@@ -2,9 +2,9 @@
 
 # Overview
 
-    * Python
-    * ES
-    * R
+* Python
+* ES
+* R
 
 # Contributing
 
