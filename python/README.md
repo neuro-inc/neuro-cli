@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/neuromation/platform-api-clients/branch/master/graph/badge.svg?token=FwM6ZV3gDj)](https://codecov.io/gh/neuromation/platform-api-clients)
+
 # Welcome to Neuromation API Python client
 
 ## Hello World

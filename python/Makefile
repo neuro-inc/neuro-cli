@@ -15,6 +15,13 @@ lint:
 publish:
 	echo 'Not implemented'
 
+.PHONY: coverage
+coverage:
+	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
+
+.PHONY: ci
+ci: test lint coverage
+
 .PHONY: clean
 clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
