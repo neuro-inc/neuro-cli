@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 .PHONY: init
 init:
 	pip install -r requirements.txt
@@ -5,7 +7,11 @@ init:
 
 .PHONY: test
 test:
-	pytest --cov=neuromation
+	pytest \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		tests
 
 .PHONY: lint
 lint:
@@ -17,7 +23,7 @@ publish:
 
 .PHONY: coverage
 coverage:
-	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
+	$(SHELL) < (curl -s https://codecov.io/bash) -X coveragepy
 
 .PHONY: ci
 ci: test lint coverage
