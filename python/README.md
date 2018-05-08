@@ -46,13 +46,11 @@ training_job = model.train(
 # Wait for job to complete and retrieve weights uri
 model_uri = training_job.wait().uri
 
-
 # Upload dataset for inference from client's local file system
 #
 dataset_uri = storage.upload(
     source='file://~/local/dataset',
     destination='storage://~/hello_world_data/dataset')
-
 
 # Run inference on newly trained model
 inference_job = model.infer(
@@ -60,7 +58,8 @@ inference_job = model.infer(
     resources=model.Resources(memory='16G', cpu=2, gpu=1)
     model=model_uri,
     dataset=dataset_uri,
-    cmd='arg1' # Optional)
+    cmd='arg1' # Optional
+    )
 
 # Wait for job to complete and retrieve result set uri
 results_uri = inference_job.wait().uri
