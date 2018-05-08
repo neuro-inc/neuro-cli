@@ -23,7 +23,7 @@ publish:
 
 .PHONY: coverage
 coverage:
-	$(SHELL) < (curl -s https://codecov.io/bash) -X coveragepy
+	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
 .PHONY: ci
 ci: test lint coverage
