@@ -7,8 +7,6 @@ jobs:
   build:
     docker:
       - image: circleci/python:3.6.1
-    environment:
-      CODECOV_TOKEN: 96d83370-5f83-4c2f-a638-175751f45008
 
     working_directory: ~/repo
 
