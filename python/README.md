@@ -5,25 +5,69 @@
 ```python
 from neuromation import model, storage
 
+# Authentication information is retrieved from environment
+# variables or from ~/.neuromation
+
 # Upload training dataset
-object_path = storage.upload(
-    path='/hello_world_data',
-    stream=open('local/file', 'rb'))
+#
+# Option 1. Use stream as source and write it
+# to file in Neuromation object storage
+#
+# TODO: if file exists, shall we throw or overwrite?
+uri = storage.upload(
+    source=open('local/file', 'rb')
+    destination='/hello_world_data/file',
+)
+
+# Option 2. Use local file or directory and copy it
+# similar to cp -r
+#
+# TODO: support for globs?
+uri = storage.upload(
+    source='local/'
+    destination='/hello_world_data/',
+)
 
 # Train using container image from neuromation repo
 # and use a newly uploaded dataset
-status = model.train(
+#
+# status is a handle that contains job id and allows to:
+# 1. query training process
+# 2. wait for job to complete (via await)
+# 3. subscribe to job completion by passing handle
+# 4. retrieve job results, in case of training is the uri
+#    for weights that is passed in results or auto-generated
+#    if results not specified or None (default)
+# 5. Future: stop, pause, resume job
+training_job = model.train(
     image='neuromation/hello-world',
-    dataset=object_path)
+    dataset=uri,
+    results='hello-world/weights')
 
-print(status.message)
+# Wait for job to complete and retrieve weights uri
+weights_uri = (await training_job.wait()).uri
+
+
+# Upload dataset for inference from client's local file system
+#
+dataset_uri = storage.upload(
+    source='local/dataset'
+    destination='/hello_world_data/dataset',
+
 
 # Run inference on newly trained model
-response = model.infer(
-    image='neuromation/hello-world'
-    weights=status.weights)
+inference_job = model.infer(
+    image='neuromation/hello-world',
+    weights=weights_uri,
+    dataset=dataset_uri)
 
-print(response.data)
+# Wait for job to complete and retrieve result set uri
+results_uri = (await inference_job.wait()).uri
+
+# Download result set
+storage.download(
+    source=results_uri,
+    destination='local/results')
 ```
 
 ## Contributing
@@ -36,7 +80,7 @@ cd platform-api-clients/python
 Before you begin, it is recommended to have clean virtual environment installed:
 
 ```shell
-virtualenv .env -p python3
+python -m venv .env
 source .env/bin/activate
 ```
 

@@ -24,5 +24,8 @@ setup(
     # url='https://bitbucket.org/gokarousel/scheduler',
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
-    entry_points={'console_scripts': ['nm=neuromation.cli:main']}
+    entry_points={'console_scripts': [
+        # TODO (artyom, 05/07/2018): possibly add cli
+        # 'nm=neuromation.cli:main'
+    ]}
 )
