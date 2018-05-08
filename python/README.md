@@ -15,18 +15,16 @@ from neuromation import model, storage
 #
 # TODO: if file exists, shall we throw or overwrite?
 uri = storage.upload(
-    source=open('local/file', 'rb')
-    destination='/hello_world_data/file',
-)
+    source=open('local/file', 'rb'),
+    destination='/hello_world_data/file')
 
 # Option 2. Use local file or directory and copy it
 # similar to cp -r
 #
 # TODO: support for globs?
 uri = storage.upload(
-    source='local/'
-    destination='/hello_world_data/',
-)
+    source='local/',
+    destination='/hello_world_data/')
 
 # Train using container image from neuromation repo
 # and use a newly uploaded dataset
@@ -35,34 +33,36 @@ uri = storage.upload(
 # 1. query training process
 # 2. wait for job to complete (via await)
 # 3. subscribe to job completion by passing handle
-# 4. retrieve job results, in case of training is the uri
-#    for weights that is passed in results or auto-generated
-#    if results not specified or None (default)
+# 4. retrieve job results. In case of training it is the uri
+#    for model checkpoint that is passed in results argument
+#    or auto-generated if results not specified or None (default)
 # 5. Future: stop, pause, resume job
 training_job = model.train(
     image='neuromation/hello-world',
+    resources=model.Resources(memory='64G', cpu=4, gpu=4),
     dataset=uri,
-    results='hello-world/weights')
+    results='/hello-world/model')
 
 # Wait for job to complete and retrieve weights uri
-weights_uri = (await training_job.wait()).uri
+model_uri = training_job.wait().uri
 
 
 # Upload dataset for inference from client's local file system
 #
 dataset_uri = storage.upload(
-    source='local/dataset'
-    destination='/hello_world_data/dataset',
+    source='local/dataset',
+    destination='/hello_world_data/dataset')
 
 
 # Run inference on newly trained model
 inference_job = model.infer(
     image='neuromation/hello-world',
-    weights=weights_uri,
+    resources=model.Resources(memory='16G', cpu=2, gpu=1)
+    model=model_uri,
     dataset=dataset_uri)
 
 # Wait for job to complete and retrieve result set uri
-results_uri = (await inference_job.wait()).uri
+results_uri = inference_job.wait().uri
 
 # Download result set
 storage.download(

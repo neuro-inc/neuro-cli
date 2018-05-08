@@ -14,6 +14,7 @@ setup(
     name='neuromation',
     version='0.1.0',
     python_requires='>=3.5.0',
+    # Make sure to pin versions of install_requires
     install_requires=[],
     include_package_data=True,
     description='Neuromation Platform API client',
