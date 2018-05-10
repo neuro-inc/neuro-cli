@@ -1,2 +1,5 @@
+from neuromation import model
+
+
 def test_e2e():
-    pass
+    assert model.foo()
