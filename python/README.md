@@ -15,16 +15,16 @@ from neuromation import model, storage
 #
 # TODO: if file exists, shall we throw or overwrite?
 uri = storage.upload(
-    source=open('local/file', 'rb'),
-    destination='/hello_world_data/file')
+    source=open('file://~/local/file', 'rb'),
+    destination='storage://~/hello_world_data/file')
 
 # Option 2. Use local file or directory and copy it
 # similar to cp -r
 #
 # TODO: support for globs?
 uri = storage.upload(
-    source='local/',
-    destination='/hello_world_data/')
+    source='file://~/local/',
+    destination='storage://~/hello_world_data/')
 
 # Train using container image from neuromation repo
 # and use a newly uploaded dataset
@@ -41,7 +41,7 @@ training_job = model.train(
     image='neuromation/hello-world',
     resources=model.Resources(memory='64G', cpu=4, gpu=4),
     dataset=uri,
-    results='/hello-world/model')
+    results='storage://~/hello-world/model')
 
 # Wait for job to complete and retrieve weights uri
 model_uri = training_job.wait().uri
@@ -50,8 +50,8 @@ model_uri = training_job.wait().uri
 # Upload dataset for inference from client's local file system
 #
 dataset_uri = storage.upload(
-    source='local/dataset',
-    destination='/hello_world_data/dataset')
+    source='file://~/local/dataset',
+    destination='storage://~/hello_world_data/dataset')
 
 
 # Run inference on newly trained model
@@ -59,7 +59,8 @@ inference_job = model.infer(
     image='neuromation/hello-world',
     resources=model.Resources(memory='16G', cpu=2, gpu=1)
     model=model_uri,
-    dataset=dataset_uri)
+    dataset=dataset_uri,
+    cmd='arg1' # Optional)
 
 # Wait for job to complete and retrieve result set uri
 results_uri = inference_job.wait().uri
@@ -67,7 +68,7 @@ results_uri = inference_job.wait().uri
 # Download result set
 storage.download(
     source=results_uri,
-    destination='local/results')
+    destination='file://~/local/results')
 ```
 
 ## Contributing
