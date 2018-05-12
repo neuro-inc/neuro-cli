@@ -14,6 +14,12 @@ test:
 		--cov-report xml:coverage.xml \
 		tests
 
+
+.PHONY: format
+format:
+	isort -ry neuromation tests
+
+
 .PHONY: lint
 lint:
 	flake8

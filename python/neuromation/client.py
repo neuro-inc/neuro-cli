@@ -1,6 +1,6 @@
 import asyncio
-from dataclasses import dataclass
-from dataclasses import replace
+
+from dataclasses import dataclass, replace
 
 
 @dataclass

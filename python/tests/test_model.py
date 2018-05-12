@@ -1,7 +1,7 @@
 import pytest
-from neuromation import Resources, JobStatus
 from dataclasses import replace
 
+from neuromation import JobStatus, Resources
 
 JOB_ARGS = {
     'resources': Resources(memory='64M', cpu=1, gpu=1),
@@ -18,7 +18,7 @@ def train_or_infer_value_errors(func, args):
         func()
 
     with pytest.raises(ValueError, match=r'Invalid image path: .*'):
-        func(**{**args, 'image': 'invalid   image path'})
+        func(**{**args, 'image': 'invalid  image path'})
 
     with pytest.raises(ValueError, match=r'Invalid resource request: .*'):
         func(**{**args, 'resources': None})
