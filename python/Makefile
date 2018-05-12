@@ -4,7 +4,7 @@ SHELL := /bin/bash
 init:
 	pip install -r requirements.txt
 	pip install -e .
-	cp .hooks/* ../git/hooks
+	cp .hooks/* ../.git/hooks
 
 .PHONY: test
 test:
