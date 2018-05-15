@@ -2,7 +2,7 @@
 
 # Inspired by: https://github.com/kennethreitz/setup.py
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open('README.md') as f:
     readme = f.read()
@@ -16,7 +16,6 @@ setup(
     python_requires='>=3.5.0',
     # Make sure to pin versions of install_requires
     install_requires=[
-        'aiohttp==3.2.1',
         'dataclasses==0.5'
     ],
     include_package_data=True,

@@ -18,16 +18,16 @@ class JobStatus:
 
     async def _worker(self):
         await asyncio.sleep(0.1)
-        return replace(self, status='FINISHED')
 
     def wait(self, timeout=None, *, loop=None):
         loop = loop if loop else asyncio.get_event_loop()
 
         try:
-            return loop.run_until_complete(
+            loop.run_until_complete(
                 asyncio.wait_for(
                     self._worker(),
                     timeout=timeout))
+            return replace(self, status='FINISHED')
         except asyncio.TimeoutError:
             raise TimeoutError
 
