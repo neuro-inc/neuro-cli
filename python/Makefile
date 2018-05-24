@@ -4,6 +4,7 @@ SHELL := /bin/bash
 init:
 	pip install -r requirements.txt
 	pip install -e .
+	cp .hooks/* ../.git/hooks
 
 .PHONY: test
 test:
@@ -12,6 +13,12 @@ test:
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		tests
+
+
+.PHONY: format
+format:
+	isort -ry neuromation tests
+
 
 .PHONY: lint
 lint:
