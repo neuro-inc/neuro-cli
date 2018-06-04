@@ -2,7 +2,7 @@
 
 # Inspired by: https://github.com/kennethreitz/setup.py
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open('README.md') as f:
     readme = f.read()
@@ -24,8 +24,6 @@ setup(
     long_description=readme,
     author='Neuromation Team',
     author_email='engineering@neuromation.io',
-    # TODO (artyom 05/04/2018): make repo public and update URL
-    # url='https://bitbucket.org/gokarousel/scheduler',
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
     entry_points={'console_scripts': [

@@ -1,6 +1,10 @@
 import asyncio
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
+
+from neuromation import requests
+
+from .requests import InferRequest, TrainRequest, fetch
 
 
 @dataclass
@@ -11,23 +15,34 @@ class Resources:
 
 
 @dataclass
+class Image:
+    image: str
+    CMD: str  # NOQA
+
+
+@dataclass
 class JobStatus:
     results: str
     status: str
     id: str
+    url: str
 
-    async def _worker(self):
-        await asyncio.sleep(0.1)
+    async def _call(self):
+        return JobStatus(
+                **await fetch(
+                    url=self.url,
+                    request=requests.JobStatusRequest(
+                        id=self.id
+                    )))
 
     def wait(self, timeout=None, *, loop=None):
         loop = loop if loop else asyncio.get_event_loop()
 
         try:
-            loop.run_until_complete(
+            return loop.run_until_complete(
                 asyncio.wait_for(
-                    self._worker(),
+                    self._call(),
                     timeout=timeout))
-            return replace(self, status='FINISHED')
         except asyncio.TimeoutError:
             raise TimeoutError
 
@@ -38,26 +53,50 @@ class Model:
 
     def infer(
             self,
-            image: str,
+            *,
+            image: Image,
             resources: Resources,
             model: str,
             dataset: str,
-            results: str)-> JobStatus:
+            results: str,
+            loop=None)-> JobStatus:
+        loop = loop if loop else asyncio.get_event_loop()
         return JobStatus(
-                results=results,
-                status='RUNNING',
-                id='foo')
+            url=self._url,
+            **loop.run_until_complete(fetch(
+                url=self._url,
+                request=InferRequest(
+                    image=requests.Image(
+                        image=image.image,
+                        CMD=image.CMD),
+                    resources=requests.Resources(
+                        memory=resources.memory,
+                        cpu=resources.cpu,
+                        gpu=resources.gpu),
+                    model_storage_uri=model,
+                    dataset_storage_uri=dataset,
+                    result_storage_uri=results))))
 
     def train(
             self,
-            image: str,
+            *,
+            image: Image,
             resources: Resources,
             dataset: str,
-            results: str) -> JobStatus:
+            results: str,
+            loop=None) -> JobStatus:
+        loop = loop if loop else asyncio.get_event_loop()
         return JobStatus(
-            results=results,
-            status='RUNNING',
-            id='foo')
+            url=self._url,
+            **loop.run_until_complete(fetch(
+                url=self._url,
+                request=TrainRequest(
+                    image=requests.Image(
+                        image=image.image,
+                        CMD=image.CMD),
+                    resources=resources,
+                    dataset_storage_uri=dataset,
+                    result_storage_uri=results))))
 
 
 class Storage:
