@@ -4,7 +4,7 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 from aiohttp import web
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 from neuromation import requests
 from utils import mocked_async_context_manager
@@ -19,8 +19,6 @@ def build_request(method):
     class MyRequest(requests.Request):
         value: str
         nested: Nested
-        route='/my'
-        method='GET'
 
     request = MyRequest(value='foo', nested=Nested(values=list('abc')))
     request.method = method
@@ -45,7 +43,8 @@ def test_call(route_method, loop):
 
     request = build_request('GET')
     route_method.return_value = ('/my', 'GET')
-    res = loop.run_until_complete(requests.fetch(session, 'http://test', request))
+    res = loop.run_until_complete(
+        requests.fetch(session, 'http://test', request))
 
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',
@@ -55,7 +54,8 @@ def test_call(route_method, loop):
 
     request = build_request('POST')
     route_method.return_value = ('/my', 'POST')
-    res = loop.run_until_complete(requests.fetch(session, 'http://test', request))
+    res = loop.run_until_complete(
+        requests.fetch(session, 'http://test', request))
     aiohttp.ClientSession.request.assert_called_with(
         method='POST',
         json=expected_json,
@@ -69,4 +69,5 @@ def test_fetch(loop):
 
     session = loop.run_until_complete(requests.session())
     with pytest.raises(TypeError, match=r'Unknown request type: .*'):
-        loop.run_until_complete(requests.fetch('http://foo', session, UnknownRequest()))
+        loop.run_until_complete(
+            requests.fetch('http://foo', session, UnknownRequest()))

@@ -1,23 +1,9 @@
 import asyncio
-import re
 
 from dataclasses import dataclass
 
 from .requests import (Image, InferRequest, JobStatusRequest, Resources,
                        TrainRequest, fetch, session)
-
-
-@dataclass(frozen=True)
-class Resources:
-    memory: str
-    cpu: int
-    gpu: int
-
-
-@dataclass(frozen=True)
-class Image:
-    image: str
-    command: str
 
 
 @dataclass(frozen=True)
@@ -27,7 +13,6 @@ class JobStatus:
     id: str
     url: str
     session: object
-
 
     async def _call(self):
         return JobStatus(
@@ -57,11 +42,6 @@ class Model:
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
         self._session = self._loop.run_until_complete(session())
-
-
-    @property
-    def session(self):
-        return self._session
 
     async def close(self):
         if self._session.closed:

@@ -15,7 +15,7 @@ JOB_ARGS = {
     'results': 'storage://~/results'
 }
 
-JOB_TIMEOUT_SEC = 0.05
+JOB_TIMEOUT_SEC = 0.005
 
 
 def train_or_infer_value_errors(func, args):
@@ -23,7 +23,11 @@ def train_or_infer_value_errors(func, args):
         func()
 
     with pytest.raises(ValueError, match=r'Invalid image path: .*'):
-        func(**{**args, 'image': client.Image(image='invalid  image path', command='bash')})
+        func(**{
+            **args,
+            'image': client.Image(
+                image='invalid  image path',
+                command='bash')})
 
     with pytest.raises(ValueError, match=r'Invalid resource request: .*'):
         func(**{**args, 'resources': None})
@@ -45,7 +49,7 @@ def train_or_infer_value_errors(func, args):
 
 
 async def _call(self):
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.006)
     return self
 
 
@@ -111,8 +115,3 @@ def test_infer_errors(request, model):
 
     # with pytest.raises(ValueError, match=r'Invalid uri: .*'):
     #     model.infer({**args, 'model': 'bad-uri'})
-
-
-async def test_context_manager(model):
-    await model.close()
-    assert model.session == None
