@@ -4,42 +4,29 @@ import aiohttp
 from dataclasses import asdict, dataclass
 
 
-class Request:
-    def __init__(self, route: str, method: str):
-        self._route = route
-        self._method = method
-
-    @property
-    def method(self):
-        return self._method
-
-    @property
-    def route(self):
-        return self._route
-
-
-@dataclass
+@dataclass(frozen=True)
 class Resources:
     memory: str
     cpu: int
     gpu: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class Image:
     image: str
-    CMD: str  # NOQA
+    command: str
 
 
-@dataclass
+class Request:
+    pass
+
+
+@dataclass(frozen=True)
 class JobStatusRequest(Request):
     id: str
 
-    def __post_init__(self):
-        super().__init__(route='/jobs', method='GET')
 
-
-@dataclass
+@dataclass(frozen=True)
 class InferRequest(Request):
     image: Image
     dataset_storage_uri: str
@@ -47,35 +34,34 @@ class InferRequest(Request):
     model_storage_uri: str
     resources: Resources
 
-    def __post_init__(self):
-        """ dataclass' auto-generated __init__ will call this method"""
-        super().__init__(route='/infer', method='POST')
 
-
-@dataclass
+@dataclass(frozen=True)
 class TrainRequest(Request):
     resources: Resources
     image: Image
     dataset_storage_uri: str
     result_storage_uri: str
 
-    def __post_init__(self):
-        """ dataclass' auto-generated __init__ will call this method"""
-        super().__init__(route='/train', method='POST')
+
+async def session():
+    return aiohttp.ClientSession()
 
 
-async def fetch(url: str, request: Request):
-    async with aiohttp.ClientSession() as session:
-        func = None
+def route_method(request: Request):
+    if type(request) is JobStatusRequest:
+        return '/jobs', 'GET'
+    elif type(request) is TrainRequest:
+        return '/train', 'POST'
+    elif type(request) is InferRequest:
+        return '/infer', 'POST'
+    else:
+        raise TypeError(f'Unknown request type: {type(request)}')
 
-        if request.method == 'POST':
-            func = session.post
-        elif request.method == 'GET':
-            func = session.get
-        else:
-            raise ValueError(f'Invalid HTTP call method: {request.method}')
 
-        async with func(
-                    url=url + request.route,
+async def fetch(session, url: str, request: Request):
+        route, method = route_method(request)
+        async with session.request(
+                    method=method,
+                    url=url + route,
                     json=asdict(request)) as resp:
             return json.loads(resp.text)

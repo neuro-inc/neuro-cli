@@ -1,37 +1,42 @@
 import asyncio
+import re
 
 from dataclasses import dataclass
 
-from neuromation import requests
+from .requests import (Image, InferRequest, JobStatusRequest, Resources,
+                       TrainRequest, fetch, session)
 
-from .requests import InferRequest, TrainRequest, fetch
 
-
-@dataclass
+@dataclass(frozen=True)
 class Resources:
     memory: str
     cpu: int
     gpu: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class Image:
     image: str
-    CMD: str  # NOQA
+    command: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class JobStatus:
     results: str
     status: str
     id: str
     url: str
+    session: object
+
 
     async def _call(self):
         return JobStatus(
+                session=self.session,
+                url=self.url,
                 **await fetch(
+                    session=self.session,
                     url=self.url,
-                    request=requests.JobStatusRequest(
+                    request=JobStatusRequest(
                         id=self.id
                     )))
 
@@ -48,8 +53,22 @@ class JobStatus:
 
 
 class Model:
-    def __init__(self, url):
+    def __init__(self, url, *, loop=None):
         self._url = url
+        self._loop = loop if loop else asyncio.get_event_loop()
+        self._session = self._loop.run_until_complete(session())
+
+
+    @property
+    def session(self):
+        return self._session
+
+    async def close(self):
+        if self._session.closed:
+            return
+
+        await self._session.close()
+        self._session = None
 
     def infer(
             self,
@@ -58,24 +77,25 @@ class Model:
             resources: Resources,
             model: str,
             dataset: str,
-            results: str,
-            loop=None)-> JobStatus:
-        loop = loop if loop else asyncio.get_event_loop()
+            results: str)-> JobStatus:
         return JobStatus(
             url=self._url,
-            **loop.run_until_complete(fetch(
-                url=self._url,
-                request=InferRequest(
-                    image=requests.Image(
-                        image=image.image,
-                        CMD=image.CMD),
-                    resources=requests.Resources(
-                        memory=resources.memory,
-                        cpu=resources.cpu,
-                        gpu=resources.gpu),
-                    model_storage_uri=model,
-                    dataset_storage_uri=dataset,
-                    result_storage_uri=results))))
+            session=self._session,
+            **self._loop.run_until_complete(
+                fetch(
+                    self._session,
+                    self._url,
+                    InferRequest(
+                        image=Image(
+                            image=image.image,
+                            command=image.command),
+                        resources=Resources(
+                            memory=resources.memory,
+                            cpu=resources.cpu,
+                            gpu=resources.gpu),
+                        model_storage_uri=model,
+                        dataset_storage_uri=dataset,
+                        result_storage_uri=results))))
 
     def train(
             self,
@@ -83,23 +103,22 @@ class Model:
             image: Image,
             resources: Resources,
             dataset: str,
-            results: str,
-            loop=None) -> JobStatus:
-        loop = loop if loop else asyncio.get_event_loop()
+            results: str) -> JobStatus:
         return JobStatus(
+            session=self._session,
             url=self._url,
-            **loop.run_until_complete(fetch(
-                url=self._url,
-                request=TrainRequest(
-                    image=requests.Image(
-                        image=image.image,
-                        CMD=image.CMD),
-                    resources=resources,
-                    dataset_storage_uri=dataset,
-                    result_storage_uri=results))))
+            **self._loop.run_until_complete(
+                fetch(
+                    self._session,
+                    self._url,
+                    TrainRequest(
+                        image=Image(
+                            image=image.image,
+                            command=image.command),
+                        resources=resources,
+                        dataset_storage_uri=dataset,
+                        result_storage_uri=results))))
 
 
 class Storage:
     pass
-    # def __init__(self, url):
-    #     self._url = url

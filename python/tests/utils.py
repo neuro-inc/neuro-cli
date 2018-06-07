@@ -1,5 +1,18 @@
 from unittest.mock import Mock
 
+TRAIN_RESPONSE = {
+    'results': 'schema://host/path',
+    'status': 'PENDING',
+    'id': 'iddqd'
+}
+
+
+INFER_RESPONSE = {
+    'results': 'schema://host/path',
+    'status': 'PENDING',
+    'id': 'iddqd'
+}
+
 
 def mocked_async_context_manager(return_value=None):
     class ContextManager():
