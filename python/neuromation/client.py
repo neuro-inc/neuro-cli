@@ -37,12 +37,15 @@ class JobStatus:
             raise TimeoutError
 
 
-class Model:
+class ApiClient:
     def __init__(self, url, *, loop=None):
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
         self._session = self._loop.run_until_complete(session())
 
+
+
+class Model(ApiClient):
     async def close(self):
         if self._session.closed:
             return
@@ -100,5 +103,5 @@ class Model:
                         result_storage_uri=results))))
 
 
-class Storage:
+class Storage(ApiClient):
     pass
