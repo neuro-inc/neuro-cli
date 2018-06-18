@@ -16,6 +16,7 @@ setup(
     python_requires='>=3.5.0',
     # Make sure to pin versions of install_requires
     install_requires=[
+        'aiohttp==3.2.1',
         'dataclasses==0.5'
     ],
     include_package_data=True,
@@ -23,8 +24,6 @@ setup(
     long_description=readme,
     author='Neuromation Team',
     author_email='engineering@neuromation.io',
-    # TODO (artyom 05/04/2018): make repo public and update URL
-    # url='https://bitbucket.org/gokarousel/scheduler',
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
     entry_points={'console_scripts': [
