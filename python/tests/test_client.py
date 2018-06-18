@@ -4,7 +4,8 @@ import aiohttp
 from aiohttp import web
 
 from neuromation import client
-from utils import INFER_RESPONSE, TRAIN_RESPONSE, mocked_async_context_manager
+from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
+                   mocked_async_context_manager)
 
 JOB_RESPONSE = {
     'results': 'schema://host/path',
@@ -15,7 +16,7 @@ JOB_RESPONSE = {
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(web.json_response(TRAIN_RESPONSE)))
+    new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)))
 def test_train(request, model, loop):
     result = model.train(
         image=client.Image(image='repo/image', command='bash'),
@@ -25,6 +26,8 @@ def test_train(request, model, loop):
 
     aiohttp.ClientSession.request.assert_called_with(
             method='POST',
+            data=None,
+            params=None,
             json={
                 'resources': {'memory': '16G', 'cpu': 1, 'gpu': 1},
                 'image': {'image': 'repo/image', 'command': 'bash'},
@@ -33,16 +36,15 @@ def test_train(request, model, loop):
             url='http://127.0.0.1/train')
 
     assert result == client.JobStatus(
-        results='schema://host/path',
+        client=model,
         status='PENDING',
         id='iddqd',
-        url='http://127.0.0.1',
-        session=result.session)
+        results='schema://host/path')
 
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(web.json_response(INFER_RESPONSE)))
+    new=mocked_async_context_manager(JsonResponse(INFER_RESPONSE)))
 def test_infer(request, model, loop):
     result = model.infer(
         image=client.Image(image='repo/image', command='bash'),
@@ -54,6 +56,8 @@ def test_infer(request, model, loop):
 
     aiohttp.ClientSession.request.assert_called_with(
             method='POST',
+            params=None,
+            data=None,
             json={
                 'image': {'image': 'repo/image', 'command': 'bash'},
                 'dataset_storage_uri': 'schema://host/data',
@@ -63,27 +67,24 @@ def test_infer(request, model, loop):
             url='http://127.0.0.1/infer')
 
     assert result == client.JobStatus(
-        session=result.session,
+        client=model,
         results='schema://host/path',
         status='PENDING',
-        id='iddqd',
-        url='http://127.0.0.1')
+        id='iddqd')
 
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(web.json_response(JOB_RESPONSE)))
+    new=mocked_async_context_manager(JsonResponse(JOB_RESPONSE)))
 def test_job_status(request, model, loop):
     job = client.JobStatus(
-        url=model._url,
+        client=model,
         **{
             **JOB_RESPONSE,
             'status': 'PENDING',
-            'session': model._session
         })
 
-    res = job.wait(loop=loop)
+    res = job.wait()
     assert res == client.JobStatus(
-        url=model._url,
-        session=model._session,
+        client=model,
         **JOB_RESPONSE)

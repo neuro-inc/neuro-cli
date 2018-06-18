@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import List
 from unittest.mock import patch
 
@@ -7,59 +8,38 @@ from aiohttp import web
 from dataclasses import dataclass
 
 from neuromation import requests
-from utils import mocked_async_context_manager
-
-
-def build_request(method):
-    @dataclass
-    class Nested:
-        values: List[str]
-
-    @dataclass
-    class MyRequest(requests.Request):
-        value: str
-        nested: Nested
-
-    request = MyRequest(value='foo', nested=Nested(values=list('abc')))
-    request.method = method
-
-    return request
+from utils import JsonResponse, mocked_async_context_manager
 
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(web.json_response({'hello': 'world'})))
+    new=mocked_async_context_manager(JsonResponse({'hello': 'world'})))
 @patch('neuromation.requests.route_method')
 def test_call(route_method, loop):
-    expected_json = {
-                'value': 'foo',
-                'nested': {
-                    'values': ['a', 'b', 'c']
-                }
-            }
+    expected_json = {'a': 'b'}
+    expected_params = {'foo': 'bar'}
     expected_url = 'http://test/my'
-
+    expected_data = b'content'
+    expected_method = 'GET'
     session = loop.run_until_complete(requests.session())
 
-    request = build_request('GET')
-    route_method.return_value = ('/my', 'GET')
+    route_method.return_value = (
+        '/my',
+        expected_params,
+        expected_method,
+        expected_json,
+        expected_data)
     res = loop.run_until_complete(
-        requests.fetch(session, 'http://test', request))
+        requests.fetch(session, 'http://test', None))
 
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',
         json=expected_json,
-        url=expected_url)
-    assert res == {'hello': 'world'}
+        params=expected_params,
+        url=expected_url,
+        data=expected_data)
 
-    request = build_request('POST')
-    route_method.return_value = ('/my', 'POST')
-    res = loop.run_until_complete(
-        requests.fetch(session, 'http://test', request))
-    aiohttp.ClientSession.request.assert_called_with(
-        method='POST',
-        json=expected_json,
-        url=expected_url)
+
     assert res == {'hello': 'world'}
 
 
