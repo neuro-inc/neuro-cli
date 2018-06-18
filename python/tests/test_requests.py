@@ -39,7 +39,6 @@ def test_call(route_method, loop):
         url=expected_url,
         data=expected_data)
 
-
     assert res == {'hello': 'world'}
 
 

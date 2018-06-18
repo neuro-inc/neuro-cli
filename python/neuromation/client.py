@@ -1,4 +1,5 @@
 import asyncio
+import re
 from io import BytesIO
 from typing import List
 
@@ -6,8 +7,62 @@ from dataclasses import InitVar, dataclass
 
 from .requests import (CreateRequest, DeleteRequest, Image, InferRequest,
                        JobStatusRequest, ListRequest, MkDirsRequest,
-                       OpenRequest, Request, Resources, TrainRequest, fetch,
-                       session)
+                       OpenRequest, Request, ResourcesPayload, TrainRequest,
+                       fetch, session)
+
+
+def parse_memory(memory) -> int:
+    """Parse string expression i.e. 16M, 16MB, etc
+    M = 1024 * 1024, MB = 1000 * 1000
+
+    returns value in bytes"""
+
+    prefixes = 'MGTPEZY'
+    value_error = ValueError(f'Unable parse value: {memory}')
+
+    if not memory:
+        raise value_error
+
+    pattern = \
+        r'^(?P<value>\d+)(?P<units>(kB|K)|((?P<prefix>[{prefixes}])(?P<unit>B?)))$'.format(  # NOQA
+            prefixes=prefixes
+        )
+    regex = re.compile(pattern)
+    match = regex.fullmatch(memory)
+
+    if not match:
+        raise value_error
+
+    groups = match.groupdict()
+
+    value = int(groups['value'])
+    unit = groups['unit']
+    prefix = groups['prefix']
+    units = groups['units']
+
+    if units == 'kB':
+        return value * 1000
+
+    if units == 'K':
+        return value * 1024
+
+    # Our prefix string starts with Mega
+    # so for index 0 the power should be 2
+    power = 2 + prefixes.index(prefix)
+    multiple = 1000 if unit else 1024
+
+    return value * multiple ** power
+
+
+def to_megabytes(value: str) -> int:
+    return int(parse_memory(value) / (1024 ** 2))
+
+
+@dataclass(frozen=True)
+class Resources:
+    memory: str
+    cpu: int
+    gpu: int
 
 
 class ApiCallError(Exception):
@@ -80,8 +135,8 @@ class Model(ApiClient):
                     image=Image(
                         image=image.image,
                         command=image.command),
-                    resources=Resources(
-                        memory=resources.memory,
+                    resources=ResourcesPayload(
+                        memory_mb=to_megabytes(resources.memory),
                         cpu=resources.cpu,
                         gpu=resources.gpu),
                     model_storage_uri=model,
@@ -91,6 +146,7 @@ class Model(ApiClient):
         return JobStatus(
             **res,
             client=self)
+
 
     def train(
             self,
@@ -104,7 +160,10 @@ class Model(ApiClient):
                 image=Image(
                     image=image.image,
                     command=image.command),
-                resources=resources,
+                    resources=ResourcesPayload(
+                        memory_mb=to_megabytes(resources.memory),
+                        cpu=resources.cpu,
+                        gpu=resources.gpu),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 
