@@ -86,6 +86,13 @@ async def session():
 
 
 def route_method(request: Request):
+    def join_url_path(a: str, b: str) -> str:
+        return '/' + '/'.join(
+            segment for segment in
+            a.split('/') + b.split('/')
+            if segment
+        )
+
     if type(request) is JobStatusRequest:
         return '/jobs', None, 'GET', asdict(request), None
     elif type(request) is TrainRequest:
@@ -93,15 +100,15 @@ def route_method(request: Request):
     elif type(request) is InferRequest:
         return '/infer', None, 'POST', asdict(request), None
     elif type(request) is CreateRequest:
-        return '/storage/' + request.path, None, 'PUT', None, request.data
+        return join_url_path('/storage', request.path), None, 'PUT', None, request.data
     elif type(request) is MkDirsRequest:
-        return '/storage/' + request.root, {request.op: None}, 'PUT', request.paths, None
+        return join_url_path('/storage', request.root), {request.op: None}, 'PUT', request.paths, None
     elif type(request) is ListRequest:
-        return '/storage', {request.op: None ,**asdict(request)}, 'GET', None, None
+        return join_url_path('/storage', request.path), {request.op: None}, 'GET', None, None
     elif type(request) is OpenRequest:
-        return '/storage/' + request.path, None, 'GET', None, None
+        return join_url_path('/storage', request.path), None, 'GET', None, None
     elif type(request) is DeleteRequest:
-        return '/storage/' + request.path, None, 'DELETE', None, None
+        return join_url_path('/storage', request.path), None, 'DELETE', None, None
     else:
         raise TypeError(f'Unknown request type: {type(request)}')
 

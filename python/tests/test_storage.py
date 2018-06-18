@@ -46,10 +46,9 @@ def test_ls(storage):
 
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',
-        url='http://127.0.0.1/storage',
+        url='http://127.0.0.1/storage/home/dir',
         params={
-            'LISTSTATUS': None,
-            'path': '/home/dir'
+            'LISTSTATUS': None
         },
         data=None,
         json=None)
