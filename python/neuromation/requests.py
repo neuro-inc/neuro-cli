@@ -5,8 +5,8 @@ from dataclasses import asdict, dataclass
 
 
 @dataclass(frozen=True)
-class Resources:
-    memory: str
+class ResourcesPayload:
+    memory_mb: str
     cpu: int
     gpu: int
 
@@ -32,12 +32,12 @@ class InferRequest(Request):
     dataset_storage_uri: str
     result_storage_uri: str
     model_storage_uri: str
-    resources: Resources
+    resources: ResourcesPayload
 
 
 @dataclass(frozen=True)
 class TrainRequest(Request):
-    resources: Resources
+    resources: ResourcesPayload
     image: Image
     dataset_storage_uri: str
     result_storage_uri: str
@@ -59,9 +59,9 @@ def route_method(request: Request):
 
 
 async def fetch(session, url: str, request: Request):
-        route, method = route_method(request)
-        async with session.request(
-                    method=method,
-                    url=url + route,
-                    json=asdict(request)) as resp:
-            return json.loads(resp.text)
+    route, method = route_method(request)
+    async with session.request(
+                method=method,
+                url=url + route,
+                json=asdict(request)) as resp:
+        return json.loads(resp.text)
