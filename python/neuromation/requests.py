@@ -1,9 +1,12 @@
-import json
 from io import BytesIO
 from typing import ClassVar, List
 
 import aiohttp
 from dataclasses import asdict, dataclass
+
+
+class RequestError(Exception):
+    pass
 
 
 @dataclass(frozen=True)
@@ -56,6 +59,7 @@ class MkDirsRequest(StorageRequest):
     paths: List[str]
     root: str
 
+
 @dataclass(frozen=True)
 class ListRequest(StorageRequest):
     op: ClassVar[str] = 'LISTSTATUS'
@@ -100,15 +104,25 @@ def route_method(request: Request):
     elif isinstance(request, InferRequest):
         return '/infer', None, 'POST', asdict(request), None
     elif isinstance(request, CreateRequest):
-        return join_url_path('/storage', request.path), None, 'PUT', None, request.data
+        return (
+            join_url_path('/storage', request.path),
+            None, 'PUT', None, request.data)
     elif isinstance(request, MkDirsRequest):
-        return join_url_path('/storage', request.root), {request.op: None}, 'PUT', request.paths, None
+        return (
+            join_url_path('/storage', request.root),
+            {request.op: None}, 'PUT', request.paths, None)
     elif isinstance(request, ListRequest):
-        return join_url_path('/storage', request.path), {request.op: None}, 'GET', None, None
+        return (
+            join_url_path('/storage', request.path),
+            {request.op: None}, 'GET', None, None)
     elif isinstance(request, OpenRequest):
-        return join_url_path('/storage', request.path), None, 'GET', None, None
+        return (
+            join_url_path('/storage', request.path),
+            None, 'GET', None, None)
     elif isinstance(request, DeleteRequest):
-        return join_url_path('/storage', request.path), None, 'DELETE', None, None
+        return (
+            join_url_path('/storage', request.path),
+            None, 'DELETE', None, None)
     else:
         raise TypeError(f'Unknown request type: {type(request)}')
 
@@ -121,7 +135,14 @@ async def fetch(session, url: str, request: Request):
                 url=url + route,
                 data=data,
                 json=json) as resp:
+
+        try:
+            resp.raise_for_status()
+        except aiohttp.ClientError as error:
+            raise RequestError(error.message)
+
         if resp.content_type == 'application/json':
             return await resp.json()
+
         # TODO (artyom, 06/17/2018): support chunks
         return resp

@@ -3,12 +3,12 @@ import re
 from io import BytesIO
 from typing import List
 
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 
 from .requests import (CreateRequest, DeleteRequest, Image, InferRequest,
                        JobStatusRequest, ListRequest, MkDirsRequest,
-                       OpenRequest, Request, ResourcesPayload, TrainRequest,
-                       fetch, session)
+                       OpenRequest, Request, RequestError, ResourcesPayload,
+                       TrainRequest, fetch, session)
 
 
 def parse_memory(memory) -> int:
@@ -17,6 +17,7 @@ def parse_memory(memory) -> int:
 
     returns value in bytes"""
 
+    # Mega, Giga, Tera, etc
     prefixes = 'MGTPEZY'
     value_error = ValueError(f'Unable parse value: {memory}')
 
@@ -65,7 +66,7 @@ class Resources:
     gpu: int
 
 
-class ApiCallError(Exception):
+class ApiError(Exception):
     pass
 
 
@@ -75,18 +76,25 @@ class ApiClient:
         self._loop = loop if loop else asyncio.get_event_loop()
         self._session = self._loop.run_until_complete(session())
 
+    @property
+    def loop(self):
+        return self._loop
+
     async def close(self):
-        if self._session.closed:
+        if self._session and self._session.closed:
             return
 
         await self._session.close()
         self._session = None
 
     async def _fetch(self, request: Request):
-        res = await fetch(session=self._session, url=self._url, request=request)
-        if type(res) is dict and 'error' in res:
-            raise ApiCallError(res['error'])
-        return res
+        try:
+            return await fetch(
+                session=self._session,
+                url=self._url,
+                request=request)
+        except RequestError as error:
+            raise ApiError(f'{error}')
 
     def _fetch_sync(self, request: Request):
         return self._loop.run_until_complete(self._fetch(request))
@@ -99,7 +107,6 @@ class JobStatus:
     id: str
     client: ApiClient
 
-
     async def _call(self):
         return JobStatus(
                 client=self.client,
@@ -108,10 +115,9 @@ class JobStatus:
                         id=self.id
                     )))
 
-
     def wait(self, timeout=None):
         try:
-            return self.client._loop.run_until_complete(
+            return self.client.loop.run_until_complete(
                 asyncio.wait_for(
                     self._call(),
                     timeout=timeout
@@ -147,7 +153,6 @@ class Model(ApiClient):
             **res,
             client=self)
 
-
     def train(
             self,
             *,
@@ -160,10 +165,10 @@ class Model(ApiClient):
                 image=Image(
                     image=image.image,
                     command=image.command),
-                    resources=ResourcesPayload(
-                        memory_mb=to_megabytes(resources.memory),
-                        cpu=resources.cpu,
-                        gpu=resources.gpu),
+                resources=ResourcesPayload(
+                    memory_mb=to_megabytes(resources.memory),
+                    cpu=resources.cpu,
+                    gpu=resources.gpu),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 
@@ -180,16 +185,16 @@ class StorageStatus:
 
 
 class Storage(ApiClient):
-    def ls(self, *, path: str) -> str:
+    def ls(self, *, path: str) -> List[StorageStatus]:
         return [
             StorageStatus(**status)
-            for status in 
+            for status in
             self._fetch_sync(ListRequest(path=path))
         ]
 
     def mkdirs(self, *, root: str, paths: List[str]) -> List[str]:
         self._fetch_sync(MkDirsRequest(root=root, paths=paths))
-        return paths 
+        return paths
 
     def create(self, *, path: str, data: BytesIO) -> str:
         self._fetch_sync(CreateRequest(path=path, data=data))

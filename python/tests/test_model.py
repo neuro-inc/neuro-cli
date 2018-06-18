@@ -6,7 +6,7 @@ from aiohttp import web
 from dataclasses import replace
 
 from neuromation import JobStatus, Resources
-from neuromation.client import ApiClient, Image
+from neuromation.client import Image
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 

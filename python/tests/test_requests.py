@@ -1,11 +1,7 @@
-from io import BytesIO
-from typing import List
 from unittest.mock import patch
 
 import aiohttp
 import pytest
-from aiohttp import web
-from dataclasses import dataclass
 
 from neuromation import requests
 from utils import JsonResponse, mocked_async_context_manager

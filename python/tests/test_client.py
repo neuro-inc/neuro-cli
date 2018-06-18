@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import aiohttp
 import pytest
-from aiohttp import web
 
 from neuromation import client
 from neuromation.client import parse_memory
