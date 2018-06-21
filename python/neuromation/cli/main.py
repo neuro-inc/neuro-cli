@@ -3,7 +3,7 @@ from functools import partial
 from urllib.parse import urlparse
 
 import neuromation
-from neuromation.client import Model, Storage
+from neuromation.client import Storage
 
 from .commands import command, run
 
@@ -92,7 +92,8 @@ def nm(url, token, version):
 
             if src.scheme == 'http':
                 if dst.scheme:
-                    raise ValueError('SOURCE or DESTINATION must have http scheme')
+                    raise ValueError(
+                        'SOURCE or DESTINATION must have http scheme')
                 with storage() as s:
                     stream = s.open(path=src.path)
                     with open(dst.path, mode='wb') as f:
@@ -100,7 +101,8 @@ def nm(url, token, version):
 
             if dst.scheme == 'http':
                 if src.scheme:
-                    raise ValueError('SOURCE or DESTINATION must have http scheme')
+                    raise ValueError(
+                        'SOURCE or DESTINATION must have http scheme')
                 with open(src.path, mode='rb') as f:
                     with storage() as s:
                         return s.create(path=dst.path, data=f)

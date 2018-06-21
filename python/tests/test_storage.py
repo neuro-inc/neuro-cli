@@ -49,9 +49,7 @@ def test_ls(storage):
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',
         url='http://127.0.0.1/storage/home/dir',
-        params={
-            'LISTSTATUS': None
-        },
+        params='LISTSTATUS',
         data=None,
         json=None)
 
@@ -65,7 +63,7 @@ def test_mkdirs(storage):
         method='PUT',
         json=['foo', 'bar'],
         url='http://127.0.0.1/storage/home',
-        params={'MKDIRS': None},
+        params='MKDIRS',
         data=None)
 
 

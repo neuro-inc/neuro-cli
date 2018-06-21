@@ -27,7 +27,7 @@ def _person(name, age, gender, city):
 
         Options:
           -i, --intensity VALUE      Intensity (HIGH, MEDIUM, LOW)  [default: LOW]
-        """
+        """  # NOQA
 
         @command
         def dig(depth, what):
@@ -48,7 +48,7 @@ def _person(name, age, gender, city):
 
             Options:
               -s, --style STYLE         Style (ex: seagull, etc)  [default: crushing]
-            """
+            """  # NOQA
             return \
                 f'{name} is {style} {whom} in {city}'
 

@@ -122,7 +122,7 @@ def route_method(request: Request):
     elif isinstance(request, DeleteRequest):
         return (
             join_url_path('/storage', request.path),
-            {}, 'DELETE', None, None)
+            None, 'DELETE', None, None)
     else:
         raise TypeError(f'Unknown request type: {type(request)}')
 

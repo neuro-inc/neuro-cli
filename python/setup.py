@@ -4,8 +4,6 @@
 
 from setuptools import find_packages, setup
 
-import neuromation
-
 with open('README.md') as f:
     readme = f.read()
 
@@ -14,7 +12,8 @@ with open('README.md') as f:
 
 setup(
     name='neuromation',
-    version=neuromation.__version__,
+    # TODO (artyom 06/21/2018): implement single source of version
+    version='0.1.0',
     python_requires='>=3.5.0',
     # Make sure to pin versions of install_requires
     install_requires=[
