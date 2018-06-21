@@ -110,11 +110,11 @@ def route_method(request: Request):
     elif isinstance(request, MkDirsRequest):
         return (
             join_url_path('/storage', request.root),
-            {request.op: None}, 'PUT', request.paths, None)
+            request.op, 'PUT', request.paths, None)
     elif isinstance(request, ListRequest):
         return (
             join_url_path('/storage', request.path),
-            {request.op: None}, 'GET', None, None)
+            request.op, 'GET', None, None)
     elif isinstance(request, OpenRequest):
         return (
             join_url_path('/storage', request.path),
@@ -122,7 +122,7 @@ def route_method(request: Request):
     elif isinstance(request, DeleteRequest):
         return (
             join_url_path('/storage', request.path),
-            None, 'DELETE', None, None)
+            {}, 'DELETE', None, None)
     else:
         raise TypeError(f'Unknown request type: {type(request)}')
 

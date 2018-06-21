@@ -74,7 +74,13 @@ class ApiClient:
     def __init__(self, url: str, *, loop=None):
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
-        self._session = self._loop.run_until_complete(session())
+        self._session = self.loop.run_until_complete(session())
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.loop.run_until_complete(self.close())
 
     @property
     def loop(self):
