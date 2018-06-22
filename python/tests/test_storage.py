@@ -42,8 +42,8 @@ def test_error(storage):
     )))
 def test_ls(storage):
     assert storage.ls(path='/home/dir') == [
-        client.StorageStatus(path='foo', size=1024, type='FILE'),
-        client.StorageStatus(path='bar', size=4*1024, type='DIR')
+        client.FileStatus(path='foo', size=1024, type='FILE'),
+        client.FileStatus(path='bar', size=4*1024, type='DIR')
     ]
 
     aiohttp.ClientSession.request.assert_called_with(

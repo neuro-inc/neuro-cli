@@ -30,13 +30,25 @@ class JsonResponse:
 
 
 class BinaryResponse:
+    class StreamResponse:
+        def __init__(self, data):
+            self._stream = BytesIO(data)
+
+        async def read(self):
+            return self._stream.read()
+
+        async def readany(self):
+            return self._stream.read()
+
     def __init__(self, data, *, error=None):
         self._stream = BytesIO(data)
         self.content_type = 'application/octet-stream'
         self._error = error
+        self._content = BinaryResponse.StreamResponse(data)
 
-    async def read(self):
-        return self._stream.read()
+    @property
+    def content(self):
+        return self._content
 
     def raise_for_status(self):
         if self._error:

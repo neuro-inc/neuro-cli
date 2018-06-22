@@ -1,6 +1,6 @@
 import asyncio
 import re
-from io import BytesIO
+from io import BufferedReader, BytesIO
 from typing import List
 
 from dataclasses import dataclass
@@ -184,16 +184,16 @@ class Model(ApiClient):
 
 
 @dataclass(frozen=True)
-class StorageStatus:
+class FileStatus:
     path: str
     size: int
     type: str
 
 
 class Storage(ApiClient):
-    def ls(self, *, path: str) -> List[StorageStatus]:
+    def ls(self, *, path: str) -> List[FileStatus]:
         return [
-            StorageStatus(**status)
+            FileStatus(**status)
             for status in
             self._fetch_sync(ListRequest(path=path))
         ]
@@ -208,7 +208,7 @@ class Storage(ApiClient):
 
     def open(self, *, path: str) -> BytesIO:
         content = self._fetch_sync(OpenRequest(path=path))
-        return BytesIO(self._loop.run_until_complete(content.read()))
+        return BufferedReader(content)
 
     def rm(self, *, path: str) -> str:
         self._fetch_sync(DeleteRequest(path=path))
