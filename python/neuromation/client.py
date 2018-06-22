@@ -1,9 +1,13 @@
 import asyncio
 import re
+from io import BufferedReader, BytesIO
+from typing import List
 
 from dataclasses import dataclass
 
-from .requests import (Image, InferRequest, JobStatusRequest, ResourcesPayload,
+from .requests import (CreateRequest, DeleteRequest, Image, InferRequest,
+                       JobStatusRequest, ListRequest, MkDirsRequest,
+                       OpenRequest, Request, RequestError, ResourcesPayload,
                        TrainRequest, fetch, session)
 
 
@@ -13,6 +17,7 @@ def parse_memory(memory) -> int:
 
     returns value in bytes"""
 
+    # Mega, Giga, Tera, etc
     prefixes = 'MGTPEZY'
     value_error = ValueError(f'Unable parse value: {memory}')
 
@@ -61,50 +66,68 @@ class Resources:
     gpu: int
 
 
-@dataclass(frozen=True)
-class JobStatus:
-    results: str
-    status: str
-    id: str
-    url: str
-    session: object
-
-    async def _call(self):
-        return JobStatus(
-                session=self.session,
-                url=self.url,
-                **await fetch(
-                    session=self.session,
-                    url=self.url,
-                    request=JobStatusRequest(
-                        id=self.id
-                    )))
-
-    def wait(self, timeout=None, *, loop=None):
-        loop = loop if loop else asyncio.get_event_loop()
-
-        try:
-            return loop.run_until_complete(
-                asyncio.wait_for(
-                    self._call(),
-                    timeout=timeout))
-        except asyncio.TimeoutError:
-            raise TimeoutError
+class ApiError(Exception):
+    pass
 
 
-class Model:
-    def __init__(self, url, *, loop=None):
+class ApiClient:
+    def __init__(self, url: str, *, loop=None):
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
         self._session = self._loop.run_until_complete(session())
 
+    @property
+    def loop(self):
+        return self._loop
+
     async def close(self):
-        if self._session.closed:
+        if self._session and self._session.closed:
             return
 
         await self._session.close()
         self._session = None
 
+    async def _fetch(self, request: Request):
+        try:
+            return await fetch(
+                session=self._session,
+                url=self._url,
+                request=request)
+        except RequestError as error:
+            raise ApiError(f'{error}')
+
+    def _fetch_sync(self, request: Request):
+        return self._loop.run_until_complete(self._fetch(request))
+
+
+@dataclass(frozen=True)
+class JobStatus:
+    results: str
+    status: str
+    id: str
+    client: ApiClient
+
+    async def _call(self):
+        return JobStatus(
+                client=self.client,
+                **await self.client._fetch(
+                    request=JobStatusRequest(
+                        id=self.id
+                    )))
+
+    def wait(self, timeout=None):
+        try:
+            return self.client.loop.run_until_complete(
+                asyncio.wait_for(
+                    self._call(),
+                    timeout=timeout
+                    )
+                )
+        except asyncio.TimeoutError:
+            raise TimeoutError
+
+
+class Model(ApiClient):
     def infer(
             self,
             *,
@@ -113,25 +136,22 @@ class Model:
             model: str,
             dataset: str,
             results: str)-> JobStatus:
+        res = self._fetch_sync(
+                InferRequest(
+                    image=Image(
+                        image=image.image,
+                        command=image.command),
+                    resources=ResourcesPayload(
+                        memory_mb=to_megabytes(resources.memory),
+                        cpu=resources.cpu,
+                        gpu=resources.gpu),
+                    model_storage_uri=model,
+                    dataset_storage_uri=dataset,
+                    result_storage_uri=results))
 
         return JobStatus(
-            url=self._url,
-            session=self._session,
-            **self._loop.run_until_complete(
-                fetch(
-                    self._session,
-                    self._url,
-                    InferRequest(
-                        image=Image(
-                            image=image.image,
-                            command=image.command),
-                        resources=ResourcesPayload(
-                            memory_mb=to_megabytes(resources.memory),
-                            cpu=resources.cpu,
-                            gpu=resources.gpu),
-                        model_storage_uri=model,
-                        dataset_storage_uri=dataset,
-                        result_storage_uri=results))))
+            **res,
+            client=self)
 
     def train(
             self,
@@ -140,24 +160,50 @@ class Model:
             resources: Resources,
             dataset: str,
             results: str) -> JobStatus:
+        res = self._fetch_sync(
+            TrainRequest(
+                image=Image(
+                    image=image.image,
+                    command=image.command),
+                resources=ResourcesPayload(
+                    memory_mb=to_megabytes(resources.memory),
+                    cpu=resources.cpu,
+                    gpu=resources.gpu),
+                dataset_storage_uri=dataset,
+                result_storage_uri=results))
+
         return JobStatus(
-            session=self._session,
-            url=self._url,
-            **self._loop.run_until_complete(
-                fetch(
-                    self._session,
-                    self._url,
-                    TrainRequest(
-                        image=Image(
-                            image=image.image,
-                            command=image.command),
-                        resources=ResourcesPayload(
-                            memory_mb=to_megabytes(resources.memory),
-                            cpu=resources.cpu,
-                            gpu=resources.gpu),
-                        dataset_storage_uri=dataset,
-                        result_storage_uri=results))))
+            **res,
+            client=self)
 
 
-class Storage:
-    pass
+@dataclass(frozen=True)
+class FileStatus:
+    path: str
+    size: int
+    type: str
+
+
+class Storage(ApiClient):
+    def ls(self, *, path: str) -> List[FileStatus]:
+        return [
+            FileStatus(**status)
+            for status in
+            self._fetch_sync(ListRequest(path=path))
+        ]
+
+    def mkdirs(self, *, root: str, paths: List[str]) -> List[str]:
+        self._fetch_sync(MkDirsRequest(root=root, paths=paths))
+        return paths
+
+    def create(self, *, path: str, data: BytesIO) -> str:
+        self._fetch_sync(CreateRequest(path=path, data=data))
+        return path
+
+    def open(self, *, path: str) -> BytesIO:
+        content = self._fetch_sync(OpenRequest(path=path))
+        return BufferedReader(content)
+
+    def rm(self, *, path: str) -> str:
+        self._fetch_sync(DeleteRequest(path=path))
+        return path
