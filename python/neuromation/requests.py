@@ -1,3 +1,4 @@
+import asyncio
 from io import BytesIO
 from typing import ClassVar, List
 
@@ -127,6 +128,23 @@ def route_method(request: Request):
         raise TypeError(f'Unknown request type: {type(request)}')
 
 
+class SyncStreamWrapper:
+    def __init__(self, stream, *, loop=None):
+        loop = loop or asyncio.get_event_loop()
+        self._loop = loop
+        self._stream_reader = stream
+
+    def readable(self):
+        return True
+
+    @property
+    def closed(self):
+        return False
+
+    def read(self):
+        return self._loop.run_until_complete(self._stream_reader.readany())
+
+
 async def fetch(session, url: str, request: Request):
     route, params, method, json, data = route_method(request)
     async with session.request(
@@ -144,5 +162,6 @@ async def fetch(session, url: str, request: Request):
         if resp.content_type == 'application/json':
             return await resp.json()
 
-        # TODO (artyom, 06/17/2018): support chunks
-        return resp
+        # TODO (artyom, 06/22/2018): refactor this. right now it is
+        # returning two different types
+        return SyncStreamWrapper(resp.content)
