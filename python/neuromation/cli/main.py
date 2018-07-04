@@ -126,20 +126,23 @@ def nmc(url, token, verbose, version):
             src = urlparse(source)
             dst = urlparse(destination)
 
-            if src.scheme == 'http':
+            log.debug(f'src={src}')
+            log.debug(f'dst={dst}')
+
+            if src.scheme == 'storage':
                 if dst.scheme:
                     raise ValueError(
-                        'SOURCE or DESTINATION must have http scheme')
+                        'SOURCE or DESTINATION must have storage scheme')
                 with storage() as s:
                     stream = s.open(path=src.path)
                     with open(dst.path, mode='wb') as f:
                         transfer(stream, f)
                         return dst.path
 
-            if dst.scheme == 'http':
+            if dst.scheme == 'storage':
                 if src.scheme:
                     raise ValueError(
-                        'SOURCE or DESTINATION must have http scheme')
+                        'SOURCE or DESTINATION must have storage scheme')
                 with open(src.path, mode='rb') as f:
                     with storage() as s:
                         return s.create(path=dst.path, data=f)
@@ -150,12 +153,12 @@ def nmc(url, token, verbose, version):
         def mkdir(path):
             """
             Usage:
-                nmc store mkdir PATH [PATH ...]
+                nmc store mkdir PATH
 
             Make directories
             """
             with storage() as s:
-                return '\n'.join(s.mkdirs(root='/', paths=path))
+                return '\n'.join(s.mkdirs(path=path))
         return locals()
 
     return locals()
@@ -170,10 +173,8 @@ def main():
         print(version)
         sys.exit(0)
 
-    res = ''
-
     try:
-        res = dispatch(
+        dispatch(
             target=nmc,
             tail=sys.argv[1:])
     except KeyboardInterrupt:
@@ -183,7 +184,4 @@ def main():
         print(e)
         sys.exit(1)
     except Exception as e:
-        log.error(f'nmc: {e}')
-    finally:
-        if res:
-            print(f'Success: {res}')
+        log.error(f'{e}')

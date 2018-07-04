@@ -60,8 +60,7 @@ class StorageRequest(Request):
 @dataclass(frozen=True)
 class MkDirsRequest(StorageRequest):
     op: ClassVar[str] = 'MKDIRS'
-    paths: List[str]
-    root: str
+    path: str
 
 
 @dataclass(frozen=True)
@@ -128,10 +127,10 @@ def build(request: Request) -> http.Request:
             data=request.data)
     elif isinstance(request, MkDirsRequest):
         return http.Request(
-            url=join_url_path('/storage', request.root),
+            url=join_url_path('/storage', request.path),
             params=request.op,
             method='PUT',
-            json=request.paths,
+            json=None,
             data=None)
     elif isinstance(request, ListRequest):
         return http.Request(

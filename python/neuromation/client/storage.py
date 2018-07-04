@@ -23,9 +23,9 @@ class Storage(ApiClient):
             self._fetch_sync(ListRequest(path=path))
         ]
 
-    def mkdirs(self, *, root: str, paths: List[str]) -> List[str]:
-        self._fetch_sync(MkDirsRequest(root=root, paths=paths))
-        return paths
+    def mkdirs(self, *, path: List[str]) -> List[str]:
+        self._fetch_sync(MkDirsRequest(path=path))
+        return path
 
     def create(self, *, path: str, data: BytesIO) -> str:
         self._fetch_sync(CreateRequest(path=path, data=data))
