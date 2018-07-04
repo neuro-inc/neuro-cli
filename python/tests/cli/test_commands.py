@@ -1,4 +1,4 @@
-from neuromation.cli.commands import command, commands, run
+from neuromation.cli.commands import command, commands, dispatch
 
 
 # NOTE: overriding command name to be 'person'
@@ -73,33 +73,33 @@ def _person(name, age, gender, city):
     return locals()
 
 
-def test_run():
+def test_dispatch():
     argv = ['-n', 'Vasya', 'work', 'dig', 'hole']
     # 'manage', '-s', 'enabling', 'engineers']
-    assert run(
-        root=_person,
-        argv=argv,
+    assert dispatch(
+        target=_person,
+        tail=argv,
         city='Kyiv') == \
         'Vasya is digging BIG hole in Kyiv'
 
     argv = ['-n', 'Vova', 'work', 'manage', 'Petya']
-    assert run(
-        root=_person,
-        argv=argv,
+    assert dispatch(
+        target=_person,
+        tail=argv,
         city='Kyiv') == \
         'Vova is crushing Petya in Kyiv'
 
     argv = ['-n', 'Vova', 'work', 'manage', '-s', 'enabling', 'Petya']
-    assert run(
-        root=_person,
-        argv=argv,
+    assert dispatch(
+        target=_person,
+        tail=argv,
         city='Kyiv') == \
         'Vova is enabling Petya in Kyiv'
 
     argv = ['-n', 'Vova', 'rest', 'home']
-    assert run(
-        root=_person,
-        argv=argv,
+    assert dispatch(
+        target=_person,
+        tail=argv,
         city='Kyiv') == \
         'Vova is resting home for 1 hour'
 

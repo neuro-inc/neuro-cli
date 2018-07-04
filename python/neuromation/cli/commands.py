@@ -55,13 +55,17 @@ def parse(doc, argv):
     return docopt.docopt(doc, argv=head, help=False), tail
 
 
-def dispatch(target, tail, version):
+def dispatch(target, tail, **kwargs):
     stack = []
     options = None
 
     while True:
         options, tail = parse(target.__doc__, stack + tail)
-        res = target(**normalize_options(options, stack + ['COMMAND']))
+        res = target(**{
+            **normalize_options(options, stack + ['COMMAND']), **kwargs})
+        # Don't pass to tested commands, they will be available through
+        # closure anyways
+        kwargs = {}
 
         command = options.get('COMMAND', None)
 

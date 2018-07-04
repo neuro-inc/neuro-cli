@@ -11,7 +11,7 @@ from utils import BinaryResponse, JsonResponse, mocked_async_context_manager
 @patch(
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse(
-        {},
+        {'error': 'blah!'},
         error=aiohttp.ClientResponseError(
             request_info=None,
             history=None,
@@ -21,7 +21,7 @@ from utils import BinaryResponse, JsonResponse, mocked_async_context_manager
 def test_error(storage):
     with pytest.raises(client.ApiError) as exc:
         storage.rm(path='blah')
-    assert exc.value.args == ('ah!',)
+    assert exc.value.args == ('blah!',)
 
 
 @patch(
