@@ -100,7 +100,7 @@ def nmc(url, token, verbose, version):
             List directory contents
             """
             with storage() as s:
-                return '\n'.join(s.ls(path=path))
+                return '\n'.join(status.path for status in s.ls(path=path))
 
         @command
         def cp(source, destination):
