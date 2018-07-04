@@ -58,11 +58,11 @@ def test_ls(storage):
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(BinaryResponse(data=None)))
 def test_mkdirs(storage):
-    assert storage.mkdirs(root='home', paths=['foo', 'bar']) == ['foo', 'bar']
+    assert storage.mkdirs(path='/root/foo') == '/root/foo'
     aiohttp.ClientSession.request.assert_called_with(
         method='PUT',
-        json=['foo', 'bar'],
-        url='http://127.0.0.1/storage/home',
+        json=None,
+        url='http://127.0.0.1/storage/root/foo',
         params='MKDIRS',
         data=None)
 
