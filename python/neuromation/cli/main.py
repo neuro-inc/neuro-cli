@@ -176,8 +176,7 @@ def main():
     try:
         res = dispatch(
             target=nmc,
-            tail=sys.argv[1:],
-            version=version)
+            tail=sys.argv[1:])
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(1)
