@@ -100,7 +100,7 @@ def nmc(url, token, verbose, version):
             List directory contents
             """
             with storage() as s:
-                return '\n'.join(status.path for status in s.ls(path=path))
+                print('\n'.join(status.path for status in s.ls(path=path)))
 
         @command
         def cp(source, destination):
@@ -109,6 +109,17 @@ def nmc(url, token, verbose, version):
                 nmc store cp SOURCE DESTINATION
 
             Copy files and directories
+            Either SOURCE or DESTINATION should have storage:// scheme.
+            If scheme is omitted, file:// scheme is assumed.
+
+            Example:
+
+            # copy local file ./foo into remote storage root
+            nmc store cp ./foo storage:///
+
+            # download remote file foo into local file foo with
+            # explicit file:// scheme set
+            nmc store cp storage:///foo file:///foo
             """
 
             def transfer(i, o):
@@ -123,16 +134,16 @@ def nmc(url, token, verbose, version):
 
                     o.write(buf)
 
-            src = urlparse(source)
-            dst = urlparse(destination)
+            src = urlparse(source, scheme='file')
+            dst = urlparse(destination, scheme='file')
 
             log.debug(f'src={src}')
             log.debug(f'dst={dst}')
 
             if src.scheme == 'storage':
-                if dst.scheme:
+                if dst.scheme != 'file':
                     raise ValueError(
-                        'SOURCE or DESTINATION must have storage scheme')
+                        'storage:// and file:// schemes required')
                 with storage() as s:
                     stream = s.open(path=src.path)
                     with open(dst.path, mode='wb') as f:
@@ -140,9 +151,9 @@ def nmc(url, token, verbose, version):
                         return dst.path
 
             if dst.scheme == 'storage':
-                if src.scheme:
+                if src.scheme != 'file':
                     raise ValueError(
-                        'SOURCE or DESTINATION must have storage scheme')
+                        'storage:// and file:// schemes required')
                 with open(src.path, mode='rb') as f:
                     with storage() as s:
                         return s.create(path=dst.path, data=f)

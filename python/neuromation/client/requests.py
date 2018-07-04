@@ -1,6 +1,6 @@
 import logging
 from io import BytesIO
-from typing import ClassVar, List
+from typing import ClassVar
 
 from dataclasses import asdict, dataclass
 
