@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from io import BufferedReader, BytesIO
 from typing import List
@@ -9,6 +10,8 @@ from .requests import (CreateRequest, DeleteRequest, Image, InferRequest,
                        JobStatusRequest, ListRequest, MkDirsRequest,
                        OpenRequest, Request, RequestError, ResourcesPayload,
                        TrainRequest, fetch, session)
+
+log = logging.getLogger(__name__)
 
 
 def parse_memory(memory) -> int:
@@ -103,7 +106,10 @@ class ApiClient:
             raise ApiError(f'{error}')
 
     def _fetch_sync(self, request: Request):
-        return self._loop.run_until_complete(self._fetch(request))
+        res = self._loop.run_until_complete(self._fetch(request))
+        log.debug(res)
+
+        return res
 
 
 @dataclass(frozen=True)
