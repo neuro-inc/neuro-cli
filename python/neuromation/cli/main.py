@@ -76,7 +76,6 @@ def nmc(url, token, verbose, version):
           ls                 List directory contents
           cp                 Copy files and directories
           mkdir              Make directories
-          help               Get help on a command
         """
 
         storage = partial(Storage, url)
@@ -151,12 +150,10 @@ def nmc(url, token, verbose, version):
         def mkdir(path):
             """
             Usage:
-                nmc store mkdir [PATH ...]
+                nmc store mkdir PATH [PATH ...]
 
             Make directories
             """
-            log.debug(f'path={path}')
-
             with storage() as s:
                 return '\n'.join(s.mkdirs(root='/', paths=path))
         return locals()
