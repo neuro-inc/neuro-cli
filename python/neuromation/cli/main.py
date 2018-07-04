@@ -155,8 +155,10 @@ def nmc(url, token, verbose, version):
 
             Make directories
             """
+            log.debug(f'path={path}')
+
             with storage() as s:
-                return '\n'.join(s.ls(path=path))
+                return '\n'.join(s.mkdirs(root='/', paths=path))
         return locals()
 
     return locals()

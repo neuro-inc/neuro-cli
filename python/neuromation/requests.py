@@ -90,16 +90,16 @@ class DeleteRequest(StorageRequest):
 
 
 async def session():
-    async def handler(session, trace_config_ctx, params):
-        log.debug(f'Trace: {params}')
+    async def trace(session, trace_config_ctx, params):
+        log.debug(f'{params}')
 
     trace_config = aiohttp.TraceConfig()
 
     if log.getEffectiveLevel() == logging.DEBUG:
-        trace_config.on_request_start.append(handler)
-        trace_config.on_response_chunk_received.append(handler)
-        trace_config.on_request_chunk_sent.append(handler)
-        trace_config.on_request_end.append(handler)
+        trace_config.on_request_start.append(trace)
+        trace_config.on_response_chunk_received.append(trace)
+        trace_config.on_request_chunk_sent.append(trace)
+        trace_config.on_request_end.append(trace)
 
     _session = aiohttp.ClientSession(trace_configs=[trace_config])
 
@@ -185,8 +185,6 @@ async def fetch(session, url: str, request: Request):
                 url=_url,
                 data=data,
                 json=json) as resp:
-
-        log.debug(f'Response: {resp}')
 
         try:
             resp.raise_for_status()
