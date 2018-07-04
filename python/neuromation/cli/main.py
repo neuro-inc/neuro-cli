@@ -17,7 +17,7 @@ def nm(url, token, version):
     Deep network training, inference and datasets with Neuromation Platform
 
     Usage:
-      nm URL [options] COMMAND
+      nmc URL [options] COMMAND
 
     Options:
       -t, --token TOKEN           API authentication token (not implemented)
@@ -33,7 +33,7 @@ def nm(url, token, version):
     def storage():
         """
         Usage:
-            nm storage COMMAND
+            nmc storage COMMAND
 
         Storage operations
 
@@ -51,7 +51,7 @@ def nm(url, token, version):
         def rm(path):
             """
             Usage:
-                nm storage rm PATH
+                nmc storage rm PATH
 
             Remove files or directories
             """
@@ -62,7 +62,7 @@ def nm(url, token, version):
         def ls(path):
             """
             Usage:
-                nm storage ls PATH
+                nmc storage ls PATH
 
             List directory contents
             """
@@ -73,7 +73,7 @@ def nm(url, token, version):
         def cp(source, destination):
             """
             Usage:
-                nm storage cp SOURCE DESTINATION
+                nmc storage cp SOURCE DESTINATION
 
             Copy files and directories
             """
@@ -113,7 +113,7 @@ def nm(url, token, version):
         def mkdir(path):
             """
             Usage:
-                nm storage mkdir [PATH ...]
+                nmc storage mkdir [PATH ...]
 
             Make directories
             """
