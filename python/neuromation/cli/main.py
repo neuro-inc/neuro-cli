@@ -4,9 +4,9 @@ from functools import partial
 from urllib.parse import urlparse
 
 import neuromation
+from neuromation.logging import ConsoleWarningFormatter
 
 from .commands import command, dispatch
-from .formatter import ConsoleWarningFormatter
 
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16

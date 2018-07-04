@@ -1,4 +1,4 @@
-from neuromation.client import Model, Storage, Resources, JobStatus
+from .client import Model, Storage, Resources, JobStatus
 
 __version__ = '0.1.0'
 
