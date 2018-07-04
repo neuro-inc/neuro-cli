@@ -57,17 +57,17 @@ def nmc(url, token, verbose, version):
 
     Commands:
       job                Start, stop, pause and monitor training and inference
+      store              Storage operations
       help               Get help on a command
-      storage            Storage operations
     """
 
     from neuromation.client import Storage
 
     @command
-    def storage():
+    def store():
         """
         Usage:
-            nmc storage COMMAND
+            nmc store COMMAND
 
         Storage operations
 
@@ -85,7 +85,7 @@ def nmc(url, token, verbose, version):
         def rm(path):
             """
             Usage:
-                nmc storage rm PATH
+                nmc store rm PATH
 
             Remove files or directories
             """
@@ -96,7 +96,7 @@ def nmc(url, token, verbose, version):
         def ls(path):
             """
             Usage:
-                nmc storage ls PATH
+                nmc store ls PATH
 
             List directory contents
             """
@@ -107,7 +107,7 @@ def nmc(url, token, verbose, version):
         def cp(source, destination):
             """
             Usage:
-                nmc storage cp SOURCE DESTINATION
+                nmc store cp SOURCE DESTINATION
 
             Copy files and directories
             """
@@ -134,7 +134,8 @@ def nmc(url, token, verbose, version):
                 with storage() as s:
                     stream = s.open(path=src.path)
                     with open(dst.path, mode='wb') as f:
-                        return transfer(stream, f)
+                        transfer(stream, f)
+                        return dst.path
 
             if dst.scheme == 'http':
                 if src.scheme:
@@ -150,7 +151,7 @@ def nmc(url, token, verbose, version):
         def mkdir(path):
             """
             Usage:
-                nmc storage mkdir [PATH ...]
+                nmc store mkdir [PATH ...]
 
             Make directories
             """
