@@ -164,15 +164,24 @@ def nmc(url, token, verbose, version):
 def main():
     setup_logging()
     setup_console_handler(console_handler, verbose=('--verbose' in sys.argv))
+
+    version = f'Neuromation Platform Client {neuromation.__version__}'
+    if '-v' in sys.argv:
+        print(version)
+        sys.exit(0)
+
     res = ''
 
     try:
         res = dispatch(
             target=nmc,
             tail=sys.argv[1:],
-            version=f'Neuromation Platform Client {neuromation.__version__}')
+            version=version)
     except KeyboardInterrupt:
         log.error("Aborting.")
+        sys.exit(1)
+    except ValueError as e:
+        print(e)
         sys.exit(1)
     except Exception as e:
         log.error(f'nmc: {e}')

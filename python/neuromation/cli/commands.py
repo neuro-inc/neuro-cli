@@ -1,5 +1,6 @@
 import types
 from functools import singledispatch
+from textwrap import dedent
 
 import docopt
 
@@ -60,7 +61,11 @@ def dispatch(target, tail, **kwargs):
     options = None
 
     while True:
-        options, tail = parse(target.__doc__, stack + tail)
+        try:
+            options, tail = parse(target.__doc__, stack + tail)
+        except docopt.DocoptExit as e:
+            raise ValueError(dedent(target.__doc__))
+
         res = target(**{
             **normalize_options(options, stack + ['COMMAND']), **kwargs})
         # Don't pass to tested commands, they will be available through
