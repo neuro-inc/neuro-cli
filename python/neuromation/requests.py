@@ -1,10 +1,12 @@
 import asyncio
+import logging
 from io import BytesIO
 from typing import ClassVar, List
 
 import aiohttp
 from dataclasses import asdict, dataclass
 
+log = logging.getLogger(__name__)
 
 class RequestError(Exception):
     pass
@@ -87,8 +89,20 @@ class DeleteRequest(StorageRequest):
 
 
 async def session():
-    return aiohttp.ClientSession()
+    async def handler(session, trace_config_ctx, params):
+        log.debug(f'Trace: {params}')
 
+    trace_config = aiohttp.TraceConfig()
+
+    if log.getEffectiveLevel() == logging.DEBUG:
+        trace_config.on_request_start.append(handler)
+        trace_config.on_response_chunk_received.append(handler)
+        trace_config.on_request_chunk_sent.append(handler)
+        trace_config.on_request_end.append(handler)
+
+    _session = aiohttp.ClientSession(trace_configs=[trace_config])
+
+    return _session
 
 def route_method(request: Request):
     def join_url_path(a: str, b: str) -> str:
@@ -134,29 +148,51 @@ class SyncStreamWrapper:
         self._loop = loop
         self._stream_reader = stream
 
+    def _run_sync(self, coro):
+        return self._loop.run_until_complete(coro)
+
     def readable(self):
         return True
+
+    def readinto(self, buf):
+        chunk = self._run_sync(self._stream_reader.read(len(buf)))
+        log.debug(f'chunk size={len(chunk)}')
+        BytesIO(chunk).readinto(buf)
+
+        return len(chunk)
 
     @property
     def closed(self):
         return False
 
     def read(self):
-        return self._loop.run_until_complete(self._stream_reader.readany())
+        return self._run_sync(self._stream_reader.readany())
 
 
 async def fetch(session, url: str, request: Request):
     route, params, method, json, data = route_method(request)
+    _url = url + route
+
+    log.debug(f'Routing request {request}')
+    log.debug(f'route={route} params={params}, method={method}, json={json}, data={data}')
+    log.debug(f'url={_url}')
+
     async with session.request(
                 method=method,
                 params=params,
-                url=url + route,
+                url=_url,
                 data=data,
                 json=json) as resp:
+
+        log.debug(f'Response: {resp}')
 
         try:
             resp.raise_for_status()
         except aiohttp.ClientError as error:
+            # Refactor the whole method and split binary and non-binary responses
+            if resp.content_type == 'application/json':
+                error = await resp.json()
+                raise RequestError(error['error'])
             raise RequestError(error.message)
 
         if resp.content_type == 'application/json':

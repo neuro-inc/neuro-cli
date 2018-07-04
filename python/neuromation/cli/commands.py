@@ -34,9 +34,9 @@ def commands(scope):
     }
 
 
-def normalize(args, exclude):
+def normalize_options(args, exclude):
     return {
-        key.lstrip('-').lower(): value
+        key.lstrip('-').lower().replace('-', '_'): value
         for key, value in args.items()
         if key not in exclude
     }
@@ -48,26 +48,22 @@ def parse(doc, argv):
 
     while head:
         try:
-            return docopt.docopt(doc, argv=head), tail
+            return docopt.docopt(doc, argv=head, help=False), tail
         except docopt.DocoptExit as e:
             tail = [head.pop()] + tail
 
-    return docopt.docopt(doc, argv=head), tail
+    return docopt.docopt(doc, argv=head, help=False), tail
 
 
-def run(root, argv, **kwargs):
-    tail = argv
-    target = root
+def dispatch(target, tail, version):
     stack = []
+    options = None
 
     while True:
-        args, tail = parse(target.__doc__, stack + tail)
-        res = target(**{**normalize(args, stack + ['COMMAND']), **kwargs})
-        # Don't pass kwargs of root further
-        # they are available through closure
-        kwargs = {}
+        options, tail = parse(target.__doc__, stack + tail)
+        res = target(**normalize_options(options, stack + ['COMMAND']))
 
-        command = args.get('COMMAND', None)
+        command = options.get('COMMAND', None)
 
         if not command and tail:
             raise ValueError(f'Invalid arguments: {" ".join(tail)}')

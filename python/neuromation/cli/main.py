@@ -1,18 +1,47 @@
+import logging
 import sys
 from functools import partial
 from urllib.parse import urlparse
 
 import neuromation
-from neuromation.client import Storage
 
-from .commands import command, run
+from .commands import command, dispatch, parse
+from .formatter import ConsoleWarningFormatter
 
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
 
+log = logging.getLogger(__name__)
+console_handler = logging.StreamHandler(sys.stderr)
+
+
+def setup_logging():
+    root_logger = logging.getLogger()
+    root_logger.addHandler(console_handler)
+    root_logger.setLevel(logging.DEBUG)
+
+    # Select modules logging, if necessary
+    # logging.getLogger("aiohttp.internal").propagate = False
+    # logging.getLogger("aiohttp.client").setLevel(logging.DEBUG)
+
+def setup_console_handler(handler, verbose, noansi=False):
+    if handler.stream.isatty() and noansi is False:
+        format_class = ConsoleWarningFormatter
+    else:
+        format_class = logging.Formatter
+
+    if verbose:
+        handler.setFormatter(format_class('%(name)s.%(funcName)s: %(message)s'))
+        loglevel = logging.DEBUG
+    else:
+        handler.setFormatter(format_class())
+        loglevel = logging.INFO
+
+    handler.setLevel(loglevel)
+
 
 @command
-def nm(url, token, version):
+def nmc(url, token, verbose, version):
     """
     Deep network training, inference and datasets with Neuromation Platform
 
@@ -21,6 +50,7 @@ def nm(url, token, version):
 
     Options:
       -t, --token TOKEN           API authentication token (not implemented)
+      --verbose                   Enable verbose logging
       -v, --version               Print version and exit
 
     Commands:
@@ -28,6 +58,8 @@ def nm(url, token, version):
       help               Get help on a command
       storage            Storage operations
     """
+
+    from neuromation.client import Storage
 
     @command
     def storage():
@@ -79,8 +111,11 @@ def nm(url, token, version):
             """
 
             def transfer(i, o):
+                log.debug(f'Input: {i}')
+                log.debug(f'Output: {o}')
+
                 while True:
-                    buf = o.read(size=BUFFER_SIZE_MB * 1024 * 1024)
+                    buf = i.read(BUFFER_SIZE_MB * 1024 * 1024)
 
                     if not buf:
                         break
@@ -120,18 +155,24 @@ def nm(url, token, version):
             with storage() as s:
                 return '\n'.join(s.ls(path=path))
         return locals()
+
     return locals()
 
 
 def main():
-    try:
-        res = run(
-            root=nm,
-            argv=sys.argv[1:],
-            version=f'Neuromation Platform Client {neuromation.__version__}')
-    except Exception as e:
-        print(e)
-        return
+    setup_logging()
+    setup_console_handler(console_handler, verbose=('--verbose' in sys.argv))
+    res = ''
 
-    if res:
-        print(res)
+    try:
+        res = dispatch(
+            target=nmc,
+            tail=sys.argv[1:],
+            version=f'Neuromation Platform Client {neuromation.__version__}')
+    except KeyboardInterrupt:
+        log.error("Aborting.")
+        sys.exit(1)
+    except Exception as e:
+        log.error(f'nmc: {e}')
+    finally:
+        if res: print(res)
