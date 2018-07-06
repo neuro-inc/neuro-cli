@@ -90,12 +90,11 @@ class DeleteRequest(StorageRequest):
 
 # TODO: better polymorphism?
 def build(request: Request) -> http.Request:
-    def join_url_path(a: str, b: str) -> str:
-        return '/' + '/'.join(
-            segment for segment in
-            a.split('/') + b.split('/')
-            if segment
-            )
+    def add_path(prefix, path):
+        # ('/prefix', 'dir') and ('/prefix', '/dir')
+        # are semantically the same in case of build
+        # file Storage API calls
+        return prefix + path.strip('/')
 
     if isinstance(request, JobStatusRequest):
         return http.Request(
@@ -120,35 +119,35 @@ def build(request: Request) -> http.Request:
             data=None)
     elif isinstance(request, CreateRequest):
         return http.Request(
-            url=join_url_path('/storage', request.path),
+            url=add_path('/storage/', request.path),
             params=None,
             method='PUT',
             json=None,
             data=request.data)
     elif isinstance(request, MkDirsRequest):
         return http.Request(
-            url=join_url_path('/storage', request.path),
+            url=add_path('/storage/', request.path),
             params=request.op,
             method='PUT',
             json=None,
             data=None)
     elif isinstance(request, ListRequest):
         return http.Request(
-            url=join_url_path('/storage', request.path),
+            url=add_path('/storage/', request.path),
             params=request.op,
             method='GET',
             json=None,
             data=None)
     elif isinstance(request, OpenRequest):
         return http.Request(
-            url=join_url_path('/storage', request.path),
+            url=add_path('/storage/', request.path),
             params=None,
             method='GET',
             json=None,
             data=None)
     elif isinstance(request, DeleteRequest):
         return http.Request(
-            url=join_url_path('/storage', request.path),
+            url=add_path('/storage/', request.path),
             params=None,
             method='DELETE',
             json=None,
