@@ -1,3 +1,4 @@
+from io import BytesIO
 from unittest.mock import Mock
 
 TRAIN_RESPONSE = {
@@ -12,6 +13,46 @@ INFER_RESPONSE = {
     'status': 'PENDING',
     'id': 'iddqd'
 }
+
+
+class JsonResponse:
+    def __init__(self, json, *, error=None):
+        self._json = json
+        self.content_type = 'application/json'
+        self._error = error
+
+    async def json(self):
+        return self._json
+
+    def raise_for_status(self):
+        if self._error:
+            raise self._error
+
+
+class BinaryResponse:
+    class StreamResponse:
+        def __init__(self, data):
+            self._stream = BytesIO(data)
+
+        async def read(self):
+            return self._stream.read()
+
+        async def readany(self):
+            return self._stream.read()
+
+    def __init__(self, data, *, error=None):
+        self._stream = BytesIO(data)
+        self.content_type = 'application/octet-stream'
+        self._error = error
+        self._content = BinaryResponse.StreamResponse(data)
+
+    @property
+    def content(self):
+        return self._content
+
+    def raise_for_status(self):
+        if self._error:
+            raise self._error
 
 
 def mocked_async_context_manager(return_value=None):

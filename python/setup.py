@@ -12,12 +12,14 @@ with open('README.md') as f:
 
 setup(
     name='neuromation',
+    # TODO (artyom 06/21/2018): implement single source of version
     version='0.1.0',
     python_requires='>=3.5.0',
     # Make sure to pin versions of install_requires
     install_requires=[
         'aiohttp==3.2.1',
-        'dataclasses==0.5'
+        'dataclasses==0.5',
+        'docopt==0.6.2'
     ],
     include_package_data=True,
     description='Neuromation Platform API client',
@@ -27,7 +29,6 @@ setup(
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
     entry_points={'console_scripts': [
-        # TODO (artyom, 05/07/2018): possibly add cli
-        # 'nm=neuromation.cli:main'
+        'nmc=neuromation.cli:main'
     ]}
 )
