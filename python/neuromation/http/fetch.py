@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import AbstractContextManager
 from io import BufferedIOBase, BytesIO
 from typing import Dict
 
@@ -41,11 +42,17 @@ async def session():
     return _session
 
 
-class SyncStreamWrapper:
-    def __init__(self, stream, *, loop=None):
+class SyncStreamWrapper(AbstractContextManager):
+    def __init__(self, stream_reader, context, *, loop=None):
         loop = loop or asyncio.get_event_loop()
         self._loop = loop
-        self._stream_reader = stream
+        self._context = context
+        self._stream_reader = stream_reader
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return self._run_sync(self._context.__aexit__(
+                exc_type, exc_value, traceback
+            ))
 
     def _run_sync(self, coro):
         return self._loop.run_until_complete(coro)
@@ -69,26 +76,27 @@ class SyncStreamWrapper:
 
 
 async def fetch(session, url: str, request: Request):
-    async with session.request(
+    context = session.request(
                 method=request.method,
                 params=request.params,
                 url=url + request.url,
                 data=request.data,
-                json=request.json) as resp:
+                json=request.json)
+    resp = await context.__aenter__()
 
-        try:
-            resp.raise_for_status()
-        except aiohttp.ClientError as error:
-            # Refactor the whole method and
-            # split binary and non-binary responses
-            if resp.content_type == 'application/json':
-                error = await resp.json()
-                raise FetchError(error['error'])
-            raise FetchError(error.message)
-
+    try:
+        resp.raise_for_status()
+    except aiohttp.ClientError as error:
+        # Refactor the whole method and
+        # split binary and non-binary responses
         if resp.content_type == 'application/json':
-            return await resp.json()
+            error = await resp.json()
+            raise FetchError(error['error'])
+        raise FetchError(error.message)
 
-        # TODO (artyom, 06/22/2018): refactor this. right now it is
-        # returning two different types
-        return SyncStreamWrapper(resp.content)
+    if resp.content_type == 'application/json':
+        return await resp.json()
+
+    # TODO (artyom, 06/22/2018): refactor this. right now it is
+    # returning two different types
+    return SyncStreamWrapper(stream_reader=resp.content, context=context)

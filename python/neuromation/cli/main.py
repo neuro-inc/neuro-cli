@@ -26,7 +26,7 @@ def setup_logging():
 
 
 def setup_console_handler(handler, verbose, noansi=False):
-    if handler.stream.isatty() and noansi is False:
+    if not handler.stream.closed and handler.stream.isatty() and noansi is False:
         format_class = ConsoleWarningFormatter
     else:
         format_class = logging.Formatter
@@ -100,7 +100,9 @@ def nmc(url, token, verbose, version):
             List directory contents
             """
             with storage() as s:
-                print('\n'.join(status.path for status in s.ls(path=path)))
+                print('\n'.join(
+                    f'{status.path.ljust(20)}{status.size}'
+                    for status in s.ls(path=path)))
 
         @command
         def cp(source, destination):
@@ -145,10 +147,10 @@ def nmc(url, token, verbose, version):
                     raise ValueError(
                         'storage:// and file:// schemes required')
                 with storage() as s:
-                    stream = s.open(path=src.path)
-                    with open(dst.path, mode='wb') as f:
-                        transfer(stream, f)
-                        return dst.path
+                    with s.open(path=src.path) as stream:
+                        with open(dst.path, mode='wb') as f:
+                            transfer(stream, f)
+                            return dst.path
 
             if dst.scheme == 'storage':
                 if src.scheme != 'file':
@@ -196,3 +198,4 @@ def main():
         sys.exit(1)
     except Exception as e:
         log.error(f'{e}')
+        raise e

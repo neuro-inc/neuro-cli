@@ -98,10 +98,11 @@ def test_create(storage):
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(BinaryResponse(data=b'bar')))
 def test_open(storage):
-    assert storage.open(path='foo').read() == b'bar'
-    aiohttp.ClientSession.request.assert_called_with(
-        method='GET',
-        url='http://127.0.0.1/storage/foo',
-        params=None,
-        json=None,
-        data=None)
+    with storage.open(path='foo') as f:
+        assert f.read() == b'bar'
+        aiohttp.ClientSession.request.assert_called_with(
+            method='GET',
+            url='http://127.0.0.1/storage/foo',
+            params=None,
+            json=None,
+            data=None)

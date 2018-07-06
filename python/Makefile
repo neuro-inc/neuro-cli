@@ -6,8 +6,28 @@ init:
 	pip install -e .
 	cp .hooks/* ../.git/hooks
 
+.PHONY: e2e
+e2e:
+	pytest \
+		-m "e2e" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		tests
+
+
 .PHONY: test
 test:
+	pytest \
+		-m "not e2e" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		tests
+
+
+.PHONY: test-all
+test-all:
 	pytest \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -15,9 +35,10 @@ test:
 		tests
 
 
-.PHONY: format
-format:
-	isort -ry neuromation/**/* tests .
+.PHONY: isort
+isort:
+	isort -rc neuromation
+	isort -rc tests
 
 
 .PHONY: lint
