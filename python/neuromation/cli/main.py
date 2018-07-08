@@ -1,15 +1,19 @@
 import logging
 import sys
 from functools import partial
+from pathlib import Path
 from urllib.parse import urlparse
 
 import neuromation
 from neuromation.logging import ConsoleWarningFormatter
 
+from . import rc
 from .commands import command, dispatch
 
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
+
+RC_FILE_NAME = '.nmrc'
 
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
@@ -48,9 +52,10 @@ def nmc(url, token, verbose, version):
     Deep network training, inference and datasets with Neuromation Platform
 
     Usage:
-      nmc URL [options] COMMAND
+      nmc [options] COMMAND
 
     Options:
+      -u, --url URL               Override API URL (.nmrc: {url})
       -t, --token TOKEN           API authentication token (not implemented)
       --verbose                   Enable verbose logging
       -v, --version               Print version and exit
@@ -183,6 +188,11 @@ def main():
     if '-v' in sys.argv:
         print(version)
         sys.exit(0)
+
+    config = rc.load(Path.home().joinpath(RC_FILE_NAME))
+    nmc.__doc__ = nmc.__doc__.format(
+            url=config.url
+        )
 
     try:
         dispatch(

@@ -17,7 +17,9 @@ test:
 
 .PHONY: format
 format:
-	isort -ry neuromation/**/* tests .
+	isort -rc neuromation
+	isort -rc tests
+	isort -rc .
 
 
 .PHONY: lint
