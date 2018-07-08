@@ -101,9 +101,11 @@ def nmc(url, token, verbose, version):
 
             List directory contents
             """
+            format = '{name:<20}{size:,}'.format
+
             with storage() as s:
                 print('\n'.join(
-                    f'{status.path.ljust(20)}{status.size}'
+                    format(name=status.path, size=status.size)
                     for status in s.ls(path=path)))
 
         @command
