@@ -1,0 +1,5 @@
+[run]
+omit = tests/*
+       neuromation/logging/colors.py
+       neuromation/logging/formatter.py
+       neuromation/cli/main.py
