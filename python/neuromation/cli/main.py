@@ -26,7 +26,9 @@ def setup_logging():
 
 
 def setup_console_handler(handler, verbose, noansi=False):
-    if not handler.stream.closed and handler.stream.isatty() and noansi is False:
+    if not handler.stream.closed and \
+           handler.stream.isatty() and \
+           noansi is False:
         format_class = ConsoleWarningFormatter
     else:
         format_class = logging.Formatter

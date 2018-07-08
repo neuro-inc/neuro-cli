@@ -12,6 +12,8 @@ FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
 API_URL = 'http://platform.dev.neuromation.io/api/v1'
 
+format_list = '{name:<20}{size:,}'.format
+
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
@@ -74,30 +76,49 @@ def hash_hex(file):
 @pytest.mark.e2e
 def test_e2e(data, run, tmpdir):
     file, checksum = data[0]
-    _dir = f'/tmp/e2e-{uuid()}'
 
+    _dir = f'e2e-{uuid()}'
+    _path = f'/tmp/{_dir}'
+
+    # Create directory for the test
     _, captured = run([
-            API_URL, 'store', 'mkdir', 'storage://' + _dir
+            API_URL, 'store', 'mkdir', 'storage://' + _path
         ])
     assert not captured.err
     assert captured.out == ''
 
+    # Upload local file
     _, captured = run([
-            API_URL, 'store', 'cp', file, 'storage://' + _dir + '/foo'
+            API_URL, 'store', 'cp', file, 'storage://' + _path + '/foo'
         ])
     assert not captured.err
     assert captured.out == ''
 
+    # Confirm file has been uploaded
     _, captured = run([
-            API_URL, 'store', 'ls', _dir
+            API_URL, 'store', 'ls', _path
         ])
-    assert f'foo                 {FILE_SIZE_MB * 1024 * 1024}' \
-           in captured.out.split('\n')
+    assert format_list(name="foo", size=FILE_SIZE_MB * 1024 * 1024) \
+        in captured.out.split('\n')
     assert not captured.err
 
+    # Download into local file and confirm checksum
     _local = join(tmpdir, 'bar')
     _, captured = run([
         API_URL, 'store', 'cp',
-        'storage://' + _dir + '/foo', _local
+        'storage://' + _path + '/foo', _local
     ])
     assert hash_hex(_local) == checksum
+
+    # Remove test dir
+    _, captured = run([
+            API_URL, 'store', 'rm', _path
+        ])
+    assert not captured.err
+
+    # And confirm
+    _, captured = run([
+            API_URL, 'store', 'ls', '/tmp'
+        ])
+    assert format_list(name=_dir, size=0) not in captured.out.split('\n')
+    assert not captured.err
