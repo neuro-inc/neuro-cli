@@ -25,7 +25,7 @@ class ResourcesPayload:
 
 
 @dataclass(frozen=True)
-class ImagePayload:
+class ContainerPayload:
     image: str
     command: str
     resources: ResourcesPayload
@@ -38,7 +38,7 @@ class JobStatusRequest(Request):
 
 @dataclass(frozen=True)
 class InferRequest(Request):
-    container: ImagePayload
+    container: ContainerPayload
     dataset_storage_uri: str
     result_storage_uri: str
     model_storage_uri: str
@@ -46,7 +46,7 @@ class InferRequest(Request):
 
 @dataclass(frozen=True)
 class TrainRequest(Request):
-    container: ImagePayload
+    container: ContainerPayload
     dataset_storage_uri: str
     result_storage_uri: str
 

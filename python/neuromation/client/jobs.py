@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from neuromation.strings import parse
 
 from .client import ApiClient
-from .requests import (ImagePayload, InferRequest, JobStatusRequest,
+from .requests import (ContainerPayload, InferRequest, JobStatusRequest,
                        ResourcesPayload, TrainRequest)
 
 
@@ -60,7 +60,7 @@ class Model(ApiClient):
             results: str)-> JobStatus:
         res = self._fetch_sync(
                 InferRequest(
-                    container=ImagePayload(
+                    container=ContainerPayload(
                         image=image.image,
                         command=image.command,
                         resources=ResourcesPayload(
@@ -84,7 +84,7 @@ class Model(ApiClient):
             results: str) -> JobStatus:
         res = self._fetch_sync(
             TrainRequest(
-                container=ImagePayload(
+                container=ContainerPayload(
                     image=image.image,
                     command=image.command,
                     resources=ResourcesPayload(
