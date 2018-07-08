@@ -60,13 +60,13 @@ class Model(ApiClient):
             results: str)-> JobStatus:
         res = self._fetch_sync(
                 InferRequest(
-                    image=ImagePayload(
+                    container=ImagePayload(
                         image=image.image,
-                        command=image.command),
-                    resources=ResourcesPayload(
-                        memory_mb=parse.to_megabytes(resources.memory),
-                        cpu=resources.cpu,
-                        gpu=resources.gpu),
+                        command=image.command,
+                        resources=ResourcesPayload(
+                            memory_mb=parse.to_megabytes(resources.memory),
+                            cpu=float(resources.cpu),
+                            gpu=float(resources.gpu))),
                     model_storage_uri=model,
                     dataset_storage_uri=dataset,
                     result_storage_uri=results))
@@ -84,13 +84,13 @@ class Model(ApiClient):
             results: str) -> JobStatus:
         res = self._fetch_sync(
             TrainRequest(
-                image=ImagePayload(
+                container=ImagePayload(
                     image=image.image,
-                    command=image.command),
-                resources=ResourcesPayload(
-                    memory_mb=parse.to_megabytes(resources.memory),
-                    cpu=resources.cpu,
-                    gpu=resources.gpu),
+                    command=image.command,
+                    resources=ResourcesPayload(
+                        memory_mb=parse.to_megabytes(resources.memory),
+                        cpu=float(resources.cpu),
+                        gpu=float(resources.gpu))),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 
