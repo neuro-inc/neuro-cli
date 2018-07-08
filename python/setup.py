@@ -30,6 +30,6 @@ setup(
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
     entry_points={'console_scripts': [
-        'nmc=neuromation.cli:main'
+        'nmctl=neuromation.cli:main'
     ]}
 )

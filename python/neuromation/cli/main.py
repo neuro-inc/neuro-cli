@@ -47,12 +47,12 @@ def setup_console_handler(handler, verbose, noansi=False):
 
 
 @command
-def nmc(url, token, verbose, version):
+def nmctl(url, token, verbose, version):
     """
     Deep network training, inference and datasets with Neuromation Platform
 
     Usage:
-      nmc [options] COMMAND
+      nmctl [options] COMMAND
 
     Options:
       -u, --url URL               Override API URL (.nmrc: {url})
@@ -72,7 +72,7 @@ def nmc(url, token, verbose, version):
     def store():
         """
         Usage:
-            nmc store COMMAND
+            nmctl store COMMAND
 
         Storage operations
 
@@ -89,7 +89,7 @@ def nmc(url, token, verbose, version):
         def rm(path):
             """
             Usage:
-                nmc store rm PATH
+                nmctl store rm PATH
 
             Remove files or directories
             """
@@ -100,7 +100,7 @@ def nmc(url, token, verbose, version):
         def ls(path):
             """
             Usage:
-                nmc store ls PATH
+                nmctl store ls PATH
 
             List directory contents
             """
@@ -111,7 +111,7 @@ def nmc(url, token, verbose, version):
         def cp(source, destination):
             """
             Usage:
-                nmc store cp SOURCE DESTINATION
+                nmctl store cp SOURCE DESTINATION
 
             Copy files and directories
             Either SOURCE or DESTINATION should have storage:// scheme.
@@ -120,11 +120,11 @@ def nmc(url, token, verbose, version):
             Example:
 
             # copy local file ./foo into remote storage root
-            nmc store cp ./foo storage:///
+            nmctl store cp ./foo storage:///
 
             # download remote file foo into local file foo with
             # explicit file:// scheme set
-            nmc store cp storage:///foo file:///foo
+            nmctl store cp storage:///foo file:///foo
             """
 
             def transfer(i, o):
@@ -169,7 +169,7 @@ def nmc(url, token, verbose, version):
         def mkdir(path):
             """
             Usage:
-                nmc store mkdir PATH
+                nmctl store mkdir PATH
 
             Make directories
             """
@@ -190,13 +190,13 @@ def main():
         sys.exit(0)
 
     config = rc.load(Path.home().joinpath(RC_FILE_NAME))
-    nmc.__doc__ = nmc.__doc__.format(
+    nmctl.__doc__ = nmctl.__doc__.format(
             url=config.url
         )
 
     try:
         dispatch(
-            target=nmc,
+            target=nmctl,
             tail=sys.argv[1:])
     except KeyboardInterrupt:
         log.error("Aborting.")
