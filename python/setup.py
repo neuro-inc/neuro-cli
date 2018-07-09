@@ -19,7 +19,8 @@ setup(
     install_requires=[
         'aiohttp==3.2.1',
         'dataclasses==0.5',
-        'docopt==0.6.2'
+        'docopt==0.6.2',
+        'pyyaml==3.13'
     ],
     include_package_data=True,
     description='Neuromation Platform API client',
@@ -29,6 +30,6 @@ setup(
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
     entry_points={'console_scripts': [
-        'nmc=neuromation.cli:main'
+        'nmctl=neuromation.cli:main'
     ]}
 )
