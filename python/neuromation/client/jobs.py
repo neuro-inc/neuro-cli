@@ -24,9 +24,9 @@ class Image:
 
 @dataclass(frozen=True)
 class JobStatus:
-    results: str
+    # results: str
     status: str
-    id: str
+    job_id: str
     client: ApiClient
 
     async def _call(self):
@@ -34,7 +34,7 @@ class JobStatus:
                 client=self.client,
                 **await self.client._fetch(
                     request=JobStatusRequest(
-                        id=self.id
+                        id=self.job_id
                     )))
 
     def wait(self, timeout=None):

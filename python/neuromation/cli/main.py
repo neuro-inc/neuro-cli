@@ -224,7 +224,7 @@ def nmctl(url, token, verbose, version):
                     results=results)
 
             # Format job info properly
-            return job
+            return f'Job ID: {job.job_id} Status: {job.status}'
 
         @command
         def test():
@@ -265,9 +265,10 @@ def main():
         sys.exit(0)
 
     try:
-        dispatch(
+        res = dispatch(
             target=nmctl,
             tail=sys.argv[1:])
+        print(res)
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(1)
