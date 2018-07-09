@@ -7,9 +7,8 @@ from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 
 JOB_RESPONSE = {
-    'results': 'schema://host/path',
     'status': 'SUCCEEDED',
-    'id': 'iddqd',
+    'job_id': 'iddqd',
 }
 
 
@@ -40,8 +39,7 @@ def test_train(request, model, loop):
     assert result == client.JobStatus(
         client=model,
         status='PENDING',
-        id='iddqd',
-        results='schema://host/path')
+        job_id='iddqd')
 
 
 @patch(
@@ -72,9 +70,8 @@ def test_infer(request, model, loop):
 
     assert result == client.JobStatus(
         client=model,
-        results='schema://host/path',
         status='PENDING',
-        id='iddqd')
+        job_id='iddqd')
 
 
 @patch(

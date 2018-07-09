@@ -182,9 +182,9 @@ def nmctl(url, token, verbose, version):
         Model operations
 
         Commands:
-          train              Remove files or directories
-          test               List directory contents
-          infer              Copy files and directories
+          train              Start model training
+          test               Test trained model against validation dataset
+          infer              Start batch inference
         """
 
         from neuromation.client.jobs import Model, Image, Resources
@@ -246,8 +246,6 @@ def nmctl(url, token, verbose, version):
 
         Commands:
           monitor             Monitor job output stream
-          pause               Pause job
-          resume              Resume job
           kill                Kill job
         """
 
