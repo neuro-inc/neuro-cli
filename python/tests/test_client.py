@@ -7,9 +7,8 @@ from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 
 JOB_RESPONSE = {
-    'results': 'schema://host/path',
     'status': 'SUCCEEDED',
-    'id': 'iddqd',
+    'job_id': 'iddqd',
 }
 
 
@@ -28,17 +27,19 @@ def test_train(request, model, loop):
             data=None,
             params=None,
             json={
-                'resources': {'memory_mb': 16384, 'cpu': 1, 'gpu': 1},
-                'image': {'image': 'repo/image', 'command': 'bash'},
+                'container': {
+                    'image': 'repo/image',
+                    'command': 'bash',
+                    'resources': {'memory_mb': 16384, 'cpu': 1.0, 'gpu': 1.0},
+                },
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results'},
-            url='http://127.0.0.1/train')
+            url='http://127.0.0.1/models')
 
     assert result == client.JobStatus(
         client=model,
         status='PENDING',
-        id='iddqd',
-        results='schema://host/path')
+        job_id='iddqd')
 
 
 @patch(
@@ -47,7 +48,7 @@ def test_train(request, model, loop):
 def test_infer(request, model, loop):
     result = model.infer(
         image=client.Image(image='repo/image', command='bash'),
-        resources=client.Resources(memory='16G', cpu=1, gpu=1),
+        resources=client.Resources(memory='16G', cpu=1.0, gpu=1.0),
         model='schema://host/model',
         dataset='schema://host/data',
         results='schema://host/results'
@@ -58,18 +59,19 @@ def test_infer(request, model, loop):
             params=None,
             data=None,
             json={
-                'image': {'image': 'repo/image', 'command': 'bash'},
+                'container': {
+                    'image': 'repo/image',
+                    'command': 'bash',
+                    'resources': {'memory_mb': 16384, 'cpu': 1.0, 'gpu': 1.0}},
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results',
-                'model_storage_uri': 'schema://host/model',
-                'resources': {'memory_mb': 16384, 'cpu': 1, 'gpu': 1}},
-            url='http://127.0.0.1/infer')
+                'model_storage_uri': 'schema://host/model'},
+            url='http://127.0.0.1/models')
 
     assert result == client.JobStatus(
         client=model,
-        results='schema://host/path',
         status='PENDING',
-        id='iddqd')
+        job_id='iddqd')
 
 
 @patch(

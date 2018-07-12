@@ -61,7 +61,8 @@ def nmctl(url, token, verbose, version):
       -v, --version               Print version and exit
 
     Commands:
-      job                Start, stop, pause and monitor training and inference
+      model              Model training, testing and inference
+      job                Manage existing jobs
       store              Storage operations
       help               Get help on a command
     """
@@ -177,6 +178,83 @@ def nmctl(url, token, verbose, version):
                 return '\n'.join(s.mkdirs(path=path))
         return locals()
 
+    @command
+    def model():
+        """
+        Usage:
+            nmctl model COMMAND
+
+        Model operations
+
+        Commands:
+          train              Start model training
+          test               Test trained model against validation dataset
+          infer              Start batch inference
+        """
+
+        from neuromation.client.jobs import Model, Image, Resources
+
+        model = partial(Model, url)
+
+        @command
+        def train(image, dataset, results, gpu, cpu, memory, cmd):
+            """
+            Usage:
+                nmctl model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
+
+            Start training job using model from IMAGE, dataset from DATASET and
+            store output weights in RESULTS.
+
+            COMMANDS list will be passed as commands to model container.
+
+            Options:
+                -g, --gpu NUMBER      Number of GPUs to request [default: 1.0]
+                -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
+                -m, --memory AMOUNT   Memory amount to request [default: 16G]
+            """
+
+            cmd = ' '.join(cmd)
+            log.debug(f'cmd="{cmd}"')
+
+            with model() as m:
+                job = m.train(
+                    image=Image(
+                            image=image,
+                            command=cmd),
+                    resources=Resources(
+                        memory=memory,
+                        gpu=gpu,
+                        cpu=cpu),
+                    dataset=dataset,
+                    results=results)
+
+            # Format job info properly
+            return f'Job ID: {job.job_id} Status: {job.status}'
+
+        @command
+        def test():
+            pass
+
+        @command
+        def infer():
+            pass
+
+        return locals()
+
+    @command
+    def job():
+        """
+        Usage:
+            nmctl job COMMAND
+
+        Model operations
+
+        Commands:
+          monitor             Monitor job output stream
+          kill                Kill job
+        """
+
+        return locals()
     return locals()
 
 
@@ -195,9 +273,10 @@ def main():
         )
 
     try:
-        dispatch(
+        res = dispatch(
             target=nmctl,
             tail=sys.argv[1:])
+        print(res)
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(1)

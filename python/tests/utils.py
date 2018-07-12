@@ -2,16 +2,14 @@ from io import BytesIO
 from unittest.mock import Mock
 
 TRAIN_RESPONSE = {
-    'results': 'schema://host/path',
     'status': 'PENDING',
-    'id': 'iddqd'
+    'job_id': 'iddqd'
 }
 
 
 INFER_RESPONSE = {
-    'results': 'schema://host/path',
     'status': 'PENDING',
-    'id': 'iddqd'
+    'job_id': 'iddqd'
 }
 
 

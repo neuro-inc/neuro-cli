@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from neuromation.strings import parse
 
 from .client import ApiClient
-from .requests import (ImagePayload, InferRequest, JobStatusRequest,
+from .requests import (ContainerPayload, InferRequest, JobStatusRequest,
                        ResourcesPayload, TrainRequest)
 
 
@@ -24,9 +24,9 @@ class Image:
 
 @dataclass(frozen=True)
 class JobStatus:
-    results: str
+    # results: str
     status: str
-    id: str
+    job_id: str
     client: ApiClient
 
     async def _call(self):
@@ -34,7 +34,7 @@ class JobStatus:
                 client=self.client,
                 **await self.client._fetch(
                     request=JobStatusRequest(
-                        id=self.id
+                        id=self.job_id
                     )))
 
     def wait(self, timeout=None):
@@ -60,13 +60,13 @@ class Model(ApiClient):
             results: str)-> JobStatus:
         res = self._fetch_sync(
                 InferRequest(
-                    image=ImagePayload(
+                    container=ContainerPayload(
                         image=image.image,
-                        command=image.command),
-                    resources=ResourcesPayload(
-                        memory_mb=parse.to_megabytes(resources.memory),
-                        cpu=resources.cpu,
-                        gpu=resources.gpu),
+                        command=image.command,
+                        resources=ResourcesPayload(
+                            memory_mb=parse.to_megabytes(resources.memory),
+                            cpu=float(resources.cpu),
+                            gpu=float(resources.gpu))),
                     model_storage_uri=model,
                     dataset_storage_uri=dataset,
                     result_storage_uri=results))
@@ -84,13 +84,13 @@ class Model(ApiClient):
             results: str) -> JobStatus:
         res = self._fetch_sync(
             TrainRequest(
-                image=ImagePayload(
+                container=ContainerPayload(
                     image=image.image,
-                    command=image.command),
-                resources=ResourcesPayload(
-                    memory_mb=parse.to_megabytes(resources.memory),
-                    cpu=resources.cpu,
-                    gpu=resources.gpu),
+                    command=image.command,
+                    resources=ResourcesPayload(
+                        memory_mb=parse.to_megabytes(resources.memory),
+                        cpu=float(resources.cpu),
+                        gpu=float(resources.gpu))),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 

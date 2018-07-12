@@ -25,9 +25,10 @@ class ResourcesPayload:
 
 
 @dataclass(frozen=True)
-class ImagePayload:
+class ContainerPayload:
     image: str
     command: str
+    resources: ResourcesPayload
 
 
 @dataclass(frozen=True)
@@ -37,17 +38,15 @@ class JobStatusRequest(Request):
 
 @dataclass(frozen=True)
 class InferRequest(Request):
-    image: ImagePayload
+    container: ContainerPayload
     dataset_storage_uri: str
     result_storage_uri: str
     model_storage_uri: str
-    resources: ResourcesPayload
 
 
 @dataclass(frozen=True)
 class TrainRequest(Request):
-    resources: ResourcesPayload
-    image: ImagePayload
+    container: ContainerPayload
     dataset_storage_uri: str
     result_storage_uri: str
 
@@ -105,14 +104,14 @@ def build(request: Request) -> http.Request:
             data=None)
     elif isinstance(request, TrainRequest):
         return http.Request(
-            url='/train',
+            url='/models',
             params=None,
             method='POST',
             json=asdict(request),
             data=None)
     elif isinstance(request, InferRequest):
         return http.Request(
-            url='/infer',
+            url='/models',
             params=None,
             method='POST',
             json=asdict(request),
