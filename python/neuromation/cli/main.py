@@ -48,30 +48,30 @@ def setup_console_handler(handler, verbose, noansi=False):
 
 @command
 def nmctl(url, token, verbose, version):
-    """\033[0;36;40m    ◣
+    """    ◣
     ▇ ◣
     ◥   ◣
-    ◣   ▇     \033[1;36;40mNeuromation Platform\033[0;36;40m
+    ◣   ▇     Neuromation Platform
     ▇ ◣ ▇
     ▇   ◥
-    ◥   ◣     \033[0;37;40mDeep network training,\033[0;36;40m
-      ◥ ▇     \033[0;37;40minference and datasets\033[0;36;40m
+    ◥   ◣     Deep network training,
+      ◥ ▇     inference and datasets
         ◥
 
-    Usage:
-      nmctl [options] COMMAND
+Usage:
+  nmctl [options] COMMAND
 
-    Options:
-      -u, --url URL         Override API URL (.nmrc: {url})
-      -t, --token TOKEN     API authentication token (not implemented)
-      --verbose             Enable verbose logging
-      -v, --version         Print version and exit
+Options:
+  -u, --url URL         Override API URL (.nmrc: {url})
+  -t, --token TOKEN     API authentication token (not implemented)
+  --verbose             Enable verbose logging
+  -v, --version         Print version and exit
 
-    Commands:
-      model                  Model training, testing and inference
-      job                    Manage existing jobs
-      store                  Storage operations
-      help                   Get help on a command
+Commands:
+  model                 Model training, testing and inference
+  job                   Manage existing jobs
+  store                 Storage operations
+  help                  Get help on a command
     """
 
     from neuromation.client import Storage
