@@ -1,12 +1,12 @@
 import asyncio
 import logging
-import sys
 from contextlib import AbstractContextManager
 from functools import singledispatch
 from io import BufferedIOBase, BytesIO
 from typing import Dict
 
 import aiohttp
+from async_generator import asynccontextmanager
 from dataclasses import dataclass
 
 log = logging.getLogger(__name__)
@@ -66,11 +66,16 @@ async def session():
 
 
 class SyncStreamWrapper(AbstractContextManager):
-    def __init__(self, stream_reader, context, *, loop=None):
+    def __init__(self, context, *, loop=None):
         loop = loop or asyncio.get_event_loop()
         self._loop = loop
         self._context = context
-        self._stream_reader = stream_reader
+        self._stream_reader = None
+
+    def __enter__(self):
+        self._stream_reader = self._run_sync(
+            self._context.__aenter__()).content
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         return self._run_sync(self._context.__aexit__(
@@ -84,6 +89,7 @@ class SyncStreamWrapper(AbstractContextManager):
         return True
 
     def readinto(self, buf):
+        print(self._stream_reader)
         chunk = self._run_sync(self._stream_reader.read(len(buf)))
         log.debug(f'chunk size={len(chunk)}')
         BytesIO(chunk).readinto(buf)
@@ -98,32 +104,29 @@ class SyncStreamWrapper(AbstractContextManager):
         return self._run_sync(self._stream_reader.readany())
 
 
+@asynccontextmanager
 async def _fetch(request: Request, session, url: str):
-    context = session.request(
+    async with session.request(
                 method=request.method,
                 params=request.params,
                 url=url + request.url,
                 data=request.data,
-                json=request.json)
-    resp = await context.__aenter__()
-
-    try:
-        resp.raise_for_status()
-    except aiohttp.ClientError as error:
-        message = error.message
-
+                json=request.json) as resp:
         try:
-            error = await resp.json()
-            # TODO(artyom 07/13/2018): API should return error text
-            # in HTTP Reason Phrase
-            # (https://tools.ietf.org/html/rfc2616#section-6.1.1)
-            message = error['error']
-        finally:
-            await context.__aexit__(*sys.exc_info())
+            resp.raise_for_status()
+        except aiohttp.ClientError as error:
+            message = error.message
+            try:
+                error = await resp.json()
+                # TODO(artyom 07/13/2018): API should return error text
+                # in HTTP Reason Phrase
+                # (https://tools.ietf.org/html/rfc2616#section-6.1.1)
+                message = error['error']
+            except Exception:
+                pass
+            raise FetchError(message)
 
-        raise FetchError(message)
-
-    return resp, context
+        yield resp
 
 
 @singledispatch
@@ -133,25 +136,16 @@ async def fetch(request, session, url: str):
 
 @fetch.register(JsonRequest)
 async def _(request, session, url: str):
-    resp, context = await _fetch(request, session, url)
-
-    try:
+    async with _fetch(request, session, url) as resp:
         return await resp.json()
-    finally:
-        await context.__aexit__(*sys.exc_info())
 
 
 @fetch.register(PlainRequest)  # NOQA
 async def _(request, session, url: str):
-    resp, context = await _fetch(request, session, url)
-
-    try:
+    async with _fetch(request, session, url) as resp:
         return await resp.text()
-    finally:
-        await context.__aexit__(*sys.exc_info())
 
 
 @fetch.register(StreamRequest)  # NOQA
 async def _(request, session, url: str):
-    resp, context = await _fetch(request, session, url)
-    return SyncStreamWrapper(stream_reader=resp.content, context=context)
+    return SyncStreamWrapper(context=_fetch(request, session, url))
