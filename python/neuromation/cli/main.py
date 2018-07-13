@@ -50,17 +50,17 @@ def setup_console_handler(handler, verbose, noansi=False):
 
 @command
 def nmctl(url, token, verbose, version):
-    """\033[0;36;40m    ◣
+    """    ◣
     ▇ ◣
     ◥   ◣
-    ◣   ▇     \033[1;36;40mNeuromation Platform\033[0;36;40m
+    ◣   ▇     Neuromation Platform
     ▇ ◣ ▇
     ▇   ◥
-    ◥   ◣     \033[0;37;40mDeep network training,\033[0;36;40m
-      ◥ ▇     \033[0;37;40minference and datasets\033[0;36;40m
+    ◥   ◣     Deep network training,
+      ◥ ▇     inference and datasets
         ◥
 
-\033[0;37;40mUsage:
+Usage:
   nmctl [options] COMMAND
 
 Options:
