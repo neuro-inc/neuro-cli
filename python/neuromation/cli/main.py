@@ -1,15 +1,19 @@
 import logging
 import sys
 from functools import partial
+from pathlib import Path
 from urllib.parse import urlparse
 
 import neuromation
 from neuromation.logging import ConsoleWarningFormatter
 
+from . import rc
 from .commands import command, dispatch
 
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
+
+RC_FILE_NAME = '.nmrc'
 
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
@@ -45,20 +49,22 @@ def setup_console_handler(handler, verbose, noansi=False):
 
 
 @command
-def nmc(url, token, verbose, version):
+def nmctl(url, token, verbose, version):
     """
     Deep network training, inference and datasets with Neuromation Platform
 
     Usage:
-      nmc URL [options] COMMAND
+      nmctl [options] COMMAND
 
     Options:
+      -u, --url URL               Override API URL (.nmrc: {url})
       -t, --token TOKEN           API authentication token (not implemented)
       --verbose                   Enable verbose logging
       -v, --version               Print version and exit
 
     Commands:
-      job                Start, stop, pause and monitor training and inference
+      model              Model training, testing and inference
+      job                Manage existing jobs
       store              Storage operations
       help               Get help on a command
     """
@@ -69,7 +75,7 @@ def nmc(url, token, verbose, version):
     def store():
         """
         Usage:
-            nmc store COMMAND
+            nmctl store COMMAND
 
         Storage operations
 
@@ -86,7 +92,7 @@ def nmc(url, token, verbose, version):
         def rm(path):
             """
             Usage:
-                nmc store rm PATH
+                nmctl store rm PATH
 
             Remove files or directories
             """
@@ -97,7 +103,7 @@ def nmc(url, token, verbose, version):
         def ls(path):
             """
             Usage:
-                nmc store ls PATH
+                nmctl store ls PATH
 
             List directory contents
             """
@@ -112,7 +118,7 @@ def nmc(url, token, verbose, version):
         def cp(source, destination):
             """
             Usage:
-                nmc store cp SOURCE DESTINATION
+                nmctl store cp SOURCE DESTINATION
 
             Copy files and directories
             Either SOURCE or DESTINATION should have storage:// scheme.
@@ -121,11 +127,11 @@ def nmc(url, token, verbose, version):
             Example:
 
             # copy local file ./foo into remote storage root
-            nmc store cp ./foo storage:///
+            nmctl store cp ./foo storage:///
 
             # download remote file foo into local file foo with
             # explicit file:// scheme set
-            nmc store cp storage:///foo file:///foo
+            nmctl store cp storage:///foo file:///foo
             """
 
             def transfer(i, o):
@@ -170,7 +176,7 @@ def nmc(url, token, verbose, version):
         def mkdir(path):
             """
             Usage:
-                nmc store mkdir PATH
+                nmctl store mkdir PATH
 
             Make directories
             """
@@ -178,6 +184,83 @@ def nmc(url, token, verbose, version):
                 return '\n'.join(s.mkdirs(path=path))
         return locals()
 
+    @command
+    def model():
+        """
+        Usage:
+            nmctl model COMMAND
+
+        Model operations
+
+        Commands:
+          train              Start model training
+          test               Test trained model against validation dataset
+          infer              Start batch inference
+        """
+
+        from neuromation.client.jobs import Model, Image, Resources
+
+        model = partial(Model, url)
+
+        @command
+        def train(image, dataset, results, gpu, cpu, memory, cmd):
+            """
+            Usage:
+                nmctl model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
+
+            Start training job using model from IMAGE, dataset from DATASET and
+            store output weights in RESULTS.
+
+            COMMANDS list will be passed as commands to model container.
+
+            Options:
+                -g, --gpu NUMBER      Number of GPUs to request [default: 1.0]
+                -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
+                -m, --memory AMOUNT   Memory amount to request [default: 16G]
+            """
+
+            cmd = ' '.join(cmd)
+            log.debug(f'cmd="{cmd}"')
+
+            with model() as m:
+                job = m.train(
+                    image=Image(
+                            image=image,
+                            command=cmd),
+                    resources=Resources(
+                        memory=memory,
+                        gpu=gpu,
+                        cpu=cpu),
+                    dataset=dataset,
+                    results=results)
+
+            # Format job info properly
+            return f'Job ID: {job.job_id} Status: {job.status}'
+
+        @command
+        def test():
+            pass
+
+        @command
+        def infer():
+            pass
+
+        return locals()
+
+    @command
+    def job():
+        """
+        Usage:
+            nmctl job COMMAND
+
+        Model operations
+
+        Commands:
+          monitor             Monitor job output stream
+          kill                Kill job
+        """
+
+        return locals()
     return locals()
 
 
@@ -190,10 +273,16 @@ def main():
         print(version)
         sys.exit(0)
 
+    config = rc.load(Path.home().joinpath(RC_FILE_NAME))
+    nmctl.__doc__ = nmctl.__doc__.format(
+            url=config.url
+        )
+
     try:
-        dispatch(
-            target=nmc,
+        res = dispatch(
+            target=nmctl,
             tail=sys.argv[1:])
+        print(res)
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(1)

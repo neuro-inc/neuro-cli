@@ -15,7 +15,6 @@ e2e:
 		--cov-report xml:coverage.xml \
 		tests
 
-
 .PHONY: test
 test:
 	pytest \
@@ -25,7 +24,6 @@ test:
 		--cov-report xml:coverage.xml \
 		tests
 
-
 .PHONY: test-all
 test-all:
 	pytest \
@@ -34,12 +32,11 @@ test-all:
 		--cov-report xml:coverage.xml \
 		tests
 
-
 .PHONY: isort
 isort:
 	isort -rc neuromation
 	isort -rc tests
-
+	isort -rc .
 
 .PHONY: lint
 lint:
