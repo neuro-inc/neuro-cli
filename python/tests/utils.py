@@ -27,6 +27,20 @@ class JsonResponse:
             raise self._error
 
 
+class PlainResponse:
+    def __init__(self, text, *, error=None):
+        self._text = text
+        self.content_type = 'text/plain'
+        self._error = error
+
+    async def text(self):
+        return self._text
+
+    def raise_for_status(self):
+        if self._error:
+            raise self._error
+
+
 class BinaryResponse:
     class StreamResponse:
         def __init__(self, data):

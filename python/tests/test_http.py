@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import aiohttp
 
-from neuromation.http import Request, fetch, session
+from neuromation.http import JsonRequest, fetch, session
 from utils import JsonResponse, mocked_async_context_manager
 
 
@@ -19,13 +19,13 @@ def test_call(build, loop):
     _session = loop.run_until_complete(session())
 
     res = loop.run_until_complete(
-        fetch(_session, 'http://test', Request(
+        fetch(JsonRequest(
                 url='/my',
                 params=expected_params,
                 method=expected_method,
                 json=expected_json,
                 data=expected_data
-            )))
+            ), _session, 'http://test'))
 
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',
@@ -50,12 +50,11 @@ def test_fetch(loop):
     _session = loop.run_until_complete(session())
     loop.run_until_complete(
         fetch(
-            session=_session,
-            url='http://foo',
-            request=Request(
+            JsonRequest(
                 method='GET',
                 params=None,
                 url='/foo',
                 data=None,
-                json=None
-            )))
+                json=None),
+            session=_session,
+            url='http://foo'))

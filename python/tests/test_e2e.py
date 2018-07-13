@@ -10,7 +10,9 @@ BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
-API_URL = 'http://platform.dev.neuromation.io/api/v1'
+RC_TEXT = """
+    url: http://platform.dev.neuromation.io/api/v1
+"""
 
 format_list = '{name:<20}{size:,}'.format
 
@@ -52,13 +54,24 @@ def data(tmpdir_factory):
 
 
 @pytest.fixture
-def run(monkeypatch, capsys):
+def run(monkeypatch, capsys, tmpdir):
     import sys
-    from neuromation.cli import main
+    from pathlib import Path
+
+    tmpdir.join('.nmrc').open('w').write(RC_TEXT)
+
+    def _home():
+        return Path(tmpdir)
 
     def _run(arguments):
-        _arguments = ['nmc'] + arguments
-        monkeypatch.setattr(sys, 'argv', _arguments)
+        monkeypatch.setattr(
+            Path, 'home', _home)
+        monkeypatch.setattr(
+            sys, 'argv',
+            ['nmc'] + arguments)
+
+        from neuromation.cli import main
+
         return main(), capsys.readouterr()
 
     return _run
@@ -81,23 +94,19 @@ def test_e2e(data, run, tmpdir):
     _path = f'/tmp/{_dir}'
 
     # Create directory for the test
-    _, captured = run([
-            API_URL, 'store', 'mkdir', 'storage://' + _path
-        ])
+    _, captured = run(['store', 'mkdir', _path])
     assert not captured.err
-    assert captured.out == ''
+    assert captured.out == _path + '\n'
 
     # Upload local file
     _, captured = run([
-            API_URL, 'store', 'cp', file, 'storage://' + _path + '/foo'
+            'store', 'cp', file, 'storage://' + _path + '/foo'
         ])
     assert not captured.err
-    assert captured.out == ''
+    assert captured.out == 'storage://' + _path + '/foo' + '\n'
 
     # Confirm file has been uploaded
-    _, captured = run([
-            API_URL, 'store', 'ls', _path
-        ])
+    _, captured = run(['store', 'ls', _path])
     assert format_list(name="foo", size=FILE_SIZE_MB * 1024 * 1024) \
         in captured.out.split('\n')
     assert not captured.err
@@ -105,20 +114,20 @@ def test_e2e(data, run, tmpdir):
     # Download into local file and confirm checksum
     _local = join(tmpdir, 'bar')
     _, captured = run([
-        API_URL, 'store', 'cp',
+        'store', 'cp',
         'storage://' + _path + '/foo', _local
     ])
     assert hash_hex(_local) == checksum
 
     # Remove test dir
     _, captured = run([
-            API_URL, 'store', 'rm', _path
+            'store', 'rm', _path
         ])
     assert not captured.err
 
     # And confirm
     _, captured = run([
-            API_URL, 'store', 'ls', '/tmp'
+            'store', 'ls', '/tmp'
         ])
     assert format_list(name=_dir, size=0) not in captured.out.split('\n')
     assert not captured.err

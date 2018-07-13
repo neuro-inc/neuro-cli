@@ -5,7 +5,8 @@ import aiohttp
 import pytest
 
 from neuromation import client
-from utils import BinaryResponse, JsonResponse, mocked_async_context_manager
+from utils import (BinaryResponse, JsonResponse, PlainResponse,
+                   mocked_async_context_manager)
 
 
 @patch(
@@ -56,7 +57,7 @@ def test_ls(storage):
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(BinaryResponse(data=None)))
+    new=mocked_async_context_manager(PlainResponse(text='')))
 def test_mkdirs(storage):
     assert storage.mkdirs(path='/root/foo') == '/root/foo'
     aiohttp.ClientSession.request.assert_called_with(
@@ -69,7 +70,7 @@ def test_mkdirs(storage):
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(BinaryResponse(data=None)))
+    new=mocked_async_context_manager(PlainResponse(text='')))
 def test_rm(storage):
     assert storage.rm(path='foo')
     aiohttp.ClientSession.request.assert_called_with(
@@ -82,7 +83,7 @@ def test_rm(storage):
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(BinaryResponse(data=None)))
+    new=mocked_async_context_manager(PlainResponse(text='')))
 def test_create(storage):
     data = BytesIO(b'bar')
     assert storage.create(path='foo', data=data)

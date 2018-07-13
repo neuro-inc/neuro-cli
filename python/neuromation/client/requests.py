@@ -96,56 +96,56 @@ def build(request: Request) -> http.Request:
         return prefix + path.strip('/')
 
     if isinstance(request, JobStatusRequest):
-        return http.Request(
+        return http.JsonRequest(
             url='/jobs',
             params=None,
             method='GET',
             json=asdict(request),
             data=None)
     elif isinstance(request, TrainRequest):
-        return http.Request(
+        return http.JsonRequest(
             url='/models',
             params=None,
             method='POST',
             json=asdict(request),
             data=None)
     elif isinstance(request, InferRequest):
-        return http.Request(
+        return http.JsonRequest(
             url='/models',
             params=None,
             method='POST',
             json=asdict(request),
             data=None)
     elif isinstance(request, CreateRequest):
-        return http.Request(
+        return http.PlainRequest(
             url=add_path('/storage/', request.path),
             params=None,
             method='PUT',
             json=None,
             data=request.data)
     elif isinstance(request, MkDirsRequest):
-        return http.Request(
+        return http.PlainRequest(
             url=add_path('/storage/', request.path),
             params=request.op,
             method='PUT',
             json=None,
             data=None)
     elif isinstance(request, ListRequest):
-        return http.Request(
+        return http.JsonRequest(
             url=add_path('/storage/', request.path),
             params=request.op,
             method='GET',
             json=None,
             data=None)
     elif isinstance(request, OpenRequest):
-        return http.Request(
+        return http.StreamRequest(
             url=add_path('/storage/', request.path),
             params=None,
             method='GET',
             json=None,
             data=None)
     elif isinstance(request, DeleteRequest):
-        return http.Request(
+        return http.PlainRequest(
             url=add_path('/storage/', request.path),
             params=None,
             method='DELETE',

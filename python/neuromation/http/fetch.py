@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import sys
 from contextlib import AbstractContextManager
+from functools import singledispatch
 from io import BufferedIOBase, BytesIO
 from typing import Dict
 
@@ -23,6 +25,27 @@ class Request:
     url: str
     data: BufferedIOBase
     json: Dict
+
+
+class JsonRequest(Request):
+    """
+    Request expecting JSON as a response
+    """
+    pass
+
+
+class StreamRequest(Request):
+    """
+    Request expecting binary stream as a response
+    """
+    pass
+
+
+class PlainRequest(Request):
+    """
+    Request expecting plain text a response
+    """
+    pass
 
 
 async def session():
@@ -75,7 +98,7 @@ class SyncStreamWrapper(AbstractContextManager):
         return self._run_sync(self._stream_reader.readany())
 
 
-async def fetch(session, url: str, request: Request):
+async def _fetch(request: Request, session, url: str):
     context = session.request(
                 method=request.method,
                 params=request.params,
@@ -87,16 +110,48 @@ async def fetch(session, url: str, request: Request):
     try:
         resp.raise_for_status()
     except aiohttp.ClientError as error:
-        # Refactor the whole method and
-        # split binary and non-binary responses
-        if resp.content_type == 'application/json':
+        message = error.message
+
+        try:
             error = await resp.json()
-            raise FetchError(error['error'])
-        raise FetchError(error.message)
+            # TODO(artyom 07/13/2018): API should return error text
+            # in HTTP Reason Phrase
+            # (https://tools.ietf.org/html/rfc2616#section-6.1.1)
+            message = error['error']
+        finally:
+            await context.__aexit__(*sys.exc_info())
 
-    if resp.content_type == 'application/json':
+        raise FetchError(message)
+
+    return resp, context
+
+
+@singledispatch
+async def fetch(request, session, url: str):
+    raise NotImplementedError(f'Unknown request type: {type(request)}')
+
+
+@fetch.register(JsonRequest)
+async def _(request, session, url: str):
+    resp, context = await _fetch(request, session, url)
+
+    try:
         return await resp.json()
+    finally:
+        await context.__aexit__(*sys.exc_info())
 
-    # TODO (artyom, 06/22/2018): refactor this. right now it is
-    # returning two different types
+
+@fetch.register(PlainRequest)  # NOQA
+async def _(request, session, url: str):
+    resp, context = await _fetch(request, session, url)
+
+    try:
+        return await resp.text()
+    finally:
+        await context.__aexit__(*sys.exc_info())
+
+
+@fetch.register(StreamRequest)  # NOQA
+async def _(request, session, url: str):
+    resp, context = await _fetch(request, session, url)
     return SyncStreamWrapper(stream_reader=resp.content, context=context)
