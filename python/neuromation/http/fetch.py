@@ -89,7 +89,6 @@ class SyncStreamWrapper(AbstractContextManager):
         return True
 
     def readinto(self, buf):
-        print(self._stream_reader)
         chunk = self._run_sync(self._stream_reader.read(len(buf)))
         log.debug(f'chunk size={len(chunk)}')
         BytesIO(chunk).readinto(buf)

@@ -50,8 +50,12 @@ publish:
 coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
+
+# TODO (artyom, 07/16/2018): swap e2e and test once coverage output
+# of both is combined. Otherwise e2e will override unit tests with
+# lower coverage
 .PHONY: ci
-ci: test lint coverage
+ci: lint e2e test coverage
 
 .PHONY: clean
 clean:
