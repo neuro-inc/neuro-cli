@@ -1,6 +1,6 @@
 import pytest
 
-from neuromation import Model, Storage
+from neuromation import Job, Model, Storage
 
 
 @pytest.fixture
@@ -15,3 +15,10 @@ def storage(loop):
     storage = Storage(url='http://127.0.0.1', loop=loop)
     yield storage
     loop.run_until_complete(storage.close())
+
+
+@pytest.fixture
+def jobs(loop):
+    job = Job(url='http://127.0.0.1', loop=loop)
+    yield job
+    loop.run_until_complete(job.close())

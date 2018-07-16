@@ -52,6 +52,26 @@ class TrainRequest(Request):
 
 
 @dataclass(frozen=True)
+class JobRequest(Request):
+    pass
+
+
+@dataclass(frozen=True)
+class JobListRequest(JobRequest):
+    pass
+
+
+@dataclass(frozen=True)
+class JobKillRequest(JobRequest):
+    id: str
+
+
+@dataclass(frozen=True)
+class JobMonitorRequest(JobRequest):
+    id: str
+
+
+@dataclass(frozen=True)
 class StorageRequest(Request):
     pass
 
@@ -95,12 +115,34 @@ def build(request: Request) -> http.Request:
         # file Storage API calls
         return prefix + path.strip('/')
 
+    # TODO (artyom, 07/16/2018):
     if isinstance(request, JobStatusRequest):
+        return http.JsonRequest(
+            url=f'/jobs/{request.id}',
+            params=None,
+            method='GET',
+            json=None,
+            data=None)
+    elif isinstance(request, JobListRequest):
         return http.JsonRequest(
             url='/jobs',
             params=None,
             method='GET',
-            json=asdict(request),
+            json=None,
+            data=None)
+    elif isinstance(request, JobKillRequest):
+        return http.PlainRequest(
+            url=f'/jobs/{request.id}',
+            params=None,
+            method='DELETE',
+            json=None,
+            data=None)
+    elif isinstance(request, JobMonitorRequest):
+        return http.StreamRequest(
+            url=f'/jobs/{request.id}/log',
+            params=None,
+            method='GET',
+            json=None,
             data=None)
     elif isinstance(request, TrainRequest):
         return http.JsonRequest(
