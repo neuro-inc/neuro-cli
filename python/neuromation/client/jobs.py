@@ -1,11 +1,15 @@
 import asyncio
+from contextlib import contextmanager
+from io import BufferedReader
+from typing import List
 
 from dataclasses import dataclass
 
 from neuromation.strings import parse
 
 from .client import ApiClient
-from .requests import (ContainerPayload, InferRequest, JobStatusRequest,
+from .requests import (ContainerPayload, InferRequest, JobKillRequest,
+                       JobListRequest, JobMonitorRequest, JobStatusRequest,
                        ResourcesPayload, TrainRequest)
 
 
@@ -97,3 +101,27 @@ class Model(ApiClient):
         return JobStatus(
             **res,
             client=self)
+
+
+class Job(ApiClient):
+    def list(self) -> List[JobStatus]:
+        return [
+            JobStatus(client=self, **item)
+            for item in
+            self._fetch_sync(JobListRequest())
+        ]
+
+    def kill(self, id: str):
+        self._fetch_sync(JobKillRequest(id=id))
+        # TODO(artyom, 07/16/2018): what are we returning here?
+        return True
+
+    @contextmanager
+    def monitor(self, id: str) -> BufferedReader:
+        with self._fetch_sync(JobMonitorRequest(id=id)) as content:
+            yield BufferedReader(content)
+
+    def status(self, id: str) -> JobStatus:
+        return JobStatus(
+                    client=self,
+                    **self._fetch_sync(JobStatusRequest(id=id)))

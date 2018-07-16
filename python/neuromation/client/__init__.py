@@ -1,5 +1,5 @@
 from .jobs import Image, Resources
-from .jobs import JobStatus, Model
+from .jobs import Job, JobStatus, Model
 from .storage import Storage, FileStatus
 from .client import ApiError
 
@@ -9,6 +9,7 @@ __all__ = [
     'Resources',
     'JobStatus',
     'Model',
+    'Job',
     'Storage',
     'FileStatus',
     'ApiError']
