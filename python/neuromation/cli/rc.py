@@ -25,7 +25,7 @@ def load(path):
 
 
 def create(path):
-    if (Path(path).exists()):
+    if Path(path).exists():
         raise FileExistsError(path)
 
     return _save(path, Config())

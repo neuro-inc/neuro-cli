@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 from unittest.mock import Mock
 
@@ -13,40 +14,52 @@ INFER_RESPONSE = {
 }
 
 
-class JsonResponse:
-    def __init__(self, json, *, error=None):
-        self._json = json
-        self.content_type = 'application/json'
+class Response:
+    def __init__(self, payload, *, error=None):
+        if type(payload) in [dict, list]:
+            self.content_type = 'application/json'
+            self._text = json.dumps(payload)
+            self._json = payload
+        elif isinstance(payload, str):
+            self.content_type = 'text/plain'
+            self._text = payload
+        else:
+            raise NotImplementedError(f'Unsupported type {type(payload)}')
         self._error = error
 
     async def json(self):
         return self._json
+
+    async def text(self):
+        return self._text
 
     def raise_for_status(self):
         if self._error:
             raise self._error
 
 
-class BinaryResponse:
-    class StreamResponse:
-        def __init__(self, data):
-            self._stream = BytesIO(data)
+class JsonResponse(Response):
+    def __init__(self, json, *, error=None):
+        super().__init__(payload=json, error=error)
 
-        async def read(self):
-            return self._stream.read()
 
-        async def readany(self):
-            return self._stream.read()
+class PlainResponse(Response):
+    def __init__(self, text, *, error=None):
+        super().__init__(payload=text, error=error)
 
+
+class BinaryResponse(Response):
     def __init__(self, data, *, error=None):
         self._stream = BytesIO(data)
         self.content_type = 'application/octet-stream'
         self._error = error
-        self._content = BinaryResponse.StreamResponse(data)
+        self.content = self
 
-    @property
-    def content(self):
-        return self._content
+    async def read(self):
+        return self._stream.read()
+
+    async def readany(self):
+        return self._stream.read()
 
     def raise_for_status(self):
         if self._error:
