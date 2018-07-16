@@ -12,6 +12,7 @@ from .commands import command, dispatch
 
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
+MONITOR_BUFFER_SIZE_BYTES = 256
 
 RC_PATH = Path.home().joinpath('.nmrc')
 
@@ -244,7 +245,11 @@ Commands:
                     results=results)
 
             # Format job info properly
-            return f'Job ID: {job.job_id} Status: {job.status}'
+            return f'Job ID: {job.id} Status: {job.status}\n' + \
+                   f'Shortcuts:\n' + \
+                   f'  neuro job status {job.id}  # check job status\n' + \
+                   f'  neuro job monitor {job.id} # monitor job stdout\n' + \
+                   f'  neuro job kill {job.id}    # kill job'
 
         @command
         def test():
@@ -266,9 +271,69 @@ Commands:
 
         Commands:
           monitor             Monitor job output stream
+          list                List all jobs
+          status              Display status of a job
           kill                Kill job
         """
 
+        from neuromation.client.jobs import Job, JobStatus
+        jobs = partial(Job, url)
+
+        @command
+        def monitor(id):
+            """
+            Usage:
+                neuro job monitor ID
+
+            Monitor job output stream
+            """
+            with jobs() as j:
+                with j.monitor(id) as stream:
+                    while True:
+                        sys.stdout.write(
+                            stream.read(
+                                MONITOR_BUFFER_SIZE_BYTES
+                            ).decode()
+                        )
+
+        @command
+        def list():
+            """
+            Usage:
+                neuro job list
+
+            List all jobs
+            """
+            with jobs() as j:
+                return '\n'.join([
+                        f'{item.id}    {item.status}'
+                        for item in
+                        j.list()
+                    ])
+
+        @command
+        def status(id):
+            """
+            Usage:
+                neuro job status ID
+
+            Display status of a job
+            """
+            with jobs() as j:
+                res = j.status(id)
+                return f'{res.id}      {res.status}'
+
+        @command
+        def kill(id):
+            """
+            Usage:
+                neuro job kill ID
+
+            Kill job
+            """
+            with jobs() as j:
+                j.kill(id)
+            return 'Job killed.'
         return locals()
     return locals()
 

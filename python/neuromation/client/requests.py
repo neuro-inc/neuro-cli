@@ -21,7 +21,6 @@ class Request:
 class ResourcesPayload:
     memory_mb: str
     cpu: int
-    gpu: int
 
 
 @dataclass(frozen=True)
