@@ -123,5 +123,5 @@ class Job(ApiClient):
 
     def status(self, id: str) -> JobStatus:
         return JobStatus(
-                    client=self,
-                    **self._fetch_sync(JobStatusRequest(id=id)))
+            client=self,
+            **self._fetch_sync(JobStatusRequest(id=id)))
