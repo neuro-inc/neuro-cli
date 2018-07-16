@@ -1,8 +1,9 @@
 from unittest.mock import patch
 
 import aiohttp
+import pytest
 
-from neuromation.http import Request, fetch, session
+from neuromation.http import FetchError, JsonRequest, fetch, session
 from utils import JsonResponse, mocked_async_context_manager
 
 
@@ -19,13 +20,13 @@ def test_call(build, loop):
     _session = loop.run_until_complete(session())
 
     res = loop.run_until_complete(
-        fetch(_session, 'http://test', Request(
+        fetch(JsonRequest(
                 url='/my',
                 params=expected_params,
                 method=expected_method,
                 json=expected_json,
                 data=expected_data
-            )))
+            ), _session, 'http://test'))
 
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',
@@ -40,7 +41,8 @@ def test_call(build, loop):
 @patch(
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse(
-        aiohttp.ClientResponseError(
+        json={},
+        error=aiohttp.ClientResponseError(
             request_info=None,
             history=None,
             status=200,
@@ -48,14 +50,15 @@ def test_call(build, loop):
     )))
 def test_fetch(loop):
     _session = loop.run_until_complete(session())
-    loop.run_until_complete(
-        fetch(
-            session=_session,
-            url='http://foo',
-            request=Request(
-                method='GET',
-                params=None,
-                url='/foo',
-                data=None,
-                json=None
-            )))
+
+    with pytest.raises(FetchError):
+        loop.run_until_complete(
+            fetch(
+                JsonRequest(
+                    method='GET',
+                    params=None,
+                    url='/foo',
+                    data=None,
+                    json=None),
+                session=_session,
+                url='http://foo'))

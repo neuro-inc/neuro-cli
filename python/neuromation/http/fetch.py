@@ -1,9 +1,12 @@
 import asyncio
 import logging
+from contextlib import AbstractContextManager
+from functools import singledispatch
 from io import BufferedIOBase, BytesIO
 from typing import Dict
 
 import aiohttp
+from async_generator import asynccontextmanager
 from dataclasses import dataclass
 
 log = logging.getLogger(__name__)
@@ -24,6 +27,27 @@ class Request:
     json: Dict
 
 
+class JsonRequest(Request):
+    """
+    Request expecting JSON as a response
+    """
+    pass
+
+
+class StreamRequest(Request):
+    """
+    Request expecting binary stream as a response
+    """
+    pass
+
+
+class PlainRequest(Request):
+    """
+    Request expecting plain text a response
+    """
+    pass
+
+
 async def session():
     async def trace(session, trace_config_ctx, params):
         log.debug(f'{params}')
@@ -41,11 +65,22 @@ async def session():
     return _session
 
 
-class SyncStreamWrapper:
-    def __init__(self, stream, *, loop=None):
+class SyncStreamWrapper(AbstractContextManager):
+    def __init__(self, context, *, loop=None):
         loop = loop or asyncio.get_event_loop()
         self._loop = loop
-        self._stream_reader = stream
+        self._context = context
+        self._stream_reader = None
+
+    def __enter__(self):
+        self._stream_reader = self._run_sync(
+            self._context.__aenter__()).content
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return self._run_sync(self._context.__aexit__(
+                exc_type, exc_value, traceback
+            ))
 
     def _run_sync(self, coro):
         return self._loop.run_until_complete(coro)
@@ -68,27 +103,48 @@ class SyncStreamWrapper:
         return self._run_sync(self._stream_reader.readany())
 
 
-async def fetch(session, url: str, request: Request):
+@asynccontextmanager
+async def _fetch(request: Request, session, url: str):
     async with session.request(
                 method=request.method,
                 params=request.params,
                 url=url + request.url,
                 data=request.data,
                 json=request.json) as resp:
-
         try:
             resp.raise_for_status()
         except aiohttp.ClientError as error:
-            # Refactor the whole method and
-            # split binary and non-binary responses
-            if resp.content_type == 'application/json':
+            message = error.message
+            try:
                 error = await resp.json()
-                raise FetchError(error['error'])
-            raise FetchError(error.message)
+                # TODO(artyom 07/13/2018): API should return error text
+                # in HTTP Reason Phrase
+                # (https://tools.ietf.org/html/rfc2616#section-6.1.1)
+                message = error['error']
+            except Exception:
+                pass
+            raise FetchError(message)
 
-        if resp.content_type == 'application/json':
-            return await resp.json()
+        yield resp
 
-        # TODO (artyom, 06/22/2018): refactor this. right now it is
-        # returning two different types
-        return SyncStreamWrapper(resp.content)
+
+@singledispatch
+async def fetch(request, session, url: str):
+    raise NotImplementedError(f'Unknown request type: {type(request)}')
+
+
+@fetch.register(JsonRequest)
+async def _(request, session, url: str):
+    async with _fetch(request, session, url) as resp:
+        return await resp.json()
+
+
+@fetch.register(PlainRequest)  # NOQA
+async def _(request, session, url: str):
+    async with _fetch(request, session, url) as resp:
+        return await resp.text()
+
+
+@fetch.register(StreamRequest)  # NOQA
+async def _(request, session, url: str):
+    return SyncStreamWrapper(context=_fetch(request, session, url))

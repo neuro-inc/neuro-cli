@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from io import BufferedReader, BytesIO
 from typing import List
 
@@ -31,9 +32,10 @@ class Storage(ApiClient):
         self._fetch_sync(CreateRequest(path=path, data=data))
         return path
 
+    @contextmanager
     def open(self, *, path: str) -> BytesIO:
-        content = self._fetch_sync(OpenRequest(path=path))
-        return BufferedReader(content)
+        with self._fetch_sync(OpenRequest(path=path)) as content:
+            yield BufferedReader(content)
 
     def rm(self, *, path: str) -> str:
         self._fetch_sync(DeleteRequest(path=path))

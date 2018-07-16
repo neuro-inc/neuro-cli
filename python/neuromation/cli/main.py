@@ -13,7 +13,7 @@ from .commands import command, dispatch
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
 
-RC_FILE_NAME = '.nmrc'
+RC_PATH = Path.home().joinpath('.nmrc')
 
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
@@ -30,7 +30,9 @@ def setup_logging():
 
 
 def setup_console_handler(handler, verbose, noansi=False):
-    if handler.stream.isatty() and noansi is False:
+    if not handler.stream.closed and \
+           handler.stream.isatty() and \
+           noansi is False:
         format_class = ConsoleWarningFormatter
     else:
         format_class = logging.Formatter
@@ -62,7 +64,7 @@ Usage:
   nmctl [options] COMMAND
 
 Options:
-  -u, --url URL         Override API URL (.nmrc: {url})
+  -u, --url URL         Override API URL [default: {url}]
   -t, --token TOKEN     API authentication token (not implemented)
   --verbose             Enable verbose logging
   -v, --version         Print version and exit
@@ -112,8 +114,12 @@ Commands:
 
             List directory contents
             """
+            format = '{name:<20}{size:,}'.format
+
             with storage() as s:
-                print('\n'.join(status.path for status in s.ls(path=path)))
+                print('\n'.join(
+                    format(name=status.path, size=status.size)
+                    for status in s.ls(path=path)))
 
         @command
         def cp(source, destination):
@@ -158,10 +164,10 @@ Commands:
                     raise ValueError(
                         'storage:// and file:// schemes required')
                 with storage() as s:
-                    stream = s.open(path=src.path)
-                    with open(dst.path, mode='wb') as f:
-                        transfer(stream, f)
-                        return dst.path
+                    with s.open(path=src.path) as stream:
+                        with open(dst.path, mode='wb') as f:
+                            transfer(stream, f)
+                            return destination
 
             if dst.scheme == 'storage':
                 if src.scheme != 'file':
@@ -169,7 +175,8 @@ Commands:
                         'storage:// and file:// schemes required')
                 with open(src.path, mode='rb') as f:
                     with storage() as s:
-                        return s.create(path=dst.path, data=f)
+                        s.create(path=dst.path, data=f)
+                        return destination
 
             raise ValueError('Invalid SOURCE or DESTINATION value')
 
@@ -182,7 +189,7 @@ Commands:
             Make directories
             """
             with storage() as s:
-                return '\n'.join(s.mkdirs(path=path))
+                return s.mkdirs(path=path)
         return locals()
 
     @command
@@ -274,7 +281,7 @@ def main():
         print(version)
         sys.exit(0)
 
-    config = rc.load(Path.home().joinpath(RC_FILE_NAME))
+    config = rc.load(RC_PATH)
     nmctl.__doc__ = nmctl.__doc__.format(
             url=config.url
         )
@@ -292,3 +299,4 @@ def main():
         sys.exit(1)
     except Exception as e:
         log.error(f'{e}')
+        raise e

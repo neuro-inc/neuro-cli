@@ -20,7 +20,8 @@ setup(
         'aiohttp==3.2.1',
         'dataclasses==0.5',
         'docopt==0.6.2',
-        'pyyaml==3.13'
+        'pyyaml==3.13',
+        'async_generator==1.9'
     ],
     include_package_data=True,
     description='Neuromation Platform API client',

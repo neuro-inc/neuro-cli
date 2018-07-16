@@ -38,9 +38,9 @@ class ApiClient:
     async def _fetch(self, request: Request):
         try:
             return await fetch(
+                build(request),
                 session=self._session,
-                url=self._url,
-                request=build(request))
+                url=self._url)
         except FetchError as error:
             raise ApiError(f'{error}')
 
