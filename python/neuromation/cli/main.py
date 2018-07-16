@@ -49,19 +49,20 @@ def setup_console_handler(handler, verbose, noansi=False):
 
 
 @command
-def nmctl(url, token, verbose, version):
+def neuro(url, token, verbose, version):
     """    ◣
     ▇ ◣
-    ◥   ◣
-    ◣   ▇     Neuromation Platform
-    ▇ ◣ ▇
-    ▇   ◥
-    ◥   ◣     Deep network training,
-      ◥ ▇     inference and datasets
-        ◥
-
+    ▇ ◥ ◣
+  ◣ ◥   ▇
+  ▇ ◣   ▇
+  ▇ ◥ ◣ ▇
+  ▇   ◥ ▇    Neuromation Platform
+  ▇   ◣ ◥
+  ◥ ◣ ▇      Deep network training,
+    ◥ ▇      inference and datasets
+      ◥
 Usage:
-  nmctl [options] COMMAND
+  neuro [options] COMMAND
 
 Options:
   -u, --url URL         Override API URL [default: {url}]
@@ -82,7 +83,7 @@ Commands:
     def store():
         """
         Usage:
-            nmctl store COMMAND
+            neuro store COMMAND
 
         Storage operations
 
@@ -99,7 +100,7 @@ Commands:
         def rm(path):
             """
             Usage:
-                nmctl store rm PATH
+                neuro store rm PATH
 
             Remove files or directories
             """
@@ -110,7 +111,7 @@ Commands:
         def ls(path):
             """
             Usage:
-                nmctl store ls PATH
+                neuro store ls PATH
 
             List directory contents
             """
@@ -125,7 +126,7 @@ Commands:
         def cp(source, destination):
             """
             Usage:
-                nmctl store cp SOURCE DESTINATION
+                neuro store cp SOURCE DESTINATION
 
             Copy files and directories
             Either SOURCE or DESTINATION should have storage:// scheme.
@@ -134,11 +135,11 @@ Commands:
             Example:
 
             # copy local file ./foo into remote storage root
-            nmctl store cp ./foo storage:///
+            neuro store cp ./foo storage:///
 
             # download remote file foo into local file foo with
             # explicit file:// scheme set
-            nmctl store cp storage:///foo file:///foo
+            neuro store cp storage:///foo file:///foo
             """
 
             def transfer(i, o):
@@ -184,7 +185,7 @@ Commands:
         def mkdir(path):
             """
             Usage:
-                nmctl store mkdir PATH
+                neuro store mkdir PATH
 
             Make directories
             """
@@ -196,7 +197,7 @@ Commands:
     def model():
         """
         Usage:
-            nmctl model COMMAND
+            neuro model COMMAND
 
         Model operations
 
@@ -214,7 +215,7 @@ Commands:
         def train(image, dataset, results, gpu, cpu, memory, cmd):
             """
             Usage:
-                nmctl model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
+                neuro model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
 
             Start training job using model from IMAGE, dataset from DATASET and
             store output weights in RESULTS.
@@ -259,7 +260,7 @@ Commands:
     def job():
         """
         Usage:
-            nmctl job COMMAND
+            neuro job COMMAND
 
         Model operations
 
@@ -282,13 +283,13 @@ def main():
         sys.exit(0)
 
     config = rc.load(RC_PATH)
-    nmctl.__doc__ = nmctl.__doc__.format(
+    neuro.__doc__ = neuro.__doc__.format(
             url=config.url
         )
 
     try:
         res = dispatch(
-            target=nmctl,
+            target=neuro,
             tail=sys.argv[1:])
         print(res)
     except KeyboardInterrupt:
