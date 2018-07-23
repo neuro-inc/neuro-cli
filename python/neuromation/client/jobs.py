@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import contextmanager
 from io import BufferedReader
-from typing import List
+from typing import List, Optional
 
 from dataclasses import dataclass
 
@@ -16,8 +16,8 @@ from .requests import (ContainerPayload, InferRequest, JobKillRequest,
 @dataclass(frozen=True)
 class Resources:
     memory: str
-    cpu: int
-    gpu: int
+    cpu: float
+    gpu: Optional[int]
 
 
 @dataclass(frozen=True)
@@ -28,17 +28,17 @@ class Image:
 
 @dataclass(frozen=True)
 class JobStatus:
-    # results: str
     status: str
-    job_id: str
+    id: str
     client: ApiClient
+    url: str = ''
 
     async def _call(self):
         return JobStatus(
                 client=self.client,
                 **await self.client._fetch(
                     request=JobStatusRequest(
-                        id=self.job_id
+                        id=self.id
                     )))
 
     def wait(self, timeout=None):
@@ -69,14 +69,15 @@ class Model(ApiClient):
                         command=image.command,
                         resources=ResourcesPayload(
                             memory_mb=parse.to_megabytes(resources.memory),
-                            cpu=float(resources.cpu),
-                            gpu=float(resources.gpu))),
+                            cpu=resources.cpu,
+                            gpu=resources.gpu)),
                     model_storage_uri=model,
                     dataset_storage_uri=dataset,
                     result_storage_uri=results))
 
         return JobStatus(
-            **res,
+            id=res['job_id'],
+            status=res['status'],
             client=self)
 
     def train(
@@ -93,25 +94,29 @@ class Model(ApiClient):
                     command=image.command,
                     resources=ResourcesPayload(
                         memory_mb=parse.to_megabytes(resources.memory),
-                        cpu=float(resources.cpu),
-                        gpu=float(resources.gpu))),
+                        cpu=resources.cpu,
+                        gpu=resources.gpu)),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 
         return JobStatus(
-            **res,
+            id=res['job_id'],
+            status=res['status'],
             client=self)
 
 
 class Job(ApiClient):
     def list(self) -> List[JobStatus]:
+        res = self._fetch_sync(JobListRequest())
         return [
-            JobStatus(client=self, **item)
-            for item in
-            self._fetch_sync(JobListRequest())
+            JobStatus(
+                client=self,
+                id=job['id'],
+                status=job['status'])
+            for job in res['jobs']
         ]
 
-    def kill(self, id: str):
+    def kill(self, id: str) -> bool:
         self._fetch_sync(JobKillRequest(id=id))
         # TODO(artyom, 07/16/2018): what are we returning here?
         return True
@@ -122,6 +127,8 @@ class Job(ApiClient):
             yield BufferedReader(content)
 
     def status(self, id: str) -> JobStatus:
+        res = self._fetch_sync(JobStatusRequest(id=id))
         return JobStatus(
             client=self,
-            **self._fetch_sync(JobStatusRequest(id=id)))
+            id=res['id'],
+            status=res['status'])

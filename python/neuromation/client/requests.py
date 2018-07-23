@@ -1,6 +1,6 @@
 import logging
 from io import BytesIO
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from dataclasses import asdict, dataclass
 
@@ -20,8 +20,8 @@ class Request:
 @dataclass(frozen=True)
 class ResourcesPayload:
     memory_mb: str
-    cpu: int
-    gpu: int
+    cpu: float
+    gpu: Optional[int]
 
 
 @dataclass(frozen=True)
@@ -115,7 +115,6 @@ def build(request: Request) -> http.Request:
         # file Storage API calls
         return prefix + path.strip('/')
 
-    # TODO (artyom, 07/16/2018):
     if isinstance(request, JobStatusRequest):
         return http.JsonRequest(
             url=f'/jobs/{request.id}',
