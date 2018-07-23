@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import contextmanager
 from io import BufferedReader
-from typing import List
+from typing import List, Optional
 
 from dataclasses import dataclass
 
@@ -16,8 +16,8 @@ from .requests import (ContainerPayload, InferRequest, JobKillRequest,
 @dataclass(frozen=True)
 class Resources:
     memory: str
-    cpu: int
-    gpu: int
+    cpu: float
+    gpu: Optional[int]
 
 
 @dataclass(frozen=True)
@@ -69,8 +69,8 @@ class Model(ApiClient):
                         command=image.command,
                         resources=ResourcesPayload(
                             memory_mb=parse.to_megabytes(resources.memory),
-                            cpu=float(resources.cpu),
-                            gpu=float(resources.gpu))),
+                            cpu=resources.cpu,
+                            gpu=resources.gpu)),
                     model_storage_uri=model,
                     dataset_storage_uri=dataset,
                     result_storage_uri=results))
@@ -94,8 +94,8 @@ class Model(ApiClient):
                     command=image.command,
                     resources=ResourcesPayload(
                         memory_mb=parse.to_megabytes(resources.memory),
-                        cpu=float(resources.cpu),
-                        )),
+                        cpu=resources.cpu,
+                        gpu=resources.gpu)),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 
@@ -113,11 +113,10 @@ class Job(ApiClient):
                 client=self,
                 id=job['id'],
                 status=job['status'])
-            for job in
-            res['jobs']
+            for job in res['jobs']
         ]
 
-    def kill(self, id: str):
+    def kill(self, id: str) -> bool:
         self._fetch_sync(JobKillRequest(id=id))
         # TODO(artyom, 07/16/2018): what are we returning here?
         return True

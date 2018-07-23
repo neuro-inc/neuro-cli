@@ -8,8 +8,38 @@ from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
 
 JOB_RESPONSE = {
     'status': 'SUCCEEDED',
-    'job_id': 'iddqd',
+    'id': 'iddqd',
 }
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)))
+def test_train_with_no_gpu(request, model, loop):
+    result = model.train(
+        image=client.Image(image='repo/image', command='bash'),
+        resources=client.Resources(memory='16G', cpu=1.0, gpu=None),
+        dataset='schema://host/data',
+        results='schema://host/results')
+
+    aiohttp.ClientSession.request.assert_called_with(
+            method='POST',
+            data=None,
+            params=None,
+            json={
+                'container': {
+                    'image': 'repo/image',
+                    'command': 'bash',
+                    'resources': {'memory_mb': 16384, 'cpu': 1.0, 'gpu': None},
+                },
+                'dataset_storage_uri': 'schema://host/data',
+                'result_storage_uri': 'schema://host/results'},
+            url='http://127.0.0.1/models')
+
+    assert result == client.JobStatus(
+        client=model,
+        status='PENDING',
+        id='iddqd')
 
 
 @patch(
@@ -39,7 +69,7 @@ def test_train(request, model, loop):
     assert result == client.JobStatus(
         client=model,
         status='PENDING',
-        job_id='iddqd')
+        id='iddqd')
 
 
 @patch(
@@ -71,7 +101,7 @@ def test_infer(request, model, loop):
     assert result == client.JobStatus(
         client=model,
         status='PENDING',
-        job_id='iddqd')
+        id='iddqd')
 
 
 @patch(

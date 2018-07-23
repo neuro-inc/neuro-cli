@@ -77,7 +77,7 @@ def test_job(job, cmd, model_uri, model, loop):
     job_status = func(**args)
     assert job_status == JobStatus(
             status='PENDING',
-            job_id=job_status.job_id,
+            id=job_status.id,
             client=model
         )
 
@@ -86,9 +86,9 @@ def test_job(job, cmd, model_uri, model, loop):
 
     status = job_status.wait()
 
-    assert replace(status, job_id=None) == JobStatus(
+    assert replace(status, id=None) == JobStatus(
         status='PENDING',
-        job_id=None,
+        id=None,
         client=model
     )
 

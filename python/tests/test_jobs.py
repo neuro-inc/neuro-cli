@@ -26,18 +26,18 @@ def test_kill(jobs):
     new=mocked_async_context_manager(JsonResponse(
         {
             'status': 'RUNNING',
-            'job_id': 'foo'
+            'id': 'foo'
         },
     )))
 def test_status(jobs):
     expected = {
             'status': 'RUNNING',
-            'job_id': 'foo'
+            'id': 'foo'
     }
     res = jobs.status('1')
     assert {
             'status': res.status,
-            'job_id': 'foo'
+            'id': 'foo'
            } == expected
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -50,20 +50,20 @@ def test_status(jobs):
 
 @patch(
     'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(JsonResponse([
-            {
-                'status': 'RUNNING',
-                'job_id': 'foo'
-            },
-            {
-                'status': 'STARTING',
-                'job_id': 'bar'
-            }
-        ])))
+    new=mocked_async_context_manager(JsonResponse({
+        'jobs': [{
+                    'status': 'RUNNING',
+                    'id': 'foo'
+                },
+                {
+                    'status': 'STARTING',
+                    'id': 'bar'
+                }]
+            })))
 def test_list(jobs):
     assert jobs.list() == [
-        JobStatus(client=jobs, job_id='foo', status='RUNNING'),
-        JobStatus(client=jobs, job_id='bar', status='STARTING')
+        JobStatus(client=jobs, id='foo', status='RUNNING'),
+        JobStatus(client=jobs, id='bar', status='STARTING')
     ]
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',

@@ -224,13 +224,16 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER      Number of GPUs to request [default: 1.0]
+                -g, --gpu NUMBER      Number of GPUs to request [default: 1]
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
             """
 
             cmd = ' '.join(cmd)
             log.debug(f'cmd="{cmd}"')
+
+            cpu = float(cpu)
+            gpu = int(gpu)
 
             with model() as m:
                 job = m.train(
@@ -276,7 +279,7 @@ Commands:
           kill                Kill job
         """
 
-        from neuromation.client.jobs import Job, JobStatus
+        from neuromation.client.jobs import Job
         jobs = partial(Job, url)
 
         @command
