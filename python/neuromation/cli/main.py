@@ -290,11 +290,10 @@ Commands:
             with jobs() as j:
                 with j.monitor(id) as stream:
                     while True:
-                        sys.stdout.write(
-                            stream.read(
-                                MONITOR_BUFFER_SIZE_BYTES
-                            ).decode()
-                        )
+                        chunk = stream.read(MONITOR_BUFFER_SIZE_BYTES)
+                        if not chunk:
+                            break
+                        sys.stdout.write(chunk.decode(errors='ignore'))
 
         @command
         def list():
