@@ -149,11 +149,11 @@ class Job(ApiClient):
             id=res['id'],
             status=res['status'],
             history=JobStatusHistory(
-                status=res['history']['status'],
-                reason=res['history']['reason'],
-                description=res['history']['description'],
-                created_at=res['history']['created_at'],
-                started_at=res['history']['started_at'],
-                finished_at=res['history']['finished_at']
+                status=res['history'].get('status', None),
+                reason=res['history'].get('reason', None),
+                description=res['history'].get('description', None),
+                created_at=res['history'].get('created_at', None),
+                started_at=res['history'].get('started_at', None),
+                finished_at=res['history'].get('finished_at', None)
             )
         )
