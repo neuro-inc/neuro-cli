@@ -45,7 +45,7 @@ def test_status_runing(jobs):
     assert {
             'status': res.status,
             'id': 'foo',
-            'history' : {
+            'history': {
                 'created_at': res.history.created_at,
                 'started_at': res.history.started_at,
             }
@@ -57,6 +57,7 @@ def test_status_runing(jobs):
         params=None,
         data=None,
         json=None)
+
 
 @patch(
     'aiohttp.ClientSession.request',
@@ -89,7 +90,7 @@ def test_status_failed(jobs):
     assert {
             'status': res.status,
             'id': 'foo',
-            'history' : {
+            'history': {
                 'created_at': res.history.created_at,
                 'started_at': res.history.started_at,
                 'finished_at': res.history.finished_at,
@@ -105,6 +106,7 @@ def test_status_failed(jobs):
         params=None,
         data=None,
         json=None)
+
 
 @patch(
     'aiohttp.ClientSession.request',

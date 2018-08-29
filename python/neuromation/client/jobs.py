@@ -48,7 +48,6 @@ class JobStatus:
     SUCCEEDED = 'succeeded'
     FAILED = 'failed'
 
-
     async def _call(self):
         return JobStatus(
                 client=self.client,

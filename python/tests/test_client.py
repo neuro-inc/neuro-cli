@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 import aiohttp
-
 from neuromation import client
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)

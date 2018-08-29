@@ -326,7 +326,8 @@ Commands:
                 result = f'Job: {res.id}\n' \
                          f'Status: {res.status}\n' \
                          f'Created: {res.history.created_at}'
-                if res.status in [JobStatus.RUNNING, JobStatus.FAILED, JobStatus.SUCCEEDED]:
+                if res.status in [JobStatus.RUNNING, JobStatus.FAILED,
+                                  JobStatus.SUCCEEDED]:
                     result += '\n' \
                               f'Started: {res.history.started_at}'
                 if res.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
@@ -335,7 +336,8 @@ Commands:
                 if res.status == JobStatus.FAILED:
                     result += '\n' \
                               f'Reason: {res.history.reason}\n' \
-                              f'===Description===\n {res.history.description}\n================='
+                              '===Description===\n ' \
+                              f'{res.history.description}\n================='
                 return result
 
         @command

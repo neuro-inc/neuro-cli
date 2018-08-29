@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
-import aiohttp
 import pytest
 
+import aiohttp
 from neuromation.http import FetchError, JsonRequest, fetch, session
 from utils import JsonResponse, mocked_async_context_manager
 
