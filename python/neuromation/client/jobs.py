@@ -4,7 +4,6 @@ from io import BufferedReader
 from typing import List, Optional
 
 from dataclasses import dataclass
-
 from neuromation.strings import parse
 
 from .client import ApiClient
@@ -27,11 +26,28 @@ class Image:
 
 
 @dataclass(frozen=True)
+class JobStatusHistory:
+    status: str
+    reason: str
+    description: str
+    created_at: str
+    started_at: str
+    finished_at: str
+
+
+@dataclass(frozen=True)
 class JobStatus:
     status: str
     id: str
     client: ApiClient
     url: str = ''
+    history: JobStatusHistory = None
+
+    PENDING = 'pending'
+    RUNNING = 'running'
+    SUCCEEDED = 'succeeded'
+    FAILED = 'failed'
+
 
     async def _call(self):
         return JobStatus(
@@ -131,4 +147,13 @@ class Job(ApiClient):
         return JobStatus(
             client=self,
             id=res['id'],
-            status=res['status'])
+            status=res['status'],
+            history=JobStatusHistory(
+                status=res['history']['status'],
+                reason=res['history']['reason'],
+                description=res['history']['description'],
+                created_at=res['history']['created_at'],
+                started_at=res['history']['started_at'],
+                finished_at=res['history']['finished_at']
+            )
+        )
