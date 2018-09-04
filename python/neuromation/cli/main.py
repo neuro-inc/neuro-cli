@@ -358,7 +358,8 @@ def main():
         res = dispatch(
             target=neuro,
             tail=sys.argv[1:])
-        print(res)
+        if res:
+            print(res)
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(1)
