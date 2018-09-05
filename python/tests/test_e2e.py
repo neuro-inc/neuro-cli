@@ -1,4 +1,5 @@
 import asyncio
+import platform
 from hashlib import sha1
 from math import ceil
 from os.path import join
@@ -19,13 +20,14 @@ format_list = '{name:<20}{size:,}'.format
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
+        exec_sha_name = 'sha1sum' if platform.platform() == "linux" else 'shasum'
         process = await asyncio.create_subprocess_shell(
                     f"""(dd if=/dev/urandom \
                     bs={BLOCK_SIZE_MB * 1024 * 1024} \
                     count={ceil(size_mb / BLOCK_SIZE_MB)} \
                     2>/dev/null) | \
                     tee {name} | \
-                    sha1sum""",
+                    {exec_sha_name}""",
                     stdout=asyncio.subprocess.PIPE)
 
         stdout, _ = await asyncio.wait_for(
