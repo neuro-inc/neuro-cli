@@ -91,9 +91,7 @@ def hash_hex(file):
 
 
 @pytest.mark.e2e
-def test_e2e(data, run, tmpdir):
-    file, checksum = data[0]
-
+def test_empty_directory_ls_output(run):
     _dir = f'e2e-{uuid()}'
     _path = f'/tmp/{_dir}'
 
@@ -107,6 +105,25 @@ def test_e2e(data, run, tmpdir):
     assert not captured.err
     assert captured.out.isspace()
 
+    # Remove test dir
+    _, captured = run([
+            'store', 'rm', _path
+        ])
+    assert not captured.err
+
+
+@pytest.mark.e2e
+def test_e2e(data, run, tmpdir):
+    file, checksum = data[0]
+
+    _dir = f'e2e-{uuid()}'
+    _path = f'/tmp/{_dir}'
+
+    # Create directory for the test
+    _, captured = run(['store', 'mkdir', _path])
+    assert not captured.err
+    assert captured.out == _path + '\n'
+
     # Upload local file
     _, captured = run([
             'store', 'cp', file, 'storage://' + _path + '/foo'
@@ -117,8 +134,6 @@ def test_e2e(data, run, tmpdir):
     # Confirm file has been uploaded
     _, captured = run(['store', 'ls', _path])
     captured_output_list = captured.out.split('\n')
-    assert 'None' \
-        not in captured_output_list
     assert 'file           16,777,216     foo' \
         in captured_output_list
     assert not captured.err
