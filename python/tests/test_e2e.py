@@ -100,6 +100,11 @@ def test_e2e(data, run, tmpdir):
     assert not captured.err
     assert captured.out == _path + '\n'
 
+    # Ensure output of ls - empty directory shall print nothing.
+    _, captured = run(['store', 'ls', _path])
+    assert not captured.err
+    assert captured.out == ''
+
     # Upload local file
     _, captured = run([
             'store', 'cp', file, 'storage://' + _path + '/foo'
@@ -112,7 +117,7 @@ def test_e2e(data, run, tmpdir):
     captured_output_list = captured.out.split('\n')
     assert 'None' \
         not in captured_output_list
-    assert format_list(name="foo", size=FILE_SIZE_MB * 1024 * 1024) \
+    assert 'file           16,777,216     foo' \
         in captured_output_list
     assert not captured.err
 
