@@ -103,7 +103,7 @@ def test_e2e(data, run, tmpdir):
     # Ensure output of ls - empty directory shall print nothing.
     _, captured = run(['store', 'ls', _path])
     assert not captured.err
-    assert captured.out == ''
+    assert captured.out.isspace()
 
     # Upload local file
     _, captured = run([
