@@ -120,7 +120,9 @@ Commands:
 
             with storage() as s:
                 print('\n'.join(
-                    format(type=status.type.lower(), name=status.path, size=status.size)
+                    format(type=status.type.lower(),
+                           name=status.path,
+                           size=status.size)
                     for status in s.ls(path=path)))
 
         @command

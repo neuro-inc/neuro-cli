@@ -20,7 +20,9 @@ format_list = '{name:<20}{size:,}'.format
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
-        exec_sha_name = 'sha1sum' if platform.platform() == "linux" else 'shasum'
+        exec_sha_name = 'sha1sum' if platform.platform() == 'linux' \
+            else 'shasum'
+
         process = await asyncio.create_subprocess_shell(
                     f"""(dd if=/dev/urandom \
                     bs={BLOCK_SIZE_MB * 1024 * 1024} \
