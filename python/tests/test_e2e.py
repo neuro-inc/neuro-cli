@@ -107,8 +107,11 @@ def test_e2e(data, run, tmpdir):
 
     # Confirm file has been uploaded
     _, captured = run(['store', 'ls', _path])
+    captured_output_list = captured.out.split('\n')
+    assert 'None' \
+        not in captured_output_list
     assert format_list(name="foo", size=FILE_SIZE_MB * 1024 * 1024) \
-        in captured.out.split('\n')
+        in captured_output_list
     assert not captured.err
 
     # Download into local file and confirm checksum
