@@ -116,11 +116,13 @@ Commands:
 
             List directory contents
             """
-            format = '{name:<20}{size:,}'.format
+            format = '{type:<15}{size:<15,}{name:<}'.format
 
             with storage() as s:
                 print('\n'.join(
-                    format(name=status.path, size=status.size)
+                    format(type=status.type.lower(),
+                           name=status.path,
+                           size=status.size)
                     for status in s.ls(path=path)))
 
         @command
@@ -358,7 +360,8 @@ def main():
         res = dispatch(
             target=neuro,
             tail=sys.argv[1:])
-        print(res)
+        if res:
+            print(res)
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(1)

@@ -1,4 +1,5 @@
 import asyncio
+import platform
 from hashlib import sha1
 from math import ceil
 from os.path import join
@@ -19,13 +20,16 @@ format_list = '{name:<20}{size:,}'.format
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
+        exec_sha_name = 'sha1sum' if platform.platform() == 'linux' \
+            else 'shasum'
+
         process = await asyncio.create_subprocess_shell(
                     f"""(dd if=/dev/urandom \
                     bs={BLOCK_SIZE_MB * 1024 * 1024} \
                     count={ceil(size_mb / BLOCK_SIZE_MB)} \
                     2>/dev/null) | \
                     tee {name} | \
-                    sha1sum""",
+                    {exec_sha_name}""",
                     stdout=asyncio.subprocess.PIPE)
 
         stdout, _ = await asyncio.wait_for(
@@ -87,6 +91,28 @@ def hash_hex(file):
 
 
 @pytest.mark.e2e
+def test_empty_directory_ls_output(run):
+    _dir = f'e2e-{uuid()}'
+    _path = f'/tmp/{_dir}'
+
+    # Create directory for the test
+    _, captured = run(['store', 'mkdir', _path])
+    assert not captured.err
+    assert captured.out == _path + '\n'
+
+    # Ensure output of ls - empty directory shall print nothing.
+    _, captured = run(['store', 'ls', _path])
+    assert not captured.err
+    assert captured.out.isspace()
+
+    # Remove test dir
+    _, captured = run([
+            'store', 'rm', _path
+        ])
+    assert not captured.err
+
+
+@pytest.mark.e2e
 def test_e2e(data, run, tmpdir):
     file, checksum = data[0]
 
@@ -107,8 +133,9 @@ def test_e2e(data, run, tmpdir):
 
     # Confirm file has been uploaded
     _, captured = run(['store', 'ls', _path])
-    assert format_list(name="foo", size=FILE_SIZE_MB * 1024 * 1024) \
-        in captured.out.split('\n')
+    captured_output_list = captured.out.split('\n')
+    assert 'file           16,777,216     foo' \
+        in captured_output_list
     assert not captured.err
 
     # Download into local file and confirm checksum
