@@ -45,7 +45,6 @@ class JobItem:
     url: str = ''
     history: JobStatusHistory = None
 
-
     async def _call(self):
         return JobItem(
                 client=self.client,
