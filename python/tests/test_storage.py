@@ -1,9 +1,9 @@
 from io import BytesIO
 from unittest.mock import patch
 
+import aiohttp
 import pytest
 
-import aiohttp
 from neuromation import client
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)

@@ -2,10 +2,10 @@ import asyncio
 from unittest.mock import patch
 
 import pytest
-
 from aiohttp import web
 from dataclasses import replace
-from neuromation import JobStatus, Resources
+
+from neuromation import JobItem, Resources
 from neuromation.client import Image
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
@@ -69,13 +69,13 @@ async def _call(self):
 @patch(
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)))
-@patch('neuromation.client.JobStatus._call', _call)
+@patch('neuromation.client.JobItem._call', _call)
 def test_job(job, cmd, model_uri, model, loop):
     args = JOB_ARGS if model_uri is None else {**JOB_ARGS, 'model': model_uri}
 
     func = getattr(model, job)
     job_status = func(**args)
-    assert job_status == JobStatus(
+    assert job_status == JobItem(
             status='PENDING',
             id=job_status.id,
             client=model
@@ -86,7 +86,7 @@ def test_job(job, cmd, model_uri, model, loop):
 
     status = job_status.wait()
 
-    assert replace(status, id=None) == JobStatus(
+    assert replace(status, id=None) == JobItem(
         status='PENDING',
         id=None,
         client=model

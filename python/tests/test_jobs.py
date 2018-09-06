@@ -1,7 +1,8 @@
 from unittest.mock import patch
 
 import aiohttp
-from neuromation.client.jobs import JobStatus
+
+from neuromation.client.jobs import JobItem
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)
 
@@ -122,8 +123,8 @@ def test_status_failed(jobs):
             })))
 def test_list(jobs):
     assert jobs.list() == [
-        JobStatus(client=jobs, id='foo', status='RUNNING'),
-        JobStatus(client=jobs, id='bar', status='STARTING')
+        JobItem(client=jobs, id='foo', status='RUNNING'),
+        JobItem(client=jobs, id='bar', status='STARTING')
     ]
     aiohttp.ClientSession.request.assert_called_with(
         method='GET',

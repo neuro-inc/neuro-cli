@@ -1,9 +1,11 @@
 import asyncio
+import enum
 from contextlib import contextmanager
 from io import BufferedReader
 from typing import List, Optional
 
 from dataclasses import dataclass
+
 from neuromation.strings import parse
 
 from .client import ApiClient
@@ -36,20 +38,16 @@ class JobStatusHistory:
 
 
 @dataclass(frozen=True)
-class JobStatus:
+class JobItem:
     status: str
     id: str
     client: ApiClient
     url: str = ''
     history: JobStatusHistory = None
 
-    PENDING = 'pending'
-    RUNNING = 'running'
-    SUCCEEDED = 'succeeded'
-    FAILED = 'failed'
 
     async def _call(self):
-        return JobStatus(
+        return JobItem(
                 client=self.client,
                 **await self.client._fetch(
                     request=JobStatusRequest(
@@ -68,6 +66,39 @@ class JobStatus:
             raise TimeoutError
 
 
+class JobStatus(str, enum.Enum):
+    """An Enum subclass that represents job statuses.
+    PENDING: a job is being created and scheduled. This includes finding (and
+    possibly waiting for) sufficient amount of resources, pulling an image
+    from a registry etc.
+    RUNNING: a job is being run.
+    SUCCEEDED: a job terminated with the 0 exit code or a running job was
+    manually terminated/deleted.
+    FAILED: a job terminated with a non-0 exit code.
+    """
+
+    PENDING = 'pending'
+    RUNNING = 'running'
+    SUCCEEDED = 'succeeded'
+    FAILED = 'failed'
+
+    @property
+    def is_pending(self) -> bool:
+        return self == self.PENDING
+
+    @property
+    def is_running(self) -> bool:
+        return self == self.RUNNING
+
+    @property
+    def is_finished(self) -> bool:
+        return self in (self.SUCCEEDED, self.FAILED)
+
+    @classmethod
+    def values(cls) -> List[str]:
+        return [item.value for item in cls]
+
+
 class Model(ApiClient):
     def infer(
             self,
@@ -76,7 +107,7 @@ class Model(ApiClient):
             resources: Resources,
             model: str,
             dataset: str,
-            results: str)-> JobStatus:
+            results: str)-> JobItem:
         res = self._fetch_sync(
                 InferRequest(
                     container=ContainerPayload(
@@ -90,7 +121,7 @@ class Model(ApiClient):
                     dataset_storage_uri=dataset,
                     result_storage_uri=results))
 
-        return JobStatus(
+        return JobItem(
             id=res['job_id'],
             status=res['status'],
             client=self)
@@ -101,7 +132,7 @@ class Model(ApiClient):
             image: Image,
             resources: Resources,
             dataset: str,
-            results: str) -> JobStatus:
+            results: str) -> JobItem:
         res = self._fetch_sync(
             TrainRequest(
                 container=ContainerPayload(
@@ -114,17 +145,17 @@ class Model(ApiClient):
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 
-        return JobStatus(
+        return JobItem(
             id=res['job_id'],
             status=res['status'],
             client=self)
 
 
 class Job(ApiClient):
-    def list(self) -> List[JobStatus]:
+    def list(self) -> List[JobItem]:
         res = self._fetch_sync(JobListRequest())
         return [
-            JobStatus(
+            JobItem(
                 client=self,
                 id=job['id'],
                 status=job['status'])
@@ -141,9 +172,9 @@ class Job(ApiClient):
         with self._fetch_sync(JobMonitorRequest(id=id)) as content:
             yield BufferedReader(content)
 
-    def status(self, id: str) -> JobStatus:
+    def status(self, id: str) -> JobItem:
         res = self._fetch_sync(JobStatusRequest(id=id))
-        return JobStatus(
+        return JobItem(
             client=self,
             id=res['id'],
             status=res['status'],
