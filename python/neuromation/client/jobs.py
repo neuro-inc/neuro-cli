@@ -81,22 +81,6 @@ class JobStatus(str, enum.Enum):
     SUCCEEDED = 'succeeded'
     FAILED = 'failed'
 
-    @property
-    def is_pending(self) -> bool:
-        return self == self.PENDING
-
-    @property
-    def is_running(self) -> bool:
-        return self == self.RUNNING
-
-    @property
-    def is_finished(self) -> bool:
-        return self in (self.SUCCEEDED, self.FAILED)
-
-    @classmethod
-    def values(cls) -> List[str]:
-        return [item.value for item in cls]
-
 
 class Model(ApiClient):
     def infer(
