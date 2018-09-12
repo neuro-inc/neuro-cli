@@ -36,7 +36,7 @@ def test_train_with_no_gpu(request, model, loop):
                 'result_storage_uri': 'schema://host/results'},
             url='http://127.0.0.1/models')
 
-    assert result == client.JobStatus(
+    assert result == client.JobItem(
         client=model,
         status='PENDING',
         id='iddqd')
@@ -66,7 +66,7 @@ def test_train(request, model, loop):
                 'result_storage_uri': 'schema://host/results'},
             url='http://127.0.0.1/models')
 
-    assert result == client.JobStatus(
+    assert result == client.JobItem(
         client=model,
         status='PENDING',
         id='iddqd')
@@ -98,7 +98,7 @@ def test_infer(request, model, loop):
                 'model_storage_uri': 'schema://host/model'},
             url='http://127.0.0.1/models')
 
-    assert result == client.JobStatus(
+    assert result == client.JobItem(
         client=model,
         status='PENDING',
         id='iddqd')
@@ -108,7 +108,7 @@ def test_infer(request, model, loop):
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse(JOB_RESPONSE)))
 def test_job_status(request, model, loop):
-    job = client.JobStatus(
+    job = client.JobItem(
         client=model,
         **{
             **JOB_RESPONSE,
@@ -116,4 +116,4 @@ def test_job_status(request, model, loop):
         })
 
     res = job.wait()
-    assert res == client.JobStatus(client=model, **JOB_RESPONSE)
+    assert res == client.JobItem(client=model, **JOB_RESPONSE)
