@@ -215,7 +215,7 @@ Commands:
         model = partial(Model, url)
 
         @command
-        def train(image, dataset, results, gpu, cpu, memory, cmd):
+        def train(image, dataset, results, gpu, cpu, memory, extshm, cmd):
             """
             Usage:
                 neuro model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
@@ -229,6 +229,7 @@ Commands:
                 -g, --gpu NUMBER      Number of GPUs to request [default: 1]
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
+                -x, --extshm          Request extended '/dev/shm' space.
             """
 
             cmd = ' '.join(cmd)
@@ -236,6 +237,7 @@ Commands:
 
             cpu = float(cpu)
             gpu = int(gpu)
+            extshm = bool(extshm)
 
             with model() as m:
                 job = m.train(
@@ -245,7 +247,9 @@ Commands:
                     resources=Resources(
                         memory=memory,
                         gpu=gpu,
-                        cpu=cpu),
+                        cpu=cpu,
+                        shm=extshm
+                    ),
                     dataset=dataset,
                     results=results)
 
