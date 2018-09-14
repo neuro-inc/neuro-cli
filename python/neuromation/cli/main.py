@@ -4,6 +4,8 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
+from aiohttp import ClientConnectorError
+
 import neuromation
 from neuromation.logging import ConsoleWarningFormatter
 
@@ -90,9 +92,11 @@ Commands:
 
         Caches authorization token
         """
-        # TODO (R Zubairov, 09/13/2018): update nmrc file only after testing connectivity, check with Alex
+        # TODO (R Zubairov, 09/13/2018): update nmrc file only after testing
+        # connectivity, check with Alex
         # Do not overwrite token in case new one does not work
-        # TODO (R Zubairov, 09/13/2018): on server side we shall implement protection against brute-force
+        # TODO (R Zubairov, 09/13/2018): on server side we shall implement
+        # protection against brute-force
 
         config = rc.load(RC_PATH)
         config = rc.Config(url=config.url, auth=token)
@@ -154,7 +158,7 @@ Commands:
           mkdir              Make directories
         """
 
-        storage = partial(Storage, url)
+        storage = partial(Storage, url, token)
 
         @command
         def rm(path):
@@ -271,7 +275,7 @@ Commands:
 
         from neuromation.client.jobs import Model, Image, Resources
 
-        model = partial(Model, url)
+        model = partial(Model, url, token)
 
         @command
         def train(image, dataset, results, gpu, cpu, memory, extshm, cmd):
@@ -345,7 +349,7 @@ Commands:
         """
 
         from neuromation.client.jobs import Job, JobStatus
-        jobs = partial(Job, url)
+        jobs = partial(Job, url, token)
 
         @command
         def monitor(id):
@@ -437,9 +441,13 @@ def main():
     try:
         res = dispatch(
             target=neuro,
-            tail=sys.argv[1:])
+            tail=sys.argv[1:],
+            token=config.auth)
         if res:
             print(res)
+    except ClientConnectorError:
+        log.error('Error connecting to server.')
+        sys.exit(1)
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(1)

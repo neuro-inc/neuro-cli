@@ -13,10 +13,10 @@ class ApiError(Exception):
 
 
 class ApiClient:
-    def __init__(self, url: str, *, loop=None):
+    def __init__(self, url: str, token: str, *, loop=None):
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
-        self._session = self.loop.run_until_complete(session())
+        self._session = self.loop.run_until_complete(session(token=token))
 
     def __enter__(self):
         return self

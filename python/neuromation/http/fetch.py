@@ -3,7 +3,7 @@ import logging
 from contextlib import AbstractContextManager
 from functools import singledispatch
 from io import BufferedIOBase, BytesIO
-from typing import Dict
+from typing import Dict, Optional
 
 import aiohttp
 from async_generator import asynccontextmanager
@@ -48,7 +48,7 @@ class PlainRequest(Request):
     pass
 
 
-async def session():
+async def session(token: Optional[str] = None):
     async def trace(session, trace_config_ctx, params):
         log.debug(f'{params}')
 
@@ -60,7 +60,11 @@ async def session():
         trace_config.on_request_chunk_sent.append(trace)
         trace_config.on_request_end.append(trace)
 
-    _session = aiohttp.ClientSession(trace_configs=[trace_config])
+    _default_auth_headers = {'Authorization': token} if token else {}
+
+    _session = aiohttp.ClientSession(trace_configs=[trace_config],
+                                     headers=_default_auth_headers,
+                                     )
 
     return _session
 

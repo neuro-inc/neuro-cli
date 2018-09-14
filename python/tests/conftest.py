@@ -5,20 +5,22 @@ from neuromation import Job, Model, Storage
 
 @pytest.fixture
 def model(loop):
-    model = Model(url='http://127.0.0.1', loop=loop)
+    model = Model(url='http://127.0.0.1', token='test-token-for-model',
+                  loop=loop)
     yield model
     loop.run_until_complete(model.close())
 
 
 @pytest.fixture
 def storage(loop):
-    storage = Storage(url='http://127.0.0.1', loop=loop)
+    storage = Storage(url='http://127.0.0.1', token='test-token-for-storage',
+                      loop=loop)
     yield storage
     loop.run_until_complete(storage.close())
 
 
 @pytest.fixture
 def jobs(loop):
-    job = Job(url='http://127.0.0.1', loop=loop)
+    job = Job(url='http://127.0.0.1', token='test-token-for-job', loop=loop)
     yield job
     loop.run_until_complete(job.close())
