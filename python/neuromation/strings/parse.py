@@ -47,3 +47,7 @@ def parse_memory(memory) -> int:
 
 def to_megabytes(value: str) -> int:
     return int(parse_memory(value) / (1024 ** 2))
+
+
+def to_megabytes_str(value: str) -> str:
+    return str(to_megabytes(value))

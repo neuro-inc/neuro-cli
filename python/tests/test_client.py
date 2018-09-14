@@ -18,7 +18,7 @@ JOB_RESPONSE = {
 def test_train_with_no_gpu(request, model, loop):
     result = model.train(
         image=client.Image(image='repo/image', command='bash'),
-        resources=client.Resources(memory='16G', cpu=1.0, gpu=None),
+        resources=client.Resources(memory='16G', cpu=1.0, gpu=None, shm=None),
         dataset='schema://host/data',
         results='schema://host/results')
 
@@ -30,7 +30,9 @@ def test_train_with_no_gpu(request, model, loop):
                 'container': {
                     'image': 'repo/image',
                     'command': 'bash',
-                    'resources': {'memory_mb': 16384, 'cpu': 1.0, 'gpu': None},
+                    'resources': {'memory_mb': '16384', 'cpu': 1.0,
+                                  'gpu': None,
+                                  'shm': None},
                 },
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results'},
@@ -48,7 +50,7 @@ def test_train_with_no_gpu(request, model, loop):
 def test_train(request, model, loop):
     result = model.train(
         image=client.Image(image='repo/image', command='bash'),
-        resources=client.Resources(memory='16G', cpu=1, gpu=1),
+        resources=client.Resources(memory='16G', cpu=1, gpu=1, shm=True),
         dataset='schema://host/data',
         results='schema://host/results')
 
@@ -60,7 +62,9 @@ def test_train(request, model, loop):
                 'container': {
                     'image': 'repo/image',
                     'command': 'bash',
-                    'resources': {'memory_mb': 16384, 'cpu': 1.0, 'gpu': 1.0},
+                    'resources': {'memory_mb': '16384', 'cpu': 1.0,
+                                  'gpu': 1.0,
+                                  'shm': True},
                 },
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results'},
@@ -78,7 +82,7 @@ def test_train(request, model, loop):
 def test_infer(request, model, loop):
     result = model.infer(
         image=client.Image(image='repo/image', command='bash'),
-        resources=client.Resources(memory='16G', cpu=1.0, gpu=1.0),
+        resources=client.Resources(memory='16G', cpu=1.0, gpu=1.0, shm=False),
         model='schema://host/model',
         dataset='schema://host/data',
         results='schema://host/results'
@@ -92,7 +96,10 @@ def test_infer(request, model, loop):
                 'container': {
                     'image': 'repo/image',
                     'command': 'bash',
-                    'resources': {'memory_mb': 16384, 'cpu': 1.0, 'gpu': 1.0}},
+                    'resources': {'memory_mb': '16384', 'cpu': 1.0,
+                                  'gpu': 1.0,
+                                  'shm': False},
+                },
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results',
                 'model_storage_uri': 'schema://host/model'},

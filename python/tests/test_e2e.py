@@ -1,8 +1,10 @@
 import asyncio
 import platform
+import re
 from hashlib import sha1
 from math import ceil
 from os.path import join
+from time import sleep, time
 from uuid import uuid4 as uuid
 
 import pytest
@@ -15,7 +17,9 @@ RC_TEXT = """
     url: http://platform.dev.neuromation.io/api/v1
 """
 
-format_list = '{name:<20}{size:,}'.format
+GCR_UBUNTU_IMAGE_URL = 'gcr.io/light-reality-205619/ubuntu:latest'
+
+format_list = '{type:<15}{size:<15,}{name:<}'.format
 
 
 async def generate_test_data(root, count, size_mb):
@@ -113,6 +117,84 @@ def test_empty_directory_ls_output(run):
 
 
 @pytest.mark.e2e
+def test_e2e_shm_run_without(run, tmpdir):
+    _dir_src = f'e2e-{uuid()}'
+    _path_src = f'/tmp/{_dir_src}'
+
+    _dir_dst = f'e2e-{uuid()}'
+    _path_dst = f'/tmp/{_dir_dst}'
+
+    # Create directory for the test, going to be model and result output
+    run(['store', 'mkdir', _path_src])
+    run(['store', 'mkdir', _path_dst])
+
+    # Start the df test job
+    command = 'bash -c "/bin/df --block-size M ' \
+              '--output=target,avail /dev/shm; false"'
+    _, captured = run(['model', 'train',
+                       GCR_UBUNTU_IMAGE_URL,
+                       'storage:/' + _path_src,
+                       'storage:/' + _path_dst, command])
+
+    # TODO (R Zubairov, 09/13/2018): once we would have wait for job
+    # replace spin loop
+
+    out = captured.out
+    job_id = re.match('Job ID: (.+) Status:', out).group(1)
+    start_time = time()
+    while ('Status: failed' not in out) and (int(time() - start_time) < 10):
+        sleep(2)
+        _, captured = run(['job', 'status', job_id])
+        out = captured.out
+
+    # Remove test dir
+    run(['store', 'rm', _path_src])
+    run(['store', 'rm', _path_dst])
+
+    assert '/dev/shm' in out
+    assert '64M' in out
+
+
+@pytest.mark.e2e
+def test_e2e_shm_run_with(run, tmpdir):
+    _dir_src = f'e2e-{uuid()}'
+    _path_src = f'/tmp/{_dir_src}'
+
+    _dir_dst = f'e2e-{uuid()}'
+    _path_dst = f'/tmp/{_dir_dst}'
+
+    # Create directory for the test, going to be model and result output
+    run(['store', 'mkdir', _path_src])
+    run(['store', 'mkdir', _path_dst])
+
+    # Start the df test job
+    command = 'bash -c "/bin/df --block-size M ' \
+              '--output=target,avail /dev/shm; false"'
+    _, captured = run(['model', 'train', '-x',
+                       GCR_UBUNTU_IMAGE_URL,
+                       'storage:/' + _path_src,
+                       'storage:/' + _path_dst, command])
+
+    # TODO (R Zubairov, 09/13/2018): once we would have wait for job
+    # replace spin loop
+
+    out = captured.out
+    job_id = re.match('Job ID: (.+) Status:', out).group(1)
+    start_time = time()
+    while ('Status: failed' not in out) and (int(time() - start_time) < 10):
+        sleep(2)
+        _, captured = run(['job', 'status', job_id])
+        out = captured.out
+
+    # Remove test dir
+    run(['store', 'rm', _path_src])
+    run(['store', 'rm', _path_dst])
+
+    assert '/dev/shm' in out
+    assert '64M' not in out
+
+
+@pytest.mark.e2e
 def test_e2e(data, run, tmpdir):
     file, checksum = data[0]
 
@@ -156,5 +238,8 @@ def test_e2e(data, run, tmpdir):
     _, captured = run([
             'store', 'ls', '/tmp'
         ])
-    assert format_list(name=_dir, size=0) not in captured.out.split('\n')
+
+    split = captured.out.split('\n')
+    assert format_list(name=_dir, size=0, type='directory') not in split
+
     assert not captured.err

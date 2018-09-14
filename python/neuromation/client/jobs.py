@@ -5,7 +5,6 @@ from io import BufferedReader
 from typing import List, Optional
 
 from dataclasses import dataclass
-
 from neuromation.strings import parse
 
 from .client import ApiClient
@@ -19,6 +18,7 @@ class Resources:
     memory: str
     cpu: float
     gpu: Optional[int]
+    shm: Optional[bool]
 
 
 @dataclass(frozen=True)
@@ -97,9 +97,11 @@ class Model(ApiClient):
                         image=image.image,
                         command=image.command,
                         resources=ResourcesPayload(
-                            memory_mb=parse.to_megabytes(resources.memory),
+                            memory_mb=parse.to_megabytes_str(resources.memory),
                             cpu=resources.cpu,
-                            gpu=resources.gpu)),
+                            gpu=resources.gpu,
+                            shm=resources.shm,
+                        )),
                     model_storage_uri=model,
                     dataset_storage_uri=dataset,
                     result_storage_uri=results))
@@ -122,9 +124,11 @@ class Model(ApiClient):
                     image=image.image,
                     command=image.command,
                     resources=ResourcesPayload(
-                        memory_mb=parse.to_megabytes(resources.memory),
+                        memory_mb=parse.to_megabytes_str(resources.memory),
                         cpu=resources.cpu,
-                        gpu=resources.gpu)),
+                        gpu=resources.gpu,
+                        shm=resources.shm,
+                    )),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 
