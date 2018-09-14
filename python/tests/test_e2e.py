@@ -4,7 +4,7 @@ import re
 from hashlib import sha1
 from math import ceil
 from os.path import join
-from time import sleep
+from time import sleep, time
 from uuid import uuid4 as uuid
 
 import pytest
@@ -16,6 +16,8 @@ GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = """
     url: http://platform.dev.neuromation.io/api/v1
 """
+
+GCR_UBUNTU_IMAGE_URL = 'gcr.io/light-reality-205619/ubuntu:latest'
 
 format_list = '{type:<15}{size:<15,}{name:<}'.format
 
@@ -130,7 +132,7 @@ def test_e2e_shm_run_without(run, tmpdir):
     command = 'bash -c "/bin/df --block-size M ' \
               '--output=target,avail /dev/shm; false"'
     _, captured = run(['model', 'train',
-                       'gcr.io/light-reality-205619/ubuntu:latest',
+                       GCR_UBUNTU_IMAGE_URL,
                        'storage:/' + _path_src,
                        'storage:/' + _path_dst, command])
 
@@ -139,7 +141,8 @@ def test_e2e_shm_run_without(run, tmpdir):
 
     out = captured.out
     job_id = re.match('Job ID: (.+) Status:', out).group(1)
-    while 'Status: failed' not in out:
+    start_time = time()
+    while ('Status: failed' not in out) and (int(time() - start_time) < 10):
         sleep(2)
         _, captured = run(['job', 'status', job_id])
         out = captured.out
@@ -168,7 +171,7 @@ def test_e2e_shm_run_with(run, tmpdir):
     command = 'bash -c "/bin/df --block-size M ' \
               '--output=target,avail /dev/shm; false"'
     _, captured = run(['model', 'train', '-x',
-                       'gcr.io/light-reality-205619/ubuntu:latest',
+                       GCR_UBUNTU_IMAGE_URL,
                        'storage:/' + _path_src,
                        'storage:/' + _path_dst, command])
 
@@ -177,7 +180,8 @@ def test_e2e_shm_run_with(run, tmpdir):
 
     out = captured.out
     job_id = re.match('Job ID: (.+) Status:', out).group(1)
-    while 'Status: failed' not in out:
+    start_time = time()
+    while ('Status: failed' not in out) and (int(time() - start_time) < 10):
         sleep(2)
         _, captured = run(['job', 'status', job_id])
         out = captured.out

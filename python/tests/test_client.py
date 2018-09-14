@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import aiohttp
+
 from neuromation import client
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
@@ -95,8 +96,10 @@ def test_infer(request, model, loop):
                 'container': {
                     'image': 'repo/image',
                     'command': 'bash',
-                    'resources': {'memory_mb': '16384', 'cpu': 1.0, 'gpu': 1.0,
-                                  'shm': False}},
+                    'resources': {'memory_mb': '16384', 'cpu': 1.0,
+                                  'gpu': 1.0,
+                                  'shm': False},
+                },
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results',
                 'model_storage_uri': 'schema://host/model'},
