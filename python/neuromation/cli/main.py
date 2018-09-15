@@ -77,32 +77,11 @@ Commands:
   model                 Model training, testing and inference
   job                   Manage existing jobs
   store                 Storage operations
-  auth                  Configure authorization
-  config                Configure cloud connection settings
+  config                Configure API connection settings
   help                  Get help on a command
     """
 
     from neuromation.client import Storage
-
-    @command
-    def auth(token):
-        """
-        Usage:
-            neuro auth TOKEN
-
-        Caches authorization token
-        """
-        # TODO (R Zubairov, 09/13/2018): update nmrc file only after testing
-        # connectivity, check with Alex
-        # Do not overwrite token in case new one does not work
-        # TODO (R Zubairov, 09/13/2018): on server side we shall implement
-        # protection against brute-force
-
-        config = rc.load(RC_PATH)
-        config = rc.Config(url=config.url, auth=token)
-        rc.save(RC_PATH, config)
-
-        return locals()
 
     @command
     def config():
@@ -114,6 +93,7 @@ Commands:
 
         Settings:
             url             Updates API URL
+            auth            Updates API Token
             show            Print current settings
         """
         @command
@@ -128,8 +108,6 @@ Commands:
             config = rc.Config(url=url, auth=config.auth)
             rc.save(RC_PATH, config)
 
-            return locals()
-
         @command
         def show():
             """
@@ -140,6 +118,24 @@ Commands:
             """
             config = rc.load(RC_PATH)
             print(config)
+
+        @command
+        def auth(token):
+            """
+            Usage:
+                neuro config auth TOKEN
+
+            Updates authorization token
+            """
+            # TODO (R Zubairov, 09/13/2018): update nmrc file only after testing
+            # connectivity, check with Alex
+            # Do not overwrite token in case new one does not work
+            # TODO (R Zubairov, 09/13/2018): on server side we shall implement
+            # protection against brute-force
+
+            config = rc.load(RC_PATH)
+            config = rc.Config(url=config.url, auth=token)
+            rc.save(RC_PATH, config)
 
         return locals()
 

@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 @dataclass
 class Config:
     url: str = 'http://platform.dev.neuromation.io/api/v1'
-    auth: str = 'Basic bm9ib2R5Om5vYm9keQ=='
+    auth: str = ''
 
 
 def save(path, config: Config) -> Config:
@@ -19,13 +19,13 @@ def save(path, config: Config) -> Config:
 
 def load(path) -> Config:
     try:
-        return create(path)
+        return create(path, Config())
     except FileExistsError:
         with open(path, 'r') as file:
             return Config(**yaml.load(file))
 
 
-def create(path, config=Config()):
+def create(path, config):
     if Path(path).exists():
         raise FileExistsError(path)
 

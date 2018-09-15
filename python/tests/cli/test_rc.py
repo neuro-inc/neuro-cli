@@ -1,10 +1,11 @@
 import pytest
 
 from neuromation.cli import rc
+from neuromation.cli.rc import Config
 
 DEFAULTS = rc.Config(
     url='http://platform.dev.neuromation.io/api/v1',
-    auth='Basic bm9ib2R5Om5vYm9keQ=='
+    auth=''
 )
 
 
@@ -14,10 +15,10 @@ def nmrc(tmpdir):
 
 
 def test_create(nmrc):
-    conf = rc.create(nmrc)
+    conf = rc.create(nmrc, Config())
     assert conf == DEFAULTS
     assert nmrc.check()
-    assert nmrc.read() == f'auth: Basic bm9ib2R5Om5vYm9keQ==\n' \
+    assert nmrc.read() == f'auth: \'\'\n' \
                           f'url: {DEFAULTS.url}\n'
 
 
@@ -28,7 +29,7 @@ def test_create_existing(nmrc):
     nmrc.write(document)
 
     with pytest.raises(FileExistsError):
-        rc.create(nmrc)
+        rc.create(nmrc, Config())
 
     assert nmrc.check()
     assert nmrc.read() == document
