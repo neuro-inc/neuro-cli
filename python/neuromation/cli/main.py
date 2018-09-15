@@ -127,7 +127,7 @@ Commands:
 
             Updates authorization token
             """
-            # TODO (R Zubairov, 09/13/2018): update nmrc file only after testing
+            # TODO (R Zubairov, 09/13/2018): check token correct
             # connectivity, check with Alex
             # Do not overwrite token in case new one does not work
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
