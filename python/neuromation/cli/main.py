@@ -4,9 +4,8 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
-from aiohttp import ClientConnectorError
-
 import neuromation
+from aiohttp import ClientConnectorError
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -443,13 +442,13 @@ def main():
             print(res)
     except ClientConnectorError:
         log.error('Error connecting to server.')
-        sys.exit(1)
+        sys.exit(126)
     except KeyboardInterrupt:
         log.error("Aborting.")
-        sys.exit(1)
+        sys.exit(130)
     except ValueError as e:
         print(e)
-        sys.exit(1)
+        sys.exit(127)
     except Exception as e:
         log.error(f'{e}')
         raise e
