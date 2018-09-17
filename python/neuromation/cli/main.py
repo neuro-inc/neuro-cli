@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import neuromation
+from aiohttp import ClientConnectorError
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -75,10 +76,67 @@ Commands:
   model                 Model training, testing and inference
   job                   Manage existing jobs
   store                 Storage operations
+  config                Configure API connection settings
   help                  Get help on a command
     """
 
     from neuromation.client import Storage
+
+    @command
+    def config():
+        """
+        Usage:
+            neuro config COMMAND
+
+        Client configuration settings commands
+
+        Settings:
+            url             Updates API URL
+            auth            Updates API Token
+            show            Print current settings
+        """
+        @command
+        def url(url):
+            """
+            Usage:
+                neuro config url URL
+
+            Updates API URL
+            """
+            config = rc.load(RC_PATH)
+            config = rc.Config(url=url, auth=config.auth)
+            rc.save(RC_PATH, config)
+
+        @command
+        def show():
+            """
+            Usage:
+                neuro config show
+
+            Prints current settings
+            """
+            config = rc.load(RC_PATH)
+            print(config)
+
+        @command
+        def auth(token):
+            """
+            Usage:
+                neuro config auth TOKEN
+
+            Updates authorization token
+            """
+            # TODO (R Zubairov, 09/13/2018): check token correct
+            # connectivity, check with Alex
+            # Do not overwrite token in case new one does not work
+            # TODO (R Zubairov, 09/13/2018): on server side we shall implement
+            # protection against brute-force
+
+            config = rc.load(RC_PATH)
+            config = rc.Config(url=config.url, auth=token)
+            rc.save(RC_PATH, config)
+
+        return locals()
 
     @command
     def store():
@@ -95,7 +153,7 @@ Commands:
           mkdir              Make directories
         """
 
-        storage = partial(Storage, url)
+        storage = partial(Storage, url, token)
 
         @command
         def rm(path):
@@ -212,7 +270,7 @@ Commands:
 
         from neuromation.client.jobs import Model, Image, Resources
 
-        model = partial(Model, url)
+        model = partial(Model, url, token)
 
         @command
         def train(image, dataset, results, gpu, cpu, memory, extshm, cmd):
@@ -286,7 +344,7 @@ Commands:
         """
 
         from neuromation.client.jobs import Job, JobStatus
-        jobs = partial(Job, url)
+        jobs = partial(Job, url, token)
 
         @command
         def monitor(id):
@@ -378,15 +436,19 @@ def main():
     try:
         res = dispatch(
             target=neuro,
-            tail=sys.argv[1:])
+            tail=sys.argv[1:],
+            token=config.auth)
         if res:
             print(res)
+    except ClientConnectorError:
+        log.error('Error connecting to server.')
+        sys.exit(126)
     except KeyboardInterrupt:
         log.error("Aborting.")
-        sys.exit(1)
+        sys.exit(130)
     except ValueError as e:
         print(e)
-        sys.exit(1)
+        sys.exit(127)
     except Exception as e:
         log.error(f'{e}')
         raise e
