@@ -72,6 +72,25 @@ storage.download(
     destination='file://~/local/results')
 ```
 
+## Errors(Exceptions)
+
+* ClientError
+  * IllegalArgumentError(bultins.ValueError)
+  * StorageError
+    * FileNotFoundError
+    * AccessDeniedError(AuthError.AuthorizationError)
+  * JobsError
+    * AccessDeniedError(AuthError.AuthorizationError)
+  * ModelsError
+  * AuthError
+    * AuthenticationError
+    * AuthorizationError
+  * IOError
+    * FileNotFoundError (builtins.FileNotFoundError)
+    * AccessDeniedError
+    * NetworkError
+   
+
 ## Contributing
 
 ```shell

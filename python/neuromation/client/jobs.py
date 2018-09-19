@@ -5,12 +5,22 @@ from io import BufferedReader
 from typing import List, Optional
 
 from dataclasses import dataclass
+
 from neuromation.strings import parse
 
-from .client import ApiClient
+from .client import AccessDeniedError as AuthAccessDeniedError
+from .client import ApiClient, ClientError
 from .requests import (ContainerPayload, InferRequest, JobKillRequest,
                        JobListRequest, JobMonitorRequest, JobStatusRequest,
                        ResourcesPayload, TrainRequest)
+
+
+class JobsError(ClientError):
+    pass
+
+
+class AccessDeniedError(JobsError, AuthAccessDeniedError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -47,11 +57,11 @@ class JobItem:
 
     async def _call(self):
         return JobItem(
-                client=self.client,
-                **await self.client._fetch(
-                    request=JobStatusRequest(
-                        id=self.id
-                    )))
+            client=self.client,
+            **await self.client._fetch(
+                request=JobStatusRequest(
+                    id=self.id
+                )))
 
     def wait(self, timeout=None):
         try:
@@ -59,8 +69,8 @@ class JobItem:
                 asyncio.wait_for(
                     self._call(),
                     timeout=timeout
-                    )
                 )
+            )
         except asyncio.TimeoutError:
             raise TimeoutError
 
@@ -90,21 +100,21 @@ class Model(ApiClient):
             resources: Resources,
             model: str,
             dataset: str,
-            results: str)-> JobItem:
+            results: str) -> JobItem:
         res = self._fetch_sync(
-                InferRequest(
-                    container=ContainerPayload(
-                        image=image.image,
-                        command=image.command,
-                        resources=ResourcesPayload(
-                            memory_mb=parse.to_megabytes_str(resources.memory),
-                            cpu=resources.cpu,
-                            gpu=resources.gpu,
-                            shm=resources.shm,
-                        )),
-                    model_storage_uri=model,
-                    dataset_storage_uri=dataset,
-                    result_storage_uri=results))
+            InferRequest(
+                container=ContainerPayload(
+                    image=image.image,
+                    command=image.command,
+                    resources=ResourcesPayload(
+                        memory_mb=parse.to_megabytes_str(resources.memory),
+                        cpu=resources.cpu,
+                        gpu=resources.gpu,
+                        shm=resources.shm,
+                    )),
+                model_storage_uri=model,
+                dataset_storage_uri=dataset,
+                result_storage_uri=results))
 
         return JobItem(
             id=res['job_id'],

@@ -1,4 +1,5 @@
 import logging
+import os
 import subprocess
 import sys
 from functools import partial
@@ -11,6 +12,8 @@ import neuromation
 from neuromation.cli.command_handlers import (CopyOperation,
                                               PlatformListDirOperation,
                                               PlatformMakeDirOperation)
+
+import neuromation
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -502,8 +505,14 @@ def main():
             token=config.auth)
         if res:
             print(res)
-    except ClientConnectorError:
-        log.error('Error connecting to server.')
+    except neuromation.client.AccessDeniedError as error:
+        log.error(f'Access denied: {error}')
+        sys.exit(os.EX_NOPERM)
+    except neuromation.client.storage.FileNotFoundError as error:
+        log.error(f'Remote file not found: {error}')
+        sys.exit(os.EX_OSFILE)
+    except ClientConnectorError as error:
+        log.error(f'Error connecting to server: {error}')
         sys.exit(126)
     except KeyboardInterrupt:
         log.error("Aborting.")

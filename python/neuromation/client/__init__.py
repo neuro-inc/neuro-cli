@@ -1,8 +1,9 @@
 from .jobs import Image, Resources
 from .jobs import Job, JobItem, JobStatus, Model
 from .storage import Storage, FileStatus
-from .client import ApiError
-
+from .client import ClientError, IllegalArgumentError, AuthError, \
+    AuthenticationError, AuthorizationError, IOError, \
+    FileNotFoundError, AccessDeniedError, NetworkError, ModelsError
 
 __all__ = [
     'Image',
@@ -13,4 +14,6 @@ __all__ = [
     'Job',
     'Storage',
     'FileStatus',
-    'ApiError']
+    'ClientError', 'IllegalArgumentError', 'AuthError', 'AuthenticationError',
+    'AuthorizationError', 'IOError', 'FileNotFoundError', 'AccessDeniedError',
+    'NetworkError', 'ModelsError']

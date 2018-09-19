@@ -12,10 +12,6 @@ from dataclasses import dataclass
 log = logging.getLogger(__name__)
 
 
-class FetchError(Exception):
-    pass
-
-
 @dataclass(frozen=True)
 class Request:
     method: str
@@ -83,8 +79,8 @@ class SyncStreamWrapper(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_value, traceback):
         return self._run_sync(self._context.__aexit__(
-                exc_type, exc_value, traceback
-            ))
+            exc_type, exc_value, traceback
+        ))
 
     def _run_sync(self, coro):
         return self._loop.run_until_complete(coro)
@@ -109,15 +105,21 @@ class SyncStreamWrapper(AbstractContextManager):
 
 @asynccontextmanager
 async def _fetch(request: Request, session, url: str):
+    from neuromation.client import (NetworkError, AccessDeniedError,
+                                    FileNotFoundError)
+
     async with session.request(
-                method=request.method,
-                params=request.params,
-                url=url + request.url,
-                data=request.data,
-                json=request.json) as resp:
+            method=request.method,
+            params=request.params,
+            url=url + request.url,
+            data=request.data,
+            json=request.json) as resp:
         try:
             resp.raise_for_status()
-        except aiohttp.ClientError as error:
+        except aiohttp.ClientConnectionError as error:
+            raise NetworkError(error)
+        except aiohttp.ClientResponseError as error:
+            code = error.code
             message = error.message
             try:
                 error = await resp.json()
@@ -127,8 +129,13 @@ async def _fetch(request: Request, session, url: str):
                 message = error['error']
             except Exception:
                 pass
-            raise FetchError(message)
-
+            if code == 403:
+                raise AccessDeniedError(message)
+            elif code == 404:
+                raise FileNotFoundError(message)
+            raise NetworkError(error)
+        except aiohttp.ClientError as error:
+            raise NetworkError(error)
         yield resp
 
 

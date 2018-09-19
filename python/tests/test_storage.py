@@ -20,7 +20,7 @@ from utils import (BinaryResponse, JsonResponse, PlainResponse,
             message='ah!')
     )))
 def test_error(storage):
-    with pytest.raises(client.ApiError) as exc:
+    with pytest.raises(client.ClientError) as exc:
         storage.rm(path='blah')
     assert exc.value.args == ('blah!',)
 

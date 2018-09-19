@@ -1,14 +1,51 @@
 import asyncio
 import logging
+from builtins import FileNotFoundError as BuiltinFileNotFoundError
 
-from neuromation.http import FetchError, fetch, session
+from neuromation.http import fetch, session
 
 from .requests import Request, build
 
 log = logging.getLogger(__name__)
 
 
-class ApiError(Exception):
+class ClientError(Exception):
+    pass
+
+
+class IllegalArgumentError(ValueError):
+    pass
+
+
+class AuthError(ClientError):
+    pass
+
+
+class AuthenticationError(AuthError):
+    pass
+
+
+class AuthorizationError(AuthError):
+    pass
+
+
+class IOError(ClientError):
+    pass
+
+
+class FileNotFoundError(IOError, BuiltinFileNotFoundError):
+    pass
+
+
+class AccessDeniedError(IOError):
+    pass
+
+
+class NetworkError(IOError):
+    pass
+
+
+class ModelsError(ValueError):
     pass
 
 
@@ -36,13 +73,10 @@ class ApiClient:
         self._session = None
 
     async def _fetch(self, request: Request):
-        try:
-            return await fetch(
-                build(request),
-                session=self._session,
-                url=self._url)
-        except FetchError as error:
-            raise ApiError(f'{error}')
+        return await fetch(
+            build(request),
+            session=self._session,
+            url=self._url)
 
     def _fetch_sync(self, request: Request):
         res = self._loop.run_until_complete(self._fetch(request))
