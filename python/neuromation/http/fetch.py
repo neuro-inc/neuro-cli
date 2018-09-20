@@ -153,7 +153,7 @@ async def _fetch(request: Request, session, url: str):
             if code == 400:
                 raise FetchError(message)
             if code == 401:
-                raise AccessDeniedError(message)
+                raise UnauthorizedError(message)
             if code == 403:
                 raise AccessDeniedError(message)
             elif code == 404:

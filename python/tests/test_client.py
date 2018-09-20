@@ -4,6 +4,7 @@ import aiohttp
 import pytest
 
 from neuromation import client
+from neuromation.client import AuthenticationError, AuthorizationError
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 
@@ -138,7 +139,7 @@ def test_job_status(request, model, loop):
             message='ah!')
     )))
 def test_authorization_error(storage):
-    with pytest.raises(client.AuthorizationError):
+    with pytest.raises(AuthorizationError):
         storage.rm(path='blah')
 
 
@@ -153,5 +154,5 @@ def test_authorization_error(storage):
             message='ah!')
     )))
 def test_authentication_error(storage):
-    with pytest.raises(client.AuthenticationError):
+    with pytest.raises(AuthenticationError):
         storage.rm(path='blah')

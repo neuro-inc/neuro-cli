@@ -60,7 +60,7 @@ class ApiClient:
         self._loop = loop if loop else asyncio.get_event_loop()
         self._session = self.loop.run_until_complete(session(token=token))
         self._exception_map = {
-            FetchAccessDeniedError: AuthenticationError,
+            FetchAccessDeniedError: AuthorizationError,
             UnauthorizedError: AuthenticationError,
             BadRequestError: IllegalArgumentError,
             FetchError: NetworkError
