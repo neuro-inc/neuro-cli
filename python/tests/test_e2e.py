@@ -10,8 +10,6 @@ from uuid import uuid4 as uuid
 
 import pytest
 
-from neuromation.client import ApiError
-
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
@@ -333,7 +331,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir):
         ])
     assert captured.err == ''
 
-    with pytest.raises(ApiError):
+    with pytest.raises(SystemExit, match=r'127'):
         _, captured = run([
             'store', 'cp', '-r',
             'storage://' + _path + '/foo', _local
