@@ -64,7 +64,7 @@ class CopyOperation:
 
 class NonRecursivePlatformToLocal(CopyOperation):
 
-    def transfer(self, i, o):
+    def transfer(self, i, o):  # pragma: no cover
         log.debug(f'Input: {i}')
         log.debug(f'Output: {o}')
 
@@ -79,7 +79,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
     def _copy(self, src: str, dst: str, storage: Callable):
         return self.copy_file(src, dst, storage)
 
-    def copy_file(self, src, dst, storage):
+    def copy_file(self, src, dst, storage):  # pragma: no cover
         with storage() as s:
             with s.open(path=src) as stream:
                 with open(dst, mode='wb') as f:
@@ -142,15 +142,30 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
             raise ValueError('Target should be directory. '
                              'Please correct your command line arguments.')
 
+        src_path = src.path.rstrip(PLATFORM_DELIMITER)
         dest_path = dst.path.rstrip('/')
 
-        self._copy(src.path, dest_path, storage)
+        # check remote
+        platform_file_name = src_path.split(PLATFORM_DELIMITER)[-1]
+        platform_file_path = dirname(src_path)
+
+        files = PlatformListDirOperation().ls(platform_file_path, storage)
+        try:
+            next(file
+                 for file in files
+                 if file.path == platform_file_name
+                 and file.type == 'DIRECTORY')
+        except StopIteration as e:
+            raise ValueError('Source directory not found.') from e
+
+        self._copy(src_path, dest_path, storage)
         return dst.geturl()
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
 
-    def copy_file(self, src_path: str, dest_path: str, storage: Callable):
+    def copy_file(self, src_path: str, dest_path: str,
+                  storage: Callable):   # pragma: no cover
         # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
         # to track progress and report
         with open(src_path, mode='rb') as f:
@@ -167,17 +182,19 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
     def _copy(self, src: str, dst: str, storage: Callable):
         # TODO should we create directory by default - root
+        dst = dst.rstrip(PLATFORM_DELIMITER)
+        dst = f'{dst}{PLATFORM_DELIMITER}'
         for root, subdirs, files in os.walk(src):
             if root != src:
                 suffix_path = os.path.relpath(root, src)
+                pref_path = f'{dst}{suffix_path}{PLATFORM_DELIMITER}'
             else:
                 suffix_path = ''
+                pref_path = dst
             for file in files:
-                target_dest = f'{dst}{PLATFORM_DELIMITER}' \
-                              f'{suffix_path}{PLATFORM_DELIMITER}{file}'
+                target_dest = f'{pref_path}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
             for subdir in subdirs:
-                target_dest = f'{dst}{PLATFORM_DELIMITER}' \
-                              f'{suffix_path}{PLATFORM_DELIMITER}{subdir}'
+                target_dest = f'{pref_path}{subdir}'
                 PlatformMakeDirOperation().mkdir(target_dest, storage)
