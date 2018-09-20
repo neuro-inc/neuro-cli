@@ -2,7 +2,7 @@ import abc
 import logging
 import os
 from os.path import dirname
-from typing import Callable, List, Optional
+from typing import Callable, List
 from urllib.parse import ParseResult
 
 from neuromation.client import FileStatus
@@ -42,7 +42,7 @@ class CopyOperation:
 
     @classmethod
     def create(cls, src_scheme: str, dst_scheme: str,
-               recursive: bool) -> Optional['CopyOperation']:
+               recursive: bool) -> 'CopyOperation':
         if src_scheme == 'file':
             if dst_scheme == 'storage':
                 if recursive:
@@ -59,7 +59,7 @@ class CopyOperation:
                     return NonRecursivePlatformToLocal()
             else:
                 raise ValueError('storage:// and file:// schemes required')
-        return None
+        raise ValueError('storage:// and file:// schemes required')
 
 
 class NonRecursivePlatformToLocal(CopyOperation):
@@ -106,9 +106,9 @@ class NonRecursivePlatformToLocal(CopyOperation):
         # check remote
         files = PlatformListDirOperation().ls(platform_file_path, storage)
         try:
-            any([file
+            next(file
                  for file in files
-                 if file.path == platform_file_name and file.type == 'FILE'])
+                 if file.path == platform_file_name and file.type == 'FILE')
         except StopIteration as e:
             raise ValueError('Source file not found.') from e
 

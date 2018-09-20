@@ -10,6 +10,8 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+from neuromation.client import ApiError
+
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
@@ -253,6 +255,98 @@ def test_e2e(data, run, tmpdir):
         'storage://' + _path + '/foo', _local
     ])
     assert hash_hex(_local_file) == checksum
+
+    # Remove test dir
+    _, captured = run([
+            'store', 'rm', _path
+        ])
+    assert not captured.err
+
+    # And confirm
+    _, captured = run([
+            'store', 'ls', '/tmp'
+        ])
+
+    split = captured.out.split('\n')
+    assert format_list(name=_dir, size=0, type='directory') not in split
+
+    assert not captured.err
+
+
+@pytest.mark.e2e
+def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir):
+    _dir = f'e2e-{uuid()}'
+    _path = f'/tmp/{_dir}'
+
+    # Create directory for the test
+    _, captured = run(['store', 'mkdir', _path])
+    assert not captured.err
+    assert captured.out == _path + '\n'
+
+    # Try downloading non existing file
+    _local = join(tmpdir, 'bar')
+    with pytest.raises(SystemExit, match=r'127'):
+        _, captured = run([
+            'store', 'cp',
+            'storage://' + _path + '/foo', _local
+        ])
+
+    with pytest.raises(SystemExit, match=r'127'):
+        _, captured = run([
+            'store', 'cp', '-r',
+            'storage://' + _path + '/foo', _local
+        ])
+
+    # Remove test dir
+    _, captured = run([
+            'store', 'rm', _path
+        ])
+    assert not captured.err
+
+    # And confirm
+    _, captured = run([
+            'store', 'ls', '/tmp'
+        ])
+
+    split = captured.out.split('\n')
+    assert format_list(name=_dir, size=0, type='directory') not in split
+
+    assert not captured.err
+
+
+@pytest.mark.e2e
+def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir):
+    _dir = f'e2e-{uuid()}'
+    _path = f'/tmp/{_dir}'
+
+    # Create directory for the test
+    _, captured = run(['store', 'mkdir', _path])
+    assert not captured.err
+    assert captured.out == _path + '\n'
+
+    # Try downloading non existing file
+    _local = join(tmpdir)
+    with pytest.raises(SystemExit, match=r'127'):
+        _, captured = run([
+            'store', 'cp',
+            'storage://' + _path + '/foo', _local
+        ])
+    assert captured.err == ''
+
+    with pytest.raises(ApiError):
+        _, captured = run([
+            'store', 'cp', '-r',
+            'storage://' + _path + '/foo', _local
+        ])
+    assert captured.err == ''
+
+    # And confirm
+    _, captured = run([
+            'store', 'ls', '/tmp'
+        ])
+
+    split = captured.out.split('\n')
+    assert format_list(name=_dir, size=0, type='directory') in split
 
     # Remove test dir
     _, captured = run([
