@@ -102,6 +102,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
                 raise ValueError('Target should exist. '
                                  'Please create directory, '
                                  'or point to existing file.')
+            dst_path = dst.path.rstrip('/')
 
         # check remote
         files = PlatformListDirOperation().ls(platform_file_path, storage)
