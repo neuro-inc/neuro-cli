@@ -2,6 +2,7 @@ import abc
 import logging
 import os
 from typing import Callable, List, Optional
+from urllib.parse import ParseResult
 
 from neuromation.client import FileStatus
 
@@ -11,6 +12,7 @@ log = logging.getLogger(__name__)
 BUFFER_SIZE_MB = 16
 
 PLATFORM_DELIMITER = '/'
+
 
 class PlatformMakeDirOperation:
 
@@ -29,11 +31,17 @@ class PlatformListDirOperation:
 class CopyOperation:
 
     @abc.abstractmethod
-    def copy(self, src: str, dst: str, storage: Callable):   # pragma: no cover
+    def _copy(self, src: str, dst: str,
+              storage: Callable):   # pragma: no cover
         pass
 
+    def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+        self._copy(src.path, dst.path, storage)
+        return dst.geturl()
+
     @classmethod
-    def create(cls, src_scheme: str, dst_scheme: str, recursive: bool) -> Optional['CopyOperation']:
+    def create(cls, src_scheme: str, dst_scheme: str,
+               recursive: bool) -> Optional['CopyOperation']:
         if src_scheme == 'file':
             if dst_scheme == 'storage':
                 if recursive:
@@ -67,7 +75,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
 
             o.write(buf)
 
-    def copy(self, src: str, dst: str, storage: Callable):
+    def _copy(self, src: str, dst: str, storage: Callable):
         return self.copy_file(dst, src, storage)
 
     def copy_file(self, dst, src, storage):
@@ -80,8 +88,9 @@ class NonRecursivePlatformToLocal(CopyOperation):
 
 class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
-    def copy(self, src: str, dst: str, storage: Callable):
-        files: List[FileStatus] = PlatformListDirOperation().ls(path=src, storage=storage)
+    def _copy(self, src: str, dst: str, storage: Callable):
+        files: List[FileStatus] = PlatformListDirOperation()\
+            .ls(path=src, storage=storage)
         for file in files:
             name = file.path
             target = os.path.join(dst, name)
@@ -89,34 +98,36 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                 os.mkdir(target)
                 self.copy(src + '/' + name, target, storage)
             else:
-                self.copy_file(f'{src}{PLATFORM_DELIMITER}{name}', target, storage)
+                self.copy_file(f'{src}{PLATFORM_DELIMITER}{name}',
+                               target, storage)
+        return dst
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
 
     def copy_file(self, src_path: str, dest_path: str, storage: Callable):
-        # TODO (R Zubairov 09/19/18) Check with Andrey if there any way to track progress and report
+        # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
+        # to track progress and report
         with open(src_path, mode='rb') as f:
             with storage() as s:
                 s.create(path=dest_path, data=f)
-                return None
+                return dest_path
 
     @abc.abstractmethod
-    def copy(self, src: str, dst: str, storage: Callable):
+    def _copy(self, src: str, dst: str, storage: Callable):
         log.debug(f'Copy {src} to {dst}.')
         return self.copy_file(src, dst, storage)
 
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
-
     @abc.abstractmethod
-    def copy(self, src: str, dst: str, storage: Callable):
+    def _copy(self, src: str, dst: str, storage: Callable):
         # TODO should we create directory by default - root
         for root, subdirs, files in os.walk(src):
             log.debug(f'{len(files)} {src}')
             for file in files:
-                target_dest = f'{dst}{self.PLATFORM_DELIMITER}{subdir}'
+                target_dest = f'{dst}{self.PLATFORM_DELIMITER}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
             for subdir in subdirs:

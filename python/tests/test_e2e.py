@@ -5,6 +5,7 @@ from hashlib import sha1
 from math import ceil
 from os.path import join
 from time import sleep, time
+from urllib.parse import urlparse
 from uuid import uuid4 as uuid
 
 import pytest
@@ -211,7 +212,8 @@ def test_e2e(data, run, tmpdir):
             'store', 'cp', file, 'storage://' + _path + '/foo'
         ])
     assert not captured.err
-    assert captured.out == 'storage://' + _path + '/foo' + '\n'
+    assert captured.out == urlparse('storage://' + _path
+                                    + '/foo' + '\n').geturl()
 
     # Confirm file has been uploaded
     _, captured = run(['store', 'ls', _path])

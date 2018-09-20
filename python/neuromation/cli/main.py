@@ -4,9 +4,8 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
-from aiohttp import ClientConnectorError
-
 import neuromation
+from aiohttp import ClientConnectorError
 from neuromation.cli.command_handlers import CopyOperation
 from neuromation.logging import ConsoleWarningFormatter
 
@@ -217,8 +216,7 @@ Commands:
             operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
 
             if operation:
-                return operation.copy(src.path, dst.path, storage)
-
+                return operation.copy(src, dst, storage)
 
             raise ValueError('Invalid SOURCE or DESTINATION value')
 
