@@ -1,6 +1,7 @@
 import abc
 import logging
 import os
+from os.path import dirname
 from typing import Callable, List, Optional
 from urllib.parse import ParseResult
 
@@ -76,14 +77,43 @@ class NonRecursivePlatformToLocal(CopyOperation):
             o.write(buf)
 
     def _copy(self, src: str, dst: str, storage: Callable):
-        return self.copy_file(dst, src, storage)
+        return self.copy_file(src, dst, storage)
 
-    def copy_file(self, dst, src, storage):
+    def copy_file(self, src, dst, storage):
         with storage() as s:
             with s.open(path=src) as stream:
                 with open(dst, mode='wb') as f:
                     self.transfer(stream, f)
                     return None
+
+    def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+        dst_path = dst.path
+        platform_file_name = src.path.split(PLATFORM_DELIMITER)[-1]
+        platform_file_path = dirname(src.path)
+
+        # define local
+        if os.path.exists(dst.path):
+            if os.path.isdir(dst.path):
+                #         get file name from src
+                dst_path = os.path.join(dst.path, platform_file_name)
+        else:
+            try_dir = dirname(dst.path)
+            if not os.path.isdir(try_dir):
+                raise ValueError('Target should exist. '
+                                 'Please create directory, '
+                                 'or point to existing file.')
+
+        # check remote
+        files = PlatformListDirOperation().ls(platform_file_path, storage)
+        try:
+            any([file
+                 for file in files
+                 if file.path == platform_file_name and file.type == 'FILE'])
+        except StopIteration as e:
+            raise ValueError('Source file not found.') from e
+
+        self._copy(src.path, dst_path, storage)
+        return dst.geturl()
 
 
 class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
@@ -94,13 +124,27 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
         for file in files:
             name = file.path
             target = os.path.join(dst, name)
-            if file.type == 'directory':
+            if file.type == 'DIRECTORY':
                 os.mkdir(target)
-                self.copy(src + '/' + name, target, storage)
+                self._copy(src + '/' + name, target, storage)
             else:
                 self.copy_file(f'{src}{PLATFORM_DELIMITER}{name}',
                                target, storage)
         return dst
+
+    def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+        if not os.path.exists(dst.path):
+            raise ValueError('Target should exist. '
+                             'Please create targert directory and try again.')
+
+        if not os.path.isdir(dst.path):
+            raise ValueError('Target should be directory. '
+                             'Please correct your command line arguments.')
+
+        dest_path = dst.path.rstrip('/')
+
+        self._copy(src.path, dest_path, storage)
+        return dst.geturl()
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
@@ -113,7 +157,6 @@ class NonRecursiveLocalToPlatform(CopyOperation):
                 s.create(path=dest_path, data=f)
                 return dest_path
 
-    @abc.abstractmethod
     def _copy(self, src: str, dst: str, storage: Callable):
         log.debug(f'Copy {src} to {dst}.')
         return self.copy_file(src, dst, storage)
@@ -121,17 +164,19 @@ class NonRecursiveLocalToPlatform(CopyOperation):
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
-    @abc.abstractmethod
     def _copy(self, src: str, dst: str, storage: Callable):
         # TODO should we create directory by default - root
         for root, subdirs, files in os.walk(src):
-            log.debug(f'{len(files)} {src}')
+            if root != src:
+                suffix_path = os.path.relpath(root, src)
+            else:
+                suffix_path = ''
             for file in files:
-                target_dest = f'{dst}{self.PLATFORM_DELIMITER}{file}'
+                target_dest = f'{dst}{PLATFORM_DELIMITER}' \
+                              f'{suffix_path}{PLATFORM_DELIMITER}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
             for subdir in subdirs:
-                src_file = os.path.join(root, subdir)
-                target_dest = f'{dst}{self.PLATFORM_DELIMITER}{subdir}'
+                target_dest = f'{dst}{PLATFORM_DELIMITER}' \
+                              f'{suffix_path}{PLATFORM_DELIMITER}{subdir}'
                 PlatformMakeDirOperation().mkdir(target_dest, storage)
-                self.copy(src_file, target_dest, storage)

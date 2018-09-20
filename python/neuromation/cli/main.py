@@ -4,9 +4,12 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
-import neuromation
 from aiohttp import ClientConnectorError
-from neuromation.cli.command_handlers import CopyOperation
+
+import neuromation
+from neuromation.cli.command_handlers import (CopyOperation,
+                                              PlatformListDirOperation,
+                                              PlatformMakeDirOperation)
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -177,12 +180,13 @@ Commands:
             """
             format = '{type:<15}{size:<15,}{name:<}'.format
 
-            with storage() as s:
-                print('\n'.join(
-                    format(type=status.type.lower(),
-                           name=status.path,
-                           size=status.size)
-                    for status in s.ls(path=path)))
+            storage_objects = PlatformListDirOperation().ls(path, storage)
+
+            print('\n'.join(
+                format(type=status.type.lower(),
+                       name=status.path,
+                       size=status.size)
+                for status in storage_objects))
 
         @command
         def cp(source, destination, recursive):
@@ -228,8 +232,9 @@ Commands:
 
             Make directories
             """
-            with storage() as s:
-                return s.mkdirs(path=path)
+            PlatformMakeDirOperation().mkdir(path, storage)
+            return path
+
         return locals()
 
     @command
