@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from neuromation.strings import parse
 
-from .client import AccessDeniedError as AuthAccessDeniedError
+from ..http.fetch import MethodNotAllowedError, NotFoundError
 from .client import ApiClient, ClientError
 from .requests import (ContainerPayload, InferRequest, JobKillRequest,
                        JobListRequest, JobMonitorRequest, JobStatusRequest,
@@ -19,7 +19,11 @@ class JobsError(ClientError):
     pass
 
 
-class AccessDeniedError(JobsError, AuthAccessDeniedError):
+class JobNotFoundError(JobsError):
+    pass
+
+
+class ModelsError(ClientError):
     pass
 
 
@@ -93,6 +97,7 @@ class JobStatus(str, enum.Enum):
 
 
 class Model(ApiClient):
+
     def infer(
             self,
             *,
@@ -149,6 +154,14 @@ class Model(ApiClient):
 
 
 class Job(ApiClient):
+
+    def __init__(self, url: str, token: str, *, loop=None):
+        super().__init__(url, token, loop=loop)
+        self._exception_map.update({
+            NotFoundError: JobNotFoundError,
+            MethodNotAllowedError: JobsError
+        })
+
     def list(self) -> List[JobItem]:
         res = self._fetch_sync(JobListRequest())
         return [

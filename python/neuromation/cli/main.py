@@ -227,19 +227,27 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
+            try:
+                src = urlparse(source, scheme='file')
+                dst = urlparse(destination, scheme='file')
 
-            src = urlparse(source, scheme='file')
-            dst = urlparse(destination, scheme='file')
+                log.debug(f'src={src}')
+                log.debug(f'dst={dst}')
 
-            log.debug(f'src={src}')
-            log.debug(f'dst={dst}')
+                operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
 
-            operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
+                if operation:
+                    return operation.copy(src, dst, storage)
 
-            if operation:
-                return operation.copy(src, dst, storage)
+            except FileNotFoundError as error:
+                raise neuromation.client.FileNotFoundError(error)
+            except PermissionError as error:
+                raise neuromation.client.AccessDeniedError(error)
+            except IOError as error:
+                raise neuromation.client.ClientIOError(error)
 
             raise ValueError('Invalid SOURCE or DESTINATION value')
+
 
         @command
         def mkdir(path):
@@ -505,15 +513,48 @@ def main():
             token=config.auth)
         if res:
             print(res)
-    except neuromation.client.AccessDeniedError as error:
-        log.error(f'Access denied: {error}')
-        sys.exit(os.EX_NOPERM)
+    except neuromation.client.IllegalArgumentError as error:
+        log.error(f'Illegal argument(s) ({error})')
+        sys.exit(os.EX_DATAERR)
+
     except neuromation.client.storage.FileNotFoundError as error:
-        log.error(f'Remote file not found: {error}')
+        log.error(f'Remote file not found ({error})')
         sys.exit(os.EX_OSFILE)
-    except ClientConnectorError as error:
-        log.error(f'Error connecting to server: {error}')
-        sys.exit(126)
+    except neuromation.client.storage.StorageError as error:
+        log.error(f'Error handling storage ({error})')
+        sys.exit(os.EX_DATAERR)
+
+    except neuromation.client.jobs.JobNotFoundError as error:
+        log.error(f'Job not found ({error})')
+        sys.exit(os.EX_OSFILE)
+    except neuromation.client.jobs.JobsError as error:
+        log.error(f'Error handling job ({error})')
+        sys.exit(os.EX_DATAERR)
+    except neuromation.client.jobs.ModelsError as error:
+        log.error(f'Error handling model ({error})')
+        sys.exit(os.EX_DATAERR)
+
+    except neuromation.client.AuthenticationError as error:
+        log.error(f'Cannot authenticate ({error})')
+        sys.exit(os.EX_DATAERR)
+    except neuromation.client.AuthorizationError as error:
+        log.error(f'You haven`t enough permission ({error})')
+        sys.exit(os.EX_DATAERR)
+
+    except neuromation.client.FileNotFoundError as error:
+        log.error(f'File not found ({error})')
+        sys.exit(os.EX_OSFILE)
+    except neuromation.client.AccessDeniedError as error:
+        log.error(f'Cannot acces file ({error})')
+        sys.exit(os.EX_NOPERM)
+    except neuromation.client.NetworkError as error:
+        log.error(f'Connection error ({error})')
+        sys.exit(os.EX_IOERR)
+
+    except neuromation.client.ClientError as error:
+        log.error(f'Application error ({error})')
+        sys.exit(os.EX_SOFTWARE)
+
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(130)

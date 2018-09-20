@@ -5,11 +5,10 @@ from typing import List
 
 from dataclasses import dataclass
 
-from .client import AccessDeniedError as AuthAccessDeniedError
+from ..http.fetch import NotFoundError
 from .client import ApiClient, ClientError
-from .client import FileNotFoundError as ClientFileNotFoundError
 from .requests import (CreateRequest, DeleteRequest, ListRequest,
-                       MkDirsRequest, OpenRequest, Request)
+                       MkDirsRequest, OpenRequest)
 
 
 class StorageError(ClientError):
@@ -17,10 +16,6 @@ class StorageError(ClientError):
 
 
 class FileNotFoundError(StorageError, BuiltinFileNotFoundError):
-    pass
-
-
-class AccessDeniedError(StorageError, AuthAccessDeniedError):
     pass
 
 
@@ -34,13 +29,11 @@ class FileStatus:
 
 class Storage(ApiClient):
 
-    def _fetch_sync(self, request: Request):
-        try:
-            return super(Storage, self)._fetch_sync(request)
-        except AuthAccessDeniedError as error:
-            raise AccessDeniedError(error)
-        except ClientFileNotFoundError as error:
-            raise FileNotFoundError(error)
+    def __init__(self, url: str, token: str, *, loop=None):
+        super().__init__(url, token, loop=loop)
+        self._exception_map.update({
+            NotFoundError: FileNotFoundError
+        })
 
     def ls(self, *, path: str) -> List[FileStatus]:
         return [

@@ -78,14 +78,13 @@ storage.download(
   * IllegalArgumentError(bultins.ValueError)
   * StorageError
     * FileNotFoundError
-    * AccessDeniedError(AuthError.AuthorizationError)
   * JobsError
-    * AccessDeniedError(AuthError.AuthorizationError)
+    * JobNotFoundError
   * ModelsError
   * AuthError
     * AuthenticationError
     * AuthorizationError
-  * IOError
+  * ClientIOError(IOError)
     * FileNotFoundError (builtins.FileNotFoundError)
     * AccessDeniedError
     * NetworkError

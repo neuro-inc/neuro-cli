@@ -2,7 +2,7 @@ from .jobs import Image, Resources
 from .jobs import Job, JobItem, JobStatus, Model
 from .storage import Storage, FileStatus
 from .client import ClientError, IllegalArgumentError, AuthError, \
-    AuthenticationError, AuthorizationError, IOError, \
+    AuthenticationError, AuthorizationError, ClientIOError, \
     FileNotFoundError, AccessDeniedError, NetworkError, ModelsError
 
 __all__ = [
@@ -15,5 +15,5 @@ __all__ = [
     'Storage',
     'FileStatus',
     'ClientError', 'IllegalArgumentError', 'AuthError', 'AuthenticationError',
-    'AuthorizationError', 'IOError', 'FileNotFoundError', 'AccessDeniedError',
-    'NetworkError', 'ModelsError']
+    'AuthorizationError', 'ClientIOError', 'FileNotFoundError',
+    'AccessDeniedError', 'NetworkError', 'ModelsError']

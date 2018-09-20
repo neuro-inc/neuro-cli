@@ -16,13 +16,12 @@ from utils import (BinaryResponse, JsonResponse, PlainResponse,
         error=aiohttp.ClientResponseError(
             request_info=None,
             history=None,
-            status=500,
+            status=404,
             message='ah!')
     )))
-def test_error(storage):
-    with pytest.raises(client.ClientError) as exc:
+def test_filenotfound_error(storage):
+    with pytest.raises(client.storage.FileNotFoundError):
         storage.rm(path='blah')
-    assert exc.value.args == ('blah!',)
 
 
 @patch(

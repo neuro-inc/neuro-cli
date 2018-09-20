@@ -12,6 +12,30 @@ from dataclasses import dataclass
 log = logging.getLogger(__name__)
 
 
+class FetchError(Exception):
+    pass
+
+
+class NotFoundError(FetchError):
+    pass
+
+
+class UnauthorizedError(FetchError):
+    pass
+
+
+class AccessDeniedError(FetchError):
+    pass
+
+
+class MethodNotAllowedError(FetchError):
+    pass
+
+
+class BadRequestError(FetchError):
+    pass
+
+
 @dataclass(frozen=True)
 class Request:
     method: str
@@ -105,9 +129,6 @@ class SyncStreamWrapper(AbstractContextManager):
 
 @asynccontextmanager
 async def _fetch(request: Request, session, url: str):
-    from neuromation.client import (NetworkError, AccessDeniedError,
-                                    FileNotFoundError)
-
     async with session.request(
             method=request.method,
             params=request.params,
@@ -117,25 +138,31 @@ async def _fetch(request: Request, session, url: str):
         try:
             resp.raise_for_status()
         except aiohttp.ClientConnectionError as error:
-            raise NetworkError(error)
+            raise FetchError(error)
         except aiohttp.ClientResponseError as error:
-            code = error.code
+            code = error.status
             message = error.message
             try:
-                error = await resp.json()
+                error_response = await resp.json()
                 # TODO(artyom 07/13/2018): API should return error text
                 # in HTTP Reason Phrase
                 # (https://tools.ietf.org/html/rfc2616#section-6.1.1)
-                message = error['error']
+                message = error_response['error']
             except Exception:
                 pass
+            if code == 400:
+                raise FetchError(message)
+            if code == 401:
+                raise AccessDeniedError(message)
             if code == 403:
                 raise AccessDeniedError(message)
             elif code == 404:
-                raise FileNotFoundError(message)
-            raise NetworkError(error)
+                raise NotFoundError(message)
+            elif code == 405:
+                raise MethodNotAllowedError(error)
+            raise FetchError(error)
         except aiohttp.ClientError as error:
-            raise NetworkError(error)
+            raise FetchError(error)
         yield resp
 
 
