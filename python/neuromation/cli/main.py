@@ -240,14 +240,12 @@ Commands:
                     return operation.copy(src, dst, storage)
 
             except FileNotFoundError as error:
-                raise neuromation.client.FileNotFoundError(error)
+                raise neuromation.client.FileNotFoundError(error) from error
             except PermissionError as error:
-                raise neuromation.client.AccessDeniedError(error)
+                raise neuromation.client.AccessDeniedError(error) from error
             except IOError as error:
-                raise neuromation.client.ClientIOError(error)
-
+                raise neuromation.client.ClientIOError(error) from error
             raise ValueError('Invalid SOURCE or DESTINATION value')
-
 
         @command
         def mkdir(path):

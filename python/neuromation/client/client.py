@@ -93,7 +93,7 @@ class ApiClient:
         except (ClientError, FetchError) as error:
             error_class = type(error)
             mapped_class = self._exception_map.get(error_class, error_class)
-            raise mapped_class(error)
+            raise mapped_class(error) from error
 
     def _fetch_sync(self, request: Request):
         res = self._loop.run_until_complete(self._fetch(request))
