@@ -69,12 +69,13 @@ class PlainRequest(Request):
 
 
 async def session(token: Optional[str] = None):
-    async def trace(session, trace_config_ctx, params):
+
+    async def trace(session, trace_config_ctx, params):  # pragma: no cover
         log.debug(f'{params}')
 
     trace_config = aiohttp.TraceConfig()
 
-    if log.getEffectiveLevel() == logging.DEBUG:
+    if log.getEffectiveLevel() == logging.DEBUG:  # pragma: no cover
         trace_config.on_request_start.append(trace)
         trace_config.on_response_chunk_received.append(trace)
         trace_config.on_request_chunk_sent.append(trace)
@@ -168,7 +169,8 @@ async def _fetch(request: Request, session, url: str):
 
 @singledispatch
 async def fetch(request, session, url: str):
-    raise NotImplementedError(f'Unknown request type: {type(request)}')
+    raise NotImplementedError(
+        f'Unknown request type: {type(request)}')  # pragma: no cover
 
 
 @fetch.register(JsonRequest)

@@ -6,7 +6,7 @@ import pytest
 
 from neuromation import client
 from neuromation.client import (AuthenticationError, AuthorizationError,
-                                IllegalArgumentError, NetworkError)
+                                IllegalArgumentError)
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)
 
@@ -54,17 +54,6 @@ def test_authorization_error(storage):
 def test_authentication_error(storage):
     with pytest.raises(AuthenticationError):
         storage.rm(path='/any.file')
-
-
-@patch(
-    'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(JsonResponse(
-        {'error': 'blah!'},
-        error=aiohttp.ClientConnectionError()
-    )))
-def test_network_error(storage):
-    with pytest.raises(NetworkError):
-        storage.ls(path='blah')
 
 
 @patch(
