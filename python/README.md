@@ -80,13 +80,13 @@ storage.download(
     * FileNotFoundError
   * JobsError
     * JobNotFoundError
-  * ModelsError
+  * ModelsError (TODO)
   * AuthError
     * AuthenticationError
     * AuthorizationError
-  * ClientIOError(IOError)
-    * FileNotFoundError (builtins.FileNotFoundError)
-    * AccessDeniedError
+  * ClientIOError(builtins.IOError)
+    * FileNotFoundError (builtins.FileNotFoundError) - CLI Only exception
+    * AccessDeniedError - CLI Only exception
     * NetworkError
    
 

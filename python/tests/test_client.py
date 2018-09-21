@@ -1,10 +1,8 @@
 from unittest.mock import patch
 
 import aiohttp
-import pytest
 
 from neuromation import client
-from neuromation.client import AuthenticationError, AuthorizationError
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 
@@ -126,33 +124,3 @@ def test_job_status(request, model, loop):
 
     res = job.wait()
     assert res == client.JobItem(client=model, **JOB_RESPONSE)
-
-
-@patch(
-    'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(JsonResponse(
-        {'error': 'blah!'},
-        error=aiohttp.ClientResponseError(
-            request_info=None,
-            history=None,
-            status=403,
-            message='ah!')
-    )))
-def test_authorization_error(storage):
-    with pytest.raises(AuthorizationError):
-        storage.rm(path='blah')
-
-
-@patch(
-    'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(JsonResponse(
-        {'error': 'blah!'},
-        error=aiohttp.ClientResponseError(
-            request_info=None,
-            history=None,
-            status=401,
-            message='ah!')
-    )))
-def test_authentication_error(storage):
-    with pytest.raises(AuthenticationError):
-        storage.rm(path='blah')

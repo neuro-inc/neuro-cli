@@ -5,6 +5,8 @@ import aiohttp
 import pytest
 
 from neuromation import client
+from neuromation.client import (AuthenticationError, AuthorizationError,
+                                IllegalArgumentError, NetworkError)
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)
 
@@ -21,7 +23,63 @@ from utils import (BinaryResponse, JsonResponse, PlainResponse,
     )))
 def test_filenotfound_error(storage):
     with pytest.raises(client.storage.FileNotFoundError):
-        storage.rm(path='blah')
+        storage.rm(path='/file-not-exists.here')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=403,
+            message='ah!')
+    )))
+def test_authorization_error(storage):
+    with pytest.raises(AuthorizationError):
+        storage.rm(path='/any.file')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=401,
+            message='ah!')
+    )))
+def test_authentication_error(storage):
+    with pytest.raises(AuthenticationError):
+        storage.rm(path='/any.file')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientConnectionError()
+    )))
+def test_network_error(storage):
+    with pytest.raises(NetworkError):
+        storage.ls(path='blah')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=400,
+            message='ah!')
+    )))
+def test_invalid_arguments_error(storage):
+    with pytest.raises(IllegalArgumentError):
+        storage.rm(path='')
 
 
 @patch(

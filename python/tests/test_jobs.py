@@ -1,10 +1,26 @@
 from unittest.mock import patch
 
 import aiohttp
+import pytest
 
-from neuromation.client.jobs import JobItem
+from neuromation.client.jobs import JobItem, JobNotFoundError
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=404,
+            message='ah!')
+    )))
+def test_jobnotfound_error(jobs):
+    with pytest.raises(JobNotFoundError):
+        jobs.kill('blah')
 
 
 @patch(

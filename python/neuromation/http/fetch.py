@@ -151,7 +151,7 @@ async def _fetch(request: Request, session, url: str):
             except Exception:
                 pass
             if code == 400:
-                raise FetchError(message)
+                raise BadRequestError(message)
             if code == 401:
                 raise UnauthorizedError(message)
             if code == 403:
