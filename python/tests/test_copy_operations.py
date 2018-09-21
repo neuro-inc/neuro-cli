@@ -301,7 +301,7 @@ def test_copy_local_to_platform_non_recursive_exist_exist_target_is_dir(
     transfer_mock = Mock()
 
     op = CopyOperation.create('file', 'storage', False)
-    op.copy_file = transfer_mock
+    op._copy = transfer_mock
     op.copy(urlparse('file:///storage/my_file.txt'),
             urlparse('storage:///local/dir/'), partial_mocked_store)
     transfer_mock.assert_called_once()
@@ -361,7 +361,7 @@ def test_copy_local_to_platform_non_recursive_dir_exist_exist_target_is_dir(
     transfer_mock.assert_not_called()
 
 
-def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file(
+def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file_2(
         mocked_store, partial_mocked_store, monkeypatch):
     def ls(path):
         return [FileStatus("my_file.txt", 100, "FILE")]
@@ -378,9 +378,34 @@ def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file(
     transfer_mock = Mock()
 
     op = CopyOperation.create('storage', 'file', False)
-    op.copy_file = transfer_mock
+    op._copy = transfer_mock
+    with pytest.raises(ValueError):
+        op.copy(urlparse('storage:///existing/my_file.txt'),
+                urlparse('file:///existing/dir/'), partial_mocked_store)
+
+    transfer_mock.assert_not_called()
+
+
+def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file(
+        mocked_store, partial_mocked_store, monkeypatch):
+    def ls(path):
+        return [FileStatus("my_file.txt", 100, "FILE")]
+
+    def exists_func(src):
+        return '/existing/dir' != src
+
+    def is_dir_func(src):
+        return '/existing' == src
+
+    monkeypatch.setattr(os.path, 'exists', exists_func)
+    monkeypatch.setattr(os.path, 'isdir', is_dir_func)
+    mocked_store.ls = ls
+    transfer_mock = Mock()
+
+    op = CopyOperation.create('storage', 'file', False)
+    op._copy = transfer_mock
     op.copy(urlparse('storage:///existing/my_file.txt'),
-            urlparse('file:///existing/dir/'), partial_mocked_store)
+            urlparse('file:///existing/dir'), partial_mocked_store)
 
     transfer_mock.assert_called_once()
     transfer_mock.assert_called_with('/existing/my_file.txt',
