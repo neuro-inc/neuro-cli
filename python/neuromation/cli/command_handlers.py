@@ -15,6 +15,9 @@ BUFFER_SIZE_MB = 16
 PLATFORM_DELIMITER = '/'
 
 
+SYSTEM_PATH_DELIMITER = os.sep
+
+
 class PlatformMakeDirOperation:
 
     def mkdir(self, path: str, storage: Callable):
@@ -76,7 +79,8 @@ class NonRecursivePlatformToLocal(CopyOperation):
 
             o.write(buf)
 
-    def _copy(self, src: str, dst: str, storage: Callable):
+    def _copy(self, src: str, dst: str,
+              storage: Callable):   # pragma: no cover
         return self.copy_file(src, dst, storage)
 
     def copy_file(self, src, dst, storage):  # pragma: no cover
@@ -87,22 +91,25 @@ class NonRecursivePlatformToLocal(CopyOperation):
                     return None
 
     def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
-        dst_path = dst.path
         platform_file_name = src.path.split(PLATFORM_DELIMITER)[-1]
         platform_file_path = dirname(src.path)
 
         # define local
-        if os.path.exists(dst.path):
-            if os.path.isdir(dst.path):
+        if os.path.exists(dst.path) and os.path.isdir(dst.path):
                 #         get file name from src
                 dst_path = os.path.join(dst.path, platform_file_name)
         else:
+            if dst.path.endswith(SYSTEM_PATH_DELIMITER):
+                raise ValueError('Target should exist. '
+                                 'Please create directory, '
+                                 'or point to existing file.')
+
             try_dir = dirname(dst.path)
             if not os.path.isdir(try_dir):
                 raise ValueError('Target should exist. '
                                  'Please create directory, '
                                  'or point to existing file.')
-            dst_path = dst.path.rstrip('/')
+            dst_path = dst.path.rstrip(SYSTEM_PATH_DELIMITER)
 
         # check remote
         files = PlatformListDirOperation().ls(platform_file_path, storage)
