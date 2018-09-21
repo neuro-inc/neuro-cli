@@ -4,8 +4,12 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
-import neuromation
 from aiohttp import ClientConnectorError
+
+import neuromation
+from neuromation.cli.command_handlers import (CopyOperation,
+                                              PlatformListDirOperation,
+                                              PlatformMakeDirOperation)
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -176,22 +180,26 @@ Commands:
             """
             format = '{type:<15}{size:<15,}{name:<}'.format
 
-            with storage() as s:
-                print('\n'.join(
-                    format(type=status.type.lower(),
-                           name=status.path,
-                           size=status.size)
-                    for status in s.ls(path=path)))
+            storage_objects = PlatformListDirOperation().ls(path, storage)
+
+            print('\n'.join(
+                format(type=status.type.lower(),
+                       name=status.path,
+                       size=status.size)
+                for status in storage_objects))
 
         @command
-        def cp(source, destination):
+        def cp(source, destination, recursive):
             """
             Usage:
-                neuro store cp SOURCE DESTINATION
+                neuro store cp [options] SOURCE DESTINATION
 
             Copy files and directories
             Either SOURCE or DESTINATION should have storage:// scheme.
             If scheme is omitted, file:// scheme is assumed.
+
+            Options:
+              -r, --recursive             Recursive copy
 
             Example:
 
@@ -203,42 +211,16 @@ Commands:
             neuro store cp storage:///foo file:///foo
             """
 
-            def transfer(i, o):
-                log.debug(f'Input: {i}')
-                log.debug(f'Output: {o}')
-
-                while True:
-                    buf = i.read(BUFFER_SIZE_MB * 1024 * 1024)
-
-                    if not buf:
-                        break
-
-                    o.write(buf)
-
             src = urlparse(source, scheme='file')
             dst = urlparse(destination, scheme='file')
 
             log.debug(f'src={src}')
             log.debug(f'dst={dst}')
 
-            if src.scheme == 'storage':
-                if dst.scheme != 'file':
-                    raise ValueError(
-                        'storage:// and file:// schemes required')
-                with storage() as s:
-                    with s.open(path=src.path) as stream:
-                        with open(dst.path, mode='wb') as f:
-                            transfer(stream, f)
-                            return destination
+            operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
 
-            if dst.scheme == 'storage':
-                if src.scheme != 'file':
-                    raise ValueError(
-                        'storage:// and file:// schemes required')
-                with open(src.path, mode='rb') as f:
-                    with storage() as s:
-                        s.create(path=dst.path, data=f)
-                        return destination
+            if operation:
+                return operation.copy(src, dst, storage)
 
             raise ValueError('Invalid SOURCE or DESTINATION value')
 
@@ -250,8 +232,9 @@ Commands:
 
             Make directories
             """
-            with storage() as s:
-                return s.mkdirs(path=path)
+            PlatformMakeDirOperation().mkdir(path, storage)
+            return path
+
         return locals()
 
     @command

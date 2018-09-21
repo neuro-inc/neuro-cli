@@ -13,6 +13,7 @@ from .requests import (CreateRequest, DeleteRequest, ListRequest,
 class FileStatus:
     path: str
     size: int
+    # TODO (R Zubairov) Make a enum
     type: str
 
 
