@@ -22,6 +22,20 @@ def test_create(nmrc):
                           f'url: {DEFAULTS.url}\n'
 
 
+def test_docker_url():
+    assert DEFAULTS.docker_registry_url() == 'registry.dev.neuromation.io'
+    custom_staging = rc.Config(
+        url='http://platform.staging.neuromation.io/api/v1',
+        auth=''
+    )
+    assert custom_staging.docker_registry_url() == 'registry.staging.neuromation.io'
+    prod = rc.Config(
+        url='http://platform.neuromation.io/api/v1',
+        auth=''
+    )
+    assert prod.docker_registry_url() == 'registry.neuromation.io'
+
+
 def test_create_existing(nmrc):
     document = """
         url: 'http://a.b/c'
