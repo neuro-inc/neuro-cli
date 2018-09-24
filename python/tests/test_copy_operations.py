@@ -96,7 +96,7 @@ def test_copy_platform_to_local_recursive_exist_exist_target_is_dir(
 
     op = CopyOperation.create('storage', 'file', True)
     op.copy_file = transfer_mock
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
                 urlparse('file:///localdir/dir/'), partial_mocked_store)
 
