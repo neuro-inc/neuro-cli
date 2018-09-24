@@ -146,7 +146,7 @@ def test_e2e_shm_run_without(run, tmpdir):
     # Start the df test job
     command = 'bash -c "/bin/df --block-size M ' \
               '--output=target,avail /dev/shm; false"'
-    _, captured = run(['model', 'train', '-g', '0',
+    _, captured = run(['model', 'train', '-m', '20M', '-c', '0.1', '-g', '0',
                        GCR_UBUNTU_IMAGE_URL,
                        'storage:/' + _path_src,
                        'storage:/' + _path_dst, command])
@@ -185,7 +185,8 @@ def test_e2e_shm_run_with(run, tmpdir):
     # Start the df test job
     command = 'bash -c "/bin/df --block-size M ' \
               '--output=target,avail /dev/shm; false"'
-    _, captured = run(['model', 'train', '-x', '-g', '0',
+    _, captured = run(['model', 'train', '-x',
+                       '-m', '20M', '-c', '0.1', '-g', '0',
                        GCR_UBUNTU_IMAGE_URL,
                        'storage:/' + _path_src,
                        'storage:/' + _path_dst, command])
