@@ -541,15 +541,18 @@ def main():
     except neuromation.client.ClientError as error:
         log.error(f'Application error ({error})')
         sys.exit(os.EX_SOFTWARE)
+
     except IOError as error:
         log.error(f'{error}')
         sys.exit(os.EX_OSFILE)
+
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(130)
     except ValueError as e:
         print(e)
         sys.exit(127)
+
     except Exception as e:
         log.error(f'{e}')
         raise e

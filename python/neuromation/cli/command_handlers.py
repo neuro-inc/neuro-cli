@@ -5,7 +5,8 @@ from os.path import dirname
 from typing import Callable, List
 from urllib.parse import ParseResult
 
-from neuromation.client import FileStatus
+from neuromation.client import FileNotFoundError as StorageFileNotFoundError
+from neuromation.client import FileStatus, IllegalArgumentError
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +54,8 @@ class CopyOperation:
                 else:
                     return NonRecursiveLocalToPlatform()
             else:
-                raise ValueError('storage:// and file:// schemes required')
+                raise IllegalArgumentError(
+                    'storage:// and file:// schemes required')
         elif src_scheme == 'storage':
             if dst_scheme == 'file':
                 if recursive:
@@ -61,8 +63,10 @@ class CopyOperation:
                 else:
                     return NonRecursivePlatformToLocal()
             else:
-                raise ValueError('storage:// and file:// schemes required')
-        raise ValueError('storage:// and file:// schemes required')
+                raise IllegalArgumentError(
+                    'storage:// and file:// schemes required')
+        raise IllegalArgumentError(
+            'storage:// and file:// schemes required')
 
 
 class NonRecursivePlatformToLocal(CopyOperation):
@@ -118,8 +122,8 @@ class NonRecursivePlatformToLocal(CopyOperation):
                  for file in files
                  if file.path == platform_file_name and file.type == 'FILE')
         except StopIteration as e:
-            raise FileNotFoundError(f'Source file {src.path} not found.') \
-                from e
+            raise StorageFileNotFoundError(
+                f'Source file {src.path} not found.') from e
 
         self._copy(src.path, dst_path, storage)
         return dst.geturl()
@@ -166,7 +170,8 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                  if file.path == platform_file_name
                  and file.type == 'DIRECTORY')
         except StopIteration as e:
-            raise ValueError('Source directory not found.') from e
+            raise StorageFileNotFoundError(
+                'Source directory not found.') from e
 
         self._copy(src_path, dest_path, storage)
         return dst.geturl()
