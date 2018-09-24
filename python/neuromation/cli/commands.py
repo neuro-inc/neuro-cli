@@ -27,7 +27,6 @@ def _(f):
 
 def commands(scope):
     """Return all commands in target scope (i.e. module or function)"""
-    print(scope)
     return {
         func._command_name: func
         for func in scope.values()
@@ -79,8 +78,6 @@ def dispatch(target, tail, **kwargs):
 
         if not command and not tail:
             return res
-
-        print(command)
 
         target = commands(res).get(command, None)
 

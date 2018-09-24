@@ -413,7 +413,7 @@ Commands:
         Commands:
           push Push docker image from local machine to cloud registry
           pull Pull docker image from cloud registry to local machine
-          list List your docker images
+          search List your docker images
         """
         @command
         def push(image_name):
@@ -425,39 +425,48 @@ Commands:
             """
             config = rc.load(RC_PATH)
             docker_registry_url = config.docker_registry_url()
-            process = subprocess.run(
-                args=['docker1', 'push',
-                      f'http://{docker_registry_url}/{image_name}'],
-                capture_output=True)
-
+            target_image_name = f'{docker_registry_url}/{image_name}'
+            # Tag first, as otherwise it would fail
+            process = subprocess.run(args=['docker', 'tag',
+                                           image_name, target_image_name])
+            # PUSH Image to remote registry
+            process = subprocess.run(args=['docker', 'push',
+                                           target_image_name])
             if process.returncode != 0:
                 raise ValueError(f'Docker pull failed. '
                                  f'Error code {process.returncode}')
-
             return locals()
 
         @command
-        def pull(image):
+        def pull(image_name):
             """
             Usage:
-                neuro image pull IMAGE
+                neuro image pull IMAGE_NAME
 
             Pull docker image into cloud registry
             """
-
+            config = rc.load(RC_PATH)
+            docker_registry_url = config.docker_registry_url()
+            target_image_name = f'{docker_registry_url}/{image_name}'
+            process = subprocess.run(args=['docker', 'pull',
+                                           target_image_name])
+            if process.returncode != 0:
+                raise ValueError(f'Docker pull failed. '
+                                 f'Error code {process.returncode}')
             return locals()
 
         @command
-        def list():
+        def search():
             """
             Usage:
-                neuro image list
+                neuro image search
 
             Lists docker images available
             """
             # TODO implement
             print('Not implemented YET')
             return locals()
+        return locals()
     return locals()
 
 
