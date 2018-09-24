@@ -121,7 +121,7 @@ def test_copy_local_to_platform_recursive_not_exist_exist_target_is_dir(
 
     op = CopyOperation.create('storage', 'file', True)
     op.copy_file = transfer_mock
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
                 urlparse('file:///localdir/dir/'), partial_mocked_store)
 
@@ -146,7 +146,7 @@ def test_copy_local_to_platform_recursive_exist_exist_target_not_dir(
 
     op = CopyOperation.create('storage', 'file', True)
     op.copy_file = transfer_mock
-    with pytest.raises(ValueError):
+    with pytest.raises(NotADirectoryError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
                 urlparse('file:///localdir/dir/'), partial_mocked_store)
 
@@ -355,7 +355,7 @@ def test_copy_local_to_platform_non_recursive_dir_exist_exist_target_is_dir(
 
     op = CopyOperation.create('storage', 'file', False)
     op.copy_file = transfer_mock
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
                 urlparse('file:///existing/dir/'), partial_mocked_store)
     transfer_mock.assert_not_called()
@@ -379,7 +379,7 @@ def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file_2(
 
     op = CopyOperation.create('storage', 'file', False)
     op._copy = transfer_mock
-    with pytest.raises(ValueError):
+    with pytest.raises(NotADirectoryError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
                 urlparse('file:///existing/dir/'), partial_mocked_store)
 

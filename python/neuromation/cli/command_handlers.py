@@ -100,13 +100,13 @@ class NonRecursivePlatformToLocal(CopyOperation):
                 dst_path = os.path.join(dst.path, platform_file_name)
         else:
             if dst.path.endswith(SYSTEM_PATH_DELIMITER):
-                raise ValueError('Target should exist. '
+                raise NotADirectoryError('Target should exist. '
                                  'Please create directory, '
                                  'or point to existing file.')
 
             try_dir = dirname(dst.path)
             if not os.path.isdir(try_dir):
-                raise ValueError('Target should exist. '
+                raise FileNotFoundError('Target should exist. '
                                  'Please create directory, '
                                  'or point to existing file.')
             dst_path = dst.path.rstrip(SYSTEM_PATH_DELIMITER)
@@ -118,7 +118,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
                  for file in files
                  if file.path == platform_file_name and file.type == 'FILE')
         except StopIteration as e:
-            raise ValueError('Source file not found.') from e
+            raise FileNotFoundError(f'Source file {src.path} not found.') from e
 
         self._copy(src.path, dst_path, storage)
         return dst.geturl()
@@ -142,12 +142,14 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
     def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
-            raise ValueError('Target should exist. '
-                             'Please create targert directory and try again.')
+            raise FileNotFoundError('Target should exist. '
+                                    'Please create target directory '
+                                    'and try again.')
 
         if not os.path.isdir(dst.path):
-            raise ValueError('Target should be directory. '
-                             'Please correct your command line arguments.')
+            raise NotADirectoryError('Target should be directory. '
+                                     'Please correct your '
+                                     'command line arguments.')
 
         src_path = src.path.rstrip(PLATFORM_DELIMITER)
         dest_path = dst.path.rstrip('/')

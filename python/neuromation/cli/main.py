@@ -12,8 +12,6 @@ import neuromation
 from neuromation.cli.command_handlers import (CopyOperation,
                                               PlatformListDirOperation,
                                               PlatformMakeDirOperation)
-
-import neuromation
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -227,25 +225,18 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
-            try:
-                src = urlparse(source, scheme='file')
-                dst = urlparse(destination, scheme='file')
+            src = urlparse(source, scheme='file')
+            dst = urlparse(destination, scheme='file')
 
-                log.debug(f'src={src}')
-                log.debug(f'dst={dst}')
+            log.debug(f'src={src}')
+            log.debug(f'dst={dst}')
 
-                operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
+            operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
 
-                if operation:
-                    return operation.copy(src, dst, storage)
+            if operation:
+                return operation.copy(src, dst, storage)
 
-            except FileNotFoundError as error:
-                raise neuromation.client.FileNotFoundError(error) from error
-            except PermissionError as error:
-                raise neuromation.client.AccessDeniedError(error) from error
-            except IOError as error:
-                raise neuromation.client.ClientIOError(error) from error
-            raise ValueError('Invalid SOURCE or DESTINATION value')
+            raise neuromation.client.IllegalArgumentError('Invalid SOURCE or DESTINATION value')
 
         @command
         def mkdir(path):
@@ -548,11 +539,12 @@ def main():
     except neuromation.client.NetworkError as error:
         log.error(f'Connection error ({error})')
         sys.exit(os.EX_IOERR)
-
     except neuromation.client.ClientError as error:
         log.error(f'Application error ({error})')
         sys.exit(os.EX_SOFTWARE)
-
+    except IOError as error:
+        log.error(f'{error}')
+        sys.exit(os.EX_OSFILE)
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(130)
