@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import sys
 from functools import partial
 from pathlib import Path
@@ -130,6 +131,7 @@ Commands:
 
             Updates authorization token
             """
+            # TODO update docker authorization here
             # TODO (R Zubairov, 09/13/2018): check token correct
             # connectivity, check with Alex
             # Do not overwrite token in case new one does not work
@@ -399,6 +401,63 @@ Commands:
                 j.kill(id)
             return 'Job killed.'
         return locals()
+
+    @command
+    def image():
+        """
+        Usage:
+            neuro image COMMAND
+
+        Docker image operations
+
+        Commands:
+          push Push docker image from local machine to cloud registry
+          pull Pull docker image from cloud registry to local machine
+          list List your docker images
+        """
+        @command
+        def push(image_name):
+            """
+            Usage:
+                neuro image push IMAGE_NAME
+
+            Push docker image into cloud registry
+            """
+            config = rc.load(RC_PATH)
+            docker_registry_url = config.docker_registry_url()
+            process = subprocess.run(
+                args=['docker1', 'push',
+                      f'http://{docker_registry_url}/{image_name}'],
+                capture_output=True)
+
+            if process.returncode != 0:
+                raise ValueError(f'Docker pull failed. '
+                                 f'Error code {process.returncode}')
+
+            return locals()
+
+        @command
+        def pull(image):
+            """
+            Usage:
+                neuro image pull IMAGE
+
+            Pull docker image into cloud registry
+            """
+
+            return locals()
+
+        @command
+        def list():
+            """
+            Usage:
+                neuro image list
+
+            Lists docker images available
+            """
+            # TODO implement
+            print('Not implemented YET')
+            return locals()
     return locals()
 
 

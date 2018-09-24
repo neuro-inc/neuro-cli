@@ -2,12 +2,19 @@ from pathlib import Path
 
 import yaml
 from dataclasses import asdict, dataclass
+from yarl import URL
 
 
 @dataclass
 class Config:
     url: str = 'http://platform.dev.neuromation.io/api/v1'
     auth: str = ''
+
+    def docker_registry_url(self) -> str:
+        platform_url = URL(self.url)
+        docker_registry_url = platform_url.\
+            host.replace('platform.', 'registry.')
+        return docker_registry_url
 
 
 def save(path, config: Config) -> Config:
