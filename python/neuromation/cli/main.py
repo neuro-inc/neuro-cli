@@ -100,6 +100,16 @@ Commands:
             auth            Updates API Token
             show            Print current settings
         """
+        def update_docker_config(config: rc.Config) -> None:
+            docker_registry_url = config.docker_registry_url()
+
+            process = subprocess.run(args=['docker', 'login',
+                                           '-u', 'client',
+                                           '-p', token,
+                                           docker_registry_url])
+            if process.returncode != 0:
+                raise ValueError('Failed to updated docker auth details.')
+
         @command
         def url(url):
             """
@@ -111,6 +121,7 @@ Commands:
             config = rc.load(RC_PATH)
             config = rc.Config(url=url, auth=config.auth)
             rc.save(RC_PATH, config)
+            update_docker_config(config)
 
         @command
         def show():
@@ -131,7 +142,6 @@ Commands:
 
             Updates authorization token
             """
-            # TODO update docker authorization here
             # TODO (R Zubairov, 09/13/2018): check token correct
             # connectivity, check with Alex
             # Do not overwrite token in case new one does not work
@@ -141,6 +151,7 @@ Commands:
             config = rc.load(RC_PATH)
             config = rc.Config(url=config.url, auth=token)
             rc.save(RC_PATH, config)
+            update_docker_config(config)
 
         return locals()
 
@@ -421,7 +432,7 @@ Commands:
             Usage:
                 neuro image push IMAGE_NAME
 
-            Push docker image into cloud registry
+            Push an image or a repository to a registry
             """
             config = rc.load(RC_PATH)
             docker_registry_url = config.docker_registry_url()
@@ -443,7 +454,7 @@ Commands:
             Usage:
                 neuro image pull IMAGE_NAME
 
-            Pull docker image into cloud registry
+            Pull an image or a repository from a registry
             """
             config = rc.load(RC_PATH)
             docker_registry_url = config.docker_registry_url()
