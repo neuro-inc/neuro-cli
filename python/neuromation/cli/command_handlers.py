@@ -101,14 +101,14 @@ class NonRecursivePlatformToLocal(CopyOperation):
         else:
             if dst.path.endswith(SYSTEM_PATH_DELIMITER):
                 raise NotADirectoryError('Target should exist. '
-                                 'Please create directory, '
-                                 'or point to existing file.')
+                                         'Please create directory, '
+                                         'or point to existing file.')
 
             try_dir = dirname(dst.path)
             if not os.path.isdir(try_dir):
                 raise FileNotFoundError('Target should exist. '
-                                 'Please create directory, '
-                                 'or point to existing file.')
+                                        'Please create directory, '
+                                        'or point to existing file.')
             dst_path = dst.path.rstrip(SYSTEM_PATH_DELIMITER)
 
         # check remote
@@ -118,7 +118,8 @@ class NonRecursivePlatformToLocal(CopyOperation):
                  for file in files
                  if file.path == platform_file_name and file.type == 'FILE')
         except StopIteration as e:
-            raise FileNotFoundError(f'Source file {src.path} not found.') from e
+            raise FileNotFoundError(f'Source file {src.path} not found.') \
+                from e
 
         self._copy(src.path, dst_path, storage)
         return dst.geturl()

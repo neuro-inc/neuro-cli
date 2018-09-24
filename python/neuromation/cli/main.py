@@ -6,8 +6,6 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
-from aiohttp import ClientConnectorError
-
 import neuromation
 from neuromation.cli.command_handlers import (CopyOperation,
                                               PlatformListDirOperation,
@@ -236,7 +234,8 @@ Commands:
             if operation:
                 return operation.copy(src, dst, storage)
 
-            raise neuromation.client.IllegalArgumentError('Invalid SOURCE or DESTINATION value')
+            raise neuromation.client.IllegalArgumentError('Invalid SOURCE or '
+                                                          'DESTINATION value')
 
         @command
         def mkdir(path):
