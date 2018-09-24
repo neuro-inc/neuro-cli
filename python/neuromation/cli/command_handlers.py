@@ -1,9 +1,12 @@
 import abc
 import logging
 import os
+import tarfile
 from os.path import dirname
 from typing import Callable, List
 from urllib.parse import ParseResult
+
+import aiofiles
 
 from neuromation.client import FileStatus
 
@@ -49,7 +52,7 @@ class CopyOperation:
         if src_scheme == 'file':
             if dst_scheme == 'storage':
                 if recursive:
-                    return RecursiveLocalToPlatform()
+                    return RecursiveLocalToPlatformV2()
                 else:
                     return NonRecursiveLocalToPlatform()
             else:
@@ -187,7 +190,10 @@ class NonRecursiveLocalToPlatform(CopyOperation):
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
-    def _copy(self, src: str, dst: str, storage: Callable):
+    async def copy_single_file(self):
+        copy it
+
+    async def _copy(self, src: str, dst: str, storage: Callable):
         # TODO should we create directory by default - root
         dst = dst.rstrip(PLATFORM_DELIMITER)
         dst = f'{dst}{PLATFORM_DELIMITER}'
@@ -202,6 +208,74 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 target_dest = f'{pref_path}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
+
+                for file from batch_of_files:
+                    coroutine = self.copy_file()
+
+                wait for all
+
             for subdir in subdirs:
                 target_dest = f'{pref_path}{subdir}'
                 PlatformMakeDirOperation().mkdir(target_dest, storage)
+
+
+class RecursiveLocalToPlatformV2(NonRecursiveLocalToPlatform):
+    """Tar base copying process"""
+
+    READ_CHUNK_SIZE = 64 * 1024
+
+    async def file_sender(self, src: str, total_size: int, files: List):
+        for file in files:
+            file_name = file['name']
+            stat = file['stat']
+            print(file_name, end='\r')
+
+            # stat = await self.io_stat(src + file_name)
+            tar_info = tarfile.TarInfo(name=file_name)
+            tar_info.mtime = stat.st_mtime
+            tar_info.mode = stat.st_mode
+
+            if stat.S_ISDIR(stat.st_mode):
+                tar_info.type = tarfile.DIRTYPE
+                yield tar_info.tobuf(tarfile.GNU_FORMAT, "utf-8", 'surrogateescape')
+            elif stat.S_ISREG(stat.st_mode):
+                tar_info.type = tarfile.REGTYPE
+                tar_info.size = stat.st_size
+                yield tar_info.tobuf(tarfile.GNU_FORMAT, "utf-8", 'surrogateescape')
+                # TODO line below is completelly broken
+                async with aiofiles.open(src + file_name, 'rb') as f:
+                    chunk = await f.read(self.READ_CHUNK_SIZE)
+                    while chunk:
+                        yield chunk
+                        chunk = await f.read(self.READ_CHUNK_SIZE)
+                blocks, remainder = divmod(tar_info.size, tarfile.BLOCKSIZE)
+                if remainder:
+                    yield tarfile.NUL * (tarfile.BLOCKSIZE - remainder)
+            print('                                                                    ', end='\r')
+
+    def _copy(self, src: str, dst: str, storage: Callable):
+        # TODO should we create directory by default - root
+        dst = dst.rstrip(PLATFORM_DELIMITER)
+        dst = f'{dst}{PLATFORM_DELIMITER}'
+        rfiles = []
+        total_size = 0
+        for root, subdirs, files in os.walk(src):
+            if root != src:
+                suffix_path = os.path.relpath(root, src)
+                pref_path = f'{suffix_path}{PLATFORM_DELIMITER}'
+            else:
+                pref_path = ''
+
+            for subdir in subdirs:
+                target_dest = f'{pref_path}{subdir}'
+                os_stat = os.stat(src + '/' + target_dest)
+                rfiles.append({'name': target_dest, 'stat:': os_stat})
+            for file in files:
+                target_dest = f'{pref_path}{file}'
+                os_stat = os.stat(src + '/' + target_dest)
+                total_size += os_stat.st_size
+                rfiles.append({'name': target_dest, 'stat:': os_stat})
+
+        with storage() as s:
+            s.create_archived_on_fly(path=dst, data=self.file_sender(src + '/', total_size=total_size, files=rfiles))
+            return dst

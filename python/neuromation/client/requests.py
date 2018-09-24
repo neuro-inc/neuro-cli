@@ -3,6 +3,7 @@ from io import BytesIO
 from typing import ClassVar, Optional
 
 from dataclasses import asdict, dataclass
+
 from neuromation import http
 
 log = logging.getLogger(__name__)
@@ -96,6 +97,13 @@ class CreateRequest(StorageRequest):
 
 
 @dataclass(frozen=True)
+class CreateRequestArchived(StorageRequest):
+    op: ClassVar[str] = 'CREATEARCH'
+    path: str
+    data: BytesIO
+
+
+@dataclass(frozen=True)
 class OpenRequest(StorageRequest):
     op: ClassVar[str] = 'OPEN'
     path: str
@@ -160,6 +168,13 @@ def build(request: Request) -> http.Request:
     elif isinstance(request, CreateRequest):
         return http.PlainRequest(
             url=add_path('/storage/', request.path),
+            params=None,
+            method='PUT',
+            json=None,
+            data=request.data)
+    elif isinstance(request, CreateRequestArchived):
+        return http.PlainRequest(
+            url=add_path('/storage/', request.path) + '?op=decompress',
             params=None,
             method='PUT',
             json=None,

@@ -378,7 +378,7 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
 
     # Upload local file
     _, captured = run([
-            'store', 'cp', '-r', dir_path, 'storage://' + _path + '/'
+            'store', 'cp', '-r', dir_path, 'storage://' + _path + '/tar.tar'
         ])
     assert not captured.err
     assert captured.out == urlparse('storage://' + _path

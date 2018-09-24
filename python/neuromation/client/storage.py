@@ -5,8 +5,8 @@ from typing import List
 from dataclasses import dataclass
 
 from .client import ApiClient
-from .requests import (CreateRequest, DeleteRequest, ListRequest,
-                       MkDirsRequest, OpenRequest)
+from .requests import (CreateRequest, CreateRequestArchived, DeleteRequest,
+                       ListRequest, MkDirsRequest, OpenRequest)
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,10 @@ class Storage(ApiClient):
 
     def create(self, *, path: str, data: BytesIO) -> str:
         self._fetch_sync(CreateRequest(path=path, data=data))
+        return path
+
+    def create_archived_on_fly(self, *, path: str, data: BytesIO) -> str:
+        self._fetch_sync(CreateRequestArchived(path=path, data=data))
         return path
 
     @contextmanager
