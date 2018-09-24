@@ -440,6 +440,9 @@ Commands:
             # Tag first, as otherwise it would fail
             process = subprocess.run(args=['docker', 'tag',
                                            image_name, target_image_name])
+            if process.returncode != 0:
+                raise ValueError(f'Docker tag failed. '
+                                 f'Error code {process.returncode}')
             # PUSH Image to remote registry
             process = subprocess.run(args=['docker', 'push',
                                            target_image_name])
