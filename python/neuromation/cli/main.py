@@ -443,7 +443,6 @@ Commands:
 
             Push an image or a repository to a registry
             """
-            config = rc.load(RC_PATH)
             target_image_name = get_image_platform_full_name(image_name)
             # Tag first, as otherwise it would fail
             try:
@@ -477,7 +476,6 @@ Commands:
             except subprocess.CalledProcessError as e:
                 raise ValueError(f'Docker pull failed. '
                                  f'Error code {e.returncode}')
-
 
         return locals()
     return locals()
