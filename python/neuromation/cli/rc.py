@@ -20,7 +20,7 @@ class Config:
 
     def get_platform_user_name(self) -> Optional[str]:
         if self.auth != '' and self.auth is not None:
-            jwt_header = jwt.get_unverified_header(self.auth)
+            jwt_header = jwt.get_unverified_claims(self.auth)
             return jwt_header.get('identity', None)
         return None
 
