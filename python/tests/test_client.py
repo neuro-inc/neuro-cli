@@ -4,7 +4,6 @@ import aiohttp
 import pytest
 
 from neuromation import client
-from neuromation.client import NetworkError
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 
@@ -134,17 +133,6 @@ def test_job_status(request, model, loop):
         {'error': 'blah!'},
         error=aiohttp.ClientConnectionError()
     )))
-def test_network_connection_error(storage):
-    with pytest.raises(NetworkError):
-        storage.ls(path='blah')
-
-
-@patch(
-    'aiohttp.ClientSession.request',
-    new=mocked_async_context_manager(JsonResponse(
-        {'error': 'blah!'},
-        error=aiohttp.ClientError()
-    )))
-def test_network_common_error(storage):
-    with pytest.raises(NetworkError):
+def test_network_error_is_not_intercepted(storage):
+    with pytest.raises(aiohttp.ClientError):
         storage.ls(path='blah')

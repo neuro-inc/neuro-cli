@@ -5,8 +5,9 @@ from os.path import dirname
 from typing import Callable, List
 from urllib.parse import ParseResult
 
-from neuromation.client import FileNotFoundError as StorageFileNotFoundError
-from neuromation.client import FileStatus, IllegalArgumentError
+from neuromation.client import FileStatus
+from neuromation.client.storage import \
+    FileNotFoundError as StorageFileNotFoundError
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ class CopyOperation:
                 else:
                     return NonRecursiveLocalToPlatform()
             else:
-                raise IllegalArgumentError(
+                raise ValueError(
                     'storage:// and file:// schemes required')
         elif src_scheme == 'storage':
             if dst_scheme == 'file':
@@ -63,9 +64,9 @@ class CopyOperation:
                 else:
                     return NonRecursivePlatformToLocal()
             else:
-                raise IllegalArgumentError(
+                raise ValueError(
                     'storage:// and file:// schemes required')
-        raise IllegalArgumentError(
+        raise ValueError(
             'storage:// and file:// schemes required')
 
 
@@ -138,7 +139,8 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
             name = file.path
             target = os.path.join(dst, name)
             if file.type == 'DIRECTORY':
-                os.mkdir(target)
+                if not os.path.isdir(target):
+                    os.mkdir(target)
                 self._copy(src + '/' + name, target, storage)
             else:
                 self.copy_file(f'{src}{PLATFORM_DELIMITER}{name}',

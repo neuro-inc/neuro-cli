@@ -6,6 +6,8 @@ from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
+import aiohttp
+
 import neuromation
 from neuromation.cli.command_handlers import (CopyOperation,
                                               PlatformListDirOperation,
@@ -501,6 +503,7 @@ def main():
             token=config.auth)
         if res:
             print(res)
+
     except neuromation.client.IllegalArgumentError as error:
         log.error(f'Illegal argument(s) ({error})')
         sys.exit(os.EX_DATAERR)
@@ -509,6 +512,7 @@ def main():
         log.error(f'Remote file not found ({error})')
         sys.exit(os.EX_OSFILE)
     except neuromation.client.storage.StorageError as error:
+        # Not raised at this moment
         log.error(f'Error handling storage ({error})')
         sys.exit(os.EX_DATAERR)
 
@@ -516,35 +520,39 @@ def main():
         log.error(f'Job not found ({error})')
         sys.exit(os.EX_OSFILE)
     except neuromation.client.jobs.JobsError as error:
+        # Not raised at this moment
         log.error(f'Error handling job ({error})')
         sys.exit(os.EX_DATAERR)
     except neuromation.client.jobs.ModelsError as error:
+        # Not raised at this moment
         log.error(f'Error handling model ({error})')
         sys.exit(os.EX_DATAERR)
 
     except neuromation.client.AuthenticationError as error:
         log.error(f'Cannot authenticate ({error})')
-        sys.exit(os.EX_DATAERR)
+        sys.exit(os.EX_NOPERM)
     except neuromation.client.AuthorizationError as error:
         log.error(f'You haven`t enough permission ({error})')
-        sys.exit(os.EX_DATAERR)
-
-    except neuromation.client.FileNotFoundError as error:
-        log.error(f'File not found ({error})')
-        sys.exit(os.EX_OSFILE)
-    except neuromation.client.AccessDeniedError as error:
-        log.error(f'Cannot acces file ({error})')
         sys.exit(os.EX_NOPERM)
-    except neuromation.client.NetworkError as error:
-        log.error(f'Connection error ({error})')
-        sys.exit(os.EX_IOERR)
+
     except neuromation.client.ClientError as error:
         log.error(f'Application error ({error})')
         sys.exit(os.EX_SOFTWARE)
 
-    except IOError as error:
-        log.error(f'{error}')
+    except aiohttp.ClientError as error:
+        log.error(f'Connection error ({error})')
+        sys.exit(os.EX_IOERR)
+
+    except FileNotFoundError as error:
+        log.error(f'File not found ({error})')
         sys.exit(os.EX_OSFILE)
+    except PermissionError as error:
+        log.error(f'Cannot acces file ({error})')
+        sys.exit(os.EX_NOPERM)
+    except IOError as error:
+        log.error(f'I/O Error ({error})')
+        raise error
+        sys.exit(os.EX_IOERR)
 
     except KeyboardInterrupt:
         log.error("Aborting.")

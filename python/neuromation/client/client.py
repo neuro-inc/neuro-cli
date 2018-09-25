@@ -1,7 +1,5 @@
 import asyncio
 import logging
-from builtins import FileNotFoundError as BuiltinFileNotFoundError
-from builtins import IOError as BuiltinIOError
 
 from neuromation.http import fetch, session
 from neuromation.http.fetch import AccessDeniedError as FetchAccessDeniedError
@@ -33,22 +31,6 @@ class AuthorizationError(AuthError):
     pass
 
 
-class ClientIOError(ClientError, BuiltinIOError):
-    pass
-
-
-class FileNotFoundError(ClientIOError, BuiltinFileNotFoundError):
-    pass
-
-
-class AccessDeniedError(ClientIOError):
-    pass
-
-
-class NetworkError(ClientIOError):
-    pass
-
-
 class ModelsError(ValueError):
     pass
 
@@ -62,8 +44,7 @@ class ApiClient:
         self._exception_map = {
             FetchAccessDeniedError: AuthorizationError,
             UnauthorizedError: AuthenticationError,
-            BadRequestError: IllegalArgumentError,
-            FetchError: NetworkError
+            BadRequestError: IllegalArgumentError
         }
 
     def __enter__(self):

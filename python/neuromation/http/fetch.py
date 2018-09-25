@@ -138,8 +138,6 @@ async def _fetch(request: Request, session, url: str):
             json=request.json) as resp:
         try:
             resp.raise_for_status()
-        except aiohttp.ClientConnectionError as error:
-            raise FetchError(error)
         except aiohttp.ClientResponseError as error:
             code = error.status
             message = error.message
@@ -161,9 +159,7 @@ async def _fetch(request: Request, session, url: str):
                 raise NotFoundError(message)
             elif code == 405:
                 raise MethodNotAllowedError(error)
-            raise FetchError(error)
-        except aiohttp.ClientError as error:
-            raise FetchError(error)
+            raise FetchError(error) from error
         yield resp
 
 

@@ -75,7 +75,7 @@ storage.download(
 ## Errors(Exceptions)
 
 * ClientError
-  * IllegalArgumentError(bultins.ValueError)
+  * IllegalArgumentError!!!(bultins.ValueError)
   * StorageError
     * FileNotFoundError
   * JobsError
@@ -84,10 +84,6 @@ storage.download(
   * AuthError
     * AuthenticationError
     * AuthorizationError
-  * ClientIOError(builtins.IOError)
-    * FileNotFoundError (builtins.FileNotFoundError) - CLI Only exception
-    * AccessDeniedError - CLI Only exception
-    * NetworkError
    
 
 ## Contributing
