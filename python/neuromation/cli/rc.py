@@ -1,7 +1,9 @@
 from pathlib import Path
+from typing import Optional
 
 import yaml
 from dataclasses import asdict, dataclass
+from jose import jwt
 from yarl import URL
 
 
@@ -15,6 +17,12 @@ class Config:
         docker_registry_url = platform_url.\
             host.replace('platform.', 'registry.')
         return docker_registry_url
+
+    def get_platform_user_name(self) -> Optional[str]:
+        if self.auth != '' and self.auth is not None:
+            jwt_header = jwt.get_unverified_header(self.auth)
+            return jwt_header.get('identity', None)
+        return None
 
 
 def save(path, config: Config) -> Config:

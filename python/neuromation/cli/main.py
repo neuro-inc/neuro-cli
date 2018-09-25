@@ -103,10 +103,11 @@ Commands:
         def update_docker_config(config: rc.Config) -> None:
             docker_registry_url = config.docker_registry_url()
 
-            process = subprocess.run(args=['docker', 'login',
-                                           '-u', token,
-                                           '-p', 'bearer-token',
-                                           docker_registry_url])
+            process = subprocess.run(['docker', 'login',
+                                      '-u', token,
+                                      '-u', token,
+                                      '-p', 'bearer-token',
+                                      docker_registry_url])
             if process.returncode != 0:
                 raise ValueError('Failed to updated docker auth details.')
 
@@ -426,6 +427,14 @@ Commands:
           pull Pull docker image from cloud registry to local machine
           search List your docker images
         """
+        def get_image_platform_full_name(image_name):
+            config = rc.load(RC_PATH)
+            docker_registry_url = config.docker_registry_url()
+            platform_user_name = config.get_platform_user_name()
+            target_image_name = f'{docker_registry_url}/' \
+                                f'{platform_user_name}/{image_name}'
+            return target_image_name
+
         @command
         def push(image_name):
             """
@@ -435,20 +444,19 @@ Commands:
             Push an image or a repository to a registry
             """
             config = rc.load(RC_PATH)
-            docker_registry_url = config.docker_registry_url()
-            target_image_name = f'{docker_registry_url}/{image_name}'
+            target_image_name = get_image_platform_full_name(image_name)
             # Tag first, as otherwise it would fail
-            process = subprocess.run(args=['docker', 'tag',
-                                           image_name, target_image_name])
+            process = subprocess.run(['docker', 'tag',
+                                      image_name, target_image_name])
             if process.returncode != 0:
                 raise ValueError(f'Docker tag failed. '
                                  f'Error code {process.returncode}')
             # PUSH Image to remote registry
-            process = subprocess.run(args=['docker', 'push',
-                                           target_image_name])
+            process = subprocess.run(['docker', 'push', target_image_name])
             if process.returncode != 0:
                 raise ValueError(f'Docker pull failed. '
                                  f'Error code {process.returncode}')
+            print(target_image_name)
             return locals()
 
         @command
@@ -459,27 +467,13 @@ Commands:
 
             Pull an image or a repository from a registry
             """
-            config = rc.load(RC_PATH)
-            docker_registry_url = config.docker_registry_url()
-            target_image_name = f'{docker_registry_url}/{image_name}'
-            process = subprocess.run(args=['docker', 'pull',
-                                           target_image_name])
+            target_image_name = get_image_platform_full_name(image_name)
+            process = subprocess.run(['docker', 'pull', target_image_name])
             if process.returncode != 0:
                 raise ValueError(f'Docker pull failed. '
                                  f'Error code {process.returncode}')
             return locals()
 
-        @command
-        def search():
-            """
-            Usage:
-                neuro image search
-
-            Lists docker images available
-            """
-            # TODO implement
-            print('Not implemented YET')
-            return locals()
         return locals()
     return locals()
 
