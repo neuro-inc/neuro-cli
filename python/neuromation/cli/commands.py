@@ -27,7 +27,6 @@ def _(f):
 
 def commands(scope):
     """Return all commands in target scope (i.e. module or function)"""
-
     return {
         func._command_name: func
         for func in scope.values()

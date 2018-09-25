@@ -22,6 +22,47 @@ def test_create(nmrc):
                           f'url: {DEFAULTS.url}\n'
 
 
+def test_docker_url():
+    assert DEFAULTS.docker_registry_url() == 'registry.dev.neuromation.io'
+    custom_staging = rc.Config(
+        url='http://platform.staging.neuromation.io/api/v1',
+        auth=''
+    )
+    url = custom_staging.docker_registry_url()
+    assert url == 'registry.staging.neuromation.io'
+
+    prod = rc.Config(
+        url='http://platform.neuromation.io/api/v1',
+        auth=''
+    )
+    url = prod.docker_registry_url()
+    assert url == 'registry.neuromation.io'
+
+
+def test_jwt_user():
+    assert DEFAULTS.get_platform_user_name() is None
+    custom_staging = rc.Config(
+        url='http://platform.staging.neuromation.io/api/v1',
+        auth='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+             'eyJpZGVudGl0eSI6InJhZmEifQ.'
+             '7-5YOshNXd6lKhQbMyglIQfUgBi9xNFW9vciBY9RSFA'
+    )
+    user = custom_staging.get_platform_user_name()
+    assert user == 'rafa'
+
+
+def test_jwt_user_missing():
+    assert DEFAULTS.get_platform_user_name() is None
+    custom_staging = rc.Config(
+        url='http://platform.staging.neuromation.io/api/v1',
+        auth='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+             'eyJzcyI6InJhZmEifQ.'
+             '9JsoI-AkyDRbLbp4V00_z-K5cpgfZABU2L0z-NZ77oc'
+    )
+    user = custom_staging.get_platform_user_name()
+    assert user is None
+
+
 def test_create_existing(nmrc):
     document = """
         url: 'http://a.b/c'

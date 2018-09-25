@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import sys
 from functools import partial
 from pathlib import Path
@@ -99,6 +100,17 @@ Commands:
             auth            Updates API Token
             show            Print current settings
         """
+        def update_docker_config(config: rc.Config) -> None:
+            docker_registry_url = config.docker_registry_url()
+
+            process = subprocess.run(['docker', 'login',
+                                      '-u', token,
+                                      '-u', token,
+                                      '-p', 'bearer-token',
+                                      docker_registry_url])
+            if process.returncode != 0:
+                raise ValueError('Failed to updated docker auth details.')
+
         @command
         def url(url):
             """
@@ -110,6 +122,7 @@ Commands:
             config = rc.load(RC_PATH)
             config = rc.Config(url=url, auth=config.auth)
             rc.save(RC_PATH, config)
+            update_docker_config(config)
 
         @command
         def show():
@@ -139,6 +152,7 @@ Commands:
             config = rc.load(RC_PATH)
             config = rc.Config(url=config.url, auth=token)
             rc.save(RC_PATH, config)
+            update_docker_config(config)
 
         return locals()
 
@@ -398,6 +412,71 @@ Commands:
             with jobs() as j:
                 j.kill(id)
             return 'Job killed.'
+        return locals()
+
+    @command
+    def image():
+        """
+        Usage:
+            neuro image COMMAND
+
+        Docker image operations
+
+        Commands:
+          push Push docker image from local machine to cloud registry
+          pull Pull docker image from cloud registry to local machine
+          search List your docker images
+        """
+        def get_image_platform_full_name(image_name):
+            config = rc.load(RC_PATH)
+            docker_registry_url = config.docker_registry_url()
+            platform_user_name = config.get_platform_user_name()
+            target_image_name = f'{docker_registry_url}/' \
+                                f'{platform_user_name}/{image_name}'
+            return target_image_name
+
+        @command
+        def push(image_name):
+            """
+            Usage:
+                neuro image push IMAGE_NAME
+
+            Push an image or a repository to a registry
+            """
+            target_image_name = get_image_platform_full_name(image_name)
+            # Tag first, as otherwise it would fail
+            try:
+                subprocess.run(['docker', 'tag',
+                                image_name, target_image_name],
+                               check=True)
+            except subprocess.CalledProcessError as e:
+                raise ValueError(f'Docker tag failed. '
+                                 f'Error code {e.returncode}')
+
+            # PUSH Image to remote registry
+            try:
+                subprocess.run(['docker', 'push', target_image_name],
+                               check=True)
+            except subprocess.CalledProcessError as e:
+                raise ValueError(f'Docker pull failed. '
+                                 f'Error details {e.returncode}')
+
+        @command
+        def pull(image_name):
+            """
+            Usage:
+                neuro image pull IMAGE_NAME
+
+            Pull an image or a repository from a registry
+            """
+            target_image_name = get_image_platform_full_name(image_name)
+            try:
+                subprocess.run(['docker', 'pull', target_image_name],
+                               check=True)
+            except subprocess.CalledProcessError as e:
+                raise ValueError(f'Docker pull failed. '
+                                 f'Error code {e.returncode}')
+
         return locals()
     return locals()
 
