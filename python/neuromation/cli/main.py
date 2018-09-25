@@ -11,7 +11,8 @@ import aiohttp
 import neuromation
 from neuromation.cli.command_handlers import (CopyOperation,
                                               PlatformListDirOperation,
-                                              PlatformMakeDirOperation)
+                                              PlatformMakeDirOperation,
+                                              PlatformRemoveOperation)
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -179,10 +180,14 @@ Commands:
             Usage:
                 neuro store rm PATH
 
-            Remove files or directories
+            Remove files or directories.
+
+            Example:
+                neuro store rm storage:///foo/bar/
+                neuro store rm storage:/foo/bar/
+                neuro store rm storage://alice/foo/bar/
             """
-            with storage() as s:
-                return s.rm(path=path)
+            PlatformRemoveOperation().remove(path, storage)
 
         @command
         def ls(path):

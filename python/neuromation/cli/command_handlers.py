@@ -3,7 +3,7 @@ import logging
 import os
 from os.path import dirname
 from typing import Callable, List
-from urllib.parse import ParseResult
+from urllib.parse import ParseResult, urlparse
 
 from neuromation.client import FileStatus, ResourceNotFound
 
@@ -30,6 +30,29 @@ class PlatformListDirOperation:
     def ls(self, path: str, storage: Callable):
         with storage() as s:
             return s.ls(path=path)
+
+
+class PlatformRemoveOperation:
+
+    def remove(self, principal: str, path: str, storage: Callable):
+        path = urlparse(path, scheme='file')
+        # TODO use PathLib from python
+        target_path = path.path
+
+        if path.scheme != 'storage':
+            raise ValueError('Path should be targeting platform storage.')
+        if target_path == '':
+            raise ValueError('Invalid path value.')
+
+        if target_path[0] != '/':
+            target_path = '/' + path.path
+
+        target_principal = path.netloc if path.netloc != '' \
+                                          and path.netloc.netloc != '~' \
+            else principal
+        final_path = f'/{target_principal}{target_path}'
+        with storage() as s:
+            return s.rm(path=final_path)
 
 
 class CopyOperation:
