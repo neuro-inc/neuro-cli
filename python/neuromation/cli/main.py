@@ -446,18 +446,21 @@ Commands:
             config = rc.load(RC_PATH)
             target_image_name = get_image_platform_full_name(image_name)
             # Tag first, as otherwise it would fail
-            process = subprocess.run(['docker', 'tag',
-                                      image_name, target_image_name])
-            if process.returncode != 0:
+            try:
+                subprocess.run(['docker', 'tag',
+                                image_name, target_image_name],
+                               check=True)
+            except subprocess.CalledProcessError as e:
                 raise ValueError(f'Docker tag failed. '
-                                 f'Error code {process.returncode}')
+                                 f'Error code {e.returncode}')
+
             # PUSH Image to remote registry
-            process = subprocess.run(['docker', 'push', target_image_name])
-            if process.returncode != 0:
+            try:
+                subprocess.run(['docker', 'push', target_image_name],
+                               check=True)
+            except subprocess.CalledProcessError as e:
                 raise ValueError(f'Docker pull failed. '
-                                 f'Error code {process.returncode}')
-            print(target_image_name)
-            return locals()
+                                 f'Error details {e.returncode}')
 
         @command
         def pull(image_name):
@@ -468,11 +471,13 @@ Commands:
             Pull an image or a repository from a registry
             """
             target_image_name = get_image_platform_full_name(image_name)
-            process = subprocess.run(['docker', 'pull', target_image_name])
-            if process.returncode != 0:
+            try:
+                subprocess.run(['docker', 'pull', target_image_name],
+                               check=True)
+            except subprocess.CalledProcessError as e:
                 raise ValueError(f'Docker pull failed. '
-                                 f'Error code {process.returncode}')
-            return locals()
+                                 f'Error code {e.returncode}')
+
 
         return locals()
     return locals()
