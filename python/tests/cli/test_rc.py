@@ -39,6 +39,18 @@ def test_docker_url():
     assert url == 'registry.neuromation.io'
 
 
+def test_jwt_user():
+    assert DEFAULTS.get_platform_user_name() is None
+    custom_staging = rc.Config(
+        url='http://platform.staging.neuromation.io/api/v1',
+        auth='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImlkZW50aXR5IjoicmF'
+             'mYSJ9.eyJpZGVudGl0eSI6InJhZmEifQ.3ZVl8v2aMeeMTl57gTQn5K'
+             'tQD5t4P0tOXyoM3J8kSqw'
+    )
+    user = custom_staging.get_platform_user_name()
+    assert user == 'rafa'
+
+
 def test_create_existing(nmrc):
     document = """
         url: 'http://a.b/c'
