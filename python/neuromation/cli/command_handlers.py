@@ -19,21 +19,7 @@ PLATFORM_DELIMITER = '/'
 SYSTEM_PATH_DELIMITER = os.sep
 
 
-class PlatformMakeDirOperation:
-
-    def mkdir(self, path: str, storage: Callable):
-        with storage() as s:
-            return s.mkdirs(path=path)
-
-
-class PlatformListDirOperation:
-
-    def ls(self, path: str, storage: Callable):
-        with storage() as s:
-            return s.ls(path=path)
-
-
-class PlatformRemoveOperation:
+class PlatformStorageOperation:
 
     def __init__(self, principal: str):
         self.principal = principal
@@ -46,20 +32,60 @@ class PlatformRemoveOperation:
             path_principal = self.principal
         return path_principal
 
-    def remove(self, path_str: str, storage: Callable):
-        path = urlparse(path_str, scheme='file')
+    def _is_storage_path_url(self, path):
         if path.scheme != 'storage':
             raise ValueError('Path should be targeting platform storage.')
 
-        # TODO test how it will work on Windows Platform
-        target_path: PosixPath = PosixPath(path.path)
+    def _render_platform_path(self, path_str: str):
+        target_path: PosixPath = PosixPath(path_str)
         if not target_path.is_absolute():
-            target_path = PosixPath('/' + path.path)
+            target_path = PosixPath(PLATFORM_DELIMITER + path_str)
+        return target_path
+
+
+class PlatformMakeDirOperation(PlatformStorageOperation):
+
+    def mkdir(self, path_str: str, storage: Callable):
+        path = urlparse(path_str, scheme='file')
+        self._is_storage_path_url(path)
+
+        target_path: PosixPath = self._render_platform_path(path.path)
+        target_principal = self._get_principal(path)
+        final_path = f'/{target_principal}{target_path}'
+
+        # TODO Test directory exists by LS-ing it, that should as well let us know whether directory or file with same name already exist or not in target directory
+
+        with storage() as s:
+            return s.mkdirs(path=final_path)
+
+
+class PlatformListDirOperation(PlatformStorageOperation):
+
+    def ls(self, path_str: str, storage: Callable):
+        path = urlparse(path_str, scheme='file')
+        self._is_storage_path_url(path)
+
+        target_path: PosixPath = self._render_platform_path(path.path)
+        target_principal = self._get_principal(path)
+        final_path = f'/{target_principal}{target_path}'
+
+        with storage() as s:
+            return s.ls(path=final_path)
+
+
+class PlatformRemoveOperation(PlatformStorageOperation):
+
+    def remove(self, path_str: str, storage: Callable):
+        path = urlparse(path_str, scheme='file')
+        self._is_storage_path_url(path)
+
+        # TODO test how it will work on Windows Platform
+        target_path: PosixPath = self._render_platform_path(path.path)
         # Lets protect user against typos in command line
         # We can of course ask user whether he really wants
         # to delete every file. Yet it is going to be nightmare
         # in case of REST
-        if str(target_path) == '/':
+        if str(target_path) == PLATFORM_DELIMITER:
             raise ValueError('Invalid path value.')
 
         target_principal = self._get_principal(path)
@@ -68,7 +94,7 @@ class PlatformRemoveOperation:
             return s.rm(path=final_path)
 
 
-class CopyOperation:
+class CopyOperation(PlatformStorageOperation):
 
     @abc.abstractmethod
     def _copy(self, src: str, dst: str,

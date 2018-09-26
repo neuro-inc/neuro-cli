@@ -65,6 +65,16 @@ class TestNormalCases:
         partial_mocked_store().rm.assert_called_once()
         partial_mocked_store().rm.assert_called_with(path='/alice/data')
 
+    def test_with_principal_file(self, alice_rm, partial_mocked_store):
+        alice_rm.remove('storage://alice/data/foo.txt', partial_mocked_store)
+        partial_mocked_store().rm.assert_called_once()
+        partial_mocked_store().rm.assert_called_with(path='/alice/data/foo.txt')
+
+    def test_with_principal_file_ensure_slash(self, alice_rm, partial_mocked_store):
+        alice_rm.remove('storage://alice/data/foo.txt/', partial_mocked_store)
+        partial_mocked_store().rm.assert_called_once()
+        partial_mocked_store().rm.assert_called_with(path='/alice/data/foo.txt')
+
 
 class TestInvalidScenarios:
 
@@ -168,5 +178,22 @@ def test_rm_alice_removes_bob_data(alice_rm, http_backed_storage):
         method='DELETE',
         json=None,
         url='http://127.0.0.1/storage/bob/foo',
+        params=None,
+        data=None)
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(PlainResponse(text='')))
+@patch(
+    'neuromation.cli.rc.Config.get_platform_user_name',
+    new='alice'
+)
+def test_rm_alice_removes_bob_data_file(alice_rm, http_backed_storage):
+    alice_rm.remove('storage://bob/foo/data.txt/', http_backed_storage)
+    aiohttp.ClientSession.request.assert_called_with(
+        method='DELETE',
+        json=None,
+        url='http://127.0.0.1/storage/bob/foo/data.txt',
         params=None,
         data=None)
