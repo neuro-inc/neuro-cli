@@ -51,13 +51,14 @@ class PlatformRemoveOperation:
         if path.scheme != 'storage':
             raise ValueError('Path should be targeting platform storage.')
 
-        # TODO use PathLib from python, test how it will work on Windows Platform
+        # TODO test how it will work on Windows Platform
         target_path: PosixPath = PosixPath(path.path)
         if not target_path.is_absolute():
             target_path = PosixPath('/' + path.path)
         # Lets protect user against typos in command line
-        # We can of course ask user whether he really wants to delete every file
-        # Yet it is going to be night mare in case of REST
+        # We can of course ask user whether he really wants
+        # to delete every file. Yet it is going to be nightmare
+        # in case of REST
         if str(target_path) == '/':
             raise ValueError('Invalid path value.')
 
