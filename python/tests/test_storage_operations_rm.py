@@ -29,7 +29,7 @@ def alice_rm():
 
 
 @pytest.fixture
-def storage_2(loop):
+def storage(loop):
     storage = Storage(url='http://127.0.0.1',
                       token='test-token-for-storage',
                       loop=loop)
@@ -37,9 +37,9 @@ def storage_2(loop):
 
 
 @pytest.fixture()
-def partial_mocked_store_http(storage_2):
+def http_backed_storage(storage):
     def partial_mocked_store():
-        return storage_2
+        return storage
     return partial_mocked_store
 
 
@@ -93,8 +93,8 @@ class TestInvalidScenarios:
     'neuromation.cli.rc.Config.get_platform_user_name',
     new='alice'
 )
-def test_rm_alice_no_user(alice_rm, partial_mocked_store_http):
-    alice_rm.remove('storage:///foo', partial_mocked_store_http)
+def test_rm_alice_no_user(alice_rm, http_backed_storage):
+    alice_rm.remove('storage:///foo', http_backed_storage)
     aiohttp.ClientSession.request.assert_called_with(
         method='DELETE',
         json=None,
@@ -110,8 +110,8 @@ def test_rm_alice_no_user(alice_rm, partial_mocked_store_http):
     'neuromation.cli.rc.Config.get_platform_user_name',
     new='alice'
 )
-def test_rm_alice_tilde_user(alice_rm, partial_mocked_store_http):
-    alice_rm.remove('storage://~/foo', partial_mocked_store_http)
+def test_rm_alice_tilde_user(alice_rm, http_backed_storage):
+    alice_rm.remove('storage://~/foo', http_backed_storage)
     aiohttp.ClientSession.request.assert_called_with(
         method='DELETE',
         json=None,
@@ -127,8 +127,8 @@ def test_rm_alice_tilde_user(alice_rm, partial_mocked_store_http):
     'neuromation.cli.rc.Config.get_platform_user_name',
     new='alice'
 )
-def test_rm_alice_omitted_user(alice_rm, partial_mocked_store_http):
-    alice_rm.remove('storage:/foo', partial_mocked_store_http)
+def test_rm_alice_omitted_user(alice_rm, http_backed_storage):
+    alice_rm.remove('storage:/foo', http_backed_storage)
     aiohttp.ClientSession.request.assert_called_with(
         method='DELETE',
         json=None,
@@ -145,8 +145,8 @@ def test_rm_alice_omitted_user(alice_rm, partial_mocked_store_http):
     new='alice'
 )
 def test_rm_alice_omitted_user_no_leading_slash(alice_rm,
-                                                partial_mocked_store_http):
-    alice_rm.remove('storage:foo', partial_mocked_store_http)
+                                                http_backed_storage):
+    alice_rm.remove('storage:foo', http_backed_storage)
     aiohttp.ClientSession.request.assert_called_with(
         method='DELETE',
         json=None,
@@ -162,8 +162,8 @@ def test_rm_alice_omitted_user_no_leading_slash(alice_rm,
     'neuromation.cli.rc.Config.get_platform_user_name',
     new='alice'
 )
-def test_rm_alice_removes_bob_data(alice_rm, partial_mocked_store_http):
-    alice_rm.remove('storage://bob/foo', partial_mocked_store_http)
+def test_rm_alice_removes_bob_data(alice_rm, http_backed_storage):
+    alice_rm.remove('storage://bob/foo', http_backed_storage)
     aiohttp.ClientSession.request.assert_called_with(
         method='DELETE',
         json=None,
