@@ -220,7 +220,12 @@ Commands:
             operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
 
             if operation:
-                return operation.copy(src, dst, storage)
+                import time
+                start = time.perf_counter()
+                ret_v = operation.copy(src, dst, storage)
+                end = time.perf_counter()
+                log.debug(f'Copy time {(end - start)} seconds')
+                return ret_v
 
             raise ValueError('Invalid SOURCE or DESTINATION value')
 

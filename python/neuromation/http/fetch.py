@@ -25,6 +25,7 @@ class Request:
     url: str
     data: BufferedIOBase
     json: Dict
+    headers: Dict
 
 
 class JsonRequest(Request):
@@ -114,6 +115,7 @@ async def _fetch(request: Request, session, url: str):
                 params=request.params,
                 url=url + request.url,
                 data=request.data,
+                headers=request.headers,
                 json=request.json) as resp:
         try:
             resp.raise_for_status()

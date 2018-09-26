@@ -174,10 +174,12 @@ def build(request: Request) -> http.Request:
             data=request.data)
     elif isinstance(request, CreateRequestArchived):
         return http.PlainRequest(
-            url=add_path('/storage/', request.path) + '?op=decompress',
+            url=add_path('/storage/', request.path),
             params=None,
             method='PUT',
             json=None,
+            headers={'Content-Encoding': 'tar',
+                     'Content-Type': 'application/octet-stream'},
             data=request.data)
     elif isinstance(request, MkDirsRequest):
         return http.PlainRequest(

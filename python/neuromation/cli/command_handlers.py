@@ -1,8 +1,10 @@
 import abc
+import asyncio
 import logging
 import os
 import tarfile
 from os.path import dirname
+from stat import S_ISDIR, S_ISREG
 from typing import Callable, List
 from urllib.parse import ParseResult
 
@@ -190,10 +192,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
-    async def copy_single_file(self):
-        copy it
-
-    async def _copy(self, src: str, dst: str, storage: Callable):
+    def _copy(self, src: str, dst: str, storage: Callable):
         # TODO should we create directory by default - root
         dst = dst.rstrip(PLATFORM_DELIMITER)
         dst = f'{dst}{PLATFORM_DELIMITER}'
@@ -208,12 +207,43 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 target_dest = f'{pref_path}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
+            for subdir in subdirs:
+                target_dest = f'{pref_path}{subdir}'
+                PlatformMakeDirOperation().mkdir(target_dest, storage)
 
-                for file from batch_of_files:
-                    coroutine = self.copy_file()
 
-                wait for all
+class RecursiveLocalToPlatformV1(NonRecursiveLocalToPlatform):
 
+    async def copy_file_2(self, src_path: str,
+                          dest_path: str,
+                          storage: Callable):
+        self.copy_file(src_path, dest_path, storage)
+
+    def _copy(self, src: str, dst: str, storage: Callable):
+        # def _storage():
+        #     def x():
+        #         return storage(loop=loop)
+        #     return x
+
+        loop = asyncio.get_event_loop()
+
+        # TODO should we create directory by default - root
+        dst = dst.rstrip(PLATFORM_DELIMITER)
+        dst = f'{dst}{PLATFORM_DELIMITER}'
+        for root, subdirs, files in os.walk(src):
+            if root != src:
+                suffix_path = os.path.relpath(root, src)
+                pref_path = f'{dst}{suffix_path}{PLATFORM_DELIMITER}'
+            else:
+                suffix_path = ''
+                pref_path = dst
+
+            for file in files:
+                target_dest = f'{pref_path}{file}'
+                src_file = os.path.join(root, file)
+                crt = self.copy_file_2(src_file, target_dest, storage)
+                gather = asyncio.gather(crt)
+                loop.run_until_complete(gather)
             for subdir in subdirs:
                 target_dest = f'{pref_path}{subdir}'
                 PlatformMakeDirOperation().mkdir(target_dest, storage)
@@ -227,21 +257,24 @@ class RecursiveLocalToPlatformV2(NonRecursiveLocalToPlatform):
     async def file_sender(self, src: str, total_size: int, files: List):
         for file in files:
             file_name = file['name']
-            stat = file['stat']
+            file_stat = file['stat']
             print(file_name, end='\r')
 
-            # stat = await self.io_stat(src + file_name)
             tar_info = tarfile.TarInfo(name=file_name)
-            tar_info.mtime = stat.st_mtime
-            tar_info.mode = stat.st_mode
+            tar_info.mtime = file_stat.st_mtime
+            tar_info.mode = file_stat.st_mode
 
-            if stat.S_ISDIR(stat.st_mode):
+            if S_ISDIR(file_stat.st_mode):
                 tar_info.type = tarfile.DIRTYPE
-                yield tar_info.tobuf(tarfile.GNU_FORMAT, "utf-8", 'surrogateescape')
-            elif stat.S_ISREG(stat.st_mode):
+                yield tar_info.tobuf(tarfile.GNU_FORMAT,
+                                     "utf-8",
+                                     'surrogateescape')
+            elif S_ISREG(file_stat.st_mode):
                 tar_info.type = tarfile.REGTYPE
-                tar_info.size = stat.st_size
-                yield tar_info.tobuf(tarfile.GNU_FORMAT, "utf-8", 'surrogateescape')
+                tar_info.size = file_stat.st_size
+                yield tar_info.tobuf(tarfile.GNU_FORMAT,
+                                     "utf-8",
+                                     'surrogateescape')
                 # TODO line below is completelly broken
                 async with aiofiles.open(src + file_name, 'rb') as f:
                     chunk = await f.read(self.READ_CHUNK_SIZE)
@@ -251,7 +284,8 @@ class RecursiveLocalToPlatformV2(NonRecursiveLocalToPlatform):
                 blocks, remainder = divmod(tar_info.size, tarfile.BLOCKSIZE)
                 if remainder:
                     yield tarfile.NUL * (tarfile.BLOCKSIZE - remainder)
-            print('                                                                    ', end='\r')
+            print('                                       '
+                  '                             ', end='\r')
 
     def _copy(self, src: str, dst: str, storage: Callable):
         # TODO should we create directory by default - root
@@ -269,13 +303,15 @@ class RecursiveLocalToPlatformV2(NonRecursiveLocalToPlatform):
             for subdir in subdirs:
                 target_dest = f'{pref_path}{subdir}'
                 os_stat = os.stat(src + '/' + target_dest)
-                rfiles.append({'name': target_dest, 'stat:': os_stat})
+                rfiles.append({'name': target_dest, 'stat': os_stat})
             for file in files:
                 target_dest = f'{pref_path}{file}'
                 os_stat = os.stat(src + '/' + target_dest)
                 total_size += os_stat.st_size
-                rfiles.append({'name': target_dest, 'stat:': os_stat})
+                rfiles.append({'name': target_dest, 'stat': os_stat})
 
         with storage() as s:
-            s.create_archived_on_fly(path=dst, data=self.file_sender(src + '/', total_size=total_size, files=rfiles))
+            s.create(path=dst, data=self.file_sender(src + '/',
+                                                     total_size=total_size,
+                                                     files=rfiles))
             return dst
