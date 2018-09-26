@@ -187,7 +187,9 @@ Commands:
                 neuro store rm storage:/foo/bar/
                 neuro store rm storage://alice/foo/bar/
             """
-            PlatformRemoveOperation().remove(path, storage)
+            config = rc.load(RC_PATH)
+            platform_user_name = config.get_platform_user_name()
+            PlatformRemoveOperation(platform_user_name).remove(path, storage)
 
         @command
         def ls(path):

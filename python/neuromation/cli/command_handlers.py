@@ -2,6 +2,7 @@ import abc
 import logging
 import os
 from os.path import dirname
+from pathlib import PosixPath
 from typing import Callable, List
 from urllib.parse import ParseResult, urlparse
 
@@ -34,22 +35,33 @@ class PlatformListDirOperation:
 
 class PlatformRemoveOperation:
 
-    def remove(self, principal: str, path: str, storage: Callable):
-        path = urlparse(path, scheme='file')
-        # TODO use PathLib from python
-        target_path = path.path
+    def __init__(self, principal: str):
+        self.principal = principal
 
+    def _get_principal(self, path_url) -> str:
+        path_principal = path_url.netloc
+        if not path_principal:
+            path_principal = self.principal
+        if path_principal == '~':
+            path_principal = self.principal
+        return path_principal
+
+    def remove(self, path_str: str, storage: Callable):
+        path = urlparse(path_str, scheme='file')
         if path.scheme != 'storage':
             raise ValueError('Path should be targeting platform storage.')
-        if target_path == '':
+
+        # TODO use PathLib from python, test how it will work on Windows Platform
+        target_path: PosixPath = PosixPath(path.path)
+        if not target_path.is_absolute():
+            target_path = PosixPath('/' + path.path)
+        # Lets protect user against typos in command line
+        # We can of course ask user whether he really wants to delete every file
+        # Yet it is going to be night mare in case of REST
+        if str(target_path) == '/':
             raise ValueError('Invalid path value.')
 
-        if target_path[0] != '/':
-            target_path = '/' + path.path
-
-        target_principal = path.netloc if path.netloc != '' \
-                                          and path.netloc.netloc != '~' \
-            else principal
+        target_principal = self._get_principal(path)
         final_path = f'/{target_principal}{target_path}'
         with storage() as s:
             return s.rm(path=final_path)
