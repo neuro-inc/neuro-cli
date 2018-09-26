@@ -105,7 +105,6 @@ Commands:
 
             process = subprocess.run(['docker', 'login',
                                       '-u', token,
-                                      '-u', token,
                                       '-p', 'bearer-token',
                                       docker_registry_url])
             if process.returncode != 0:
