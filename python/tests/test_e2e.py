@@ -15,10 +15,10 @@ BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = """
-    url: http://platform.dev.neuromation.io/api/v1
-    auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImlkZW50aXR5IjoicmFmYSJ9.eyJpZGVudGl0eSI6InJhZmEifQ.3ZVl8v2aMeeMTl57gTQn5KtQD5t4P0tOXyoM3J8kSqw
-"""
+RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"\
+    "auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImlkZW50aXR5IjoicmFmYSJ9" \
+          ".eyJpZGVudGl0eSI6InJhZmEifQ" \
+          ".3ZVl8v2aMeeMTl57gTQn5KtQD5t4P0tOXyoM3J8kSqw"
 
 UBUNTU_IMAGE_NAME = 'ubuntu:latest'
 
