@@ -201,7 +201,10 @@ Commands:
             """
             format = '{type:<15}{size:<15,}{name:<}'.format
 
-            storage_objects = PlatformListDirOperation().ls(path, storage)
+            config = rc.load(RC_PATH)
+            platform_user_name = config.get_platform_user_name()
+            ls_op = PlatformListDirOperation(platform_user_name)
+            storage_objects = ls_op.ls(path, storage)
 
             print('\n'.join(
                 format(type=status.type.lower(),
@@ -237,7 +240,12 @@ Commands:
             log.debug(f'src={src}')
             log.debug(f'dst={dst}')
 
-            operation = CopyOperation.create(src.scheme, dst.scheme, recursive)
+            config = rc.load(RC_PATH)
+            platform_user_name = config.get_platform_user_name()
+            operation = CopyOperation.create(platform_user_name,
+                                             src.scheme,
+                                             dst.scheme,
+                                             recursive)
 
             if operation:
                 return operation.copy(src, dst, storage)
@@ -253,7 +261,9 @@ Commands:
 
             Make directories
             """
-            PlatformMakeDirOperation().mkdir(path, storage)
+            config = rc.load(RC_PATH)
+            platform_user_name = config.get_platform_user_name()
+            PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
             return path
 
         return locals()

@@ -13,19 +13,19 @@ from neuromation.client import FileStatus, ResourceNotFound
 
 def test_invalid_scheme_combinations():
     with pytest.raises(ValueError, match=r'schemes required'):
-        CopyOperation.create('file', 'file', False)
+        CopyOperation.create('alice', 'file', 'file', False)
 
     with pytest.raises(ValueError, match=r'schemes required'):
-        CopyOperation.create('storage', 'storage', False)
+        CopyOperation.create('alice', 'storage', 'storage', False)
 
     with pytest.raises(ValueError, match=r'schemes required'):
-        CopyOperation.create('storage', 'abrakadabra', False)
+        CopyOperation.create('alice', 'storage', 'abrakadabra', False)
 
     with pytest.raises(ValueError, match=r'schemes required'):
-        CopyOperation.create('file', 'abrakadabra', False)
+        CopyOperation.create('alice', 'file', 'abrakadabra', False)
 
     with pytest.raises(ValueError, match=r'schemes required'):
-        CopyOperation.create('abrakadabra', 'abrakadabra', False)
+        CopyOperation.create('alice', 'abrakadabra', 'abrakadabra', False)
 
 
 @pytest.fixture(scope='function')
@@ -33,8 +33,6 @@ def mocked_store(loop):
     my_mock = MagicMock(Storage('no-url', 'no-token', loop=loop))
     my_mock.__enter__ = Mock(return_value=my_mock)
     my_mock.__exit__ = Mock(return_value=False)
-    # my_mock.mkdir = Mock(return_value=False)
-    # my_mock.ls = Mock(return_value=False)
     return my_mock
 
 
@@ -46,17 +44,19 @@ def partial_mocked_store(mocked_store):
 
 
 def test_ls(mocked_store, partial_mocked_store):
-    PlatformListDirOperation().ls('/home/dir', partial_mocked_store)
+    PlatformListDirOperation('alice').ls('storage:///home/dir',
+                                         partial_mocked_store)
 
     mocked_store.ls.assert_called_once()
-    mocked_store.ls.assert_called_with(path='/home/dir')
+    mocked_store.ls.assert_called_with(path='/alice/home/dir')
 
 
 def test_mkdir(mocked_store, partial_mocked_store):
-    PlatformMakeDirOperation().mkdir('/home/dir', partial_mocked_store)
+    PlatformMakeDirOperation('alice').mkdir('storage:///home/dir',
+                                            partial_mocked_store)
 
     mocked_store.mkdirs.assert_called_once()
-    mocked_store.mkdirs.assert_called_with(path='/home/dir')
+    mocked_store.mkdirs.assert_called_with(path='/alice/home/dir')
 
 
 # Platform TO Local File System Recursive SET
@@ -94,7 +94,7 @@ def test_copy_platform_to_local_recursive_exist_exist_target_is_dir(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', True)
+    op = CopyOperation.create('alice', 'storage', 'file', True)
     op.copy_file = transfer_mock
     with pytest.raises(ResourceNotFound):
         op.copy(urlparse('storage:///existing/my_file.txt'),
@@ -119,7 +119,7 @@ def test_copy_local_to_platform_recursive_not_exist_exist_target_is_dir(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', True)
+    op = CopyOperation.create('alice', 'storage', 'file', True)
     op.copy_file = transfer_mock
     with pytest.raises(FileNotFoundError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
@@ -144,7 +144,7 @@ def test_copy_local_to_platform_recursive_exist_exist_target_not_dir(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', True)
+    op = CopyOperation.create('alice', 'storage', 'file', True)
     op.copy_file = transfer_mock
     with pytest.raises(NotADirectoryError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
@@ -156,17 +156,17 @@ def test_copy_local_to_platform_recursive_exist_exist_target_not_dir(
 def test_copy_local_to_platform_recursive_exist_exist_target_is_dir_2(
         mocked_store, partial_mocked_store, monkeypatch):
     def ls(path):
-        if path == '/existing' or path == '/existing/':
+        if path == '/alice/platform_existing':
             return [FileStatus("my_file.txt", 100, "FILE"),
                     FileStatus("dir", 0, "DIRECTORY"),
                     FileStatus("di1", 0, "DIRECTORY"),
                     ]
-        if path == '/existing/dir' or path == '/existing/dir/':
+        if path == '/alice/platform_existing/dir' or path == '/existing/dir/':
             return [FileStatus("my_file2.txt", 100, "FILE")]
-        if path == '/existing/di1' or path == '/existing/di1/':
+        if path == '/alice/platform_existing/di1' or path == '/existing/di1/':
             return []
-        if path == '/':
-            return [FileStatus("existing", 0, "DIRECTORY")]
+        if path == '/alice/':
+            return [FileStatus("platform_existing", 0, "DIRECTORY")]
         raise ValueError('OOPS')
 
     def exists_func(src):
@@ -184,16 +184,16 @@ def test_copy_local_to_platform_recursive_exist_exist_target_is_dir_2(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', True)
+    op = CopyOperation.create('alice', 'storage', 'file', True)
     op.copy_file = transfer_mock
-    op.copy(urlparse('storage:///existing/'),
+    op.copy(urlparse('storage:///platform_existing/'),
             urlparse('file:///existing/dir/'), partial_mocked_store)
 
     assert transfer_mock.call_count == 2
-    transfer_mock.assert_any_call('/existing/my_file.txt',
+    transfer_mock.assert_any_call('/platform_existing/my_file.txt',
                                   '/existing/dir/my_file.txt',
                                   partial_mocked_store)
-    transfer_mock.assert_any_call('/existing/dir/my_file2.txt',
+    transfer_mock.assert_any_call('/platform_existing/dir/my_file2.txt',
                                   '/existing/dir/dir/my_file2.txt',
                                   partial_mocked_store)
 
@@ -210,29 +210,29 @@ def test_copy_local_to_platform_recursive_exist_exist_target_is_dir_2(
 def test_copy_platform_to_local_non_recursive_exist_exist_target_is_dir(
         mocked_store, partial_mocked_store, monkeypatch):
     def ls(path):
-        if path == '/existing' or path == '/existing/':
-            return [FileStatus("my_file.txt", 100, "FILE")]
+        if path == '/alice/platform_existing':
+            return [FileStatus("platform_file.txt", 100, "FILE")]
         raise ValueError('OOPS')
 
     def exists_func(src):
-        return '/existing/dir/' == src
+        return '/local_existing/dir/' == src
 
     def is_dir_func(src):
-        return '/existing/dir/' == src
+        return '/local_existing/dir/' == src
 
     monkeypatch.setattr(os.path, 'exists', exists_func)
     monkeypatch.setattr(os.path, 'isdir', is_dir_func)
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', False)
+    op = CopyOperation.create('alice', 'storage', 'file', False)
     op.copy_file = transfer_mock
-    op.copy(urlparse('storage:///existing/my_file.txt'),
-            urlparse('file:///existing/dir/'), partial_mocked_store)
+    op.copy(urlparse('storage:///platform_existing/platform_file.txt'),
+            urlparse('file:///local_existing/dir/'), partial_mocked_store)
 
     transfer_mock.assert_called_once()
-    transfer_mock.assert_called_with('/existing/my_file.txt',
-                                     '/existing/dir/my_file.txt',
+    transfer_mock.assert_called_with('/platform_existing/platform_file.txt',
+                                     '/local_existing/dir/platform_file.txt',
                                      partial_mocked_store)
 
 
@@ -252,7 +252,7 @@ def test_copy_local_to_platform_non_recursive_not_exist_exist_target_is_dir(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', False)
+    op = CopyOperation.create('alice', 'storage', 'file', False)
     op.copy_file = transfer_mock
     with pytest.raises(ValueError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
@@ -276,7 +276,7 @@ def test_copy_local_to_platform_non_recursive_not_not_exist_exist_target_dir(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', False)
+    op = CopyOperation.create('alice', 'storage', 'file', False)
     op.copy_file = transfer_mock
     with pytest.raises(ValueError):
         op.copy(urlparse('storage:///storage/my_file.txt'),
@@ -300,7 +300,7 @@ def test_copy_local_to_platform_non_recursive_exist_exist_target_is_dir(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('file', 'storage', False)
+    op = CopyOperation.create('alice', 'file', 'storage', False)
     op._copy = transfer_mock
     op.copy(urlparse('file:///storage/my_file.txt'),
             urlparse('storage:///local/dir/'), partial_mocked_store)
@@ -321,7 +321,7 @@ def test_copy_local_to_platform_recursive_exist_exist_target_is_dir(
     mocked_store.mkdir = lambda x: x
     transfer_mock = Mock()
 
-    op = CopyOperation.create('file', 'storage', True)
+    op = CopyOperation.create('alice', 'file', 'storage', True)
     op.copy_file = transfer_mock
     op.copy(urlparse('file:///storage/'),
             urlparse('storage:///local/dir/'), partial_mocked_store)
@@ -338,7 +338,7 @@ def test_copy_local_to_platform_recursive_exist_exist_target_is_dir(
 def test_copy_local_to_platform_non_recursive_dir_exist_exist_target_is_dir(
         mocked_store, partial_mocked_store, monkeypatch):
     def ls(path):
-        if path == '/existing' or path == '/existing/':
+        if path == '/alice/platform':
             return [FileStatus("my_file.txt", 0, "DIRECTORY")]
         return [FileStatus("my_file.txt", 100, "FILE")]
 
@@ -353,10 +353,10 @@ def test_copy_local_to_platform_non_recursive_dir_exist_exist_target_is_dir(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', False)
+    op = CopyOperation.create('alice', 'storage', 'file', False)
     op.copy_file = transfer_mock
     with pytest.raises(ResourceNotFound):
-        op.copy(urlparse('storage:///existing/my_file.txt'),
+        op.copy(urlparse('storage:///platform/my_file.txt'),
                 urlparse('file:///existing/dir/'), partial_mocked_store)
     transfer_mock.assert_not_called()
 
@@ -377,7 +377,7 @@ def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file_2(
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', False)
+    op = CopyOperation.create('alice', 'storage', 'file', False)
     op._copy = transfer_mock
     with pytest.raises(NotADirectoryError):
         op.copy(urlparse('storage:///existing/my_file.txt'),
@@ -389,24 +389,29 @@ def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file_2(
 def test_copy_local_to_platform_non_recursive_exist_exist_target_is_file(
         mocked_store, partial_mocked_store, monkeypatch):
     def ls(path):
-        return [FileStatus("my_file.txt", 100, "FILE")]
+        if path == '/alice/platform_existing':
+            return [FileStatus("my_file.txt", 100, "FILE")]
+        if path == '/alice/platform_existing/my_file.txt':
+            return [FileStatus("my_file.txt", 100, "FILE")]
+        raise ValueError(f'Scanning non expected directory {path}')
 
     def exists_func(src):
-        return '/existing/dir' != src
+        return '/local_existing/dir' != src
 
     def is_dir_func(src):
-        return '/existing' == src
+        return '/local_existing' == src
 
     monkeypatch.setattr(os.path, 'exists', exists_func)
     monkeypatch.setattr(os.path, 'isdir', is_dir_func)
     mocked_store.ls = ls
     transfer_mock = Mock()
 
-    op = CopyOperation.create('storage', 'file', False)
-    op._copy = transfer_mock
-    op.copy(urlparse('storage:///existing/my_file.txt'),
-            urlparse('file:///existing/dir'), partial_mocked_store)
+    op = CopyOperation.create('alice', 'storage', 'file', False)
+    op.copy_file = transfer_mock
+    op.copy(urlparse('storage:///platform_existing/my_file.txt'),
+            urlparse('file:///local_existing/dir'), partial_mocked_store)
 
     transfer_mock.assert_called_once()
-    transfer_mock.assert_called_with('/existing/my_file.txt',
-                                     '/existing/dir', partial_mocked_store)
+    transfer_mock.assert_called_with('/alice/platform_existing/my_file.txt',
+                                     '/local_existing/dir',
+                                     partial_mocked_store)

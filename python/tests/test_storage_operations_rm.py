@@ -68,12 +68,21 @@ class TestNormalCases:
     def test_with_principal_file(self, alice_rm, partial_mocked_store):
         alice_rm.remove('storage://alice/data/foo.txt', partial_mocked_store)
         partial_mocked_store().rm.assert_called_once()
-        partial_mocked_store().rm.assert_called_with(path='/alice/data/foo.txt')
+        partial_mocked_store().rm.assert_called_with(
+            path='/alice/data/foo.txt')
 
-    def test_with_principal_file_ensure_slash(self, alice_rm, partial_mocked_store):
+    def test_with_principal_bob_file(self, alice_rm, partial_mocked_store):
+        alice_rm.remove('storage://bob/data/foo.txt', partial_mocked_store)
+        partial_mocked_store().rm.assert_called_once()
+        partial_mocked_store().rm.assert_called_with(path='/bob/data/foo.txt')
+
+    def test_with_principal_file_ensure_slash(self,
+                                              alice_rm,
+                                              partial_mocked_store):
         alice_rm.remove('storage://alice/data/foo.txt/', partial_mocked_store)
         partial_mocked_store().rm.assert_called_once()
-        partial_mocked_store().rm.assert_called_with(path='/alice/data/foo.txt')
+        partial_mocked_store().rm.assert_called_with(
+            path='/alice/data/foo.txt')
 
 
 class TestInvalidScenarios:
