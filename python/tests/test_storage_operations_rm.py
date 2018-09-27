@@ -1,46 +1,15 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
 import aiohttp
 import pytest
 
-from neuromation import Storage
 from neuromation.cli.command_handlers import PlatformRemoveOperation
 from tests.utils import PlainResponse, mocked_async_context_manager
 
 
 @pytest.fixture()
-def mocked_store(loop):
-    my_mock = MagicMock(Storage('no-url', 'no-token', loop=loop))
-    my_mock.__enter__ = Mock(return_value=my_mock)
-    my_mock.__exit__ = Mock(return_value=False)
-    return my_mock
-
-
-@pytest.fixture()
-def partial_mocked_store(mocked_store):
-    def partial_mocked_store_func():
-        return mocked_store
-    return partial_mocked_store_func
-
-
-@pytest.fixture()
 def alice_rm():
     return PlatformRemoveOperation('alice')
-
-
-@pytest.fixture
-def storage(loop):
-    storage = Storage(url='http://127.0.0.1',
-                      token='test-token-for-storage',
-                      loop=loop)
-    return storage
-
-
-@pytest.fixture()
-def http_backed_storage(storage):
-    def partial_mocked_store():
-        return storage
-    return partial_mocked_store
 
 
 class TestNormalCases:

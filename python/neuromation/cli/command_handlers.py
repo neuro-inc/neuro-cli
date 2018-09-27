@@ -180,7 +180,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
             dst_path = Path(dst.path)
 
         # check remote
-        files = self._ls(str(platform_file_name), storage)
+        files = self._ls(str(platform_file_name.parent), storage)
         try:
             next(file
                  for file in files
@@ -220,19 +220,19 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                                      'command line arguments.')
 
         # Test that source directory exists.
-        platform_file_name = self._render_platform_path_with_principal(
-            src.path)
-        platform_file_path = self._get_parent(
-            platform_file_name)
-        files = self._ls(str(platform_file_path), storage)
-        try:
-            next(file
-                 for file in files
-                 if file.path == str(platform_file_name.name)
-                 and file.type == 'DIRECTORY')
-        except StopIteration as e:
-            raise ResourceNotFound(
-                'Source directory not found.') from e
+        platform_file_name = self._render_platform_path_with_principal(src)
+        platform_file_path = self._get_parent(platform_file_name)
+        # TODO here we should have work around when someone
+        # tries to copy full directory of a person
+        if str(platform_file_path) != '/':
+            files = self._ls(str(platform_file_path), storage)
+            try:
+                next(file
+                     for file in files
+                     if file.path == str(platform_file_name.name)
+                     and file.type == 'DIRECTORY')
+            except StopIteration as e:
+                raise ResourceNotFound('Source directory not found.') from e
 
         self._copy_obj(platform_file_name, Path(dst.path), storage)
 
@@ -251,21 +251,47 @@ class NonRecursiveLocalToPlatform(CopyOperation):
                 return dest_path
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+        if not os.path.exists(src.path):
+            raise ValueError('Source file not found.')
+
+        if os.path.isdir(src.path):
+            raise ValueError('Source should be file.')
+
         target_path: PosixPath = self._render_platform_path_with_principal(dst)
+
+        platform_file_path = self._get_parent(target_path)
+        files = self._ls(str(platform_file_path), storage)
+        try:
+            next(file
+                 for file in files
+                 if file.path == str(target_path.name)
+                 and file.type == 'DIRECTORY')
+            target_path = PosixPath(target_path, Path(src.path).name)
+        except StopIteration as e:
+            pass
+
         return self.copy_file(src.path, str(target_path), storage)
 
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
-    def _copy(self, src, dst, storage: Callable):
+    def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+        if not os.path.exists(src.path):
+            raise ValueError('Source should exist.')
+
+        if not os.path.isdir(src.path):
+            NonRecursiveLocalToPlatform.copy_file(self, src, dst, storage)
+            return
+
         final_path = self._render_platform_path_with_principal(dst)
         for root, subdirs, files in os.walk(src.path):
             if root != src.path:
                 suffix_path = os.path.relpath(root, src.path)
-                pref_path = f'{final_path}{suffix_path}{PLATFORM_DELIMITER}'
+                pref_path = f'{final_path}{PLATFORM_DELIMITER}' \
+                            f'{suffix_path}{PLATFORM_DELIMITER}'
             else:
                 suffix_path = ''
-                pref_path = final_path
+                pref_path = f'{final_path}{PLATFORM_DELIMITER}'
             for file in files:
                 target_dest = f'{pref_path}{file}'
                 src_file = os.path.join(root, file)

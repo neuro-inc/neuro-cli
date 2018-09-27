@@ -258,7 +258,7 @@ def test_e2e(data, run, tmpdir):
 
     # Remove test dir
     _, captured = run([
-            'store', 'rm', _path
+            'store', 'rm', f'storage://{_path}'
         ])
     assert not captured.err
 
