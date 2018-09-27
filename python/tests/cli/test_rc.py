@@ -1,3 +1,5 @@
+from pathlib import Path, PosixPath
+
 import pytest
 
 from neuromation.cli import rc
@@ -20,6 +22,16 @@ def test_create(nmrc):
     assert nmrc.check()
     assert nmrc.read() == f'auth: \'\'\n' \
                           f'url: {DEFAULTS.url}\n'
+
+
+def test_factory(monkeypatch, nmrc):
+    def home():
+        return PosixPath(nmrc.dirpath())
+    monkeypatch.setattr(Path, 'home', home)
+    config: Config = Config(url='http://abc.def', auth='token1')
+    rc.ConfigFactory.save(config)
+    config2: Config = rc.ConfigFactory.load()
+    assert config == config2
 
 
 def test_docker_url():

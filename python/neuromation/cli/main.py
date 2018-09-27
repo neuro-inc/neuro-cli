@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 from functools import partial
-from pathlib import Path
 from urllib.parse import urlparse
 
 import aiohttp
@@ -21,8 +20,6 @@ from .commands import command, dispatch
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
 MONITOR_BUFFER_SIZE_BYTES = 256
-
-RC_PATH = Path.home().joinpath('.nmrc')
 
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
@@ -120,9 +117,9 @@ Commands:
 
             Updates API URL
             """
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             config = rc.Config(url=url, auth=config.auth)
-            rc.save(RC_PATH, config)
+            rc.ConfigFactory.save(config)
             update_docker_config(config)
 
         @command
@@ -133,7 +130,7 @@ Commands:
 
             Prints current settings
             """
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             print(config)
 
         @command
@@ -150,9 +147,9 @@ Commands:
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
 
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             config = rc.Config(url=config.url, auth=token)
-            rc.save(RC_PATH, config)
+            rc.ConfigFactory.save(config)
             update_docker_config(config)
 
         return locals()
@@ -187,7 +184,7 @@ Commands:
                 neuro store rm storage:/foo/bar/
                 neuro store rm storage://alice/foo/bar/
             """
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             PlatformRemoveOperation(platform_user_name).remove(path, storage)
 
@@ -201,7 +198,7 @@ Commands:
             """
             format = '{type:<15}{size:<15,}{name:<}'.format
 
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             ls_op = PlatformListDirOperation(platform_user_name)
             storage_objects = ls_op.ls(path, storage)
@@ -240,7 +237,7 @@ Commands:
             log.debug(f'src={src}')
             log.debug(f'dst={dst}')
 
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             operation = CopyOperation.create(platform_user_name,
                                              src.scheme,
@@ -261,7 +258,7 @@ Commands:
 
             Make directories
             """
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
             return path
@@ -445,7 +442,7 @@ Commands:
           search List your docker images
         """
         def get_image_platform_full_name(image_name):
-            config = rc.load(RC_PATH)
+            config = rc.ConfigFactory.load()
             docker_registry_url = config.docker_registry_url()
             platform_user_name = config.get_platform_user_name()
             target_image_name = f'{docker_registry_url}/' \
@@ -507,7 +504,7 @@ def main():
         print(version)
         sys.exit(0)
 
-    config = rc.load(RC_PATH)
+    config = rc.ConfigFactory.load()
     neuro.__doc__ = neuro.__doc__.format(
             url=config.url
         )
