@@ -344,8 +344,8 @@ class ModelHandlerOperations(PlatformStorageOperation):
                     cpu=cpu,
                     shm=extshm
                 ),
-                dataset=dataset_platform_path,
-                results=resultset_platform_path)
+                dataset=f'storage:/{dataset_platform_path}',
+                results=f'storage:/{resultset_platform_path}')
 
         # Format job info properly
         return f'Job ID: {job.id} Status: {job.status}\n' + \

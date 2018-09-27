@@ -37,10 +37,25 @@ def mocked_store(loop):
 
 
 @pytest.fixture(scope='function')
+def mocked_model(loop):
+    my_mock = MagicMock(Model('no-url', 'no-token', loop=loop))
+    my_mock.__enter__ = Mock(return_value=my_mock)
+    my_mock.__exit__ = Mock(return_value=False)
+    return my_mock
+
+
+@pytest.fixture(scope='function')
 def partial_mocked_store(mocked_store):
     def partial_mocked_store_func():
         return mocked_store
     return partial_mocked_store_func
+
+
+@pytest.fixture(scope='function')
+def partial_mocked_model(mocked_model):
+    def partial_mocked_model_func():
+        return mocked_model
+    return partial_mocked_model_func
 
 
 @pytest.fixture(scope='function')

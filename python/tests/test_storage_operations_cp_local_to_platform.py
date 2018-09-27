@@ -1,30 +1,13 @@
 import os
 from typing import Callable, Dict, List
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 from urllib.parse import urlparse
 
 import pytest
 
-from neuromation import Storage
 from neuromation.cli.command_handlers import (CopyOperation,
                                               NonRecursiveLocalToPlatform)
 from neuromation.client import FileStatus
-
-
-@pytest.fixture(scope='function')
-def mocked_store(loop):
-    my_mock = MagicMock(Storage('no-url', 'no-token', loop=loop))
-    my_mock.__enter__ = Mock(return_value=my_mock)
-    my_mock.__exit__ = Mock(return_value=False)
-    return my_mock
-
-
-@pytest.fixture(scope='function')
-def partial_mocked_store(mocked_store):
-    def partial_mocked_store():
-        return mocked_store
-
-    return partial_mocked_store
 
 
 def _os_exists(tree: Dict) -> Callable:
