@@ -51,6 +51,11 @@ class PlatformStorageOperation:
     def _get_parent(self, path: PosixPath) -> PosixPath:
         return path.parent
 
+    def render_uri_path_with_principal(self, path: str):
+        path_url = urlparse(path, 'file')
+        self._is_storage_path_url(path_url)
+        return self._render_platform_path_with_principal(path_url)
+
 
 class PlatformMakeDirOperation(PlatformStorageOperation):
 
@@ -301,3 +306,50 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 PlatformMakeDirOperation(self.principal).mkdir(
                     f'storage:/{target_dest}',
                     storage)
+
+
+class ModelHandlerOperations(PlatformStorageOperation):
+    def train(self, image, dataset, results,
+              gpu, cpu, memory, extshm,
+              cmd, model):
+        try:
+            dataset_platform_path = self.render_uri_path_with_principal(
+                dataset)
+        except ValueError as e:
+            raise ValueError('Dataset path should be on platform. '
+                             'Specify scheme storage:')
+
+        try:
+            resultset_platform_path = self.render_uri_path_with_principal(
+                results)
+        except ValueError as e:
+            raise ValueError('Results path should be on platform. '
+                             'Specify scheme storage:')
+
+        cmd = ' '.join(cmd)
+        log.debug(f'cmd="{cmd}"')
+
+        cpu = float(cpu)
+        gpu = int(gpu)
+        extshm = bool(extshm)
+
+        with model() as m:
+            job = m.train(
+                image=Image(
+                    image=image,
+                    command=cmd),
+                resources=Resources(
+                    memory=memory,
+                    gpu=gpu,
+                    cpu=cpu,
+                    shm=extshm
+                ),
+                dataset=dataset_platform_path,
+                results=resultset_platform_path)
+
+        # Format job info properly
+        return f'Job ID: {job.id} Status: {job.status}\n' + \
+               f'Shortcuts:\n' + \
+               f'  neuro job status {job.id}  # check job status\n' + \
+               f'  neuro job monitor {job.id} # monitor job stdout\n' + \
+               f'  neuro job kill {job.id}    # kill job'

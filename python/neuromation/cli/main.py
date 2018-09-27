@@ -9,9 +9,11 @@ import aiohttp
 
 import neuromation
 from neuromation.cli.command_handlers import (CopyOperation,
+                                              ModelHandlerOperations,
                                               PlatformListDirOperation,
                                               PlatformMakeDirOperation,
                                               PlatformRemoveOperation)
+from neuromation.cli.rc import Config
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -279,7 +281,7 @@ Commands:
           infer              Start batch inference
         """
 
-        from neuromation.client.jobs import Model, Image, Resources
+        from neuromation.client.jobs import Model
 
         model = partial(Model, url, token)
 
@@ -301,33 +303,12 @@ Commands:
                 -x, --extshm          Request extended '/dev/shm' space.
             """
 
-            cmd = ' '.join(cmd)
-            log.debug(f'cmd="{cmd}"')
-
-            cpu = float(cpu)
-            gpu = int(gpu)
-            extshm = bool(extshm)
-
-            with model() as m:
-                job = m.train(
-                    image=Image(
-                            image=image,
-                            command=cmd),
-                    resources=Resources(
-                        memory=memory,
-                        gpu=gpu,
-                        cpu=cpu,
-                        shm=extshm
-                    ),
-                    dataset=dataset,
-                    results=results)
-
-            # Format job info properly
-            return f'Job ID: {job.id} Status: {job.status}\n' + \
-                   f'Shortcuts:\n' + \
-                   f'  neuro job status {job.id}  # check job status\n' + \
-                   f'  neuro job monitor {job.id} # monitor job stdout\n' + \
-                   f'  neuro job kill {job.id}    # kill job'
+            config: Config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            model_operation = ModelHandlerOperations(platform_user_name)
+            return model_operation.train(image, dataset, results,
+                                         gpu, cpu, memory, extshm,
+                                         cmd, model)
 
         @command
         def test():
