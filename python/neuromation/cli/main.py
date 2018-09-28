@@ -104,8 +104,8 @@ Commands:
             docker_registry_url = config.docker_registry_url()
 
             process = subprocess.run(['docker', 'login',
-                                      '-u', token,
-                                      '-p', 'bearer-token',
+                                      '-p', token,
+                                      '-u', '<token>',
                                       docker_registry_url])
             if process.returncode != 0:
                 raise ValueError('Failed to updated docker auth details.')
