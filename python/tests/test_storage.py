@@ -33,6 +33,21 @@ def test_filenotfound_error(storage):
         error=aiohttp.ClientResponseError(
             request_info=None,
             history=None,
+            status=404,
+            message='ah!')
+    )))
+def test_opem_notexists_file(storage):
+    with pytest.raises(ResourceNotFound):
+        with storage.open(path='/file-not-exists.here') as stream:
+            stream.read()
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
             status=403,
             message='ah!')
     )))

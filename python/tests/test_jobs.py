@@ -41,6 +41,21 @@ def test_kill_already_killed_job_error(jobs):
 
 @patch(
     'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=404,
+            message='ah!')
+    )))
+def test_monitor_notexistent_job(jobs):
+    with pytest.raises(ResourceNotFound):
+        with jobs.monitor('blah') as stream:
+            stream.read()
+
+@patch(
+    'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(PlainResponse(text='')))
 def test_kill(jobs):
     assert jobs.kill('1')
