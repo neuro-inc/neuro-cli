@@ -54,6 +54,7 @@ def test_monitor_notexistent_job(jobs):
         with jobs.monitor('blah') as stream:
             stream.read()
 
+
 @patch(
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(PlainResponse(text='')))

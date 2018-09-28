@@ -41,6 +41,7 @@ def test_opem_notexists_file(storage):
         with storage.open(path='/file-not-exists.here') as stream:
             stream.read()
 
+
 @patch(
     'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse(
