@@ -4,6 +4,7 @@ import logging
 from neuromation.http import fetch, session
 from neuromation.http.fetch import AccessDeniedError as FetchAccessDeniedError
 from neuromation.http.fetch import (BadRequestError, FetchError,
+                                    MethodNotAllowedError, NotFoundError,
                                     UnauthorizedError)
 
 from .requests import Request, build
@@ -31,7 +32,7 @@ class AuthorizationError(AuthError):
     pass
 
 
-class ModelsError(ValueError):
+class ResourceNotFound(ValueError):
     pass
 
 
@@ -44,7 +45,9 @@ class ApiClient:
         self._exception_map = {
             FetchAccessDeniedError: AuthorizationError,
             UnauthorizedError: AuthenticationError,
-            BadRequestError: IllegalArgumentError
+            BadRequestError: IllegalArgumentError,
+            NotFoundError: ResourceNotFound,
+            MethodNotAllowedError: ClientError
         }
 
     def __enter__(self):

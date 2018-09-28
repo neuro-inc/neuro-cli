@@ -76,11 +76,7 @@ storage.download(
 
 * ClientError
   * IllegalArgumentError!!!(bultins.ValueError)
-  * StorageError
-    * FileNotFoundError
-  * JobsError
-    * JobNotFoundError
-  * ModelsError (TODO)
+  * ResourceNotFoundError
   * AuthError
     * AuthenticationError
     * AuthorizationError

@@ -531,12 +531,11 @@ def main():
         log.error(f'File not found ({error})')
         sys.exit(os.EX_OSFILE)
     except PermissionError as error:
-        log.error(f'Cannot acces file ({error})')
+        log.error(f'Cannot access file ({error})')
         sys.exit(os.EX_NOPERM)
     except IOError as error:
         log.error(f'I/O Error ({error})')
         raise error
-        sys.exit(os.EX_IOERR)
 
     except KeyboardInterrupt:
         log.error("Aborting.")

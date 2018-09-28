@@ -21,12 +21,6 @@ class FileStatus:
 
 class Storage(ApiClient):
 
-    def __init__(self, url: str, token: str, *, loop=None):
-        super().__init__(url, token, loop=loop)
-        self._exception_map.update({
-            NotFoundError: FileNotFoundError
-        })
-
     def ls(self, *, path: str) -> List[FileStatus]:
         return [
             FileStatus(**status)
