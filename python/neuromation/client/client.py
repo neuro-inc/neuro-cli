@@ -71,7 +71,7 @@ class ApiClient:
                 build(request),
                 session=self._session,
                 url=self._url)
-        except (ClientError, FetchError) as error:
+        except FetchError as error:
             error_class = type(error)
             mapped_class = self._exception_map.get(error_class, error_class)
             raise mapped_class(error) from error

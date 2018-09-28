@@ -159,7 +159,8 @@ async def _fetch(request: Request, session, url: str):
                 raise NotFoundError(message)
             elif code == 405:
                 raise MethodNotAllowedError(error)
-            raise FetchError(error) from error
+            raise BadRequestError(message) from error
+
         yield resp
 
 

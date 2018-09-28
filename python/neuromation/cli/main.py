@@ -508,25 +508,9 @@ def main():
         log.error(f'Illegal argument(s) ({error})')
         sys.exit(os.EX_DATAERR)
 
-    except neuromation.client.storage.FileNotFoundError as error:
-        log.error(f'Remote file not found ({error})')
+    except neuromation.client.ResourceNotFound as error:
+        log.error(f'{error}')
         sys.exit(os.EX_OSFILE)
-    except neuromation.client.storage.StorageError as error:
-        # Not raised at this moment
-        log.error(f'Error handling storage ({error})')
-        sys.exit(os.EX_DATAERR)
-
-    except neuromation.client.jobs.JobNotFoundError as error:
-        log.error(f'Job not found ({error})')
-        sys.exit(os.EX_OSFILE)
-    except neuromation.client.jobs.JobsError as error:
-        # Not raised at this moment
-        log.error(f'Error handling job ({error})')
-        sys.exit(os.EX_DATAERR)
-    except neuromation.client.jobs.ModelsError as error:
-        # Not raised at this moment
-        log.error(f'Error handling model ({error})')
-        sys.exit(os.EX_DATAERR)
 
     except neuromation.client.AuthenticationError as error:
         log.error(f'Cannot authenticate ({error})')

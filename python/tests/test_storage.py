@@ -6,7 +6,7 @@ import pytest
 
 from neuromation import client
 from neuromation.client import (AuthenticationError, AuthorizationError,
-                                IllegalArgumentError)
+                                IllegalArgumentError, ResourceNotFound)
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)
 
@@ -22,7 +22,7 @@ from utils import (BinaryResponse, JsonResponse, PlainResponse,
             message='ah!')
     )))
 def test_filenotfound_error(storage):
-    with pytest.raises(client.storage.FileNotFoundError):
+    with pytest.raises(ResourceNotFound):
         storage.rm(path='/file-not-exists.here')
 
 

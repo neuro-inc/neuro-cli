@@ -5,9 +5,7 @@ from os.path import dirname
 from typing import Callable, List
 from urllib.parse import ParseResult
 
-from neuromation.client import FileStatus
-from neuromation.client.storage import \
-    FileNotFoundError as StorageFileNotFoundError
+from neuromation.client import FileStatus, ResourceNotFound
 
 log = logging.getLogger(__name__)
 
@@ -123,8 +121,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
                  for file in files
                  if file.path == platform_file_name and file.type == 'FILE')
         except StopIteration as e:
-            raise StorageFileNotFoundError(
-                f'Source file {src.path} not found.') from e
+            raise ResourceNotFound(f'Source file {src.path} not found.') from e
 
         self._copy(src.path, dst_path, storage)
         return dst.geturl()
@@ -172,7 +169,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                  if file.path == platform_file_name
                  and file.type == 'DIRECTORY')
         except StopIteration as e:
-            raise StorageFileNotFoundError(
+            raise ResourceNotFound(
                 'Source directory not found.') from e
 
         self._copy(src_path, dest_path, storage)

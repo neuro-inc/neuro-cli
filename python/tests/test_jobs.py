@@ -3,7 +3,8 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 
-from neuromation.client.jobs import JobItem, JobNotFoundError, JobsError
+from neuromation.client import ClientError, ResourceNotFound
+from neuromation.client.jobs import JobItem
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)
 
@@ -19,7 +20,7 @@ from utils import (BinaryResponse, JsonResponse, PlainResponse,
             message='ah!')
     )))
 def test_jobnotfound_error(jobs):
-    with pytest.raises(JobNotFoundError):
+    with pytest.raises(ResourceNotFound):
         jobs.kill('blah')
 
 
@@ -34,7 +35,7 @@ def test_jobnotfound_error(jobs):
             message='ah!')
     )))
 def test_kill_already_killed_job_error(jobs):
-    with pytest.raises(JobsError):
+    with pytest.raises(ClientError):
         jobs.kill('blah')
 
 

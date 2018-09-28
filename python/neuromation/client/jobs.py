@@ -6,25 +6,13 @@ from typing import List, Optional
 
 from dataclasses import dataclass
 
+from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
 
-from ..http.fetch import MethodNotAllowedError, NotFoundError
-from .client import ApiClient, ClientError
+from .client import ApiClient
 from .requests import (ContainerPayload, InferRequest, JobKillRequest,
                        JobListRequest, JobMonitorRequest, JobStatusRequest,
                        ResourcesPayload, TrainRequest)
-
-
-class JobsError(ClientError):
-    pass
-
-
-class JobNotFoundError(JobsError):
-    pass
-
-
-class ModelsError(ClientError):
-    pass
 
 
 @dataclass(frozen=True)
@@ -155,13 +143,6 @@ class Model(ApiClient):
 
 class Job(ApiClient):
 
-    def __init__(self, url: str, token: str, *, loop=None):
-        super().__init__(url, token, loop=loop)
-        self._exception_map.update({
-            NotFoundError: JobNotFoundError,
-            MethodNotAllowedError: JobsError
-        })
-
     def list(self) -> List[JobItem]:
         res = self._fetch_sync(JobListRequest())
         return [
@@ -179,8 +160,13 @@ class Job(ApiClient):
 
     @contextmanager
     def monitor(self, id: str) -> BufferedReader:
-        with self._fetch_sync(JobMonitorRequest(id=id)) as content:
-            yield BufferedReader(content)
+        try:
+            with self._fetch_sync(JobMonitorRequest(id=id)) as content:
+                yield BufferedReader(content)
+        except FetchError as error:
+            error_class = type(error)
+            mapped_class = self._exception_map.get(error_class, error_class)
+            raise mapped_class(error) from error
 
     def status(self, id: str) -> JobItem:
         res = self._fetch_sync(JobStatusRequest(id=id))
