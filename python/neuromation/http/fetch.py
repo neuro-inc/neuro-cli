@@ -16,6 +16,26 @@ class FetchError(Exception):
     pass
 
 
+class NotFoundError(FetchError):
+    pass
+
+
+class UnauthorizedError(FetchError):
+    pass
+
+
+class AccessDeniedError(FetchError):
+    pass
+
+
+class MethodNotAllowedError(FetchError):
+    pass
+
+
+class BadRequestError(FetchError):
+    pass
+
+
 @dataclass(frozen=True)
 class Request:
     method: str
@@ -49,12 +69,13 @@ class PlainRequest(Request):
 
 
 async def session(token: Optional[str] = None):
-    async def trace(session, trace_config_ctx, params):
+
+    async def trace(session, trace_config_ctx, params):  # pragma: no cover
         log.debug(f'{params}')
 
     trace_config = aiohttp.TraceConfig()
 
-    if log.getEffectiveLevel() == logging.DEBUG:
+    if log.getEffectiveLevel() == logging.DEBUG:  # pragma: no cover
         trace_config.on_request_start.append(trace)
         trace_config.on_response_chunk_received.append(trace)
         trace_config.on_request_chunk_sent.append(trace)
@@ -83,8 +104,8 @@ class SyncStreamWrapper(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_value, traceback):
         return self._run_sync(self._context.__aexit__(
-                exc_type, exc_value, traceback
-            ))
+            exc_type, exc_value, traceback
+        ))
 
     def _run_sync(self, coro):
         return self._loop.run_until_complete(coro)
@@ -110,31 +131,43 @@ class SyncStreamWrapper(AbstractContextManager):
 @asynccontextmanager
 async def _fetch(request: Request, session, url: str):
     async with session.request(
-                method=request.method,
-                params=request.params,
-                url=url + request.url,
-                data=request.data,
-                json=request.json) as resp:
+            method=request.method,
+            params=request.params,
+            url=url + request.url,
+            data=request.data,
+            json=request.json) as resp:
         try:
             resp.raise_for_status()
-        except aiohttp.ClientError as error:
+        except aiohttp.ClientResponseError as error:
+            code = error.status
             message = error.message
             try:
-                error = await resp.json()
+                error_response = await resp.json()
                 # TODO(artyom 07/13/2018): API should return error text
                 # in HTTP Reason Phrase
                 # (https://tools.ietf.org/html/rfc2616#section-6.1.1)
-                message = error['error']
+                message = error_response['error']
             except Exception:
                 pass
-            raise FetchError(message)
+            if code == 400:
+                raise BadRequestError(message)
+            if code == 401:
+                raise UnauthorizedError(message)
+            if code == 403:
+                raise AccessDeniedError(message)
+            elif code == 404:
+                raise NotFoundError(message)
+            elif code == 405:
+                raise MethodNotAllowedError(error)
+            raise BadRequestError(message) from error
 
         yield resp
 
 
 @singledispatch
 async def fetch(request, session, url: str):
-    raise NotImplementedError(f'Unknown request type: {type(request)}')
+    raise NotImplementedError(
+        f'Unknown request type: {type(request)}')  # pragma: no cover
 
 
 @fetch.register(JsonRequest)

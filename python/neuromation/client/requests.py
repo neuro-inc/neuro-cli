@@ -3,6 +3,7 @@ from io import BytesIO
 from typing import ClassVar, Optional
 
 from dataclasses import asdict, dataclass
+
 from neuromation import http
 
 log = logging.getLogger(__name__)

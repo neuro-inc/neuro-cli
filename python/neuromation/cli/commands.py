@@ -49,7 +49,7 @@ def parse(doc, argv):
     while head:
         try:
             return docopt.docopt(doc, argv=head, help=False), tail
-        except docopt.DocoptExit as e:
+        except docopt.DocoptExit:
             tail = [head.pop()] + tail
 
     return docopt.docopt(doc, argv=head, help=False), tail
@@ -57,12 +57,11 @@ def parse(doc, argv):
 
 def dispatch(target, tail, **kwargs):
     stack = []
-    options = None
 
     while True:
         try:
             options, tail = parse(target.__doc__, stack + tail)
-        except docopt.DocoptExit as e:
+        except docopt.DocoptExit:
             raise ValueError(dedent(target.__doc__))
 
         res = target(**{

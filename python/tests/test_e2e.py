@@ -1,4 +1,5 @@
 import asyncio
+import os
 import platform
 import re
 from hashlib import sha1
@@ -284,13 +285,13 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir):
 
     # Try downloading non existing file
     _local = join(tmpdir, 'bar')
-    with pytest.raises(SystemExit, match=r'127'):
+    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         _, captured = run([
             'store', 'cp',
             'storage://' + _path + '/foo', _local
         ])
 
-    with pytest.raises(SystemExit, match=r'127'):
+    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         _, captured = run([
             'store', 'cp', '-r',
             'storage://' + _path + '/foo', _local
@@ -325,14 +326,14 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir):
 
     # Try downloading non existing file
     _local = join(tmpdir)
-    with pytest.raises(SystemExit, match=r'127'):
+    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         _, captured = run([
             'store', 'cp',
             'storage://' + _path + '/foo', _local
         ])
     assert captured.err == ''
 
-    with pytest.raises(SystemExit, match=r'127'):
+    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         _, captured = run([
             'store', 'cp', '-r',
             'storage://' + _path + '/foo', _local

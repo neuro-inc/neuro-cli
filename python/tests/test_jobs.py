@@ -1,10 +1,58 @@
 from unittest.mock import patch
 
 import aiohttp
+import pytest
 
+from neuromation.client import ClientError, ResourceNotFound
 from neuromation.client.jobs import JobItem
 from utils import (BinaryResponse, JsonResponse, PlainResponse,
                    mocked_async_context_manager)
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=404,
+            message='ah!')
+    )))
+def test_jobnotfound_error(jobs):
+    with pytest.raises(ResourceNotFound):
+        jobs.kill('blah')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=405,
+            message='ah!')
+    )))
+def test_kill_already_killed_job_error(jobs):
+    with pytest.raises(ClientError):
+        jobs.kill('blah')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'error': 'blah!'},
+        error=aiohttp.ClientResponseError(
+            request_info=None,
+            history=None,
+            status=404,
+            message='ah!')
+    )))
+def test_monitor_notexistent_job(jobs):
+    with pytest.raises(ResourceNotFound):
+        with jobs.monitor('blah') as stream:
+            stream.read()
 
 
 @patch(

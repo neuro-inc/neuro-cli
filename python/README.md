@@ -72,6 +72,16 @@ storage.download(
     destination='file://~/local/results')
 ```
 
+## Errors(Exceptions)
+
+* ClientError
+  * IllegalArgumentError!!!(bultins.ValueError)
+  * ResourceNotFoundError
+  * AuthError
+    * AuthenticationError
+    * AuthorizationError
+   
+
 ## Contributing
 
 ```shell

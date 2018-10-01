@@ -82,7 +82,7 @@ def test_call_session_with_token(build, loop):
         error=aiohttp.ClientResponseError(
             request_info=None,
             history=None,
-            status=200,
+            status=500,
             message='ah!')
     )))
 def test_fetch(loop):

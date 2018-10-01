@@ -1,11 +1,12 @@
 import logging
+import os
 import subprocess
 import sys
 from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
 
-from aiohttp import ClientConnectorError
+import aiohttp
 
 import neuromation
 from neuromation.cli.command_handlers import (CopyOperation,
@@ -223,7 +224,6 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
-
             src = urlparse(source, scheme='file')
             dst = urlparse(destination, scheme='file')
 
@@ -235,7 +235,8 @@ Commands:
             if operation:
                 return operation.copy(src, dst, storage)
 
-            raise ValueError('Invalid SOURCE or DESTINATION value')
+            raise neuromation.client.IllegalArgumentError('Invalid SOURCE or '
+                                                          'DESTINATION value')
 
         @command
         def mkdir(path):
@@ -501,15 +502,47 @@ def main():
             token=config.auth)
         if res:
             print(res)
-    except ClientConnectorError:
-        log.error('Error connecting to server.')
-        sys.exit(126)
+
+    except neuromation.client.IllegalArgumentError as error:
+        log.error(f'Illegal argument(s) ({error})')
+        sys.exit(os.EX_DATAERR)
+
+    except neuromation.client.ResourceNotFound as error:
+        log.error(f'{error}')
+        sys.exit(os.EX_OSFILE)
+
+    except neuromation.client.AuthenticationError as error:
+        log.error(f'Cannot authenticate ({error})')
+        sys.exit(os.EX_NOPERM)
+    except neuromation.client.AuthorizationError as error:
+        log.error(f'You haven`t enough permission ({error})')
+        sys.exit(os.EX_NOPERM)
+
+    except neuromation.client.ClientError as error:
+        log.error(f'Application error ({error})')
+        sys.exit(os.EX_SOFTWARE)
+
+    except aiohttp.ClientError as error:
+        log.error(f'Connection error ({error})')
+        sys.exit(os.EX_IOERR)
+
+    except FileNotFoundError as error:
+        log.error(f'File not found ({error})')
+        sys.exit(os.EX_OSFILE)
+    except PermissionError as error:
+        log.error(f'Cannot access file ({error})')
+        sys.exit(os.EX_NOPERM)
+    except IOError as error:
+        log.error(f'I/O Error ({error})')
+        raise error
+
     except KeyboardInterrupt:
         log.error("Aborting.")
         sys.exit(130)
     except ValueError as e:
         print(e)
         sys.exit(127)
+
     except Exception as e:
         log.error(f'{e}')
         raise e

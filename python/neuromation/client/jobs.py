@@ -5,6 +5,8 @@ from io import BufferedReader
 from typing import List, Optional
 
 from dataclasses import dataclass
+
+from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
 
 from .client import ApiClient
@@ -47,11 +49,11 @@ class JobItem:
 
     async def _call(self):
         return JobItem(
-                client=self.client,
-                **await self.client._fetch(
-                    request=JobStatusRequest(
-                        id=self.id
-                    )))
+            client=self.client,
+            **await self.client._fetch(
+                request=JobStatusRequest(
+                    id=self.id
+                )))
 
     def wait(self, timeout=None):
         try:
@@ -59,8 +61,8 @@ class JobItem:
                 asyncio.wait_for(
                     self._call(),
                     timeout=timeout
-                    )
                 )
+            )
         except asyncio.TimeoutError:
             raise TimeoutError
 
@@ -83,6 +85,7 @@ class JobStatus(str, enum.Enum):
 
 
 class Model(ApiClient):
+
     def infer(
             self,
             *,
@@ -90,21 +93,21 @@ class Model(ApiClient):
             resources: Resources,
             model: str,
             dataset: str,
-            results: str)-> JobItem:
+            results: str) -> JobItem:
         res = self._fetch_sync(
-                InferRequest(
-                    container=ContainerPayload(
-                        image=image.image,
-                        command=image.command,
-                        resources=ResourcesPayload(
-                            memory_mb=parse.to_megabytes_str(resources.memory),
-                            cpu=resources.cpu,
-                            gpu=resources.gpu,
-                            shm=resources.shm,
-                        )),
-                    model_storage_uri=model,
-                    dataset_storage_uri=dataset,
-                    result_storage_uri=results))
+            InferRequest(
+                container=ContainerPayload(
+                    image=image.image,
+                    command=image.command,
+                    resources=ResourcesPayload(
+                        memory_mb=parse.to_megabytes_str(resources.memory),
+                        cpu=resources.cpu,
+                        gpu=resources.gpu,
+                        shm=resources.shm,
+                    )),
+                model_storage_uri=model,
+                dataset_storage_uri=dataset,
+                result_storage_uri=results))
 
         return JobItem(
             id=res['job_id'],
@@ -139,6 +142,7 @@ class Model(ApiClient):
 
 
 class Job(ApiClient):
+
     def list(self) -> List[JobItem]:
         res = self._fetch_sync(JobListRequest())
         return [
@@ -156,8 +160,13 @@ class Job(ApiClient):
 
     @contextmanager
     def monitor(self, id: str) -> BufferedReader:
-        with self._fetch_sync(JobMonitorRequest(id=id)) as content:
-            yield BufferedReader(content)
+        try:
+            with self._fetch_sync(JobMonitorRequest(id=id)) as content:
+                yield BufferedReader(content)
+        except FetchError as error:
+            error_class = type(error)
+            mapped_class = self._exception_map.get(error_class, error_class)
+            raise mapped_class(error) from error
 
     def status(self, id: str) -> JobItem:
         res = self._fetch_sync(JobStatusRequest(id=id))

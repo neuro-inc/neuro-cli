@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 from aiohttp import web
 from dataclasses import replace
+
 from neuromation import JobItem, Resources
 from neuromation.client import Image
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,

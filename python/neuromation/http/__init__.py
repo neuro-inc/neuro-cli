@@ -1,9 +1,10 @@
-from .fetch import (Request, JsonRequest,        # NOQA
-                    StreamRequest, PlainRequest, # NOQA
-                    fetch, session, FetchError)  # NOQA
+from .fetch import (Request, JsonRequest, StreamRequest, PlainRequest,
+                    fetch, session, FetchError, AccessDeniedError,
+                    NotFoundError, MethodNotAllowedError,
+                    BadRequestError)
 
 
 __all__ = [
-    'Request', 'JsonRequest',          # NOQA
-    'StreamRequest', 'PlainRequest'    # NOQA
-    'fetch', 'session', 'FetchError']  # NOQA
+    'Request', 'JsonRequest', 'StreamRequest', 'PlainRequest', 'fetch',
+    'session', 'FetchError', 'AccessDeniedError', 'NotFoundError',
+    'MethodNotAllowedError', 'BadRequestError']

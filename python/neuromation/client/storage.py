@@ -4,6 +4,8 @@ from typing import List
 
 from dataclasses import dataclass
 
+from neuromation.http.fetch import FetchError
+
 from .client import ApiClient
 from .requests import (CreateRequest, DeleteRequest, ListRequest,
                        MkDirsRequest, OpenRequest)
@@ -18,6 +20,7 @@ class FileStatus:
 
 
 class Storage(ApiClient):
+
     def ls(self, *, path: str) -> List[FileStatus]:
         return [
             FileStatus(**status)
@@ -35,8 +38,13 @@ class Storage(ApiClient):
 
     @contextmanager
     def open(self, *, path: str) -> BytesIO:
-        with self._fetch_sync(OpenRequest(path=path)) as content:
-            yield BufferedReader(content)
+        try:
+            with self._fetch_sync(OpenRequest(path=path)) as content:
+                yield BufferedReader(content)
+        except FetchError as error:
+            error_class = type(error)
+            mapped_class = self._exception_map.get(error_class, error_class)
+            raise mapped_class(error) from error
 
     def rm(self, *, path: str) -> str:
         self._fetch_sync(DeleteRequest(path=path))
