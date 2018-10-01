@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 import aiohttp
 from async_generator import asynccontextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 log = logging.getLogger(__name__)
 

@@ -329,7 +329,7 @@ class RecursiveLocalToPlatformV3(NonRecursiveLocalToPlatform):
                                   'surrogateescape')
 
         for entry in os.scandir(src):
-            src_path=os.path.join(src, entry.name)
+            src_path = os.path.join(src, entry.name)
             stat = entry.stat()
             tar_info = tarfile.TarInfo(name=prefix + entry.name)
             tar_info.mtime = stat.st_mtime
