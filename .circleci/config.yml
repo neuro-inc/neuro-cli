@@ -77,10 +77,8 @@ workflows:
           requires:
             - build
           filters:
-#            tags:
-#              only: /^v.*/
+            tags:
+              only: /^v.*/
             branches:
-#              ignore: /.*/            
-              only:
-                - setup_devpi
+              ignore: /.*/            
                 
