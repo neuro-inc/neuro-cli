@@ -54,7 +54,7 @@ jobs:
           name: devpi upload
           command: |
             make -C python devpi_upload
-            
+
 workflows:
   version: 2
 
