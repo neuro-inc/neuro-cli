@@ -54,7 +54,7 @@ class CopyOperation:
         if src_scheme == 'file':
             if dst_scheme == 'storage':
                 if recursive:
-                    return RecursiveLocalToPlatformV2()
+                    return RecursiveLocalToPlatformV3()
                 else:
                     return NonRecursiveLocalToPlatform()
             else:
@@ -315,3 +315,50 @@ class RecursiveLocalToPlatformV2(NonRecursiveLocalToPlatform):
                                                      total_size=total_size,
                                                      files=rfiles))
             return dst
+
+
+class RecursiveLocalToPlatformV3(NonRecursiveLocalToPlatform):
+    """Tar base copying process"""
+
+    READ_CHUNK_SIZE = 64 * 1024
+
+    async def _tar(self, src: str, prefix: str = ''):
+        def _tar_entry(tar_info: tarfile.TarInfo):
+            return tar_info.tobuf(tarfile.GNU_FORMAT,
+                                  "utf-8",
+                                  'surrogateescape')
+
+        for entry in os.scandir(src):
+            src_path=os.path.join(src, entry.name)
+            stat = entry.stat()
+            tar_info = tarfile.TarInfo(name=prefix + entry.name)
+            tar_info.mtime = stat.st_mtime
+            tar_info.mode = stat.st_mode
+            if entry.is_dir():
+                tar_info.type = tarfile.DIRTYPE
+                yield _tar_entry(tar_info)
+                async for data in self._tar(src_path,
+                                            prefix + entry.name + '/'):
+                    yield data
+            # TODO symlink support?
+            # elif entry.is_symlink():
+            elif entry.is_file():
+                tar_info.type = tarfile.REGTYPE
+                tar_info.size = stat.st_size
+                yield _tar_entry(tar_info)
+                # TODO line below is completelly broken
+                async with aiofiles.open(src_path, 'rb') as f:
+                    while True:
+                        chunk = await f.read(self.READ_CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        yield chunk
+                blocks, remainder = divmod(tar_info.size, tarfile.BLOCKSIZE)
+                if remainder:
+                    yield tarfile.NUL * (tarfile.BLOCKSIZE - remainder)
+
+    def _copy(self, src: str, dst: str, storage: Callable):
+        src = os.path.join(os.path.dirname(src), os.path.basename(src))
+        with storage() as s:
+            s.create_archived_on_fly(path=dst, data=self._tar(src))
+        return src

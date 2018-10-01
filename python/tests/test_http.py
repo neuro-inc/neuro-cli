@@ -25,7 +25,7 @@ def test_call(build, loop):
                 params=expected_params,
                 method=expected_method,
                 json=expected_json,
-                data=expected_data
+                data=expected_data,
             ), _session, 'http://test'))
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -33,7 +33,8 @@ def test_call(build, loop):
         json=expected_json,
         params=expected_params,
         url=expected_url,
-        data=expected_data)
+        data=expected_data,
+        headers=None)
 
     assert _session._default_headers == {}
 
@@ -67,7 +68,9 @@ def test_call_session_with_token(build, loop):
         json=expected_json,
         params=expected_params,
         url=expected_url,
-        data=expected_data)
+        data=expected_data,
+        headers=None
+    )
 
     assert 'Authorization' in _session._default_headers
     assert _session._default_headers['Authorization'] == expected_auth_token

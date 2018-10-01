@@ -36,7 +36,8 @@ def test_train_with_no_gpu(request, model, loop):
                 },
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results'},
-            url='http://127.0.0.1/models')
+            url='http://127.0.0.1/models',
+            headers=None)
 
     assert result == client.JobItem(
         client=model,
@@ -68,7 +69,9 @@ def test_train(request, model, loop):
                 },
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results'},
-            url='http://127.0.0.1/models')
+            url='http://127.0.0.1/models',
+            headers=None
+    )
 
     assert result == client.JobItem(
         client=model,
@@ -103,7 +106,9 @@ def test_infer(request, model, loop):
                 'dataset_storage_uri': 'schema://host/data',
                 'result_storage_uri': 'schema://host/results',
                 'model_storage_uri': 'schema://host/model'},
-            url='http://127.0.0.1/models')
+            url='http://127.0.0.1/models',
+            headers=None
+    )
 
     assert result == client.JobItem(
         client=model,

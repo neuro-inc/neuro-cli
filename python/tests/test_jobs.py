@@ -18,7 +18,8 @@ def test_kill(jobs):
         url='http://127.0.0.1/jobs/1',
         params=None,
         data=None,
-        json=None)
+        json=None,
+        headers=None)
 
 
 @patch(
@@ -57,7 +58,8 @@ def test_status_runing(jobs):
         url='http://127.0.0.1/jobs/1',
         params=None,
         data=None,
-        json=None)
+        json=None,
+        headers=None)
 
 
 @patch(
@@ -106,7 +108,8 @@ def test_status_failed(jobs):
         url='http://127.0.0.1/jobs/1',
         params=None,
         data=None,
-        json=None)
+        json=None,
+        headers=None)
 
 
 @patch(
@@ -131,7 +134,8 @@ def test_list(jobs):
         json=None,
         url='http://127.0.0.1/jobs',
         params=None,
-        data=None)
+        data=None,
+        headers=None)
 
 
 @patch(
@@ -145,4 +149,5 @@ def test_monitor(jobs):
             url='http://127.0.0.1/jobs/1/log',
             params=None,
             json=None,
-            data=None)
+            data=None,
+            headers=None)

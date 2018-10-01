@@ -52,7 +52,8 @@ def test_ls(storage):
         url='http://127.0.0.1/storage/home/dir',
         params='LISTSTATUS',
         data=None,
-        json=None)
+        json=None,
+        headers=None)
 
 
 @patch(
@@ -65,7 +66,8 @@ def test_mkdirs(storage):
         json=None,
         url='http://127.0.0.1/storage/root/foo',
         params='MKDIRS',
-        data=None)
+        data=None,
+        headers=None)
 
 
 @patch(
@@ -78,7 +80,8 @@ def test_rm(storage):
         json=None,
         url='http://127.0.0.1/storage/foo',
         params=None,
-        data=None)
+        data=None,
+        headers=None)
 
 
 @patch(
@@ -92,7 +95,8 @@ def test_create(storage):
         url='http://127.0.0.1/storage/foo',
         params=None,
         data=data,
-        json=None)
+        json=None,
+        headers=None)
 
 
 @patch(
@@ -106,4 +110,5 @@ def test_open(storage):
             url='http://127.0.0.1/storage/foo',
             params=None,
             json=None,
-            data=None)
+            data=None,
+            headers=None)

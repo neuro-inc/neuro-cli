@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 import aiohttp
 from async_generator import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class Request:
     url: str
     data: BufferedIOBase
     json: Dict
-    headers: Dict
+    headers: Dict = None
 
 
 class JsonRequest(Request):
