@@ -18,7 +18,7 @@ RC_TEXT = """
     url: http://platform.dev.neuromation.io/api/v1
 """
 
-GCR_UBUNTU_IMAGE_URL = 'gcr.io/light-reality-205619/ubuntu:latest'
+UBUNTU_IMAGE_NAME = 'ubuntu:latest'
 
 format_list = '{type:<15}{size:<15,}{name:<}'.format
 
@@ -147,7 +147,7 @@ def test_e2e_shm_run_without(run, tmpdir):
     command = 'bash -c "/bin/df --block-size M ' \
               '--output=target,avail /dev/shm; false"'
     _, captured = run(['model', 'train', '-m', '20M', '-c', '0.1', '-g', '0',
-                       GCR_UBUNTU_IMAGE_URL,
+                       UBUNTU_IMAGE_NAME,
                        'storage:/' + _path_src,
                        'storage:/' + _path_dst, command])
 
@@ -187,7 +187,7 @@ def test_e2e_shm_run_with(run, tmpdir):
               '--output=target,avail /dev/shm; false"'
     _, captured = run(['model', 'train', '-x',
                        '-m', '20M', '-c', '0.1', '-g', '0',
-                       GCR_UBUNTU_IMAGE_URL,
+                       UBUNTU_IMAGE_NAME,
                        'storage:/' + _path_src,
                        'storage:/' + _path_dst, command])
 
