@@ -12,8 +12,10 @@ with open('README.md') as f:
 
 setup(
     name='neuromation',
-    # TODO (artyom 06/21/2018): implement single source of version
-    version='0.1.0',
+
+    use_scm_version={'root': '..', 'relative_to': __file__},
+    setup_requires=['setuptools_scm'],
+
     python_requires='>=3.5.0',
     # Make sure to pin versions of install_requires
     install_requires=[
