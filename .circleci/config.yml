@@ -47,11 +47,14 @@ jobs:
       - run:
           name: devpi setup
           command: |
+            python3 -m venv .env
+            . .env/bin/activate
             make -C python -s devpi_setup
 
       - run:
           name: devpi upload
           command: |
+            . .env/bin/activate
             make -C python devpi_upload
 
 workflows:
