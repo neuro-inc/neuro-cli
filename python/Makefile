@@ -1,3 +1,5 @@
+DEVPI_URL ?= "https://$(DEVPI_USER):$(DEVPI_PASS)@$(DEVPI_HOST)/$(DEVPI_USER)"
+
 SHELL := /bin/bash
 
 .PHONY: init
@@ -61,3 +63,16 @@ ci: lint e2e test coverage
 clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
+
+devpi_setup:
+	pip install devpi-client
+	pip install wheel
+	@devpi use $(DEVPI_URL)/$(DEVPI_INDEX)
+
+devpi_login:
+	@devpi login $(DEVPI_USER) --password=$(DEVPI_PASS)
+
+devpi_upload: devpi_login
+	devpi upload --formats bdist_wheel
+	
+	
