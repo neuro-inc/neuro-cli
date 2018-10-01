@@ -8,9 +8,9 @@ defaults: &defaults
     working_directory: ~/repo
 
 version: 2
-jobs:
-  <<: *defaults
+jobs:  
   build:
+    <<: *defaults
     steps:
       - checkout
 
