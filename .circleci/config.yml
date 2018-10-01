@@ -2,14 +2,15 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-version: 2
-jobs:
-  build:
+defaults: &defaults
     docker:
       - image: circleci/python:3.6.1
-
     working_directory: ~/repo
 
+version: 2
+jobs:  
+  build:
+    <<: *defaults
     steps:
       - checkout
 
@@ -37,3 +38,42 @@ jobs:
           command: |
             . .env/bin/activate
             make -C python ci
+
+  devpi_deploy:
+    <<: *defaults
+    steps:
+      - checkout
+
+      - run:
+          name: devpi setup
+          command: |
+            python3 -m venv .env
+            . .env/bin/activate
+            make -C python -s devpi_setup
+
+      - run:
+          name: devpi upload
+          command: |
+            . .env/bin/activate
+            make -C python devpi_upload
+
+workflows:
+  version: 2
+
+  main:
+    jobs:
+      - build:
+          context: org-global
+          filters:
+            tags:
+              only: /^v.*/
+      - devpi_deploy:
+          context: org-global
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/            
+                
