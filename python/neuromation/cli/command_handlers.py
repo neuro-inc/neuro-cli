@@ -32,14 +32,14 @@ class PlatformStorageOperation:
             path_principal = self.principal
         return path_principal
 
-    def _is_storage_path_url(self, path):
+    def _is_storage_path_url(self, path: ParseResult):
         if path.scheme != 'storage':
             raise ValueError('Path should be targeting platform storage.')
 
     def _render_platform_path(self, path_str: str) -> PosixPath:
         target_path: PosixPath = PosixPath(path_str)
         if target_path.is_absolute():
-            target_path = PosixPath(path_str[1:])
+            target_path = target_path.relative_to(PosixPath('/'))
         return target_path
 
     def _render_platform_path_with_principal(self,
@@ -52,7 +52,7 @@ class PlatformStorageOperation:
         return path.parent
 
     def render_uri_path_with_principal(self, path: str):
-        path_url = urlparse(path, 'file')
+        path_url = urlparse(path, scheme='file')
         self._is_storage_path_url(path_url)
         return self._render_platform_path_with_principal(path_url)
 
@@ -60,9 +60,7 @@ class PlatformStorageOperation:
 class PlatformMakeDirOperation(PlatformStorageOperation):
 
     def mkdir(self, path_str: str, storage: Callable):
-        path = urlparse(path_str, scheme='file')
-        self._is_storage_path_url(path)
-        final_path = self._render_platform_path_with_principal(path)
+        final_path = self.render_uri_path_with_principal(path_str)
         # TODO CHECK parent exists
         with storage() as s:
             return s.mkdirs(path=str(final_path))
@@ -71,9 +69,7 @@ class PlatformMakeDirOperation(PlatformStorageOperation):
 class PlatformListDirOperation(PlatformStorageOperation):
 
     def ls(self, path_str: str, storage: Callable):
-        path = urlparse(path_str, scheme='file')
-        self._is_storage_path_url(path)
-        final_path = self._render_platform_path_with_principal(path)
+        final_path = self.render_uri_path_with_principal(path_str)
         with storage() as s:
             return s.ls(path=str(final_path))
 
@@ -93,10 +89,6 @@ class PlatformRemoveOperation(PlatformStorageOperation):
         target_path: PosixPath = self._render_platform_path(path.path)
         if str(target_path) == '.':
             raise ValueError('Invalid path value.')
-        #
-        #
-        #
-
         with storage() as s:
             return s.rm(path=str(final_path))
 
