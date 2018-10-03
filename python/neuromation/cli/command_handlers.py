@@ -6,7 +6,8 @@ from pathlib import Path, PosixPath
 from typing import Callable, List
 from urllib.parse import ParseResult, urlparse
 
-from neuromation.client import FileStatus, ResourceNotFound
+from neuromation import Resources
+from neuromation.client import FileStatus, Image, ResourceNotFound
 
 log = logging.getLogger(__name__)
 

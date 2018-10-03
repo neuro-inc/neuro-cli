@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import pytest
 
 from neuromation.cli.command_handlers import CopyOperation
-from neuromation.client import FileStatus
+from neuromation.client import FileStatus, ResourceNotFound
 
 
 def _os_exists(tree: Dict) -> Callable:
@@ -171,7 +171,7 @@ class TestCopyRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'storage', 'file', True)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r'Target should exist'):
+        with pytest.raises(FileNotFoundError, match=r'Target should exist'):
             op.copy(urlparse('storage:///platform_existing/'),
                     urlparse('file:///localdir_non_existing/dir/'),
                     partial_mocked_store)
@@ -185,7 +185,8 @@ class TestCopyRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'storage', 'file', True)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r'Target should be directory'):
+        with pytest.raises(NotADirectoryError,
+                           match=r'Target should be directory'):
             op.copy(urlparse('storage:///platform_existing/'),
                     urlparse('file:///localdir/abc.txt/'),
                     partial_mocked_store)
@@ -207,7 +208,8 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'storage', 'file', False)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r'Source file not found'):
+        with pytest.raises(ResourceNotFound,
+                           match=r'Source file /platform_existing/ not found'):
             op.copy(urlparse('storage:///platform_existing/'),
                     urlparse('file:///localdir/dir/'), partial_mocked_store)
 
@@ -253,7 +255,7 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'storage', 'file', True)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r'Target should exist'):
+        with pytest.raises(FileNotFoundError, match=r'Target should exist'):
             op.copy(urlparse('storage:///platform_existing/my_file.txt'),
                     urlparse('file:///localdir_non_existing/dir/'),
                     partial_mocked_store)
