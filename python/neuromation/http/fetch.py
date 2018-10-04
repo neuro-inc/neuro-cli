@@ -81,7 +81,7 @@ async def session(token: Optional[str] = None):
         trace_config.on_request_chunk_sent.append(trace)
         trace_config.on_request_end.append(trace)
 
-    _default_auth_headers = {'Authorization': token} if token else {}
+    _default_auth_headers = {'Authorization': f'Bearer {token}'} if token else {}
 
     _session = aiohttp.ClientSession(trace_configs=[trace_config],
                                      headers=_default_auth_headers,

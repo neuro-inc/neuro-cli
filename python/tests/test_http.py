@@ -70,7 +70,8 @@ def test_call_session_with_token(build, loop):
         data=expected_data)
 
     assert 'Authorization' in _session._default_headers
-    assert _session._default_headers['Authorization'] == expected_auth_token
+    assert _session._default_headers['Authorization']\
+           == f'Bearer {expected_auth_token}'
 
     assert res == {'hello': 'world'}
 

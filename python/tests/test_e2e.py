@@ -16,9 +16,7 @@ FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"\
-    "auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImlkZW50aXR5IjoicmFmYSJ9" \
-          ".eyJpZGVudGl0eSI6InJhZmEifQ" \
-          ".3ZVl8v2aMeeMTl57gTQn5KtQD5t4P0tOXyoM3J8kSqw"
+    "auth: {token}"
 
 UBUNTU_IMAGE_NAME = 'ubuntu:latest'
 
@@ -83,7 +81,10 @@ def run(monkeypatch, capsys, tmpdir):
     import sys
     from pathlib import Path
 
-    tmpdir.join('.nmrc').open('w').write(RC_TEXT)
+    e2e_test_token = os.environ['CLIENT_TEST_E2E_USER_NAME']
+
+    rc_text = RC_TEXT.format(token = e2e_test_token)
+    tmpdir.join('.nmrc').open('w').write(rc_text)
 
     def _home():
         return Path(tmpdir)
