@@ -82,6 +82,7 @@ Commands:
   model                 Model training, testing and inference
   job                   Manage existing jobs
   store                 Storage operations
+  image                 Docker container image operations
   config                Configure API connection settings
   help                  Get help on a command
     """
@@ -456,6 +457,8 @@ Commands:
             except subprocess.CalledProcessError as e:
                 raise ValueError(f'Docker pull failed. '
                                  f'Error details {e.returncode}')
+
+            return target_image_name
 
         @command
         def pull(image_name):
