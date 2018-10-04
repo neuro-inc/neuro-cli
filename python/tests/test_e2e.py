@@ -83,7 +83,7 @@ def run(monkeypatch, capsys, tmpdir):
 
     e2e_test_token = os.environ['CLIENT_TEST_E2E_USER_NAME']
 
-    rc_text = RC_TEXT.format(token = e2e_test_token)
+    rc_text = RC_TEXT.format(token=e2e_test_token)
     tmpdir.join('.nmrc').open('w').write(rc_text)
 
     def _home():
