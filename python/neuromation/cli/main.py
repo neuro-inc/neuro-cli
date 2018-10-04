@@ -105,7 +105,7 @@ Commands:
             docker_registry_url = config.docker_registry_url()
 
             process = subprocess.run(['docker', 'login',
-                                      '-p', token,
+                                      '-p', config.auth,
                                       '-u', 'token',
                                       docker_registry_url])
             if process.returncode != 0:
@@ -426,6 +426,7 @@ Commands:
             config = rc.ConfigFactory.load()
             docker_registry_url = config.docker_registry_url()
             platform_user_name = config.get_platform_user_name()
+            platform_user_name = platform_user_name.lower()
             target_image_name = f'{docker_registry_url}/' \
                                 f'{platform_user_name}/{image_name}'
             return target_image_name
