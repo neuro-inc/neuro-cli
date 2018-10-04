@@ -15,9 +15,8 @@ BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = """
-    url: http://platform.dev.neuromation.io/api/v1
-"""
+RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"\
+    "auth: {token}"
 
 UBUNTU_IMAGE_NAME = 'ubuntu:latest'
 
@@ -82,7 +81,10 @@ def run(monkeypatch, capsys, tmpdir):
     import sys
     from pathlib import Path
 
-    tmpdir.join('.nmrc').open('w').write(RC_TEXT)
+    e2e_test_token = os.environ['CLIENT_TEST_E2E_USER_NAME']
+
+    rc_text = RC_TEXT.format(token=e2e_test_token)
+    tmpdir.join('.nmrc').open('w').write(rc_text)
 
     def _home():
         return Path(tmpdir)
@@ -116,18 +118,18 @@ def test_empty_directory_ls_output(run):
     _path = f'/tmp/{_dir}'
 
     # Create directory for the test
-    _, captured = run(['store', 'mkdir', _path])
+    _, captured = run(['store', 'mkdir', f'storage://{_path}'])
     assert not captured.err
-    assert captured.out == _path + '\n'
+    assert captured.out == f'storage://{_path}\n'
 
     # Ensure output of ls - empty directory shall print nothing.
-    _, captured = run(['store', 'ls', _path])
+    _, captured = run(['store', 'ls', f'storage://{_path}'])
     assert not captured.err
     assert captured.out.isspace()
 
     # Remove test dir
     _, captured = run([
-            'store', 'rm', _path
+            'store', 'rm', f'storage://{_path}'
         ])
     assert not captured.err
 
@@ -141,8 +143,8 @@ def test_e2e_shm_run_without(run, tmpdir):
     _path_dst = f'/tmp/{_dir_dst}'
 
     # Create directory for the test, going to be model and result output
-    run(['store', 'mkdir', _path_src])
-    run(['store', 'mkdir', _path_dst])
+    run(['store', 'mkdir', f'storage://{_path_src}'])
+    run(['store', 'mkdir', f'storage://{_path_dst}'])
 
     # Start the df test job
     command = 'bash -c "/bin/df --block-size M ' \
@@ -164,8 +166,8 @@ def test_e2e_shm_run_without(run, tmpdir):
         out = captured.out
 
     # Remove test dir
-    run(['store', 'rm', _path_src])
-    run(['store', 'rm', _path_dst])
+    run(['store', 'rm', f'storage://{_path_src}'])
+    run(['store', 'rm', f'storage://{_path_dst}'])
 
     assert '/dev/shm' in out
     assert '64M' in out
@@ -180,8 +182,8 @@ def test_e2e_shm_run_with(run, tmpdir):
     _path_dst = f'/tmp/{_dir_dst}'
 
     # Create directory for the test, going to be model and result output
-    run(['store', 'mkdir', _path_src])
-    run(['store', 'mkdir', _path_dst])
+    run(['store', 'mkdir', f'storage://{_path_src}'])
+    run(['store', 'mkdir', f'storage://{_path_dst}'])
 
     # Start the df test job
     command = 'bash -c "/bin/df --block-size M ' \
@@ -204,8 +206,8 @@ def test_e2e_shm_run_with(run, tmpdir):
         out = captured.out
 
     # Remove test dir
-    run(['store', 'rm', _path_src])
-    run(['store', 'rm', _path_dst])
+    run(['store', 'rm', f'storage://{_path_src}'])
+    run(['store', 'rm', f'storage://{_path_dst}'])
 
     assert '/dev/shm' in out
     assert '64M' not in out
@@ -219,9 +221,9 @@ def test_e2e(data, run, tmpdir):
     _path = f'/tmp/{_dir}'
 
     # Create directory for the test
-    _, captured = run(['store', 'mkdir', _path])
+    _, captured = run(['store', 'mkdir', f'storage://{_path}'])
     assert not captured.err
-    assert captured.out == _path + '\n'
+    assert captured.out == f'storage://{_path}\n'
 
     # Upload local file
     _, captured = run([
@@ -232,7 +234,7 @@ def test_e2e(data, run, tmpdir):
                                     + '/foo' + '\n').geturl()
 
     # Confirm file has been uploaded
-    _, captured = run(['store', 'ls', _path])
+    _, captured = run(['store', 'ls', f'storage://{_path}'])
     captured_output_list = captured.out.split('\n')
     assert 'file           16,777,216     foo' \
         in captured_output_list
@@ -258,13 +260,13 @@ def test_e2e(data, run, tmpdir):
 
     # Remove test dir
     _, captured = run([
-            'store', 'rm', _path
+            'store', 'rm', f'storage://{_path}'
         ])
     assert not captured.err
 
     # And confirm
     _, captured = run([
-            'store', 'ls', '/tmp'
+            'store', 'ls', f'storage:///tmp'
         ])
 
     split = captured.out.split('\n')
@@ -279,9 +281,9 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir):
     _path = f'/tmp/{_dir}'
 
     # Create directory for the test
-    _, captured = run(['store', 'mkdir', _path])
+    _, captured = run(['store', 'mkdir', f'storage://{_path}'])
     assert not captured.err
-    assert captured.out == _path + '\n'
+    assert captured.out == f'storage://{_path}' + '\n'
 
     # Try downloading non existing file
     _local = join(tmpdir, 'bar')
@@ -299,13 +301,13 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir):
 
     # Remove test dir
     _, captured = run([
-            'store', 'rm', _path
+            'store', 'rm', f'storage://{_path}'
         ])
     assert not captured.err
 
     # And confirm
     _, captured = run([
-            'store', 'ls', '/tmp'
+            'store', 'ls', f'storage:///tmp'
         ])
 
     split = captured.out.split('\n')
@@ -320,9 +322,9 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir):
     _path = f'/tmp/{_dir}'
 
     # Create directory for the test
-    _, captured = run(['store', 'mkdir', _path])
+    _, captured = run(['store', 'mkdir', f'storage://{_path}'])
     assert not captured.err
-    assert captured.out == _path + '\n'
+    assert captured.out == f'storage://{_path}' + '\n'
 
     # Try downloading non existing file
     _local = join(tmpdir)
@@ -342,7 +344,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir):
 
     # And confirm
     _, captured = run([
-            'store', 'ls', '/tmp'
+            'store', 'ls', 'storage:///tmp'
         ])
 
     split = captured.out.split('\n')
@@ -350,13 +352,13 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir):
 
     # Remove test dir
     _, captured = run([
-            'store', 'rm', _path
+            'store', 'rm', f'storage://{_path}'
         ])
     assert not captured.err
 
     # And confirm
     _, captured = run([
-            'store', 'ls', '/tmp'
+            'store', 'ls', f'storage:///tmp'
         ])
 
     split = captured.out.split('\n')
@@ -374,9 +376,9 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     _path = f'/tmp/{_dir}'
 
     # Create directory for the test
-    _, captured = run(['store', 'mkdir', _path])
+    _, captured = run(['store', 'mkdir', f'storage://{_path}'])
     assert not captured.err
-    assert captured.out == _path + '\n'
+    assert captured.out == f'storage://{_path}' + '\n'
 
     # Upload local file
     _, captured = run([
@@ -387,28 +389,32 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
                                     + '/' + '\n').geturl()
 
     # Check directory structure
-    _, captured = run(['store', 'ls', f'{_path}'])
+    _, captured = run(['store', 'ls', f'storage://{_path}'])
     captured_output_list = captured.out.split('\n')
     assert f'directory      0              nested' in captured_output_list
     assert not captured.err
 
-    _, captured = run(['store', 'ls', f'{_path}/nested'])
+    _, captured = run(['store', 'ls', f'storage://{_path}/nested'])
     captured_output_list = captured.out.split('\n')
     assert f'directory      0              directory' in captured_output_list
     assert not captured.err
 
-    _, captured = run(['store', 'ls', f'{_path}/nested/directory'])
+    _, captured = run(['store', 'ls', f'storage://{_path}/nested/directory'])
     captured_output_list = captured.out.split('\n')
     assert f'directory      0              for' in captured_output_list
     assert not captured.err
 
-    _, captured = run(['store', 'ls', f'{_path}/nested/directory/for'])
+    _, captured = run(['store',
+                       'ls',
+                       f'storage://{_path}/nested/directory/for'])
     captured_output_list = captured.out.split('\n')
     assert f'directory      0              test' in captured_output_list
     assert not captured.err
 
     # Confirm file has been uploaded
-    _, captured = run(['store', 'ls', f'{_path}/nested/directory/for/test'])
+    _, captured = run(['store',
+                       'ls',
+                       f'storage://{_path}/nested/directory/for/test'])
     captured_output_list = captured.out.split('\n')
     assert f'file           16,777,216     {target_file_name}' \
         in captured_output_list
@@ -426,13 +432,13 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
 
     # Remove test dir
     _, captured = run([
-            'store', 'rm', _path
+            'store', 'rm', f'storage://{_path}'
         ])
     assert not captured.err
 
     # And confirm
     _, captured = run([
-            'store', 'ls', '/tmp'
+            'store', 'ls', f'storage:///tmp'
         ])
 
     split = captured.out.split('\n')

@@ -25,6 +25,18 @@ class Config:
         return None
 
 
+class ConfigFactory:
+    @classmethod
+    def load(cls):
+        nmrc_config_path = Path.home().joinpath('.nmrc')
+        return load(nmrc_config_path)
+
+    @classmethod
+    def save(cls, config: Config):
+        nmrc_config_path = Path.home().joinpath('.nmrc')
+        return save(nmrc_config_path, config)
+
+
 def save(path, config: Config) -> Config:
     with open(path, 'w') as file:
         yaml.dump(asdict(config), file, default_flow_style=False)

@@ -2,10 +2,12 @@ import abc
 import logging
 import os
 from os.path import dirname
+from pathlib import Path, PosixPath
 from typing import Callable, List
-from urllib.parse import ParseResult
+from urllib.parse import ParseResult, urlparse
 
-from neuromation.client import FileStatus, ResourceNotFound
+from neuromation import Resources
+from neuromation.client import FileStatus, Image, ResourceNotFound
 
 log = logging.getLogger(__name__)
 
@@ -18,49 +20,114 @@ PLATFORM_DELIMITER = '/'
 SYSTEM_PATH_DELIMITER = os.sep
 
 
-class PlatformMakeDirOperation:
+class PlatformStorageOperation:
 
-    def mkdir(self, path: str, storage: Callable):
+    def __init__(self, principal: str):
+        self.principal = principal
+
+    def _get_principal(self, path_url: ParseResult) -> str:
+        path_principal = path_url.netloc
+        if not path_principal:
+            path_principal = self.principal
+        if path_principal == '~':
+            path_principal = self.principal
+        return path_principal
+
+    def _is_storage_path_url(self, path: ParseResult):
+        if path.scheme != 'storage':
+            raise ValueError('Path should be targeting platform storage.')
+
+    def _render_platform_path(self, path_str: str) -> PosixPath:
+        target_path: PosixPath = PosixPath(path_str)
+        if target_path.is_absolute():
+            target_path = target_path.relative_to(PosixPath('/'))
+        return target_path
+
+    def _render_platform_path_with_principal(self,
+                                             path: ParseResult) -> PosixPath:
+        target_path: PosixPath = self._render_platform_path(path.path)
+        target_principal = self._get_principal(path)
+        return PosixPath(PLATFORM_DELIMITER, target_principal, target_path)
+
+    def _get_parent(self, path: PosixPath) -> PosixPath:
+        return path.parent
+
+    def render_uri_path_with_principal(self, path: str):
+        path_url = urlparse(path, scheme='file')
+        self._is_storage_path_url(path_url)
+        return self._render_platform_path_with_principal(path_url)
+
+
+class PlatformMakeDirOperation(PlatformStorageOperation):
+
+    def mkdir(self, path_str: str, storage: Callable):
+        final_path = self.render_uri_path_with_principal(path_str)
+        # TODO CHECK parent exists
         with storage() as s:
-            return s.mkdirs(path=path)
+            return s.mkdirs(path=str(final_path))
 
 
-class PlatformListDirOperation:
+class PlatformListDirOperation(PlatformStorageOperation):
 
-    def ls(self, path: str, storage: Callable):
+    def ls(self, path_str: str, storage: Callable):
+        final_path = self.render_uri_path_with_principal(path_str)
         with storage() as s:
-            return s.ls(path=path)
+            return s.ls(path=str(final_path))
 
 
-class CopyOperation:
+class PlatformRemoveOperation(PlatformStorageOperation):
+
+    def remove(self, path_str: str, storage: Callable):
+        path = urlparse(path_str, scheme='file')
+        self._is_storage_path_url(path)
+        final_path = self._render_platform_path_with_principal(path)
+
+        # TODO test how it will work on Windows Platform
+        # Lets protect user against typos in command line
+        # We can of course ask user whether he really wants
+        # to delete every file. Yet it is going to be nightmare
+        # in case of REST
+        target_path: PosixPath = self._render_platform_path(path.path)
+        if str(target_path) == '.':
+            raise ValueError('Invalid path value.')
+        with storage() as s:
+            return s.rm(path=str(final_path))
+
+
+class CopyOperation(PlatformStorageOperation):
 
     @abc.abstractmethod
-    def _copy(self, src: str, dst: str,
+    def _copy(self, src: ParseResult, dst: ParseResult,
               storage: Callable):   # pragma: no cover
         pass
 
     def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
-        self._copy(src.path, dst.path, storage)
+        log.debug(f'Copy {src} to {dst}.')
+        self._copy(src, dst, storage)
         return dst.geturl()
 
+    def _ls(self, path: str, storage: Callable):
+        ls = PlatformListDirOperation(self.principal)
+        return ls.ls(f'storage:/{path}', storage)
+
     @classmethod
-    def create(cls, src_scheme: str, dst_scheme: str,
+    def create(cls, principal: str, src_scheme: str, dst_scheme: str,
                recursive: bool) -> 'CopyOperation':
         if src_scheme == 'file':
             if dst_scheme == 'storage':
                 if recursive:
-                    return RecursiveLocalToPlatform()
+                    return RecursiveLocalToPlatform(principal)
                 else:
-                    return NonRecursiveLocalToPlatform()
+                    return NonRecursiveLocalToPlatform(principal)
             else:
                 raise ValueError(
                     'storage:// and file:// schemes required')
         elif src_scheme == 'storage':
             if dst_scheme == 'file':
                 if recursive:
-                    return RecursivePlatformToLocal()
+                    return RecursivePlatformToLocal(principal)
                 else:
-                    return NonRecursivePlatformToLocal()
+                    return NonRecursivePlatformToLocal(principal)
             else:
                 raise ValueError(
                     'storage:// and file:// schemes required')
@@ -82,25 +149,21 @@ class NonRecursivePlatformToLocal(CopyOperation):
 
             o.write(buf)
 
-    def _copy(self, src: str, dst: str,
-              storage: Callable):   # pragma: no cover
-        return self.copy_file(src, dst, storage)
-
-    def copy_file(self, src, dst, storage):  # pragma: no cover
+    def copy_file(self, src: str, dst: str, storage):  # pragma: no cover
         with storage() as s:
             with s.open(path=src) as stream:
                 with open(dst, mode='wb') as f:
                     self.transfer(stream, f)
                     return None
 
-    def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
-        platform_file_name = src.path.split(PLATFORM_DELIMITER)[-1]
-        platform_file_path = dirname(src.path)
+    def _copy(self, src: ParseResult, dst: ParseResult,
+              storage: Callable):   # pragma: no cover
+        platform_file_name = self._render_platform_path_with_principal(src)
 
         # define local
         if os.path.exists(dst.path) and os.path.isdir(dst.path):
                 #         get file name from src
-                dst_path = os.path.join(dst.path, platform_file_name)
+                dst_path = Path(dst.path, platform_file_name.name)
         else:
             if dst.path.endswith(SYSTEM_PATH_DELIMITER):
                 raise NotADirectoryError('Target should exist. '
@@ -112,39 +175,38 @@ class NonRecursivePlatformToLocal(CopyOperation):
                 raise FileNotFoundError('Target should exist. '
                                         'Please create directory, '
                                         'or point to existing file.')
-            dst_path = dst.path.rstrip(SYSTEM_PATH_DELIMITER)
+            dst_path = Path(dst.path)
 
         # check remote
-        files = PlatformListDirOperation().ls(platform_file_path, storage)
+        files = self._ls(str(platform_file_name.parent), storage)
         try:
             next(file
                  for file in files
-                 if file.path == platform_file_name and file.type == 'FILE')
+                 if file.path == platform_file_name.name
+                 and file.type == 'FILE')
         except StopIteration as e:
             raise ResourceNotFound(f'Source file {src.path} not found.') from e
 
-        self._copy(src.path, dst_path, storage)
-        return dst.geturl()
+        return self.copy_file(str(platform_file_name), str(dst_path), storage)
 
 
 class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
-    def _copy(self, src: str, dst: str, storage: Callable):
-        files: List[FileStatus] = PlatformListDirOperation()\
-            .ls(path=src, storage=storage)
+    def _copy_obj(self, src: PosixPath, dst: Path, storage: Callable):
+        files: List[FileStatus] = PlatformListDirOperation(self.principal)\
+            .ls(path_str=f'storage:/{src}', storage=storage)
+
         for file in files:
             name = file.path
-            target = os.path.join(dst, name)
+            target = Path(dst, name)
             if file.type == 'DIRECTORY':
-                if not os.path.isdir(target):
-                    os.mkdir(target)
-                self._copy(src + '/' + name, target, storage)
+                os.mkdir(target)
+                self._copy_obj(PosixPath(src, name), target, storage)
             else:
-                self.copy_file(f'{src}{PLATFORM_DELIMITER}{name}',
-                               target, storage)
-        return dst
+                platform_file_name = f'{src}{PLATFORM_DELIMITER}{name}'
+                self.copy_file(platform_file_name, str(target), storage)
 
-    def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+    def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
             raise FileNotFoundError('Target should exist. '
                                     'Please create target directory '
@@ -155,25 +217,24 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                                      'Please correct your '
                                      'command line arguments.')
 
-        src_path = src.path.rstrip(PLATFORM_DELIMITER)
-        dest_path = dst.path.rstrip('/')
+        # Test that source directory exists.
+        platform_file_name = self._render_platform_path_with_principal(src)
+        platform_file_path = self._get_parent(platform_file_name)
+        # TODO here we should have work around when someone
+        # tries to copy full directory of a person
+        if str(platform_file_path) != '/':
+            files = self._ls(str(platform_file_path), storage)
+            try:
+                next(file
+                     for file in files
+                     if file.path == str(platform_file_name.name)
+                     and file.type == 'DIRECTORY')
+            except StopIteration as e:
+                raise ResourceNotFound('Source directory not found.') from e
 
-        # check remote
-        platform_file_name = src_path.split(PLATFORM_DELIMITER)[-1]
-        platform_file_path = dirname(src_path)
+        self._copy_obj(platform_file_name, Path(dst.path), storage)
 
-        files = PlatformListDirOperation().ls(platform_file_path, storage)
-        try:
-            next(file
-                 for file in files
-                 if file.path == platform_file_name
-                 and file.type == 'DIRECTORY')
-        except StopIteration as e:
-            raise ResourceNotFound(
-                'Source directory not found.') from e
-
-        self._copy(src_path, dest_path, storage)
-        return dst.geturl()
+        return dst
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
@@ -187,28 +248,101 @@ class NonRecursiveLocalToPlatform(CopyOperation):
                 s.create(path=dest_path, data=f)
                 return dest_path
 
-    def _copy(self, src: str, dst: str, storage: Callable):
-        log.debug(f'Copy {src} to {dst}.')
-        return self.copy_file(src, dst, storage)
+    def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+        if not os.path.exists(src.path):
+            raise ValueError('Source file not found.')
+
+        if os.path.isdir(src.path):
+            raise ValueError('Source should be file.')
+
+        target_path: PosixPath = self._render_platform_path_with_principal(dst)
+
+        platform_file_path = self._get_parent(target_path)
+        files = self._ls(str(platform_file_path), storage)
+        try:
+            next(file
+                 for file in files
+                 if file.path == str(target_path.name)
+                 and file.type == 'DIRECTORY')
+            target_path = PosixPath(target_path, Path(src.path).name)
+        except StopIteration as e:
+            pass
+
+        return self.copy_file(src.path, str(target_path), storage)
 
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
-    def _copy(self, src: str, dst: str, storage: Callable):
-        # TODO should we create directory by default - root
-        dst = dst.rstrip(PLATFORM_DELIMITER)
-        dst = f'{dst}{PLATFORM_DELIMITER}'
-        for root, subdirs, files in os.walk(src):
-            if root != src:
-                suffix_path = os.path.relpath(root, src)
-                pref_path = f'{dst}{suffix_path}{PLATFORM_DELIMITER}'
+    def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+        if not os.path.exists(src.path):
+            raise ValueError('Source should exist.')
+
+        if not os.path.isdir(src.path):
+            NonRecursiveLocalToPlatform.copy_file(self, src, dst, storage)
+            return
+
+        final_path = self._render_platform_path_with_principal(dst)
+        for root, subdirs, files in os.walk(src.path):
+            if root != src.path:
+                suffix_path = os.path.relpath(root, src.path)
+                pref_path = f'{final_path}{PLATFORM_DELIMITER}' \
+                            f'{suffix_path}{PLATFORM_DELIMITER}'
             else:
                 suffix_path = ''
-                pref_path = dst
+                pref_path = f'{final_path}{PLATFORM_DELIMITER}'
             for file in files:
                 target_dest = f'{pref_path}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
             for subdir in subdirs:
                 target_dest = f'{pref_path}{subdir}'
-                PlatformMakeDirOperation().mkdir(target_dest, storage)
+                PlatformMakeDirOperation(self.principal).mkdir(
+                    f'storage:/{target_dest}',
+                    storage)
+
+
+class ModelHandlerOperations(PlatformStorageOperation):
+    def train(self, image, dataset, results,
+              gpu, cpu, memory, extshm,
+              cmd, model):
+        try:
+            dataset_platform_path = self.render_uri_path_with_principal(
+                dataset)
+        except ValueError as e:
+            raise ValueError('Dataset path should be on platform. '
+                             'Specify scheme storage:')
+
+        try:
+            resultset_platform_path = self.render_uri_path_with_principal(
+                results)
+        except ValueError as e:
+            raise ValueError('Results path should be on platform. '
+                             'Specify scheme storage:')
+
+        cmd = ' '.join(cmd)
+        log.debug(f'cmd="{cmd}"')
+
+        cpu = float(cpu)
+        gpu = int(gpu)
+        extshm = bool(extshm)
+
+        with model() as m:
+            job = m.train(
+                image=Image(
+                    image=image,
+                    command=cmd),
+                resources=Resources(
+                    memory=memory,
+                    gpu=gpu,
+                    cpu=cpu,
+                    shm=extshm
+                ),
+                dataset=f'storage:/{dataset_platform_path}',
+                results=f'storage:/{resultset_platform_path}')
+
+        # Format job info properly
+        return f'Job ID: {job.id} Status: {job.status}\n' + \
+               f'Shortcuts:\n' + \
+               f'  neuro job status {job.id}  # check job status\n' + \
+               f'  neuro job monitor {job.id} # monitor job stdout\n' + \
+               f'  neuro job kill {job.id}    # kill job'
