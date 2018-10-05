@@ -364,6 +364,13 @@ Commands:
 
             List all jobs
             """
+            def short_format(item) -> str:
+                image = item.image if item.image else ''
+                command = item.command if item.command else ''
+                return f'{item.id}' \
+                       f'    {item.status:<10}' \
+                       f'    {image:<25}' \
+                       f'    {command}'
 
             def short_format(item) -> str:
                 image = item.image if item.image else ''
