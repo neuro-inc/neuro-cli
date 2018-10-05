@@ -103,8 +103,8 @@ class CopyOperation(PlatformStorageOperation):
 
     def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         log.debug(f'Copy {src} to {dst}.')
-        self._copy(src, dst, storage)
-        return dst.geturl()
+        copy_result = self._copy(src, dst, storage)
+        return copy_result
 
     def _ls(self, path: str, storage: Callable):
         ls = PlatformListDirOperation(self.principal)
@@ -154,7 +154,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
             with s.open(path=src) as stream:
                 with open(dst, mode='wb') as f:
                     self.transfer(stream, f)
-                    return None
+                    return dst
 
     def _copy(self, src: ParseResult, dst: ParseResult,
               storage: Callable):   # pragma: no cover
@@ -171,7 +171,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
                                          'or point to existing file.')
 
             try_dir = dirname(dst.path)
-            if not os.path.isdir(try_dir):
+            if try_dir != '' and not os.path.isdir(try_dir):
                 raise FileNotFoundError('Target should exist. '
                                         'Please create directory, '
                                         'or point to existing file.')
@@ -187,7 +187,10 @@ class NonRecursivePlatformToLocal(CopyOperation):
         except StopIteration as e:
             raise ResourceNotFound(f'Source file {src.path} not found.') from e
 
-        return self.copy_file(str(platform_file_name), str(dst_path), storage)
+        copy_file = self.copy_file(str(platform_file_name),
+                                   str(dst_path),
+                                   storage)
+        return copy_file
 
 
 class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
@@ -258,17 +261,22 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         target_path: PosixPath = self._render_platform_path_with_principal(dst)
 
         platform_file_path = self._get_parent(target_path)
-        files = self._ls(str(platform_file_path), storage)
-        try:
-            next(file
-                 for file in files
-                 if file.path == str(target_path.name)
-                 and file.type == 'DIRECTORY')
+        if platform_file_path != PosixPath('/'):
+            files = self._ls(str(platform_file_path), storage)
+            try:
+                tgt = next(file
+                           for file in files
+                           if file.path == str(target_path.name))
+                if tgt.type == 'DIRECTORY':
+                    target_path = PosixPath(target_path, Path(src.path).name)
+            except StopIteration as e:
+                pass
+        else:
+            # Copying to home
             target_path = PosixPath(target_path, Path(src.path).name)
-        except StopIteration as e:
-            pass
 
-        return self.copy_file(src.path, str(target_path), storage)
+        copy_file = self.copy_file(src.path, str(target_path), storage)
+        return f'storage:/{copy_file}'
 
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
@@ -278,8 +286,10 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
             raise ValueError('Source should exist.')
 
         if not os.path.isdir(src.path):
-            NonRecursiveLocalToPlatform.copy_file(self, src, dst, storage)
-            return
+            return NonRecursiveLocalToPlatform.copy_file(self,
+                                                         src,
+                                                         dst,
+                                                         storage)
 
         final_path = self._render_platform_path_with_principal(dst)
         for root, subdirs, files in os.walk(src.path):
@@ -299,6 +309,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 PlatformMakeDirOperation(self.principal).mkdir(
                     f'storage:/{target_dest}',
                     storage)
+        return final_path
 
 
 class ModelHandlerOperations(PlatformStorageOperation):
