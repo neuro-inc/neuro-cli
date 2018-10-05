@@ -3,6 +3,7 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 
+from neuromation.client.requests import build
 from neuromation.http import FetchError, JsonRequest, fetch, session
 from utils import JsonResponse, mocked_async_context_manager
 
@@ -100,3 +101,8 @@ def test_fetch(loop):
                     json=None),
                 session=_session,
                 url='http://foo'))
+
+
+def test_unknown_request_type():
+    with pytest.raises(TypeError):
+        build(None)

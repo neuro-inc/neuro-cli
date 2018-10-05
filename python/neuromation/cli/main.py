@@ -363,9 +363,13 @@ Commands:
 
             List all jobs
             """
+
             with jobs() as j:
                 return '\n'.join([
-                        f'{item.id}    {item.status}'
+                        f'{item.id}'
+                        f'    {item.status}'
+                        f'    {item.image:<15}'
+                        f'    {item.command:<15}'
                         for item in
                         j.list()
                     ])
@@ -382,6 +386,9 @@ Commands:
                 res = j.status(id)
                 result = f'Job: {res.id}\n' \
                          f'Status: {res.status}\n' \
+                         f'Image: {res.image}\n' \
+                         f'Command: {res.command}\n' \
+                         f'Resources: {res.resources}\n' \
                          f'Created: {res.history.created_at}'
                 if res.status in [JobStatus.RUNNING, JobStatus.FAILED,
                                   JobStatus.SUCCEEDED]:

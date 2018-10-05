@@ -40,6 +40,18 @@ class JobStatusHistory:
 
 
 @dataclass(frozen=True)
+class JobDescription:
+    status: str
+    id: str
+    client: ApiClient
+    image: Optional[str] = None
+    command: Optional[str] = None
+    url: str = ''
+    history: JobStatusHistory = None
+    resources: Resources = None
+
+
+@dataclass(frozen=True)
 class JobItem:
     status: str
     id: str
@@ -143,13 +155,10 @@ class Model(ApiClient):
 
 class Job(ApiClient):
 
-    def list(self) -> List[JobItem]:
+    def list(self) -> List[JobDescription]:
         res = self._fetch_sync(JobListRequest())
         return [
-            JobItem(
-                client=self,
-                id=job['id'],
-                status=job['status'])
+            self._dict_to_description(job)
             for job in res['jobs']
         ]
 
@@ -168,13 +177,15 @@ class Job(ApiClient):
             mapped_class = self._exception_map.get(error_class, error_class)
             raise mapped_class(error) from error
 
-    def status(self, id: str) -> JobItem:
+    def status(self, id: str) -> JobDescription:
         res = self._fetch_sync(JobStatusRequest(id=id))
-        return JobItem(
-            client=self,
-            id=res['id'],
-            status=res['status'],
-            history=JobStatusHistory(
+        return self._dict_to_description_with_history(res)
+
+    def _dict_to_description_with_history(self, res):
+        job_description = self._dict_to_description(res)
+        job_history = None
+        if 'history' in res:
+            job_history = JobStatusHistory(
                 status=res['history'].get('status', None),
                 reason=res['history'].get('reason', None),
                 description=res['history'].get('description', None),
@@ -182,4 +193,44 @@ class Job(ApiClient):
                 started_at=res['history'].get('started_at', None),
                 finished_at=res['history'].get('finished_at', None)
             )
+        return JobDescription(
+            client=self,
+            id=job_description.id,
+            status=job_description.status,
+            image=job_description.image,
+            command=job_description.command,
+            history=job_history,
+            resources=job_description.resources
+        )
+
+    def _dict_to_description(self, res):
+        job_container_image = None
+        job_command = None
+        job_resources = None
+
+        if 'container' in res:
+            job_container_image = res['container']['image'] \
+                if 'image' in res['container'] \
+                else None
+            job_command = res['container']['command'] \
+                if 'command' in res['container'] \
+                else None
+
+            if 'resources' in res['container']:
+                shm = res['container']['resources']['shm'] \
+                    if 'shm' in res['container']['resources'] \
+                    else None
+                job_resources = Resources(
+                    cpu=res['container']['resources']['cpu'],
+                    memory=res['container']['resources']['memory_mb'],
+                    gpu=res['container']['resources']['gpu'],
+                    shm=shm,
+                )
+        return JobDescription(
+            client=self,
+            id=res['id'],
+            status=res['status'],
+            image=job_container_image,
+            command=job_command,
+            resources=job_resources
         )
