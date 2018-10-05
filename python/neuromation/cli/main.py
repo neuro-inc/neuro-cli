@@ -364,6 +364,7 @@ Commands:
 
             List all jobs
             """
+
             def short_format(item) -> str:
                 image = item.image if item.image else ''
                 command = item.command if item.command else ''
