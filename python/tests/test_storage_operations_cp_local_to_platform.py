@@ -335,6 +335,24 @@ class TestCopyNonRecursivePlatformToLocal:
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
         op.copy(urlparse('file:///localdir/abc.txt'),
+                urlparse('file:///platform_existing/dir2'),
+                partial_mocked_store)
+
+        assert transfer_mock.call_count == 1
+        transfer_mock.assert_any_call('/localdir/abc.txt',
+                                      '/alice/platform_existing/dir2',
+                                      partial_mocked_store)
+
+    def test_target_file_trailing_slash(self,
+                                        mocked_store,
+                                        partial_mocked_store,
+                                        monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        op.copy(urlparse('file:///localdir/abc.txt'),
                 urlparse('file:///platform_existing/dir2/'),
                 partial_mocked_store)
 
