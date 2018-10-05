@@ -39,8 +39,8 @@ def setup_logging():
 
 def setup_console_handler(handler, verbose, noansi=False):
     if not handler.stream.closed and \
-           handler.stream.isatty() and \
-           noansi is False:
+            handler.stream.isatty() and \
+            noansi is False:
         format_class = ConsoleWarningFormatter
     else:
         format_class = logging.Formatter
@@ -102,6 +102,7 @@ Commands:
             auth            Updates API Token
             show            Print current settings
         """
+
         def update_docker_config(config: rc.Config) -> None:
             docker_registry_url = config.docker_registry_url()
 
@@ -363,16 +364,20 @@ Commands:
 
             List all jobs
             """
+            def short_format(item) -> str:
+                image = item.image if item.image else ''
+                command = item.command if item.command else ''
+                return f'{item.id}' \
+                       f'    {item.status:<10}' \
+                       f'    {image:<25}' \
+                       f'    {command}'
 
             with jobs() as j:
                 return '\n'.join([
-                        f'{item.id}'
-                        f'    {item.status}'
-                        f'    {item.image:<15}'
-                        f'    {item.command:<15}'
-                        for item in
-                        j.list()
-                    ])
+                    short_format(item)
+                    for item in
+                    j.list()
+                ])
 
         @command
         def status(id):
@@ -415,6 +420,7 @@ Commands:
             with jobs() as j:
                 j.kill(id)
             return 'Job killed.'
+
         return locals()
 
     @command
@@ -430,6 +436,7 @@ Commands:
           pull Pull docker image from cloud registry to local machine
           search List your docker images
         """
+
         def get_image_platform_full_name(image_name):
             config = rc.ConfigFactory.load()
             docker_registry_url = config.docker_registry_url()
@@ -483,6 +490,7 @@ Commands:
                                  f'Error code {e.returncode}')
 
         return locals()
+
     return locals()
 
 
@@ -497,8 +505,8 @@ def main():
 
     config = rc.ConfigFactory.load()
     neuro.__doc__ = neuro.__doc__.format(
-            url=config.url
-        )
+        url=config.url
+    )
 
     try:
         res = dispatch(
