@@ -2,7 +2,7 @@ import abc
 import logging
 import os
 from os.path import dirname
-from pathlib import Path, PosixPath
+from pathlib import Path, PosixPath, PurePath
 from typing import Callable, List
 from urllib.parse import ParseResult, urlparse
 
@@ -290,6 +290,10 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                                                      storage)
 
         final_path = self._render_platform_path_with_principal(dst)
+        src_dir_path = PurePath(src.path).name
+        if src_dir_path != '':
+            final_path = PosixPath(final_path, src_dir_path)
+
         for root, subdirs, files in os.walk(src.path):
             if root != src.path:
                 suffix_path = os.path.relpath(root, src.path)
