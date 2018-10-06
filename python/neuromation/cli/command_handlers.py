@@ -11,11 +11,9 @@ from neuromation.client import FileStatus, Image, ResourceNotFound
 
 log = logging.getLogger(__name__)
 
-
 BUFFER_SIZE_MB = 16
 
 PLATFORM_DELIMITER = '/'
-
 
 SYSTEM_PATH_DELIMITER = os.sep
 
@@ -98,7 +96,7 @@ class CopyOperation(PlatformStorageOperation):
 
     @abc.abstractmethod
     def _copy(self, src: ParseResult, dst: ParseResult,
-              storage: Callable):   # pragma: no cover
+              storage: Callable):  # pragma: no cover
         pass
 
     def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
@@ -157,13 +155,13 @@ class NonRecursivePlatformToLocal(CopyOperation):
                     return dst
 
     def _copy(self, src: ParseResult, dst: ParseResult,
-              storage: Callable):   # pragma: no cover
+              storage: Callable):  # pragma: no cover
         platform_file_name = self._render_platform_path_with_principal(src)
 
         # define local
         if os.path.exists(dst.path) and os.path.isdir(dst.path):
-                #         get file name from src
-                dst_path = Path(dst.path, platform_file_name.name)
+            #         get file name from src
+            dst_path = Path(dst.path, platform_file_name.name)
         else:
             if dst.path.endswith(SYSTEM_PATH_DELIMITER):
                 raise NotADirectoryError('Target should exist. '
@@ -196,7 +194,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
 class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
     def _copy_obj(self, src: PosixPath, dst: Path, storage: Callable):
-        files: List[FileStatus] = PlatformListDirOperation(self.principal)\
+        files: List[FileStatus] = PlatformListDirOperation(self.principal) \
             .ls(path_str=f'storage:/{src}', storage=storage)
 
         for file in files:
@@ -243,7 +241,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 class NonRecursiveLocalToPlatform(CopyOperation):
 
     def copy_file(self, src_path: str, dest_path: str,
-                  storage: Callable):   # pragma: no cover
+                  storage: Callable):  # pragma: no cover
         # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
         # to track progress and report
         with open(src_path, mode='rb') as f:
@@ -286,10 +284,10 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
             raise ValueError('Source should exist.')
 
         if not os.path.isdir(src.path):
-            return NonRecursiveLocalToPlatform.copy_file(self,
-                                                         src,
-                                                         dst,
-                                                         storage)
+            return NonRecursiveLocalToPlatform._copy(self,
+                                                     src,
+                                                     dst,
+                                                     storage)
 
         final_path = self._render_platform_path_with_principal(dst)
         for root, subdirs, files in os.walk(src.path):
