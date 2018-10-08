@@ -106,12 +106,22 @@ Commands:
         def update_docker_config(config: rc.Config) -> None:
             docker_registry_url = config.docker_registry_url()
 
-            process = subprocess.run(['docker', 'login',
-                                      '-p', config.auth,
-                                      '-u', 'token',
-                                      docker_registry_url])
-            if process.returncode != 0:
+            try:
+                p = subprocess.run(['docker'], check=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+            except subprocess.CalledProcessError as e:
+                return
+
+            try:
+                subprocess.run(['docker', 'login',
+                                          '-p', config.auth,
+                                          '-u', 'token',
+                                          docker_registry_url],
+                                         check=True)
+            except subprocess.CalledProcessError as e:
                 raise ValueError('Failed to updated docker auth details.')
+            return
 
         @command
         def url(url):
