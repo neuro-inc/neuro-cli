@@ -1,9 +1,10 @@
 import os
 import re
-from time import sleep, time
 from uuid import uuid4 as uuid
 
 import pytest
+
+from tests.test_e2e_utils import wait_for_job_to_change_state_from
 
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"\
     "auth: {token}"
@@ -63,12 +64,7 @@ def test_job_filtering(run, tmpdir):
                        'storage:/' + _path_dst, command])
     job_id = re.match('Job ID: (.+) Status:', captured.out).group(1)
 
-    out = 'Status: pending'
-    start_time = time()
-    while ('Status: pending' in out) and (int(time() - start_time) < 10):
-        sleep(2)
-        _, captured = run(['job', 'status', job_id])
-        out = captured.out
+    wait_for_job_to_change_state_from(run, job_id, 'Status: pending')
 
     _, captured = run(['job', 'list', '--status', 'running'])
     store_out = captured.out
@@ -78,6 +74,7 @@ def test_job_filtering(run, tmpdir):
     assert job_id in job_ids2
 
     _, captured = run(['job', 'kill', job_id])
+    wait_for_job_to_change_state_from(run, job_id, 'Status: running')
 
     _, captured = run(['job', 'list', '--status', 'running'])
     store_out = captured.out

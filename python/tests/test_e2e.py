@@ -10,6 +10,8 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+from tests.test_e2e_utils import wait_for_job_to_change_state_to
+
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
@@ -193,20 +195,16 @@ def test_e2e_shm_run_with(run, tmpdir):
                        'storage:/' + _path_src,
                        'storage:/' + _path_dst, command])
 
-    # TODO (R Zubairov, 09/13/2018): once we would have wait for job
-    # replace spin loop
-
     out = captured.out
     job_id = re.match('Job ID: (.+) Status:', out).group(1)
-    start_time = time()
-    while ('Status: failed' not in out) and (int(time() - start_time) < 10):
-        sleep(2)
-        _, captured = run(['job', 'status', job_id])
-        out = captured.out
+    wait_for_job_to_change_state_to(run, job_id, 'Status: failed')
 
     # Remove test dir
     run(['store', 'rm', f'storage://{_path_src}'])
     run(['store', 'rm', f'storage://{_path_dst}'])
+
+    _, captured = run(['job', 'status', job_id])
+    out = captured.out
 
     assert '/dev/shm' in out
     assert '64M' not in out
