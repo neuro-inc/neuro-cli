@@ -56,6 +56,16 @@ def setup_console_handler(handler, verbose, noansi=False):
     handler.setLevel(loglevel)
 
 
+def check_docker_installed():
+    try:
+        subprocess.run(['docker'], check=True,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+        return True
+    except subprocess.CalledProcessError as e:
+        return False
+
+
 @command
 def neuro(url, token, verbose, version):
     """    ◣
@@ -106,19 +116,15 @@ Commands:
         def update_docker_config(config: rc.Config) -> None:
             docker_registry_url = config.docker_registry_url()
 
-            try:
-                p = subprocess.run(['docker'], check=True,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-            except subprocess.CalledProcessError as e:
+            if not check_docker_installed():
                 return
 
             try:
                 subprocess.run(['docker', 'login',
-                                          '-p', config.auth,
-                                          '-u', 'token',
-                                          docker_registry_url],
-                                         check=True)
+                                '-p', config.auth,
+                                '-u', 'token',
+                                docker_registry_url],
+                               check=True)
             except subprocess.CalledProcessError as e:
                 raise ValueError('Failed to updated docker auth details.')
             return
@@ -471,6 +477,10 @@ Commands:
 
             Push an image or a repository to a registry
             """
+            if not check_docker_installed():
+                raise ValueError('Docker client is not installed. '
+                                 'Install it first.')
+
             target_image_name = get_image_platform_full_name(image_name)
             # Tag first, as otherwise it would fail
             try:
@@ -499,6 +509,10 @@ Commands:
 
             Pull an image or a repository from a registry
             """
+            if not check_docker_installed():
+                raise ValueError('Docker client is not installed. '
+                                 'Install it first.')
+
             target_image_name = get_image_platform_full_name(image_name)
             try:
                 subprocess.run(['docker', 'pull', target_image_name],
