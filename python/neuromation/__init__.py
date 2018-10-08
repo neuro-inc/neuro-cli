@@ -1,6 +1,8 @@
+from pkg_resources import get_distribution
+
 from .client import Model, Storage, Resources, Job, JobItem
 
-__version__ = '0.1.0'
+__version__ = get_distribution(__name__).version
 
 __all__ = [
     '__version__',
