@@ -357,10 +357,14 @@ Commands:
                         sys.stdout.write(chunk.decode(errors='ignore'))
 
         @command
-        def list():
+        def list(status):
             """
             Usage:
-                neuro job list
+                neuro job list [options]
+
+            Options:
+              --status (pending|running|succeeded|failed)
+                  Filters out job by state
 
             List all jobs
             """
@@ -377,6 +381,7 @@ Commands:
                     short_format(item)
                     for item in
                     j.list()
+                    if status and item.status == status
                 ])
 
         @command
