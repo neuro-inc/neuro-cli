@@ -39,6 +39,19 @@ class JobStatusRequest(Request):
     id: str
 
 
+def model_request_to_http(req: Request) -> JsonRequest:
+    json_params = asdict(req)
+    if 'http' in json_params['container'] \
+            and not json_params['container']['http']:
+        json_params['container'].pop('http', None)
+    return http.JsonRequest(
+        url='/models',
+        params=None,
+        method='POST',
+        json=json_params,
+        data=None)
+
+
 @dataclass(frozen=True)
 class InferRequest(Request):
     container: ContainerPayload
@@ -47,15 +60,7 @@ class InferRequest(Request):
     model_storage_uri: str
 
     def to_http_request(self) -> JsonRequest:
-        json_params = asdict(self)
-        if not self.container.http:
-            json_params['container'].pop('http', None)
-        return http.JsonRequest(
-            url='/models',
-            params=None,
-            method='POST',
-            json=json_params,
-            data=None)
+        return model_request_to_http(self)
 
 
 @dataclass(frozen=True)
@@ -65,15 +70,7 @@ class TrainRequest(Request):
     result_storage_uri: str
 
     def to_http_request(self) -> JsonRequest:
-        json_params = asdict(self)
-        if not self.container.http:
-            json_params['container'].pop('http', None)
-        return http.JsonRequest(
-            url='/models',
-            params=None,
-            method='POST',
-            json=json_params,
-            data=None)
+        return model_request_to_http(self)
 
 
 @dataclass(frozen=True)
