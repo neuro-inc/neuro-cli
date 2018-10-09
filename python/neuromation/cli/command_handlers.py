@@ -241,6 +241,13 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
 class NonRecursiveLocalToPlatform(CopyOperation):
 
+    def is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
+        try:
+            self._ls(str(path), storage)
+        except BaseException as e:
+            return False
+        return True
+
     def copy_file(self, src_path: str, dest_path: str,
                   storage: Callable):  # pragma: no cover
         # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
@@ -258,21 +265,17 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             raise ValueError('Source should be file.')
 
         target_path: PosixPath = self._render_platform_path_with_principal(dst)
-
-        platform_file_path = self._get_parent(target_path)
-        if platform_file_path != PosixPath('/'):
-            files = self._ls(str(platform_file_path), storage)
-            try:
-                tgt = next(file
-                           for file in files
-                           if file.path == str(target_path.name))
-                if tgt.type == 'DIRECTORY':
-                    target_path = PosixPath(target_path, Path(src.path).name)
-            except StopIteration as e:
-                pass
-        else:
-            # Copying to home
+        if len(dst.path) > 0 and dst.path[-1] == PLATFORM_DELIMITER:
             target_path = PosixPath(target_path, Path(src.path).name)
+            platform_file_path = self._get_parent(target_path)
+            if not self.is_dir_on_platform(platform_file_path, storage):
+                raise ValueError('Target directory does not exist.')
+        else:
+            if not self.is_dir_on_platform(target_path, storage):
+                if not self.is_dir_on_platform(target_path.parent, storage):
+                    raise ValueError('Target directory does not exist.')
+            else:
+                target_path = PosixPath(target_path, Path(src.path).name)
 
         copy_file = self.copy_file(src.path, str(target_path), storage)
         return f'storage:/{copy_file}'
