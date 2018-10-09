@@ -154,11 +154,6 @@ class Model(ApiClient):
                 http = {
                     'port': network.ports['http'].containerPort
                 }
-            # if 'ssh' in network.ports:
-            #     tcp = {
-            #         'port': network.ports['ssh'].containerPort
-            #     }
-
         res = self._fetch_sync(
             TrainRequest(
                 container=ContainerPayload(
