@@ -3,6 +3,7 @@ import pytest
 from neuromation import Resources
 from neuromation.cli.command_handlers import ModelHandlerOperations
 from neuromation.client import Image
+from neuromation.client.jobs import NetworkPort, NetworkPortForwarding
 
 
 @pytest.fixture()
@@ -17,7 +18,7 @@ class TestNormalCases:
                           'storage:///data/set.txt',
                           'storage://~/results/result1.txt',
                           0, 1, 100, False,
-                          '', partial_mocked_model)
+                          '', partial_mocked_model, http=None)
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
             image=Image(
@@ -29,6 +30,31 @@ class TestNormalCases:
                 cpu=1.0,
                 shm=False
             ),
+            network=None,
+            dataset=f'storage://alice/data/set.txt',
+            results=f'storage://alice/results/result1.txt'
+        )
+
+    def test_model_submit_with_http(self, alice_model, partial_mocked_model):
+        alice_model.train('ubuntu:tf_2.0_beta',
+                          'storage:///data/set.txt',
+                          'storage://~/results/result1.txt',
+                          0, 1, 100, False,
+                          '', partial_mocked_model, http=8888)
+        partial_mocked_model().train.assert_called_once()
+        partial_mocked_model().train.assert_called_with(
+            image=Image(
+                image='ubuntu:tf_2.0_beta',
+                command=''),
+            resources=Resources(
+                memory=100,
+                gpu=0,
+                cpu=1.0,
+                shm=False
+            ),
+            network=NetworkPortForwarding(
+                {'http': NetworkPort(name='http', containerPort=8888)}
+            ),
             dataset=f'storage://alice/data/set.txt',
             results=f'storage://alice/results/result1.txt'
         )
@@ -39,7 +65,7 @@ class TestNormalCases:
                               '/data/set.txt',
                               'storage://~/results/result1.txt',
                               0, 1, 100, False,
-                              '', partial_mocked_model)
+                              '', partial_mocked_model, http=None)
         assert partial_mocked_model().train.call_count == 0
 
     def test_model_submit_wrong_dst(self, alice_model, partial_mocked_model):
@@ -48,5 +74,5 @@ class TestNormalCases:
                               'storage://~/data/set.txt',
                               'http://results/result1.txt',
                               0, 1, 100, False,
-                              '', partial_mocked_model)
+                              '', partial_mocked_model, http=None)
         assert partial_mocked_model().train.call_count == 0

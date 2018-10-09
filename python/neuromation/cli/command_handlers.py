@@ -3,11 +3,12 @@ import logging
 import os
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath
-from typing import Callable, List
+from typing import Callable, Dict, List
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
 from neuromation.client import FileStatus, Image, ResourceNotFound
+from neuromation.client.jobs import NetworkPort, NetworkPortForwarding
 
 log = logging.getLogger(__name__)
 
@@ -317,7 +318,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 class ModelHandlerOperations(PlatformStorageOperation):
     def train(self, image, dataset, results,
               gpu, cpu, memory, extshm,
-              cmd, model):
+              cmd, model, http):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(
                 dataset)
@@ -332,6 +333,13 @@ class ModelHandlerOperations(PlatformStorageOperation):
             raise ValueError('Results path should be on platform. '
                              'Specify scheme storage:')
 
+        net = None
+        ports: Dict[str, NetworkPort] = {}
+        if http:
+            ports['http'] = NetworkPort(name='http', containerPort=http)
+        if ports:
+            net = NetworkPortForwarding(ports)
+
         cmd = ' '.join(cmd)
         log.debug(f'cmd="{cmd}"')
 
@@ -344,6 +352,7 @@ class ModelHandlerOperations(PlatformStorageOperation):
                 image=Image(
                     image=image,
                     command=cmd),
+                network=net,
                 resources=Resources(
                     memory=memory,
                     gpu=gpu,
