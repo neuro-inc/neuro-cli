@@ -209,7 +209,7 @@ class TestCopyRecursiveLocalToPlatform:
 
         assert transfer_mock.call_count == 1
         transfer_mock.assert_any_call('/localdir/abc.txt',
-                                      '/bob/abc.txt',
+                                      '/bob/localdir/abc.txt',
                                       partial_mocked_store)
 
     def test_ok_copy_into_root_data(self,
@@ -225,7 +225,7 @@ class TestCopyRecursiveLocalToPlatform:
 
         assert transfer_mock.call_count == 1
         transfer_mock.assert_any_call('/localdir/abc.txt',
-                                      '/alice/abc.txt',
+                                      '/alice/localdir/abc.txt',
                                       partial_mocked_store)
 
     def test_source_doesnot_exists(self,
