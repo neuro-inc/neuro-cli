@@ -24,14 +24,8 @@ class Resources:
 
 
 @dataclass()
-class NetworkPort:
-    name: str
-    containerPort: int
-
-
-@dataclass()
 class NetworkPortForwarding:
-    ports: Dict[str, NetworkPort]
+    ports: Dict[str, int]
 
 
 @dataclass(frozen=True)
@@ -152,7 +146,7 @@ class Model(ApiClient):
         if network:
             if 'http' in network.ports:
                 http = {
-                    'port': network.ports['http'].containerPort
+                    'port': network.ports['http']
                 }
         res = self._fetch_sync(
             TrainRequest(

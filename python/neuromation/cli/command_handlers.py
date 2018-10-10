@@ -8,7 +8,7 @@ from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
 from neuromation.client import FileStatus, Image, ResourceNotFound
-from neuromation.client.jobs import NetworkPort, NetworkPortForwarding
+from neuromation.client.jobs import NetworkPortForwarding
 
 log = logging.getLogger(__name__)
 
@@ -334,9 +334,9 @@ class ModelHandlerOperations(PlatformStorageOperation):
                              'Specify scheme storage:')
 
         net = None
-        ports: Dict[str, NetworkPort] = {}
+        ports: Dict[str, int] = {}
         if http:
-            ports['http'] = NetworkPort(name='http', containerPort=http)
+            ports['http'] = http
         if ports:
             net = NetworkPortForwarding(ports)
 

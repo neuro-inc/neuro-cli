@@ -4,7 +4,7 @@ import aiohttp
 import pytest
 
 from neuromation import client
-from neuromation.client.jobs import NetworkPort, NetworkPortForwarding
+from neuromation.client.jobs import NetworkPortForwarding
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 
@@ -90,7 +90,8 @@ def test_train_with_http(request, model, loop):
         dataset='schema://host/data',
         results='schema://host/results',
         network=NetworkPortForwarding(
-            {'http': NetworkPort(name='http_nginx', containerPort=8888)})
+            {'http': 7878}
+        )
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -102,7 +103,7 @@ def test_train_with_http(request, model, loop):
                     'image': 'repo/image',
                     'command': 'bash',
                     'http': {
-                        'port': 8888
+                        'port': 7878
                     },
                     'resources': {'memory_mb': '16384', 'cpu': 1.0,
                                   'gpu': 1.0,

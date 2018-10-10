@@ -3,7 +3,7 @@ import pytest
 from neuromation import Resources
 from neuromation.cli.command_handlers import ModelHandlerOperations
 from neuromation.client import Image
-from neuromation.client.jobs import NetworkPort, NetworkPortForwarding
+from neuromation.client.jobs import NetworkPortForwarding
 
 
 @pytest.fixture()
@@ -53,7 +53,7 @@ class TestNormalCases:
                 shm=False
             ),
             network=NetworkPortForwarding(
-                {'http': NetworkPort(name='http', containerPort=8888)}
+                {'http': 8888}
             ),
             dataset=f'storage://alice/data/set.txt',
             results=f'storage://alice/results/result1.txt'
