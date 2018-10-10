@@ -19,7 +19,7 @@ GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"\
     "auth: {token}"
 
-UBUNTU_IMAGE_NAME = 'registry.dev.neuromation.io/shell-e2e-test-user-kz2lda8vctlstzarhrc9/ubuntu:latest'
+UBUNTU_IMAGE_NAME = 'ubuntu:latest'
 
 format_list = '{type:<15}{size:<15,}{name:<}'.format
 
