@@ -65,8 +65,8 @@ def test_job_filtering(run, tmpdir):
     command = 'bash -c "sleep 1m; false"'
     _, captured = run(['model', 'train', '-m', '20M', '-c', '0.1', '-g', '0',
                        UBUNTU_IMAGE_NAME,
-                       'storage:/' + _path_src,
-                       'storage:/' + _path_dst, command])
+                       'storage://' + _path_src,
+                       'storage://' + _path_dst, command])
     job_id = re.match('Job ID: (.+) Status:', captured.out).group(1)
 
     wait_for_job_to_change_state_from(run, job_id, 'Status: pending')
@@ -112,8 +112,8 @@ def test_model_train_with_http(run, loop):
     _, captured = run(['model', 'train', '-m', '20M', '-c', '0.1', '-g', '0',
                        '--http', '80',
                        NGINX_IMAGE_NAME,
-                       'storage:/' + _path_src,
-                       'storage:/' + _path_dst,
+                       'storage://' + _path_src,
+                       'storage://' + _path_dst,
                        command])
     job_id = re.match('Job ID: (.+) Status:', captured.out).group(1)
     wait_for_job_to_change_state_from(run, job_id, 'Status: pending')
