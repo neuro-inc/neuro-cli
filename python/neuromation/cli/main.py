@@ -387,6 +387,7 @@ Commands:
 
             List all jobs
             """
+
             def short_format(item) -> str:
                 image = item.image if item.image else ''
                 command = item.command if item.command else ''
@@ -461,7 +462,7 @@ Commands:
           search List your docker images
         """
 
-        def get_image_platform_full_name(image_name):
+        def _get_image_platform_full_name(image_name):
             config = rc.ConfigFactory.load()
             docker_registry_url = config.docker_registry_url()
             platform_user_name = config.get_platform_user_name()
@@ -477,11 +478,9 @@ Commands:
 
             Push an image or a repository to a registry
             """
-            if not check_docker_installed():
-                raise ValueError('Docker client is not installed. '
-                                 'Install it first.')
+            _check_docker_client_available()
 
-            target_image_name = get_image_platform_full_name(image_name)
+            target_image_name = _get_image_platform_full_name(image_name)
             # Tag first, as otherwise it would fail
             try:
                 subprocess.run(['docker', 'tag',
@@ -509,17 +508,20 @@ Commands:
 
             Pull an image or a repository from a registry
             """
-            if not check_docker_installed():
-                raise ValueError('Docker client is not installed. '
-                                 'Install it first.')
+            _check_docker_client_available()
 
-            target_image_name = get_image_platform_full_name(image_name)
+            target_image_name = _get_image_platform_full_name(image_name)
             try:
                 subprocess.run(['docker', 'pull', target_image_name],
                                check=True)
             except subprocess.CalledProcessError as e:
                 raise ValueError(f'Docker pull failed. '
                                  f'Error code {e.returncode}')
+
+        def _check_docker_client_available():
+            if not check_docker_installed():
+                raise OSError('Docker client is not installed. '
+                              'Install it first.')
 
         return locals()
 
