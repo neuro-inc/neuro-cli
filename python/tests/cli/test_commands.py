@@ -106,7 +106,6 @@ def test_dispatch():
         'Vova is resting home for 1 hour'
 
 
-
 def test_dispatch_help():
     argv = ['-n', 'Vova', 'rest', '--help']
     with pytest.raises(ValueError, match=r'person rest'):
