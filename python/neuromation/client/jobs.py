@@ -103,6 +103,20 @@ class JobStatus(str, enum.Enum):
 
 class Model(ApiClient):
 
+    def _network_to_api(self, network: NetworkPortForwarding):
+        http = None
+        ssh = None
+        if network:
+            if 'http' in network.ports:
+                http = {
+                    'port': network.ports['http']
+                }
+            if 'ssh' in network.ports:
+                ssh = {
+                    'port': network.ports['ssh']
+                }
+        return http, ssh
+
     def infer(
             self,
             *,
@@ -112,12 +126,14 @@ class Model(ApiClient):
             model: str,
             dataset: str,
             results: str) -> JobItem:
+        http, ssh = self._network_to_api(network)
         res = self._fetch_sync(
             InferRequest(
                 container=ContainerPayload(
                     image=image.image,
                     command=image.command,
-                    http=None,
+                    http=http,
+                    ssh=ssh,
                     resources=ResourcesPayload(
                         memory_mb=parse.to_megabytes_str(resources.memory),
                         cpu=resources.cpu,
@@ -142,18 +158,14 @@ class Model(ApiClient):
             network: NetworkPortForwarding,
             dataset: str,
             results: str) -> JobItem:
-        http = None
-        if network:
-            if 'http' in network.ports:
-                http = {
-                    'port': network.ports['http']
-                }
+        http, ssh = self._network_to_api(network)
         res = self._fetch_sync(
             TrainRequest(
                 container=ContainerPayload(
                     image=image.image,
                     command=image.command,
                     http=http,
+                    ssh=ssh,
                     resources=ResourcesPayload(
                         memory_mb=parse.to_megabytes_str(resources.memory),
                         cpu=resources.cpu,

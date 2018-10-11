@@ -14,6 +14,7 @@ class RequestError(Exception):
     pass
 
 
+@dataclass(frozen=True)
 class Request:
     pass
 
@@ -31,6 +32,7 @@ class ContainerPayload:
     image: str
     command: str
     http: Optional[Dict[str, int]]
+    ssh: Optional[Dict[str, int]]
     resources: ResourcesPayload
 
 
@@ -41,9 +43,13 @@ class JobStatusRequest(Request):
 
 def model_request_to_http(req: Request) -> JsonRequest:
     json_params = asdict(req)
-    if 'http' in json_params['container'] \
-            and not json_params['container']['http']:
-        json_params['container'].pop('http', None)
+    container_desctiptor = json_params['container']
+    if 'http' in container_desctiptor \
+            and not container_desctiptor['http']:
+        container_desctiptor.pop('http', None)
+    if 'ssh' in container_desctiptor \
+            and not container_desctiptor['ssh']:
+        container_desctiptor.pop('ssh', None)
     return http.JsonRequest(
         url='/models',
         params=None,

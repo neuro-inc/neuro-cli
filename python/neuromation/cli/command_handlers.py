@@ -318,7 +318,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 class ModelHandlerOperations(PlatformStorageOperation):
     def train(self, image, dataset, results,
               gpu, cpu, memory, extshm,
-              cmd, model, http):
+              cmd, model, http, ssh):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(
                 dataset)
@@ -337,6 +337,8 @@ class ModelHandlerOperations(PlatformStorageOperation):
         ports: Dict[str, int] = {}
         if http:
             ports['http'] = http
+        if ssh:
+            ports['ssh'] = ssh
         if ports:
             net = NetworkPortForwarding(ports)
 
