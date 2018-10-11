@@ -305,8 +305,7 @@ Commands:
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
-
-                --http NUMBER         Enable HTTP port forwarding.
+                --http NUMBER         Enable HTTP port forwarding
             """
 
             config: Config = rc.ConfigFactory.load()
