@@ -4,6 +4,7 @@ import aiohttp
 import pytest
 
 from neuromation import client
+from neuromation.client.jobs import NetworkPortForwarding
 from utils import (INFER_RESPONSE, TRAIN_RESPONSE, JsonResponse,
                    mocked_async_context_manager)
 
@@ -21,7 +22,8 @@ def test_train_with_no_gpu(request, model, loop):
         image=client.Image(image='repo/image', command='bash'),
         resources=client.Resources(memory='16G', cpu=1.0, gpu=None, shm=None),
         dataset='schema://host/data',
-        results='schema://host/results')
+        results='schema://host/results',
+        network=None)
 
     aiohttp.ClientSession.request.assert_called_with(
             method='POST',
@@ -53,7 +55,8 @@ def test_train(request, model, loop):
         image=client.Image(image='repo/image', command='bash'),
         resources=client.Resources(memory='16G', cpu=1, gpu=1, shm=True),
         dataset='schema://host/data',
-        results='schema://host/results')
+        results='schema://host/results',
+        network=None)
 
     aiohttp.ClientSession.request.assert_called_with(
             method='POST',
@@ -79,6 +82,45 @@ def test_train(request, model, loop):
 
 @patch(
     'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)))
+def test_train_with_http(request, model, loop):
+    result = model.train(
+        image=client.Image(image='repo/image', command='bash'),
+        resources=client.Resources(memory='16G', cpu=1, gpu=1, shm=True),
+        dataset='schema://host/data',
+        results='schema://host/results',
+        network=NetworkPortForwarding(
+            {'http': 7878}
+        )
+    )
+
+    aiohttp.ClientSession.request.assert_called_with(
+            method='POST',
+            data=None,
+            params=None,
+            json={
+                'container': {
+                    'image': 'repo/image',
+                    'command': 'bash',
+                    'http': {
+                        'port': 7878
+                    },
+                    'resources': {'memory_mb': '16384', 'cpu': 1.0,
+                                  'gpu': 1.0,
+                                  'shm': True},
+                },
+                'dataset_storage_uri': 'schema://host/data',
+                'result_storage_uri': 'schema://host/results'},
+            url='http://127.0.0.1/models')
+
+    assert result == client.JobItem(
+        client=model,
+        status='PENDING',
+        id='iddqd')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse(INFER_RESPONSE)))
 def test_infer(request, model, loop):
     result = model.infer(
@@ -86,7 +128,8 @@ def test_infer(request, model, loop):
         resources=client.Resources(memory='16G', cpu=1.0, gpu=1.0, shm=False),
         model='schema://host/model',
         dataset='schema://host/data',
-        results='schema://host/results'
+        results='schema://host/results',
+        network=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(

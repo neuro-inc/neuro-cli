@@ -14,7 +14,8 @@ JOB_ARGS = {
     'resources': Resources(memory='64M', cpu=1, gpu=1, shm=False),
     'image': Image(image='test/image', command='bash'),
     'dataset': 'storage://~/dataset',
-    'results': 'storage://~/results'
+    'results': 'storage://~/results',
+    'network': None,
 }
 
 JOB_TIMEOUT_SEC = 0.005

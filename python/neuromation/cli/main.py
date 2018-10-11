@@ -288,7 +288,9 @@ Commands:
         model = partial(Model, url, token)
 
         @command
-        def train(image, dataset, results, gpu, cpu, memory, extshm, cmd):
+        def train(image, dataset, results,
+                  gpu, cpu, memory, extshm,
+                  http, cmd):
             """
             Usage:
                 neuro model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
@@ -302,7 +304,8 @@ Commands:
                 -g, --gpu NUMBER      Number of GPUs to request [default: 1]
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
-                -x, --extshm          Request extended '/dev/shm' space.
+                -x, --extshm          Request extended '/dev/shm' space
+                --http NUMBER         Enable HTTP port forwarding
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -310,7 +313,7 @@ Commands:
             model_operation = ModelHandlerOperations(platform_user_name)
             return model_operation.train(image, dataset, results,
                                          gpu, cpu, memory, extshm,
-                                         cmd, model)
+                                         cmd, model, http)
 
         @command
         def test():

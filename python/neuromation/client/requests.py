@@ -1,10 +1,11 @@
 import logging
 from io import BytesIO
-from typing import ClassVar, Optional
+from typing import ClassVar, Dict, Optional
 
 from dataclasses import asdict, dataclass
 
 from neuromation import http
+from neuromation.http import JsonRequest
 
 log = logging.getLogger(__name__)
 
@@ -29,12 +30,26 @@ class ResourcesPayload:
 class ContainerPayload:
     image: str
     command: str
+    http: Optional[Dict[str, int]]
     resources: ResourcesPayload
 
 
 @dataclass(frozen=True)
 class JobStatusRequest(Request):
     id: str
+
+
+def model_request_to_http(req: Request) -> JsonRequest:
+    json_params = asdict(req)
+    if 'http' in json_params['container'] \
+            and not json_params['container']['http']:
+        json_params['container'].pop('http', None)
+    return http.JsonRequest(
+        url='/models',
+        params=None,
+        method='POST',
+        json=json_params,
+        data=None)
 
 
 @dataclass(frozen=True)
@@ -44,12 +59,18 @@ class InferRequest(Request):
     result_storage_uri: str
     model_storage_uri: str
 
+    def to_http_request(self) -> JsonRequest:
+        return model_request_to_http(self)
+
 
 @dataclass(frozen=True)
 class TrainRequest(Request):
     container: ContainerPayload
     dataset_storage_uri: str
     result_storage_uri: str
+
+    def to_http_request(self) -> JsonRequest:
+        return model_request_to_http(self)
 
 
 @dataclass(frozen=True)
@@ -145,19 +166,9 @@ def build(request: Request) -> http.Request:
             json=None,
             data=None)
     elif isinstance(request, TrainRequest):
-        return http.JsonRequest(
-            url='/models',
-            params=None,
-            method='POST',
-            json=asdict(request),
-            data=None)
+        return request.to_http_request()
     elif isinstance(request, InferRequest):
-        return http.JsonRequest(
-            url='/models',
-            params=None,
-            method='POST',
-            json=asdict(request),
-            data=None)
+        return request.to_http_request()
     elif isinstance(request, CreateRequest):
         return http.PlainRequest(
             url=add_path('/storage/', request.path),

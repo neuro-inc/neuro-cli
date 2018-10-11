@@ -138,8 +138,8 @@ def test_e2e_shm_run_without(run, tmpdir):
               '--output=target,avail /dev/shm; false"'
     _, captured = run(['model', 'train', '-m', '20M', '-c', '0.1', '-g', '0',
                        UBUNTU_IMAGE_NAME,
-                       'storage:/' + _path_src,
-                       'storage:/' + _path_dst, command])
+                       'storage://' + _path_src,
+                       'storage://' + _path_dst, command])
 
     # TODO (R Zubairov, 09/13/2018): once we would have wait for job
     # replace spin loop
@@ -178,8 +178,8 @@ def test_e2e_shm_run_with(run, tmpdir):
     _, captured = run(['model', 'train', '-x',
                        '-m', '20M', '-c', '0.1', '-g', '0',
                        UBUNTU_IMAGE_NAME,
-                       'storage:/' + _path_src,
-                       'storage:/' + _path_dst, command])
+                       'storage://' + _path_src,
+                       'storage://' + _path_dst, command])
 
     out = captured.out
     job_id = re.match('Job ID: (.+) Status:', out).group(1)

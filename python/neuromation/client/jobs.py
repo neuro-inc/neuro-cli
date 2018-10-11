@@ -2,7 +2,7 @@ import asyncio
 import enum
 from contextlib import contextmanager
 from io import BufferedReader
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from dataclasses import dataclass
 
@@ -21,6 +21,11 @@ class Resources:
     cpu: float
     gpu: Optional[int]
     shm: Optional[bool]
+
+
+@dataclass()
+class NetworkPortForwarding:
+    ports: Dict[str, int]
 
 
 @dataclass(frozen=True)
@@ -103,6 +108,7 @@ class Model(ApiClient):
             *,
             image: Image,
             resources: Resources,
+            network: NetworkPortForwarding,
             model: str,
             dataset: str,
             results: str) -> JobItem:
@@ -111,12 +117,14 @@ class Model(ApiClient):
                 container=ContainerPayload(
                     image=image.image,
                     command=image.command,
+                    http=None,
                     resources=ResourcesPayload(
                         memory_mb=parse.to_megabytes_str(resources.memory),
                         cpu=resources.cpu,
                         gpu=resources.gpu,
                         shm=resources.shm,
-                    )),
+                    )
+                ),
                 model_storage_uri=model,
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
@@ -131,19 +139,28 @@ class Model(ApiClient):
             *,
             image: Image,
             resources: Resources,
+            network: NetworkPortForwarding,
             dataset: str,
             results: str) -> JobItem:
+        http = None
+        if network:
+            if 'http' in network.ports:
+                http = {
+                    'port': network.ports['http']
+                }
         res = self._fetch_sync(
             TrainRequest(
                 container=ContainerPayload(
                     image=image.image,
                     command=image.command,
+                    http=http,
                     resources=ResourcesPayload(
                         memory_mb=parse.to_megabytes_str(resources.memory),
                         cpu=resources.cpu,
                         gpu=resources.gpu,
                         shm=resources.shm,
-                    )),
+                    )
+                ),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results))
 

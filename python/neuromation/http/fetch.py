@@ -47,6 +47,7 @@ class Request:
     json: Dict
 
 
+@dataclass(frozen=True, init=True)
 class JsonRequest(Request):
     """
     Request expecting JSON as a response
@@ -54,6 +55,7 @@ class JsonRequest(Request):
     pass
 
 
+@dataclass(frozen=True)
 class StreamRequest(Request):
     """
     Request expecting binary stream as a response
@@ -61,6 +63,7 @@ class StreamRequest(Request):
     pass
 
 
+@dataclass(frozen=True)
 class PlainRequest(Request):
     """
     Request expecting plain text a response
