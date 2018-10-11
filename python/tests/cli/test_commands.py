@@ -1,3 +1,5 @@
+import pytest
+
 from neuromation.cli.commands import command, commands, dispatch
 
 
@@ -102,6 +104,28 @@ def test_dispatch():
         tail=argv,
         city='Kyiv') == \
         'Vova is resting home for 1 hour'
+
+    argv = ['-n', 'Vova', '--help']
+    with pytest.raises(ValueError, match=r'person -n NAME'):
+        dispatch(
+            target=_person,
+            tail=argv,
+            city='Kyiv')
+
+    argv = ['-n', 'Vova', 'rest', '--help']
+    with pytest.raises(ValueError, match=r'person rest'):
+        dispatch(
+            target=_person,
+            tail=argv,
+            city='Kyiv')
+
+    argv = ['-n', 'Vova', 'rest',
+            '--any-long-option', '-any-short-option', '--help']
+    with pytest.raises(ValueError, match=r'person rest'):
+        dispatch(
+            target=_person,
+            tail=argv,
+            city='Kyiv')
 
 
 def test_commands():

@@ -196,10 +196,13 @@ Commands:
         def ls(path):
             """
             Usage:
-                neuro store ls PATH
+                neuro store ls [PATH]
 
             List directory contents
             """
+            if path is None:
+                path = 'storage://'
+
             format = '{type:<15}{size:<15,}{name:<}'.format
 
             config = rc.ConfigFactory.load()

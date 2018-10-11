@@ -56,6 +56,16 @@ def parse(doc, argv):
 
 
 def dispatch(target, tail, **kwargs):
+    def help_required(tail):
+        for option in tail:
+            if option == '--help':
+                return True
+            elif option[:1] == '-':
+                continue
+            else:
+                return False
+        return False
+
     stack = []
 
     while True:
@@ -82,5 +92,8 @@ def dispatch(target, tail, **kwargs):
 
         if not target:
             raise ValueError(f'Invalid command: {command}')
+
+        if help_required(tail):
+            raise ValueError(dedent(target.__doc__))
 
         stack += [command]
