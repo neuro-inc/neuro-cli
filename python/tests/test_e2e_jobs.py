@@ -1,6 +1,6 @@
 import os
 import re
-from time import sleep
+from time import sleep, time
 from urllib.parse import urlparse
 from uuid import uuid4 as uuid
 
@@ -90,12 +90,19 @@ def test_job_filtering(run, tmpdir):
 
 @pytest.mark.e2e
 def test_model_train_with_http(run, loop):
+    loop_sleep = 1
+    service_wait_time = 60
+
     async def get_(platform_url):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                    f'http://{job_id}.jobs.{platform_url}'
-            ) as resp:
-                assert resp.status == 200
+        succeeded = False
+        start_time = time()
+        while not succeeded and (int(time() - start_time) < service_wait_time):
+            sleep(loop_sleep)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                        f'http://{job_id}.jobs.{platform_url}'
+                ) as resp:
+                    succeeded = (resp.status == 200)
 
     _dir_src = f'e2e-{uuid()}'
     _path_src = f'/tmp/{_dir_src}'
@@ -118,7 +125,6 @@ def test_model_train_with_http(run, loop):
     job_id = re.match('Job ID: (.+) Status:', captured.out).group(1)
     wait_for_job_to_change_state_from(run, job_id, 'Status: pending')
 
-    sleep(5)
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
 
