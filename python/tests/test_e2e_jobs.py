@@ -94,15 +94,17 @@ def test_model_train_with_http(run, loop):
     service_wait_time = 60
 
     async def get_(platform_url):
-        succeeded = False
+        succeeded = None
         start_time = time()
         while not succeeded and (int(time() - start_time) < service_wait_time):
-            sleep(loop_sleep)
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                         f'http://{job_id}.jobs.{platform_url}'
                 ) as resp:
                     succeeded = (resp.status == 200)
+            if not succeeded:
+                sleep(loop_sleep)
+        return succeeded
 
     _dir_src = f'e2e-{uuid()}'
     _path_src = f'/tmp/{_dir_src}'
@@ -128,7 +130,7 @@ def test_model_train_with_http(run, loop):
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
 
-    loop.run_until_complete(get_(parsed_url.netloc))
+    assert loop.run_until_complete(get_(parsed_url.netloc))
 
     _, captured = run(['job', 'kill', job_id])
     wait_for_job_to_change_state_from(run, job_id, 'Status: running')
