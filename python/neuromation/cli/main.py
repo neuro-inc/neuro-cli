@@ -56,6 +56,16 @@ def setup_console_handler(handler, verbose, noansi=False):
     handler.setLevel(loglevel)
 
 
+def check_docker_installed():
+    try:
+        subprocess.run(['docker'], check=True,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+        return True
+    except subprocess.CalledProcessError as e:
+        return False
+
+
 @command
 def neuro(url, token, verbose, version):
     """    ◣
@@ -106,12 +116,18 @@ Commands:
         def update_docker_config(config: rc.Config) -> None:
             docker_registry_url = config.docker_registry_url()
 
-            process = subprocess.run(['docker', 'login',
-                                      '-p', config.auth,
-                                      '-u', 'token',
-                                      docker_registry_url])
-            if process.returncode != 0:
+            if not check_docker_installed():
+                return
+
+            try:
+                subprocess.run(['docker', 'login',
+                                '-p', config.auth,
+                                '-u', 'token',
+                                docker_registry_url],
+                               check=True)
+            except subprocess.CalledProcessError as e:
                 raise ValueError('Failed to updated docker auth details.')
+            return
 
         @command
         def url(url):
@@ -371,6 +387,7 @@ Commands:
 
             List all jobs
             """
+
             def short_format(item) -> str:
                 image = item.image if item.image else ''
                 command = item.command if item.command else ''
@@ -445,7 +462,7 @@ Commands:
           search List your docker images
         """
 
-        def get_image_platform_full_name(image_name):
+        def _get_image_platform_full_name(image_name):
             config = rc.ConfigFactory.load()
             docker_registry_url = config.docker_registry_url()
             platform_user_name = config.get_platform_user_name()
@@ -461,7 +478,9 @@ Commands:
 
             Push an image or a repository to a registry
             """
-            target_image_name = get_image_platform_full_name(image_name)
+            _check_docker_client_available()
+
+            target_image_name = _get_image_platform_full_name(image_name)
             # Tag first, as otherwise it would fail
             try:
                 subprocess.run(['docker', 'tag',
@@ -489,13 +508,20 @@ Commands:
 
             Pull an image or a repository from a registry
             """
-            target_image_name = get_image_platform_full_name(image_name)
+            _check_docker_client_available()
+
+            target_image_name = _get_image_platform_full_name(image_name)
             try:
                 subprocess.run(['docker', 'pull', target_image_name],
                                check=True)
             except subprocess.CalledProcessError as e:
                 raise ValueError(f'Docker pull failed. '
                                  f'Error code {e.returncode}')
+
+        def _check_docker_client_available():
+            if not check_docker_installed():
+                raise OSError('Docker client is not installed. '
+                              'Install it first.')
 
         return locals()
 
