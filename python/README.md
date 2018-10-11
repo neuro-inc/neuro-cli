@@ -72,6 +72,12 @@ storage.download(
     destination='file://~/local/results')
 ```
 
+## Installation (staging)
+
+```shell
+pip install neuromation==0.0.1b2 -i https://testuser:hx364ty94hzz92axh373k2vf2@devpi.dev.neuromation.io/testuser/dev
+```
+
 ## Errors(Exceptions)
 
 * ClientError
