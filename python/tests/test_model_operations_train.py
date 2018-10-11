@@ -109,7 +109,9 @@ class TestNormalCases:
             results=f'storage://alice/results/result1.txt'
         )
 
-    def test_model_submit_with_ssh_and_http(self, alice_model, partial_mocked_model):
+    def test_model_submit_with_ssh_and_http(self,
+                                            alice_model,
+                                            partial_mocked_model):
         alice_model.train('ubuntu:tf_2.0_beta',
                           'storage:///data/set.txt',
                           'storage://~/results/result1.txt',
