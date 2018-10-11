@@ -235,12 +235,8 @@ class Job(ApiClient):
 
             if 'resources' in res['container']:
                 container_resources = res['container']['resources']
-                shm = container_resources['shm'] \
-                    if 'shm' in container_resources \
-                    else None
-                gpu = container_resources['gpu'] \
-                    if 'gpu' in container_resources \
-                    else None
+                shm = container_resources.get('shm', None)
+                gpu = container_resources.get('gpu', None)
                 job_resources = Resources(
                     cpu=container_resources['cpu'],
                     memory=container_resources['memory_mb'],
