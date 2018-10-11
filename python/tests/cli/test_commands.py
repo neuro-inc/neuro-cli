@@ -105,13 +105,9 @@ def test_dispatch():
         city='Kyiv') == \
         'Vova is resting home for 1 hour'
 
-    argv = ['-n', 'Vova', '--help']
-    with pytest.raises(ValueError, match=r'person -n NAME'):
-        dispatch(
-            target=_person,
-            tail=argv,
-            city='Kyiv')
 
+
+def test_dispatch_help():
     argv = ['-n', 'Vova', 'rest', '--help']
     with pytest.raises(ValueError, match=r'person rest'):
         dispatch(
@@ -126,6 +122,16 @@ def test_dispatch():
             target=_person,
             tail=argv,
             city='Kyiv')
+
+    argv = ['-n', 'Vova', 'rest', 'Alabama', '-d', '1day', '--help']
+    try:
+        dispatch(
+            target=_person,
+            tail=argv,
+            city='Kyiv')
+    except ValueError as err:
+        if str(err) != 'Invalid arguments: --help':
+            pytest.fail('--help option error detection')
 
 
 def test_commands():
