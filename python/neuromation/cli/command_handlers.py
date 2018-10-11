@@ -3,7 +3,7 @@ import logging
 import os
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
@@ -376,3 +376,23 @@ class ModelHandlerOperations(PlatformStorageOperation):
                f'  neuro job status {job.id}  # check job status\n' + \
                f'  neuro job monitor {job.id} # monitor job stdout\n' + \
                f'  neuro job kill {job.id}    # kill job'
+
+
+class JobHandlerOperations():
+
+    def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
+        def short_format(item) -> str:
+            image = item.image if item.image else ''
+            command = item.command if item.command else ''
+            return f'{item.id}' \
+                   f'    {item.status:<10}' \
+                   f'    {image:<25}' \
+                   f'    {command}'
+
+        with jobs() as j:
+            return '\n'.join([
+                short_format(item)
+                for item in
+                j.list()
+                if not status or item.status == status
+            ])
