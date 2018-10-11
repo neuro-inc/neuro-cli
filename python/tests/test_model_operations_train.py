@@ -59,7 +59,7 @@ class TestNormalCases:
             results=f'storage://alice/results/result1.txt'
         )
 
-    def test_model_submit_with_ssh(self, alice_model, partial_mocked_model):
+    def test_model_submit_with_ssh_only(self, alice_model, partial_mocked_model):
         alice_model.train('ubuntu:tf_2.0_beta',
                           'storage:///data/set.txt',
                           'storage://~/results/result1.txt',
