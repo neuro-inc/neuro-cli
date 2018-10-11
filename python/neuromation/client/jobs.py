@@ -234,13 +234,17 @@ class Job(ApiClient):
                 else None
 
             if 'resources' in res['container']:
-                shm = res['container']['resources']['shm'] \
-                    if 'shm' in res['container']['resources'] \
+                container_resources = res['container']['resources']
+                shm = container_resources['shm'] \
+                    if 'shm' in container_resources \
+                    else None
+                gpu = container_resources['gpu'] \
+                    if 'gpu' in container_resources \
                     else None
                 job_resources = Resources(
-                    cpu=res['container']['resources']['cpu'],
-                    memory=res['container']['resources']['memory_mb'],
-                    gpu=res['container']['resources']['gpu'],
+                    cpu=container_resources['cpu'],
+                    memory=container_resources['memory_mb'],
+                    gpu=gpu,
                     shm=shm,
                 )
         return JobDescription(
