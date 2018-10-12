@@ -288,6 +288,55 @@ def test_list_extended_output_no_shm(jobs):
     new=mocked_async_context_manager(JsonResponse({
         'jobs': [{
             "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+            "status": "failed",
+            "history": {
+                "status": "failed",
+                "reason": "Error",
+                "description": "Mounted on Avail\\n/dev/shm"
+                               "     64M\\n\\nExit code: 1",
+                "created_at": "2018-09-25T12:28:21.298672+00:00",
+                "started_at": "2018-09-25T12:28:59.759433+00:00",
+                "finished_at": "2018-09-25T12:28:59.759433+00:00"
+            },
+            "container": {
+                "image": "gcr.io/light-reality-205619/ubuntu:latest",
+                "command": "bash -c \" / bin / df--block - size M--output = "
+                           "target, avail / dev / shm;false\"",
+                "resources": {
+                    "cpu": 1.0,
+                    "memory_mb": 16384,
+                }
+            }
+        }]
+    })))
+def test_list_extended_output_no_gpu(jobs):
+    assert jobs.list() == [
+        JobDescription(client=jobs,
+                       id='job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f',
+                       status='failed',
+                       image="gcr.io/light-reality-205619/ubuntu:latest",
+                       command="bash -c \" / bin / df--block - size M--output "
+                               "= target, avail / dev / shm;false\"",
+                       resources=Resources(
+                           memory=16384,
+                           cpu=1.0,
+                           gpu=None,
+                           shm=None
+                       )),
+    ]
+    aiohttp.ClientSession.request.assert_called_with(
+        method='GET',
+        json=None,
+        url='http://127.0.0.1/jobs',
+        params=None,
+        data=None)
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse({
+        'jobs': [{
+            "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
             "status": "pending",
             "history": {
                 "status": "failed",
