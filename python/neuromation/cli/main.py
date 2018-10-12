@@ -306,7 +306,7 @@ Commands:
         @command
         def train(image, dataset, results,
                   gpu, cpu, memory, extshm,
-                  http, cmd):
+                  http, ssh, cmd):
             """
             Usage:
                 neuro model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
@@ -321,7 +321,8 @@ Commands:
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
-                --http NUMBER         Enable HTTP port forwarding
+                --http NUMBER         Enable HTTP port forwarding to container
+                --ssh  NUMBER         Enable SSH port forwarding to container
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -329,7 +330,7 @@ Commands:
             model_operation = ModelHandlerOperations(platform_user_name)
             return model_operation.train(image, dataset, results,
                                          gpu, cpu, memory, extshm,
-                                         cmd, model, http)
+                                         cmd, model, http, ssh)
 
         @command
         def test():

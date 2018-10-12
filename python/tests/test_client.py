@@ -121,6 +121,90 @@ def test_train_with_http(request, model, loop):
 
 @patch(
     'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)))
+def test_train_with_ssh(request, model, loop):
+    result = model.train(
+        image=client.Image(image='repo/image', command='bash'),
+        resources=client.Resources(memory='16G', cpu=1, gpu=1, shm=True),
+        dataset='schema://host/data',
+        results='schema://host/results',
+        network=NetworkPortForwarding(
+            {'ssh': 7878}
+        )
+    )
+
+    aiohttp.ClientSession.request.assert_called_with(
+            method='POST',
+            data=None,
+            params=None,
+            json={
+                'container': {
+                    'image': 'repo/image',
+                    'command': 'bash',
+                    'ssh': {
+                        'port': 7878
+                    },
+                    'resources': {'memory_mb': '16384', 'cpu': 1.0,
+                                  'gpu': 1.0,
+                                  'shm': True},
+                },
+                'dataset_storage_uri': 'schema://host/data',
+                'result_storage_uri': 'schema://host/results'},
+            url='http://127.0.0.1/models')
+
+    assert result == client.JobItem(
+        client=model,
+        status='PENDING',
+        id='iddqd')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)))
+def test_train_with_ssh_and_http(request, model, loop):
+    result = model.train(
+        image=client.Image(image='repo/image', command='bash'),
+        resources=client.Resources(memory='16G', cpu=1, gpu=1, shm=True),
+        dataset='schema://host/data',
+        results='schema://host/results',
+        network=NetworkPortForwarding(
+            {
+                'ssh': 7878,
+                'http': 8787
+            }
+        )
+    )
+
+    aiohttp.ClientSession.request.assert_called_with(
+            method='POST',
+            data=None,
+            params=None,
+            json={
+                'container': {
+                    'image': 'repo/image',
+                    'command': 'bash',
+                    'ssh': {
+                        'port': 7878
+                    },
+                    'http': {
+                        'port': 8787
+                    },
+                    'resources': {'memory_mb': '16384', 'cpu': 1.0,
+                                  'gpu': 1.0,
+                                  'shm': True},
+                },
+                'dataset_storage_uri': 'schema://host/data',
+                'result_storage_uri': 'schema://host/results'},
+            url='http://127.0.0.1/models')
+
+    assert result == client.JobItem(
+        client=model,
+        status='PENDING',
+        id='iddqd')
+
+
+@patch(
+    'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse(INFER_RESPONSE)))
 def test_infer(request, model, loop):
     result = model.infer(
