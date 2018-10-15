@@ -577,6 +577,9 @@ def main():
     except FileNotFoundError as error:
         log.error(f'File not found ({error})')
         sys.exit(os.EX_OSFILE)
+    except NotADirectoryError as error:
+        log.error(f'{error}')
+        sys.exit(os.EX_OSFILE)
     except PermissionError as error:
         log.error(f'Cannot access file ({error})')
         sys.exit(os.EX_NOPERM)

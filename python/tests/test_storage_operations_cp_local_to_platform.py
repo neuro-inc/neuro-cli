@@ -7,7 +7,7 @@ import pytest
 
 from neuromation.cli.command_handlers import (CopyOperation,
                                               NonRecursiveLocalToPlatform)
-from neuromation.client import FileStatus
+from neuromation.client import FileStatus, ResourceNotFound
 
 
 def _os_exists(tree: Dict) -> Callable:
@@ -79,10 +79,14 @@ def _os_isdir(tree: Dict) -> Callable:
 def _platform_ls(dirs: List) -> Callable:
     def ls(path: str):
         coll = [
-            v['files'] for v in dirs
+            v for v in dirs
             if v['path'] == path
         ]
-        return coll[0]
+        if len(coll) == 0:
+            raise ResourceNotFound('Not a directory.')
+        if 'file' not in coll[0]:
+            return coll[0]['files']
+        raise ResourceNotFound('Not a directory.')
 
     return ls
 
@@ -140,7 +144,8 @@ platform_tree = [
     },
     {
         'path': '/alice/platform_existing/my_file.txt',
-        'files': [FileStatus("my_file.txt", 100, "FILE")]
+        'files': [FileStatus("my_file.txt", 100, "FILE")],
+        'file': True
     },
     {
         'path': '/bob',
@@ -152,7 +157,8 @@ platform_tree = [
     },
     {
         'path': '/bob/bob_data/file.model',
-        'files': [FileStatus("file.model", 120, "FILE")]
+        'files': [FileStatus("file.model", 120, "FILE")],
+        'file': True
     },
 ]
 
@@ -290,7 +296,7 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r'Source file not found'):
+        with pytest.raises(FileNotFoundError, match=r'Source file not found'):
             op.copy(urlparse('file:///local_non_existing/file.txt'),
                     urlparse('storage:///platform_existing/'),
                     partial_mocked_store)
@@ -304,27 +310,116 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r'Source should be file.'):
+        with pytest.raises(IsADirectoryError, match=r'Source should be file.'):
             op.copy(urlparse('file:///localdir/'),
                     urlparse('storage:///platform_existing/'),
                     partial_mocked_store)
 
         transfer_mock.assert_not_called()
 
-    def test_source_file(self,
-                         mocked_store, partial_mocked_store, monkeypatch):
+    def test_source_file_target_dir(self,
+                                    mocked_store,
+                                    partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)
         transfer_mock = Mock()
 
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
         op.copy(urlparse('file:///localdir/abc.txt'),
-                urlparse('file:///platform_existing/dir/'),
+                urlparse('storage:///platform_existing/'),
                 partial_mocked_store)
 
         assert transfer_mock.call_count == 1
         transfer_mock.assert_any_call('/localdir/abc.txt',
-                                      '/alice/platform_existing/dir/abc.txt',
+                                      '/alice/platform_existing/abc.txt',
+                                      partial_mocked_store)
+
+    def test_source_file_target_root_trailing_slash(self,
+                                                    mocked_store,
+                                                    partial_mocked_store,
+                                                    monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        op.copy(urlparse('file:///localdir/abc.txt'),
+                urlparse('storage:///'),
+                partial_mocked_store)
+
+        assert transfer_mock.call_count == 1
+        transfer_mock.assert_any_call('/localdir/abc.txt',
+                                      '/alice/abc.txt',
+                                      partial_mocked_store)
+
+    def test_source_file_target_root_no_trailing_slash(self,
+                                                       mocked_store,
+                                                       partial_mocked_store,
+                                                       monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        op.copy(urlparse('file:///localdir/abc.txt'),
+                urlparse('storage://'),
+                partial_mocked_store)
+
+        assert transfer_mock.call_count == 1
+        transfer_mock.assert_any_call('/localdir/abc.txt',
+                                      '/alice/abc.txt',
+                                      partial_mocked_store)
+
+    def test_source_file_target_empty(self,
+                                      mocked_store,
+                                      partial_mocked_store, monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        op.copy(urlparse('file:///localdir/abc.txt'),
+                urlparse('storage:'),
+                partial_mocked_store)
+
+        assert transfer_mock.call_count == 1
+        transfer_mock.assert_any_call('/localdir/abc.txt',
+                                      '/alice/abc.txt',
+                                      partial_mocked_store)
+
+    def test_source_file_target_does_not_exists(self,
+                                                mocked_store,
+                                                partial_mocked_store,
+                                                monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        non_exist = 'storage:///not-exists/not-exists/not-exists'
+        with pytest.raises(NotADirectoryError,
+                           match=r'Target directory does not exist.'):
+            op.copy(urlparse('file:///localdir/abc.txt'),
+                    urlparse('%s' % non_exist),
+                    partial_mocked_store)
+
+        assert transfer_mock.call_count == 0
+
+    def test_source_file_target_slash(self,
+                                      mocked_store,
+                                      partial_mocked_store, monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        op.copy(urlparse('file:///localdir/abc.txt'),
+                urlparse('storage:/'),
+                partial_mocked_store)
+
+        assert transfer_mock.call_count == 1
+        transfer_mock.assert_any_call('/localdir/abc.txt',
+                                      '/alice/abc.txt',
                                       partial_mocked_store)
 
     def test_target_file(self,
@@ -335,7 +430,7 @@ class TestCopyNonRecursivePlatformToLocal:
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
         op.copy(urlparse('file:///localdir/abc.txt'),
-                urlparse('file:///platform_existing/dir2'),
+                urlparse('storage:///platform_existing/dir2'),
                 partial_mocked_store)
 
         assert transfer_mock.call_count == 1
@@ -352,11 +447,57 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
+        with pytest.raises(NotADirectoryError,
+                           match=r'Target directory does not exist.'):
+            op.copy(urlparse('file:///localdir/abc.txt'),
+                    urlparse('storage:///platform_existing/dir2/'),
+                    partial_mocked_store)
+
+    def test_target_file_trailing_slash_2(self,
+                                          mocked_store,
+                                          partial_mocked_store,
+                                          monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        with pytest.raises(NotADirectoryError,
+                           match=r'Target directory does not exist.'):
+            op.copy(urlparse('file:///localdir/abc.txt'),
+                    urlparse('storage:///platform_existing/my_file.txt/'),
+                    partial_mocked_store)
+
+    def test_target_dir(self,
+                        mocked_store, partial_mocked_store, monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
         op.copy(urlparse('file:///localdir/abc.txt'),
-                urlparse('file:///platform_existing/dir2/'),
+                urlparse('storage:///platform_existing/di1'),
                 partial_mocked_store)
 
         assert transfer_mock.call_count == 1
         transfer_mock.assert_any_call('/localdir/abc.txt',
-                                      '/alice/platform_existing/dir2',
+                                      '/alice/platform_existing/di1/abc.txt',
+                                      partial_mocked_store)
+
+    def test_target_dir_trailing_slash(self,
+                                       mocked_store,
+                                       partial_mocked_store,
+                                       monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        op.copy(urlparse('file:///localdir/abc.txt'),
+                urlparse('storage:///platform_existing/di1/'),
+                partial_mocked_store)
+
+        assert transfer_mock.call_count == 1
+        transfer_mock.assert_any_call('/localdir/abc.txt',
+                                      '/alice/platform_existing/di1/abc.txt',
                                       partial_mocked_store)

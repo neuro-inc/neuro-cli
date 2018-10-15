@@ -241,6 +241,16 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
 class NonRecursiveLocalToPlatform(CopyOperation):
 
+    def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
+        """Tests whether specified path is directory on a platform or not.
+        Test is done by running LS command.
+        """
+        try:
+            self._ls(str(path), storage)
+        except ResourceNotFound as e:
+            return False
+        return True
+
     def copy_file(self, src_path: str, dest_path: str,
                   storage: Callable):  # pragma: no cover
         # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
@@ -252,27 +262,23 @@ class NonRecursiveLocalToPlatform(CopyOperation):
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(src.path):
-            raise ValueError('Source file not found.')
+            raise FileNotFoundError('Source file not found.')
 
         if os.path.isdir(src.path):
-            raise ValueError('Source should be file.')
+            raise IsADirectoryError('Source should be file.')
 
         target_path: PosixPath = self._render_platform_path_with_principal(dst)
-
-        platform_file_path = self._get_parent(target_path)
-        if platform_file_path != PosixPath('/'):
-            files = self._ls(str(platform_file_path), storage)
-            try:
-                tgt = next(file
-                           for file in files
-                           if file.path == str(target_path.name))
-                if tgt.type == 'DIRECTORY':
-                    target_path = PosixPath(target_path, Path(src.path).name)
-            except StopIteration as e:
-                pass
-        else:
-            # Copying to home
+        target_dir_not_exists = 'Target directory does not exist.'
+        if len(dst.path) and dst.path[-1] == PLATFORM_DELIMITER:
+            if not self._is_dir_on_platform(target_path, storage):
+                raise NotADirectoryError(target_dir_not_exists)
             target_path = PosixPath(target_path, Path(src.path).name)
+        else:
+            if not self._is_dir_on_platform(target_path, storage):
+                if not self._is_dir_on_platform(target_path.parent, storage):
+                    raise NotADirectoryError(target_dir_not_exists)
+            else:
+                target_path = PosixPath(target_path, Path(src.path).name)
 
         copy_file = self.copy_file(src.path, str(target_path), storage)
         return f'storage:/{copy_file}'
