@@ -431,7 +431,6 @@ Commands:
           monitor             Monitor job output stream
           list                List all jobs
           status              Display status of a job
-          ssh                 Open SSH shell to job
           kill                Kill job
         """
 
