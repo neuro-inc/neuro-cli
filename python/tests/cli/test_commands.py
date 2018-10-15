@@ -132,6 +132,16 @@ def test_dispatch_help():
         if str(err) != 'Invalid arguments: --help':
             pytest.fail('--help option error detection')
 
+    argv = ['-n', 'Vova', 'rest', 'Alabama', '-d', '1day']
+    try:
+        dispatch(
+            target=_person,
+            tail=argv,
+            city='Kyiv')
+    except ValueError as err:
+        if str(err) != 'Invalid arguments: --help':
+            pytest.fail('--help option error detection')
+
 
 def test_commands():
     assert commands(scope=globals()) == {

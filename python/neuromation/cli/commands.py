@@ -64,7 +64,6 @@ def dispatch(target, tail, **kwargs):
                 continue
             else:
                 return False
-        return False
 
     stack = []
 
