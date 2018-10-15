@@ -510,26 +510,6 @@ Commands:
                 j.kill(id)
             return 'Job killed.'
 
-        @command
-        def ssh(id):
-            """
-            Usage:
-                neuro job ssh ID ID_RSA
-
-            Starts ssh shell into container where job is running.
-            Job should be started with --ssh flag.
-            """
-            with jobs() as j:
-                res = j.status(id)
-                job_has_ssh = res.ssh
-
-            if job_has_ssh:
-                # TODO (Rafa) prepare config file for ssh
-                subprocess.run(['ssh', '-vvvv', f'{id}.default'])
-                return 'SSH session finished.'
-            else:
-                return "Consider starting a job with SSH port enabled."
-
         return locals()
 
     @command
