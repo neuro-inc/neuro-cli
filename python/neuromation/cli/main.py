@@ -1,9 +1,9 @@
 import logging
 import os
+import random
 import subprocess
 import sys
 from functools import partial
-from random import random
 from urllib.parse import urlparse
 
 import aiohttp
@@ -320,6 +320,7 @@ Commands:
         Model operations
 
         Commands:
+          develop            Start environment for model development
           train              Start model training
           test               Test trained model against validation dataset
           infer              Start batch inference
@@ -331,14 +332,15 @@ Commands:
 
         @command
         def develop(image, dataset, results,
-                  gpu, cpu, memory, extshm,
-                  http, ssh, project_path):
+                    gpu, cpu, memory, extshm,
+                    http, ssh, project_path):
             """
             Usage:
-                neuro model develop [options] IMAGE DATASET RESULTS PROJECT_PATH
+                neuro model develop (--ssh=NUMBER) [options]
+                   IMAGE DATASET RESULTS [PROJECT_PATH]
 
-            Start training job using model from IMAGE, dataset from DATASET and
-            store output weights in RESULTS.
+            Start development environment for model from IMAGE,
+            dataset from DATASET and store output weights in RESULTS.
 
             PROJECT_PATH neuro cli would try to patch project source code to
             enable remote debug. Otherwise please refer to documentation.
@@ -349,20 +351,34 @@ Commands:
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
                 --http NUMBER         Enable HTTP port forwarding to container
-                --ssh  NUMBER         Enable SSH port forwarding to container
             """
-
-            # TODO PyCharm project
-            if os._exists(project_path + ".idea"):
+            # TODO (R Zubairov) Later check for PyDev
+            # & VsCode(Sergey should know)
+            if project_path and os._exists(project_path + ".idea"):
+                # TODO PyCharm project
                 print("PyCharm project found, patching.")
             else:
-                print("")
                 config: Config = rc.ConfigFactory.load()
                 platform_user_name = config.get_platform_user_name()
                 model_operation = ModelHandlerOperations(platform_user_name)
-                return model_operation.train(image, dataset, results,
-                                             gpu, cpu, memory, extshm,
-                                             None, model, http, ssh)
+                model_details = model_operation.train(image, dataset, results,
+                                                      gpu, cpu, memory, extshm,
+                                                      None, model, http, ssh)
+
+                print(model_details)
+
+                start_port = 64000
+                max_port = 65535
+                random_in_range = random.randint(start_port, max_port)
+                print(f'Starting tunnel to access SSH port on container, '
+                      f'connect to localhost:{random_in_range}.')
+                # TODO (R Zubairov) we cannot assume everybody has ssh client
+                # instead we should use either async-ssh, paramiko -check
+                subprocess.run(['ssh', 'platform.local',
+                                '-L', f'{random_in_range}:{id}.default:22',
+                                '-N'])
+
+                return 'SSH session finished.'
 
         @command
         def train(image, dataset, results,
@@ -416,7 +432,6 @@ Commands:
           list                List all jobs
           status              Display status of a job
           ssh                 Open SSH shell to job
-          debug               Open tunnel to job for debug
           kill                Kill job
         """
 
@@ -514,24 +529,6 @@ Commands:
                 return 'SSH session finished.'
             else:
                 return "Consider starting a job with SSH port enabled."
-
-        @command
-        def debug(id):
-            """
-            Usage:
-                neuro job debug ID
-            """
-            # TODO (Rafa) first check whether job started with SSH
-            # TODO (Rafa) prepare config file for ssh
-            # TODO (Rafa) select random port
-            start_port = 64000
-            max_port = 65535
-            local_port = start_port + int(random() * (max_port - start_port))
-            print(f'Starting tunnel to access SSH port on container, '
-                  f'connect to localhost:{local_port}.')
-            subprocess.run(['ssh', 'platform.local',
-                            '-L', f'{local_port}:{id}.default:22', '-N'])
-            return 'SSH session finished.'
 
         return locals()
 
