@@ -241,7 +241,10 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
 class NonRecursiveLocalToPlatform(CopyOperation):
 
-    def is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
+    def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
+        """Tests whether specified path is directory on a platform or not.
+        Test is done by running LS command.
+        """
         try:
             self._ls(str(path), storage)
         except BaseException as e:
@@ -259,7 +262,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(src.path):
-            raise ValueError('Source file not found.')
+            raise FileNotFoundError('Source file not found.')
 
         if os.path.isdir(src.path):
             raise ValueError('Source should be file.')
@@ -268,12 +271,12 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         if len(dst.path) > 0 and dst.path[-1] == PLATFORM_DELIMITER:
             target_path = PosixPath(target_path, Path(src.path).name)
             platform_file_path = self._get_parent(target_path)
-            if not self.is_dir_on_platform(platform_file_path, storage):
-                raise ValueError('Target directory does not exist.')
+            if not self._is_dir_on_platform(platform_file_path, storage):
+                raise NotADirectoryError('Target directory does not exist.')
         else:
-            if not self.is_dir_on_platform(target_path, storage):
-                if not self.is_dir_on_platform(target_path.parent, storage):
-                    raise ValueError('Target directory does not exist.')
+            if not self._is_dir_on_platform(target_path, storage):
+                if not self._is_dir_on_platform(target_path.parent, storage):
+                    raise NotADirectoryError('Target directory does not exist.')
             else:
                 target_path = PosixPath(target_path, Path(src.path).name)
 

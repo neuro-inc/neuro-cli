@@ -294,7 +294,7 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r'Source file not found'):
+        with pytest.raises(FileNotFoundError, match=r'Source file not found'):
             op.copy(urlparse('file:///local_non_existing/file.txt'),
                     urlparse('storage:///platform_existing/'),
                     partial_mocked_store)
@@ -427,7 +427,7 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError,
+        with pytest.raises(NotADirectoryError,
                            match=r'Target directory does not exist.'):
             op.copy(urlparse('file:///localdir/abc.txt'),
                     urlparse('storage:///platform_existing/dir2/'),
@@ -442,7 +442,7 @@ class TestCopyNonRecursivePlatformToLocal:
 
         op = CopyOperation.create('alice', 'file', 'storage', False)
         op.copy_file = transfer_mock
-        with pytest.raises(ValueError,
+        with pytest.raises(NotADirectoryError,
                            match=r'Target directory does not exist.'):
             op.copy(urlparse('file:///localdir/abc.txt'),
                     urlparse('storage:///platform_existing/my_file.txt/'),
