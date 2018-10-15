@@ -35,7 +35,9 @@ class TestNormalCases:
             results=f'storage://alice/results/result1.txt'
         )
 
-    def test_model_submit_no_command_passed(self, alice_model, partial_mocked_model):
+    def test_model_submit_no_command_passed(self,
+                                            alice_model,
+                                            partial_mocked_model):
         alice_model.train('ubuntu:tf_2.0_beta',
                           'storage:///data/set.txt',
                           'storage://~/results/result1.txt',
@@ -81,7 +83,9 @@ class TestNormalCases:
             results=f'storage://alice/results/result1.txt'
         )
 
-    def test_model_submit_with_ssh_only(self, alice_model, partial_mocked_model):
+    def test_model_submit_with_ssh_only(self,
+                                        alice_model,
+                                        partial_mocked_model):
         alice_model.train('ubuntu:tf_2.0_beta',
                           'storage:///data/set.txt',
                           'storage://~/results/result1.txt',
@@ -100,32 +104,6 @@ class TestNormalCases:
             ),
             network=NetworkPortForwarding(
                 {'ssh': 8888}
-            ),
-            dataset=f'storage://alice/data/set.txt',
-            results=f'storage://alice/results/result1.txt'
-        )
-
-    def test_model_submit_with_ssh_and_http(self,
-                                            alice_model,
-                                            partial_mocked_model):
-        alice_model.train('ubuntu:tf_2.0_beta',
-                          'storage:///data/set.txt',
-                          'storage://~/results/result1.txt',
-                          0, 1, 100, False,
-                          '', partial_mocked_model, http=7878, ssh=8888)
-        partial_mocked_model().train.assert_called_once()
-        partial_mocked_model().train.assert_called_with(
-            image=Image(
-                image='ubuntu:tf_2.0_beta',
-                command=''),
-            resources=Resources(
-                memory=100,
-                gpu=0,
-                cpu=1.0,
-                shm=False
-            ),
-            network=NetworkPortForwarding(
-                {'ssh': 8888, 'http': 7878}
             ),
             dataset=f'storage://alice/data/set.txt',
             results=f'storage://alice/results/result1.txt'
