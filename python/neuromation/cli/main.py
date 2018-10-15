@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 from functools import partial
+from random import random
 from urllib.parse import urlparse
 
 import aiohttp
@@ -379,6 +380,8 @@ Commands:
           monitor             Monitor job output stream
           list                List all jobs
           status              Display status of a job
+          ssh                 Open SSH shell to job
+          debug               Open tunnel to job for debug
           kill                Kill job
         """
 
@@ -456,6 +459,38 @@ Commands:
             with jobs() as j:
                 j.kill(id)
             return 'Job killed.'
+
+        @command
+        def ssh(id):
+            """
+            Usage:
+                neuro job ssh ID ID_RSA
+
+            Starts ssh shell into container where job is running.
+            Job should be started with --ssh flag.
+            """
+            # TODO (Rafa) first check whether job started with SSH
+            # TODO (Rafa) prepare config file for ssh
+            subprocess.run(['ssh', '-vvvv', f'{id}.default'])
+            return 'SSH session finished.'
+
+        @command
+        def debug(id):
+            """
+            Usage:
+                neuro job debug ID
+            """
+            # TODO (Rafa) first check whether job started with SSH
+            # TODO (Rafa) prepare config file for ssh
+            # TODO (Rafa) select random port
+            start_port = 64000
+            max_port = 65535
+            local_port = start_port + int(random() * (max_port - start_port))
+            print(f'Starting tunnel to access SSH port on container, '
+                  f'connect to localhost:{local_port}.')
+            subprocess.run(['ssh', 'platform.local',
+                            '-L', f'{local_port}:{id}.default:22', '-N'])
+            return 'SSH session finished.'
 
         return locals()
 
