@@ -8,6 +8,7 @@ import pytest
 from neuromation.cli.command_handlers import (CopyOperation,
                                               NonRecursiveLocalToPlatform)
 from neuromation.client import FileStatus
+from neuromation.http import NotFoundError
 
 
 def _os_exists(tree: Dict) -> Callable:
@@ -82,9 +83,11 @@ def _platform_ls(dirs: List) -> Callable:
             v for v in dirs
             if v['path'] == path
         ]
+        if len(coll) == 0:
+            raise NotFoundError('Not a directory.')
         if 'file' not in coll[0]:
             return coll[0]['files']
-        raise ValueError('Not a directory.')
+        raise NotFoundError('Not a directory.')
 
     return ls
 
