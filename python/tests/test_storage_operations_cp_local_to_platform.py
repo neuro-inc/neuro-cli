@@ -385,6 +385,23 @@ class TestCopyNonRecursivePlatformToLocal:
                                       '/alice/abc.txt',
                                       partial_mocked_store)
 
+    def test_source_file_target_does_not_exists(self,
+                                      mocked_store,
+                                      partial_mocked_store, monkeypatch):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create('alice', 'file', 'storage', False)
+        op.copy_file = transfer_mock
+        non_exist = 'storage:///not-exists/not-exists/not-exists'
+        with pytest.raises(NotADirectoryError,
+                           match=r'Target directory does not exist.'):
+            op.copy(urlparse('file:///localdir/abc.txt'),
+                urlparse('%s' % non_exist),
+                partial_mocked_store)
+
+        assert transfer_mock.call_count == 0
+
     def test_source_file_target_slash(self,
                                       mocked_store,
                                       partial_mocked_store, monkeypatch):
