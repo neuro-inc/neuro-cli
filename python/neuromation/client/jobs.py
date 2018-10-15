@@ -54,6 +54,7 @@ class JobDescription:
     url: str = ''
     history: JobStatusHistory = None
     resources: Resources = None
+    ssh: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -250,6 +251,7 @@ class Job(ApiClient):
         job_container_image = None
         job_command = None
         job_resources = None
+        ssh_port = None
 
         if 'container' in res:
             job_container_image = res['container']['image'] \
@@ -269,11 +271,14 @@ class Job(ApiClient):
                     gpu=gpu,
                     shm=shm,
                 )
+            if 'ssh' in res['container']:
+                ssh_port = res['container']['ssh']['port']
         return JobDescription(
             client=self,
             id=res['id'],
             status=res['status'],
             image=job_container_image,
             command=job_command,
-            resources=job_resources
+            resources=job_resources,
+            ssh=ssh_port
         )

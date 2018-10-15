@@ -330,6 +330,29 @@ Commands:
         model = partial(Model, url, token)
 
         @command
+        def develop(image, dataset, results,
+                  gpu, cpu, memory, extshm):
+            """
+            Usage:
+                neuro model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
+
+            Start development cycle for a model from IMAGE, dataset from DATASET and
+            store output weights in RESULTS.
+
+            Options:
+                -g, --gpu NUMBER      Number of GPUs to request [default: 1]
+                -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
+                -m, --memory AMOUNT   Memory amount to request [default: 16G]
+                -x, --extshm          Request extended '/dev/shm' space
+            """
+            config: Config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            model_operation = ModelHandlerOperations(platform_user_name)
+            return model_operation.train(image, dataset, results,
+                                         gpu, cpu, memory, extshm,
+                                         None, model, None, None)
+
+        @command
         def train(image, dataset, results,
                   gpu, cpu, memory, extshm,
                   http, ssh, cmd):
@@ -469,10 +492,16 @@ Commands:
             Starts ssh shell into container where job is running.
             Job should be started with --ssh flag.
             """
-            # TODO (Rafa) first check whether job started with SSH
-            # TODO (Rafa) prepare config file for ssh
-            subprocess.run(['ssh', '-vvvv', f'{id}.default'])
-            return 'SSH session finished.'
+            with jobs() as j:
+                res = j.status(id)
+                job_has_ssh = res.ssh
+
+            if job_has_ssh:
+                # TODO (Rafa) prepare config file for ssh
+                subprocess.run(['ssh', '-vvvv', f'{id}.default'])
+                return 'SSH session finished.'
+            else:
+                return "Consider starting a job with SSH port enabled."
 
         @command
         def debug(id):
