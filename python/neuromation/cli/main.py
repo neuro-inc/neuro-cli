@@ -331,26 +331,38 @@ Commands:
 
         @command
         def develop(image, dataset, results,
-                  gpu, cpu, memory, extshm):
+                  gpu, cpu, memory, extshm,
+                  http, ssh, project_path):
             """
             Usage:
-                neuro model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
+                neuro model develop [options] IMAGE DATASET RESULTS PROJECT_PATH
 
-            Start development cycle for a model from IMAGE, dataset from DATASET and
+            Start training job using model from IMAGE, dataset from DATASET and
             store output weights in RESULTS.
+
+            PROJECT_PATH neuro cli would try to patch project source code to
+            enable remote debug. Otherwise please refer to documentation.
 
             Options:
                 -g, --gpu NUMBER      Number of GPUs to request [default: 1]
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
+                --http NUMBER         Enable HTTP port forwarding to container
+                --ssh  NUMBER         Enable SSH port forwarding to container
             """
-            config: Config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            model_operation = ModelHandlerOperations(platform_user_name)
-            return model_operation.train(image, dataset, results,
-                                         gpu, cpu, memory, extshm,
-                                         None, model, None, None)
+
+            # TODO PyCharm project
+            if os._exists(project_path + ".idea"):
+                print("PyCharm project found, patching.")
+            else:
+                print("")
+                config: Config = rc.ConfigFactory.load()
+                platform_user_name = config.get_platform_user_name()
+                model_operation = ModelHandlerOperations(platform_user_name)
+                return model_operation.train(image, dataset, results,
+                                             gpu, cpu, memory, extshm,
+                                             None, model, http, ssh)
 
         @command
         def train(image, dataset, results,
