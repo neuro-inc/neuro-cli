@@ -9,7 +9,6 @@ from urllib.parse import ParseResult, urlparse
 from neuromation import Resources
 from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import NetworkPortForwarding
-from neuromation.http import NotFoundError
 
 log = logging.getLogger(__name__)
 
@@ -248,7 +247,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         """
         try:
             self._ls(str(path), storage)
-        except NotFoundError as e:
+        except ResourceNotFound as e:
             return False
         return True
 
