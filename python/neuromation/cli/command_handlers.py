@@ -266,11 +266,11 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             raise FileNotFoundError('Source file not found.')
 
         if os.path.isdir(src.path):
-            raise ValueError('Source should be file.')
+            raise IsADirectoryError('Source should be file.')
 
         target_path: PosixPath = self._render_platform_path_with_principal(dst)
         target_dir_not_exists = 'Target directory does not exist.'
-        if len(dst.path) > 0 and dst.path[-1] == PLATFORM_DELIMITER:
+        if len(dst.path) and dst.path[-1] == PLATFORM_DELIMITER:
             target_path = PosixPath(target_path, Path(src.path).name)
             platform_file_path = self._get_parent(target_path)
             if not self._is_dir_on_platform(platform_file_path, storage):
