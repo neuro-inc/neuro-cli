@@ -57,6 +57,19 @@ class PlatformStorageOperation:
         return self._render_platform_path_with_principal(path_url)
 
 
+class PlatformStorageShare(PlatformStorageOperation):
+
+    def share(self, path_str: str,
+              op_type: str,
+              whom: str,
+              resource_sharing: Callable):
+        what = urlparse(path_str, scheme='file')
+        target_platform_path = self._render_platform_path_with_principal(what)
+        with resource_sharing() as rs:
+            resource_uri = f'storage:/{target_platform_path}'
+            return rs.share(resource_uri, op_type, whom)
+
+
 class PlatformMakeDirOperation(PlatformStorageOperation):
 
     def mkdir(self, path_str: str, storage: Callable):

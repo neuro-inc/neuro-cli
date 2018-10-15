@@ -12,7 +12,7 @@ from neuromation.strings import parse
 from .client import ApiClient
 from .requests import (ContainerPayload, InferRequest, JobKillRequest,
                        JobListRequest, JobMonitorRequest, JobStatusRequest,
-                       ResourcesPayload, TrainRequest)
+                       ResourcesPayload, ShareResourceRequest, TrainRequest)
 
 
 @dataclass(frozen=True)
@@ -99,6 +99,20 @@ class JobStatus(str, enum.Enum):
     RUNNING = 'running'
     SUCCEEDED = 'succeeded'
     FAILED = 'failed'
+
+
+class ResourceSharing(ApiClient):
+
+    def share(self, path: str, action: str, whom: str) -> bool:
+        permissions = [
+            {
+                'uri': path,
+                'action': action,
+            }
+        ]
+        self._fetch_sync(ShareResourceRequest(whom, permissions))
+        # TODO (R Zubairov) should depend on the success of operation
+        return True
 
 
 class Model(ApiClient):

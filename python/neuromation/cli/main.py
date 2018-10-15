@@ -13,8 +13,10 @@ from neuromation.cli.command_handlers import (CopyOperation,
                                               ModelHandlerOperations,
                                               PlatformListDirOperation,
                                               PlatformMakeDirOperation,
-                                              PlatformRemoveOperation)
+                                              PlatformRemoveOperation,
+                                              PlatformStorageShare)
 from neuromation.cli.rc import Config
+from neuromation.client.jobs import ResourceSharing
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -188,9 +190,11 @@ Commands:
           ls                 List directory contents
           cp                 Copy files and directories
           mkdir              Make directories
+          share              Share directories and files
         """
 
         storage = partial(Storage, url, token)
+        resource_sharing = partial(ResourceSharing, url, token)
 
         @command
         def rm(path):
@@ -283,6 +287,26 @@ Commands:
             platform_user_name = config.get_platform_user_name()
             PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
             return path
+
+        @command
+        def share(path, read, write, manage, whom):
+            """
+            Usage:
+                neuro store share PATH (read|write|manage) WHOM
+
+            Shares an object to a WHOM
+            """
+            op_type = 'manage' if manage \
+                else 'write' if write \
+                else 'read' if read else None
+            if not op_type:
+                return "Specify sharing type."
+            config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            share = PlatformStorageShare(platform_user_name)
+            share.share(path, op_type, whom, resource_sharing)
+            # TODO should depend on the result of previous operand
+            return "Applied."
 
         return locals()
 

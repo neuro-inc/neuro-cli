@@ -1,6 +1,6 @@
 import logging
 from io import BytesIO
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Dict, List, Optional
 
 from dataclasses import asdict, dataclass
 
@@ -39,6 +39,21 @@ class ContainerPayload:
 @dataclass(frozen=True)
 class JobStatusRequest(Request):
     id: str
+
+
+@dataclass(frozen=True)
+class ShareResourceRequest(Request):
+    whom: str
+    # List of { uri: '...', action: '...' }
+    permissions: List[Dict]
+
+    def to_http_request(self):
+        return http.PlainRequest(
+            url=f'/users/{self.whom}/permissions',
+            params=None,
+            method='POST',
+            json=self.permissions,
+            data=None)
 
 
 def model_request_to_http(req: Request) -> JsonRequest:
@@ -210,5 +225,7 @@ def build(request: Request) -> http.Request:
             method='DELETE',
             json=None,
             data=None)
+    elif isinstance(request, ShareResourceRequest):
+        return request.to_http_request()
     else:
         raise TypeError(f'Unknown request type: {type(request)}')
