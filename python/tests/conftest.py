@@ -29,6 +29,15 @@ def jobs(loop):
     loop.run_until_complete(job.close())
 
 
+@pytest.fixture
+def resource_sharing(loop):
+    resource_sharing = ResourceSharing(url='http://127.0.0.1',
+                                       token='test-token-for-job',
+                                       loop=loop)
+    yield resource_sharing
+    loop.run_until_complete(resource_sharing.close())
+
+
 @pytest.fixture(scope='function')
 def mocked_store(loop):
     my_mock = MagicMock(Storage('no-url', 'no-token', loop=loop))
