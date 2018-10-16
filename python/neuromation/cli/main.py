@@ -1,9 +1,11 @@
 import logging
 import os
 import random
+import re
 import subprocess
 import sys
 from functools import partial
+from time import sleep
 from urllib.parse import urlparse
 
 import aiohttp
@@ -326,18 +328,19 @@ Commands:
           infer              Start batch inference
         """
 
-        from neuromation.client.jobs import Model
+        from neuromation.client.jobs import Job, JobStatus, Model
 
         model = partial(Model, url, token)
+        jobs = partial(Job, url, token)
 
         @command
         def develop(image, dataset, results,
                     gpu, cpu, memory, extshm,
-                    http, ssh, project_path):
+                    http, ssh, key_path):
             """
             Usage:
                 neuro model develop (--ssh=NUMBER) [options]
-                   IMAGE DATASET RESULTS [PROJECT_PATH]
+                   IMAGE DATASET RESULTS KEY_PATH
 
             Start development environment for model from IMAGE,
             dataset from DATASET and store output weights in RESULTS.
@@ -354,31 +357,43 @@ Commands:
             """
             # TODO (R Zubairov) Later check for PyDev
             # & VsCode(Sergey should know)
-            if project_path and os._exists(project_path + ".idea"):
-                # TODO PyCharm project
-                print("PyCharm project found, patching.")
-            else:
-                config: Config = rc.ConfigFactory.load()
-                platform_user_name = config.get_platform_user_name()
-                model_operation = ModelHandlerOperations(platform_user_name)
-                model_details = model_operation.train(image, dataset, results,
-                                                      gpu, cpu, memory, extshm,
-                                                      None, model, http, ssh)
+            config: Config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            model_operation = ModelHandlerOperations(platform_user_name)
+            model_details = model_operation.train(image, dataset, results,
+                                                  gpu, cpu, memory, extshm,
+                                                  None, model, http, ssh)
 
-                print(model_details)
+            job_id = re.match('Job ID: (.+) Status:', model_details).group(1)
+            print(f'Waiting for job to start on a cluster. JobId={job_id}')
+            job_is_pending = True
+            job_started = False
+            while job_is_pending:
+                with jobs() as j:
+                    job_status = j.status(job_id)
+                    job_is_pending = (job_status.status == 'pending')
+                    job_started = (job_status.status == 'running')
+                if job_is_pending:
+                    print('.', end='')
+                    sleep(1)
 
-                start_port = 64000
-                max_port = 65535
-                random_in_range = random.randint(start_port, max_port)
-                print(f'Starting tunnel to access SSH port on container, '
-                      f'connect to localhost:{random_in_range}.')
-                # TODO (R Zubairov) we cannot assume everybody has ssh client
-                # instead we should use either async-ssh, paramiko -check
-                subprocess.run(['ssh', 'platform.local',
-                                '-L', f'{random_in_range}:{id}.default:22',
-                                '-N'])
-
+            if job_started:
+                print('Starting ssh-shell.')
+                # job_id = 'job_id'
+                # Avoid doing config changes, run tricky stuff by ourself
+                # TODO remove hardcoded jump IP
+                jump_host_ip = f"35.226.58.122"
+                # TODO remove hardcoded id_rsa
+                rsa = f"-i ~/.ssh/platform_dev_jump_id_rsa"
+                nc_command = f"nc {job_id}.default 31022"
+                proxy_command = f"ProxyCommand='ssh %s root@%s %s'" % (
+                    rsa, jump_host_ip, nc_command)
+                subprocess.run(['ssh', '-o', proxy_command,
+                                '-i', key_path,
+                                f'root@{job_id}.default'])
                 return 'SSH session finished.'
+            else:
+                return f'Job failed to start, please check logs.'
 
         @command
         def train(image, dataset, results,
