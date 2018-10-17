@@ -378,6 +378,8 @@ Commands:
                     sleep(1)
 
             if job_started:
+                print('Sleeping')
+                sleep(30)
                 print('Starting ssh-shell.')
                 # job_id = 'job_id'
                 # Avoid doing config changes, run tricky stuff by ourself
@@ -386,7 +388,7 @@ Commands:
                 # TODO remove hardcoded id_rsa
                 rsa = f"-i ~/.ssh/platform_dev_jump_id_rsa"
                 nc_command = f"nc {job_id}.default 31022"
-                proxy_command = f"ProxyCommand='ssh %s root@%s %s'" % (
+                proxy_command = f'ProxyCommand=ssh %s root@%s %s' % (
                     rsa, jump_host_ip, nc_command)
                 subprocess.run(['ssh', '-o', proxy_command,
                                 '-i', key_path,
