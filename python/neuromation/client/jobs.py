@@ -111,7 +111,6 @@ class ResourceSharing(ApiClient):
             }
         ]
         self._fetch_sync(ShareResourceRequest(whom, permissions))
-        # TODO (R Zubairov) should depend on the success of operation
         return True
 
 

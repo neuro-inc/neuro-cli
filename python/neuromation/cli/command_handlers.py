@@ -57,7 +57,7 @@ class PlatformStorageOperation:
         return self._render_platform_path_with_principal(path_url)
 
 
-class PlatformStorageShare(PlatformStorageOperation):
+class PlatformSharingOperations(PlatformStorageOperation):
 
     def share(self, path_str: str,
               op_type: str,
@@ -66,7 +66,7 @@ class PlatformStorageShare(PlatformStorageOperation):
         what = urlparse(path_str, scheme='file')
         target_platform_path = self._render_platform_path_with_principal(what)
         with resource_sharing() as rs:
-            resource_uri = f'storage:/{target_platform_path}'
+            resource_uri = f'{what.scheme}:/{target_platform_path}'
             return rs.share(resource_uri, op_type, whom)
 
 

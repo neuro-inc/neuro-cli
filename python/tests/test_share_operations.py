@@ -3,13 +3,13 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 
-from neuromation.cli.command_handlers import PlatformStorageShare
+from neuromation.cli.command_handlers import PlatformSharingOperations
 from tests.utils import PlainResponse, mocked_async_context_manager
 
 
 @pytest.fixture()
 def alice_sharing():
-    return PlatformStorageShare('alice')
+    return PlatformSharingOperations('alice')
 
 
 class TestNormalCases:
