@@ -378,13 +378,13 @@ Commands:
                     sleep(1)
 
             if job_started:
-                print('Sleeping')
-                sleep(30)
+                sleep(2)
                 print('Starting ssh-shell.')
                 # job_id = 'job_id'
                 # Avoid doing config changes, run tricky stuff by ourself
                 # TODO remove hardcoded jump IP
                 jump_host_ip = f"35.226.58.122"
+                jump_host_ip = f"35.184.56.47"
                 # TODO remove hardcoded id_rsa
                 rsa = f"-i ~/.ssh/platform_dev_jump_id_rsa"
                 nc_command = f"nc {job_id}.default 31022"
