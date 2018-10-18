@@ -310,7 +310,7 @@ Commands:
                   http, ssh, cmd):
             """
             Usage:
-                neuro model train [options] IMAGE DATASET RESULTS CMD [CMD ...]
+                neuro model train [options] IMAGE DATASET RESULTS [CMD...]
 
             Start training job using model from IMAGE, dataset from DATASET and
             store output weights in RESULTS.

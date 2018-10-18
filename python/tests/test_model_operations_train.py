@@ -35,6 +35,29 @@ class TestNormalCases:
             results=f'storage://alice/results/result1.txt'
         )
 
+    def test_model_submit_no_cmd(self, alice_model, partial_mocked_model):
+        alice_model.train('ubuntu:tf_2.0_beta',
+                          'storage:///data/set.txt',
+                          'storage://~/results/result1.txt',
+                          0, 1, 100, False,
+                          None, partial_mocked_model,
+                          http=None, ssh=None)
+        partial_mocked_model().train.assert_called_once()
+        partial_mocked_model().train.assert_called_with(
+            image=Image(
+                image='ubuntu:tf_2.0_beta',
+                command=None),
+            resources=Resources(
+                memory=100,
+                gpu=0,
+                cpu=1.0,
+                shm=False
+            ),
+            network=None,
+            dataset=f'storage://alice/data/set.txt',
+            results=f'storage://alice/results/result1.txt'
+        )
+
     def test_model_submit_with_http(self, alice_model, partial_mocked_model):
         alice_model.train('ubuntu:tf_2.0_beta',
                           'storage:///data/set.txt',

@@ -31,7 +31,7 @@ class NetworkPortForwarding:
 @dataclass(frozen=True)
 class Image:
     image: str
-    command: str
+    command: Optional[str]
 
 
 @dataclass(frozen=True)

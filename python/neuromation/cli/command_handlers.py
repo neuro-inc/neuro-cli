@@ -348,7 +348,7 @@ class ModelHandlerOperations(PlatformStorageOperation):
         if ports:
             net = NetworkPortForwarding(ports)
 
-        cmd = ' '.join(cmd)
+        cmd = ' '.join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
 
         cpu = float(cpu)
