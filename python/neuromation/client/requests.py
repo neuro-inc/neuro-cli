@@ -43,16 +43,10 @@ class JobStatusRequest(Request):
 
 def model_request_to_http(req: Request) -> JsonRequest:
     json_params = asdict(req)
-    container_desctiptor = json_params['container']
-    if 'http' in container_desctiptor \
-            and not container_desctiptor['http']:
-        container_desctiptor.pop('http', None)
-    if 'ssh' in container_desctiptor \
-            and not container_desctiptor['ssh']:
-        container_desctiptor.pop('ssh', None)
-    if 'command' in container_desctiptor \
-            and not container_desctiptor['command']:
-        container_desctiptor.pop('command', None)
+    container_descriptor = json_params['container']
+    for field in ('http', 'ssh', 'command'):
+        if not container_descriptor.get(field):
+            container_descriptor.pop(field, None)
     return http.JsonRequest(
         url='/models',
         params=None,
