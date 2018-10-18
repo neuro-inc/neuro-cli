@@ -19,6 +19,8 @@ def _person(name, age, gender, city):
       work               Work
       rest               Rest
       help               command reference
+
+    (c) {year}
     """
 
     @command
@@ -29,6 +31,8 @@ def _person(name, age, gender, city):
 
         Options:
           -i, --intensity VALUE      Intensity (HIGH, MEDIUM, LOW)  [default: LOW]
+           
+        (c) {year}
         """  # NOQA
 
         @command
@@ -39,6 +43,8 @@ def _person(name, age, gender, city):
 
             Options:
               -d, --depth VALUE         Depth (BIG, SMALL) [default: BIG]
+
+            (c) {year}
             """
             return f"{name} is digging {depth} {what} in {city}"
 
@@ -50,6 +56,8 @@ def _person(name, age, gender, city):
 
             Options:
               -s, --style STYLE         Style (ex: seagull, etc)  [default: crushing]
+            
+            (c) {year}
             """  # NOQA
             return f"{name} is {style} {whom} in {city}"
 
@@ -65,6 +73,8 @@ def _person(name, age, gender, city):
 
         Options:
           -d, --duration HOURS    Duration in hours [default: 1]
+
+        (c) {year}
         """
         return f"{name} is resting {where} for {duration} hour"
 
@@ -126,6 +136,32 @@ def test_dispatch_help():
     except ValueError as err:
         if str(err) != 'Invalid arguments: --help':
             pytest.fail('--help option error detection')
+
+
+def test_dispatch_help_format_spec():
+    argv = ['--help']
+    with pytest.raises(ValueError, match=r'2018'):
+        dispatch(
+            target=_person,
+            tail=argv,
+            format_spec={'year': 2018}
+        )
+
+    argv = ['Vasya', 'work']
+    with pytest.raises(ValueError, match=r'2018'):
+        dispatch(
+            target=_person,
+            tail=argv,
+            format_spec={'year': 2018}
+        )
+
+    argv = ['Vasya', 'work', 'dig', 'hole']
+    with pytest.raises(ValueError, match=r'2018'):
+        dispatch(
+            target=_person,
+            tail=argv,
+            format_spec={'year': 2018}
+        )
 
 
 def test_commands():
