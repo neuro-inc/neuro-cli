@@ -81,7 +81,10 @@ def test_call_session_with_token(build, loop):
 
 def test_session_with_timeout_api_client(loop):
     with mock.patch('aiohttp.ClientSession') as runMock:
-        timeout = TimeoutSettings(total=1, connect=2, sock_connect=3, sock_read=4)
+        timeout = TimeoutSettings(total=1,
+                                  connect=2,
+                                  sock_connect=3,
+                                  sock_read=4)
         ApiClient(url='no-url', token='', timeout=timeout)
         client_timeout = aiohttp.ClientTimeout(
             total=1,
