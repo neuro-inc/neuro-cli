@@ -399,27 +399,26 @@ Commands:
 
             Display status of a job
             """
-            with jobs() as j:
-                res = j.status(id)
-                result = f'Job: {res.id}\n' \
-                         f'Status: {res.status}\n' \
-                         f'Image: {res.image}\n' \
-                         f'Command: {res.command}\n' \
-                         f'Resources: {res.resources}\n' \
-                         f'Created: {res.history.created_at}'
-                if res.status in [JobStatus.RUNNING, JobStatus.FAILED,
-                                  JobStatus.SUCCEEDED]:
-                    result += '\n' \
-                              f'Started: {res.history.started_at}'
-                if res.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
-                    result += '\n' \
-                              f'Finished: {res.history.finished_at}'
-                if res.status == JobStatus.FAILED:
-                    result += '\n' \
-                              f'Reason: {res.history.reason}\n' \
-                              '===Description===\n ' \
-                              f'{res.history.description}\n================='
-                return result
+            res = JobHandlerOperations().status(id, jobs)
+            result = f'Job: {res.id}\n' \
+                     f'Status: {res.status}\n' \
+                     f'Image: {res.image}\n' \
+                     f'Command: {res.command}\n' \
+                     f'Resources: {res.resources}\n' \
+                     f'Created: {res.history.created_at}'
+            if res.status in [JobStatus.RUNNING, JobStatus.FAILED,
+                              JobStatus.SUCCEEDED]:
+                result += '\n' \
+                          f'Started: {res.history.started_at}'
+            if res.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
+                result += '\n' \
+                          f'Finished: {res.history.finished_at}'
+            if res.status == JobStatus.FAILED:
+                result += '\n' \
+                          f'Reason: {res.history.reason}\n' \
+                          '===Description===\n ' \
+                          f'{res.history.description}\n================='
+            return result
 
         @command
         def kill(id):
