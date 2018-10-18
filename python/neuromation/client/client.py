@@ -65,7 +65,7 @@ class ApiClient:
             NotFoundError: ResourceNotFound,
             MethodNotAllowedError: ClientError
         }
-        client_timeout = aiohttp.ClientTimeout(total=5*60)
+        client_timeout = None
         if timeout:
             client_timeout = aiohttp.ClientTimeout(
                 total=timeout.total,

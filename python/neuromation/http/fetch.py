@@ -87,11 +87,14 @@ async def session(token: Optional[str] = None,
     _default_auth_headers = {'Authorization': f'Bearer {token}'} if token \
         else {}
 
-    _session = aiohttp.ClientSession(
-        trace_configs=[trace_config],
-        headers=_default_auth_headers,
-        timeout=timeout
-    )
+    client_session_settings = {
+        'trace_configs': [trace_config],
+        'headers': _default_auth_headers,
+    }
+    if timeout:
+        client_session_settings['timeout'] = timeout
+
+    _session = aiohttp.ClientSession(**client_session_settings)
     return _session
 
 
