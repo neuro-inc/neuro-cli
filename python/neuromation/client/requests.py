@@ -50,6 +50,9 @@ def model_request_to_http(req: Request) -> JsonRequest:
     if 'ssh' in container_desctiptor \
             and not container_desctiptor['ssh']:
         container_desctiptor.pop('ssh', None)
+    if 'command' in container_desctiptor \
+            and not container_desctiptor['command']:
+        container_desctiptor.pop('command', None)
     return http.JsonRequest(
         url='/models',
         params=None,
