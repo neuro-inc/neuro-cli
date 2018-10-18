@@ -370,12 +370,7 @@ class ModelHandlerOperations(PlatformStorageOperation):
                 dataset=f'storage:/{dataset_platform_path}',
                 results=f'storage:/{resultset_platform_path}')
 
-        # Format job info properly
-        return f'Job ID: {job.id} Status: {job.status}\n' + \
-               f'Shortcuts:\n' + \
-               f'  neuro job status {job.id}  # check job status\n' + \
-               f'  neuro job monitor {job.id} # monitor job stdout\n' + \
-               f'  neuro job kill {job.id}    # kill job'
+        return job
 
 
 class JobHandlerOperations():
