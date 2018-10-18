@@ -1,5 +1,9 @@
 import asyncio
 import logging
+from typing import Optional
+
+import aiohttp
+from dataclasses import dataclass
 
 from neuromation.http import fetch, session
 from neuromation.http.fetch import AccessDeniedError as FetchAccessDeniedError
@@ -36,12 +40,24 @@ class ResourceNotFound(ValueError):
     pass
 
 
+@dataclass(frozen=True)
+class TimeoutSettings:
+    total: Optional[float]
+    connect: Optional[float]
+    sock_read: Optional[float]
+    sock_connect: Optional[float]
+
+
 class ApiClient:
 
-    def __init__(self, url: str, token: str, *, loop=None):
+    def __init__(self,
+                 url: str,
+                 token: str,
+                 timeout: Optional[TimeoutSettings] = None,
+                 *,
+                 loop=None):
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
-        self._session = self.loop.run_until_complete(session(token=token))
         self._exception_map = {
             FetchAccessDeniedError: AuthorizationError,
             UnauthorizedError: AuthenticationError,
@@ -49,6 +65,16 @@ class ApiClient:
             NotFoundError: ResourceNotFound,
             MethodNotAllowedError: ClientError
         }
+        client_timeout = aiohttp.ClientTimeout(total=5*60)
+        if timeout:
+            client_timeout = aiohttp.ClientTimeout(
+                total=timeout.total,
+                connect=timeout.connect,
+                sock_connect=timeout.sock_connect,
+                sock_read=timeout.sock_read,
+            )
+        self._session_object = session(token=token, timeout=client_timeout)
+        self._session = self.loop.run_until_complete(self._session_object)
 
     def __enter__(self):
         return self

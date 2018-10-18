@@ -16,6 +16,7 @@ from neuromation.cli.command_handlers import (CopyOperation,
                                               PlatformRemoveOperation,
                                               PlatformSharingOperations)
 from neuromation.cli.rc import Config
+from neuromation.client.client import TimeoutSettings
 from neuromation.client.jobs import ResourceSharing
 from neuromation.logging import ConsoleWarningFormatter
 
@@ -28,6 +29,9 @@ MONITOR_BUFFER_SIZE_BYTES = 256
 
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
+
+# AIO HTTP Default Timeout Settings
+DEFAULT_CLI_TIMEOUT_SETTINGS = TimeoutSettings(None, None, 30, 30)
 
 
 def setup_logging():
@@ -221,7 +225,7 @@ Commands:
           mkdir              Make directories
         """
 
-        storage = partial(Storage, url, token)
+        storage = partial(Storage, url, token, DEFAULT_CLI_TIMEOUT_SETTINGS)
 
         @command
         def rm(path):
@@ -333,7 +337,7 @@ Commands:
 
         from neuromation.client.jobs import Model
 
-        model = partial(Model, url, token)
+        model = partial(Model, url, token, DEFAULT_CLI_TIMEOUT_SETTINGS)
 
         @command
         def train(image, dataset, results,
@@ -397,7 +401,7 @@ Commands:
         """
 
         from neuromation.client.jobs import Job, JobStatus
-        jobs = partial(Job, url, token)
+        jobs = partial(Job, url, token, DEFAULT_CLI_TIMEOUT_SETTINGS)
 
         @command
         def monitor(id):
