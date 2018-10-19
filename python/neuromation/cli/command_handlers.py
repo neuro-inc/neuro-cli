@@ -1,4 +1,5 @@
 import abc
+import io
 import logging
 import os
 from os.path import dirname
@@ -267,12 +268,43 @@ class NonRecursiveLocalToPlatform(CopyOperation):
 
     def copy_file(self, src_path: str, dest_path: str,
                   storage: Callable):  # pragma: no cover
+        total = 0
+
+        class ProxyReportReader(io.BufferedReader):
+            reporter: Callable
+
+            def setReporter(self, reporter: Callable):
+                self.reporter = reporter
+
+            def read(self, size: Optional[int] = ...):
+                self.report('Before read', size=size)
+                result = super().read(size)
+                self.report('After read', size=size, result=result)
+                return result
+
+            def report(self, *args, **kwargs):
+                if self.reporter:
+                    self.reporter(*args, **kwargs)
+
+        def reporter(event, *args, **kwargs):
+            nonlocal total, dest_path
+            if event == 'After read':
+                size = len(kwargs['result'])
+                if size:
+                    total += size
+                    print(f'\r{dest_path}: {total} bytes', end='\r')
+                else:
+                    print(f'\r{dest_path} transferred     ', end='\r')
+                    print()
+
         # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
         # to track progress and report
-        with open(src_path, mode='rb') as f:
-            with storage() as s:
-                s.create(path=dest_path, data=f)
-                return dest_path
+        raw = io.FileIO(src_path, mode='r')
+        proxy = ProxyReportReader(raw)
+        proxy.setReporter(reporter)
+        with storage() as s:
+            s.create(path=dest_path, data=proxy)
+            return dest_path
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(src.path):
