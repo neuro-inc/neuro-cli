@@ -9,6 +9,9 @@ from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
+from neuromation.cli.rc import ConfigFactory
+from neuromation.client import (FileStatus, IllegalArgumentError, Image,
+                                ResourceNotFound)
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
 log = logging.getLogger(__name__)
@@ -338,7 +341,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 class JobHandlerOperations:
     def wait_job_transfer_from(
         self, id: str, from_state: str, jobs: Callable, sleep_interval_s: int = 1
-    ):
+    ) -> JobDescription:
         still_state = True
         job_status = None
         while still_state:
@@ -367,8 +370,18 @@ class JobHandlerOperations:
                 ]
             )
 
+    def start_ssh(self, job_id: str,
+                  jump_host: str, jump_user: str, jump_key: str,
+                  container_user: str, container_key: str):
+        ConfigFactory.load()
+        nc_command = f"nc {job_id}.default 31022"
+        proxy_command = f'ProxyCommand=ssh -i {jump_key} {jump_user}@{jump_host} {nc_command}'
+        os.subprocess.run(['ssh', '-o', proxy_command,
+                        '-i', container_key,
+                        f'{container_user}@{job_id}.default'])
 
-class ModelHandlerOperations(PlatformStorageOperation):
+
+class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
     def train(
         self, image, dataset, results, gpu, cpu, memory, extshm, cmd, model, http, ssh
     ):
@@ -412,3 +425,22 @@ class ModelHandlerOperations(PlatformStorageOperation):
             )
 
         return job
+
+    def develop(self, image, dataset, results,
+                gpu, cpu, memory, extshm,
+                model, jobs,
+                http, ssh, ssh_key_path):
+        # Temporal solution - pending custom Jump Server with JWT support
+        if not ssh_key_path:
+            raise ValueError('Configure id_rsa first.')
+
+        # Start the job, we expect it to have SSH server on board
+        job_id = self.train(image, dataset, results, gpu, cpu, memory, extshm,
+                            None, model, http, ssh)
+        # wait for a job to leave pending stage
+        job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
+        if job_status.status == 'running':
+            self.start_ssh()
+        else:
+            print('Job is not running.')
+            return None
