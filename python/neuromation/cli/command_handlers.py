@@ -375,10 +375,11 @@ class JobHandlerOperations:
                   container_user: str, container_key: str):
         ConfigFactory.load()
         nc_command = f"nc {job_id}.default 31022"
-        proxy_command = f'ProxyCommand=ssh -i {jump_key} {jump_user}@{jump_host} {nc_command}'
+        proxy_command = f'ProxyCommand=ssh -i {jump_key} ' \
+                        f'{jump_user}@{jump_host} {nc_command}'
         os.subprocess.run(['ssh', '-o', proxy_command,
-                        '-i', container_key,
-                        f'{container_user}@{job_id}.default'])
+                           '-i', container_key,
+                           f'{container_user}@{job_id}.default'])
 
 
 class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
