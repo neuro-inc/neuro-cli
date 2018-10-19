@@ -48,12 +48,17 @@ class TimeoutSettings:
     sock_connect: Optional[float]
 
 
+# AIO HTTP Default Timeout Settings
+DEFAULT_CLIENT_TIMEOUT_SETTINGS = TimeoutSettings(None, None, 30, 30)
+
+
 class ApiClient:
 
     def __init__(self,
                  url: str,
                  token: str,
-                 timeout: Optional[TimeoutSettings] = None,
+                 timeout: Optional[TimeoutSettings] =
+                 DEFAULT_CLIENT_TIMEOUT_SETTINGS,
                  *,
                  loop=None):
         self._url = url

@@ -30,9 +30,6 @@ MONITOR_BUFFER_SIZE_BYTES = 256
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
 
-# AIO HTTP Default Timeout Settings
-DEFAULT_CLI_TIMEOUT_SETTINGS = TimeoutSettings(None, None, 30, 30)
-
 
 def setup_logging():
     root_logger = logging.getLogger()
@@ -225,7 +222,7 @@ Commands:
           mkdir              Make directories
         """
 
-        storage = partial(Storage, url, token, DEFAULT_CLI_TIMEOUT_SETTINGS)
+        storage = partial(Storage, url, token)
 
         @command
         def rm(path):
@@ -337,7 +334,7 @@ Commands:
 
         from neuromation.client.jobs import Model
 
-        model = partial(Model, url, token, DEFAULT_CLI_TIMEOUT_SETTINGS)
+        model = partial(Model, url, token)
 
         @command
         def train(image, dataset, results,
@@ -401,7 +398,7 @@ Commands:
         """
 
         from neuromation.client.jobs import Job, JobStatus
-        jobs = partial(Job, url, token, DEFAULT_CLI_TIMEOUT_SETTINGS)
+        jobs = partial(Job, url, token)
 
         @command
         def monitor(id):
