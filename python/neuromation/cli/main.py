@@ -515,17 +515,18 @@ Commands:
         return locals()
 
     @command
-    def share(objecturi, whom, read, write, manage):
+    def share(uri, whom, read, write, manage):
         """
             Usage:
-                neuro share OBJECTURI WHOM (read|write|manage)
+                neuro share URI WHOM (read|write|manage)
 
-            Shares an object to a WHOM with given PERMISSION.
+            Shares resource specified by URI to a user specified by WHOM
+             allowing to read, write or manage it.
 
             Examples:
-                neuro share storage:///sample_data/ alice write
+                neuro share storage:///sample_data/ alice manage
                 neuro share image:///resnet50 bob read
-                neuro share job:///my_job_id alice read
+                neuro share job:///my_job_id alice write
         """
 
         op_type = 'manage' if manage \
@@ -542,7 +543,7 @@ Commands:
         try:
             resource_sharing = partial(ResourceSharing, url, token)
             share_command = PlatformSharingOperations(platform_user_name)
-            share_command.share(objecturi, op_type, whom, resource_sharing)
+            share_command.share(uri, op_type, whom, resource_sharing)
         except neuromation.client.IllegalArgumentError:
             print("Resource not shared. "
                   "Please verify resource-uri, user name.")
