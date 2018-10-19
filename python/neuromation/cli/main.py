@@ -331,9 +331,16 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             model_operation = ModelHandlerOperations(platform_user_name)
-            return model_operation.train(image, dataset, results,
-                                         gpu, cpu, memory, extshm,
-                                         cmd, model, http, ssh)
+            job = model_operation.train(image, dataset, results,
+                                        gpu, cpu, memory, extshm,
+                                        cmd, model, http, ssh)
+
+            # Format job info properly
+            return f'Job ID: {job.id} Status: {job.status}\n' + \
+                   f'Shortcuts:\n' + \
+                   f'  neuro job status {job.id}  # check job status\n' + \
+                   f'  neuro job monitor {job.id} # monitor job stdout\n' + \
+                   f'  neuro job kill {job.id}    # kill job'
 
         @command
         def test():
