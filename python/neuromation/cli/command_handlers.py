@@ -3,12 +3,13 @@ import logging
 import os
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath
+from time import sleep
 from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
 from neuromation.client import FileStatus, Image, ResourceNotFound
-from neuromation.client.jobs import NetworkPortForwarding
+from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
 log = logging.getLogger(__name__)
 
@@ -387,6 +388,24 @@ class ModelHandlerOperations(PlatformStorageOperation):
 
 
 class JobHandlerOperations():
+
+    def wait_job_transfer_from(self,
+                               id: str,
+                               from_state: str,
+                               jobs: Callable,
+                               sleep_interval_s: int = 1):
+        still_state = True
+        job_status = None
+        while still_state:
+            job_status = self.status(id, jobs)
+            still_state = job_status.status == from_state
+            if still_state:
+                sleep(sleep_interval_s)
+        return job_status
+
+    def status(self, id: str, jobs: Callable) -> JobDescription:
+        with jobs() as j:
+            return j.status(id)
 
     def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
         def short_format(item) -> str:
