@@ -159,6 +159,61 @@ def test_status_failed(jobs):
 
 @patch(
     'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {
+            'status': 'failed',
+            'id': 'foo',
+            "http_url": "http://my_host:8889",
+            "ssh_connection": "ssh://my_host.ssh:22",
+            'history': {
+                'created_at': '2018-08-29T12:23:13.981621+00:00',
+                'started_at': '2018-08-29T12:23:15.988054+00:00',
+                'finished_at': '2018-08-29T12:59:31.427795+00:00',
+                'reason': 'ContainerCannotRun',
+                'description': 'Not enough coffee'
+            }
+        },
+    )))
+def test_status_with_ssh_and_http(jobs):
+    expected = {
+        'status': 'failed',
+        'id': 'foo',
+        "http_url": "http://my_host:8889",
+        "ssh": "ssh://my_host.ssh:22",
+        'history': {
+            'created_at': '2018-08-29T12:23:13.981621+00:00',
+            'started_at': '2018-08-29T12:23:15.988054+00:00',
+            'finished_at': '2018-08-29T12:59:31.427795+00:00',
+            'reason': 'ContainerCannotRun',
+            'description': 'Not enough coffee'
+        }
+    }
+    res = jobs.status('1')
+    assert {
+               'status': res.status,
+               'id': 'foo',
+               "http_url": res.url,
+               "ssh": res.ssh,
+               'history': {
+                   'created_at': res.history.created_at,
+                   'started_at': res.history.started_at,
+                   'finished_at': res.history.finished_at,
+                   'reason': res.history.reason,
+                   'description': res.history.description,
+
+               }
+           } == expected
+
+    aiohttp.ClientSession.request.assert_called_with(
+        method='GET',
+        url='http://127.0.0.1/jobs/1',
+        params=None,
+        data=None,
+        json=None)
+
+
+@patch(
+    'aiohttp.ClientSession.request',
     new=mocked_async_context_manager(JsonResponse({
         'jobs': [{
             'status': 'RUNNING',
@@ -215,6 +270,61 @@ def test_list_extended_output(jobs):
         JobDescription(client=jobs,
                        id='job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f',
                        status='failed',
+                       image="gcr.io/light-reality-205619/ubuntu:latest",
+                       command="bash -c \" / bin / df--block - size M--output"
+                               " = target, avail / dev / shm;false\"",
+                       resources=Resources(
+                           memory=16384,
+                           cpu=1.0,
+                           gpu=1,
+                           shm=False
+                       )),
+    ]
+    aiohttp.ClientSession.request.assert_called_with(
+        method='GET',
+        json=None,
+        url='http://127.0.0.1/jobs',
+        params=None,
+        data=None)
+
+
+@patch(
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse({
+        'jobs': [{
+            "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+            "status": "failed",
+            "history": {
+                "status": "failed",
+                "reason": "Error",
+                "description": "Mounted on Avail\\n/dev/shm     "
+                               "64M\\n\\nExit code: 1",
+                "created_at": "2018-09-25T12:28:21.298672+00:00",
+                "started_at": "2018-09-25T12:28:59.759433+00:00",
+                "finished_at": "2018-09-25T12:28:59.759433+00:00"
+            },
+            "container": {
+                "image": "gcr.io/light-reality-205619/ubuntu:latest",
+                "command": "bash -c \" / bin / df--block - size M--output "
+                           "= target, avail / dev / shm;false\"",
+                "resources": {
+                    "cpu": 1.0,
+                    "memory_mb": 16384,
+                    "gpu": 1,
+                    "shm": False
+                }
+            },
+            "http_url": "http://my_host:8889",
+            "ssh_connection": "ssh://my_host.ssh:22",
+        }]
+    })))
+def test_list_extended_output_with_http_url(jobs):
+    assert jobs.list() == [
+        JobDescription(client=jobs,
+                       id='job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f',
+                       status='failed',
+                       url="http://my_host:8889",
+                       ssh="ssh://my_host.ssh:22",
                        image="gcr.io/light-reality-205619/ubuntu:latest",
                        command="bash -c \" / bin / df--block - size M--output"
                                " = target, avail / dev / shm;false\"",
