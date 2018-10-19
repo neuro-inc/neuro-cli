@@ -3,7 +3,7 @@ from pathlib import Path, PosixPath
 import pytest
 
 from neuromation.cli import rc
-from neuromation.cli.rc import Config
+from neuromation.cli.rc import Config, ConfigFactory
 
 DEFAULTS = rc.Config(
     url='http://platform.dev.neuromation.io/api/v1',
@@ -25,14 +25,42 @@ def test_create(nmrc):
                           f'url: {DEFAULTS.url}\n'
 
 
-def test_factory(monkeypatch, nmrc):
-    def home():
-        return PosixPath(nmrc.dirpath())
-    monkeypatch.setattr(Path, 'home', home)
-    config: Config = Config(url='http://abc.def', auth='token1')
-    rc.ConfigFactory.save(config)
-    config2: Config = rc.ConfigFactory.load()
-    assert config == config2
+class TestFactoryMethods:
+
+    def test_factory(self, monkeypatch, nmrc):
+        def home():
+            return PosixPath(nmrc.dirpath())
+        monkeypatch.setattr(Path, 'home', home)
+        config: Config = Config(url='http://abc.def', auth='token1')
+        rc.ConfigFactory.update_config(url='http://abc.def', auth='token1')
+        config2: Config = rc.ConfigFactory.load()
+        assert config == config2
+
+    def test_factory_update_url(self, monkeypatch, nmrc):
+        def home():
+            return PosixPath(nmrc.dirpath())
+        monkeypatch.setattr(Path, 'home', home)
+        config: Config = Config(url='http://abc.def', auth='token1')
+        rc.ConfigFactory.update_api_url(url='http://abc.def')
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url == config2.url
+
+    def test_factory_update_token_invalid(self, monkeypatch, nmrc):
+        def home():
+            return PosixPath(nmrc.dirpath())
+        monkeypatch.setattr(Path, 'home', home)
+        with pytest.raises(ValueError):
+            rc.ConfigFactory.update_auth_key(token='not-a-token')
+
+    def test_factory_update_token_no_identity(self, monkeypatch, nmrc):
+        def home():
+            return PosixPath(nmrc.dirpath())
+        monkeypatch.setattr(Path, 'home', home)
+        no_identity = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" \
+                      ".eyJub3QtaWRlbnRpdHkiOiJub3QtaWRlbnRpdHkifQ" \
+                      ".ag9NbxxOvp2ufMCUXk2pU3MMf2zYftXHQdOZDJajlvE"
+        with pytest.raises(ValueError):
+            rc.ConfigFactory.update_auth_key(token=no_identity)
 
 
 def test_docker_url():
@@ -97,6 +125,24 @@ def test_load(nmrc):
 
     config = rc.load(nmrc)
     assert config == rc.Config(url='http://a.b/c')
+
+
+def test_merge_missing():
+    conf: Config = Config(url='a', auth='b')
+    merged = ConfigFactory.merge(conf, {})
+    assert merged == Config(url='a', auth='b')
+
+
+def test_merge_override_url():
+    conf: Config = Config(url='a', auth='b')
+    merged = ConfigFactory.merge(conf, {'url': 'a1'})
+    assert merged == Config(url='a1', auth='b')
+
+
+def test_merge_override_token():
+    conf: Config = Config(url='a', auth='b')
+    merged = ConfigFactory.merge(conf, {'auth': 'b1'})
+    assert merged == Config(url='a', auth='b1')
 
 
 def test_load_missing(nmrc):

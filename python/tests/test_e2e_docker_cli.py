@@ -20,6 +20,12 @@ RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"\
 
 UBUNTU_IMAGE_NAME = 'ubuntu:latest'
 
+CUSTOM_TOKEN_FOR_TESTS = "eyJhbGciOiJIUzI1NiIsInR5cC" \
+                         "I6IkpXVCJ9.eyJpZGVudGl0eSI" \
+                         "6Im5ldXJvbWF0aW9uLWlzLWF3Z" \
+                         "XNvbWUhIn0.5T0RGa9aWv_XVFH" \
+                         "QKjlrJEZ_5S8kHkxmzIvj4tnBOis"
+
 format_list = '{type:<15}{size:<15,}{name:<}'.format
 
 
@@ -108,10 +114,10 @@ def test_docker_config_no_docker(run, monkeypatch):
         runMock.side_effect = subprocess.CalledProcessError(
             returncode=2,
             cmd='no command')
-        _, captured = run(['config', 'auth', 'test-token'])
+        _, captured = run(['config', 'auth', CUSTOM_TOKEN_FOR_TESTS])
         assert runMock.call_count == 1
 
-    assert 'test-token' == ConfigFactory.load().auth
+    assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
 def test_docker_push_no_docker(run, monkeypatch):
@@ -136,10 +142,10 @@ def test_docker_pull_no_docker(run, monkeypatch):
 
 def test_docker_config_with_docker(run, monkeypatch):
     with mock.patch('subprocess.run') as runMock:
-        _, captured = run(['config', 'auth', 'test-token'])
+        _, captured = run(['config', 'auth', CUSTOM_TOKEN_FOR_TESTS])
         assert runMock.call_count == 2
 
-    assert 'test-token' == ConfigFactory.load().auth
+    assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
 def test_docker_push_with_docker(run, monkeypatch):

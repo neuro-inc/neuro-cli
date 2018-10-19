@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import yaml
 from dataclasses import asdict, dataclass
-from jose import jwt
+from jose import JWTError, jwt
 from yarl import URL
 
 
@@ -33,9 +33,34 @@ class ConfigFactory:
         return load(nmrc_config_path)
 
     @classmethod
-    def save(cls, config: Config):
+    def update_auth_key(cls, token: str) -> Config:
+        try:
+            jwt_header = jwt.get_unverified_claims(token)
+            if 'identity' not in jwt_header:
+                raise ValueError("JWT Claims structure is not correct.")
+        except JWTError as e:
+            raise ValueError(f"Passed string does not "
+                             f"contain valid JWT structure.") from e
+
+        return cls.update_config(auth=token)
+
+    @classmethod
+    def update_api_url(cls, url: str) -> Config:
+        return cls.update_config(url=url)
+
+    @classmethod
+    def update_config(cls, **updated_fields):
         nmrc_config_path = Path.home().joinpath('.nmrc')
+        config = load(nmrc_config_path)
+        config = cls.merge(config, updated_fields)
         return save(nmrc_config_path, config)
+
+    @classmethod
+    def merge(cls, config: Config, kwargs: Dict):
+        default = asdict(config)
+        for kv in kwargs.items():
+            default[kv[0]] = kv[1]
+        return Config(**default)
 
 
 def save(path, config: Config) -> Config:

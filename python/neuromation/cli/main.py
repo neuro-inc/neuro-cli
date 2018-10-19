@@ -143,11 +143,7 @@ Commands:
 
             Updates API URL
             """
-            config = rc.ConfigFactory.load()
-            config = rc.Config(url=url,
-                               auth=config.auth,
-                               github_rsa_path=config.github_rsa_path)
-            rc.ConfigFactory.save(config)
+            config = rc.ConfigFactory.update_api_url(url)
             update_docker_config(config)
 
         @command
@@ -197,12 +193,7 @@ Commands:
             # Do not overwrite token in case new one does not work
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
-
-            config = rc.ConfigFactory.load()
-            config = rc.Config(url=config.url,
-                               auth=token,
-                               github_rsa_path=config.github_rsa_path)
-            rc.ConfigFactory.save(config)
+            config = rc.ConfigFactory.update_auth_key(token=token)
             update_docker_config(config)
 
         return locals()
