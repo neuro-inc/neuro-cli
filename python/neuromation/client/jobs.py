@@ -52,6 +52,7 @@ class JobDescription:
     image: Optional[str] = None
     command: Optional[str] = None
     url: str = ''
+    ssh: str = ''
     history: JobStatusHistory = None
     resources: Resources = None
 
@@ -242,7 +243,9 @@ class Job(ApiClient):
             image=job_description.image,
             command=job_description.command,
             history=job_history,
-            resources=job_description.resources
+            resources=job_description.resources,
+            url=job_description.url,
+            ssh=job_description.ssh,
         )
 
     def _dict_to_description(self, res):
@@ -268,11 +271,16 @@ class Job(ApiClient):
                     gpu=gpu,
                     shm=shm,
                 )
+        http_url = res.get('http_url', '')
+        ssh_conn = res.get('ssh_connection', '')
         return JobDescription(
             client=self,
             id=res['id'],
             status=res['status'],
             image=job_container_image,
             command=job_command,
-            resources=job_resources
+            resources=job_resources,
+
+            url=http_url,
+            ssh=ssh_conn,
         )

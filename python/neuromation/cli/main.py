@@ -413,7 +413,12 @@ Commands:
                      f'Status: {res.status}\n' \
                      f'Image: {res.image}\n' \
                      f'Command: {res.command}\n' \
-                     f'Resources: {res.resources}\n' \
+                     f'Resources: {res.resources}\n'
+            if res.url:
+                result = f"{result}" \
+                         f'Http URL: {res.url}\n'
+
+            result = f"{result}" \
                      f'Created: {res.history.created_at}'
             if res.status in [JobStatus.RUNNING, JobStatus.FAILED,
                               JobStatus.SUCCEEDED]:
