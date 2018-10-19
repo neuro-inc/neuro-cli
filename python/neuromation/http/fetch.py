@@ -71,7 +71,8 @@ class PlainRequest(Request):
     pass
 
 
-async def session(token: Optional[str] = None):
+async def session(token: Optional[str] = None,
+                  timeout: Optional[aiohttp.ClientTimeout] = None):
     async def trace(session, trace_config_ctx, params):  # pragma: no cover
         log.debug(f'{params}')
 
@@ -86,10 +87,14 @@ async def session(token: Optional[str] = None):
     _default_auth_headers = {'Authorization': f'Bearer {token}'} if token \
         else {}
 
-    _session = aiohttp.ClientSession(trace_configs=[trace_config],
-                                     headers=_default_auth_headers,
-                                     )
+    client_session_settings = {
+        'trace_configs': [trace_config],
+        'headers': _default_auth_headers,
+    }
+    if timeout:
+        client_session_settings['timeout'] = timeout
 
+    _session = aiohttp.ClientSession(**client_session_settings)
     return _session
 
 

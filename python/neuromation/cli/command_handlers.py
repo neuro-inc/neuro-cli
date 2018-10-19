@@ -8,7 +8,8 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
-from neuromation.client import FileStatus, Image, ResourceNotFound
+from neuromation.client import (FileStatus, IllegalArgumentError, Image,
+                                ResourceNotFound)
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
 log = logging.getLogger(__name__)
@@ -261,7 +262,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         """
         try:
             self._ls(str(path), storage)
-        except ResourceNotFound as e:
+        except (IllegalArgumentError, ResourceNotFound):
             return False
         return True
 
