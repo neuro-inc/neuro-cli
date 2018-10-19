@@ -21,6 +21,7 @@ def test_create(nmrc):
     assert conf == DEFAULTS
     assert nmrc.check()
     assert nmrc.read() == f'auth: \'\'\n' \
+                          f'github_rsa_path: \'\'\n' \
                           f'url: {DEFAULTS.url}\n'
 
 

@@ -113,6 +113,8 @@ Commands:
         Settings:
             url             Updates API URL
             auth            Updates API Token
+            id_rsa          Updates path to Github RSA token,
+                            in use for SSH/Remote debug
             show            Print current settings
         """
 
@@ -141,7 +143,32 @@ Commands:
             Updates API URL
             """
             config = rc.ConfigFactory.load()
-            config = rc.Config(url=url, auth=config.auth)
+            config = rc.Config(url=url,
+                               auth=config.auth,
+                               github_rsa_path=config.github_rsa_path)
+            rc.ConfigFactory.save(config)
+            update_docker_config(config)
+
+        @command
+        def id_rsa(file):
+            """
+            Usage:
+                neuro config id_rsa FILE
+
+            Updates path to id_rsa file with private key.
+            File is being used for accessing remote shell, remote debug.
+
+            Note: this is temporal and going to be
+            replaced in future by JWT token.
+            """
+            if not os.path.exists(file) or not os.path.isfile(file):
+                print(f"File does not exist id_rsa={file}.")
+                return
+
+            config = rc.ConfigFactory.load()
+            config = rc.Config(url=config.url,
+                               auth=config.auth,
+                               github_rsa_path=file)
             rc.ConfigFactory.save(config)
             update_docker_config(config)
 
@@ -171,7 +198,9 @@ Commands:
             # protection against brute-force
 
             config = rc.ConfigFactory.load()
-            config = rc.Config(url=config.url, auth=token)
+            config = rc.Config(url=config.url,
+                               auth=token,
+                               github_rsa_path=config.github_rsa_path)
             rc.ConfigFactory.save(config)
             update_docker_config(config)
 

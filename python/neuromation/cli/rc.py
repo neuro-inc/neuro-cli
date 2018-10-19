@@ -11,6 +11,7 @@ from yarl import URL
 class Config:
     url: str = 'http://platform.dev.neuromation.io/api/v1'
     auth: str = ''
+    github_rsa_path: str = ''
 
     def docker_registry_url(self) -> str:
         platform_url = URL(self.url)
