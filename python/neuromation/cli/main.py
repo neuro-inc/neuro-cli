@@ -18,6 +18,7 @@ from neuromation.cli.command_handlers import (CopyOperation,
 from neuromation.cli.rc import Config
 from neuromation.client.client import TimeoutSettings
 from neuromation.client.jobs import ResourceSharing
+from neuromation.client.client import TimeoutSettings
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -284,6 +285,8 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
+            timeout = TimeoutSettings(None, None, None, 30)
+            storage = partial(Storage, url, token, timeout)
             src = urlparse(source, scheme='file')
             dst = urlparse(destination, scheme='file')
 
