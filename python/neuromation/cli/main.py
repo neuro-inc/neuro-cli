@@ -18,7 +18,6 @@ from neuromation.cli.command_handlers import (CopyOperation,
 from neuromation.cli.rc import Config
 from neuromation.client.client import TimeoutSettings
 from neuromation.client.jobs import ResourceSharing
-from neuromation.client.client import TimeoutSettings
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
