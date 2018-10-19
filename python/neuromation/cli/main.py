@@ -13,8 +13,10 @@ from neuromation.cli.command_handlers import (CopyOperation,
                                               ModelHandlerOperations,
                                               PlatformListDirOperation,
                                               PlatformMakeDirOperation,
-                                              PlatformRemoveOperation)
+                                              PlatformRemoveOperation,
+                                              PlatformSharingOperations)
 from neuromation.cli.rc import Config
+from neuromation.client.jobs import ResourceSharing
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -511,6 +513,43 @@ Commands:
                               'Install it first.')
 
         return locals()
+
+    @command
+    def share(uri, whom, read, write, manage):
+        """
+            Usage:
+                neuro share URI WHOM (read|write|manage)
+
+            Shares resource specified by URI to a user specified by WHOM
+             allowing to read, write or manage it.
+
+            Examples:
+                neuro share storage:///sample_data/ alice manage
+                neuro share image:///resnet50 bob read
+                neuro share job:///my_job_id alice write
+        """
+
+        op_type = 'manage' if manage \
+            else 'write' if write \
+            else 'read' if read else None
+        if not op_type:
+            print("Resource not shared. "
+                  "Please specify one of read/write/manage.")
+            return None
+
+        config = rc.ConfigFactory.load()
+        platform_user_name = config.get_platform_user_name()
+
+        try:
+            resource_sharing = partial(ResourceSharing, url, token)
+            share_command = PlatformSharingOperations(platform_user_name)
+            share_command.share(uri, op_type, whom, resource_sharing)
+        except neuromation.client.IllegalArgumentError:
+            print("Resource not shared. "
+                  "Please verify resource-uri, user name.")
+            return None
+        print("Resource shared.")
+        return None
 
     return locals()
 
