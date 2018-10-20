@@ -441,7 +441,11 @@ class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
         # wait for a job to leave pending stage
         job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
         if job_status.status == 'running':
-            self.start_ssh()
+            jump_host_rsa = ConfigFactory.load().github_rsa_path
+            ssh_hostname = urlparse(job_status.ssh)
+            self.start_ssh(job_id,
+                           ssh_hostname.netloc, self.principal, jump_host_rsa,
+                           'root', ssh_key_path)
         else:
             print('Job is not running.')
             return None
