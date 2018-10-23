@@ -33,7 +33,7 @@ class ConfigFactory:
         return load(nmrc_config_path)
 
     @classmethod
-    def update_auth_key(cls, token: str) -> Config:
+    def update_auth_token(cls, token: str) -> Config:
         try:
             jwt_header = jwt.get_unverified_claims(token)
             if 'identity' not in jwt_header:
@@ -42,14 +42,14 @@ class ConfigFactory:
             raise ValueError(f"Passed string does not "
                              f"contain valid JWT structure.") from e
 
-        return cls.update_config(auth=token)
+        return cls._update_config(auth=token)
 
     @classmethod
     def update_api_url(cls, url: str) -> Config:
-        return cls.update_config(url=url)
+        return cls._update_config(url=url)
 
     @classmethod
-    def update_config(cls, **updated_fields):
+    def _update_config(cls, **updated_fields):
         nmrc_config_path = Path.home().joinpath('.nmrc')
         config = load(nmrc_config_path)
         config = cls.merge(config, updated_fields)

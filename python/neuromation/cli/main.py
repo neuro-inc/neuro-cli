@@ -193,7 +193,7 @@ Commands:
             # Do not overwrite token in case new one does not work
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
-            config = rc.ConfigFactory.update_auth_key(token=token)
+            config = rc.ConfigFactory.update_auth_token(token=token)
             update_docker_config(config)
 
         return locals()

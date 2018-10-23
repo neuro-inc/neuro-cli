@@ -32,7 +32,7 @@ class TestFactoryMethods:
             return PosixPath(nmrc.dirpath())
         monkeypatch.setattr(Path, 'home', home)
         config: Config = Config(url='http://abc.def', auth='token1')
-        rc.ConfigFactory.update_config(url='http://abc.def', auth='token1')
+        rc.ConfigFactory._update_config(url='http://abc.def', auth='token1')
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
@@ -50,7 +50,7 @@ class TestFactoryMethods:
             return PosixPath(nmrc.dirpath())
         monkeypatch.setattr(Path, 'home', home)
         with pytest.raises(ValueError):
-            rc.ConfigFactory.update_auth_key(token='not-a-token')
+            rc.ConfigFactory.update_auth_token(token='not-a-token')
 
     def test_factory_update_token_no_identity(self, monkeypatch, nmrc):
         def home():
@@ -60,7 +60,7 @@ class TestFactoryMethods:
                       ".eyJub3QtaWRlbnRpdHkiOiJub3QtaWRlbnRpdHkifQ" \
                       ".ag9NbxxOvp2ufMCUXk2pU3MMf2zYftXHQdOZDJajlvE"
         with pytest.raises(ValueError):
-            rc.ConfigFactory.update_auth_key(token=no_identity)
+            rc.ConfigFactory.update_auth_token(token=no_identity)
 
 
 def test_docker_url():
