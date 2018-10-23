@@ -45,6 +45,17 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url == config2.url
 
+    def test_factory_update_id_rsa(self, monkeypatch, nmrc):
+        def home():
+            return PosixPath(nmrc.dirpath())
+        monkeypatch.setattr(Path, 'home', home)
+        config: Config = Config(url=DEFAULTS.url,
+                                auth=DEFAULTS.auth,
+                                github_rsa_path='~/.ssh/id_rsa')
+        rc.ConfigFactory.update_github_rsa_path('~/.ssh/id_rsa')
+        config2: Config = rc.ConfigFactory.load()
+        assert config == config2
+
     def test_factory_update_token_invalid(self, monkeypatch, nmrc):
         def home():
             return PosixPath(nmrc.dirpath())

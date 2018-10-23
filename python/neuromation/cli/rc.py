@@ -49,6 +49,10 @@ class ConfigFactory:
         return cls._update_config(url=url)
 
     @classmethod
+    def update_github_rsa_path(cls, github_rsa_path: str) -> Config:
+        return cls._update_config(github_rsa_path=github_rsa_path)
+
+    @classmethod
     def _update_config(cls, **updated_fields):
         nmrc_config_path = Path.home().joinpath('.nmrc')
         config = load(nmrc_config_path)

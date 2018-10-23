@@ -162,12 +162,7 @@ Commands:
                 print(f"File does not exist id_rsa={file}.")
                 return
 
-            config = rc.ConfigFactory.load()
-            config = rc.Config(url=config.url,
-                               auth=config.auth,
-                               github_rsa_path=file)
-            rc.ConfigFactory.save(config)
-            update_docker_config(config)
+            rc.ConfigFactory.update_github_rsa_path(file)
 
         @command
         def show():
