@@ -1,6 +1,7 @@
-class OutputFormatter:
+from neuromation.client.jobs import JobItem
 
-    from neuromation.client.jobs import JobItem
+
+class OutputFormatter:
 
     @classmethod
     def format_job(cls, job: JobItem, quiet: bool=True):
