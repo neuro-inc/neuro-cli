@@ -1,6 +1,7 @@
 import abc
 import logging
 import os
+import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
@@ -373,13 +374,19 @@ class JobHandlerOperations:
     def start_ssh(self, job_id: str,
                   jump_host: str, jump_user: str, jump_key: str,
                   container_user: str, container_key: str):
-        ConfigFactory.load()
         nc_command = f"nc {job_id}.default 31022"
         proxy_command = f'ProxyCommand=ssh -i {jump_key} ' \
                         f'{jump_user}@{jump_host} {nc_command}'
-        os.subprocess.run(['ssh', '-o', proxy_command,
-                           '-i', container_key,
-                           f'{container_user}@{job_id}.default'])
+        try:
+            subprocess.run(args=['ssh', '-o', proxy_command,
+                                 '-i', container_key,
+                                 f'{container_user}@{job_id}.default'],
+                           check=True)
+        except subprocess.CalledProcessError as e:
+            # TODO (R Zubairov) check what ssh returns
+            # on disconnect due to network issues.
+            pass
+        return None
 
 
 class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
@@ -430,22 +437,32 @@ class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
     def develop(self, image, dataset, results,
                 gpu, cpu, memory, extshm,
                 model, jobs,
-                http, ssh, ssh_key_path):
+                http, ssh,
+                jump_host_rsa,
+                container_user, container_key_path):
         # Temporal solution - pending custom Jump Server with JWT support
-        if not ssh_key_path:
-            raise ValueError('Configure id_rsa first.')
+        if not container_user:
+            raise ValueError('Specify container user name')
+        if not container_key_path:
+            raise ValueError('Specify container RSA key path.')
+        if not jump_host_rsa:
+            raise ValueError('Configure Github RSA key path.'
+                             'See for more info `neuro config`.')
+        if not ssh:
+            raise ValueError('Please enable SSH / specify ssh port.')
 
         # Start the job, we expect it to have SSH server on board
-        job_id = self.train(image, dataset, results, gpu, cpu, memory, extshm,
-                            None, model, http, ssh)
+        job = self.train(image, dataset, results, gpu, cpu, memory, extshm,
+                         None, model, http, ssh)
+        job_id = job.id
         # wait for a job to leave pending stage
         job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
         if job_status.status == 'running':
-            jump_host_rsa = ConfigFactory.load().github_rsa_path
             ssh_hostname = urlparse(job_status.ssh)
-            self.start_ssh(job_id,
-                           ssh_hostname.netloc, self.principal, jump_host_rsa,
-                           'root', ssh_key_path)
-        else:
-            print('Job is not running.')
+            self.start_ssh(job_id, ssh_hostname.hostname,
+                           self.principal, jump_host_rsa,
+                           container_user, container_key_path)
             return None
+        else:
+            raise ValueError(f'Job is not running. '
+                             f'Status={job_status.status}')
