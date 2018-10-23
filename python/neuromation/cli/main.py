@@ -15,6 +15,7 @@ from neuromation.cli.command_handlers import (CopyOperation,
                                               PlatformMakeDirOperation,
                                               PlatformRemoveOperation,
                                               PlatformSharingOperations)
+from neuromation.cli.formatter import OutputFormatter
 from neuromation.cli.rc import Config
 from neuromation.client.client import TimeoutSettings
 from neuromation.client.jobs import ResourceSharing
@@ -341,7 +342,8 @@ Commands:
         @command
         def train(image, dataset, results,
                   gpu, cpu, memory, extshm,
-                  http, ssh, cmd):
+                  http, ssh, cmd,
+                  quiet):
             """
             Usage:
                 neuro model train [options] IMAGE DATASET RESULTS [CMD...]
@@ -358,6 +360,7 @@ Commands:
                 -x, --extshm          Request extended '/dev/shm' space
                 --http NUMBER         Enable HTTP port forwarding to container
                 --ssh  NUMBER         Enable SSH port forwarding to container
+                -q, --quiet           Run command in quiet mode
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -367,12 +370,7 @@ Commands:
                                         gpu, cpu, memory, extshm,
                                         cmd, model, http, ssh)
 
-            # Format job info properly
-            return f'Job ID: {job.id} Status: {job.status}\n' + \
-                   f'Shortcuts:\n' + \
-                   f'  neuro job status {job.id}  # check job status\n' + \
-                   f'  neuro job monitor {job.id} # monitor job stdout\n' + \
-                   f'  neuro job kill {job.id}    # kill job'
+            return OutputFormatter.format_job(job, quiet)
 
         @command
         def test():
