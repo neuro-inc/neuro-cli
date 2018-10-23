@@ -336,6 +336,44 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
         return final_path
 
 
+class JobHandlerOperations():
+
+    def wait_job_transfer_from(self,
+                               id: str,
+                               from_state: str,
+                               jobs: Callable,
+                               sleep_interval_s: int = 1):
+        still_state = True
+        job_status = None
+        while still_state:
+            job_status = self.status(id, jobs)
+            still_state = job_status.status == from_state
+            if still_state:
+                sleep(sleep_interval_s)
+        return job_status
+
+    def status(self, id: str, jobs: Callable) -> JobDescription:
+        with jobs() as j:
+            return j.status(id)
+
+    def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
+        def short_format(item) -> str:
+            image = item.image if item.image else ''
+            command = item.command if item.command else ''
+            return f'{item.id}' \
+                   f'    {item.status:<10}' \
+                   f'    {image:<25}' \
+                   f'    {command}'
+
+        with jobs() as j:
+            return '\n'.join([
+                short_format(item)
+                for item in
+                j.list()
+                if not status or item.status == status
+            ])
+
+
 class ModelHandlerOperations(PlatformStorageOperation):
     def train(self, image, dataset, results,
               gpu, cpu, memory, extshm,
@@ -386,41 +424,3 @@ class ModelHandlerOperations(PlatformStorageOperation):
                 results=f'storage:/{resultset_platform_path}')
 
         return job
-
-
-class JobHandlerOperations():
-
-    def wait_job_transfer_from(self,
-                               id: str,
-                               from_state: str,
-                               jobs: Callable,
-                               sleep_interval_s: int = 1):
-        still_state = True
-        job_status = None
-        while still_state:
-            job_status = self.status(id, jobs)
-            still_state = job_status.status == from_state
-            if still_state:
-                sleep(sleep_interval_s)
-        return job_status
-
-    def status(self, id: str, jobs: Callable) -> JobDescription:
-        with jobs() as j:
-            return j.status(id)
-
-    def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
-        def short_format(item) -> str:
-            image = item.image if item.image else ''
-            command = item.command if item.command else ''
-            return f'{item.id}' \
-                   f'    {item.status:<10}' \
-                   f'    {image:<25}' \
-                   f'    {command}'
-
-        with jobs() as j:
-            return '\n'.join([
-                short_format(item)
-                for item in
-                j.list()
-                if not status or item.status == status
-            ])
