@@ -109,7 +109,7 @@ class PlatformRemoveOperation(PlatformStorageOperation):
         # or user volume root, however force operation here should
         # allow user to delete everything
         if final_path == root_data_path \
-            or final_path.parent == root_data_path:
+                or final_path.parent == root_data_path:
             raise ValueError('Invalid path value.')
 
         with storage() as s:
