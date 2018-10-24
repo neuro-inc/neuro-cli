@@ -2,7 +2,7 @@ import abc
 import logging
 import os
 from os.path import dirname
-from pathlib import Path, PosixPath, PurePath
+from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
 from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
@@ -48,9 +48,9 @@ class PlatformStorageOperation:
                                              path: ParseResult) -> PosixPath:
         target_path: PosixPath = self._render_platform_path(path.path)
         target_principal = self._get_principal(path)
-        posix_path = PosixPath(PLATFORM_DELIMITER, target_principal,
-                               target_path)
-        return posix_path.resolve()
+        posix_path = PurePosixPath(PLATFORM_DELIMITER, target_principal,
+                                   target_path)
+        return posix_path
 
     def _get_parent(self, path: PosixPath) -> PosixPath:
         return path.parent
