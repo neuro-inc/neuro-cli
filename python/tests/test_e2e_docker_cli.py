@@ -15,37 +15,32 @@ BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"\
-    "auth: {token}"
+RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
 
-UBUNTU_IMAGE_NAME = 'ubuntu:latest'
+UBUNTU_IMAGE_NAME = "ubuntu:latest"
 
-CUSTOM_TOKEN_FOR_TESTS = "eyJhbGciOiJIUzI1NiIsInR5cC" \
-                         "I6IkpXVCJ9.eyJpZGVudGl0eSI" \
-                         "6Im5ldXJvbWF0aW9uLWlzLWF3Z" \
-                         "XNvbWUhIn0.5T0RGa9aWv_XVFH" \
-                         "QKjlrJEZ_5S8kHkxmzIvj4tnBOis"
+CUSTOM_TOKEN_FOR_TESTS = "eyJhbGciOiJIUzI1NiIsInR5cC" "I6IkpXVCJ9.eyJpZGVudGl0eSI" "6Im5ldXJvbWF0aW9uLWlzLWF3Z" "XNvbWUhIn0.5T0RGa9aWv_XVFH" "QKjlrJEZ_5S8kHkxmzIvj4tnBOis"
 
-format_list = '{type:<15}{size:<15,}{name:<}'.format
+format_list = "{type:<15}{size:<15,}{name:<}".format
 
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
-        exec_sha_name = 'sha1sum' if platform.platform() == 'linux' \
-            else 'shasum'
+        exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"
 
         process = await asyncio.create_subprocess_shell(
-                    f"""(dd if=/dev/urandom \
+            f"""(dd if=/dev/urandom \
                     bs={BLOCK_SIZE_MB * 1024 * 1024} \
                     count={ceil(size_mb / BLOCK_SIZE_MB)} \
                     2>/dev/null) | \
                     tee {name} | \
                     {exec_sha_name}""",
-                    stdout=asyncio.subprocess.PIPE)
+            stdout=asyncio.subprocess.PIPE,
+        )
 
         stdout, _ = await asyncio.wait_for(
-            process.communicate(),
-            timeout=GENERATION_TIMEOUT_SEC)
+            process.communicate(), timeout=GENERATION_TIMEOUT_SEC
+        )
 
         # sha1sum appends file name to the output
         return name, stdout.decode()[:40]
@@ -53,32 +48,27 @@ async def generate_test_data(root, count, size_mb):
     return await asyncio.gather(
         *[
             generate_file(join(root, name))
-            for name in (
-                str(uuid()) for _ in range(count))
-        ])
+            for name in (str(uuid()) for _ in range(count))
+        ]
+    )
 
 
 @pytest.fixture(scope="session")
 def data(tmpdir_factory):
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        generate_test_data(
-            tmpdir_factory.mktemp("data"),
-            FILE_COUNT,
-            FILE_SIZE_MB))
+        generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
+    )
 
 
 @pytest.fixture(scope="session")
 def nested_data(tmpdir_factory):
     loop = asyncio.get_event_loop()
-    root_tmp_dir = tmpdir_factory.mktemp('data')
-    tmp_dir = root_tmp_dir.mkdir('nested').mkdir(
-        'directory').mkdir('for').mkdir('test')
+    root_tmp_dir = tmpdir_factory.mktemp("data")
+    tmp_dir = root_tmp_dir.mkdir("nested").mkdir("directory").mkdir("for").mkdir("test")
     data = loop.run_until_complete(
-        generate_test_data(
-            tmp_dir,
-            FILE_COUNT,
-            FILE_SIZE_MB))
+        generate_test_data(tmp_dir, FILE_COUNT, FILE_SIZE_MB)
+    )
     return data[0][0], data[0][1], root_tmp_dir.strpath
 
 
@@ -87,20 +77,17 @@ def run(monkeypatch, capsys, tmpdir):
     import sys
     from pathlib import Path
 
-    e2e_test_token = os.environ['CLIENT_TEST_E2E_USER_NAME']
+    e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
     rc_text = RC_TEXT.format(token=e2e_test_token)
-    tmpdir.join('.nmrc').open('w').write(rc_text)
+    tmpdir.join(".nmrc").open("w").write(rc_text)
 
     def _home():
         return Path(tmpdir)
 
     def _run(arguments):
-        monkeypatch.setattr(
-            Path, 'home', _home)
-        monkeypatch.setattr(
-            sys, 'argv',
-            ['nmc'] + arguments)
+        monkeypatch.setattr(Path, "home", _home)
+        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
 
         from neuromation.cli import main
 
@@ -110,51 +97,51 @@ def run(monkeypatch, capsys, tmpdir):
 
 
 def test_docker_config_no_docker(run, monkeypatch):
-    with mock.patch('subprocess.run') as runMock:
+    with mock.patch("subprocess.run") as runMock:
         runMock.side_effect = subprocess.CalledProcessError(
-            returncode=2,
-            cmd='no command')
-        _, captured = run(['config', 'auth', CUSTOM_TOKEN_FOR_TESTS])
+            returncode=2, cmd="no command"
+        )
+        _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
         assert runMock.call_count == 1
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
 def test_docker_push_no_docker(run, monkeypatch):
-    with mock.patch('subprocess.run') as runMock:
+    with mock.patch("subprocess.run") as runMock:
         runMock.side_effect = subprocess.CalledProcessError(
-            returncode=2,
-            cmd='no command')
+            returncode=2, cmd="no command"
+        )
         with pytest.raises(OSError):
-            _, captured = run(['image', 'push', 'abrakadabra'])
+            _, captured = run(["image", "push", "abrakadabra"])
         assert runMock.call_count == 1
 
 
 def test_docker_pull_no_docker(run, monkeypatch):
-    with mock.patch('subprocess.run') as runMock:
+    with mock.patch("subprocess.run") as runMock:
         runMock.side_effect = subprocess.CalledProcessError(
-            returncode=2,
-            cmd='no command')
+            returncode=2, cmd="no command"
+        )
         with pytest.raises(OSError):
-            _, captured = run(['image', 'pull', 'abrakadabra'])
+            _, captured = run(["image", "pull", "abrakadabra"])
         assert runMock.call_count == 1
 
 
 def test_docker_config_with_docker(run, monkeypatch):
-    with mock.patch('subprocess.run') as runMock:
-        _, captured = run(['config', 'auth', CUSTOM_TOKEN_FOR_TESTS])
+    with mock.patch("subprocess.run") as runMock:
+        _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
         assert runMock.call_count == 2
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
 def test_docker_push_with_docker(run, monkeypatch):
-    with mock.patch('subprocess.run') as runMock:
-        _, captured = run(['image', 'push', 'abrakadabra'])
+    with mock.patch("subprocess.run") as runMock:
+        _, captured = run(["image", "push", "abrakadabra"])
         assert runMock.call_count == 3
 
 
 def test_docker_pull_with_docker(run, monkeypatch):
-    with mock.patch('subprocess.run') as runMock:
-        _, captured = run(['image', 'pull', 'abrakadabra'])
+    with mock.patch("subprocess.run") as runMock:
+        _, captured = run(["image", "pull", "abrakadabra"])
         assert runMock.call_count == 2

@@ -9,16 +9,16 @@ class ConsoleWarningFormatter(logging.Formatter):
     """
 
     def get_level_message(self, record):
-        separator = ': '
+        separator = ": "
         if record.levelno == logging.WARNING:
             return colors.yellow(record.levelname) + separator
         if record.levelno == logging.ERROR:
             return colors.red(record.levelname) + separator
 
-        return ''
+        return ""
 
     def format(self, record):
         if isinstance(record.msg, bytes):
-            record.msg = record.msg.decode('utf-8')
+            record.msg = record.msg.decode("utf-8")
         message = super(ConsoleWarningFormatter, self).format(record)
-        return '{0}{1}'.format(self.get_level_message(record), message)
+        return "{0}{1}".format(self.get_level_message(record), message)

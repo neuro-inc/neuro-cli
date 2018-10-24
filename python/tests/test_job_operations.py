@@ -11,22 +11,18 @@ from neuromation.client.jobs import Job, JobDescription
 def jobs_mock(loop):
     def jobs_() -> List[JobDescription]:
         jobs = [
-            JobDescription(status='running',
-                           id='id0',
-                           client=None,
-                           image='ubuntu',
-                           command='shell')
+            JobDescription(
+                status="running", id="id0", client=None, image="ubuntu", command="shell"
+            )
         ]
         return jobs
 
     def jobs_status(id) -> JobDescription:
-        return JobDescription(status='running',
-                              id=id,
-                              client=None,
-                              image='ubuntu',
-                              command='shell')
+        return JobDescription(
+            status="running", id=id, client=None, image="ubuntu", command="shell"
+        )
 
-    mock = MagicMock(Job(url='no-url', token='notoken', loop=loop))
+    mock = MagicMock(Job(url="no-url", token="notoken", loop=loop))
     mock.__enter__ = Mock(return_value=mock)
     mock.__exit__ = Mock(return_value=False)
     mock.list = jobs_
@@ -34,6 +30,7 @@ def jobs_mock(loop):
 
     def mock_():
         return mock
+
     return mock_
 
 
@@ -43,19 +40,17 @@ def test_job_filter_all(jobs_mock):
 
 
 def test_job_filter_running(jobs_mock):
-    jobs = JobHandlerOperations().list_jobs('running', jobs_mock)
+    jobs = JobHandlerOperations().list_jobs("running", jobs_mock)
     assert jobs
 
 
 def test_job_filter_failed(jobs_mock):
-    jobs = JobHandlerOperations().list_jobs('failed', jobs_mock)
+    jobs = JobHandlerOperations().list_jobs("failed", jobs_mock)
     assert not jobs
 
 
 def test_job_status_query(jobs_mock):
-    jobs = JobHandlerOperations().status('id0', jobs_mock)
-    assert jobs == JobDescription(status='running',
-                                  id='id0',
-                                  client=None,
-                                  image='ubuntu',
-                                  command='shell')
+    jobs = JobHandlerOperations().status("id0", jobs_mock)
+    assert jobs == JobDescription(
+        status="running", id="id0", client=None, image="ubuntu", command="shell"
+    )

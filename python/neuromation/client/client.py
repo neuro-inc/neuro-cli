@@ -6,11 +6,14 @@ import aiohttp
 from dataclasses import dataclass
 
 from neuromation.http import fetch, session
-from neuromation.http.fetch import AccessDeniedError as FetchAccessDeniedError
-from neuromation.http.fetch import (BadRequestError, FetchError,
-                                    MethodNotAllowedError, NotFoundError,
-                                    UnauthorizedError)
-
+from neuromation.http.fetch import (
+    AccessDeniedError as FetchAccessDeniedError,
+    BadRequestError,
+    FetchError,
+    MethodNotAllowedError,
+    NotFoundError,
+    UnauthorizedError,
+)
 from .requests import Request, build
 
 log = logging.getLogger(__name__)
@@ -53,14 +56,14 @@ DEFAULT_CLIENT_TIMEOUT_SETTINGS = TimeoutSettings(None, None, 30, 30)
 
 
 class ApiClient:
-
-    def __init__(self,
-                 url: str,
-                 token: str,
-                 timeout: Optional[TimeoutSettings] =
-                 DEFAULT_CLIENT_TIMEOUT_SETTINGS,
-                 *,
-                 loop=None):
+    def __init__(
+        self,
+        url: str,
+        token: str,
+        timeout: Optional[TimeoutSettings] = DEFAULT_CLIENT_TIMEOUT_SETTINGS,
+        *,
+        loop=None
+    ):
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
         self._exception_map = {
@@ -68,7 +71,7 @@ class ApiClient:
             UnauthorizedError: AuthenticationError,
             BadRequestError: IllegalArgumentError,
             NotFoundError: ResourceNotFound,
-            MethodNotAllowedError: ClientError
+            MethodNotAllowedError: ClientError,
         }
         client_timeout = None
         if timeout:
@@ -101,10 +104,7 @@ class ApiClient:
     async def _fetch(self, request: Request):
 
         try:
-            return await fetch(
-                build(request),
-                session=self._session,
-                url=self._url)
+            return await fetch(build(request), session=self._session, url=self._url)
         except FetchError as error:
             error_class = type(error)
             mapped_class = self._exception_map.get(error_class, error_class)

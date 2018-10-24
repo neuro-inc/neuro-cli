@@ -8,16 +8,15 @@ def parse_memory(memory) -> int:
     returns value in bytes"""
 
     # Mega, Giga, Tera, etc
-    prefixes = 'MGTPEZY'
-    value_error = ValueError(f'Unable parse value: {memory}')
+    prefixes = "MGTPEZY"
+    value_error = ValueError(f"Unable parse value: {memory}")
 
     if not memory:
         raise value_error
 
-    pattern = \
-        r'^(?P<value>\d+)(?P<units>(kB|K)|((?P<prefix>[{prefixes}])(?P<unit>B?)))$'.format(  # NOQA
-            prefixes=prefixes
-        )
+    pattern = r"^(?P<value>\d+)(?P<units>(kB|K)|((?P<prefix>[{prefixes}])(?P<unit>B?)))$".format(  # NOQA
+        prefixes=prefixes
+    )
     regex = re.compile(pattern)
     match = regex.fullmatch(memory)
 
@@ -26,15 +25,15 @@ def parse_memory(memory) -> int:
 
     groups = match.groupdict()
 
-    value = int(groups['value'])
-    unit = groups['unit']
-    prefix = groups['prefix']
-    units = groups['units']
+    value = int(groups["value"])
+    unit = groups["unit"]
+    prefix = groups["prefix"]
+    units = groups["units"]
 
-    if units == 'kB':
+    if units == "kB":
         return value * 1000
 
-    if units == 'K':
+    if units == "K":
         return value * 1024
 
     # Our prefix string starts with Mega
