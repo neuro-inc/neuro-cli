@@ -5,8 +5,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from neuromation.cli.command_handlers import CopyOperation, \
-    NonRecursiveLocalToPlatform
+from neuromation.cli.command_handlers import CopyOperation, NonRecursiveLocalToPlatform
 from neuromation.client import FileStatus, IllegalArgumentError
 
 

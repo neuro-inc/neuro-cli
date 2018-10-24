@@ -1,12 +1,13 @@
 import asyncio
 import os
 import platform
-from _sha1 import sha1
 from math import ceil
 from os.path import join
 from uuid import uuid4 as uuid
 
 import pytest
+
+from _sha1 import sha1
 
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1

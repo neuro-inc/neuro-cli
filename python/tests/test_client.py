@@ -2,15 +2,15 @@ from unittest.mock import patch
 
 import aiohttp
 import pytest
+
+from neuromation import client
+from neuromation.client.jobs import NetworkPortForwarding
 from utils import (
     INFER_RESPONSE,
     TRAIN_RESPONSE,
     JsonResponse,
     mocked_async_context_manager,
 )
-
-from neuromation import client
-from neuromation.client.jobs import NetworkPortForwarding
 
 JOB_RESPONSE = {"status": "SUCCEEDED", "id": "iddqd"}
 

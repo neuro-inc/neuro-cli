@@ -5,6 +5,7 @@ from typing import List
 from dataclasses import dataclass
 
 from neuromation.http.fetch import FetchError
+
 from .client import ApiClient
 from .requests import (
     CreateRequest,

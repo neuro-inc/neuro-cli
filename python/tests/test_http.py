@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 import aiohttp
 import pytest
-from utils import JsonResponse, mocked_async_context_manager
 
 from neuromation.client.client import ApiClient, TimeoutSettings
 from neuromation.client.requests import build
 from neuromation.http import FetchError, JsonRequest, fetch, session
+from utils import JsonResponse, mocked_async_context_manager
 
 
 @patch(

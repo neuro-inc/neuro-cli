@@ -8,8 +8,7 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
-from neuromation.client import FileStatus, IllegalArgumentError, Image, \
-    ResourceNotFound
+from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
 log = logging.getLogger(__name__)

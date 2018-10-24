@@ -14,6 +14,7 @@ from neuromation.http.fetch import (
     NotFoundError,
     UnauthorizedError,
 )
+
 from .requests import Request, build
 
 log = logging.getLogger(__name__)
