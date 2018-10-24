@@ -68,7 +68,10 @@ class TestFactoryMethods:
             return PosixPath(nmrc.dirpath())
 
         monkeypatch.setattr(Path, "home", home)
-        no_identity = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" ".eyJub3QtaWRlbnRpdHkiOiJub3QtaWRlbnRpdHkifQ" ".ag9NbxxOvp2ufMCUXk2pU3MMf2zYftXHQdOZDJajlvE"
+        jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
+        jwt_claims = """eyJub3QtaWRlbnRpdHkiOiJub3QtaWRlbnRpdHkifQ"""
+        jwt_sig = """ag9NbxxOvp2ufMCUXk2pU3MMf2zYftXHQdOZDJajlvE"""
+        no_identity = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token=no_identity)
 

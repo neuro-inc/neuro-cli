@@ -39,7 +39,7 @@ class ConfigFactory:
                 raise ValueError("JWT Claims structure is not correct.")
         except JWTError as e:
             raise ValueError(
-                f"Passed string does not " f"contain valid JWT structure."
+                f"Passed string does not contain valid JWT structure."
             ) from e
 
         return cls._update_config(auth=token)

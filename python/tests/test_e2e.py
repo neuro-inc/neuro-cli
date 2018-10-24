@@ -126,7 +126,8 @@ def test_e2e_shm_run_without(run, tmpdir):
     run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # Start the df test job
-    command = 'bash -c "/bin/df --block-size M ' '--output=target,avail /dev/shm; false"'
+    bash_script = "/bin/df --block-size M ' '--output=target,avail /dev/shm; false"
+    command = f"bash -c {bash_script}"
     _, captured = run(
         [
             "model",
@@ -176,7 +177,8 @@ def test_e2e_shm_run_with(run, tmpdir):
     run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # Start the df test job
-    command = 'bash -c "/bin/df --block-size M ' '--output=target,avail /dev/shm; false"'
+    bash_script = "/bin/df --block-size M ' '--output=target,avail /dev/shm; false"
+    command = f"bash -c {bash_script}"
     _, captured = run(
         [
             "model",

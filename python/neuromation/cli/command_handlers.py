@@ -318,7 +318,8 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
         for root, subdirs, files in os.walk(src.path):
             if root != src.path:
                 suffix_path = os.path.relpath(root, src.path)
-                pref_path = f"{final_path}{PLATFORM_DELIMITER}" f"{suffix_path}{PLATFORM_DELIMITER}"
+                pref_path = f"{final_path}{PLATFORM_DELIMITER}"
+                pref_path = f"{pref_path}{suffix_path}{PLATFORM_DELIMITER}"
             else:
                 suffix_path = ""
                 pref_path = f"{final_path}{PLATFORM_DELIMITER}"
@@ -355,7 +356,7 @@ class JobHandlerOperations:
         def short_format(item) -> str:
             image = item.image if item.image else ""
             command = item.command if item.command else ""
-            return f"{item.id}" f"    {item.status:<10}" f"    {image:<25}" f"    {command}"
+            return f"{item.id}    {item.status:<10}    {image:<25}    {command}"
 
         with jobs() as j:
             return "\n".join(

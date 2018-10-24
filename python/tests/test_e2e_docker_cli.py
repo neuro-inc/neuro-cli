@@ -15,11 +15,16 @@ BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
+RC_TEXT = """url: http://platform.dev.neuromation.io/api/v1
+auth: {token}"""
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 
-CUSTOM_TOKEN_FOR_TESTS = "eyJhbGciOiJIUzI1NiIsInR5cC" "I6IkpXVCJ9.eyJpZGVudGl0eSI" "6Im5ldXJvbWF0aW9uLWlzLWF3Z" "XNvbWUhIn0.5T0RGa9aWv_XVFH" "QKjlrJEZ_5S8kHkxmzIvj4tnBOis"
+JWT_HDR = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+JWT_CLAIM = "eyJpZGVudGl0eSI6Im5ldXJvbWF0aW9uLWlzLWF3ZXNvbWUhIn0"
+JWT_SIG = "5T0RGa9aWv_XVFHQKjlrJEZ_5S8kHkxmzIvj4tnBOis"
+
+CUSTOM_TOKEN_FOR_TESTS = f"{JWT_HDR}.{JWT_CLAIM}.{JWT_SIG}"
 
 format_list = "{type:<15}{size:<15,}{name:<}".format
 

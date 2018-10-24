@@ -432,7 +432,12 @@ Commands:
             Display status of a job
             """
             res = JobHandlerOperations().status(id, jobs)
-            result = f"Job: {res.id}\n" f"Status: {res.status}\n" f"Image: {res.image}\n" f"Command: {res.command}\n" f"Resources: {res.resources}\n"
+            result = f"Job: {res.id}\n"
+            result += f"Status: {res.status}\n"
+            result += f"Image: {res.image}\n"
+            result += f"Command: {res.command}\n"
+            result += f"Resources: {res.resources}\n"
+
             if res.url:
                 result = f"{result}" f"Http URL: {res.url}\n"
 
@@ -442,7 +447,9 @@ Commands:
             if res.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
                 result += "\n" f"Finished: {res.history.finished_at}"
             if res.status == JobStatus.FAILED:
-                result += "\n" f"Reason: {res.history.reason}\n" "===Description===\n " f"{res.history.description}\n================="
+                result += "\n" f"Reason: {res.history.reason}\n"
+                result += "===Description===\n "
+                result += f"{res.history.description}\n================="
             return result
 
         @command
@@ -475,9 +482,9 @@ Commands:
 
         def _get_image_platform_full_name(image_name):
             config = rc.ConfigFactory.load()
-            docker_registry_url = config.docker_registry_url()
-            platform_user_name = config.get_platform_user_name()
-            target_image_name = f"{docker_registry_url}/" f"{platform_user_name}/{image_name}"
+            registry_url = config.docker_registry_url()
+            user_name = config.get_platform_user_name()
+            target_image_name = f"{registry_url}/{user_name}/{image_name}"
             return target_image_name
 
         @command
