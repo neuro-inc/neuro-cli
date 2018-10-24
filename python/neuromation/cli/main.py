@@ -369,8 +369,8 @@ Commands:
 
         @command
         def develop(image, dataset, results,
-                  gpu, cpu, memory, extshm,
-                  http, ssh, user, key):
+                    gpu, cpu, memory, extshm,
+                    http, ssh, user, key):
             """
             Usage:
                 neuro model develop [options] IMAGE DATASET RESULTS
@@ -386,7 +386,8 @@ Commands:
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
                 --http=NUMBER         Enable HTTP port forwarding to container
-                --ssh=NUMBER          Enable SSH port forwarding to container [default: 22]
+                --ssh=NUMBER          Enable SSH port forwarding to container
+                                                                 [default: 22]
                 --user=STRING         Container user name [default: root]
                 --key=STRING          Path to container private key.
             """
