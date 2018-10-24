@@ -1,5 +1,4 @@
 import abc
-import io
 import logging
 import os
 from os.path import dirname
@@ -289,7 +288,8 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             while data_chunk:
                 copied_file_size += len(data_chunk)
                 yield data_chunk
-                print(f"\r{(copied_file_size * 100) / total_file_size:.2f}%", end="")
+                print(f"\r{(copied_file_size * 100) / total_file_size:.2f}%",
+                      end="")
                 data_chunk = f.read(BUFFER_SIZE_B)
 
     def copy_file(self, src_path: str, dest_path: str,
