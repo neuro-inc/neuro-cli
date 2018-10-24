@@ -233,7 +233,7 @@ Commands:
                 for status in storage_objects))
 
         @command
-        def cp(source, destination, recursive):
+        def cp(source, destination, recursive, progress):
             """
             Usage:
                 neuro store cp [options] SOURCE DESTINATION
@@ -244,6 +244,7 @@ Commands:
 
             Options:
               -r, --recursive             Recursive copy
+              -p, --progress              Show progress
 
             Example:
 
@@ -265,7 +266,8 @@ Commands:
             operation = CopyOperation.create(platform_user_name,
                                              src.scheme,
                                              dst.scheme,
-                                             recursive)
+                                             recursive,
+                                             progress)
 
             if operation:
                 return operation.copy(src, dst, storage)

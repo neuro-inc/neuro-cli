@@ -14,7 +14,9 @@ from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
 log = logging.getLogger(__name__)
 
-BUFFER_SIZE_MB = 16
+BUFFER_SIZE_MB = 1
+
+BUFFER_SIZE_B = BUFFER_SIZE_MB * 1024 * 1024
 
 PLATFORM_DELIMITER = '/'
 
@@ -110,6 +112,10 @@ class PlatformRemoveOperation(PlatformStorageOperation):
 
 class CopyOperation(PlatformStorageOperation):
 
+    def __init__(self, principal: str, progress: bool = False):
+        super().__init__(principal)
+        self.progress = progress
+
     @abc.abstractmethod
     def _copy(self, src: ParseResult, dst: ParseResult,
               storage: Callable):  # pragma: no cover
@@ -126,13 +132,14 @@ class CopyOperation(PlatformStorageOperation):
 
     @classmethod
     def create(cls, principal: str, src_scheme: str, dst_scheme: str,
-               recursive: bool) -> 'CopyOperation':
+               recursive: bool, progress: bool = False) -> 'CopyOperation':
+        log.debug(f"p = {progress}")
         if src_scheme == 'file':
             if dst_scheme == 'storage':
                 if recursive:
-                    return RecursiveLocalToPlatform(principal)
+                    return RecursiveLocalToPlatform(principal, progress)
                 else:
-                    return NonRecursiveLocalToPlatform(principal)
+                    return NonRecursiveLocalToPlatform(principal, progress)
             else:
                 raise ValueError(
                     'storage:// and file:// schemes required')
@@ -266,44 +273,33 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             return False
         return True
 
+    async def _copy_data(self, src: str):  # pragma: no cover
+        with open(src, mode='rb') as f:
+            data_chunk = f.read(BUFFER_SIZE_B)
+            while data_chunk:
+                yield data_chunk
+                data_chunk = f.read(BUFFER_SIZE_B)
+
+    async def _copy_data_with_progress(self, src: str):  # pragma: no cover
+        file_stat = os.stat(src)
+        total_file_size = file_stat.st_size
+        copied_file_size = 0
+        with open(src, mode='rb') as f:
+            data_chunk = f.read(BUFFER_SIZE_B)
+            while data_chunk:
+                copied_file_size += len(data_chunk)
+                yield data_chunk
+                print(f"\r{(copied_file_size * 100) / total_file_size:.2f}%", end="")
+                data_chunk = f.read(BUFFER_SIZE_B)
+
     def copy_file(self, src_path: str, dest_path: str,
                   storage: Callable):  # pragma: no cover
-        total = 0
+        data = self._copy_data_with_progress(src_path) \
+            if self.progress \
+            else self._copy_data(src_path)
 
-        class ProxyReportReader(io.BufferedReader):
-            reporter: Callable
-
-            def setReporter(self, reporter: Callable):
-                self.reporter = reporter
-
-            def read(self, size: Optional[int] = ...):
-                self.report('Before read', size=size)
-                result = super().read(size)
-                self.report('After read', size=size, result=result)
-                return result
-
-            def report(self, *args, **kwargs):
-                if self.reporter:
-                    self.reporter(*args, **kwargs)
-
-        def reporter(event, *args, **kwargs):
-            nonlocal total, dest_path
-            if event == 'After read':
-                size = len(kwargs['result'])
-                if size:
-                    total += size
-                    print(f'\r{dest_path}: {total} bytes', end='\r')
-                else:
-                    print(f'\r{dest_path} transferred     ', end='\r')
-                    print()
-
-        # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
-        # to track progress and report
-        raw = io.FileIO(src_path, mode='r')
-        proxy = ProxyReportReader(raw)
-        proxy.setReporter(reporter)
         with storage() as s:
-            s.create(path=dest_path, data=proxy)
+            s.create(path=dest_path, data=data)
             return dest_path
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
@@ -359,6 +355,8 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 target_dest = f'{pref_path}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
+                if self.progress:
+                    print(f"\rFile {src_file} copied.")
             for subdir in subdirs:
                 target_dest = f'{pref_path}{subdir}'
                 PlatformMakeDirOperation(self.principal).mkdir(
