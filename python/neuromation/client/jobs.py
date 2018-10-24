@@ -259,8 +259,8 @@ class Job(ApiClient):
                     gpu=gpu,
                     shm=shm,
                 )
-        http_url = res.get("http_url", "")
-        ssh_conn = res.get("ssh_connection", "")
+        http_url = res.get('http_url', '')
+        ssh_conn = res.get('ssh_server', '')
         return JobDescription(
             client=self,
             id=res["id"],

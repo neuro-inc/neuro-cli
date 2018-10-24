@@ -374,13 +374,13 @@ class JobHandlerOperations:
     def start_ssh(self, job_id: str,
                   jump_host: str, jump_user: str, jump_key: str,
                   container_user: str, container_key: str):
-        nc_command = f"nc {job_id}.default 31022"
+        nc_command = f"nc {job_id} 22"
         proxy_command = f'ProxyCommand=ssh -i {jump_key} ' \
                         f'{jump_user}@{jump_host} {nc_command}'
         try:
             subprocess.run(args=['ssh', '-o', proxy_command,
                                  '-i', container_key,
-                                 f'{container_user}@{job_id}.default'],
+                                 f'{container_user}@{job_id}'],
                            check=True)
         except subprocess.CalledProcessError as e:
             # TODO (R Zubairov) check what ssh returns
@@ -396,16 +396,14 @@ class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
         except ValueError as e:
-            raise ValueError(
-                "Dataset path should be on platform. " "Specify scheme storage:"
-            )
+            raise ValueError(f'Dataset path should be on platform. '
+                             f'Current value {dataset}')
 
         try:
             resultset_platform_path = self.render_uri_path_with_principal(results)
         except ValueError as e:
-            raise ValueError(
-                "Results path should be on platform. " "Specify scheme storage:"
-            )
+            raise ValueError(f'Results path should be on platform. '
+                             f'Current value {results}')
 
         net = None
         ports: Dict[str, int] = {}
@@ -458,8 +456,10 @@ class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
         # wait for a job to leave pending stage
         job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
         if job_status.status == 'running':
-            ssh_hostname = urlparse(job_status.ssh)
-            self.start_ssh(job_id, ssh_hostname.hostname,
+            # Strip jump host cname from job-id
+            ssh_hostname = urlparse(job_status.ssh).hostname
+            ssh_hostname = '.'.join(ssh_hostname.split('.')[1:])
+            self.start_ssh(job_id, ssh_hostname,
                            self.principal, jump_host_rsa,
                            container_user, container_key_path)
             return None

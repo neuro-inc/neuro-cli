@@ -21,7 +21,7 @@ class TestSSHConnectionPaths:
                                   client=None,
                                   image='ubuntu',
                                   command='shell',
-                                  ssh='ssh://my-test-host:22')
+                                  ssh='ssh://my-test-host.cname.ssh.host:22')
 
         return jobs_
 
@@ -122,10 +122,8 @@ class TestSSHConnectionPaths:
 
             assert runMock.call_count == 1
             proxy_command = f'ProxyCommand=ssh -i /user/some/path.id.rsa ' \
-                            f'alice@my-test-host nc {my_test_job_id}' \
-                            f'.default 31022'
+                            f'alice@cname.ssh.host nc {my_test_job_id} 22'
             runMock.assert_any_call(args=['ssh', '-o', proxy_command,
                                           '-i', 'container-key-path',
-                                          f'container-user@{my_test_job_id}'
-                                          f'.default'],
+                                          f'container-user@{my_test_job_id}'],
                                     check=True)
