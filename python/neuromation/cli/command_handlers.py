@@ -27,7 +27,7 @@ class PlatformStorageOperation:
         self.principal = principal
 
     def _get_principal(self, path_url: ParseResult) -> str:
-        path_principal = path_url.netloc
+        path_principal = path_url.hostname
         if not path_principal:
             path_principal = self.principal
         if path_principal == '~':
@@ -48,12 +48,19 @@ class PlatformStorageOperation:
                                              path: ParseResult) -> PosixPath:
         target_path: PosixPath = self._render_platform_path(path.path)
         target_principal = self._get_principal(path)
-        return PosixPath(PLATFORM_DELIMITER, target_principal, target_path)
+        posix_path = PosixPath(PLATFORM_DELIMITER, target_principal,
+                               target_path)
+        return posix_path.resolve()
 
     def _get_parent(self, path: PosixPath) -> PosixPath:
         return path.parent
 
     def render_uri_path_with_principal(self, path: str):
+        # Special case that shall be handled here, when path is '//'
+        if path == 'storage://':
+            return PosixPath(PLATFORM_DELIMITER)
+
+        # Normal processing flow
         path_url = urlparse(path, scheme='file')
         self._is_storage_path_url(path_url)
         return self._render_platform_path_with_principal(path_url)
@@ -94,16 +101,17 @@ class PlatformRemoveOperation(PlatformStorageOperation):
     def remove(self, path_str: str, storage: Callable):
         path = urlparse(path_str, scheme='file')
         self._is_storage_path_url(path)
-        final_path = self._render_platform_path_with_principal(path)
+        final_path = self.render_uri_path_with_principal(path_str)
 
-        # TODO test how it will work on Windows Platform
-        # Lets protect user against typos in command line
-        # We can of course ask user whether he really wants
-        # to delete every file. Yet it is going to be nightmare
-        # in case of REST
-        target_path: PosixPath = self._render_platform_path(path.path)
-        if str(target_path) == '.':
+        root_data_path = PosixPath("/")
+
+        # Minor protection against deleting everything from root
+        # or user volume root, however force operation here should
+        # allow user to delete everything
+        if final_path == root_data_path \
+            or final_path.parent == root_data_path:
             raise ValueError('Invalid path value.')
+
         with storage() as s:
             return s.rm(path=str(final_path))
 

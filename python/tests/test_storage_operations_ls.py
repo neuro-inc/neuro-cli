@@ -14,6 +14,30 @@ def alice_ls():
 
 class TestNormalCases:
 
+    def test_list_users(self, alice_ls, partial_mocked_store):
+        alice_ls.ls('storage://', partial_mocked_store)
+        partial_mocked_store().ls.assert_called_once()
+        partial_mocked_store().ls.assert_called_with(path='/')
+
+    def test_back_reference(self, alice_ls, partial_mocked_store):
+        alice_ls.ls('storage://~/my_data_depth0/my_data_depth1/../', partial_mocked_store)
+        partial_mocked_store().ls.assert_called_once()
+        partial_mocked_store().ls.assert_called_with(path='/alice/my_data_depth0')
+
+    def test_back_reference_parent_of_root(self, alice_ls, partial_mocked_store):
+        alice_ls.ls('storage://~/my_data_depth0/my_data_depth1/'
+                    '../../../../../../../../../',
+                    partial_mocked_store)
+        partial_mocked_store().ls.assert_called_once()
+        partial_mocked_store().ls.assert_called_with(path='/')
+
+    def test_back_reference_parent_of_root_2(self, alice_ls, partial_mocked_store):
+        alice_ls.ls('storage:/'
+                    '../../../../../../../../../',
+                    partial_mocked_store)
+        partial_mocked_store().ls.assert_called_once()
+        partial_mocked_store().ls.assert_called_with(path='/')
+
     def test_fix_leading_platform_slash(self, alice_ls, partial_mocked_store):
         alice_ls.ls('storage:data', partial_mocked_store)
         partial_mocked_store().ls.assert_called_once()

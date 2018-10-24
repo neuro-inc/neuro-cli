@@ -56,10 +56,20 @@ class TestNormalCases:
 
 class TestInvalidScenarios:
 
-    def test_malformed(self, alice_rm, partial_mocked_store):
+    def test_malformed_delete_home(self, alice_rm, partial_mocked_store):
         with pytest.raises(ValueError,
                            match=r'Invalid path value.'):
             alice_rm.remove('storage:', partial_mocked_store)
+
+    def test_malformed_delete_other_home(self, alice_rm, partial_mocked_store):
+        with pytest.raises(ValueError,
+                           match=r'Invalid path value.'):
+            alice_rm.remove('storage://home/', partial_mocked_store)
+
+    def test_malformed_all_users(self, alice_rm, partial_mocked_store):
+        with pytest.raises(ValueError,
+                           match=r'Invalid path value.'):
+            alice_rm.remove('storage://', partial_mocked_store)
 
     def test_local(self, alice_rm, partial_mocked_store):
         with pytest.raises(ValueError,
