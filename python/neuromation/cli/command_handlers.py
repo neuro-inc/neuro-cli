@@ -135,7 +135,8 @@ class CopyOperation(PlatformStorageOperation):
 
     @classmethod
     def create(cls, principal: str, src_scheme: str, dst_scheme: str,
-               recursive: bool, progress_enabled: bool = False) -> 'CopyOperation':
+               recursive: bool,
+               progress_enabled: bool = False) -> 'CopyOperation':
         log.debug(f"p = {progress_enabled}")
         progress: ProgressBase = StandardPrintPercentOnly() \
             if progress_enabled else ProgressBase()
