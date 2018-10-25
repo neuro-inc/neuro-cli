@@ -11,6 +11,7 @@ from urllib.parse import ParseResult, urlparse
 from neuromation import Resources
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
+from neuromation.http import BadRequestError
 
 log = logging.getLogger(__name__)
 
@@ -336,7 +337,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
         return final_path
 
 
-class JobHandlerOperations:
+class JobHandlerOperations(PlatformStorageOperation):
     def wait_job_transfer_from(
         self, id: str, from_state: str, jobs: Callable, sleep_interval_s: int = 1
     ) -> JobDescription:
@@ -399,8 +400,39 @@ class JobHandlerOperations:
             pass
         return None
 
+    def connect_ssh(
+        self,
+        job_id: str,
+        jump_host_key: str,
+        container_user: str,
+        container_key: str,
+        jobs: Callable,
+    ) -> None:
+        try:
+            job_status = self.status(job_id, jobs)
+        except BadRequestError as e:
+            raise ValueError(f"Job not found. Job Id = {job_id}") from e
 
-class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
+        if job_status.status == "running":
+            if job_status.ssh:
+                ssh_hostname = urlparse(job_status.ssh).hostname
+                ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+                self.start_ssh(
+                    job_id,
+                    ssh_hostname,
+                    self.principal,
+                    jump_host_key,
+                    container_user,
+                    container_key,
+                )
+                return None
+            else:
+                raise ValueError("Job should be started with SSH support.")
+        else:
+            raise ValueError(f"Job is not running. Job status is {job_status.status}")
+
+
+class ModelHandlerOperations(JobHandlerOperations):
     def train(
         self, image, dataset, results, gpu, cpu, memory, extshm, cmd, model, http, ssh
     ):

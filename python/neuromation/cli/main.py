@@ -438,11 +438,26 @@ Commands:
           list                List all jobs
           status              Display status of a job
           kill                Kill job
+          ssh                 Start SSH terminal
         """
 
         from neuromation.client.jobs import Job, JobStatus
 
         jobs = partial(Job, url, token)
+
+        @command
+        def ssh(id):
+            """
+            Usage:
+                neuro job ssh ID
+
+            Starts ssh terminal connected to running job.
+            Job should be started with SSH support enabled.
+
+            Examples:
+
+            """
+            return None
 
         @command
         def monitor(id):
@@ -472,7 +487,7 @@ Commands:
 
             List all jobs
             """
-            return JobHandlerOperations().list_jobs(status, jobs)
+            return JobHandlerOperations(token).list_jobs(status, jobs)
 
         @command
         def status(id):
@@ -482,7 +497,7 @@ Commands:
 
             Display status of a job
             """
-            res = JobHandlerOperations().status(id, jobs)
+            res = JobHandlerOperations(token).status(id, jobs)
             result = f"Job: {res.id}\n"
             result += f"Status: {res.status}\n"
             result += f"Image: {res.image}\n"

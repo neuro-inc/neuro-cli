@@ -63,7 +63,7 @@ class ApiClient:
         token: str,
         timeout: Optional[TimeoutSettings] = DEFAULT_CLIENT_TIMEOUT_SETTINGS,
         *,
-        loop=None
+        loop=None,
     ):
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
@@ -108,6 +108,7 @@ class ApiClient:
             return await fetch(build(request), session=self._session, url=self._url)
         except FetchError as error:
             error_class = type(error)
+            log.debug(f"Error {error_class} {error}")
             mapped_class = self._exception_map.get(error_class, error_class)
             raise mapped_class(error) from error
 
