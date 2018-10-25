@@ -10,9 +10,17 @@ from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
 
 from .client import ApiClient
-from .requests import (ContainerPayload, InferRequest, JobKillRequest,
-                       JobListRequest, JobMonitorRequest, JobStatusRequest,
-                       ResourcesPayload, ShareResourceRequest, TrainRequest)
+from .requests import (
+    ContainerPayload,
+    InferRequest,
+    JobKillRequest,
+    JobListRequest,
+    JobMonitorRequest,
+    JobStatusRequest,
+    ResourcesPayload,
+    ShareResourceRequest,
+    TrainRequest,
+)
 
 
 @dataclass(frozen=True)
@@ -51,8 +59,8 @@ class JobDescription:
     client: ApiClient
     image: Optional[str] = None
     command: Optional[str] = None
-    url: str = ''
-    ssh: str = ''
+    url: str = ""
+    ssh: str = ""
     history: JobStatusHistory = None
     resources: Resources = None
 
@@ -62,24 +70,19 @@ class JobItem:
     status: str
     id: str
     client: ApiClient
-    url: str = ''
+    url: str = ""
     history: JobStatusHistory = None
 
     async def _call(self):
         return JobItem(
             client=self.client,
-            **await self.client._fetch(
-                request=JobStatusRequest(
-                    id=self.id
-                )))
+            **await self.client._fetch(request=JobStatusRequest(id=self.id))
+        )
 
     def wait(self, timeout=None):
         try:
             return self.client.loop.run_until_complete(
-                asyncio.wait_for(
-                    self._call(),
-                    timeout=timeout
-                )
+                asyncio.wait_for(self._call(), timeout=timeout)
             )
         except asyncio.TimeoutError:
             raise TimeoutError
@@ -96,50 +99,40 @@ class JobStatus(str, enum.Enum):
     FAILED: a job terminated with a non-0 exit code.
     """
 
-    PENDING = 'pending'
-    RUNNING = 'running'
-    SUCCEEDED = 'succeeded'
-    FAILED = 'failed'
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 
 class ResourceSharing(ApiClient):
-
     def share(self, path: str, action: str, whom: str) -> bool:
-        permissions = [
-            {
-                'uri': path,
-                'action': action,
-            }
-        ]
+        permissions = [{"uri": path, "action": action}]
         self._fetch_sync(ShareResourceRequest(whom, permissions))
         return True
 
 
 class Model(ApiClient):
-
     def _network_to_api(self, network: NetworkPortForwarding):
         http = None
         ssh = None
         if network:
-            if 'http' in network.ports:
-                http = {
-                    'port': network.ports['http']
-                }
-            if 'ssh' in network.ports:
-                ssh = {
-                    'port': network.ports['ssh']
-                }
+            if "http" in network.ports:
+                http = {"port": network.ports["http"]}
+            if "ssh" in network.ports:
+                ssh = {"port": network.ports["ssh"]}
         return http, ssh
 
     def infer(
-            self,
-            *,
-            image: Image,
-            resources: Resources,
-            network: NetworkPortForwarding,
-            model: str,
-            dataset: str,
-            results: str) -> JobItem:
+        self,
+        *,
+        image: Image,
+        resources: Resources,
+        network: NetworkPortForwarding,
+        model: str,
+        dataset: str,
+        results: str
+    ) -> JobItem:
         http, ssh = self._network_to_api(network)
         res = self._fetch_sync(
             InferRequest(
@@ -153,25 +146,25 @@ class Model(ApiClient):
                         cpu=resources.cpu,
                         gpu=resources.gpu,
                         shm=resources.shm,
-                    )
+                    ),
                 ),
                 model_storage_uri=model,
                 dataset_storage_uri=dataset,
-                result_storage_uri=results))
+                result_storage_uri=results,
+            )
+        )
 
-        return JobItem(
-            id=res['job_id'],
-            status=res['status'],
-            client=self)
+        return JobItem(id=res["job_id"], status=res["status"], client=self)
 
     def train(
-            self,
-            *,
-            image: Image,
-            resources: Resources,
-            network: NetworkPortForwarding,
-            dataset: str,
-            results: str) -> JobItem:
+        self,
+        *,
+        image: Image,
+        resources: Resources,
+        network: NetworkPortForwarding,
+        dataset: str,
+        results: str
+    ) -> JobItem:
         http, ssh = self._network_to_api(network)
         res = self._fetch_sync(
             TrainRequest(
@@ -185,25 +178,20 @@ class Model(ApiClient):
                         cpu=resources.cpu,
                         gpu=resources.gpu,
                         shm=resources.shm,
-                    )
+                    ),
                 ),
                 dataset_storage_uri=dataset,
-                result_storage_uri=results))
+                result_storage_uri=results,
+            )
+        )
 
-        return JobItem(
-            id=res['job_id'],
-            status=res['status'],
-            client=self)
+        return JobItem(id=res["job_id"], status=res["status"], client=self)
 
 
 class Job(ApiClient):
-
     def list(self) -> List[JobDescription]:
         res = self._fetch_sync(JobListRequest())
-        return [
-            self._dict_to_description(job)
-            for job in res['jobs']
-        ]
+        return [self._dict_to_description(job) for job in res["jobs"]]
 
     def kill(self, id: str) -> bool:
         self._fetch_sync(JobKillRequest(id=id))
@@ -227,14 +215,14 @@ class Job(ApiClient):
     def _dict_to_description_with_history(self, res):
         job_description = self._dict_to_description(res)
         job_history = None
-        if 'history' in res:
+        if "history" in res:
             job_history = JobStatusHistory(
-                status=res['history'].get('status', None),
-                reason=res['history'].get('reason', None),
-                description=res['history'].get('description', None),
-                created_at=res['history'].get('created_at', None),
-                started_at=res['history'].get('started_at', None),
-                finished_at=res['history'].get('finished_at', None)
+                status=res["history"].get("status", None),
+                reason=res["history"].get("reason", None),
+                description=res["history"].get("description", None),
+                created_at=res["history"].get("created_at", None),
+                started_at=res["history"].get("started_at", None),
+                finished_at=res["history"].get("finished_at", None),
             )
         return JobDescription(
             client=self,
@@ -253,34 +241,33 @@ class Job(ApiClient):
         job_command = None
         job_resources = None
 
-        if 'container' in res:
-            job_container_image = res['container']['image'] \
-                if 'image' in res['container'] \
-                else None
-            job_command = res['container']['command'] \
-                if 'command' in res['container'] \
-                else None
+        if "container" in res:
+            job_container_image = (
+                res["container"]["image"] if "image" in res["container"] else None
+            )
+            job_command = (
+                res["container"]["command"] if "command" in res["container"] else None
+            )
 
-            if 'resources' in res['container']:
-                container_resources = res['container']['resources']
-                shm = container_resources.get('shm', None)
-                gpu = container_resources.get('gpu', None)
+            if "resources" in res["container"]:
+                container_resources = res["container"]["resources"]
+                shm = container_resources.get("shm", None)
+                gpu = container_resources.get("gpu", None)
                 job_resources = Resources(
-                    cpu=container_resources['cpu'],
-                    memory=container_resources['memory_mb'],
+                    cpu=container_resources["cpu"],
+                    memory=container_resources["memory_mb"],
                     gpu=gpu,
                     shm=shm,
                 )
-        http_url = res.get('http_url', '')
-        ssh_conn = res.get('ssh_connection', '')
+        http_url = res.get("http_url", "")
+        ssh_conn = res.get("ssh_connection", "")
         return JobDescription(
             client=self,
-            id=res['id'],
-            status=res['status'],
+            id=res["id"],
+            status=res["status"],
             image=job_container_image,
             command=job_command,
             resources=job_resources,
-
             url=http_url,
             ssh=ssh_conn,
         )

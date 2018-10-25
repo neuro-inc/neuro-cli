@@ -2,7 +2,7 @@ from neuromation.cli.commands import command, commands, dispatch
 
 
 # NOTE: overriding command name to be 'person'
-@command('person')
+@command("person")
 def _person(name, age, gender, city):
     """
     Usage:
@@ -38,7 +38,7 @@ def _person(name, age, gender, city):
             Options:
               -d, --depth VALUE         Depth (BIG, SMALL) [default: BIG]
             """
-            return f'{name} is digging {depth} {what} in {city}'
+            return f"{name} is digging {depth} {what} in {city}"
 
         @command
         def manage(style, whom):
@@ -49,8 +49,7 @@ def _person(name, age, gender, city):
             Options:
               -s, --style STYLE         Style (ex: seagull, etc)  [default: crushing]
             """  # NOQA
-            return \
-                f'{name} is {style} {whom} in {city}'
+            return f"{name} is {style} {whom} in {city}"
 
         return locals()
 
@@ -65,7 +64,7 @@ def _person(name, age, gender, city):
         Options:
           -d, --duration HOURS    Duration in hours [default: 1]
         """
-        return f'{name} is resting {where} for {duration} hour'
+        return f"{name} is resting {where} for {duration} hour"
 
     def nothing():
         pass
@@ -74,41 +73,33 @@ def _person(name, age, gender, city):
 
 
 def test_dispatch():
-    argv = ['-n', 'Vasya', 'work', 'dig', 'hole']
+    argv = ["-n", "Vasya", "work", "dig", "hole"]
     # 'manage', '-s', 'enabling', 'engineers']
-    assert dispatch(
-        target=_person,
-        tail=argv,
-        city='Kyiv') == \
-        'Vasya is digging BIG hole in Kyiv'
+    assert (
+        dispatch(target=_person, tail=argv, city="Kyiv")
+        == "Vasya is digging BIG hole in Kyiv"
+    )
 
-    argv = ['-n', 'Vova', 'work', 'manage', 'Petya']
-    assert dispatch(
-        target=_person,
-        tail=argv,
-        city='Kyiv') == \
-        'Vova is crushing Petya in Kyiv'
+    argv = ["-n", "Vova", "work", "manage", "Petya"]
+    assert (
+        dispatch(target=_person, tail=argv, city="Kyiv")
+        == "Vova is crushing Petya in Kyiv"
+    )
 
-    argv = ['-n', 'Vova', 'work', 'manage', '-s', 'enabling', 'Petya']
-    assert dispatch(
-        target=_person,
-        tail=argv,
-        city='Kyiv') == \
-        'Vova is enabling Petya in Kyiv'
+    argv = ["-n", "Vova", "work", "manage", "-s", "enabling", "Petya"]
+    assert (
+        dispatch(target=_person, tail=argv, city="Kyiv")
+        == "Vova is enabling Petya in Kyiv"
+    )
 
-    argv = ['-n', 'Vova', 'rest', 'home']
-    assert dispatch(
-        target=_person,
-        tail=argv,
-        city='Kyiv') == \
-        'Vova is resting home for 1 hour'
+    argv = ["-n", "Vova", "rest", "home"]
+    assert (
+        dispatch(target=_person, tail=argv, city="Kyiv")
+        == "Vova is resting home for 1 hour"
+    )
 
 
 def test_commands():
-    assert commands(scope=globals()) == {
-        'person': _person
-    }
+    assert commands(scope=globals()) == {"person": _person}
 
-    assert set(commands(scope=_person(None, None, None, None))) == {
-          'work', 'rest'
-    }
+    assert set(commands(scope=_person(None, None, None, None))) == {"work", "rest"}

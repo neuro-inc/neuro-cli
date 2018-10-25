@@ -42,6 +42,7 @@ isort:
 
 .PHONY: lint
 lint:
+	black --check neuromation tests
 	flake8
 
 .PHONY: publish
@@ -52,6 +53,9 @@ publish:
 coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
+format:
+	isort -rc neuromation tests
+	black neuromation tests
 
 # TODO (artyom, 07/16/2018): swap e2e and test once coverage output
 # of both is combined. Otherwise e2e will override unit tests with

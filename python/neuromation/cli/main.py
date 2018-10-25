@@ -8,13 +8,15 @@ from urllib.parse import urlparse
 import aiohttp
 
 import neuromation
-from neuromation.cli.command_handlers import (CopyOperation,
-                                              JobHandlerOperations,
-                                              ModelHandlerOperations,
-                                              PlatformListDirOperation,
-                                              PlatformMakeDirOperation,
-                                              PlatformRemoveOperation,
-                                              PlatformSharingOperations)
+from neuromation.cli.command_handlers import (
+    CopyOperation,
+    JobHandlerOperations,
+    ModelHandlerOperations,
+    PlatformListDirOperation,
+    PlatformMakeDirOperation,
+    PlatformRemoveOperation,
+    PlatformSharingOperations,
+)
 from neuromation.cli.formatter import OutputFormatter
 from neuromation.cli.rc import Config
 from neuromation.client.client import TimeoutSettings
@@ -43,16 +45,13 @@ def setup_logging():
 
 
 def setup_console_handler(handler, verbose, noansi=False):
-    if not handler.stream.closed and \
-            handler.stream.isatty() and \
-            noansi is False:
+    if not handler.stream.closed and handler.stream.isatty() and noansi is False:
         format_class = ConsoleWarningFormatter
     else:
         format_class = logging.Formatter
 
     if verbose:
-        handler.setFormatter(
-            format_class('%(name)s.%(funcName)s: %(message)s'))
+        handler.setFormatter(format_class("%(name)s.%(funcName)s: %(message)s"))
         loglevel = logging.DEBUG
     else:
         handler.setFormatter(format_class())
@@ -63,9 +62,9 @@ def setup_console_handler(handler, verbose, noansi=False):
 
 def check_docker_installed():
     try:
-        subprocess.run(['docker'], check=True,
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
+        subprocess.run(
+            ["docker"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         return True
     except subprocess.CalledProcessError as e:
         return False
@@ -127,13 +126,20 @@ Commands:
                 return
 
             try:
-                subprocess.run(['docker', 'login',
-                                '-p', config.auth,
-                                '-u', 'token',
-                                docker_registry_url],
-                               check=True)
+                subprocess.run(
+                    [
+                        "docker",
+                        "login",
+                        "-p",
+                        config.auth,
+                        "-u",
+                        "token",
+                        docker_registry_url,
+                    ],
+                    check=True,
+                )
             except subprocess.CalledProcessError as e:
-                raise ValueError('Failed to updated docker auth details.')
+                raise ValueError("Failed to updated docker auth details.")
             return
 
         @command
@@ -236,18 +242,19 @@ Commands:
 
             List directory contents
             """
-            format = '{type:<15}{size:<15,}{name:<}'.format
+            format = "{type:<15}{size:<15,}{name:<}".format
 
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             ls_op = PlatformListDirOperation(platform_user_name)
             storage_objects = ls_op.ls(path, storage)
 
-            print('\n'.join(
-                format(type=status.type.lower(),
-                       name=status.path,
-                       size=status.size)
-                for status in storage_objects))
+            print(
+                "\n".join(
+                    format(type=status.type.lower(), name=status.path, size=status.size)
+                    for status in storage_objects
+                )
+            )
 
         @command
         def cp(source, destination, recursive):
@@ -273,24 +280,24 @@ Commands:
             """
             timeout = TimeoutSettings(None, None, None, 30)
             storage = partial(Storage, url, token, timeout)
-            src = urlparse(source, scheme='file')
-            dst = urlparse(destination, scheme='file')
+            src = urlparse(source, scheme="file")
+            dst = urlparse(destination, scheme="file")
 
-            log.debug(f'src={src}')
-            log.debug(f'dst={dst}')
+            log.debug(f"src={src}")
+            log.debug(f"dst={dst}")
 
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            operation = CopyOperation.create(platform_user_name,
-                                             src.scheme,
-                                             dst.scheme,
-                                             recursive)
+            operation = CopyOperation.create(
+                platform_user_name, src.scheme, dst.scheme, recursive
+            )
 
             if operation:
                 return operation.copy(src, dst, storage)
 
-            raise neuromation.client.IllegalArgumentError('Invalid SOURCE or '
-                                                          'DESTINATION value')
+            raise neuromation.client.IllegalArgumentError(
+                "Invalid SOURCE or " "DESTINATION value"
+            )
 
         @command
         def mkdir(path):
@@ -326,10 +333,9 @@ Commands:
         model = partial(Model, url, token)
 
         @command
-        def train(image, dataset, results,
-                  gpu, cpu, memory, extshm,
-                  http, ssh, cmd,
-                  quiet):
+        def train(
+            image, dataset, results, gpu, cpu, memory, extshm, http, ssh, cmd, quiet
+        ):
             """
             Usage:
                 neuro model train [options] IMAGE DATASET RESULTS [CMD...]
@@ -352,9 +358,9 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             model_operation = ModelHandlerOperations(platform_user_name)
-            job = model_operation.train(image, dataset, results,
-                                        gpu, cpu, memory, extshm,
-                                        cmd, model, http, ssh)
+            job = model_operation.train(
+                image, dataset, results, gpu, cpu, memory, extshm, cmd, model, http, ssh
+            )
 
             return OutputFormatter.format_job(job, quiet)
 
@@ -384,6 +390,7 @@ Commands:
         """
 
         from neuromation.client.jobs import Job, JobStatus
+
         jobs = partial(Job, url, token)
 
         @command
@@ -400,7 +407,7 @@ Commands:
                         chunk = stream.read(MONITOR_BUFFER_SIZE_BYTES)
                         if not chunk:
                             break
-                        sys.stdout.write(chunk.decode(errors='ignore'))
+                        sys.stdout.write(chunk.decode(errors="ignore"))
 
         @command
         def list(status):
@@ -425,29 +432,24 @@ Commands:
             Display status of a job
             """
             res = JobHandlerOperations().status(id, jobs)
-            result = f'Job: {res.id}\n' \
-                     f'Status: {res.status}\n' \
-                     f'Image: {res.image}\n' \
-                     f'Command: {res.command}\n' \
-                     f'Resources: {res.resources}\n'
-            if res.url:
-                result = f"{result}" \
-                         f'Http URL: {res.url}\n'
+            result = f"Job: {res.id}\n"
+            result += f"Status: {res.status}\n"
+            result += f"Image: {res.image}\n"
+            result += f"Command: {res.command}\n"
+            result += f"Resources: {res.resources}\n"
 
-            result = f"{result}" \
-                     f'Created: {res.history.created_at}'
-            if res.status in [JobStatus.RUNNING, JobStatus.FAILED,
-                              JobStatus.SUCCEEDED]:
-                result += '\n' \
-                          f'Started: {res.history.started_at}'
+            if res.url:
+                result = f"{result}" f"Http URL: {res.url}\n"
+
+            result = f"{result}" f"Created: {res.history.created_at}"
+            if res.status in [JobStatus.RUNNING, JobStatus.FAILED, JobStatus.SUCCEEDED]:
+                result += "\n" f"Started: {res.history.started_at}"
             if res.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
-                result += '\n' \
-                          f'Finished: {res.history.finished_at}'
+                result += "\n" f"Finished: {res.history.finished_at}"
             if res.status == JobStatus.FAILED:
-                result += '\n' \
-                          f'Reason: {res.history.reason}\n' \
-                          '===Description===\n ' \
-                          f'{res.history.description}\n================='
+                result += "\n" f"Reason: {res.history.reason}\n"
+                result += "===Description===\n "
+                result += f"{res.history.description}\n================="
             return result
 
         @command
@@ -460,7 +462,7 @@ Commands:
             """
             with jobs() as j:
                 j.kill(id)
-            return 'Job killed.'
+            return "Job killed."
 
         return locals()
 
@@ -480,10 +482,9 @@ Commands:
 
         def _get_image_platform_full_name(image_name):
             config = rc.ConfigFactory.load()
-            docker_registry_url = config.docker_registry_url()
-            platform_user_name = config.get_platform_user_name()
-            target_image_name = f'{docker_registry_url}/' \
-                                f'{platform_user_name}/{image_name}'
+            registry_url = config.docker_registry_url()
+            user_name = config.get_platform_user_name()
+            target_image_name = f"{registry_url}/{user_name}/{image_name}"
             return target_image_name
 
         @command
@@ -499,20 +500,19 @@ Commands:
             target_image_name = _get_image_platform_full_name(image_name)
             # Tag first, as otherwise it would fail
             try:
-                subprocess.run(['docker', 'tag',
-                                image_name, target_image_name],
-                               check=True)
+                subprocess.run(
+                    ["docker", "tag", image_name, target_image_name], check=True
+                )
             except subprocess.CalledProcessError as e:
-                raise ValueError(f'Docker tag failed. '
-                                 f'Error code {e.returncode}')
+                raise ValueError(f"Docker tag failed. " f"Error code {e.returncode}")
 
             # PUSH Image to remote registry
             try:
-                subprocess.run(['docker', 'push', target_image_name],
-                               check=True)
+                subprocess.run(["docker", "push", target_image_name], check=True)
             except subprocess.CalledProcessError as e:
-                raise ValueError(f'Docker pull failed. '
-                                 f'Error details {e.returncode}')
+                raise ValueError(
+                    f"Docker pull failed. " f"Error details {e.returncode}"
+                )
 
             return target_image_name
 
@@ -528,16 +528,13 @@ Commands:
 
             target_image_name = _get_image_platform_full_name(image_name)
             try:
-                subprocess.run(['docker', 'pull', target_image_name],
-                               check=True)
+                subprocess.run(["docker", "pull", target_image_name], check=True)
             except subprocess.CalledProcessError as e:
-                raise ValueError(f'Docker pull failed. '
-                                 f'Error code {e.returncode}')
+                raise ValueError(f"Docker pull failed. " f"Error code {e.returncode}")
 
         def _check_docker_client_available():
             if not check_docker_installed():
-                raise OSError('Docker client is not installed. '
-                              'Install it first.')
+                raise OSError("Docker client is not installed. " "Install it first.")
 
         return locals()
 
@@ -556,12 +553,9 @@ Commands:
                 neuro share job:///my_job_id alice write
         """
 
-        op_type = 'manage' if manage \
-            else 'write' if write \
-            else 'read' if read else None
+        op_type = "manage" if manage else "write" if write else "read" if read else None
         if not op_type:
-            print("Resource not shared. "
-                  "Please specify one of read/write/manage.")
+            print("Resource not shared. " "Please specify one of read/write/manage.")
             return None
 
         config = rc.ConfigFactory.load()
@@ -572,8 +566,7 @@ Commands:
             share_command = PlatformSharingOperations(platform_user_name)
             share_command.share(uri, op_type, whom, resource_sharing)
         except neuromation.client.IllegalArgumentError:
-            print("Resource not shared. "
-                  "Please verify resource-uri, user name.")
+            print("Resource not shared. " "Please verify resource-uri, user name.")
             return None
         print("Resource shared.")
         return None
@@ -583,60 +576,55 @@ Commands:
 
 def main():
     setup_logging()
-    setup_console_handler(console_handler, verbose=('--verbose' in sys.argv))
+    setup_console_handler(console_handler, verbose=("--verbose" in sys.argv))
 
-    version = f'Neuromation Platform Client {neuromation.__version__}'
-    if '-v' in sys.argv:
+    version = f"Neuromation Platform Client {neuromation.__version__}"
+    if "-v" in sys.argv:
         print(version)
         sys.exit(0)
 
     config = rc.ConfigFactory.load()
-    neuro.__doc__ = neuro.__doc__.format(
-        url=config.url
-    )
+    neuro.__doc__ = neuro.__doc__.format(url=config.url)
 
     try:
-        res = dispatch(
-            target=neuro,
-            tail=sys.argv[1:],
-            token=config.auth)
+        res = dispatch(target=neuro, tail=sys.argv[1:], token=config.auth)
         if res:
             print(res)
 
     except neuromation.client.IllegalArgumentError as error:
-        log.error(f'Illegal argument(s) ({error})')
+        log.error(f"Illegal argument(s) ({error})")
         sys.exit(os.EX_DATAERR)
 
     except neuromation.client.ResourceNotFound as error:
-        log.error(f'{error}')
+        log.error(f"{error}")
         sys.exit(os.EX_OSFILE)
 
     except neuromation.client.AuthenticationError as error:
-        log.error(f'Cannot authenticate ({error})')
+        log.error(f"Cannot authenticate ({error})")
         sys.exit(os.EX_NOPERM)
     except neuromation.client.AuthorizationError as error:
-        log.error(f'You haven`t enough permission ({error})')
+        log.error(f"You haven`t enough permission ({error})")
         sys.exit(os.EX_NOPERM)
 
     except neuromation.client.ClientError as error:
-        log.error(f'Application error ({error})')
+        log.error(f"Application error ({error})")
         sys.exit(os.EX_SOFTWARE)
 
     except aiohttp.ClientError as error:
-        log.error(f'Connection error ({error})')
+        log.error(f"Connection error ({error})")
         sys.exit(os.EX_IOERR)
 
     except FileNotFoundError as error:
-        log.error(f'File not found ({error})')
+        log.error(f"File not found ({error})")
         sys.exit(os.EX_OSFILE)
     except NotADirectoryError as error:
-        log.error(f'{error}')
+        log.error(f"{error}")
         sys.exit(os.EX_OSFILE)
     except PermissionError as error:
-        log.error(f'Cannot access file ({error})')
+        log.error(f"Cannot access file ({error})")
         sys.exit(os.EX_NOPERM)
     except IOError as error:
-        log.error(f'I/O Error ({error})')
+        log.error(f"I/O Error ({error})")
         raise error
 
     except KeyboardInterrupt:
@@ -647,5 +635,5 @@ def main():
         sys.exit(127)
 
     except Exception as e:
-        log.error(f'{e}')
+        log.error(f"{e}")
         raise e
