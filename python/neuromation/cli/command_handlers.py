@@ -9,7 +9,6 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
-from neuromation.cli.rc import ConfigFactory
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
@@ -379,7 +378,9 @@ class JobHandlerOperations:
         container_key: str,
     ):
         nc_command = f"nc {job_id} 22"
-        proxy_command = f"ProxyCommand=ssh -i {jump_key} " f"{jump_user}@{jump_host} {nc_command}"
+        proxy_command = (
+            f"ProxyCommand=ssh -i {jump_key} {jump_user}@{jump_host} {nc_command}"
+        )
         try:
             subprocess.run(
                 args=[
