@@ -1,10 +1,9 @@
 import asyncio
 import enum
 from contextlib import contextmanager
+from dataclasses import dataclass
 from io import BufferedReader
 from typing import Dict, List, Optional
-
-from dataclasses import dataclass
 
 from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
