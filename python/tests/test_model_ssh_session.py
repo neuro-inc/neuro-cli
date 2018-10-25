@@ -19,6 +19,22 @@ def alice_model():
 
 
 class TestSSHConnectionToJob:
+    @pytest.mark.parametrize(
+        "ssh, jump, ucont, kcont, det",
+        [
+            (None, "jump.key", "user", "container.key", "no-ssh-specified"),
+            (334, None, "user", "container.key", "no-jump-key-specified"),
+            (334, "jump.key", None, "container.key", "no-user-specified"),
+            (334, "jump.key", "user", None, "no-container-key-specified"),
+        ],
+    )
+    def test_model_develop_validate_required(
+        self, partial_mocked_job, ssh, jump, ucont, kcont, det
+    ):
+        with pytest.raises(ValueError):
+            jh = JobHandlerOperations("no-token")
+            jh.connect_ssh("test-job-id", jump, ucont, kcont, partial_mocked_job)
+
     def job_status(self, desired_state: str, ssh: Optional[str]):
         def jobs_(id):
             return JobDescription(

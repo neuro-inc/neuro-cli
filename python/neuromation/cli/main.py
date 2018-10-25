@@ -446,17 +446,25 @@ Commands:
         jobs = partial(Job, url, token)
 
         @command
-        def ssh(id):
+        def ssh(id, user, key):
             """
             Usage:
-                neuro job ssh ID
+                neuro job ssh [options] ID
 
             Starts ssh terminal connected to running job.
             Job should be started with SSH support enabled.
 
+            Options:
+                --user=STRING         Container user name [default: root]
+                --key=STRING          Path to container private key.
+
             Examples:
 
             """
+            config: Config = rc.ConfigFactory.load()
+            git_key = config.github_rsa_path
+
+            JobHandlerOperations(token).connect_ssh(id, git_key, user, key, jobs)
             return None
 
         @command

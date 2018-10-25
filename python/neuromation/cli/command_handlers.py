@@ -408,13 +408,23 @@ class JobHandlerOperations(PlatformStorageOperation):
         container_key: str,
         jobs: Callable,
     ) -> None:
+        # Temporal solution - pending custom Jump Server with JWT support
+        if not container_user:
+            raise ValueError("Specify container user name")
+        if not container_key:
+            raise ValueError("Specify container RSA key path.")
+        if not jump_host_key:
+            raise ValueError(
+                "Configure Github RSA key path." "See for more info `neuro config`."
+            )
+        # Check if job is running
         try:
             job_status = self.status(job_id, jobs)
         except BadRequestError as e:
             raise ValueError(f"Job not found. Job Id = {job_id}") from e
-
         if job_status.status == "running":
             if job_status.ssh:
+                # We shall make an attempt to connect only in case it has SSH
                 ssh_hostname = urlparse(job_status.ssh).hostname
                 ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
                 self.start_ssh(
