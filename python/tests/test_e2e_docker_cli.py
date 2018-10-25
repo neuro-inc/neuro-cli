@@ -82,9 +82,7 @@ def run(monkeypatch, capsys, tmpdir):
     import sys
     from pathlib import Path
 
-    e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
-
-    rc_text = RC_TEXT.format(token=e2e_test_token)
+    rc_text = RC_TEXT.format(token=CUSTOM_TOKEN_FOR_TESTS)
     tmpdir.join(".nmrc").open("w").write(rc_text)
 
     def _home():
