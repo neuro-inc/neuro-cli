@@ -1,5 +1,4 @@
 import abc
-import io
 import logging
 import os
 import subprocess
@@ -11,12 +10,17 @@ from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
+from neuromation.cli.command_progress_report import (ProgressBase,
+                                                     StandardPrintPercentOnly)
+from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.http import BadRequestError
 
 log = logging.getLogger(__name__)
 
-BUFFER_SIZE_MB = 16
+BUFFER_SIZE_MB = 1
+
+BUFFER_SIZE_B = BUFFER_SIZE_MB * 1024 * 1024
 
 PLATFORM_DELIMITER = "/"
 
@@ -108,6 +112,13 @@ class PlatformRemoveOperation(PlatformStorageOperation):
 
 
 class CopyOperation(PlatformStorageOperation):
+
+    def __init__(self,
+                 principal: str,
+                 progress: ProgressBase = ProgressBase()):
+        super().__init__(principal)
+        self.progress = progress
+
     @abc.abstractmethod
     def _copy(
         self, src: ParseResult, dst: ParseResult, storage: Callable
@@ -124,15 +135,18 @@ class CopyOperation(PlatformStorageOperation):
         return ls.ls(f"storage:/{path}", storage)
 
     @classmethod
-    def create(
-        cls, principal: str, src_scheme: str, dst_scheme: str, recursive: bool
-    ) -> "CopyOperation":
-        if src_scheme == "file":
-            if dst_scheme == "storage":
+    def create(cls, principal: str, src_scheme: str, dst_scheme: str,
+               recursive: bool,
+               progress_enabled: bool = False) -> 'CopyOperation':
+        log.debug(f"p = {progress_enabled}")
+        progress: ProgressBase = StandardPrintPercentOnly() \
+            if progress_enabled else ProgressBase()
+        if src_scheme == 'file':
+            if dst_scheme == 'storage':
                 if recursive:
-                    return RecursiveLocalToPlatform(principal)
+                    return RecursiveLocalToPlatform(principal, progress)
                 else:
-                    return NonRecursiveLocalToPlatform(principal)
+                    return NonRecursiveLocalToPlatform(principal, progress)
             else:
                 raise ValueError("storage:// and file:// schemes required")
         elif src_scheme == "storage":
@@ -271,44 +285,24 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             return False
         return True
 
+    async def _copy_data_with_progress(self, src: str):  # pragma: no cover
+        file_stat = os.stat(src)
+        total_file_size = file_stat.st_size
+        copied_file_size = 0
+        self.progress.start(src, total_file_size)
+        with open(src, mode='rb') as f:
+            data_chunk = f.read(BUFFER_SIZE_B)
+            while data_chunk:
+                copied_file_size += len(data_chunk)
+                yield data_chunk
+                self.progress.progress(src, copied_file_size)
+                data_chunk = f.read(BUFFER_SIZE_B)
+
     def copy_file(self, src_path: str, dest_path: str,
                   storage: Callable):  # pragma: no cover
-        total = 0
-
-        class ProxyReportReader(io.BufferedReader):
-            reporter: Callable
-
-            def setReporter(self, reporter: Callable):
-                self.reporter = reporter
-
-            def read(self, size: Optional[int] = ...):
-                self.report('Before read', size=size)
-                result = super().read(size)
-                self.report('After read', size=size, result=result)
-                return result
-
-            def report(self, *args, **kwargs):
-                if self.reporter:
-                    self.reporter(*args, **kwargs)
-
-        def reporter(event, *args, **kwargs):
-            nonlocal total, dest_path
-            if event == 'After read':
-                size = len(kwargs['result'])
-                if size:
-                    total += size
-                    print(f'\r{dest_path}: {total} bytes', end='\r')
-                else:
-                    print(f'\r{dest_path} transferred     ', end='\r')
-                    print()
-
-        # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
-        # to track progress and report
-        raw = io.FileIO(src_path, mode='r')
-        proxy = ProxyReportReader(raw)
-        proxy.setReporter(reporter)
+        data = self._copy_data_with_progress(src_path)
         with storage() as s:
-            s.create(path=dest_path, data=proxy)
+            s.create(path=dest_path, data=data)
             return dest_path
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
@@ -360,6 +354,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 target_dest = f"{pref_path}{file}"
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
+                self.progress.complete(src_file)
             for subdir in subdirs:
                 target_dest = f"{pref_path}{subdir}"
                 PlatformMakeDirOperation(self.principal).mkdir(
