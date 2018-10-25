@@ -368,9 +368,9 @@ Commands:
             return OutputFormatter.format_job(job, quiet)
 
         @command
-        def develop(image, dataset, results,
-                    gpu, cpu, memory, extshm,
-                    http, ssh, user, key):
+        def develop(
+            image, dataset, results, gpu, cpu, memory, extshm, http, ssh, user, key
+        ):
             """
             Usage:
                 neuro model develop [options] IMAGE DATASET RESULTS
@@ -397,10 +397,22 @@ Commands:
             git_key = config.github_rsa_path
 
             model_operation = ModelHandlerOperations(platform_user_name)
-            model_operation.develop(image, dataset, results,
-                                    gpu, cpu, memory, extshm,
-                                    model, jobs, http, ssh,
-                                    git_key, user, key)
+            model_operation.develop(
+                image,
+                dataset,
+                results,
+                gpu,
+                cpu,
+                memory,
+                extshm,
+                model,
+                jobs,
+                http,
+                ssh,
+                git_key,
+                user,
+                key,
+            )
             return
 
         @command

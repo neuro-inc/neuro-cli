@@ -9,10 +9,8 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
-from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.cli.rc import ConfigFactory
-from neuromation.client import (FileStatus, IllegalArgumentError, Image,
-                                ResourceNotFound)
+from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
 log = logging.getLogger(__name__)
@@ -371,17 +369,29 @@ class JobHandlerOperations:
                 ]
             )
 
-    def start_ssh(self, job_id: str,
-                  jump_host: str, jump_user: str, jump_key: str,
-                  container_user: str, container_key: str):
+    def start_ssh(
+        self,
+        job_id: str,
+        jump_host: str,
+        jump_user: str,
+        jump_key: str,
+        container_user: str,
+        container_key: str,
+    ):
         nc_command = f"nc {job_id} 22"
-        proxy_command = f'ProxyCommand=ssh -i {jump_key} ' \
-                        f'{jump_user}@{jump_host} {nc_command}'
+        proxy_command = f"ProxyCommand=ssh -i {jump_key} " f"{jump_user}@{jump_host} {nc_command}"
         try:
-            subprocess.run(args=['ssh', '-o', proxy_command,
-                                 '-i', container_key,
-                                 f'{container_user}@{job_id}'],
-                           check=True)
+            subprocess.run(
+                args=[
+                    "ssh",
+                    "-o",
+                    proxy_command,
+                    "-i",
+                    container_key,
+                    f"{container_user}@{job_id}",
+                ],
+                check=True,
+            )
         except subprocess.CalledProcessError as e:
             # TODO (R Zubairov) check what ssh returns
             # on disconnect due to network issues.
@@ -396,14 +406,16 @@ class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
         except ValueError as e:
-            raise ValueError(f'Dataset path should be on platform. '
-                             f'Current value {dataset}')
+            raise ValueError(
+                f"Dataset path should be on platform. " f"Current value {dataset}"
+            )
 
         try:
             resultset_platform_path = self.render_uri_path_with_principal(results)
         except ValueError as e:
-            raise ValueError(f'Results path should be on platform. '
-                             f'Current value {results}')
+            raise ValueError(
+                f"Results path should be on platform. " f"Current value {results}"
+            )
 
         net = None
         ports: Dict[str, int] = {}
@@ -432,37 +444,54 @@ class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
 
         return job
 
-    def develop(self, image, dataset, results,
-                gpu, cpu, memory, extshm,
-                model, jobs,
-                http, ssh,
-                jump_host_rsa,
-                container_user, container_key_path):
+    def develop(
+        self,
+        image,
+        dataset,
+        results,
+        gpu,
+        cpu,
+        memory,
+        extshm,
+        model,
+        jobs,
+        http,
+        ssh,
+        jump_host_rsa,
+        container_user,
+        container_key_path,
+    ):
         # Temporal solution - pending custom Jump Server with JWT support
         if not container_user:
-            raise ValueError('Specify container user name')
+            raise ValueError("Specify container user name")
         if not container_key_path:
-            raise ValueError('Specify container RSA key path.')
+            raise ValueError("Specify container RSA key path.")
         if not jump_host_rsa:
-            raise ValueError('Configure Github RSA key path.'
-                             'See for more info `neuro config`.')
+            raise ValueError(
+                "Configure Github RSA key path." "See for more info `neuro config`."
+            )
         if not ssh:
-            raise ValueError('Please enable SSH / specify ssh port.')
+            raise ValueError("Please enable SSH / specify ssh port.")
 
         # Start the job, we expect it to have SSH server on board
-        job = self.train(image, dataset, results, gpu, cpu, memory, extshm,
-                         None, model, http, ssh)
+        job = self.train(
+            image, dataset, results, gpu, cpu, memory, extshm, None, model, http, ssh
+        )
         job_id = job.id
         # wait for a job to leave pending stage
         job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
-        if job_status.status == 'running':
+        if job_status.status == "running":
             # Strip jump host cname from job-id
             ssh_hostname = urlparse(job_status.ssh).hostname
-            ssh_hostname = '.'.join(ssh_hostname.split('.')[1:])
-            self.start_ssh(job_id, ssh_hostname,
-                           self.principal, jump_host_rsa,
-                           container_user, container_key_path)
+            ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+            self.start_ssh(
+                job_id,
+                ssh_hostname,
+                self.principal,
+                jump_host_rsa,
+                container_user,
+                container_key_path,
+            )
             return None
         else:
-            raise ValueError(f'Job is not running. '
-                             f'Status={job_status.status}')
+            raise ValueError(f"Job is not running. " f"Status={job_status.status}")
