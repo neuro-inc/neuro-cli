@@ -42,6 +42,7 @@ isort:
 
 .PHONY: lint
 lint:
+	black --check neuromation tests
 	flake8
 
 .PHONY: publish
