@@ -53,6 +53,14 @@ def mocked_model(loop):
 
 
 @pytest.fixture(scope="function")
+def mocked_jobs(loop):
+    my_mock = MagicMock(Job("no-url", "no-token", loop=loop))
+    my_mock.__enter__ = Mock(return_value=my_mock)
+    my_mock.__exit__ = Mock(return_value=False)
+    return my_mock
+
+
+@pytest.fixture(scope="function")
 def mocked_resource_share(loop):
     my_mock = MagicMock(ResourceSharing("no-url", "no-token", loop=loop))
     my_mock.__enter__ = Mock(return_value=my_mock)
@@ -74,6 +82,14 @@ def partial_mocked_model(mocked_model):
         return mocked_model
 
     return partial_mocked_model_func
+
+
+@pytest.fixture(scope="function")
+def partial_mocked_job(mocked_jobs):
+    def partial_mocked_jobs_func():
+        return mocked_jobs
+
+    return partial_mocked_jobs_func
 
 
 @pytest.fixture(scope="function")

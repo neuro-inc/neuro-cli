@@ -1,6 +1,7 @@
 import abc
 import logging
 import os
+import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
@@ -338,7 +339,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 class JobHandlerOperations:
     def wait_job_transfer_from(
         self, id: str, from_state: str, jobs: Callable, sleep_interval_s: int = 1
-    ):
+    ) -> JobDescription:
         still_state = True
         job_status = None
         while still_state:
@@ -367,8 +368,39 @@ class JobHandlerOperations:
                 ]
             )
 
+    def start_ssh(
+        self,
+        job_id: str,
+        jump_host: str,
+        jump_user: str,
+        jump_key: str,
+        container_user: str,
+        container_key: str,
+    ):
+        nc_command = f"nc {job_id} 22"
+        proxy_command = (
+            f"ProxyCommand=ssh -i {jump_key} {jump_user}@{jump_host} {nc_command}"
+        )
+        try:
+            subprocess.run(
+                args=[
+                    "ssh",
+                    "-o",
+                    proxy_command,
+                    "-i",
+                    container_key,
+                    f"{container_user}@{job_id}",
+                ],
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            # TODO (R Zubairov) check what ssh returns
+            # on disconnect due to network issues.
+            pass
+        return None
 
-class ModelHandlerOperations(PlatformStorageOperation):
+
+class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
     def train(
         self, image, dataset, results, gpu, cpu, memory, extshm, cmd, model, http, ssh
     ):
@@ -376,14 +408,14 @@ class ModelHandlerOperations(PlatformStorageOperation):
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
         except ValueError as e:
             raise ValueError(
-                "Dataset path should be on platform. " "Specify scheme storage:"
+                f"Dataset path should be on platform. " f"Current value {dataset}"
             )
 
         try:
             resultset_platform_path = self.render_uri_path_with_principal(results)
         except ValueError as e:
             raise ValueError(
-                "Results path should be on platform. " "Specify scheme storage:"
+                f"Results path should be on platform. " f"Current value {results}"
             )
 
         net = None
@@ -412,3 +444,55 @@ class ModelHandlerOperations(PlatformStorageOperation):
             )
 
         return job
+
+    def develop(
+        self,
+        image,
+        dataset,
+        results,
+        gpu,
+        cpu,
+        memory,
+        extshm,
+        model,
+        jobs,
+        http,
+        ssh,
+        jump_host_rsa,
+        container_user,
+        container_key_path,
+    ):
+        # Temporal solution - pending custom Jump Server with JWT support
+        if not container_user:
+            raise ValueError("Specify container user name")
+        if not container_key_path:
+            raise ValueError("Specify container RSA key path.")
+        if not jump_host_rsa:
+            raise ValueError(
+                "Configure Github RSA key path." "See for more info `neuro config`."
+            )
+        if not ssh:
+            raise ValueError("Please enable SSH / specify ssh port.")
+
+        # Start the job, we expect it to have SSH server on board
+        job = self.train(
+            image, dataset, results, gpu, cpu, memory, extshm, None, model, http, ssh
+        )
+        job_id = job.id
+        # wait for a job to leave pending stage
+        job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
+        if job_status.status == "running":
+            # Strip jump host cname from job-id
+            ssh_hostname = urlparse(job_status.ssh).hostname
+            ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+            self.start_ssh(
+                job_id,
+                ssh_hostname,
+                self.principal,
+                jump_host_rsa,
+                container_user,
+                container_key_path,
+            )
+            return None
+        else:
+            raise ValueError(f"Job is not running. " f"Status={job_status.status}")

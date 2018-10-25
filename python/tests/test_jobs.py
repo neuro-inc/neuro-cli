@@ -173,7 +173,7 @@ def test_status_failed(jobs):
                 "status": "failed",
                 "id": "foo",
                 "http_url": "http://my_host:8889",
-                "ssh_connection": "ssh://my_host.ssh:22",
+                "ssh_server": "ssh://my_host.ssh:22",
                 "history": {
                     "created_at": "2018-08-29T12:23:13.981621+00:00",
                     "started_at": "2018-08-29T12:23:15.988054+00:00",
@@ -324,7 +324,7 @@ def test_list_extended_output(jobs):
                             },
                         },
                         "http_url": "http://my_host:8889",
-                        "ssh_connection": "ssh://my_host.ssh:22",
+                        "ssh_server": "ssh://my_host.ssh:22",
                     }
                 ]
             }
