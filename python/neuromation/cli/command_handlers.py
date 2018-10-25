@@ -8,6 +8,8 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
+from neuromation.cli.command_progress_report import (ProgressBase,
+                                                     StandardPrintPercentOnly)
 from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 
@@ -111,7 +113,9 @@ class PlatformRemoveOperation(PlatformStorageOperation):
 
 class CopyOperation(PlatformStorageOperation):
 
-    def __init__(self, principal: str, progress: bool = False):
+    def __init__(self,
+                 principal: str,
+                 progress: ProgressBase = ProgressBase()):
         super().__init__(principal)
         self.progress = progress
 
@@ -131,8 +135,10 @@ class CopyOperation(PlatformStorageOperation):
 
     @classmethod
     def create(cls, principal: str, src_scheme: str, dst_scheme: str,
-               recursive: bool, progress: bool = False) -> 'CopyOperation':
-        log.debug(f"p = {progress}")
+               recursive: bool, progress_enabled: bool = False) -> 'CopyOperation':
+        log.debug(f"p = {progress_enabled}")
+        progress: ProgressBase = StandardPrintPercentOnly() \
+            if progress_enabled else ProgressBase()
         if src_scheme == 'file':
             if dst_scheme == 'storage':
                 if recursive:
@@ -272,32 +278,22 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             return False
         return True
 
-    async def _copy_data(self, src: str):  # pragma: no cover
-        with open(src, mode='rb') as f:
-            data_chunk = f.read(BUFFER_SIZE_B)
-            while data_chunk:
-                yield data_chunk
-                data_chunk = f.read(BUFFER_SIZE_B)
-
     async def _copy_data_with_progress(self, src: str):  # pragma: no cover
         file_stat = os.stat(src)
         total_file_size = file_stat.st_size
         copied_file_size = 0
+        self.progress.start(src, total_file_size)
         with open(src, mode='rb') as f:
             data_chunk = f.read(BUFFER_SIZE_B)
             while data_chunk:
                 copied_file_size += len(data_chunk)
                 yield data_chunk
-                print(f"\r{(copied_file_size * 100) / total_file_size:.2f}%",
-                      end="")
+                self.progress.progress(src, copied_file_size)
                 data_chunk = f.read(BUFFER_SIZE_B)
 
     def copy_file(self, src_path: str, dest_path: str,
                   storage: Callable):  # pragma: no cover
-        data = self._copy_data_with_progress(src_path) \
-            if self.progress \
-            else self._copy_data(src_path)
-
+        data = self._copy_data_with_progress(src_path)
         with storage() as s:
             s.create(path=dest_path, data=data)
             return dest_path
@@ -355,8 +351,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 target_dest = f'{pref_path}{file}'
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
-                if self.progress:
-                    print(f"\rFile {src_file} copied.")
+                self.progress.complete(src_file)
             for subdir in subdirs:
                 target_dest = f'{pref_path}{subdir}'
                 PlatformMakeDirOperation(self.principal).mkdir(
