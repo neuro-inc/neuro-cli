@@ -43,6 +43,7 @@ isort:
 .PHONY: lint
 lint:
 	black --check neuromation tests
+	mypy neuromation
 	flake8
 
 .PHONY: publish
