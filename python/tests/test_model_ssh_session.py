@@ -148,7 +148,7 @@ class TestSSHConnectionPaths:
             assert runMock.call_count == 1
             ssh_key = "-i /user/some/path.id.rsa"
             ssh_host = "alice@cname.ssh.host"
-            cmd = "nc {my_test_job_id} 22"
+            cmd = f"nc {my_test_job_id} 22"
             proxy_command = f"ProxyCommand=ssh {ssh_key} {ssh_host} {cmd}"
             runMock.assert_any_call(
                 args=[
