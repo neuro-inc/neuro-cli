@@ -11,6 +11,7 @@ from urllib.parse import ParseResult, urlparse
 from neuromation import Resources
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
+from neuromation.http import BadRequestError
 
 log = logging.getLogger(__name__)
 
@@ -336,7 +337,7 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
         return final_path
 
 
-class JobHandlerOperations:
+class JobHandlerOperations(PlatformStorageOperation):
     def wait_job_transfer_from(
         self, id: str, from_state: str, jobs: Callable, sleep_interval_s: int = 1
     ) -> JobDescription:
@@ -399,8 +400,58 @@ class JobHandlerOperations:
             pass
         return None
 
+    def _connect_ssh(
+        self,
+        job_status: JobDescription,
+        jump_host_key: str,
+        container_user: str,
+        container_key: str,
+    ):
+        if job_status.status == "running":
+            if job_status.ssh:
+                # We shall make an attempt to connect only in case it has SSH
+                ssh_hostname = urlparse(job_status.ssh).hostname
+                ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+                self.start_ssh(
+                    job_status.id,
+                    ssh_hostname,
+                    self.principal,
+                    jump_host_key,
+                    container_user,
+                    container_key,
+                )
+                return None
+            else:
+                raise ValueError("Job should be started with SSH support.")
+        else:
+            raise ValueError(f"Job is not running. Job status is {job_status.status}")
 
-class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
+    def connect_ssh(
+        self,
+        job_id: str,
+        jump_host_key: str,
+        container_user: str,
+        container_key: str,
+        jobs: Callable,
+    ) -> None:
+        # Temporal solution - pending custom Jump Server with JWT support
+        if not container_user:
+            raise ValueError("Specify container user name")
+        if not container_key:
+            raise ValueError("Specify container RSA key path.")
+        if not jump_host_key:
+            raise ValueError(
+                "Configure Github RSA key path." "See for more info `neuro config`."
+            )
+        # Check if job is running
+        try:
+            job_status = self.status(job_id, jobs)
+            self._connect_ssh(job_status, jump_host_key, container_user, container_key)
+        except BadRequestError as e:
+            raise ValueError(f"Job not found. Job Id = {job_id}") from e
+
+
+class ModelHandlerOperations(JobHandlerOperations):
     def train(
         self, image, dataset, results, gpu, cpu, memory, extshm, cmd, model, http, ssh
     ):
@@ -481,18 +532,6 @@ class ModelHandlerOperations(PlatformStorageOperation, JobHandlerOperations):
         job_id = job.id
         # wait for a job to leave pending stage
         job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
-        if job_status.status == "running":
-            # Strip jump host cname from job-id
-            ssh_hostname = urlparse(job_status.ssh).hostname
-            ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
-            self.start_ssh(
-                job_id,
-                ssh_hostname,
-                self.principal,
-                jump_host_rsa,
-                container_user,
-                container_key_path,
-            )
-            return None
-        else:
-            raise ValueError(f"Job is not running. " f"Status={job_status.status}")
+        # start ssh shell session
+        self._connect_ssh(job_status, jump_host_rsa, container_user, container_key_path)
+        return None

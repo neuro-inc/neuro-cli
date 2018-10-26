@@ -35,22 +35,22 @@ def jobs_mock(loop):
 
 
 def test_job_filter_all(jobs_mock):
-    jobs = JobHandlerOperations().list_jobs(None, jobs_mock)
+    jobs = JobHandlerOperations("test-user").list_jobs(None, jobs_mock)
     assert jobs
 
 
 def test_job_filter_running(jobs_mock):
-    jobs = JobHandlerOperations().list_jobs("running", jobs_mock)
+    jobs = JobHandlerOperations("test-user").list_jobs("running", jobs_mock)
     assert jobs
 
 
 def test_job_filter_failed(jobs_mock):
-    jobs = JobHandlerOperations().list_jobs("failed", jobs_mock)
+    jobs = JobHandlerOperations("test-user").list_jobs("failed", jobs_mock)
     assert not jobs
 
 
 def test_job_status_query(jobs_mock):
-    jobs = JobHandlerOperations().status("id0", jobs_mock)
+    jobs = JobHandlerOperations("test-user").status("id0", jobs_mock)
     assert jobs == JobDescription(
         status="running", id="id0", client=None, image="ubuntu", command="shell"
     )

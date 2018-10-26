@@ -438,11 +438,34 @@ Commands:
           list                List all jobs
           status              Display status of a job
           kill                Kill job
+          ssh                 Start SSH terminal
         """
 
         from neuromation.client.jobs import Job, JobStatus
 
         jobs = partial(Job, url, token)
+
+        @command
+        def ssh(id, user, key):
+            """
+            Usage:
+                neuro job ssh [options] ID
+
+            Starts ssh terminal connected to running job.
+            Job should be started with SSH support enabled.
+
+            Options:
+                --user=STRING         Container user name [default: root]
+                --key=STRING          Path to container private key.
+
+            Examples:
+
+            """
+            config: Config = rc.ConfigFactory.load()
+            git_key = config.github_rsa_path
+
+            JobHandlerOperations(token).connect_ssh(id, git_key, user, key, jobs)
+            return None
 
         @command
         def monitor(id):
@@ -472,7 +495,7 @@ Commands:
 
             List all jobs
             """
-            return JobHandlerOperations().list_jobs(status, jobs)
+            return JobHandlerOperations(token).list_jobs(status, jobs)
 
         @command
         def status(id):
@@ -482,7 +505,7 @@ Commands:
 
             Display status of a job
             """
-            res = JobHandlerOperations().status(id, jobs)
+            res = JobHandlerOperations(token).status(id, jobs)
             result = f"Job: {res.id}\n"
             result += f"Status: {res.status}\n"
             result += f"Image: {res.image}\n"

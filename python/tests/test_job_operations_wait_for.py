@@ -33,7 +33,9 @@ def jobs_mock(loop):
 
 
 def test_job_status_query(jobs_mock):
-    jobs = JobHandlerOperations().wait_job_transfer_from("id0", "pending", jobs_mock)
+    jobs = JobHandlerOperations("test-user").wait_job_transfer_from(
+        "id0", "pending", jobs_mock
+    )
     assert jobs == JobDescription(
         status="running", id="id0", client=None, image="ubuntu", command="shell"
     )
