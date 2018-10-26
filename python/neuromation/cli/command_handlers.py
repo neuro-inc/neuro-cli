@@ -400,6 +400,32 @@ class JobHandlerOperations(PlatformStorageOperation):
             pass
         return None
 
+    def _connect_ssh(
+        self,
+        job_status: JobDescription,
+        jump_host_key: str,
+        container_user: str,
+        container_key: str,
+    ):
+        if job_status.status == "running":
+            if job_status.ssh:
+                # We shall make an attempt to connect only in case it has SSH
+                ssh_hostname = urlparse(job_status.ssh).hostname
+                ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+                self.start_ssh(
+                    job_status.id,
+                    ssh_hostname,
+                    self.principal,
+                    jump_host_key,
+                    container_user,
+                    container_key,
+                )
+                return None
+            else:
+                raise ValueError("Job should be started with SSH support.")
+        else:
+            raise ValueError(f"Job is not running. Job status is {job_status.status}")
+
     def connect_ssh(
         self,
         job_id: str,
@@ -420,26 +446,9 @@ class JobHandlerOperations(PlatformStorageOperation):
         # Check if job is running
         try:
             job_status = self.status(job_id, jobs)
+            self._connect_ssh(job_status, jump_host_key, container_user, container_key)
         except BadRequestError as e:
             raise ValueError(f"Job not found. Job Id = {job_id}") from e
-        if job_status.status == "running":
-            if job_status.ssh:
-                # We shall make an attempt to connect only in case it has SSH
-                ssh_hostname = urlparse(job_status.ssh).hostname
-                ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
-                self.start_ssh(
-                    job_id,
-                    ssh_hostname,
-                    self.principal,
-                    jump_host_key,
-                    container_user,
-                    container_key,
-                )
-                return None
-            else:
-                raise ValueError("Job should be started with SSH support.")
-        else:
-            raise ValueError(f"Job is not running. Job status is {job_status.status}")
 
 
 class ModelHandlerOperations(JobHandlerOperations):
@@ -523,18 +532,6 @@ class ModelHandlerOperations(JobHandlerOperations):
         job_id = job.id
         # wait for a job to leave pending stage
         job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
-        if job_status.status == "running":
-            # Strip jump host cname from job-id
-            ssh_hostname = urlparse(job_status.ssh).hostname
-            ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
-            self.start_ssh(
-                job_id,
-                ssh_hostname,
-                self.principal,
-                jump_host_rsa,
-                container_user,
-                container_key_path,
-            )
-            return None
-        else:
-            raise ValueError(f"Job is not running. " f"Status={job_status.status}")
+        # start ssh shell session
+        self._connect_ssh(job_status, jump_host_rsa, container_user, container_key_path)
+        return None
