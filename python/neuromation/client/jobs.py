@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BufferedReader
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
 from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
@@ -62,6 +63,11 @@ class JobDescription:
     ssh: str = ""
     history: JobStatusHistory = None
     resources: Resources = None
+
+    def jump_host(self) -> str:
+        ssh_hostname = urlparse(self.ssh).hostname
+        ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+        return ssh_hostname
 
 
 @dataclass(frozen=True)

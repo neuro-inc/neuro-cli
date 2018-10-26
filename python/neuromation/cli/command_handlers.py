@@ -457,8 +457,7 @@ class JobHandlerOperations(PlatformStorageOperation):
     ):
         self._validate_job_status_for_ssh_session(job_status)
         # We shall make an attempt to connect only in case it has SSH
-        ssh_hostname = urlparse(job_status.ssh).hostname
-        ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+        ssh_hostname = job_status.jump_host()
         self.start_ssh(
             job_status.id,
             ssh_hostname,
@@ -496,8 +495,7 @@ class JobHandlerOperations(PlatformStorageOperation):
             )
         try:
             job_status = self.status(job_id, jobs)
-            ssh_hostname = urlparse(job_status.ssh).hostname
-            ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+            ssh_hostname = job_status.jump_host()
             self._start_ssh_tunnel(
                 job_status, ssh_hostname, self.principal, jump_host_key, local_port
             )
