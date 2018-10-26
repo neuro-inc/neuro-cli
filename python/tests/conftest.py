@@ -112,3 +112,24 @@ def http_backed_storage(http_storage):
         return http_storage
 
     return partial_mocked_store
+
+
+@pytest.fixture
+def run(request, monkeypatch, capsys, tmpdir):
+    import sys
+    from pathlib import Path
+
+    def _home():
+        return Path(tmpdir)
+
+    def _run(arguments, rc_text):
+        tmpdir.join(".nmrc").open("w").write(rc_text)
+
+        monkeypatch.setattr(Path, "home", _home)
+        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
+
+        from neuromation.cli import main
+
+        return main(), capsys.readouterr()
+
+    return _run

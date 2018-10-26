@@ -99,7 +99,7 @@ Commands:
   image                 Docker container image operations
   config                Configure API connection settings
   help                  Get help on a command
-    """
+"""
 
     from neuromation.client import Storage
 
