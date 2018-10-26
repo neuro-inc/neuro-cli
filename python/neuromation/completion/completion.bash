@@ -1,18 +1,27 @@
-#/usr/bin/env bash
-alias errcho='>>log echo'
-
+#!/bin/bash
+#
+# Bash-completion for neuro command line client
+alias errcho='echo >> log'
+######################################################################
+# Adds whitespace to tok unless it ends with /
+# $1: tok
+######################################################################
 _neuro_add_whitespace()
 {
-    local word=$1
-    if [[ $word = */ ]]
+    local tok=$1
+    if [[ $tok = */ ]]
     then
-	echo "$word"
+	echo "$tok"
     else
-	echo "$word "
+	echo "$tok "
     fi
     return 0
 } # _neuro_add_whitespace()
 
+######################################################################
+# Quotes tok, so it can be used in bash-completion
+# $1: tok
+######################################################################
 _neuro_quote()  {
     local tok=$1
     tok=$(printf "%q" "$tok")
@@ -25,6 +34,11 @@ _neuro_quote()  {
     return 0
 } # _neuro_quote()
 
+######################################################################
+# Generates possible completions of cur from toks
+# $1: toks
+# $2: cur
+######################################################################
 _neuro_gen_completion() {
     local toks=$1
     local cur=$2
@@ -40,6 +54,13 @@ _neuro_gen_completion() {
     return 0
 } # _neuro_gen_completion()
 
+######################################################################
+# Generates possible completions for cur from local filesystem.
+# Ported from common completion extensions for bash 3 compatibility.
+# $1: -d if only directories should be completed
+#     -a if files should be completed as well
+# $2: cur
+######################################################################
 _neuro_filedir()
 {
     local cur=$2
@@ -72,6 +93,10 @@ _neuro_filedir()
     return 0
 } # _neuro_filedir()
 
+######################################################################
+# Lists all jobs of the current status (all jobs if no status given).
+# [$1]: status
+######################################################################
 _neuro_listjobs()
 {
     status=$1
@@ -93,19 +118,24 @@ _neuro_listjobs()
     return 0
 } # _neuro_listjobs()
 
+######################################################################
+# Lists all possible completions of cur from the storage filesystem.
+# $1: cur
+# [$2]: y if only dicetories should be used for completion.
+######################################################################
 _neuro_complete-storage()
 {
-    local fullpath=$1
+    local cur=$1
     local dironly=$2
     local path=
     local file=
     local prefix=
-    if [[ $fullpath == */ ]] || [[ $fullpath == "" ]]
+    if [[ $cur == */ ]] || [[ $cur == "" ]]
     then
-	path=$fullpath
+	path=$cur
     else
-	path=$(dirname $fullpath)
-	file=$(basename $fullpath)
+	path=$(dirname $cur)
+	file=$(basename $cur)
     fi
     path=${path#.}
     path=${path#/}
@@ -142,6 +172,11 @@ _neuro_complete-storage()
     return 0
 } # _neuro_complete-storage()
 
+######################################################################
+# Lists all possible completions of cur from the local filesystem.
+# $1: cur
+# [$2]: y if only dicetories should be used for completion.
+######################################################################
 _neuro_complete-path()
 {
     local path=$1
@@ -155,40 +190,47 @@ _neuro_complete-path()
     return 0
 } # _neuro_complete-path()
 
+######################################################################
+# Lists all possible completions of cur as uri.
+# $1: cur
+# [$2]: y if both local and storage are the valid tareget (otherwise
+#       only storage scheme is valid for completion)
+# [$3]: y if only directories should be used for completion.
+######################################################################
 _neuro_complete-uri()
 {
-    local uri=$1
+    local cur=$1
     local target_local=$2
     local dironly=$3
     local toks=
-    if [[ "storage\://" == "$uri"*/ ]]
+    if [[ "storage\://" == "$cur"*/ ]]
     then
 	toks="$toks storage\://"
     fi 
-    if [[ $uri == "storage\\://"* ]]
+    if [[ $cur == "storage\\://"* ]]
     then
-	local path=${uri#storage\\://}
+	local path=${cur#storage\\://}
 	local newtoks=$(_neuro_complete-storage "$path" "$dironly")
 	toks="$toks $newtoks"
     fi
 
     if [[ $target_local == 'y' ]]
     then
-	if [[ "file\\://" == "$uri"*/ ]]
+	if [[ "file\\://" == "$cur"*/ ]]
 	then
 	    toks="$toks file\://"
 	fi 
 
 	local path=
 
-	if [[ $uri == "file\\://"* ]]
+	if [[ $cur == "file\\://"* ]]
 	then
-	    path=${uri#file\\://}
-	elif [[ "file\\://" == "$uri"* ]]
+	    path=${cur#file\\://}
+	elif [[ "file\\://" == "$cur"* ]]
 	then
 	    path=""
 	else
-	    path=$uri
+	    path=$cur
 	fi
 	toks="$toks $(_neuro_complete-path "$path" $dironly)"
     fi
@@ -196,17 +238,30 @@ _neuro_complete-uri()
     return 0
 } # _neuro_complete-uri()
 
+######################################################################
 # Main function for completion
+######################################################################
 _neuro-completion()
 {
-    toks=()  # global array to accumulate possible completions
+    errcho "completing"
+    toks=()  # array to accumulate possible completions
     cur=${COMP_WORDS[COMP_CWORD]}  # current word
-    local state=base
-    for i in `seq 1 $((COMP_CWORD - 1))`	     
+    local state=init
+    for i in `seq 0 $((COMP_CWORD - 1))`	     
     do
 	local cword=${COMP_WORDS[i]}
+	errcho "i=$i, istate=$state, cword=$cword"
 	local recursive=n
 	case $state in
+	    init)
+		case $cword in
+		    neuro)
+			state=base
+			;;
+		    *)
+			state=init
+		esac
+		;;
 	    base)
 		case $cword in
 		    -v|--verbose|--version)
@@ -233,6 +288,12 @@ _neuro-completion()
 		    image)
 			state=image
 			;;
+		    completion)
+			state=completion
+			;;
+		    *)
+			state=error
+			;;
 		esac
 		;;
 	    store)
@@ -249,21 +310,27 @@ _neuro-completion()
 		    cp)
 			state=store-cp
 			;;
+		    *)
+			state=erro
+			;;
 		esac
 		;;
 	    job)
 		case $cword in
 		    list)
 			state=done
-		    ;;
+			;;
 		    status)
 			state=job-status
-		    ;;
+			;;
 		    kill)
 			state=job-kill
-		    ;;
+			;;
 		    monitor)
 			state=job-monitor
+			;;
+		    *)
+			state=error
 			;;
 		esac
 		;;
@@ -294,7 +361,8 @@ _neuro-completion()
 		    train)
 			state=model-train
 			;;
-		    test|infer)
+		    *)
+			state=error
 			;;
 		esac
 		;;
@@ -308,6 +376,14 @@ _neuro-completion()
 			;;
 		    -m|--memory)
 			state=model-train-memory
+			;;
+		    --http)
+			state=model-train-http
+			;;
+		    --ssh)
+			state=model-train-ssh
+			;;
+		    --quite|-q)
 			;;
 		    -x|--extshm)
 			;;
@@ -337,7 +413,13 @@ _neuro-completion()
 			state=config-auth
 			;;
 		    show)
-			state=final
+			state=done
+			;;
+		    id_rsa)
+			state=config-id_rsa
+			;;
+		    *)
+			state=error
 			;;
 		esac
 		;;
@@ -350,16 +432,34 @@ _neuro-completion()
 			state=config-push
 			;;
 		    search)
-			state=final
+			state=done
+			;;
+		    *)
+			state=error
 			;;
 		esac
+		;;
+	    completion)
+		case $cword in
+		    generate)
+			state=done
+			;;
+		    patch)
+			state=done
+			;;
+		    *)
+			state=error
+			;;
+		esac
+		;;
         esac
     done
+    errcho "State=$state"
     case $state in
 	base)
 	    toks='-u --url -t --token -v --verbose
                   -v --version model job store help 
-		  config image'
+		  config image completion'
 	    ;;
 	url)
 	    toks='http\://'
@@ -367,16 +467,21 @@ _neuro-completion()
 	token)
 	    ;;
 	model)
-	    toks='train test infer'
+	    toks='train'
 	    ;;
 	model-train)
-	    toks='-c --cpu -g --gpu -m --memory -x --extshm'
+	    toks='-c --cpu -g --gpu -m --memory -x --extshm
+	    	  --http --ssh -q --quite'	     
 	    ;;
 	model-train-dataset)
 	    toks=$(_neuro_complete-uri "$cur" n y)
 	    ;;
 	model-train-result)
 	    toks=$(_neuro_complete-uri "$cur" n y)
+	    ;;
+	model-train-ssh)
+	    ;;
+	model-train-http)
 	    ;;
 	job)
 	    toks='list status monitor kill'
@@ -404,15 +509,21 @@ _neuro-completion()
 	    toks=$(_neuro_complete-uri "$cur" y $recursive)
 	    ;;
 	config)
-	    toks='url auth show'
+	    toks='url auth show id_rsa'
 	    ;;
 	config-url)
 	    toks='http\://'
 	    ;;
 	config-auth)
 	    ;;
+	config-id_rsa)
+	    toks=$(_neuro_complete-uri "$cur" y n)
+	    ;;
 	image)
-	    toks='push pull search'
+	    toks='push pull'
+	    ;;
+	completion)
+	    toks='generate patch'
 	    ;;
     esac
     _neuro_gen_completion "$toks" "$cur"
