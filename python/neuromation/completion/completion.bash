@@ -1,7 +1,6 @@
 #!/bin/bash
 #
 # Bash-completion for neuro command line client
-alias errcho='echo >> log'
 ######################################################################
 # Adds whitespace to tok unless it ends with /
 # $1: tok
@@ -243,14 +242,12 @@ _neuro_complete-uri()
 ######################################################################
 _neuro-completion()
 {
-    errcho "completing"
     toks=()  # array to accumulate possible completions
     cur=${COMP_WORDS[COMP_CWORD]}  # current word
     local state=init
     for i in `seq 0 $((COMP_CWORD - 1))`	     
     do
 	local cword=${COMP_WORDS[i]}
-	errcho "i=$i, istate=$state, cword=$cword"
 	local recursive=n
 	case $state in
 	    init)
@@ -454,7 +451,6 @@ _neuro-completion()
 		;;
         esac
     done
-    errcho "State=$state"
     case $state in
 	base)
 	    toks='-u --url -t --token -v --verbose
