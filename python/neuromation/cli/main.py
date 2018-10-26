@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 from functools import partial
+from pathlib import Path
 from urllib.parse import urlparse
 
 import aiohttp
@@ -98,6 +99,7 @@ Commands:
   store                 Storage operations
   image                 Docker container image operations
   config                Configure API connection settings
+  completion            Generate code to enable completion
   help                  Get help on a command
     """
 
@@ -621,6 +623,55 @@ Commands:
             return None
         print("Resource shared.")
         return None
+
+    @command
+    def completion():
+        """
+            Usage:
+                neuro completion COMMAND
+
+            Generates code to enable bash-completion.
+
+            Commands:
+                generate     Generate code enabling bash-completion.
+                             eval $(neuro generate) enables completion for the
+                             current session.
+                             Adding eval $(neuro generate) to .bashrc_profile
+                             enables completion permanently.
+                patch        Automatically patch .bash_profile to enable completion
+        """
+        neuromation_dir = Path(__file__).parent.parent
+        completion_file = neuromation_dir / "completion" / "completion.bash"
+        activate_completion = "source '{}'".format(str(completion_file))
+
+        @command
+        def generate():
+            """
+               Usage:
+                   neuro completion generate
+
+               Generate code enabling bash-completion.
+               eval $(neuro completion generate) enables completion for the current
+               session.
+               Adding eval $(neuro completion generate) to .bashrc_profile enables
+               completion permanently.
+            """
+            print(activate_completion)
+
+        @command
+        def patch():
+            """
+               Usage:
+                   neuro completion patch
+
+               Automatically patch .bash_profile to enable completion
+            """
+            bash_profile_file = Path.home() / ".bash_profile"
+            with bash_profile_file.open("a+") as bash_profile:
+                bash_profile.write(activate_completion)
+                bash_profile.write("\n")
+
+        return locals()
 
     return locals()
 
