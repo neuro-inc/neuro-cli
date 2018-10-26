@@ -368,6 +368,31 @@ Commands:
             return OutputFormatter.format_job(job, quiet)
 
         @command
+        def debug(id, localport, user, key):
+            """
+            Usage:
+                neuro model debug [options] ID
+
+            Starts ssh terminal connected to running job.
+            Job should be started with SSH support enabled.
+
+            Options:
+                --localport=NUMBER    Local port number for debug [default: 31234]
+                --user=STRING         Container user name [default: root]
+                --key=STRING          Path to container private key.
+
+            Examples:
+
+            """
+            config: Config = rc.ConfigFactory.load()
+            git_key = config.github_rsa_path
+
+            JobHandlerOperations(token).python_remote_debug(
+                id, git_key, localport, jobs
+            )
+            return None
+
+        @command
         def develop(
             image, dataset, results, gpu, cpu, memory, extshm, http, ssh, user, key
         ):

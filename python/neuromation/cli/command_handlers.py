@@ -350,6 +350,28 @@ class JobHandlerOperations(PlatformStorageOperation):
                 sleep(sleep_interval_s)
         return job_status
 
+    def _validate_args_for_ssh_session(
+        self, container_user: str, container_key: str, jump_host_key: str
+    ):
+        # Temporal solution - pending custom Jump Server with JWT support
+        if not container_user:
+            raise ValueError("Specify container user name")
+        if not container_key:
+            raise ValueError("Specify container RSA key path.")
+        if not jump_host_key:
+            raise ValueError(
+                "Configure Github RSA key path." "See for more info `neuro config`."
+            )
+
+    def _validate_job_status_for_ssh_session(self, job_status: JobDescription):
+        if job_status.status == "running":
+            if job_status.ssh:
+                pass
+            else:
+                raise ValueError("Job should be started with SSH support.")
+        else:
+            raise ValueError(f"Job is not running. Job status is {job_status.status}")
+
     def status(self, id: str, jobs: Callable) -> JobDescription:
         with jobs() as j:
             return j.status(id)
@@ -400,6 +422,32 @@ class JobHandlerOperations(PlatformStorageOperation):
             pass
         return None
 
+    def _start_ssh_tunnel(
+        self,
+        job_status: JobDescription,
+        jump_host: str,
+        jump_user: str,
+        jump_key: str,
+        local_port: int,
+    ) -> None:
+        self._validate_job_status_for_ssh_session(job_status)
+        try:
+            subprocess.run(
+                args=[
+                    "ssh",
+                    "-i",
+                    jump_key,
+                    f"{jump_user}@{jump_host}",
+                    "-L",
+                    f"{local_port}:{job_status.id}:22",
+                ],
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            # TODO (R Zubairov) check what ssh returns
+            # on disconnect due to network issues.
+            pass
+
     def _connect_ssh(
         self,
         job_status: JobDescription,
@@ -407,24 +455,19 @@ class JobHandlerOperations(PlatformStorageOperation):
         container_user: str,
         container_key: str,
     ):
-        if job_status.status == "running":
-            if job_status.ssh:
-                # We shall make an attempt to connect only in case it has SSH
-                ssh_hostname = urlparse(job_status.ssh).hostname
-                ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
-                self.start_ssh(
-                    job_status.id,
-                    ssh_hostname,
-                    self.principal,
-                    jump_host_key,
-                    container_user,
-                    container_key,
-                )
-                return None
-            else:
-                raise ValueError("Job should be started with SSH support.")
-        else:
-            raise ValueError(f"Job is not running. Job status is {job_status.status}")
+        self._validate_job_status_for_ssh_session(job_status)
+        # We shall make an attempt to connect only in case it has SSH
+        ssh_hostname = urlparse(job_status.ssh).hostname
+        ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+        self.start_ssh(
+            job_status.id,
+            ssh_hostname,
+            self.principal,
+            jump_host_key,
+            container_user,
+            container_key,
+        )
+        return None
 
     def connect_ssh(
         self,
@@ -434,19 +477,30 @@ class JobHandlerOperations(PlatformStorageOperation):
         container_key: str,
         jobs: Callable,
     ) -> None:
-        # Temporal solution - pending custom Jump Server with JWT support
-        if not container_user:
-            raise ValueError("Specify container user name")
-        if not container_key:
-            raise ValueError("Specify container RSA key path.")
-        if not jump_host_key:
-            raise ValueError(
-                "Configure Github RSA key path." "See for more info `neuro config`."
-            )
+        self._validate_args_for_ssh_session(
+            container_user, container_key, jump_host_key
+        )
         # Check if job is running
         try:
             job_status = self.status(job_id, jobs)
             self._connect_ssh(job_status, jump_host_key, container_user, container_key)
+        except BadRequestError as e:
+            raise ValueError(f"Job not found. Job Id = {job_id}") from e
+
+    def python_remote_debug(
+        self, job_id: str, jump_host_key: str, local_port: int, jobs: Callable
+    ) -> None:
+        if not jump_host_key:
+            raise ValueError(
+                "Configure Github RSA key path." "See for more info `neuro config`."
+            )
+        try:
+            job_status = self.status(job_id, jobs)
+            ssh_hostname = urlparse(job_status.ssh).hostname
+            ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
+            self._start_ssh_tunnel(
+                job_status, ssh_hostname, self.principal, jump_host_key, local_port
+            )
         except BadRequestError as e:
             raise ValueError(f"Job not found. Job Id = {job_id}") from e
 
@@ -513,15 +567,9 @@ class ModelHandlerOperations(JobHandlerOperations):
         container_user,
         container_key_path,
     ):
-        # Temporal solution - pending custom Jump Server with JWT support
-        if not container_user:
-            raise ValueError("Specify container user name")
-        if not container_key_path:
-            raise ValueError("Specify container RSA key path.")
-        if not jump_host_rsa:
-            raise ValueError(
-                "Configure Github RSA key path." "See for more info `neuro config`."
-            )
+        self._validate_args_for_ssh_session(
+            container_user, container_key_path, jump_host_rsa
+        )
         if not ssh:
             raise ValueError("Please enable SSH / specify ssh port.")
 

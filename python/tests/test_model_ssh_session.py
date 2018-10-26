@@ -110,6 +110,61 @@ class TestSSHConnectionToJob:
             "my-job-id", "server", "no-token", "jump_hst_key", "root", "key_paths"
         )
 
+    def test_tunnel_to_running_job_ssh_not_exists(
+        self, alice_model, partial_mocked_model, partial_mocked_job
+    ) -> None:
+        def not_found(id: str):
+            raise BadRequestError("Job not found.")
+
+        partial_mocked_job().status = not_found
+
+        with pytest.raises(ValueError):
+            alice_model.python_remote_debug(
+                "my-job-id", "jump_hst_key", 32121, partial_mocked_job
+            )
+
+    def test_tunnel_to_running_job_ssh_no_key(self, alice_model, partial_mocked_job):
+        with pytest.raises(ValueError):
+            alice_model.python_remote_debug(
+                "my-job-id", None, 32121, partial_mocked_job
+            )
+
+    def test_tunnel_to_running_job_ssh(
+        self, alice_model, partial_mocked_model, partial_mocked_job
+    ) -> None:
+        partial_mocked_job().status = self.job_status("running", "ssh://test.server:22")
+
+        with mock.patch("subprocess.run") as runMock:
+            alice_model.python_remote_debug(
+                "my-job-id", "jump_hst_key", 32121, partial_mocked_job
+            )
+
+            runMock.assert_any_call(
+                args=[
+                    "ssh",
+                    "-i",
+                    "jump_hst_key",
+                    "alice@server",
+                    "-L",
+                    f"32121:my-job-id:22",
+                ],
+                check=True,
+            )
+
+    def test_tunnel_to_running_job_ssh_exec_fail(
+        self, alice_model, partial_mocked_model, partial_mocked_job
+    ) -> None:
+        partial_mocked_job().status = self.job_status("running", "ssh://test.server:22")
+
+        with mock.patch("subprocess.run") as runMock:
+            runMock.side_effect = subprocess.CalledProcessError(
+                returncode=2, cmd="no command"
+            )
+
+            alice_model.python_remote_debug(
+                "my-job-id", "jump_hst_key", 32121, partial_mocked_job
+            )
+
 
 class TestSSHConnectionPaths:
     def job_status(self, desired: str):
