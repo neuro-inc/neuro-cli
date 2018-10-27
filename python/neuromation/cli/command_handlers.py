@@ -87,7 +87,7 @@ class PlatformMakeDirOperation(PlatformStorageOperation):
 
 
 class PlatformListDirOperation(PlatformStorageOperation):
-    def ls(self, path_str: str, storage: Callable):
+    def ls(self, path_str: str, storage: Callable) -> List[FileStatus]:
         final_path = self.render_uri_path_with_principal(path_str)
         with storage() as s:
             return s.ls(path=str(final_path))
@@ -130,7 +130,7 @@ class CopyOperation(PlatformStorageOperation):
         copy_result = self._copy(src, dst, storage)
         return copy_result
 
-    def _ls(self, path: str, storage: Callable):
+    def _ls(self, path: str, storage: Callable) -> List[FileStatus]:
         ls = PlatformListDirOperation(self.principal)
         return ls.ls(f"storage:/{path}", storage)
 
@@ -152,18 +152,21 @@ class CopyOperation(PlatformStorageOperation):
         elif src_scheme == "storage":
             if dst_scheme == "file":
                 if recursive:
-                    return RecursivePlatformToLocal(principal)
+                    return RecursivePlatformToLocal(principal, progress)
                 else:
-                    return NonRecursivePlatformToLocal(principal)
+                    return NonRecursivePlatformToLocal(principal, progress)
             else:
                 raise ValueError("storage:// and file:// schemes required")
         raise ValueError("storage:// and file:// schemes required")
 
 
 class NonRecursivePlatformToLocal(CopyOperation):
-    def transfer(self, i, o):  # pragma: no cover
+    def transfer(self, file: FileStatus, i, o):  # pragma: no cover
         log.debug(f"Input: {i}")
         log.debug(f"Output: {o}")
+
+        self.progress.start(file.path, file.size)
+        copied = 0
 
         while True:
             buf = i.read(BUFFER_SIZE_MB * 1024 * 1024)
@@ -171,13 +174,19 @@ class NonRecursivePlatformToLocal(CopyOperation):
             if not buf:
                 break
 
+            copied = copied + len(buf)
             o.write(buf)
+            self.progress.progress(file.path, copied)
+        self.progress.complete(file.path)
 
-    def copy_file(self, src: str, dst: str, storage):  # pragma: no cover
+    def copy_file(self,
+                  src: str,
+                  dst: str,
+                  file: FileStatus, storage):  # pragma: no cover
         with storage() as s:
             with s.open(path=src) as stream:
                 with open(dst, mode="wb") as f:
-                    self.transfer(stream, f)
+                    self.transfer(file, stream, f)
                     return dst
 
     def _copy(
@@ -209,15 +218,18 @@ class NonRecursivePlatformToLocal(CopyOperation):
         # check remote
         files = self._ls(str(platform_file_name.parent), storage)
         try:
-            next(
-                file
-                for file in files
-                if file.path == platform_file_name.name and file.type == "FILE"
+            file_info = next(file
+                             for file in files
+                             if file.path == platform_file_name.name
+                             and file.type == "FILE"
             )
         except StopIteration as e:
             raise ResourceNotFound(f"Source file {src.path} not found.") from e
 
-        copy_file = self.copy_file(str(platform_file_name), str(dst_path), storage)
+        copy_file = self.copy_file(str(platform_file_name),
+                                   str(dst_path),
+                                   file_info,
+                                   storage)
         return copy_file
 
 
@@ -235,7 +247,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                 self._copy_obj(PosixPath(src, name), target, storage)
             else:
                 platform_file_name = f"{src}{PLATFORM_DELIMITER}{name}"
-                self.copy_file(platform_file_name, str(target), storage)
+                self.copy_file(platform_file_name, str(target), file, storage)
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
@@ -271,7 +283,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
         self._copy_obj(platform_file_name, Path(dst.path), storage)
 
-        return dst
+        return dst.path
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
@@ -297,6 +309,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
                 yield data_chunk
                 self.progress.progress(src, copied_file_size)
                 data_chunk = f.read(BUFFER_SIZE_B)
+            self.progress.complete(src)
 
     def copy_file(self, src_path: str, dest_path: str,
                   storage: Callable):  # pragma: no cover
@@ -354,7 +367,6 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                 target_dest = f"{pref_path}{file}"
                 src_file = os.path.join(root, file)
                 self.copy_file(src_file, target_dest, storage)
-                self.progress.complete(src_file)
             for subdir in subdirs:
                 target_dest = f"{pref_path}{subdir}"
                 PlatformMakeDirOperation(self.principal).mkdir(

@@ -20,7 +20,7 @@ class StandardPrintPercentOnly(ProgressBase):
     def start(self, file: str, size: int):
         self._file = file
         self._file_size = size
-        print(f"\Starting file {file}.")
+        print(f"Starting file {file}.")
 
     def complete(self, file: str):
         self._file = file
