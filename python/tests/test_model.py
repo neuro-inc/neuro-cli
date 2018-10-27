@@ -1,9 +1,9 @@
 import asyncio
-from dataclasses import replace
 from unittest.mock import patch
 
 import pytest
 from aiohttp import web
+from dataclasses import replace
 
 from neuromation import JobItem, Resources
 from neuromation.client import Image

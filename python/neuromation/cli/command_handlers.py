@@ -9,10 +9,11 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
+from neuromation.cli.command_progress_report import (
+    ProgressBase,
+    StandardPrintPercentOnly,
+)
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
-from neuromation.cli.command_progress_report import (ProgressBase,
-                                                     StandardPrintPercentOnly)
-from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.http import BadRequestError
 
@@ -112,10 +113,7 @@ class PlatformRemoveOperation(PlatformStorageOperation):
 
 
 class CopyOperation(PlatformStorageOperation):
-
-    def __init__(self,
-                 principal: str,
-                 progress: ProgressBase = ProgressBase()):
+    def __init__(self, principal: str, progress: ProgressBase = ProgressBase()):
         super().__init__(principal)
         self.progress = progress
 
@@ -135,14 +133,20 @@ class CopyOperation(PlatformStorageOperation):
         return ls.ls(f"storage:/{path}", storage)
 
     @classmethod
-    def create(cls, principal: str, src_scheme: str, dst_scheme: str,
-               recursive: bool,
-               progress_enabled: bool = False) -> 'CopyOperation':
+    def create(
+        cls,
+        principal: str,
+        src_scheme: str,
+        dst_scheme: str,
+        recursive: bool,
+        progress_enabled: bool = False,
+    ) -> "CopyOperation":
         log.debug(f"p = {progress_enabled}")
-        progress: ProgressBase = StandardPrintPercentOnly() \
-            if progress_enabled else ProgressBase()
-        if src_scheme == 'file':
-            if dst_scheme == 'storage':
+        progress: ProgressBase = ProgressBase()
+        if progress_enabled:
+            progress = StandardPrintPercentOnly()
+        if src_scheme == "file":
+            if dst_scheme == "storage":
                 if recursive:
                     return RecursiveLocalToPlatform(principal, progress)
                 else:
@@ -179,10 +183,9 @@ class NonRecursivePlatformToLocal(CopyOperation):
             self.progress.progress(file.path, copied)
         self.progress.complete(file.path)
 
-    def copy_file(self,
-                  src: str,
-                  dst: str,
-                  file: FileStatus, storage):  # pragma: no cover
+    def copy_file(
+        self, src: str, dst: str, file: FileStatus, storage
+    ):  # pragma: no cover
         with storage() as s:
             with s.open(path=src) as stream:
                 with open(dst, mode="wb") as f:
@@ -218,18 +221,17 @@ class NonRecursivePlatformToLocal(CopyOperation):
         # check remote
         files = self._ls(str(platform_file_name.parent), storage)
         try:
-            file_info = next(file
-                             for file in files
-                             if file.path == platform_file_name.name
-                             and file.type == "FILE"
+            file_info = next(
+                file
+                for file in files
+                if file.path == platform_file_name.name and file.type == "FILE"
             )
         except StopIteration as e:
             raise ResourceNotFound(f"Source file {src.path} not found.") from e
 
-        copy_file = self.copy_file(str(platform_file_name),
-                                   str(dst_path),
-                                   file_info,
-                                   storage)
+        copy_file = self.copy_file(
+            str(platform_file_name), str(dst_path), file_info, storage
+        )
         return copy_file
 
 
@@ -302,7 +304,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         total_file_size = file_stat.st_size
         copied_file_size = 0
         self.progress.start(src, total_file_size)
-        with open(src, mode='rb') as f:
+        with open(src, mode="rb") as f:
             data_chunk = f.read(BUFFER_SIZE_B)
             while data_chunk:
                 copied_file_size += len(data_chunk)
@@ -311,8 +313,9 @@ class NonRecursiveLocalToPlatform(CopyOperation):
                 data_chunk = f.read(BUFFER_SIZE_B)
             self.progress.complete(src)
 
-    def copy_file(self, src_path: str, dest_path: str,
-                  storage: Callable):  # pragma: no cover
+    def copy_file(
+        self, src_path: str, dest_path: str, storage: Callable
+    ):  # pragma: no cover
         data = self._copy_data_with_progress(src_path)
         with storage() as s:
             s.create(path=dest_path, data=data)

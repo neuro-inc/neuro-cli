@@ -125,13 +125,13 @@ class TestCopyRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/alice/platform_existing/my_file.txt",
             "/localdir/dir/my_file.txt",
-            FileStatus('my_file.txt', 100, 'FILE'),
-                                      partial_mocked_store,
+            FileStatus("my_file.txt", 100, "FILE"),
+            partial_mocked_store,
         )
         transfer_mock.assert_any_call(
             "/alice/platform_existing/dir/my_file2.txt",
             "/localdir/dir/dir/my_file2.txt",
-            FileStatus('my_file2.txt', 100, 'FILE'),
+            FileStatus("my_file2.txt", 100, "FILE"),
             partial_mocked_store,
         )
 
@@ -151,8 +151,8 @@ class TestCopyRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/bob/bob_data/file.model",
             "/localdir/dir/bob_data/file.model",
-            FileStatus('file.model', 120, 'FILE'),
-                                      partial_mocked_store,
+            FileStatus("file.model", 120, "FILE"),
+            partial_mocked_store,
         )
 
     def test_target_doesnot_exists(
@@ -228,8 +228,8 @@ class TestCopyNonRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/alice/platform_existing/my_file.txt",
             "/localdir/dir/my_file.txt",
-            FileStatus('my_file.txt', 100, 'FILE'),
-                                      partial_mocked_store,
+            FileStatus("my_file.txt", 100, "FILE"),
+            partial_mocked_store,
         )
 
     def test_source_file_target_specified(
@@ -250,8 +250,8 @@ class TestCopyNonRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/alice/platform_existing/my_file.txt",
             "/localdir/dir/dummy.txt",
-            FileStatus('my_file.txt', 100, 'FILE'),
-                                      partial_mocked_store,
+            FileStatus("my_file.txt", 100, "FILE"),
+            partial_mocked_store,
         )
 
     def test_target_doesnot_exists(

@@ -1,5 +1,3 @@
-
-
 class ProgressBase:  # pragma: no cover
     def start(self, file: str, size: int):
         pass
@@ -12,7 +10,6 @@ class ProgressBase:  # pragma: no cover
 
 
 class StandardPrintPercentOnly(ProgressBase):
-
     def __init__(self):
         self._file = None
         self._file_size = None

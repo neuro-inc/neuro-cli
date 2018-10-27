@@ -289,11 +289,9 @@ Commands:
 
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            operation = CopyOperation.create(platform_user_name,
-                                             src.scheme,
-                                             dst.scheme,
-                                             recursive,
-                                             progress)
+            operation = CopyOperation.create(
+                platform_user_name, src.scheme, dst.scheme, recursive, progress
+            )
 
             if operation:
                 return operation.copy(src, dst, storage)
