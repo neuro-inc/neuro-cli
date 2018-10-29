@@ -1,7 +1,8 @@
 import logging
-from dataclasses import asdict, dataclass
 from io import BytesIO
 from typing import ClassVar, Dict, List, Optional
+
+from dataclasses import asdict, dataclass
 
 from neuromation import http
 from neuromation.http import JsonRequest

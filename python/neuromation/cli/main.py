@@ -327,6 +327,7 @@ Commands:
           test               Test trained model against validation dataset
           infer              Start batch inference
           develop            Start model and connect using ssh
+          debug              Prepare debug tunnel for PyCharm
         """
 
         from neuromation.client.jobs import Model
@@ -366,6 +367,30 @@ Commands:
             )
 
             return OutputFormatter.format_job(job, quiet)
+
+        @command
+        def debug(id, localport):
+            """
+            Usage:
+                neuro model debug [options] ID
+
+            Starts ssh terminal connected to running job.
+            Job should be started with SSH support enabled.
+
+            Options:
+                --localport=NUMBER    Local port number for debug [default: 31234]
+
+            Examples:
+
+            """
+            config: Config = rc.ConfigFactory.load()
+            git_key = config.github_rsa_path
+            platform_user_name = config.get_platform_user_name()
+
+            JobHandlerOperations(platform_user_name).python_remote_debug(
+                id, git_key, localport, jobs
+            )
+            return None
 
         @command
         def develop(
@@ -463,8 +488,11 @@ Commands:
             """
             config: Config = rc.ConfigFactory.load()
             git_key = config.github_rsa_path
+            platform_user_name = config.get_platform_user_name()
 
-            JobHandlerOperations(token).connect_ssh(id, git_key, user, key, jobs)
+            JobHandlerOperations(platform_user_name).connect_ssh(
+                id, git_key, user, key, jobs
+            )
             return None
 
         @command
