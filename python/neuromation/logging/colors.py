@@ -1,7 +1,7 @@
 from typing import Any, Callable, Iterator, Tuple
 
 NAMES = ["grey", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
-COLOR_PAIRS = {}
+COLOR_FUNCS = {}
 
 
 def get_pairs() -> Iterator[Tuple[str, str]]:
@@ -24,7 +24,7 @@ def make_color_fn(code: str) -> Callable[[str], str]:
 
 for (name, code) in get_pairs():
     globals()[name] = make_color_fn(code)
-    COLOR_PAIRS[name] = make_color_fn(code)
+    COLOR_FUNCS[name] = make_color_fn(code)
 
 
 def rainbow() -> Iterator[str]:
