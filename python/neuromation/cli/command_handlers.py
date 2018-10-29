@@ -110,7 +110,7 @@ class PlatformRemoveOperation(PlatformStorageOperation):
 
 
 class CopyOperation(PlatformStorageOperation):
-    def __init__(self, principal: str, progress: ProgressBase = ProgressBase()):
+    def __init__(self, principal: str, progress: ProgressBase):
         super().__init__(principal)
         self.progress = progress
 
