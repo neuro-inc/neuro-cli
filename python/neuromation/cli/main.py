@@ -323,10 +323,10 @@ Commands:
         Model operations
 
         Commands:
-          ssh                Interactive shell session to your container
           train              Start model training
           test               Test trained model against validation dataset
           infer              Start batch inference
+          develop            Start model and connect using ssh
         """
 
         from neuromation.client.jobs import Model
