@@ -326,6 +326,7 @@ Commands:
           train              Start model training
           test               Test trained model against validation dataset
           infer              Start batch inference
+          develop            Start model and connect using ssh
         """
 
         from neuromation.client.jobs import Model
