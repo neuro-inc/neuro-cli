@@ -490,7 +490,9 @@ Commands:
             git_key = config.github_rsa_path
             platform_user_name = config.get_platform_user_name()
 
-            JobHandlerOperations(platform_user_name).connect_ssh(id, git_key, user, key, jobs)
+            JobHandlerOperations(platform_user_name).connect_ssh(
+                id, git_key, user, key, jobs
+            )
             return None
 
         @command
