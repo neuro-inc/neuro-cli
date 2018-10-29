@@ -30,7 +30,7 @@ class ResourcesPayload:
 @dataclass(frozen=True)
 class ContainerPayload:
     image: str
-    command: str
+    command: Optional[str]
     http: Optional[Dict[str, int]]
     ssh: Optional[Dict[str, int]]
     resources: ResourcesPayload
