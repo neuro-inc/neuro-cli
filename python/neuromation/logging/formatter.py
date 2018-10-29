@@ -12,9 +12,9 @@ class ConsoleWarningFormatter(logging.Formatter):
         separator = ": "
 
         if record.levelno == logging.WARNING:
-            return colors.COLOR_PAIRS["yellow"](record.levelname) + separator
+            return colors.COLOR_FUNCS["yellow"](record.levelname) + separator
         if record.levelno == logging.ERROR:
-            return colors.COLOR_PAIRS["red"](record.levelname) + separator
+            return colors.COLOR_FUNCS["red"](record.levelname) + separator
 
         return ""
 
