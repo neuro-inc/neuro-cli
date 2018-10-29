@@ -9,10 +9,7 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
-from neuromation.cli.command_progress_report import (
-    ProgressBase,
-    StandardPrintPercentOnly,
-)
+from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.http import BadRequestError
