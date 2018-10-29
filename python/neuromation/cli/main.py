@@ -368,7 +368,7 @@ Commands:
             return OutputFormatter.format_job(job, quiet)
 
         @command
-        def debug(id, localport, user, key):
+        def debug(id, localport):
             """
             Usage:
                 neuro model debug [options] ID
@@ -378,8 +378,6 @@ Commands:
 
             Options:
                 --localport=NUMBER    Local port number for debug [default: 31234]
-                --user=STRING         Container user name [default: root]
-                --key=STRING          Path to container private key.
 
             Examples:
 
