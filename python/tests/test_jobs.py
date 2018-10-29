@@ -269,6 +269,7 @@ def test_list(jobs):
                                 "memory_mb": 16384,
                                 "gpu": 1,
                                 "shm": False,
+                                "gpu_model": "nvidia-tesla-k80",
                             },
                         },
                     }
@@ -286,7 +287,9 @@ def test_list_extended_output(jobs):
             image="gcr.io/light-reality-205619/ubuntu:latest",
             command='bash -c " / bin / df--block - size M--output'
             ' = target, avail / dev / shm;false"',
-            resources=Resources(memory=16384, cpu=1.0, gpu=1, shm=False),
+            resources=Resources(
+                memory=16384, cpu=1.0, gpu=1, shm=False, gpu_model="nvidia-tesla-k80"
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
@@ -321,6 +324,7 @@ def test_list_extended_output(jobs):
                                 "memory_mb": 16384,
                                 "gpu": 1,
                                 "shm": False,
+                                "gpu_model": "nvidia-tesla-p4",
                             },
                         },
                         "http_url": "http://my_host:8889",
@@ -342,7 +346,9 @@ def test_list_extended_output_with_http_url(jobs):
             image="gcr.io/light-reality-205619/ubuntu:latest",
             command='bash -c " / bin / df--block - size M--output'
             ' = target, avail / dev / shm;false"',
-            resources=Resources(memory=16384, cpu=1.0, gpu=1, shm=False),
+            resources=Resources(
+                memory=16384, cpu=1.0, gpu=1, shm=False, gpu_model="nvidia-tesla-p4"
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
@@ -372,7 +378,12 @@ def test_list_extended_output_with_http_url(jobs):
                             "image": "gcr.io/light-reality-205619/ubuntu:latest",
                             "command": 'bash -c " / bin / df--block - size M--output = '
                             'target, avail / dev / shm;false"',
-                            "resources": {"cpu": 1.0, "memory_mb": 16384, "gpu": 1},
+                            "resources": {
+                                "cpu": 1.0,
+                                "memory_mb": 16384,
+                                "gpu": 1,
+                                "gpu_model": "nvidia-tesla-v100",
+                            },
                         },
                     }
                 ]
@@ -389,7 +400,9 @@ def test_list_extended_output_no_shm(jobs):
             image="gcr.io/light-reality-205619/ubuntu:latest",
             command='bash -c " / bin / df--block - size M--output '
             '= target, avail / dev / shm;false"',
-            resources=Resources(memory=16384, cpu=1.0, gpu=1, shm=None),
+            resources=Resources(
+                memory=16384, cpu=1.0, gpu=1, shm=None, gpu_model="nvidia-tesla-v100"
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
@@ -436,7 +449,9 @@ def test_list_extended_output_no_gpu(jobs):
             image="gcr.io/light-reality-205619/ubuntu:latest",
             command='bash -c " / bin / df--block - size M--output '
             '= target, avail / dev / shm;false"',
-            resources=Resources(memory=16384, cpu=1.0, gpu=None, shm=None),
+            resources=Resources(
+                memory=16384, cpu=1.0, gpu=None, shm=None, gpu_model=None
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
@@ -463,7 +478,12 @@ def test_list_extended_output_no_gpu(jobs):
                             "finished_at": "2018-09-25T12:28:59.759433+00:00",
                         },
                         "container": {
-                            "resources": {"cpu": 1.0, "memory_mb": 16384, "gpu": 1}
+                            "resources": {
+                                "cpu": 1.0,
+                                "memory_mb": 16384,
+                                "gpu": 1,
+                                "gpu_model": "nvidia-tesla-v100",
+                            }
                         },
                     }
                 ]
@@ -479,7 +499,9 @@ def test_list_extended_output_no_image(jobs):
             status="pending",
             image=None,
             command=None,
-            resources=Resources(memory=16384, cpu=1.0, gpu=1, shm=None),
+            resources=Resources(
+                memory=16384, cpu=1.0, gpu=1, shm=None, gpu_model="nvidia-tesla-v100"
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(

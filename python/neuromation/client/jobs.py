@@ -1,10 +1,11 @@
 import asyncio
 import enum
 from contextlib import contextmanager
-from dataclasses import dataclass
 from io import BufferedReader
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import urlparse
+
+from dataclasses import dataclass
 
 from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
@@ -29,6 +30,7 @@ class Resources:
     cpu: float
     gpu: Optional[int]
     shm: Optional[bool]
+    gpu_model: Optional[str]
 
 
 @dataclass()
@@ -152,6 +154,7 @@ class Model(ApiClient):
                         memory_mb=parse.to_megabytes_str(resources.memory),
                         cpu=resources.cpu,
                         gpu=resources.gpu,
+                        gpu_model=resources.gpu_model,
                         shm=resources.shm,
                     ),
                 ),
@@ -184,6 +187,7 @@ class Model(ApiClient):
                         memory_mb=parse.to_megabytes_str(resources.memory),
                         cpu=resources.cpu,
                         gpu=resources.gpu,
+                        gpu_model=resources.gpu_model,
                         shm=resources.shm,
                     ),
                 ),
@@ -260,11 +264,13 @@ class Job(ApiClient):
                 container_resources = res["container"]["resources"]
                 shm = container_resources.get("shm", None)
                 gpu = container_resources.get("gpu", None)
+                gpu_model = container_resources.get("gpu_model", None)
                 job_resources = Resources(
                     cpu=container_resources["cpu"],
                     memory=container_resources["memory_mb"],
                     gpu=gpu,
                     shm=shm,
+                    gpu_model=gpu_model,
                 )
         http_url = res.get("http_url", "")
         ssh_conn = res.get("ssh_server", "")

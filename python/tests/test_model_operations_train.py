@@ -18,6 +18,7 @@ class TestNormalCases:
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
             0,
+            None,
             1,
             100,
             False,
@@ -29,7 +30,33 @@ class TestNormalCases:
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
             image=Image(image="ubuntu:tf_2.0_beta", command=""),
-            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False),
+            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False, gpu_model=None),
+            network=None,
+            dataset=f"storage://alice/data/set.txt",
+            results=f"storage://alice/results/result1.txt",
+        )
+
+    def test_model_submit_with_gpu_model(self, alice_model, partial_mocked_model):
+        alice_model.train(
+            "ubuntu:tf_2.0_beta",
+            "storage:///data/set.txt",
+            "storage://~/results/result1.txt",
+            1,
+            "nvidia-tesla-p4",
+            1,
+            100,
+            False,
+            "",
+            partial_mocked_model,
+            http=None,
+            ssh=None,
+        )
+        partial_mocked_model().train.assert_called_once()
+        partial_mocked_model().train.assert_called_with(
+            image=Image(image="ubuntu:tf_2.0_beta", command=""),
+            resources=Resources(
+                memory=100, gpu=1, cpu=1.0, shm=False, gpu_model="nvidia-tesla-p4"
+            ),
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
@@ -41,6 +68,7 @@ class TestNormalCases:
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
             0,
+            None,
             1,
             100,
             False,
@@ -52,7 +80,7 @@ class TestNormalCases:
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
             image=Image(image="ubuntu:tf_2.0_beta", command=None),
-            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False),
+            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False, gpu_model=None),
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
@@ -64,6 +92,7 @@ class TestNormalCases:
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
             0,
+            None,
             1,
             100,
             False,
@@ -75,7 +104,7 @@ class TestNormalCases:
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
             image=Image(image="ubuntu:tf_2.0_beta", command=""),
-            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False),
+            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False, gpu_model=None),
             network=NetworkPortForwarding({"http": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
@@ -87,6 +116,7 @@ class TestNormalCases:
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
             0,
+            None,
             1,
             100,
             False,
@@ -98,7 +128,7 @@ class TestNormalCases:
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
             image=Image(image="ubuntu:tf_2.0_beta", command=""),
-            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False),
+            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False, gpu_model=None),
             network=NetworkPortForwarding({"ssh": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
@@ -110,6 +140,7 @@ class TestNormalCases:
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
             0,
+            None,
             1,
             100,
             False,
@@ -121,7 +152,7 @@ class TestNormalCases:
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
             image=Image(image="ubuntu:tf_2.0_beta", command=""),
-            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False),
+            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False, gpu_model=None),
             network=NetworkPortForwarding({"ssh": 8888, "http": 7878}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
@@ -134,6 +165,7 @@ class TestNormalCases:
                 "/data/set.txt",
                 "storage://~/results/result1.txt",
                 0,
+                None,
                 1,
                 100,
                 False,
@@ -151,6 +183,7 @@ class TestNormalCases:
                 "storage://~/data/set.txt",
                 "http://results/result1.txt",
                 0,
+                None,
                 1,
                 100,
                 False,

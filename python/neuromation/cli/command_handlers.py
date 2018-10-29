@@ -542,7 +542,19 @@ class JobHandlerOperations(PlatformStorageOperation):
 
 class ModelHandlerOperations(JobHandlerOperations):
     def train(
-        self, image, dataset, results, gpu, cpu, memory, extshm, cmd, model, http, ssh
+        self,
+        image,
+        dataset,
+        results,
+        gpu,
+        gpu_model,
+        cpu,
+        memory,
+        extshm,
+        cmd,
+        model,
+        http,
+        ssh,
     ):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
@@ -578,7 +590,9 @@ class ModelHandlerOperations(JobHandlerOperations):
             job = m.train(
                 image=Image(image=image, command=cmd),
                 network=net,
-                resources=Resources(memory=memory, gpu=gpu, cpu=cpu, shm=extshm),
+                resources=Resources(
+                    memory=memory, gpu=gpu, cpu=cpu, shm=extshm, gpu_model=gpu_model
+                ),
                 dataset=f"storage:/{dataset_platform_path}",
                 results=f"storage:/{resultset_platform_path}",
             )
@@ -591,6 +605,7 @@ class ModelHandlerOperations(JobHandlerOperations):
         dataset,
         results,
         gpu,
+        gpu_model,
         cpu,
         memory,
         extshm,
@@ -610,7 +625,18 @@ class ModelHandlerOperations(JobHandlerOperations):
 
         # Start the job, we expect it to have SSH server on board
         job = self.train(
-            image, dataset, results, gpu, cpu, memory, extshm, None, model, http, ssh
+            image,
+            dataset,
+            results,
+            gpu,
+            gpu_model,
+            cpu,
+            memory,
+            extshm,
+            None,
+            model,
+            http,
+            ssh,
         )
         job_id = job.id
         # wait for a job to leave pending stage
