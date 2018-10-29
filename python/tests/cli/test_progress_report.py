@@ -1,6 +1,19 @@
 from unittest import mock
 
-from neuromation.cli.command_progress_report import StandardPrintPercentOnly
+from neuromation.cli.command_progress_report import (
+    ProgressBase,
+    StandardPrintPercentOnly,
+)
+
+
+def test_progress_factory_none():
+    progress = ProgressBase.create_progress(False)
+    assert isinstance(progress, ProgressBase)
+
+
+def test_progress_factory_percent():
+    progress = ProgressBase.create_progress(True)
+    assert isinstance(progress, StandardPrintPercentOnly)
 
 
 def test_simple_progress():

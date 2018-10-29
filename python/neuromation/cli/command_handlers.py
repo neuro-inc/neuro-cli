@@ -142,9 +142,7 @@ class CopyOperation(PlatformStorageOperation):
         progress_enabled: bool = False,
     ) -> "CopyOperation":
         log.debug(f"p = {progress_enabled}")
-        progress: ProgressBase = ProgressBase()
-        if progress_enabled:
-            progress = StandardPrintPercentOnly()
+        progress: ProgressBase = ProgressBase.create_progress(progress_enabled)
         if src_scheme == "file":
             if dst_scheme == "storage":
                 if recursive:

@@ -8,6 +8,12 @@ class ProgressBase:  # pragma: no cover
     def progress(self, file: str, current: int):
         pass
 
+    @classmethod
+    def create_progress(cls, show_progress: bool) -> "ProgressBase":
+        if show_progress:
+            return StandardPrintPercentOnly()
+        return ProgressBase()
+
 
 class StandardPrintPercentOnly(ProgressBase):
     def __init__(self):
