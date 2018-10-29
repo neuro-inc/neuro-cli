@@ -17,9 +17,9 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "python/requirements.txt" }}-v0
+          - v1-dependencies-{{ checksum "python/requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies--v0
+          - v1-dependencies-
 
       - run:
           name: install dependencies
@@ -31,7 +31,7 @@ jobs:
       - save_cache:
           paths:
             - ./.env
-          key: v1-dependencies-{{ checksum "python/requirements.txt" }}-v0
+          key: v1-dependencies-{{ checksum "python/requirements.txt" }}
 
       - run:
           name: run CI target
