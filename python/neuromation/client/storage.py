@@ -9,6 +9,7 @@ from .client import ApiClient
 from .requests import (
     CreateRequest,
     DeleteRequest,
+    FileStatRequest,
     ListRequest,
     MkDirsRequest,
     OpenRequest,
@@ -53,6 +54,17 @@ class Storage(ApiClient):
     def create(self, *, path: str, data: BytesIO) -> str:
         self._fetch_sync(CreateRequest(path=path, data=data))
         return path
+
+    def stats(self, *, path: str) -> FileStatus:
+        """
+        Request file or directory stats.
+        Throws NotFound exception in case path points to non existing object.
+
+        :param path: path to object on storage.
+        :return: Status of a file or directory.
+        """
+        resp = self._fetch_sync(FileStatRequest(path=path))
+        return FileStatus(**resp)
 
     @contextmanager
     def open(self, *, path: str) -> Iterator[BufferedReader]:
