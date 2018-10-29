@@ -1,4 +1,3 @@
-from unittest import mock
 
 from neuromation.cli.command_progress_report import (
     ProgressBase,
@@ -16,29 +15,22 @@ def test_progress_factory_percent():
     assert isinstance(progress, StandardPrintPercentOnly)
 
 
-def test_simple_progress():
+def test_simple_progress(capsys):
     report = StandardPrintPercentOnly()
     file_name = "abc"
 
-    with mock.patch("builtins.print", return_value=None) as p:
-        report.start(file_name, 100)
-        p.assert_called()
-        assert file_name in p.call_args_list[0][0][0]
-        assert "Starting" in p.call_args_list[0][0][0]
+    report.start(file_name, 100)
+    captured = capsys.readouterr()
+    assert captured.out == f"Starting file {file_name}.\n"
 
-    with mock.patch("builtins.print", return_value=None) as p:
-        report.progress(file_name, 50)
-        p.assert_called()
-        assert file_name in p.call_args_list[0][0][0]
-        assert "50.00%" in p.call_args_list[0][0][0]
+    report.progress(file_name, 50)
+    captured = capsys.readouterr()
+    assert captured.out == f"\r{file_name}: 50.00%."
 
-    with mock.patch("builtins.print", return_value=None) as p:
-        report.progress(file_name, 75)
-        p.assert_called()
-        assert file_name in p.call_args_list[0][0][0]
-        assert "75.00%" in p.call_args_list[0][0][0]
+    report.progress(file_name, 75)
+    captured = capsys.readouterr()
+    assert captured.out == f"\r{file_name}: 75.00%."
 
-    with mock.patch("builtins.print", return_value=None) as p:
-        report.complete(file_name)
-        p.assert_called()
-        assert file_name in p.call_args_list[0][0][0]
+    report.complete(file_name)
+    captured = capsys.readouterr()
+    assert captured.out == f"\rFile {file_name} upload complete.\n"
