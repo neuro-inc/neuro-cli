@@ -370,7 +370,7 @@ Commands:
 
             Options:
                 -g, --gpu NUMBER          Number of GPUs to request [default: 1]
-                -gm, --gpu-model MODEL    GPU to use [default: nvidia-tesla-k80]
+                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
                                           Other options available are
                                           nvidia-tesla-p4, nvidia-tesla-v100.
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
@@ -451,7 +451,7 @@ Commands:
 
             Options:
                 -g, --gpu NUMBER          Number of GPUs to request [default: 1]
-                -gm, --gpu-model MODEL    GPU to use [default: nvidia-tesla-k80]
+                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
                                           Other options available are
                                           nvidia-tesla-p4, nvidia-tesla-v100.
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
@@ -474,6 +474,7 @@ Commands:
                 dataset,
                 results,
                 gpu,
+                gpu_model,
                 cpu,
                 memory,
                 extshm,

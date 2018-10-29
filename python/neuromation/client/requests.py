@@ -29,11 +29,10 @@ class ResourcesPayload:
     shm: Optional[bool]
 
     def to_primitive(self) -> dict:
-        value = {"memory_mb": self.memory_mb, "cpu": self.cpu}
+        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
         if self.gpu:
             value["gpu"] = self.gpu
             value["gpu_model"] = self.gpu_model
-        value["shm"] = self.shm
         return value
 
 
