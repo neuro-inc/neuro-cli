@@ -150,7 +150,10 @@ Commands:
             Usage:
                 neuro config url URL
 
-            Updates API URL
+            Updates settings with provided platform URL.
+
+            Example:
+                neuro config url http://platform.neuromation.io/api/v1
             """
             config = rc.ConfigFactory.update_api_url(url)
             update_docker_config(config)
@@ -179,7 +182,7 @@ Commands:
             Usage:
                 neuro config show
 
-            Prints current settings
+            Prints current settings.
             """
             config = rc.ConfigFactory.load()
             print(config)
@@ -228,9 +231,9 @@ Commands:
             Remove files or directories.
 
             Example:
-                neuro store rm storage:///foo/bar/
-                neuro store rm storage:/foo/bar/
-                neuro store rm storage://alice/foo/bar/
+            neuro store rm storage:///foo/bar/
+            neuro store rm storage:/foo/bar/
+            neuro store rm storage://alice/foo/bar/
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
@@ -275,6 +278,7 @@ Commands:
 
             # copy local file ./foo into remote storage root
             neuro store cp ./foo storage:///
+            neuro store cp ./foo storage:/
 
             # download remote file foo into local file foo with
             # explicit file:// scheme set
@@ -357,7 +361,7 @@ Commands:
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
                 --http NUMBER         Enable HTTP port forwarding to container
-                --ssh  NUMBER         Enable SSH port forwarding to container
+                --ssh NUMBER          Enable SSH port forwarding to container
                 -q, --quiet           Run command in quiet mode
             """
 
@@ -380,10 +384,10 @@ Commands:
             Job should be started with SSH support enabled.
 
             Options:
-                --localport=NUMBER    Local port number for debug [default: 31234]
+                --localport NUMBER    Local port number for debug [default: 31234]
 
-            Examples:
-
+            Example:
+            neuro model debug --localport 12789 job-abc-def-ghk
             """
             config: Config = rc.ConfigFactory.load()
             git_key = config.github_rsa_path
@@ -412,11 +416,11 @@ Commands:
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
-                --http=NUMBER         Enable HTTP port forwarding to container
-                --ssh=NUMBER          Enable SSH port forwarding to container
+                --http NUMBER         Enable HTTP port forwarding to container
+                --ssh NUMBER          Enable SSH port forwarding to container
                                                                  [default: 22]
-                --user=STRING         Container user name [default: root]
-                --key=STRING          Path to container private key.
+                --user STRING         Container user name [default: root]
+                --key STRING          Path to container private key.
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -482,11 +486,11 @@ Commands:
             Job should be started with SSH support enabled.
 
             Options:
-                --user=STRING         Container user name [default: root]
-                --key=STRING          Path to container private key.
+                --user STRING         Container user name [default: root]
+                --key STRING          Path to container private key.
 
-            Examples:
-
+            Example:
+            neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
             """
             config: Config = rc.ConfigFactory.load()
             git_key = config.github_rsa_path
@@ -579,9 +583,8 @@ Commands:
         Docker image operations
 
         Commands:
-          push Push docker image from local machine to cloud registry
-          pull Pull docker image from cloud registry to local machine
-          search List your docker images
+          push                 Push docker image from local machine to cloud registry.
+          pull                 Pull docker image from cloud registry to local machine.
         """
 
         def _get_image_platform_full_name(image_name):
@@ -597,7 +600,7 @@ Commands:
             Usage:
                 neuro image push IMAGE_NAME
 
-            Push an image or a repository to a registry
+            Push an image to platform registry
             """
             _check_docker_client_available()
 
@@ -626,7 +629,7 @@ Commands:
             Usage:
                 neuro image pull IMAGE_NAME
 
-            Pull an image or a repository from a registry
+            Pull an image from platform registry
             """
             _check_docker_client_available()
 
@@ -652,9 +655,9 @@ Commands:
              allowing to read, write or manage it.
 
             Examples:
-                neuro share storage:///sample_data/ alice manage
-                neuro share image:///resnet50 bob read
-                neuro share job:///my_job_id alice write
+            neuro share storage:///sample_data/ alice manage
+            neuro share image:///resnet50 bob read
+            neuro share job:///my_job_id alice write
         """
 
         op_type = "manage" if manage else "write" if write else "read" if read else None
