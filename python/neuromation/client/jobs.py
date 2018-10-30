@@ -1,11 +1,10 @@
 import asyncio
 import enum
 from contextlib import contextmanager
+from dataclasses import dataclass
 from io import BufferedReader
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import urlparse
-
-from dataclasses import dataclass
 
 from dataclasses import dataclass
 

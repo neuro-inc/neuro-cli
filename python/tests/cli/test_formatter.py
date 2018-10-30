@@ -5,6 +5,7 @@ import pytest
 from neuromation import JobItem
 from neuromation.cli.formatter import OutputFormatter
 
+
 TEST_JOB_STATUS = "pending"
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 

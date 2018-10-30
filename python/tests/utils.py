@@ -2,6 +2,7 @@ import json
 from io import BytesIO
 from unittest.mock import Mock
 
+
 TRAIN_RESPONSE = {"status": "PENDING", "job_id": "iddqd"}
 
 

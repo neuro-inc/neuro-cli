@@ -12,6 +12,7 @@ from utils import (
     mocked_async_context_manager,
 )
 
+
 JOB_RESPONSE = {"status": "SUCCEEDED", "id": "iddqd"}
 
 

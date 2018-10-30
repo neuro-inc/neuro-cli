@@ -1,9 +1,9 @@
 import asyncio
 import logging
+from dataclasses import dataclass
 from typing import Optional
 
 import aiohttp
-from dataclasses import dataclass
 
 from neuromation.http import fetch, session
 from neuromation.http.fetch import (
@@ -16,6 +16,7 @@ from neuromation.http.fetch import (
 )
 
 from .requests import Request, build
+
 
 log = logging.getLogger(__name__)
 

@@ -10,6 +10,7 @@ import pytest
 
 from neuromation.cli.rc import ConfigFactory
 
+
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
