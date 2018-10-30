@@ -4,6 +4,8 @@ from typing import Iterator, List
 
 from dataclasses import dataclass
 
+from dataclasses import dataclass
+
 from neuromation.http.fetch import FetchError
 
 from .client import ApiClient

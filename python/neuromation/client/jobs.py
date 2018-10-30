@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 
 from dataclasses import dataclass
 
+from dataclasses import dataclass
+
 from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
 

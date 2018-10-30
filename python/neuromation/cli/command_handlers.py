@@ -9,13 +9,16 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 from neuromation import Resources
+from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.http import BadRequestError
 
 log = logging.getLogger(__name__)
 
-BUFFER_SIZE_MB = 16
+BUFFER_SIZE_MB = 1
+
+BUFFER_SIZE_B = BUFFER_SIZE_MB * 1024 * 1024
 
 PLATFORM_DELIMITER = "/"
 
@@ -82,7 +85,7 @@ class PlatformMakeDirOperation(PlatformStorageOperation):
 
 
 class PlatformListDirOperation(PlatformStorageOperation):
-    def ls(self, path_str: str, storage: Callable):
+    def ls(self, path_str: str, storage: Callable) -> List[FileStatus]:
         final_path = self.render_uri_path_with_principal(path_str)
         with storage() as s:
             return s.ls(path=str(final_path))
@@ -107,6 +110,10 @@ class PlatformRemoveOperation(PlatformStorageOperation):
 
 
 class CopyOperation(PlatformStorageOperation):
+    def __init__(self, principal: str, progress: ProgressBase):
+        super().__init__(principal)
+        self.progress = progress
+
     @abc.abstractmethod
     def _copy(
         self, src: ParseResult, dst: ParseResult, storage: Callable
@@ -118,37 +125,47 @@ class CopyOperation(PlatformStorageOperation):
         copy_result = self._copy(src, dst, storage)
         return copy_result
 
-    def _ls(self, path: str, storage: Callable):
+    def _ls(self, path: str, storage: Callable) -> List[FileStatus]:
         ls = PlatformListDirOperation(self.principal)
         return ls.ls(f"storage:/{path}", storage)
 
     @classmethod
     def create(
-        cls, principal: str, src_scheme: str, dst_scheme: str, recursive: bool
+        cls,
+        principal: str,
+        src_scheme: str,
+        dst_scheme: str,
+        recursive: bool,
+        progress_enabled: bool = False,
     ) -> "CopyOperation":
+        log.debug(f"p = {progress_enabled}")
+        progress: ProgressBase = ProgressBase.create_progress(progress_enabled)
         if src_scheme == "file":
             if dst_scheme == "storage":
                 if recursive:
-                    return RecursiveLocalToPlatform(principal)
+                    return RecursiveLocalToPlatform(principal, progress)
                 else:
-                    return NonRecursiveLocalToPlatform(principal)
+                    return NonRecursiveLocalToPlatform(principal, progress)
             else:
                 raise ValueError("storage:// and file:// schemes required")
         elif src_scheme == "storage":
             if dst_scheme == "file":
                 if recursive:
-                    return RecursivePlatformToLocal(principal)
+                    return RecursivePlatformToLocal(principal, progress)
                 else:
-                    return NonRecursivePlatformToLocal(principal)
+                    return NonRecursivePlatformToLocal(principal, progress)
             else:
                 raise ValueError("storage:// and file:// schemes required")
         raise ValueError("storage:// and file:// schemes required")
 
 
 class NonRecursivePlatformToLocal(CopyOperation):
-    def transfer(self, i, o):  # pragma: no cover
+    def transfer(self, file: FileStatus, i, o):  # pragma: no cover
         log.debug(f"Input: {i}")
         log.debug(f"Output: {o}")
+
+        self.progress.start(file.path, file.size)
+        copied = 0
 
         while True:
             buf = i.read(BUFFER_SIZE_MB * 1024 * 1024)
@@ -156,13 +173,18 @@ class NonRecursivePlatformToLocal(CopyOperation):
             if not buf:
                 break
 
+            copied = copied + len(buf)
             o.write(buf)
+            self.progress.progress(file.path, copied)
+        self.progress.complete(file.path)
 
-    def copy_file(self, src: str, dst: str, storage):  # pragma: no cover
+    def copy_file(
+        self, src: str, dst: str, file: FileStatus, storage
+    ):  # pragma: no cover
         with storage() as s:
             with s.open(path=src) as stream:
                 with open(dst, mode="wb") as f:
-                    self.transfer(stream, f)
+                    self.transfer(file, stream, f)
                     return dst
 
     def _copy(
@@ -194,7 +216,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
         # check remote
         files = self._ls(str(platform_file_name.parent), storage)
         try:
-            next(
+            file_info = next(
                 file
                 for file in files
                 if file.path == platform_file_name.name and file.type == "FILE"
@@ -202,7 +224,9 @@ class NonRecursivePlatformToLocal(CopyOperation):
         except StopIteration as e:
             raise ResourceNotFound(f"Source file {src.path} not found.") from e
 
-        copy_file = self.copy_file(str(platform_file_name), str(dst_path), storage)
+        copy_file = self.copy_file(
+            str(platform_file_name), str(dst_path), file_info, storage
+        )
         return copy_file
 
 
@@ -220,7 +244,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                 self._copy_obj(PosixPath(src, name), target, storage)
             else:
                 platform_file_name = f"{src}{PLATFORM_DELIMITER}{name}"
-                self.copy_file(platform_file_name, str(target), storage)
+                self.copy_file(platform_file_name, str(target), file, storage)
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
@@ -256,7 +280,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
         self._copy_obj(platform_file_name, Path(dst.path), storage)
 
-        return dst
+        return dst.path
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
@@ -270,15 +294,27 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             return False
         return True
 
+    async def _copy_data_with_progress(self, src: str):  # pragma: no cover
+        file_stat = os.stat(src)
+        total_file_size = file_stat.st_size
+        copied_file_size = 0
+        self.progress.start(src, total_file_size)
+        with open(src, mode="rb") as f:
+            data_chunk = f.read(BUFFER_SIZE_B)
+            while data_chunk:
+                copied_file_size += len(data_chunk)
+                yield data_chunk
+                self.progress.progress(src, copied_file_size)
+                data_chunk = f.read(BUFFER_SIZE_B)
+            self.progress.complete(src)
+
     def copy_file(
         self, src_path: str, dest_path: str, storage: Callable
     ):  # pragma: no cover
-        # TODO (R Zubairov 09/19/18) Check with Andrey if there any way
-        # to track progress and report
-        with open(src_path, mode="rb") as f:
-            with storage() as s:
-                s.create(path=dest_path, data=f)
-                return dest_path
+        data = self._copy_data_with_progress(src_path)
+        with storage() as s:
+            s.create(path=dest_path, data=data)
+            return dest_path
 
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(src.path):
