@@ -2,7 +2,7 @@ import asyncio
 import enum
 from contextlib import contextmanager
 from io import BufferedReader
-from typing import Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from dataclasses import dataclass
@@ -62,8 +62,8 @@ class JobDescription:
     command: Optional[str] = None
     url: str = ""
     ssh: str = ""
-    history: JobStatusHistory = None
-    resources: Resources = None
+    history: Optional[JobStatusHistory] = None
+    resources: Optional[Resources] = None
 
     def jump_host(self) -> str:
         ssh_hostname = urlparse(self.ssh).hostname
@@ -77,15 +77,15 @@ class JobItem:
     id: str
     client: ApiClient
     url: str = ""
-    history: JobStatusHistory = None
+    history: Optional[JobStatusHistory] = None
 
-    async def _call(self):
+    async def _call(self) -> "JobItem":
         return JobItem(
             client=self.client,
             **await self.client._fetch(request=JobStatusRequest(id=self.id))
         )
 
-    def wait(self, timeout=None):
+    def wait(self, timeout: Optional[float] = None) -> "JobItem":
         try:
             return self.client.loop.run_until_complete(
                 asyncio.wait_for(self._call(), timeout=timeout)
@@ -119,7 +119,9 @@ class ResourceSharing(ApiClient):
 
 
 class Model(ApiClient):
-    def _network_to_api(self, network: NetworkPortForwarding):
+    def _network_to_api(
+        self, network: NetworkPortForwarding
+    ) -> Tuple[Optional[Dict[str, int]], Optional[Dict[str, int]]]:
         http = None
         ssh = None
         if network:
@@ -205,7 +207,7 @@ class Job(ApiClient):
         return True
 
     @contextmanager
-    def monitor(self, id: str) -> BufferedReader:
+    def monitor(self, id: str) -> Iterator[BufferedReader]:
         try:
             with self._fetch_sync(JobMonitorRequest(id=id)) as content:
                 yield BufferedReader(content)
@@ -218,7 +220,7 @@ class Job(ApiClient):
         res = self._fetch_sync(JobStatusRequest(id=id))
         return self._dict_to_description_with_history(res)
 
-    def _dict_to_description_with_history(self, res):
+    def _dict_to_description_with_history(self, res: Dict[str, Any]) -> JobDescription:
         job_description = self._dict_to_description(res)
         job_history = None
         if "history" in res:
@@ -242,7 +244,7 @@ class Job(ApiClient):
             ssh=job_description.ssh,
         )
 
-    def _dict_to_description(self, res):
+    def _dict_to_description(self, res: Dict[str, Any]) -> JobDescription:
         job_container_image = None
         job_command = None
         job_resources = None

@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from io import BufferedReader, BytesIO
-from typing import List
+from typing import Iterator, List
 
 from dataclasses import dataclass
 
@@ -30,7 +30,7 @@ class Storage(ApiClient):
             FileStatus(**status) for status in self._fetch_sync(ListRequest(path=path))
         ]
 
-    def mkdirs(self, *, path: List[str]) -> List[str]:
+    def mkdirs(self, *, path: str) -> str:
         self._fetch_sync(MkDirsRequest(path=path))
         return path
 
@@ -39,7 +39,7 @@ class Storage(ApiClient):
         return path
 
     @contextmanager
-    def open(self, *, path: str) -> BytesIO:
+    def open(self, *, path: str) -> Iterator[BufferedReader]:
         try:
             with self._fetch_sync(OpenRequest(path=path)) as content:
                 yield BufferedReader(content)
