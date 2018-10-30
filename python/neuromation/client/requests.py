@@ -1,7 +1,7 @@
 import logging
 from dataclasses import asdict, dataclass
 from io import BytesIO
-from typing import ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from neuromation import http
 from neuromation.http import JsonRequest
@@ -45,9 +45,9 @@ class JobStatusRequest(Request):
 class ShareResourceRequest(Request):
     whom: str
     # List of { uri: '...', action: '...' }
-    permissions: List[Dict]
+    permissions: List[Dict[str, str]]
 
-    def to_http_request(self):
+    def to_http_request(self) -> http.Request:
         return http.PlainRequest(
             url=f"/users/{self.whom}/permissions",
             params=None,
@@ -58,7 +58,7 @@ class ShareResourceRequest(Request):
 
 
 def model_request_to_http(req: Request) -> JsonRequest:
-    json_params = asdict(req)
+    json_params: Dict[Any, Any] = asdict(req)
     container_descriptor = json_params["container"]
     for field in ("http", "ssh", "command"):
         if not container_descriptor.get(field):
@@ -147,7 +147,7 @@ class DeleteRequest(StorageRequest):
 
 # TODO: better polymorphism?
 def build(request: Request) -> http.Request:
-    def add_path(prefix, path):
+    def add_path(prefix: str, path: str) -> str:
         # ('/prefix', 'dir') and ('/prefix', '/dir')
         # are semantically the same in case of build
         # file Storage API calls

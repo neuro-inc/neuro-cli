@@ -3,8 +3,8 @@ import logging
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from functools import singledispatch
-from io import BufferedIOBase, BytesIO
-from typing import Dict, Optional
+from io import BytesIO
+from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
 from async_generator import asynccontextmanager
@@ -42,10 +42,10 @@ class Request:
     method: str
     # TODO(artyom, 07/04/2018): put a stricter type hint
     # that corresponds to URL query parameters spec as per RFC
-    params: Dict
+    params: Optional[Union[Dict[str, str], str]]
     url: str
-    data: BufferedIOBase
-    json: Dict
+    data: Optional[BytesIO]
+    json: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]
 
 
 @dataclass(frozen=True, init=True)
