@@ -9,6 +9,7 @@ import pytest
 
 from _sha1 import sha1
 
+
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16

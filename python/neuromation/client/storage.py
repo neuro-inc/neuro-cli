@@ -1,10 +1,7 @@
 from contextlib import contextmanager
+from dataclasses import dataclass
 from io import BufferedReader, BytesIO
 from typing import Iterator, List
-
-from dataclasses import dataclass
-
-from dataclasses import dataclass
 
 from neuromation.http.fetch import FetchError
 

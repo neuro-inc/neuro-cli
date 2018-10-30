@@ -1,5 +1,6 @@
 from typing import Any, Callable, Iterator, Tuple
 
+
 NAMES = ["grey", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
 COLOR_FUNCS = {}
 
