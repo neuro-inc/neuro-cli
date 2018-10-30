@@ -293,10 +293,11 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         Test is done by running LS command.
         """
         try:
-            self._ls(str(path), storage)
+            with storage() as s:
+                file_status = s.stats(path=str(path))
+                return file_status.type == 'DIRECTORY'
         except (IllegalArgumentError, ResourceNotFound):
             return False
-        return True
 
     async def _copy_data_with_progress(self, src: str):  # pragma: no cover
         file_stat = os.stat(src)

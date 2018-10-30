@@ -127,7 +127,7 @@ class StorageRequest(Request):
         # file Storage API calls
         return prefix + path.strip("/")
 
-    def to_http_request(self) -> Request:
+    def to_http_request(self) -> Request:  # pragma: no cover
         pass
 
 
