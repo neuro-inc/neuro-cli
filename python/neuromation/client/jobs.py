@@ -6,8 +6,6 @@ from io import BufferedReader
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from dataclasses import dataclass
-
 from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
 
