@@ -1,8 +1,7 @@
 import logging
+from dataclasses import asdict, dataclass
 from io import BytesIO
 from typing import Any, ClassVar, Dict, List, Optional
-
-from dataclasses import asdict, dataclass
 
 from neuromation import http
 from neuromation.http import JsonRequest
@@ -28,7 +27,7 @@ class ResourcesPayload:
     gpu_model: Optional[str]
     shm: Optional[bool]
 
-    def to_primitive(self) -> dict:
+    def to_primitive(self) -> Dict[str, Any]:
         value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
         if self.gpu:
             value["gpu"] = self.gpu

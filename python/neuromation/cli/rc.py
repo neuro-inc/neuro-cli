@@ -1,8 +1,8 @@
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, Optional
 
 import yaml
-from dataclasses import asdict, dataclass
 from jose import JWTError, jwt
 from yarl import URL
 
