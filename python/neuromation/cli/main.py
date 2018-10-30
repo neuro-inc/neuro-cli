@@ -153,7 +153,7 @@ Commands:
             Updates settings with provided platform URL.
 
             Example:
-                neuro config url http://platform.neuromation.io/api/v1
+            neuro config url http://platform.neuromation.io/api/v1
             """
             config = rc.ConfigFactory.update_api_url(url)
             update_docker_config(config)
@@ -654,7 +654,7 @@ Commands:
             Shares resource specified by URI to a user specified by WHOM
              allowing to read, write or manage it.
 
-            Examples:
+            Example:
             neuro share storage:///sample_data/ alice manage
             neuro share image:///resnet50 bob read
             neuro share job:///my_job_id alice write
