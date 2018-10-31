@@ -1,7 +1,7 @@
 import logging
 from dataclasses import asdict, dataclass
 from io import BytesIO
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from neuromation import http
 from neuromation.http import JsonRequest
@@ -24,7 +24,15 @@ class ResourcesPayload:
     memory_mb: str
     cpu: float
     gpu: Optional[int]
+    gpu_model: Optional[str]
     shm: Optional[bool]
+
+    def to_primitive(self) -> Dict[str, Any]:
+        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
+        if self.gpu:
+            value["gpu"] = self.gpu
+            value["gpu_model"] = self.gpu_model
+        return value
 
 
 @dataclass(frozen=True)
@@ -57,12 +65,14 @@ class ShareResourceRequest(Request):
         )
 
 
-def model_request_to_http(req: Request) -> JsonRequest:
+def model_request_to_http(req: Union["InferRequest", "TrainRequest"]) -> JsonRequest:
     json_params: Dict[Any, Any] = asdict(req)
     container_descriptor = json_params["container"]
     for field in ("http", "ssh", "command"):
         if not container_descriptor.get(field):
             container_descriptor.pop(field, None)
+    # Handle resources field
+    json_params["container"]["resources"] = req.container.resources.to_primitive()
     return http.JsonRequest(
         url="/models", params=None, method="POST", json=json_params, data=None
     )

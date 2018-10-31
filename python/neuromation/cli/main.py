@@ -346,7 +346,18 @@ Commands:
 
         @command
         def train(
-            image, dataset, results, gpu, cpu, memory, extshm, http, ssh, cmd, quiet
+            image,
+            dataset,
+            results,
+            gpu,
+            gpu_model,
+            cpu,
+            memory,
+            extshm,
+            http,
+            ssh,
+            cmd,
+            quiet,
         ):
             """
             Usage:
@@ -358,7 +369,10 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER      Number of GPUs to request [default: 1]
+                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
+                                          Other options available are
+                                          nvidia-tesla-p4, nvidia-tesla-v100.
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
@@ -371,7 +385,18 @@ Commands:
             platform_user_name = config.get_platform_user_name()
             model_operation = ModelHandlerOperations(platform_user_name)
             job = model_operation.train(
-                image, dataset, results, gpu, cpu, memory, extshm, cmd, model, http, ssh
+                image,
+                dataset,
+                results,
+                gpu,
+                gpu_model,
+                cpu,
+                memory,
+                extshm,
+                cmd,
+                model,
+                http,
+                ssh,
             )
 
             return OutputFormatter.format_job(job, quiet)
@@ -402,7 +427,18 @@ Commands:
 
         @command
         def develop(
-            image, dataset, results, gpu, cpu, memory, extshm, http, ssh, user, key
+            image,
+            dataset,
+            results,
+            gpu,
+            cpu,
+            memory,
+            extshm,
+            http,
+            ssh,
+            user,
+            key,
+            gpu_model,
         ):
             """
             Usage:
@@ -414,7 +450,10 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER      Number of GPUs to request [default: 1]
+                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
+                                          Other options available are
+                                          nvidia-tesla-p4, nvidia-tesla-v100.
                 -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
                 -m, --memory AMOUNT   Memory amount to request [default: 16G]
                 -x, --extshm          Request extended '/dev/shm' space
@@ -435,6 +474,7 @@ Commands:
                 dataset,
                 results,
                 gpu,
+                gpu_model,
                 cpu,
                 memory,
                 extshm,

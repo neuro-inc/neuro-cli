@@ -16,7 +16,9 @@ from utils import (
 
 
 JOB_ARGS = {
-    "resources": Resources(memory="64M", cpu=1, gpu=1, shm=False),
+    "resources": Resources(
+        memory="64M", cpu=1, gpu=1, shm=False, gpu_model="nvidia-tesla-v100"
+    ),
     "image": Image(image="test/image", command="bash"),
     "dataset": "storage://~/dataset",
     "results": "storage://~/results",

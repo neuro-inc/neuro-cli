@@ -23,7 +23,9 @@ JOB_RESPONSE = {"status": "SUCCEEDED", "id": "iddqd"}
 def test_train_with_no_gpu(request, model, loop):
     result = model.train(
         image=client.Image(image="repo/image", command="bash"),
-        resources=client.Resources(memory="16G", cpu=1.0, gpu=None, shm=None),
+        resources=client.Resources(
+            memory="16G", cpu=1.0, gpu=None, shm=None, gpu_model=None
+        ),
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
@@ -37,12 +39,7 @@ def test_train_with_no_gpu(request, model, loop):
             "container": {
                 "image": "repo/image",
                 "command": "bash",
-                "resources": {
-                    "memory_mb": "16384",
-                    "cpu": 1.0,
-                    "gpu": None,
-                    "shm": None,
-                },
+                "resources": {"memory_mb": "16384", "cpu": 1.0, "shm": None},
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
@@ -60,7 +57,9 @@ def test_train_with_no_gpu(request, model, loop):
 def test_train(request, model, loop):
     result = model.train(
         image=client.Image(image="repo/image", command="bash"),
-        resources=client.Resources(memory="16G", cpu=1, gpu=1, shm=True),
+        resources=client.Resources(
+            memory="16G", cpu=1, gpu=1, shm=True, gpu_model="nvidia-tesla-p4"
+        ),
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
@@ -78,8 +77,43 @@ def test_train(request, model, loop):
                     "memory_mb": "16384",
                     "cpu": 1.0,
                     "gpu": 1.0,
+                    "gpu_model": "nvidia-tesla-p4",
                     "shm": True,
                 },
+            },
+            "dataset_storage_uri": "schema://host/data",
+            "result_storage_uri": "schema://host/results",
+        },
+        url="http://127.0.0.1/models",
+    )
+
+    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+
+
+@patch(
+    "aiohttp.ClientSession.request",
+    new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)),
+)
+def test_train_zero_gpu(request, model, loop):
+    result = model.train(
+        image=client.Image(image="repo/image", command="bash"),
+        resources=client.Resources(
+            memory="16G", cpu=1, gpu=0, shm=True, gpu_model="nvidia-tesla-p4"
+        ),
+        dataset="schema://host/data",
+        results="schema://host/results",
+        network=None,
+    )
+
+    aiohttp.ClientSession.request.assert_called_with(
+        method="POST",
+        data=None,
+        params=None,
+        json={
+            "container": {
+                "image": "repo/image",
+                "command": "bash",
+                "resources": {"memory_mb": "16384", "cpu": 1.0, "shm": True},
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
@@ -97,7 +131,9 @@ def test_train(request, model, loop):
 def test_train_with_http(request, model, loop):
     result = model.train(
         image=client.Image(image="repo/image", command="bash"),
-        resources=client.Resources(memory="16G", cpu=1, gpu=1, shm=True),
+        resources=client.Resources(
+            memory="16G", cpu=1, gpu=1, shm=True, gpu_model="nvidia-tesla-k80"
+        ),
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"http": 7878}),
@@ -116,6 +152,7 @@ def test_train_with_http(request, model, loop):
                     "memory_mb": "16384",
                     "cpu": 1.0,
                     "gpu": 1.0,
+                    "gpu_model": "nvidia-tesla-k80",
                     "shm": True,
                 },
             },
@@ -135,7 +172,9 @@ def test_train_with_http(request, model, loop):
 def test_train_with_ssh(request, model, loop):
     result = model.train(
         image=client.Image(image="repo/image", command="bash"),
-        resources=client.Resources(memory="16G", cpu=1, gpu=1, shm=True),
+        resources=client.Resources(
+            memory="16G", cpu=1, gpu=1, shm=True, gpu_model="nvidia-tesla-v100"
+        ),
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878}),
@@ -154,6 +193,7 @@ def test_train_with_ssh(request, model, loop):
                     "memory_mb": "16384",
                     "cpu": 1.0,
                     "gpu": 1.0,
+                    "gpu_model": "nvidia-tesla-v100",
                     "shm": True,
                 },
             },
@@ -173,7 +213,9 @@ def test_train_with_ssh(request, model, loop):
 def test_train_with_ssh_and_http(request, model, loop):
     result = model.train(
         image=client.Image(image="repo/image", command="bash"),
-        resources=client.Resources(memory="16G", cpu=1, gpu=1, shm=True),
+        resources=client.Resources(
+            memory="16G", cpu=1, gpu=1, shm=True, gpu_model="nvidia-tesla-p4"
+        ),
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
@@ -193,6 +235,7 @@ def test_train_with_ssh_and_http(request, model, loop):
                     "memory_mb": "16384",
                     "cpu": 1.0,
                     "gpu": 1.0,
+                    "gpu_model": "nvidia-tesla-p4",
                     "shm": True,
                 },
             },
@@ -212,7 +255,9 @@ def test_train_with_ssh_and_http(request, model, loop):
 def test_train_empty_command(request, model, loop):
     result = model.train(
         image=client.Image(image="repo/image", command=None),
-        resources=client.Resources(memory="16G", cpu=1, gpu=1, shm=True),
+        resources=client.Resources(
+            memory="16G", cpu=1, gpu=1, shm=True, gpu_model="nvidia-tesla-p4"
+        ),
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
@@ -231,6 +276,7 @@ def test_train_empty_command(request, model, loop):
                     "memory_mb": "16384",
                     "cpu": 1.0,
                     "gpu": 1.0,
+                    "gpu_model": "nvidia-tesla-p4",
                     "shm": True,
                 },
             },
@@ -250,7 +296,9 @@ def test_train_empty_command(request, model, loop):
 def test_infer(request, model, loop):
     result = model.infer(
         image=client.Image(image="repo/image", command="bash"),
-        resources=client.Resources(memory="16G", cpu=1.0, gpu=1.0, shm=False),
+        resources=client.Resources(
+            memory="16G", cpu=1.0, gpu=1.0, shm=False, gpu_model="nvidia-tesla-k80"
+        ),
         model="schema://host/model",
         dataset="schema://host/data",
         results="schema://host/results",
@@ -269,6 +317,7 @@ def test_infer(request, model, loop):
                     "memory_mb": "16384",
                     "cpu": 1.0,
                     "gpu": 1.0,
+                    "gpu_model": "nvidia-tesla-k80",
                     "shm": False,
                 },
             },
