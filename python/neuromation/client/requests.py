@@ -1,7 +1,7 @@
 import logging
 from dataclasses import asdict, dataclass
 from io import BytesIO
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from neuromation import http
 from neuromation.http import JsonRequest
@@ -65,7 +65,7 @@ class ShareResourceRequest(Request):
         )
 
 
-def model_request_to_http(req: Request) -> JsonRequest:
+def model_request_to_http(req: Union["InferRequest", "TrainRequest"]) -> JsonRequest:
     json_params: Dict[Any, Any] = asdict(req)
     container_descriptor = json_params["container"]
     for field in ("http", "ssh", "command"):
