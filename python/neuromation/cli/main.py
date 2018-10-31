@@ -508,6 +508,7 @@ Commands:
         Model operations
 
         Commands:
+          submit              Starts Job on a platform
           monitor             Monitor job output stream
           list                List all jobs
           status              Display status of a job
@@ -518,6 +519,54 @@ Commands:
         from neuromation.client.jobs import Job, JobStatus
 
         jobs = partial(Job, url, token)
+
+        @command
+        def submit(
+            image, gpu, gpu_model, cpu, memory, extshm, http, ssh, cmd, volume, quiet
+        ):
+            """
+            Usage:
+                neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
+
+            Start job using IMAGE
+
+            COMMANDS list will be passed as commands to model container.
+
+            Options:
+                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
+                                          Other options available are
+                                              nvidia-tesla-p4, nvidia-tesla-v100.
+                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
+                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                -x, --extshm              Request extended '/dev/shm' space
+                --http NUMBER             Enable HTTP port forwarding to container
+                --ssh NUMBER              Enable SSH port forwarding to container
+                --volume MOUNT...         Mounts directory from vault into container
+                -q, --quiet               Run command in quiet mode
+            Example:
+
+            neuro job submit --gpu-model nvidia-tesla-p4 -c 4 -m 24G pytorch:latest
+               -volume storage:/data/2018q1:/data:ro
+               -volume storage:/data/2018q1/model:/model:rw
+            Starts a container pytorch:latest with two paths mounted. Directory
+            /data/2018q1/data is mounter in read only mode to /data directory
+            within container. Directory /data/2018q1/model mounted to /model
+            directory in read-write mode.
+
+            neuro job submit --gpu-model nvidia-tesla-p4 -c 4 -m 24G pytorch:latest
+               -volume storage:/data/2018q1:/data:ro --ssh 22
+            Starts a container pytorch:latest with connection enabled to port 22.
+            Please note that SSH server should be provided by container.
+            """
+
+            config: Config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+
+            JobHandlerOperations(platform_user_name).submit(
+                image, gpu, gpu_model, cpu, memory, extshm, cmd, http, ssh, volume, jobs
+            )
+            return volume
 
         @command
         def ssh(id, user, key):
