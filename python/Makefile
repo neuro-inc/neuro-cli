@@ -43,7 +43,7 @@ isort:
 .PHONY: lint
 lint:
 	black --check neuromation tests
-	mypy neuromation/client/storage.py neuromation/client/jobs.py neuromation/logging
+	mypy neuromation/client/storage.py neuromation/client/jobs.py neuromation/client/requests.py neuromation/logging neuromation/strings
 	flake8
 
 .PHONY: publish

@@ -1,7 +1,7 @@
 import re
 
 
-def parse_memory(memory) -> int:
+def parse_memory(memory: str) -> int:
     """Parse string expression i.e. 16M, 16MB, etc
     M = 1024 * 1024, MB = 1000 * 1000
 
