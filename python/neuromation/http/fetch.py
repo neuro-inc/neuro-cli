@@ -4,7 +4,7 @@ from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from functools import singledispatch
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import aiohttp
 from async_generator import asynccontextmanager
@@ -45,7 +45,7 @@ class Request:
     params: Optional[Union[Dict[str, str], str]]
     url: str
     data: Optional[BytesIO]
-    json: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]
+    json: Any
 
 
 @dataclass(frozen=True, init=True)
