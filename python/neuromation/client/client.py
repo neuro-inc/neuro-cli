@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 import aiohttp
 
@@ -64,8 +64,8 @@ class ApiClient:
         token: str,
         timeout: Optional[TimeoutSettings] = DEFAULT_CLIENT_TIMEOUT_SETTINGS,
         *,
-        loop=None,
-    ):
+        loop: Optional[asyncio.events.AbstractEventLoop] = None,
+    ) -> None:
         self._url = url
         self._loop = loop if loop else asyncio.get_event_loop()
         self._exception_map = {
@@ -86,25 +86,24 @@ class ApiClient:
         self._session_object = session(token=token, timeout=client_timeout)
         self._session = self.loop.run_until_complete(self._session_object)
 
-    def __enter__(self):
+    def __enter__(self) -> "ApiClient":
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args) -> None:
         self.loop.run_until_complete(self.close())
 
     @property
-    def loop(self):
+    def loop(self) -> asyncio.events.AbstractEventLoop:
         return self._loop
 
-    async def close(self):
+    async def close(self) -> None:
         if self._session and self._session.closed:
             return
 
         await self._session.close()
         self._session = None
 
-    async def _fetch(self, request: Request):
-
+    async def _fetch(self, request: Request) -> Any:
         try:
             return await fetch(build(request), session=self._session, url=self._url)
         except FetchError as error:
@@ -113,8 +112,7 @@ class ApiClient:
             mapped_class = self._exception_map.get(error_class, error_class)
             raise mapped_class(error) from error
 
-    def _fetch_sync(self, request: Request):
+    def _fetch_sync(self, request: Request) -> Any:
         res = self._loop.run_until_complete(self._fetch(request))
         log.debug(res)
-
         return res
