@@ -101,6 +101,7 @@ Commands:
   image                 Docker container image operations
   config                Configure API connection settings
   completion            Generate code to enable completion
+  share                 Resource sharing management
   help                  Get help on a command
 """
 
@@ -730,10 +731,10 @@ Commands:
 
             Commands:
                 generate     Generate code enabling bash-completion.
-                             eval $(neuro generate) enables completion for the
-                             current session.
-                             Adding eval $(neuro generate) to .bashrc_profile
-                             enables completion permanently.
+                             eval $(neuro completion generate) enables completion
+                             for the current session.
+                             Adding eval $(neuro completion generate) to
+                             .bashrc_profile enables completion permanently.
                 patch        Automatically patch .bash_profile to enable completion
         """
         neuromation_dir = Path(__file__).parent.parent
