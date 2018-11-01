@@ -101,6 +101,7 @@ Commands:
   image                 Docker container image operations
   config                Configure API connection settings
   completion            Generate code to enable completion
+  share                 Resource sharing management
   help                  Get help on a command
 """
 
@@ -372,13 +373,13 @@ Commands:
                 -g, --gpu NUMBER          Number of GPUs to request [default: 1]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
                                           Other options available are
-                                          nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT   Memory amount to request [default: 16G]
-                -x, --extshm          Request extended '/dev/shm' space
-                --http NUMBER         Enable HTTP port forwarding to container
-                --ssh NUMBER          Enable SSH port forwarding to container
-                -q, --quiet           Run command in quiet mode
+                                              nvidia-tesla-p4, nvidia-tesla-v100.
+                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
+                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                -x, --extshm              Request extended '/dev/shm' space
+                --http NUMBER             Enable HTTP port forwarding to container
+                --ssh NUMBER              Enable SSH port forwarding to container
+                -q, --quiet               Run command in quiet mode
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -453,15 +454,15 @@ Commands:
                 -g, --gpu NUMBER          Number of GPUs to request [default: 1]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
                                           Other options available are
-                                          nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER      Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT   Memory amount to request [default: 16G]
-                -x, --extshm          Request extended '/dev/shm' space
-                --http NUMBER         Enable HTTP port forwarding to container
-                --ssh NUMBER          Enable SSH port forwarding to container
+                                              nvidia-tesla-p4, nvidia-tesla-v100.
+                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
+                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                -x, --extshm              Request extended '/dev/shm' space
+                --http NUMBER             Enable HTTP port forwarding to container
+                --ssh NUMBER              Enable SSH port forwarding to container
                                                                  [default: 22]
-                --user STRING         Container user name [default: root]
-                --key STRING          Path to container private key.
+                --user STRING             Container user name [default: root]
+                --key STRING              Path to container private key.
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -730,10 +731,10 @@ Commands:
 
             Commands:
                 generate     Generate code enabling bash-completion.
-                             eval $(neuro generate) enables completion for the
-                             current session.
-                             Adding eval $(neuro generate) to .bashrc_profile
-                             enables completion permanently.
+                             eval $(neuro completion generate) enables completion
+                             for the current session.
+                             Adding eval $(neuro completion generate) to
+                             .bashrc_profile enables completion permanently.
                 patch        Automatically patch .bash_profile to enable completion
         """
         neuromation_dir = Path(__file__).parent.parent
