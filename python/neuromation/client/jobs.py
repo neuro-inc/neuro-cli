@@ -37,6 +37,7 @@ class Resources:
     ) -> "Resources":
         return cls(memory, float(cpu), int(gpu), bool(extshm), gpu_model)
 
+
 @dataclass()
 class NetworkPortForwarding:
     ports: Dict[str, int]
