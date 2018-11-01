@@ -26,7 +26,7 @@ from .requests import (
 
 
 def network_to_api(
-    network: "NetworkPortForwarding"
+    network: Optional["NetworkPortForwarding"]
 ) -> Tuple[Optional[Dict[str, int]], Optional[Dict[str, int]]]:
     http = None
     ssh = None
