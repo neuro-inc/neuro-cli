@@ -428,7 +428,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 ]
             )
 
-    def _network_parse(self, http, ssh) -> NetworkPortForwarding:
+    def _network_parse(self, http, ssh) -> Optional[NetworkPortForwarding]:
         net = None
         ports: Dict[str, int] = {}
         if http:

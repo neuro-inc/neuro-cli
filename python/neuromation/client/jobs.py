@@ -126,7 +126,7 @@ class ResourceSharing(ApiClient):
 
 class Model(ApiClient):
     def _network_to_api(
-        self, network: NetworkPortForwarding
+        self, network: Optional[NetworkPortForwarding]
     ) -> Tuple[Optional[Dict[str, int]], Optional[Dict[str, int]]]:
         http = None
         ssh = None
@@ -142,7 +142,7 @@ class Model(ApiClient):
         *,
         image: Image,
         resources: Resources,
-        network: NetworkPortForwarding,
+        network: Optional[NetworkPortForwarding],
         model: str,
         dataset: str,
         results: str
@@ -176,7 +176,7 @@ class Model(ApiClient):
         *,
         image: Image,
         resources: Resources,
-        network: NetworkPortForwarding,
+        network: Optional[NetworkPortForwarding],
         dataset: str,
         results: str
     ) -> JobItem:
