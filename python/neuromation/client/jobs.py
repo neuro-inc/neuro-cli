@@ -31,6 +31,11 @@ class Resources:
     shm: Optional[bool]
     gpu_model: Optional[str]
 
+    @classmethod
+    def create(
+        cls, cpu: str, gpu: str, gpu_model: str, memory: str, extshm: str
+    ) -> "Resources":
+        return cls(memory, float(cpu), int(gpu), bool(extshm), gpu_model)
 
 @dataclass()
 class NetworkPortForwarding:
