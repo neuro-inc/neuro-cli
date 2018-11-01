@@ -586,10 +586,6 @@ class ModelHandlerOperations(JobHandlerOperations):
         cmd = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
 
-        cpu = float(cpu)
-        gpu = int(gpu)
-        extshm = bool(extshm)
-
         with model() as m:
             job = m.train(
                 image=Image(image=image, command=cmd),
