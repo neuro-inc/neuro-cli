@@ -31,6 +31,12 @@ class Resources:
     shm: Optional[bool]
     gpu_model: Optional[str]
 
+    @classmethod
+    def create(
+        cls, cpu: str, gpu: str, gpu_model: str, memory: str, extshm: str
+    ) -> "Resources":
+        return cls(memory, float(cpu), int(gpu), bool(extshm), gpu_model)
+
 
 @dataclass()
 class NetworkPortForwarding:
@@ -120,7 +126,7 @@ class ResourceSharing(ApiClient):
 
 class Model(ApiClient):
     def _network_to_api(
-        self, network: NetworkPortForwarding
+        self, network: Optional[NetworkPortForwarding]
     ) -> Tuple[Optional[Dict[str, int]], Optional[Dict[str, int]]]:
         http = None
         ssh = None
@@ -136,7 +142,7 @@ class Model(ApiClient):
         *,
         image: Image,
         resources: Resources,
-        network: NetworkPortForwarding,
+        network: Optional[NetworkPortForwarding],
         model: str,
         dataset: str,
         results: str
@@ -170,7 +176,7 @@ class Model(ApiClient):
         *,
         image: Image,
         resources: Resources,
-        network: NetworkPortForwarding,
+        network: Optional[NetworkPortForwarding],
         dataset: str,
         results: str
     ) -> JobItem:

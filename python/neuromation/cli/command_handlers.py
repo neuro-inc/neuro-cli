@@ -428,6 +428,17 @@ class JobHandlerOperations(PlatformStorageOperation):
                 ]
             )
 
+    def _network_parse(self, http, ssh) -> Optional[NetworkPortForwarding]:
+        net = None
+        ports: Dict[str, int] = {}
+        if http:
+            ports["http"] = http
+        if ssh:
+            ports["ssh"] = ssh
+        if ports:
+            net = NetworkPortForwarding(ports)
+        return net
+
     def start_ssh(
         self,
         job_id: str,
@@ -570,28 +581,17 @@ class ModelHandlerOperations(JobHandlerOperations):
                 f"Results path should be on platform. " f"Current value {results}"
             )
 
-        net = None
-        ports: Dict[str, int] = {}
-        if http:
-            ports["http"] = http
-        if ssh:
-            ports["ssh"] = ssh
-        if ports:
-            net = NetworkPortForwarding(ports)
+        net = self._network_parse(http, ssh)
 
         cmd = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
-
-        cpu = float(cpu)
-        gpu = int(gpu)
-        extshm = bool(extshm)
 
         with model() as m:
             job = m.train(
                 image=Image(image=image, command=cmd),
                 network=net,
-                resources=Resources(
-                    memory=memory, gpu=gpu, cpu=cpu, shm=extshm, gpu_model=gpu_model
+                resources=Resources.create(
+                    memory=memory, gpu=gpu, cpu=cpu, extshm=extshm, gpu_model=gpu_model
                 ),
                 dataset=f"storage:/{dataset_platform_path}",
                 results=f"storage:/{resultset_platform_path}",
