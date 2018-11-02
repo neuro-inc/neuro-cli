@@ -25,7 +25,7 @@ class FileStatus:
     permission: str
 
     @classmethod
-    def from_primitive(cls, **values) -> "FileStatus":
+    def from_primitive(cls, values: Dict[str, Any]) -> "FileStatus":
         return cls(
             path=values["path"],
             type=values["type"],
@@ -42,7 +42,7 @@ class Storage(ApiClient):
 
         response_dict = self._fetch_sync(ListRequest(path=path))
         return [
-            FileStatus.from_primitive(**status)
+            FileStatus.from_primitive(status)
             for status in get_file_status_list(response_dict)
         ]
 

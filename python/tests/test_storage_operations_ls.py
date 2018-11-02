@@ -108,7 +108,9 @@ class TestInvalidScenarios:
         ):
             alice_ls.ls("http:///home/dir", partial_mocked_store)
 
+
 empty_response = JsonResponse({"FileStatuses": {"FileStatus": []}})
+
 
 @patch(
     "aiohttp.ClientSession.request", new=mocked_async_context_manager(empty_response)
