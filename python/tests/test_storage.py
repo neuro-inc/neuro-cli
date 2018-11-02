@@ -101,16 +101,25 @@ def test_invalid_arguments_error(storage):
 
 
 @patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(
-        JsonResponse(
-            [
-                {"path": "foo", "size": 1024, "type": "FILE"},
-                {"path": "bar", "size": 4 * 1024, "type": "DIR"},
-            ]
-        )
-    ),
-)
+    'aiohttp.ClientSession.request',
+    new=mocked_async_context_manager(JsonResponse(
+        {'FileStatuses':
+            {'FileStatus':
+                [
+                    {
+                        'path': 'foo',
+                        'length': 1024,
+                        'type': 'FILE'
+                    },
+                    {
+                        'path': 'bar',
+                        'length': 4*1024,
+                        'type': 'DIR'
+                    }
+                ]
+            }
+        }
+    )))
 def test_ls(storage):
     assert storage.ls(path="/home/dir") == [
         client.FileStatus(path="foo", size=1024, type="FILE"),

@@ -9,7 +9,6 @@ from typing import Any, Dict, Optional, Union
 import aiohttp
 from async_generator import asynccontextmanager
 
-
 log = logging.getLogger(__name__)
 
 
