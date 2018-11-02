@@ -4,6 +4,7 @@
 
 from setuptools import find_packages, setup
 
+
 with open('README.md') as f:
     readme = f.read()
 
@@ -25,6 +26,7 @@ setup(
         'pyyaml==3.13',
         'async_generator==1.9',
         'python-jose==3.0.1',
+        'python-dateutil==2.7.5',
     ],
     include_package_data=True,
     description='Neuromation Platform API client',
