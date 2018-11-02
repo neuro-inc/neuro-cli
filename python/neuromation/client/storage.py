@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BufferedReader, BytesIO
-from typing import Iterator, List
+from typing import Any, Dict, Iterator, List
 
 from neuromation.http.fetch import FetchError
 
@@ -21,12 +21,29 @@ class FileStatus:
     size: int
     # TODO (R Zubairov) Make a enum
     type: str
+    modification_time: int
+    permission: str
+
+    @classmethod
+    def from_primitive(cls, values: Dict[str, Any]) -> "FileStatus":
+        return cls(
+            path=values["path"],
+            type=values["type"],
+            size=int(values["length"]),
+            modification_time=int(values["modificationTime"]),
+            permission=values["permission"],
+        )
 
 
 class Storage(ApiClient):
     def ls(self, *, path: str) -> List[FileStatus]:
+        def get_file_status_list(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+            return response["FileStatuses"]["FileStatus"]
+
+        response_dict = self._fetch_sync(ListRequest(path=path))
         return [
-            FileStatus(**status) for status in self._fetch_sync(ListRequest(path=path))
+            FileStatus.from_primitive(status)
+            for status in get_file_status_list(response_dict)
         ]
 
     def mkdirs(self, *, path: str) -> str:
