@@ -54,7 +54,35 @@ def test_status_running(jobs):
 @patch(
     "aiohttp.ClientSession.request",
     new=mocked_async_context_manager(
-        JsonResponse({"status": "PENDING", "job_id": "iddqd"})
+        JsonResponse(
+            {
+                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+                "status": "failed",
+                "history": {
+                    "status": "failed",
+                    "reason": "Error",
+                    "description": "Mounted on Avail\\n/dev/shm     "
+                    "64M\\n\\nExit code: 1",
+                    "created_at": "2018-09-25T12:28:21.298672+00:00",
+                    "started_at": "2018-09-25T12:28:59.759433+00:00",
+                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
+                },
+                "container": {
+                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
+                    "command": 'bash -c " / bin / df--block - size M--output '
+                    '= target, avail / dev / shm;false"',
+                    "resources": {
+                        "cpu": 1.0,
+                        "memory_mb": 16384,
+                        "gpu": 1,
+                        "shm": False,
+                        "gpu_model": "nvidia-tesla-p4",
+                    },
+                },
+                "http_url": "http://my_host:8889",
+                "ssh_server": "ssh://my_host.ssh:22",
+            }
+        )
     ),
 )
 def test_job_submit(jobs):
@@ -93,11 +121,12 @@ def test_job_submit(jobs):
                     {
                         "src_storage_uri": "storage://test-user/path_read_only",
                         "dst_path": "/container/read_only",
-                        "read_only": "True",
+                        "read_only": True,
                     },
                     {
                         "src_storage_uri": "storage://test-user/path_read_write",
                         "dst_path": "/container/path_read_write",
+                        "read_only": False,
                     },
                 ],
             }
@@ -108,7 +137,35 @@ def test_job_submit(jobs):
 @patch(
     "aiohttp.ClientSession.request",
     new=mocked_async_context_manager(
-        JsonResponse({"status": "PENDING", "job_id": "iddqd"})
+        JsonResponse(
+            {
+                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+                "status": "failed",
+                "history": {
+                    "status": "failed",
+                    "reason": "Error",
+                    "description": "Mounted on Avail\\n/dev/shm     "
+                    "64M\\n\\nExit code: 1",
+                    "created_at": "2018-09-25T12:28:21.298672+00:00",
+                    "started_at": "2018-09-25T12:28:59.759433+00:00",
+                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
+                },
+                "container": {
+                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
+                    "command": 'bash -c " / bin / df--block - size M--output '
+                    '= target, avail / dev / shm;false"',
+                    "resources": {
+                        "cpu": 1.0,
+                        "memory_mb": 16384,
+                        "gpu": 1,
+                        "shm": False,
+                        "gpu_model": "nvidia-tesla-p4",
+                    },
+                },
+                "http_url": "http://my_host:8889",
+                "ssh_server": "ssh://my_host.ssh:22",
+            }
+        )
     ),
 )
 def test_job_submit_no_volumes(jobs):

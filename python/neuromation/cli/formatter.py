@@ -1,9 +1,11 @@
-from neuromation.client.jobs import JobItem
+from typing import Union
+
+from neuromation.client.jobs import JobDescription, JobItem
 
 
 class OutputFormatter:
     @classmethod
-    def format_job(cls, job: JobItem, quiet: bool = True):
+    def format_job(cls, job: Union[JobItem, JobDescription], quiet: bool = True):
         if quiet:
             return job.id
         return (

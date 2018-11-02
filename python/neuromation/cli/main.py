@@ -544,18 +544,20 @@ Commands:
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
                 -q, --quiet               Run command in quiet mode
-            Example:
 
-            neuro job submit --gpu-model nvidia-tesla-p4 -c 4 -m 24G pytorch:latest
-               -volume storage:/data/2018q1:/data:ro
-               -volume storage:/data/2018q1/model:/model:rw
+
+            Examples:
+            neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
+                pytorch:latest
+
             Starts a container pytorch:latest with two paths mounted. Directory
-            /data/2018q1/data is mounter in read only mode to /data directory
-            within container. Directory /data/2018q1/model mounted to /model
+            /q1/ is mounter in read only mode to /qm directory
+            within container. Directory /mod mounted to /mod
             directory in read-write mode.
 
-            neuro job submit --gpu-model nvidia-tesla-p4 -c 4 -m 24G pytorch:latest
-               -volume storage:/data/2018q1:/data:ro --ssh 22
+            neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
+               pytorch:latest
+
             Starts a container pytorch:latest with connection enabled to port 22.
             Please note that SSH server should be provided by container.
             """
@@ -563,10 +565,10 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
 
-            JobHandlerOperations(platform_user_name).submit(
+            job = JobHandlerOperations(platform_user_name).submit(
                 image, gpu, gpu_model, cpu, memory, extshm, cmd, http, ssh, volume, jobs
             )
-            return volume
+            return OutputFormatter.format_job(job, quiet)
 
         @command
         def ssh(id, user, key):

@@ -50,10 +50,15 @@ class VolumeDescriptionPayload:
     container_path: str
     read_only: bool
 
-    def to_primitive(self) -> Dict[str, str]:
-        resp = {"src_storage_uri": self.storage_path, "dst_path": self.container_path}
+    def to_primitive(self) -> Dict[str, Any]:
+        resp: Dict[str, Any] = {
+            "src_storage_uri": self.storage_path,
+            "dst_path": self.container_path,
+        }
         if self.read_only:
-            resp["read_only"] = str(self.read_only)
+            resp["read_only"] = bool(self.read_only)
+        else:
+            resp["read_only"] = False
         return resp
 
 

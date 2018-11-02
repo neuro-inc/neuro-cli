@@ -215,7 +215,7 @@ class Job(ApiClient):
         resources: Resources,
         network: NetworkPortForwarding,
         volumes: Optional[List[VolumeDescriptionPayload]],
-    ) -> JobItem:
+    ) -> JobDescription:
         http, ssh = network_to_api(network)
         resources_payload: ResourcesPayload = ResourcesPayload(
             memory_mb=parse.to_megabytes_str(resources.memory),
@@ -235,7 +235,7 @@ class Job(ApiClient):
             JobSubmissionRequest(container=container, volumes=volumes)
         )
 
-        return JobItem(id=res["job_id"], status=res["status"], client=self)
+        return self._dict_to_description(res)
 
     def list(self) -> List[JobDescription]:
         res = self._fetch_sync(JobListRequest())

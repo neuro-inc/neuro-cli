@@ -14,7 +14,7 @@ import dateutil.parser
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
-from neuromation.client.jobs import JobDescription, JobItem, NetworkPortForwarding
+from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.client.requests import VolumeDescriptionPayload
 from neuromation.http import BadRequestError
 
@@ -465,8 +465,13 @@ class JobHandlerOperations(PlatformStorageOperation):
             storage_path = ":".join(volume_desc_parts[:-2])
 
         self._is_storage_path_url(urlparse(storage_path, scheme="file"))
+        storage_path_with_principal = (
+            f"storage:/{str(self.render_uri_path_with_principal(storage_path))}"
+        )
 
-        return VolumeDescriptionPayload(storage_path, container_path, read_only)
+        return VolumeDescriptionPayload(
+            storage_path_with_principal, container_path, read_only
+        )
 
     def _parse_volumes(self, volumes) -> Optional[List[VolumeDescriptionPayload]]:
         if volumes:
@@ -486,7 +491,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         ssh,
         volumes,
         jobs: Callable,
-    ) -> JobItem:
+    ) -> JobDescription:
 
         cmd = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
