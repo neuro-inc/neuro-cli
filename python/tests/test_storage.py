@@ -107,8 +107,20 @@ def test_invalid_arguments_error(storage):
             {
                 "FileStatuses": {
                     "FileStatus": [
-                        {"path": "foo", "length": 1024, "type": "FILE"},
-                        {"path": "bar", "length": 4 * 1024, "type": "DIR"},
+                        {
+                            "path": "foo",
+                            "length": 1024,
+                            "type": "FILE",
+                            "modificationTime": 0,
+                            "permission": "read",
+                        },
+                        {
+                            "path": "bar",
+                            "length": 4 * 1024,
+                            "type": "DIR",
+                            "modificationTime": 0,
+                            "permission": "read",
+                        },
                     ]
                 }
             }
@@ -117,8 +129,16 @@ def test_invalid_arguments_error(storage):
 )
 def test_ls(storage):
     assert storage.ls(path="/home/dir") == [
-        client.FileStatus(path="foo", size=1024, type="FILE"),
-        client.FileStatus(path="bar", size=4 * 1024, type="DIR"),
+        client.FileStatus(
+            path="foo", size=1024, type="FILE", modification_time=0, permission="read"
+        ),
+        client.FileStatus(
+            path="bar",
+            size=4 * 1024,
+            type="DIR",
+            modification_time=0,
+            permission="read",
+        ),
     ]
 
     aiohttp.ClientSession.request.assert_called_with(

@@ -63,26 +63,32 @@ platform_tree = [
     {
         "path": "/",
         "files": [
-            FileStatus("/alice", 0, "DIRECTORY"),
-            FileStatus("/bob", 0, "DIRECTORY"),
+            FileStatus("/alice", 0, "DIRECTORY", 0, "read"),
+            FileStatus("/bob", 0, "DIRECTORY", 0, "read"),
         ],
     },
-    {"path": "/alice", "files": [FileStatus("platform_existing", 0, "DIRECTORY")]},
+    {
+        "path": "/alice",
+        "files": [FileStatus("platform_existing", 0, "DIRECTORY", 0, "read")],
+    },
     {
         "path": "/alice/platform_existing",
         "files": [
-            FileStatus("my_file.txt", 100, "FILE"),
-            FileStatus("dir", 0, "DIRECTORY"),
-            FileStatus("di1", 0, "DIRECTORY"),
+            FileStatus("my_file.txt", 100, "FILE", 0, "read"),
+            FileStatus("dir", 0, "DIRECTORY", 0, "read"),
+            FileStatus("di1", 0, "DIRECTORY", 0, "read"),
         ],
     },
     {
         "path": "/alice/platform_existing/dir",
-        "files": [FileStatus("my_file2.txt", 100, "FILE")],
+        "files": [FileStatus("my_file2.txt", 100, "FILE", 0, "read")],
     },
     {"path": "/alice/platform_existing/di1", "files": []},
-    {"path": "/bob", "files": [FileStatus("bob_data", 0, "DIRECTORY")]},
-    {"path": "/bob/bob_data", "files": [FileStatus("file.model", 120, "FILE")]},
+    {"path": "/bob", "files": [FileStatus("bob_data", 0, "DIRECTORY", 0, "read")]},
+    {
+        "path": "/bob/bob_data",
+        "files": [FileStatus("file.model", 120, "FILE", 0, "read")],
+    },
 ]
 
 
@@ -125,13 +131,13 @@ class TestCopyRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/alice/platform_existing/my_file.txt",
             "/localdir/dir/my_file.txt",
-            FileStatus("my_file.txt", 100, "FILE"),
+            FileStatus("my_file.txt", 100, "FILE", 0, "read"),
             partial_mocked_store,
         )
         transfer_mock.assert_any_call(
             "/alice/platform_existing/dir/my_file2.txt",
             "/localdir/dir/dir/my_file2.txt",
-            FileStatus("my_file2.txt", 100, "FILE"),
+            FileStatus("my_file2.txt", 100, "FILE", 0, "read"),
             partial_mocked_store,
         )
 
@@ -151,7 +157,7 @@ class TestCopyRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/bob/bob_data/file.model",
             "/localdir/dir/bob_data/file.model",
-            FileStatus("file.model", 120, "FILE"),
+            FileStatus("file.model", 120, "FILE", 0, "read"),
             partial_mocked_store,
         )
 
@@ -228,7 +234,7 @@ class TestCopyNonRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/alice/platform_existing/my_file.txt",
             "/localdir/dir/my_file.txt",
-            FileStatus("my_file.txt", 100, "FILE"),
+            FileStatus("my_file.txt", 100, "FILE", 0, "read"),
             partial_mocked_store,
         )
 
@@ -250,7 +256,7 @@ class TestCopyNonRecursivePlatformToLocal:
         transfer_mock.assert_any_call(
             "/alice/platform_existing/my_file.txt",
             "/localdir/dir/dummy.txt",
-            FileStatus("my_file.txt", 100, "FILE"),
+            FileStatus("my_file.txt", 100, "FILE", 0, "read"),
             partial_mocked_store,
         )
 

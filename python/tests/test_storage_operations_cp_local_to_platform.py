@@ -102,34 +102,40 @@ platform_tree = [
     {
         "path": "/",
         "files": [
-            FileStatus("/alice", 0, "DIRECTORY"),
-            FileStatus("/bob", 0, "DIRECTORY"),
+            FileStatus("/alice", 0, "DIRECTORY", 0, "read"),
+            FileStatus("/bob", 0, "DIRECTORY", 0, "read"),
         ],
     },
-    {"path": "/alice", "files": [FileStatus("platform_existing", 0, "DIRECTORY")]},
+    {
+        "path": "/alice",
+        "files": [FileStatus("platform_existing", 0, "DIRECTORY", 0, "read")],
+    },
     {
         "path": "/alice/platform_existing",
         "files": [
-            FileStatus("my_file.txt", 100, "FILE"),
-            FileStatus("dir", 0, "DIRECTORY"),
-            FileStatus("di1", 0, "DIRECTORY"),
+            FileStatus("my_file.txt", 100, "FILE", 0, "read"),
+            FileStatus("dir", 0, "DIRECTORY", 0, "read"),
+            FileStatus("di1", 0, "DIRECTORY", 0, "read"),
         ],
     },
     {
         "path": "/alice/platform_existing/dir",
-        "files": [FileStatus("my_file2.txt", 100, "FILE")],
+        "files": [FileStatus("my_file2.txt", 100, "FILE", 0, "read")],
     },
     {"path": "/alice/platform_existing/di1", "files": []},
     {
         "path": "/alice/platform_existing/my_file.txt",
-        "files": [FileStatus("my_file.txt", 100, "FILE")],
+        "files": [FileStatus("my_file.txt", 100, "FILE", 0, "read")],
         "file": True,
     },
-    {"path": "/bob", "files": [FileStatus("bob_data", 0, "DIRECTORY")]},
-    {"path": "/bob/bob_data", "files": [FileStatus("file.model", 120, "FILE")]},
+    {"path": "/bob", "files": [FileStatus("bob_data", 0, "DIRECTORY", 0, "read")]},
+    {
+        "path": "/bob/bob_data",
+        "files": [FileStatus("file.model", 120, "FILE", 0, "read")],
+    },
     {
         "path": "/bob/bob_data/file.model",
-        "files": [FileStatus("file.model", 120, "FILE")],
+        "files": [FileStatus("file.model", 120, "FILE", 0, "read")],
         "file": True,
     },
 ]

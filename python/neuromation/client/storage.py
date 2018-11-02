@@ -20,28 +20,18 @@ class FileStatus:
     path: str
     size: int
     # TODO (R Zubairov) Make a enum
-    # TODO (A Yushkovskiy) I think we should use the same 'FileStatus' class
-    # from platform_storage_api (extracted to a separate project 'platform-common')
-    # related: https://github.com/neuromation/platform-storage-api/issues/49
     type: str
-    modification_time: Optional[int] = None
-    permission: Optional[str] = None
+    modification_time: int
+    permission: str
 
     @classmethod
-    def from_prmitive(
-        cls,
-        path: str,
-        type: str,
-        length: int,
-        modificationTime: Optional[int] = None,
-        permission: Optional[str] = None,
-    ) -> "FileStatus":
+    def from_primitive(cls, **values) -> "FileStatus":
         return cls(
-            path=path,
-            type=type,
-            size=length,
-            modification_time=modificationTime,
-            permission=permission,
+            path=values["path"],
+            type=values["type"],
+            size=int(values["length"]),
+            modification_time=int(values["modificationTime"]),
+            permission=values["permission"],
         )
 
 
@@ -51,13 +41,10 @@ class Storage(ApiClient):
             return response["FileStatuses"]["FileStatus"]
 
         response_dict = self._fetch_sync(ListRequest(path=path))
-        result: List[FileStatus] = list()
-        if response_dict:
-            result.extend(
-                FileStatus.from_prmitive(**status)
-                for status in get_file_status_list(response_dict)
-            )
-        return result
+        return [
+            FileStatus.from_primitive(**status)
+            for status in get_file_status_list(response_dict)
+        ]
 
     def mkdirs(self, *, path: str) -> str:
         self._fetch_sync(MkDirsRequest(path=path))

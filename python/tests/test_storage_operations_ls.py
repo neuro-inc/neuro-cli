@@ -108,9 +108,10 @@ class TestInvalidScenarios:
         ):
             alice_ls.ls("http:///home/dir", partial_mocked_store)
 
+empty_response = JsonResponse({"FileStatuses": {"FileStatus": []}})
 
 @patch(
-    "aiohttp.ClientSession.request", new=mocked_async_context_manager(JsonResponse({}))
+    "aiohttp.ClientSession.request", new=mocked_async_context_manager(empty_response)
 )
 @patch("neuromation.cli.rc.Config.get_platform_user_name", new="alice")
 def test_ls_alice_no_user(alice_ls, http_backed_storage):
@@ -125,7 +126,7 @@ def test_ls_alice_no_user(alice_ls, http_backed_storage):
 
 
 @patch(
-    "aiohttp.ClientSession.request", new=mocked_async_context_manager(JsonResponse({}))
+    "aiohttp.ClientSession.request", new=mocked_async_context_manager(empty_response)
 )
 @patch("neuromation.cli.rc.Config.get_platform_user_name", new="alice")
 def test_ls_alice_tilde_user(alice_ls, http_backed_storage):
@@ -140,7 +141,7 @@ def test_ls_alice_tilde_user(alice_ls, http_backed_storage):
 
 
 @patch(
-    "aiohttp.ClientSession.request", new=mocked_async_context_manager(JsonResponse({}))
+    "aiohttp.ClientSession.request", new=mocked_async_context_manager(empty_response)
 )
 @patch("neuromation.cli.rc.Config.get_platform_user_name", new="alice")
 def test_ls_alice_omitted_user(alice_ls, http_backed_storage):
@@ -155,7 +156,7 @@ def test_ls_alice_omitted_user(alice_ls, http_backed_storage):
 
 
 @patch(
-    "aiohttp.ClientSession.request", new=mocked_async_context_manager(JsonResponse({}))
+    "aiohttp.ClientSession.request", new=mocked_async_context_manager(empty_response)
 )
 @patch("neuromation.cli.rc.Config.get_platform_user_name", new="alice")
 def test_ls_alice_omitted_user_no_leading_slash(alice_ls, http_backed_storage):
@@ -170,7 +171,7 @@ def test_ls_alice_omitted_user_no_leading_slash(alice_ls, http_backed_storage):
 
 
 @patch(
-    "aiohttp.ClientSession.request", new=mocked_async_context_manager(JsonResponse({}))
+    "aiohttp.ClientSession.request", new=mocked_async_context_manager(empty_response)
 )
 @patch("neuromation.cli.rc.Config.get_platform_user_name", new="alice")
 def test_ls_alice_removes_bob_data(alice_ls, http_backed_storage):
@@ -185,7 +186,7 @@ def test_ls_alice_removes_bob_data(alice_ls, http_backed_storage):
 
 
 @patch(
-    "aiohttp.ClientSession.request", new=mocked_async_context_manager(JsonResponse({}))
+    "aiohttp.ClientSession.request", new=mocked_async_context_manager(empty_response)
 )
 @patch("neuromation.cli.rc.Config.get_platform_user_name", new="alice")
 def test_ls_alice_removes_bob_data_file(alice_ls, http_backed_storage):
