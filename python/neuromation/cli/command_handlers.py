@@ -424,7 +424,7 @@ class JobHandlerOperations(PlatformStorageOperation):
 
         def job_sort_key(job: JobDescription) -> datetime:
             created_str = job.history.created_at
-            return dateutil.parser.parse(created_str)
+            return dateutil.parser.isoparse(created_str)
 
         with jobs() as j:
             job_list = j.list()
