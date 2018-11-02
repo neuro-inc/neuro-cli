@@ -4,7 +4,7 @@ import aiohttp
 import pytest
 
 from neuromation.client import ClientError, ResourceNotFound
-from neuromation.client.jobs import JobDescription, Resources
+from neuromation.client.jobs import JobDescription, JobStatusHistory, Resources
 from utils import (
     BinaryResponse,
     JsonResponse,
@@ -290,6 +290,14 @@ def test_list_extended_output(jobs):
             resources=Resources(
                 memory=16384, cpu=1.0, gpu=1, shm=False, gpu_model="nvidia-tesla-k80"
             ),
+            history=JobStatusHistory(
+                status="failed",
+                reason="Error",
+                description="Mounted on Avail\\n/dev/shm" "     64M\\n\\nExit code: 1",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
@@ -349,6 +357,14 @@ def test_list_extended_output_with_http_url(jobs):
             resources=Resources(
                 memory=16384, cpu=1.0, gpu=1, shm=False, gpu_model="nvidia-tesla-p4"
             ),
+            history=JobStatusHistory(
+                status="failed",
+                reason="Error",
+                description="Mounted on Avail\\n/dev/shm" "     64M\\n\\nExit code: 1",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
@@ -403,6 +419,14 @@ def test_list_extended_output_no_shm(jobs):
             resources=Resources(
                 memory=16384, cpu=1.0, gpu=1, shm=None, gpu_model="nvidia-tesla-v100"
             ),
+            history=JobStatusHistory(
+                status="failed",
+                reason="Error",
+                description="Mounted on Avail\\n/dev/shm" "     64M\\n\\nExit code: 1",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
+            ),
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
@@ -451,6 +475,14 @@ def test_list_extended_output_no_gpu(jobs):
             '= target, avail / dev / shm;false"',
             resources=Resources(
                 memory=16384, cpu=1.0, gpu=None, shm=None, gpu_model=None
+            ),
+            history=JobStatusHistory(
+                status="failed",
+                reason="Error",
+                description="Mounted on Avail\\n/dev/shm" "     64M\\n\\nExit code: 1",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
             ),
         )
     ]
@@ -501,6 +533,14 @@ def test_list_extended_output_no_image(jobs):
             command=None,
             resources=Resources(
                 memory=16384, cpu=1.0, gpu=1, shm=None, gpu_model="nvidia-tesla-v100"
+            ),
+            history=JobStatusHistory(
+                status="failed",
+                reason="Error",
+                description="Mounted on Avail\\n/dev/shm     64M\\n\\nExit code: 1",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
             ),
         )
     ]

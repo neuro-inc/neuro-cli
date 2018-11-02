@@ -207,7 +207,7 @@ class Model(ApiClient):
 class Job(ApiClient):
     def list(self) -> List[JobDescription]:
         res = self._fetch_sync(JobListRequest())
-        return [self._dict_to_description(job) for job in res["jobs"]]
+        return [self._dict_to_description_with_history(job) for job in res["jobs"]]
 
     def kill(self, id: str) -> bool:
         self._fetch_sync(JobKillRequest(id=id))

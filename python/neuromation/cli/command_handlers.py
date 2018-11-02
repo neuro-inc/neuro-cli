@@ -1,4 +1,5 @@
 import abc
+import datetime
 import logging
 import os
 import subprocess
@@ -7,6 +8,8 @@ from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
 from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
+
+import dateutil.parser
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
@@ -419,11 +422,18 @@ class JobHandlerOperations(PlatformStorageOperation):
             command = item.command if item.command else ""
             return f"{item.id}    {item.status:<10}    {image:<25}    {command}"
 
+        def job_sort_key(job: JobDescription) -> datetime:
+            created_str = job.history.created_at
+            return dateutil.parser.isoparse(created_str)
+
         with jobs() as j:
+            job_list = j.list()
+
+            sorted_job_list = sorted(job_list, key=job_sort_key)
             return "\n".join(
                 [
                     short_format(item)
-                    for item in j.list()
+                    for item in sorted_job_list
                     if not status or item.status == status
                 ]
             )
