@@ -3,7 +3,8 @@ import enum
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BufferedReader
-from typing import Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
+from urllib.parse import urlparse
 
 from neuromation.http.fetch import FetchError
 from neuromation.strings import parse

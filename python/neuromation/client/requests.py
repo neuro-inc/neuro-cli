@@ -1,10 +1,6 @@
 import logging
 from dataclasses import asdict, dataclass
 from io import BytesIO
-from typing import ClassVar, Dict, List, Optional
-
-from dataclasses import asdict, dataclass
-from io import BytesIO
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from neuromation import http

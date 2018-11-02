@@ -1,12 +1,7 @@
 from contextlib import contextmanager
-from io import BufferedReader, BytesIO
-from typing import List
-
 from dataclasses import dataclass
 from io import BufferedReader, BytesIO
-from typing import Iterator, List
-from io import BufferedReader, BytesIO
-from typing import Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from neuromation.http.fetch import FetchError
 
@@ -52,11 +47,11 @@ class FileStatus:
 
 class Storage(ApiClient):
     def ls(self, *, path: str) -> List[FileStatus]:
-        def get_file_status_list(response: Dict) -> List[Dict]:
+        def get_file_status_list(response: Dict[str, Any]) -> List[Dict[str, Any]]:
             return response["FileStatuses"]["FileStatus"]
 
         response_dict = self._fetch_sync(ListRequest(path=path))
-        result = list()
+        result: List[FileStatus] = list()
         if response_dict:
             result.extend(
                 FileStatus.from_prmitive(**status)
