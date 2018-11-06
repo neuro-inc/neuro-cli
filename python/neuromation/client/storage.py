@@ -68,7 +68,6 @@ class Storage(ApiClient):
         :return: Status of a file or directory.
         """
         resp = self._fetch_sync(FileStatRequest(path=path))
-        log.debug(f"{resp}")
         return FileStatus.from_primitive(resp["FileStatus"])
 
     @contextmanager

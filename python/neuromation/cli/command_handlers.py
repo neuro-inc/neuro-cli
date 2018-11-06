@@ -289,9 +289,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
 class NonRecursiveLocalToPlatform(CopyOperation):
     def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
-        """Tests whether specified path is directory on a platform or not.
-        Test is done by running LS command.
-        """
+        """Tests whether specified path is directory on a platform or not."""
         try:
             with storage() as s:
                 file_status = s.stats(path=str(path))

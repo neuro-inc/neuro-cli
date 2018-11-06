@@ -10,6 +10,13 @@ from neuromation.http import JsonRequest
 log = logging.getLogger(__name__)
 
 
+def add_path(prefix: str, path: str) -> str:
+    # ('/prefix', 'dir') and ('/prefix', '/dir')
+    # are semantically the same in case of build
+    # file Storage API calls
+    return prefix + path.strip("/")
+
+
 class RequestError(Exception):
     pass
 
@@ -121,12 +128,6 @@ class JobMonitorRequest(JobRequest):
 
 @dataclass(frozen=True)
 class StorageRequest(Request):
-    def add_path(self, prefix: str, path: str) -> str:
-        # ('/prefix', 'dir') and ('/prefix', '/dir')
-        # are semantically the same in case of build
-        # file Storage API calls
-        return prefix + path.strip("/")
-
     def to_http_request(self) -> http.Request:  # pragma: no cover
         pass
 
@@ -138,7 +139,7 @@ class MkDirsRequest(StorageRequest):
 
     def to_http_request(self) -> http.Request:
         return http.PlainRequest(
-            url=self.add_path("/storage/", self.path),
+            url=add_path("/storage/", self.path),
             params=self.op,
             method="PUT",
             json=None,
@@ -159,7 +160,7 @@ class FileStatRequest(StorageRequest):
 
     def to_http_request(self) -> http.Request:
         return http.JsonRequest(
-            url=self.add_path("/storage/", self.path),
+            url=add_path("/storage/", self.path),
             params=self.op,
             method="GET",
             json=None,
@@ -188,11 +189,6 @@ class DeleteRequest(StorageRequest):
 
 # TODO: better polymorphism?
 def build(request: Request) -> http.Request:
-    def add_path(prefix: str, path: str) -> str:
-        # ('/prefix', 'dir') and ('/prefix', '/dir')
-        # are semantically the same in case of build
-        # file Storage API calls
-        return prefix + path.strip("/")
 
     if isinstance(request, JobStatusRequest):
         return http.JsonRequest(
