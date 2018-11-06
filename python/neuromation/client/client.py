@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 
-import aiohttp
+from aiohttp.client import ClientTimeout
 
 from neuromation.http import fetch, session
 from neuromation.http.fetch import (
@@ -77,7 +77,7 @@ class ApiClient:
         }
         client_timeout = None
         if timeout:
-            client_timeout = aiohttp.ClientTimeout(
+            client_timeout = ClientTimeout(  # type: ignore
                 total=timeout.total,
                 connect=timeout.connect,
                 sock_connect=timeout.sock_connect,
@@ -89,7 +89,7 @@ class ApiClient:
     def __enter__(self) -> "ApiClient":
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(self, *args: Any) -> None:
         self.loop.run_until_complete(self.close())
 
     @property
