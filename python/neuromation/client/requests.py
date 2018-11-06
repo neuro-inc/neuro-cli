@@ -4,7 +4,7 @@ from io import BytesIO
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from neuromation import http
-from neuromation.http import JsonRequest, PlainRequest
+from neuromation.http import JsonRequest
 
 
 log = logging.getLogger(__name__)
@@ -121,13 +121,13 @@ class JobMonitorRequest(JobRequest):
 
 @dataclass(frozen=True)
 class StorageRequest(Request):
-    def add_path(self, prefix, path):
+    def add_path(self, prefix: str, path: str) -> str:
         # ('/prefix', 'dir') and ('/prefix', '/dir')
         # are semantically the same in case of build
         # file Storage API calls
         return prefix + path.strip("/")
 
-    def to_http_request(self) -> Request:  # pragma: no cover
+    def to_http_request(self) -> http.Request:  # pragma: no cover
         pass
 
 
@@ -136,7 +136,7 @@ class MkDirsRequest(StorageRequest):
     op: ClassVar[str] = "MKDIRS"
     path: str
 
-    def to_http_request(self) -> Request:
+    def to_http_request(self) -> http.Request:
         return http.PlainRequest(
             url=self.add_path("/storage/", self.path),
             params=self.op,
@@ -154,10 +154,10 @@ class ListRequest(StorageRequest):
 
 @dataclass(frozen=True)
 class FileStatRequest(StorageRequest):
-    op: ClassVar[str] = "FILESTATUS"
+    op: ClassVar[str] = "GETFILESTATUS"
     path: str
 
-    def to_http_request(self) -> Request:
+    def to_http_request(self) -> http.Request:
         return http.JsonRequest(
             url=self.add_path("/storage/", self.path),
             params=self.op,

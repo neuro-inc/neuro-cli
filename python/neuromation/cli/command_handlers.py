@@ -295,7 +295,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         try:
             with storage() as s:
                 file_status = s.stats(path=str(path))
-                return file_status.type == 'DIRECTORY'
+                return file_status.type == "DIRECTORY"
         except (IllegalArgumentError, ResourceNotFound):
             return False
 

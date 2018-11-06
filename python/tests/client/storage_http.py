@@ -27,30 +27,50 @@ class TestStats:
         "aiohttp.ClientSession.request",
         new=mocked_async_context_manager(
             JsonResponse(
-                {'FileStatus': {'size': 100, 'modificationTime': 1540809272,
-                                'permission': 'manage', 'type': 'FILE',
-                                'path': 'existing.file'}},
+                {
+                    "FileStatus": {
+                        "size": 100,
+                        "modificationTime": 1540809272,
+                        "permission": "manage",
+                        "type": "FILE",
+                        "path": "existing.file",
+                    }
+                }
             )
         ),
     )
     def test_file_status(self, storage):
         file_stats = storage.stats(path="/existing.file")
-        assert file_stats == FileStatus(path="existing.file", size=100, type="FILE",
-                                        modificationTime=1540809272,
-                                        permission='manage')
+        assert file_stats == FileStatus(
+            path="existing.file",
+            size=100,
+            type="FILE",
+            modificationTime=1540809272,
+            permission="manage",
+        )
 
     @patch(
         "aiohttp.ClientSession.request",
         new=mocked_async_context_manager(
             JsonResponse(
-                {'FileStatus': {'size': 0, 'modificationTime': 1540809272,
-                                'permission': 'manage', 'type': 'DIRECTORY',
-                                'path': 'existing.dir'}},
+                {
+                    "FileStatus": {
+                        "size": 0,
+                        "modificationTime": 1540809272,
+                        "permission": "manage",
+                        "type": "DIRECTORY",
+                        "path": "existing.dir",
+                    }
+                }
             )
         ),
     )
     def test_dir_status(self, storage):
         file_stats = storage.stats(path="existing.dir")
-        assert file_stats == FileStatus(path="existing.dir", size=0, type="DIRECTORY",
-                                        modificationTime=1540809272,
-                                        permission='manage')
+        assert file_stats == FileStatus(
+            path="existing.dir",
+            size=0,
+            type="DIRECTORY",
+            modificationTime=1540809272,
+            permission="manage",
+        )

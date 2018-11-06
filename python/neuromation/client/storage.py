@@ -1,8 +1,5 @@
 import logging
 from contextlib import contextmanager
-from io import BufferedReader, BytesIO
-from typing import Iterator, List, Optional
-
 from dataclasses import dataclass
 from io import BufferedReader, BytesIO
 from typing import Any, Dict, Iterator, List
@@ -18,6 +15,7 @@ from .requests import (
     MkDirsRequest,
     OpenRequest,
 )
+
 
 log = logging.getLogger(__name__)
 
@@ -70,8 +68,8 @@ class Storage(ApiClient):
         :return: Status of a file or directory.
         """
         resp = self._fetch_sync(FileStatRequest(path=path))
-        log.debug(f'{resp}')
-        return FileStatus(**resp['FileStatus'])
+        log.debug(f"{resp}")
+        return FileStatus.from_primitive(resp["FileStatus"])
 
     @contextmanager
     def open(self, *, path: str) -> Iterator[BufferedReader]:
