@@ -43,7 +43,7 @@ isort:
 .PHONY: lint
 lint:
 	black --check neuromation tests
-	mypy neuromation/client/client.py neuromation/client/storage.py neuromation/client/jobs.py neuromation/client/requests.py neuromation/logging neuromation/strings
+	mypy neuromation/client neuromation/logging neuromation/strings
 	flake8
 
 .PHONY: publish
@@ -79,5 +79,4 @@ devpi_login:
 
 devpi_upload: devpi_login
 	devpi upload --formats bdist_wheel
-	
 	
