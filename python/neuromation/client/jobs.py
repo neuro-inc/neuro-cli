@@ -17,10 +17,25 @@ from .requests import (
     JobListRequest,
     JobMonitorRequest,
     JobStatusRequest,
+    JobSubmissionRequest,
     ResourcesPayload,
     ShareResourceRequest,
     TrainRequest,
+    VolumeDescriptionPayload,
 )
+
+
+def network_to_api(
+    network: Optional["NetworkPortForwarding"]
+) -> Tuple[Optional[Dict[str, int]], Optional[Dict[str, int]]]:
+    http = None
+    ssh = None
+    if network:
+        if "http" in network.ports:
+            http = {"port": network.ports["http"]}
+        if "ssh" in network.ports:
+            ssh = {"port": network.ports["ssh"]}
+    return http, ssh
 
 
 @dataclass(frozen=True)
@@ -88,7 +103,7 @@ class JobItem:
     async def _call(self) -> "JobItem":
         return JobItem(
             client=self.client,
-            **await self.client._fetch(request=JobStatusRequest(id=self.id))
+            **await self.client._fetch(request=JobStatusRequest(id=self.id)),
         )
 
     def wait(self, timeout: Optional[float] = None) -> "JobItem":
@@ -125,18 +140,6 @@ class ResourceSharing(ApiClient):
 
 
 class Model(ApiClient):
-    def _network_to_api(
-        self, network: Optional[NetworkPortForwarding]
-    ) -> Tuple[Optional[Dict[str, int]], Optional[Dict[str, int]]]:
-        http = None
-        ssh = None
-        if network:
-            if "http" in network.ports:
-                http = {"port": network.ports["http"]}
-            if "ssh" in network.ports:
-                ssh = {"port": network.ports["ssh"]}
-        return http, ssh
-
     def infer(
         self,
         *,
@@ -145,9 +148,9 @@ class Model(ApiClient):
         network: Optional[NetworkPortForwarding],
         model: str,
         dataset: str,
-        results: str
+        results: str,
     ) -> JobItem:
-        http, ssh = self._network_to_api(network)
+        http, ssh = network_to_api(network)
         res = self._fetch_sync(
             InferRequest(
                 container=ContainerPayload(
@@ -178,9 +181,9 @@ class Model(ApiClient):
         resources: Resources,
         network: Optional[NetworkPortForwarding],
         dataset: str,
-        results: str
+        results: str,
     ) -> JobItem:
-        http, ssh = self._network_to_api(network)
+        http, ssh = network_to_api(network)
         res = self._fetch_sync(
             TrainRequest(
                 container=ContainerPayload(
@@ -205,6 +208,35 @@ class Model(ApiClient):
 
 
 class Job(ApiClient):
+    def submit(
+        self,
+        *,
+        image: Image,
+        resources: Resources,
+        network: NetworkPortForwarding,
+        volumes: Optional[List[VolumeDescriptionPayload]],
+    ) -> JobDescription:
+        http, ssh = network_to_api(network)
+        resources_payload: ResourcesPayload = ResourcesPayload(
+            memory_mb=parse.to_megabytes_str(resources.memory),
+            cpu=resources.cpu,
+            gpu=resources.gpu,
+            gpu_model=resources.gpu_model,
+            shm=resources.shm,
+        )
+        container = ContainerPayload(
+            image=image.image,
+            command=image.command,
+            http=http,
+            ssh=ssh,
+            resources=resources_payload,
+        )
+        res = self._fetch_sync(
+            JobSubmissionRequest(container=container, volumes=volumes)
+        )
+
+        return self._dict_to_description(res)
+
     def list(self) -> List[JobDescription]:
         res = self._fetch_sync(JobListRequest())
         return [self._dict_to_description_with_history(job) for job in res["jobs"]]

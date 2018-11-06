@@ -83,45 +83,6 @@ def test_kill(jobs):
     new=mocked_async_context_manager(
         JsonResponse(
             {
-                "status": "running",
-                "id": "foo",
-                "history": {
-                    "created_at": "2018-08-29T12:23:13.981621+00:00",
-                    "started_at": "2018-08-29T12:23:15.988054+00:00",
-                },
-            }
-        )
-    ),
-)
-def test_status_runing(jobs):
-    expected = {
-        "status": "running",
-        "id": "foo",
-        "history": {
-            "created_at": "2018-08-29T12:23:13.981621+00:00",
-            "started_at": "2018-08-29T12:23:15.988054+00:00",
-        },
-    }
-    res = jobs.status("1")
-    assert {
-        "status": res.status,
-        "id": "foo",
-        "history": {
-            "created_at": res.history.created_at,
-            "started_at": res.history.started_at,
-        },
-    } == expected
-
-    aiohttp.ClientSession.request.assert_called_with(
-        method="GET", url="http://127.0.0.1/jobs/1", params=None, data=None, json=None
-    )
-
-
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(
-        JsonResponse(
-            {
                 "status": "failed",
                 "id": "foo",
                 "history": {
