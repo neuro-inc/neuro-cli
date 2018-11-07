@@ -336,7 +336,6 @@ Commands:
           test               Test trained model against validation dataset
           infer              Start batch inference
           develop            Start model and connect using ssh
-          debug              Prepare debug tunnel for PyCharm
         """
 
         from neuromation.client.jobs import Model
@@ -425,69 +424,6 @@ Commands:
                 id, git_key, localport, jobs
             )
             return None
-
-        @command
-        def develop(
-            image,
-            dataset,
-            results,
-            gpu,
-            cpu,
-            memory,
-            extshm,
-            http,
-            ssh,
-            user,
-            key,
-            gpu_model,
-        ):
-            """
-            Usage:
-                neuro model develop [options] IMAGE DATASET RESULTS
-
-            Start training job using model from IMAGE, dataset from DATASET and
-            store output weights in RESULTS.
-
-            COMMANDS list will be passed as commands to model container.
-
-            Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
-                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Other options available are
-                                              nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT       Memory amount to request [default: 16G]
-                -x, --extshm              Request extended '/dev/shm' space
-                --http NUMBER             Enable HTTP port forwarding to container
-                --ssh NUMBER              Enable SSH port forwarding to container
-                                                                 [default: 22]
-                --user STRING             Container user name [default: root]
-                --key STRING              Path to container private key.
-            """
-
-            config: Config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            git_key = config.github_rsa_path
-
-            model_operation = ModelHandlerOperations(platform_user_name)
-            model_operation.develop(
-                image,
-                dataset,
-                results,
-                gpu,
-                gpu_model,
-                cpu,
-                memory,
-                extshm,
-                model,
-                jobs,
-                http,
-                ssh,
-                git_key,
-                user,
-                key,
-            )
-            return
 
         @command
         def test():
