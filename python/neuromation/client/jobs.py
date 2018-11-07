@@ -149,6 +149,7 @@ class Model(ApiClient):
         model: str,
         dataset: str,
         results: str,
+        job_name: Optional[str],
     ) -> JobItem:
         http, ssh = network_to_api(network)
         res = self._fetch_sync(
@@ -169,6 +170,7 @@ class Model(ApiClient):
                 model_storage_uri=model,
                 dataset_storage_uri=dataset,
                 result_storage_uri=results,
+                job_name=job_name,
             )
         )
 
@@ -182,6 +184,7 @@ class Model(ApiClient):
         network: Optional[NetworkPortForwarding],
         dataset: str,
         results: str,
+        job_name: Optional[str],
     ) -> JobItem:
         http, ssh = network_to_api(network)
         res = self._fetch_sync(
@@ -201,6 +204,7 @@ class Model(ApiClient):
                 ),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results,
+                job_name=job_name,
             )
         )
 
@@ -215,6 +219,7 @@ class Job(ApiClient):
         resources: Resources,
         network: NetworkPortForwarding,
         volumes: Optional[List[VolumeDescriptionPayload]],
+        job_name: Optional[str],
     ) -> JobDescription:
         http, ssh = network_to_api(network)
         resources_payload: ResourcesPayload = ResourcesPayload(
@@ -232,7 +237,9 @@ class Job(ApiClient):
             resources=resources_payload,
         )
         res = self._fetch_sync(
-            JobSubmissionRequest(container=container, volumes=volumes)
+            JobSubmissionRequest(
+                container=container, volumes=volumes, job_name=job_name
+            )
         )
 
         return self._dict_to_description(res)

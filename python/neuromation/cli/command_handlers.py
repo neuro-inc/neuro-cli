@@ -502,7 +502,11 @@ class JobHandlerOperations(PlatformStorageOperation):
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
             volumes = self._parse_volumes(volumes)
             return j.submit(
-                image=image, resources=resources, network=network, volumes=volumes
+                image=image,
+                resources=resources,
+                network=network,
+                volumes=volumes,
+                job_name=None,
             )
 
     def start_ssh(
@@ -659,6 +663,7 @@ class ModelHandlerOperations(JobHandlerOperations):
                 resources=Resources.create(cpu, gpu, gpu_model, memory, extshm),
                 dataset=f"storage:/{dataset_platform_path}",
                 results=f"storage:/{resultset_platform_path}",
+                job_name=None,
             )
 
         return job

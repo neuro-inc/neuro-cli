@@ -1,7 +1,7 @@
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from io import BytesIO
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional
 
 from neuromation import http
 from neuromation.http import JsonRequest
@@ -44,13 +44,13 @@ class ContainerPayload:
     resources: ResourcesPayload
 
     def to_primitive(self) -> Dict[str, Any]:
-        primitive = {'image': self.image, 'resources': self.resources.to_primitive(), }
+        primitive = {"image": self.image, "resources": self.resources.to_primitive()}
         if self.command:
-            primitive['command'] = self.command
+            primitive["command"] = self.command
         if self.http:
-            primitive['http'] = self.http
+            primitive["http"] = self.http
         if self.ssh:
-            primitive['ssh'] = self.ssh
+            primitive["ssh"] = self.ssh
         return primitive
 
 
@@ -93,9 +93,7 @@ class ShareResourceRequest(Request):
         )
 
 
-def container_to_primitive(
-        req_container_payload: ContainerPayload
-) -> Dict[str, Any]:
+def container_to_primitive(req_container_payload: ContainerPayload) -> Dict[str, Any]:
     """
     Converts request object to json object.
 
@@ -115,10 +113,10 @@ class InferRequest(Request):
 
     def to_primitive(self) -> Dict[str, Any]:
         json_params: Dict[str, Any] = {
-            'container': container_to_primitive(self.container),
-            'dataset_storage_uri': self.dataset_storage_uri,
-            'result_storage_uri': self.result_storage_uri,
-            'model_storage_uri': self.model_storage_uri,
+            "container": container_to_primitive(self.container),
+            "dataset_storage_uri": self.dataset_storage_uri,
+            "result_storage_uri": self.result_storage_uri,
+            "model_storage_uri": self.model_storage_uri,
         }
 
         if self.job_name:
@@ -141,9 +139,9 @@ class TrainRequest(Request):
 
     def to_primitive(self) -> Dict[str, Any]:
         json_params: Dict[str, Any] = {
-            'container': container_to_primitive(self.container),
-            'dataset_storage_uri': self.dataset_storage_uri,
-            'result_storage_uri': self.result_storage_uri,
+            "container": container_to_primitive(self.container),
+            "dataset_storage_uri": self.dataset_storage_uri,
+            "result_storage_uri": self.result_storage_uri,
         }
 
         if self.job_name:
@@ -175,7 +173,7 @@ class JobSubmissionRequest(JobRequest):
 
     def to_http_request(self) -> JsonRequest:
         request_details: Dict[str, Any] = {
-            'container': container_to_primitive(self.container),
+            "container": container_to_primitive(self.container)
         }
         request_details["container"]["volumes"] = self._convert_volumes_to_primitive()
         if self.job_name:
