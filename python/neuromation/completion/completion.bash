@@ -377,9 +377,6 @@ _neuro-completion()
 		    train)
 			state=model-train
 			;;
-		    develop)
-			state=model-develop
-			;;
 		    debug)
 			state=model-debug
 			;;
@@ -428,48 +425,6 @@ _neuro-completion()
 		;;
 	    model-train-cmd)
 		state=model-train-cmd
-		;;
-	    model-develop)
-		case $cword in
-		    -c|--cpu)
-			state=model-develop-cpu
-			;;
-		    -g|--gpu)
-			state=model-develop-gpu
-			;;
-		    -m|--memory)
-			state=model-develop-memory
-			;;
-		    --http)
-			state=model-develop-http
-			;;
-		    --ssh)
-			state=model-develop-ssh
-			;;
-		    -x|--extshm)
-			;;
-		    --user)
-			state=model-develop-user
-			;;
-		    --key)
-			state=model-develop
-			;;
-		    *)
-			state=model-develop-dataset
-			;;
-		esac
-		;;
-	    model-develop-memory|model-develop-gpu|model-develop-cpu)
-		state=model-develop
-		;;
-	    model-develop-http|model-develop-ssh)
-		state=model-develop
-		;;
-	    model-develop-dataset)
-		state=model-develop-result
-		;;
-	    model-develop-result)
-		state=model-develop-cmd
 		;;
 	    model-debug)
 		case $cword in
@@ -555,7 +510,7 @@ _neuro-completion()
 	token)
 	    ;;
 	model)
-	    toks='train develop debug'
+	    toks='train debug'
 	    ;;
 	model-train)
 	    toks='-c --cpu -g --gpu -m --memory -x --extshm
@@ -565,16 +520,6 @@ _neuro-completion()
 	    toks=$(_neuro_complete-uri "$cur" n y)
 	    ;;
 	model-train-result)
-	    toks=$(_neuro_complete-uri "$cur" n y)
-	    ;;
-	model-develop)
-	    toks='-c --cpu -g --gpu -m --memory -x --extshm
-	    	  --http --ssh --user --key'	     
-	    ;;
-	model-develop-dataset)
-	    toks=$(_neuro_complete-uri "$cur" n y)
-	    ;;
-	model-develop-result)
 	    toks=$(_neuro_complete-uri "$cur" n y)
 	    ;;
 	model-debug)
