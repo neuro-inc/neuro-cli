@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import subprocess
@@ -74,7 +75,7 @@ def check_docker_installed():
 
 
 @command
-def neuro(url, token, verbose, version):
+async def neuro(url, token, verbose, version):
     """    ◣
     ▇ ◣
     ▇ ◥ ◣
@@ -226,7 +227,7 @@ Commands:
         return locals()
 
     @command
-    def store():
+    async def store():
         """
         Usage:
             neuro store COMMAND
@@ -261,7 +262,7 @@ Commands:
             PlatformRemoveOperation(platform_user_name).remove(path, storage)
 
         @command
-        def ls(path):
+        async def ls(path):
             """
             Usage:
                 neuro store ls [PATH]
@@ -277,7 +278,7 @@ Commands:
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             ls_op = PlatformListDirOperation(platform_user_name)
-            storage_objects = ls_op.ls(path, storage)
+            storage_objects = await ls_op.ls(path, storage)
 
             print(
                 "\n".join(
@@ -509,7 +510,7 @@ Commands:
         jobs = partial(Job, url, token)
 
         @command
-        def submit(
+        async def submit(
             image,
             gpu,
             gpu_model,
@@ -565,7 +566,7 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
 
-            job = JobHandlerOperations(platform_user_name).submit(
+            job = await JobHandlerOperations(platform_user_name).submit(
                 image,
                 gpu,
                 gpu_model,
@@ -819,7 +820,7 @@ Commands:
     return locals()
 
 
-def main():
+async def async_main():
     setup_logging()
     setup_console_handler(console_handler, verbose=("--verbose" in sys.argv))
 
@@ -835,7 +836,7 @@ def main():
     format_spec = {"api_url": config.url, "username": doc_username}
 
     try:
-        res = dispatch(
+        res = await dispatch(
             target=neuro, tail=sys.argv[1:], format_spec=format_spec, token=config.auth
         )
         if res:
@@ -887,3 +888,9 @@ def main():
     except Exception as e:
         log.error(f"{e}")
         raise e
+
+
+def main():
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(async_main())
+    loop.close()

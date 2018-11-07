@@ -84,13 +84,13 @@ class ApiClient:
                 sock_read=timeout.sock_read,
             )
         self._session_object = session(token=token, timeout=client_timeout)
-        self._session = self.loop.run_until_complete(self._session_object)
 
-    def __enter__(self) -> "ApiClient":
+    async def __aenter__(self) -> "ApiClient":
+        self._session = await self._session_object
         return self
 
-    def __exit__(self, *args: Any) -> None:
-        self.loop.run_until_complete(self.close())
+    async def __aexit__(self, *args: Any) -> None:
+        await self.close()
 
     @property
     def loop(self) -> asyncio.events.AbstractEventLoop:
@@ -105,14 +105,11 @@ class ApiClient:
 
     async def _fetch(self, request: Request) -> Any:
         try:
-            return await fetch(build(request), session=self._session, url=self._url)
+            response = await fetch(build(request), session=self._session, url=self._url)
+            log.debug(response)
+            return response
         except FetchError as error:
             error_class = type(error)
             log.debug(f"Error {error_class} {error}")
             mapped_class = self._exception_map.get(error_class, error_class)
             raise mapped_class(error) from error
-
-    def _fetch_sync(self, request: Request) -> Any:
-        res = self._loop.run_until_complete(self._fetch(request))
-        log.debug(res)
-        return res

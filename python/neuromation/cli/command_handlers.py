@@ -70,12 +70,14 @@ class PlatformStorageOperation:
 
 
 class PlatformSharingOperations(PlatformStorageOperation):
-    def share(self, path_str: str, op_type: str, whom: str, resource_sharing: Callable):
+    async def share(
+        self, path_str: str, op_type: str, whom: str, resource_sharing: Callable
+    ):
         what = urlparse(path_str, scheme="file")
         target_platform_path = self._render_platform_path_with_principal(what)
         with resource_sharing() as rs:
             resource_uri = f"{what.scheme}:/{target_platform_path}"
-            return rs.share(resource_uri, op_type, whom)
+            return await rs.share(resource_uri, op_type, whom)
 
 
 class PlatformMakeDirOperation(PlatformStorageOperation):
@@ -87,10 +89,10 @@ class PlatformMakeDirOperation(PlatformStorageOperation):
 
 
 class PlatformListDirOperation(PlatformStorageOperation):
-    def ls(self, path_str: str, storage: Callable) -> List[FileStatus]:
+    async def ls(self, path_str: str, storage: Callable) -> List[FileStatus]:
         final_path = self.render_uri_path_with_principal(path_str)
-        with storage() as s:
-            return s.ls(path=str(final_path))
+        async with storage() as s:
+            return await s.ls(path=str(final_path))
 
 
 class PlatformRemoveOperation(PlatformStorageOperation):
@@ -511,7 +513,7 @@ class JobHandlerOperations(PlatformStorageOperation):
             return [self._parse_volume_str(volume) for volume in volumes]
         return None
 
-    def submit(
+    async def submit(
         self,
         image,
         gpu: str,
@@ -535,7 +537,7 @@ class JobHandlerOperations(PlatformStorageOperation):
             network = self._network_parse(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
             volumes = self._parse_volumes(volumes)
-            return j.submit(
+            return await j.submit(
                 image=image,
                 resources=resources,
                 network=network,

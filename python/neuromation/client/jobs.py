@@ -136,14 +136,14 @@ class JobStatus(str, enum.Enum):
 
 
 class ResourceSharing(ApiClient):
-    def share(self, path: str, action: str, whom: str) -> bool:
+    async def share(self, path: str, action: str, whom: str) -> bool:
         permissions = [{"uri": path, "action": action}]
-        self._fetch_sync(ShareResourceRequest(whom, permissions))
+        await self._fetch(ShareResourceRequest(whom, permissions))
         return True
 
 
 class Model(ApiClient):
-    def infer(
+    async def infer(
         self,
         *,
         image: Image,
@@ -155,7 +155,7 @@ class Model(ApiClient):
         description: Optional[str],
     ) -> JobItem:
         http, ssh = network_to_api(network)
-        res = self._fetch_sync(
+        res = await self._fetch(
             InferRequest(
                 container=ContainerPayload(
                     image=image.image,
@@ -181,7 +181,7 @@ class Model(ApiClient):
             id=res["job_id"], status=res["status"], client=self, description=description
         )
 
-    def train(
+    async def train(
         self,
         *,
         image: Image,
@@ -192,7 +192,7 @@ class Model(ApiClient):
         description: Optional[str],
     ) -> JobItem:
         http, ssh = network_to_api(network)
-        res = self._fetch_sync(
+        res = await self._fetch(
             TrainRequest(
                 container=ContainerPayload(
                     image=image.image,
@@ -219,7 +219,7 @@ class Model(ApiClient):
 
 
 class Job(ApiClient):
-    def submit(
+    async def submit(
         self,
         *,
         image: Image,
@@ -243,7 +243,7 @@ class Job(ApiClient):
             ssh=ssh,
             resources=resources_payload,
         )
-        res = self._fetch_sync(
+        res = await self._fetch(
             JobSubmissionRequest(
                 container=container, volumes=volumes, description=description
             )
@@ -251,27 +251,27 @@ class Job(ApiClient):
 
         return self._dict_to_description(res)
 
-    def list(self) -> List[JobDescription]:
-        res = self._fetch_sync(JobListRequest())
+    async def list(self) -> List[JobDescription]:
+        res = await self._fetch(JobListRequest())
         return [self._dict_to_description_with_history(job) for job in res["jobs"]]
 
-    def kill(self, id: str) -> bool:
-        self._fetch_sync(JobKillRequest(id=id))
+    async def kill(self, id: str) -> bool:
+        await self._fetch(JobKillRequest(id=id))
         # TODO(artyom, 07/16/2018): what are we returning here?
         return True
 
     @contextmanager
-    def monitor(self, id: str) -> Iterator[BufferedReader]:
+    async def monitor(self, id: str) -> Iterator[BufferedReader]:
         try:
-            with self._fetch_sync(JobMonitorRequest(id=id)) as content:
+            async with self._fetch(JobMonitorRequest(id=id)) as content:
                 yield BufferedReader(content)
         except FetchError as error:
             error_class = type(error)
             mapped_class = self._exception_map.get(error_class, error_class)
             raise mapped_class(error) from error
 
-    def status(self, id: str) -> JobDescription:
-        res = self._fetch_sync(JobStatusRequest(id=id))
+    async def status(self, id: str) -> JobDescription:
+        res = await self._fetch(JobStatusRequest(id=id))
         return self._dict_to_description_with_history(res)
 
     def _dict_to_description_with_history(self, res: Dict[str, Any]) -> JobDescription:

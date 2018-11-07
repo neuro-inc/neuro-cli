@@ -1,8 +1,12 @@
+import logging
 import types
 from functools import singledispatch
 from textwrap import dedent
 
 import docopt
+
+
+log = logging.getLogger(__name__)
 
 
 def add_command_name(f, name):
@@ -83,7 +87,7 @@ def get_help(target, tail, stack):
         stack += [command]
 
 
-def dispatch(target, tail, format_spec=None, **kwargs):
+async def dispatch(target, tail, format_spec=None, **kwargs):
     def help_required(tail):
         for option in tail:
             if option == "--help":
@@ -99,7 +103,6 @@ def dispatch(target, tail, format_spec=None, **kwargs):
             help = help.format(**format_spec)
         help = dedent(help)
         return help
-
     stack = []
 
     while True:
@@ -109,11 +112,16 @@ def dispatch(target, tail, format_spec=None, **kwargs):
         except docopt.DocoptExit:
             raise ValueError(target.__doc__)
 
-        res = target(**{**normalize_options(options, stack + ["COMMAND"]), **kwargs})
+        log.debug(target)
+        res = await target(
+            **{**normalize_options(options, stack + ["COMMAND"]), **kwargs}
+        )
         # Don't pass to tested commands, they will be available through
         # closure anyways
         kwargs = {}
 
+        log.debug(res)
+        log.debug("===================")
         command = options.get("COMMAND", None)
         if command == "help" and not stack:
             return get_help(target, tail, stack)

@@ -42,22 +42,22 @@ class FileStatus:
 
 
 class Storage(ApiClient):
-    def ls(self, *, path: str) -> List[FileStatus]:
+    async def ls(self, *, path: str) -> List[FileStatus]:
         def get_file_status_list(response: Dict[str, Any]) -> List[Dict[str, Any]]:
             return response["FileStatuses"]["FileStatus"]
 
-        response_dict = self._fetch_sync(ListRequest(path=path))
+        response_dict = await self._fetch(ListRequest(path=path))
         return [
             FileStatus.from_primitive(status)
             for status in get_file_status_list(response_dict)
         ]
 
-    def mkdirs(self, *, path: str) -> str:
-        self._fetch_sync(MkDirsRequest(path=path))
+    async def mkdirs(self, *, path: str) -> str:
+        await self._fetch(MkDirsRequest(path=path))
         return path
 
-    def create(self, *, path: str, data: BytesIO) -> str:
-        self._fetch_sync(CreateRequest(path=path, data=data))
+    async def create(self, *, path: str, data: BytesIO) -> str:
+        await self._fetch(CreateRequest(path=path, data=data))
         return path
 
     def stats(self, *, path: str) -> FileStatus:
@@ -72,17 +72,17 @@ class Storage(ApiClient):
         return FileStatus.from_primitive(resp["FileStatus"])
 
     @contextmanager
-    def open(self, *, path: str) -> Iterator[BufferedReader]:
+    async def open(self, *, path: str) -> Iterator[BufferedReader]:
         try:
-            with self._fetch_sync(OpenRequest(path=path)) as content:
+            async with self._fetch(OpenRequest(path=path)) as content:
                 yield BufferedReader(content)
         except FetchError as error:
             error_class = type(error)
             mapped_class = self._exception_map.get(error_class, error_class)
             raise mapped_class(error) from error
 
-    def rm(self, *, path: str) -> str:
-        self._fetch_sync(DeleteRequest(path=path))
+    async def rm(self, *, path: str) -> str:
+        await self._fetch(DeleteRequest(path=path))
         return path
 
     def mv(self, *, src_path: str, dst_path: str) -> str:
