@@ -27,7 +27,7 @@ class JobStatusFormatter:
             and job_status.history.reason
             and job_status.status in [JobStatus.FAILED, JobStatus.PENDING]
         ):
-            result += f"({job_status.history.reason})"
+            result += f" ({job_status.history.reason})"
         result += f"\nImage: {job_status.image}\n"
         result += f"Command: {job_status.command}\n"
         result += f"Resources: {job_status.resources}\n"
