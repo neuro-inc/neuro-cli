@@ -288,10 +288,19 @@ _neuro-completion()
 		    completion)
 			state=completion
 			;;
+		    share)
+			state=share
+			;;
 		    *)
 			state=error
 			;;
 		esac
+		;;
+            url)
+		state=base
+		;;
+	    token)
+		state=base
 		;;
 	    store)
 		case $cword in
@@ -312,6 +321,19 @@ _neuro-completion()
 			;;
 		esac
 		;;
+	    store-ls|store-rm|store-mkdir)
+		state=done
+		;;
+	    store-cp)
+		case $cword in
+		    -r|--recursive)
+			recursive=y
+			;;
+		    *)
+			state=store-cp2
+			;;
+		esac
+		;;
 	    job)
 		case $cword in
 		    list)
@@ -326,37 +348,37 @@ _neuro-completion()
 		    monitor)
 			state=job-monitor
 			;;
+		    ssh)
+			state=job-ssh
+			;;
 		    *)
 			state=error
-			;;
-		esac
-		;;
-            url)
-		state=base
-		;;
-	    token)
-		state=base
-		;;
-	    store-ls|store-rm|store-mkdir)
-		state=done
-		;;
-	    store-cp)
-		case $cword in
-		    -r|--recursive)
-			recursive=y
-			;;
-		    *)
-			state=store-cp2
 			;;
 		esac
 		;;
 	    job-status|job-kill|job-monitor)
 		state=done
 		;;
+	    job-ssh)
+		case $cword in
+		    --user)
+			state=job-ssh-user
+		    ;;
+		    --key)
+			state=job-ssh-key
+		    ;;
+		esac
+		;;
+	    job-ssh-user|job-ssh-key)
+		state=job-ssh
+		;;
 	    model)
 		case $cword in
 		    train)
 			state=model-train
+			;;
+		    debug)
+			state=model-debug
 			;;
 		    *)
 			state=error
@@ -392,6 +414,9 @@ _neuro-completion()
 	    model-train-memory|model-train-gpu|model-train-cpu)
 		state=model-train
 		;;
+	    model-train-http|model-train-ssh)
+		state=model-train
+		;;
 	    model-train-dataset)
 		state=model-train-result
 		;;
@@ -400,6 +425,19 @@ _neuro-completion()
 		;;
 	    model-train-cmd)
 		state=model-train-cmd
+		;;
+	    model-debug)
+		case $cword in
+		    --localport)
+			state=model-debug-localport
+		    ;;
+		    *)
+			state=done
+		    ;;
+		esac
+		;;
+	    model-debug-localport)
+		state=model-debug
 		;;
 	    config)
 		case $cword in
@@ -449,13 +487,22 @@ _neuro-completion()
 			;;
 		esac
 		;;
+	    share)
+		state=share-user
+		;;
+	    share-user)
+		state=share-access
+		;;
+	    share-access)
+		state=done
+		;;
         esac
     done
     case $state in
 	base)
 	    toks='-u --url -t --token -v --verbose
                   -v --version model job store help 
-		  config image completion'
+		  config image completion share'
 	    ;;
 	url)
 	    toks='http\://'
@@ -463,7 +510,7 @@ _neuro-completion()
 	token)
 	    ;;
 	model)
-	    toks='train'
+	    toks='train debug'
 	    ;;
 	model-train)
 	    toks='-c --cpu -g --gpu -m --memory -x --extshm
@@ -475,9 +522,9 @@ _neuro-completion()
 	model-train-result)
 	    toks=$(_neuro_complete-uri "$cur" n y)
 	    ;;
-	model-train-ssh)
-	    ;;
-	model-train-http)
+	model-debug)
+	    toks=$(_neuro_listjobs running)
+	    toks="$toks --localport"
 	    ;;
 	job)
 	    toks='list status monitor kill'
@@ -487,6 +534,10 @@ _neuro-completion()
 	    ;;
 	job-kill|job-monitor)
 	    toks=$(_neuro_listjobs running)
+	    ;;
+	job-ssh)
+	    toks=$(_neuro_listjobs running)
+	    toks="$toks --user --key"
 	    ;;
 	store)
 	    toks='ls cp rm mkdir'
@@ -521,6 +572,11 @@ _neuro-completion()
 	completion)
 	    toks='generate patch'
 	    ;;
+	share)
+	    toks=$(_neuro_complete-uri "$cur" n n)
+	    ;;
+	share-access)
+	    toks="manage read write"
     esac
     _neuro_gen_completion "$toks" "$cur"
     return 0
