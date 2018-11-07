@@ -21,8 +21,14 @@ class JobStatusFormatter:
     @classmethod
     def format_job_status(cls, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
-        result += f"Status: {job_status.status}\n"
-        result += f"Image: {job_status.image}\n"
+        result += f"Status: {job_status.status}"
+        if (
+            job_status.history
+            and job_status.history.reason
+            and job_status.status in [JobStatus.FAILED, JobStatus.PENDING]
+        ):
+            result += f"({job_status.history.reason})"
+        result += f"\nImage: {job_status.image}\n"
         result += f"Command: {job_status.command}\n"
         result += f"Resources: {job_status.resources}\n"
 
@@ -38,10 +44,7 @@ class JobStatusFormatter:
             result += "\n" f"Started: {job_status.history.started_at}"
         if job_status.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
             result += "\n" f"Finished: {job_status.history.finished_at}"
-        if job_status.status == JobStatus.PENDING and job_status.history.reason:
-            result += "\n" f"Reason: {job_status.history.reason}"
         if job_status.status == JobStatus.FAILED:
-            result += "\n" f"Reason: {job_status.history.reason}\n"
-            result += "===Description===\n"
+            result += "\n===Description===\n"
             result += f"{job_status.history.description}\n================="
         return result

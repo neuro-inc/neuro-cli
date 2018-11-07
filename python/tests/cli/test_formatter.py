@@ -53,11 +53,11 @@ class TestJobOutputFormatter:
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
-            status == "Job: test-job\nStatus: failed\nImage: test-image\n"
+            status == "Job: test-job\nStatus: failed(ErrorReason)\nImage: test-image\n"
             "Command: test-command\nResources: None\n"
             "Http URL: http://local.host.test/\n"
             "Created: NOW\nStarted: NOW1\nFinished: NOW2\n"
-            "Reason: ErrorReason\n===Description===\n"
+            "===Description===\n"
             "ErrorDesc\n================="
         )
 
@@ -103,7 +103,7 @@ class TestJobOutputFormatter:
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
-            status == "Job: test-job\nStatus: pending\nImage: test-image\n"
-            "Command: test-command\nResources: None\nCreated: NOW\n"
-            "Reason: ContainerCreating"
+            status
+            == "Job: test-job\nStatus: pending(ContainerCreating)\nImage: test-image\n"
+            "Command: test-command\nResources: None\nCreated: NOW"
         )
