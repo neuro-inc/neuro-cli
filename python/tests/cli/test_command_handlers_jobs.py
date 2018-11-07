@@ -75,6 +75,7 @@ class TestJobSubmit:
                     read_only=False,
                 ),
             ],
+            job_name=None,
         )
 
     def test_job_submit_no_volumes(self, partial_mocked_job) -> None:
@@ -100,4 +101,5 @@ class TestJobSubmit:
             network=NetworkPortForwarding({"http": 8183, "ssh": 25}),
             resources=Resources.create("1.2", "1", "test-gpu", "1G", "False"),
             volumes=None,
+            job_name=None,
         )

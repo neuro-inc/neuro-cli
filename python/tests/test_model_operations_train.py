@@ -34,6 +34,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            job_name=None,
         )
 
     def test_model_submit_with_gpu_model(self, alice_model, partial_mocked_model):
@@ -60,6 +61,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            job_name=None,
         )
 
     def test_model_submit_no_cmd(self, alice_model, partial_mocked_model):
@@ -84,6 +86,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            job_name=None,
         )
 
     def test_model_submit_with_http(self, alice_model, partial_mocked_model):
@@ -108,6 +111,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"http": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            job_name=None,
         )
 
     def test_model_submit_with_ssh(self, alice_model, partial_mocked_model):
@@ -132,6 +136,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"ssh": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            job_name=None,
         )
 
     def test_model_submit_with_ssh_and_http(self, alice_model, partial_mocked_model):
@@ -156,6 +161,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"ssh": 8888, "http": 7878}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            job_name=None,
         )
 
     def test_model_submit_wrong_src(self, alice_model, partial_mocked_model):
