@@ -129,7 +129,7 @@ class JobMonitorRequest(JobRequest):
 @dataclass(frozen=True)
 class StorageRequest(Request):
     def to_http_request(self) -> http.Request:  # pragma: no cover
-        pass
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)
