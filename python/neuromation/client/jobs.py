@@ -149,7 +149,7 @@ class Model(ApiClient):
         model: str,
         dataset: str,
         results: str,
-        job_name: Optional[str],
+        description: Optional[str],
     ) -> JobItem:
         http, ssh = network_to_api(network)
         res = self._fetch_sync(
@@ -170,7 +170,7 @@ class Model(ApiClient):
                 model_storage_uri=model,
                 dataset_storage_uri=dataset,
                 result_storage_uri=results,
-                job_name=job_name,
+                description=description,
             )
         )
 
@@ -184,7 +184,7 @@ class Model(ApiClient):
         network: Optional[NetworkPortForwarding],
         dataset: str,
         results: str,
-        job_name: Optional[str],
+        description: Optional[str],
     ) -> JobItem:
         http, ssh = network_to_api(network)
         res = self._fetch_sync(
@@ -204,7 +204,7 @@ class Model(ApiClient):
                 ),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results,
-                job_name=job_name,
+                description=description,
             )
         )
 
@@ -219,7 +219,7 @@ class Job(ApiClient):
         resources: Resources,
         network: NetworkPortForwarding,
         volumes: Optional[List[VolumeDescriptionPayload]],
-        job_name: Optional[str],
+        description: Optional[str],
     ) -> JobDescription:
         http, ssh = network_to_api(network)
         resources_payload: ResourcesPayload = ResourcesPayload(
@@ -238,7 +238,7 @@ class Job(ApiClient):
         )
         res = self._fetch_sync(
             JobSubmissionRequest(
-                container=container, volumes=volumes, job_name=job_name
+                container=container, volumes=volumes, description=description
             )
         )
 

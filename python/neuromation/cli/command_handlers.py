@@ -506,7 +506,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 resources=resources,
                 network=network,
                 volumes=volumes,
-                job_name=None,
+                description=None,
             )
 
     def start_ssh(
@@ -663,7 +663,7 @@ class ModelHandlerOperations(JobHandlerOperations):
                 resources=Resources.create(cpu, gpu, gpu_model, memory, extshm),
                 dataset=f"storage:/{dataset_platform_path}",
                 results=f"storage:/{resultset_platform_path}",
-                job_name=None,
+                description=None,
             )
 
         return job

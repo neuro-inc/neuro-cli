@@ -23,7 +23,7 @@ JOB_ARGS = {
     "dataset": "storage://~/dataset",
     "results": "storage://~/results",
     "network": None,
-    "job_name": None,
+    "description": None,
 }
 
 JOB_TIMEOUT_SEC = 0.005

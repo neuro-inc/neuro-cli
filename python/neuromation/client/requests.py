@@ -109,7 +109,7 @@ class InferRequest(Request):
     dataset_storage_uri: str
     result_storage_uri: str
     model_storage_uri: str
-    job_name: Optional[str]
+    description: Optional[str]
 
     def to_primitive(self) -> Dict[str, Any]:
         json_params: Dict[str, Any] = {
@@ -119,8 +119,8 @@ class InferRequest(Request):
             "model_storage_uri": self.model_storage_uri,
         }
 
-        if self.job_name:
-            json_params["name"] = self.job_name
+        if self.description:
+            json_params["description"] = self.description
         return json_params
 
     def to_http_request(self) -> JsonRequest:
@@ -135,7 +135,7 @@ class TrainRequest(Request):
     container: ContainerPayload
     dataset_storage_uri: str
     result_storage_uri: str
-    job_name: Optional[str]
+    description: Optional[str]
 
     def to_primitive(self) -> Dict[str, Any]:
         json_params: Dict[str, Any] = {
@@ -144,8 +144,8 @@ class TrainRequest(Request):
             "result_storage_uri": self.result_storage_uri,
         }
 
-        if self.job_name:
-            json_params["name"] = self.job_name
+        if self.description:
+            json_params["description"] = self.description
         return json_params
 
     def to_http_request(self) -> JsonRequest:
@@ -163,7 +163,7 @@ class JobRequest(Request):
 @dataclass(frozen=True)
 class JobSubmissionRequest(JobRequest):
     container: ContainerPayload
-    job_name: Optional[str]
+    description: Optional[str]
     volumes: Optional[List[VolumeDescriptionPayload]]
 
     def _convert_volumes_to_primitive(self) -> List[Dict[str, Any]]:
@@ -176,8 +176,8 @@ class JobSubmissionRequest(JobRequest):
             "container": container_to_primitive(self.container)
         }
         request_details["container"]["volumes"] = self._convert_volumes_to_primitive()
-        if self.job_name:
-            request_details["name"] = self.job_name
+        if self.description:
+            request_details["description"] = self.description
         return http.JsonRequest(
             url="/jobs", params=None, method="POST", json=request_details, data=None
         )

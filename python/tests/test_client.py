@@ -29,7 +29,7 @@ def test_train_with_no_gpu(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -64,7 +64,7 @@ def test_train(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -105,7 +105,7 @@ def test_train_zero_gpu(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -140,7 +140,7 @@ def test_train_with_http(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"http": 7878}),
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -182,7 +182,7 @@ def test_train_with_ssh(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878}),
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -224,7 +224,7 @@ def test_train_with_ssh_and_http(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
-        job_name="test-job-name",
+        description="test-job-name",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -247,7 +247,7 @@ def test_train_with_ssh_and_http(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
-            "name": "test-job-name",
+            "description": "test-job-name",
         },
         url="http://127.0.0.1/models",
     )
@@ -268,7 +268,7 @@ def test_train_with_ssh_and_http_no_name(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -311,7 +311,7 @@ def test_train_empty_command(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -354,7 +354,7 @@ def test_infer(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        job_name=None,
+        description=None,
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -397,7 +397,7 @@ def test_infer_with_name(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        job_name="test-job-name",
+        description="test-job-name",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -419,7 +419,7 @@ def test_infer_with_name(request, model, loop):
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
             "model_storage_uri": "schema://host/model",
-            "name": "test-job-name",
+            "description": "test-job-name",
         },
         url="http://127.0.0.1/models",
     )
