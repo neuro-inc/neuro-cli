@@ -18,7 +18,7 @@ from neuromation.cli.command_handlers import (
     PlatformRemoveOperation,
     PlatformSharingOperations,
 )
-from neuromation.cli.formatter import OutputFormatter
+from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
 from neuromation.client.client import TimeoutSettings
 from neuromation.client.jobs import ResourceSharing
@@ -452,7 +452,7 @@ Commands:
           ssh                 Start SSH terminal
         """
 
-        from neuromation.client.jobs import Job, JobStatus
+        from neuromation.client.jobs import Job
 
         jobs = partial(Job, url, token)
 
@@ -570,25 +570,7 @@ Commands:
             Display status of a job
             """
             res = JobHandlerOperations(token).status(id, jobs)
-            result = f"Job: {res.id}\n"
-            result += f"Status: {res.status}\n"
-            result += f"Image: {res.image}\n"
-            result += f"Command: {res.command}\n"
-            result += f"Resources: {res.resources}\n"
-
-            if res.url:
-                result = f"{result}" f"Http URL: {res.url}\n"
-
-            result = f"{result}" f"Created: {res.history.created_at}"
-            if res.status in [JobStatus.RUNNING, JobStatus.FAILED, JobStatus.SUCCEEDED]:
-                result += "\n" f"Started: {res.history.started_at}"
-            if res.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
-                result += "\n" f"Finished: {res.history.finished_at}"
-            if res.status == JobStatus.FAILED:
-                result += "\n" f"Reason: {res.history.reason}\n"
-                result += "===Description===\n "
-                result += f"{res.history.description}\n================="
-            return result
+            return JobStatusFormatter.format_job_status(res)
 
         @command
         def kill(id):
