@@ -13,7 +13,7 @@ import dateutil.parser
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
+from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.http import BadRequestError
 
@@ -294,7 +294,7 @@ class NonRecursiveLocalToPlatform(CopyOperation):
             with storage() as s:
                 file_status = s.stats(path=str(path))
                 return file_status.type == "DIRECTORY"
-        except (IllegalArgumentError, ResourceNotFound):
+        except ResourceNotFound:
             return False
 
     async def _copy_data_with_progress(self, src: str):  # pragma: no cover
