@@ -97,7 +97,13 @@ def test_job_submit(jobs):
             "storage://test-user/path_read_write", "/container/path_read_write", False
         ),
     ]
-    jobs.submit(image=image, resources=resources, network=network, volumes=volumes)
+    jobs.submit(
+        image=image,
+        resources=resources,
+        network=network,
+        volumes=volumes,
+        description="test-job-name",
+    )
 
     aiohttp.ClientSession.request.assert_called_with(
         method="POST",
@@ -129,7 +135,8 @@ def test_job_submit(jobs):
                         "read_only": False,
                     },
                 ],
-            }
+            },
+            "description": "test-job-name",
         },
     )
 
@@ -173,7 +180,13 @@ def test_job_submit_no_volumes(jobs):
     network = NetworkPortForwarding({"http": 8181, "ssh": 22})
     resources = Resources.create("7", "1", "test-gpu-model", "4G", "true")
     volumes: List[VolumeDescriptionPayload] = None
-    jobs.submit(image=image, resources=resources, network=network, volumes=volumes)
+    jobs.submit(
+        image=image,
+        resources=resources,
+        network=network,
+        volumes=volumes,
+        description="test-job-name",
+    )
 
     aiohttp.ClientSession.request.assert_called_with(
         method="POST",
@@ -194,6 +207,7 @@ def test_job_submit_no_volumes(jobs):
                     "gpu_model": "test-gpu-model",
                 },
                 "volumes": [],
-            }
+            },
+            "description": "test-job-name",
         },
     )
