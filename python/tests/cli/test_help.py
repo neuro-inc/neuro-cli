@@ -33,7 +33,5 @@ def test_help(run):
     assert captured.type == SystemExit
     assert captured.value.code == 127
 
-    _, captured = run(["help", "job", "list",
-                       "--status", "pending"],
-                      RC_TEXT)
+    _, captured = run(["help", "job", "list", "--status", "pending"], RC_TEXT)
     assert not captured.err
