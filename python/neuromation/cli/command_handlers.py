@@ -416,12 +416,22 @@ class JobHandlerOperations(PlatformStorageOperation):
         with jobs() as j:
             return j.status(id)
 
+    @classmethod
+    def _truncate_string(cls, input: str, max_length: int) -> str:
+        if len(input) <= max_length:
+            return input
+        len_tail, dots = 4, "..."
+        tail_index = len(input) - len_tail
+        tail = input[tail_index:] if max_length > len(dots) + len_tail else ""
+        index_stop = max_length - len(dots) - len(tail)
+        return input[:index_stop] + dots + tail
+
     def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
         def short_format(item) -> str:
             tab = "\t"
             image = item.image or ""
-            description = item.description or ""
-            command = item.command or ""
+            description = self._truncate_string(item.description or "", 50)
+            command = self._truncate_string(item.command or "", 50)
             return tab.join(
                 [
                     item.id,
