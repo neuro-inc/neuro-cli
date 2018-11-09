@@ -13,7 +13,7 @@ import dateutil.parser
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
+from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.client.requests import VolumeDescriptionPayload
 from neuromation.http import BadRequestError
@@ -290,14 +290,13 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
 class NonRecursiveLocalToPlatform(CopyOperation):
     def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
-        """Tests whether specified path is directory on a platform or not.
-        Test is done by running LS command.
-        """
+        """Tests whether specified path is directory on a platform or not."""
         try:
-            self._ls(str(path), storage)
-        except (IllegalArgumentError, ResourceNotFound):
+            with storage() as s:
+                file_status = s.stats(path=str(path))
+                return file_status.type == "DIRECTORY"
+        except ResourceNotFound:
             return False
-        return True
 
     async def _copy_data_with_progress(self, src: str):  # pragma: no cover
         file_stat = os.stat(src)

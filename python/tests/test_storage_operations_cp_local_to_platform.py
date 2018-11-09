@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import pytest
 
 from neuromation.cli.command_handlers import CopyOperation, NonRecursiveLocalToPlatform
-from neuromation.client import FileStatus, IllegalArgumentError
+from neuromation.client import FileStatus, IllegalArgumentError, ResourceNotFound
 
 
 def _os_exists(tree: Dict) -> Callable:
@@ -87,6 +87,28 @@ def _platform_ls(dirs: List) -> Callable:
     return ls
 
 
+def _platform_stat(dirs: List) -> Callable:
+    def stat(path: str):
+        try:
+            item = next(v for v in dirs if v["path"] == path)
+            if item:
+                if item.get("file", False):
+                    return item.get("files")[0]
+                else:
+                    return FileStatus(
+                        path=path,
+                        size=0,
+                        type="DIRECTORY",
+                        modification_time=0,
+                        permission="",
+                    )
+            raise IllegalArgumentError("Not a directory.")
+        except StopIteration:
+            raise ResourceNotFound()
+
+    return stat
+
+
 local_tree = {
     "c": {
         "localdir": {
@@ -148,6 +170,7 @@ class TestCopyRecursiveLocalToPlatform:
         monkeypatch.setattr(os, "walk", _os_walk_func(local_tree))
         monkeypatch.setattr(os, "mkdir", Mock())
         mocked_store.ls = _platform_ls(platform_tree)
+        mocked_store.stats = _platform_stat(platform_tree)
 
     def test_source_file(self, mocked_store, partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)
@@ -275,6 +298,7 @@ class TestCopyNonRecursivePlatformToLocal:
         monkeypatch.setattr(os, "walk", _os_walk_func(local_tree))
         monkeypatch.setattr(os, "mkdir", Mock())
         mocked_store.ls = _platform_ls(platform_tree)
+        mocked_store.stats = _platform_stat(platform_tree)
 
     def test_source_not_found(self, mocked_store, partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)

@@ -10,6 +10,13 @@ from neuromation.http import JsonRequest
 log = logging.getLogger(__name__)
 
 
+def add_path(prefix: str, path: str) -> str:
+    # ('/prefix', 'dir') and ('/prefix', '/dir')
+    # are semantically the same in case of build
+    # file Storage API calls
+    return prefix + path.strip("/")
+
+
 class RequestError(Exception):
     pass
 
@@ -200,7 +207,8 @@ class JobMonitorRequest(JobRequest):
 
 @dataclass(frozen=True)
 class StorageRequest(Request):
-    pass
+    def to_http_request(self) -> http.Request:  # pragma: no cover
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)
@@ -208,11 +216,35 @@ class MkDirsRequest(StorageRequest):
     op: ClassVar[str] = "MKDIRS"
     path: str
 
+    def to_http_request(self) -> http.Request:
+        return http.PlainRequest(
+            url=add_path("/storage/", self.path),
+            params=self.op,
+            method="PUT",
+            json=None,
+            data=None,
+        )
+
 
 @dataclass(frozen=True)
 class ListRequest(StorageRequest):
     op: ClassVar[str] = "LISTSTATUS"
     path: str
+
+
+@dataclass(frozen=True)
+class FileStatRequest(StorageRequest):
+    op: ClassVar[str] = "GETFILESTATUS"
+    path: str
+
+    def to_http_request(self) -> http.Request:
+        return http.JsonRequest(
+            url=add_path("/storage/", self.path),
+            params=self.op,
+            method="GET",
+            json=None,
+            data=None,
+        )
 
 
 @dataclass(frozen=True)
@@ -236,11 +268,6 @@ class DeleteRequest(StorageRequest):
 
 # TODO: better polymorphism?
 def build(request: Request) -> http.Request:
-    def add_path(prefix: str, path: str) -> str:
-        # ('/prefix', 'dir') and ('/prefix', '/dir')
-        # are semantically the same in case of build
-        # file Storage API calls
-        return prefix + path.strip("/")
 
     if isinstance(request, JobStatusRequest):
         return http.JsonRequest(
@@ -281,13 +308,9 @@ def build(request: Request) -> http.Request:
             data=request.data,
         )
     elif isinstance(request, MkDirsRequest):
-        return http.PlainRequest(
-            url=add_path("/storage/", request.path),
-            params=request.op,
-            method="PUT",
-            json=None,
-            data=None,
-        )
+        return request.to_http_request()
+    elif isinstance(request, FileStatRequest):
+        return request.to_http_request()
     elif isinstance(request, ListRequest):
         return http.JsonRequest(
             url=add_path("/storage/", request.path),
