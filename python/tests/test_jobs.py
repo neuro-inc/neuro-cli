@@ -201,8 +201,8 @@ def test_status_with_ssh_and_http(jobs):
 )
 def test_list(jobs):
     assert jobs.list() == [
-        JobDescription(client=jobs, id="foo", status="RUNNING"),
-        JobDescription(client=jobs, id="bar", status="STARTING"),
+        JobDescription(client=jobs, id="foo", status="RUNNING", owner=""),
+        JobDescription(client=jobs, id="bar", status="STARTING", owner=""),
     ]
     aiohttp.ClientSession.request.assert_called_with(
         method="GET", json=None, url="http://127.0.0.1/jobs", params=None, data=None
@@ -251,6 +251,7 @@ def test_list_extended_output(jobs):
             client=jobs,
             id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
             status="failed",
+            owner="",
             image="gcr.io/light-reality-205619/ubuntu:latest",
             command='bash -c " / bin / df--block - size M--output'
             ' = target, avail / dev / shm;false"',
@@ -281,6 +282,7 @@ def test_list_extended_output(jobs):
                     {
                         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
                         "status": "failed",
+                        "owner": "test-user",
                         "history": {
                             "status": "failed",
                             "reason": "Error",
@@ -316,6 +318,7 @@ def test_list_extended_output_with_http_url(jobs):
             client=jobs,
             id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
             status="failed",
+            owner="test-user",
             url="http://my_host:8889",
             ssh="ssh://my_host.ssh:22",
             image="gcr.io/light-reality-205619/ubuntu:latest",
@@ -379,6 +382,7 @@ def test_list_extended_output_no_shm(jobs):
         JobDescription(
             client=jobs,
             id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+            owner="",
             status="failed",
             image="gcr.io/light-reality-205619/ubuntu:latest",
             command='bash -c " / bin / df--block - size M--output '
@@ -436,6 +440,7 @@ def test_list_extended_output_no_gpu(jobs):
         JobDescription(
             client=jobs,
             id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+            owner="",
             status="failed",
             image="gcr.io/light-reality-205619/ubuntu:latest",
             command='bash -c " / bin / df--block - size M--output '
@@ -495,6 +500,7 @@ def test_list_extended_output_no_image(jobs):
         JobDescription(
             client=jobs,
             id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+            owner="",
             status="pending",
             image=None,
             command=None,

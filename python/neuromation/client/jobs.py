@@ -83,6 +83,7 @@ class JobDescription:
     command: Optional[str] = None
     url: str = ""
     ssh: str = ""
+    owner: Optional[str] = None
     history: Optional[JobStatusHistory] = None
     resources: Optional[Resources] = None
     description: Optional[str] = None
@@ -295,6 +296,7 @@ class Job(ApiClient):
             resources=job_description.resources,
             url=job_description.url,
             ssh=job_description.ssh,
+            owner=job_description.owner,
             description=job_description.description,
         )
 
@@ -326,6 +328,7 @@ class Job(ApiClient):
         http_url = res.get("http_url", "")
         ssh_conn = res.get("ssh_server", "")
         description = res.get("description")
+        job_owner = res.get("owner", "")
         return JobDescription(
             client=self,
             id=res["id"],
@@ -335,5 +338,6 @@ class Job(ApiClient):
             resources=job_resources,
             url=http_url,
             ssh=ssh_conn,
+            owner=job_owner,
             description=description,
         )
