@@ -102,7 +102,7 @@ def test_job_submit(jobs):
         resources=resources,
         network=network,
         volumes=volumes,
-        description="test-job-name",
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -136,7 +136,7 @@ def test_job_submit(jobs):
                     },
                 ],
             },
-            "description": "test-job-name",
+            "description": "job description",
         },
     )
 
@@ -185,7 +185,7 @@ def test_job_submit_no_volumes(jobs):
         resources=resources,
         network=network,
         volumes=volumes,
-        description="test-job-name",
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -208,6 +208,6 @@ def test_job_submit_no_volumes(jobs):
                 },
                 "volumes": [],
             },
-            "description": "test-job-name",
+            "description": "job description",
         },
     )

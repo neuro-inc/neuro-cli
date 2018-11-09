@@ -21,6 +21,8 @@ class JobStatusFormatter:
     @classmethod
     def format_job_status(cls, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
+        if job_status.description:
+            result += f"Description: {job_status.description}\n"
         result += f"Status: {job_status.status}"
         if (
             job_status.history

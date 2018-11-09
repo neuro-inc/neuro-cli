@@ -23,7 +23,7 @@ JOB_ARGS = {
     "dataset": "storage://~/dataset",
     "results": "storage://~/results",
     "network": None,
-    "description": None,
+    "description": "test job description",
 }
 
 JOB_TIMEOUT_SEC = 0.005
@@ -81,14 +81,21 @@ def test_job(job, cmd, model_uri, model, loop):
 
     func = getattr(model, job)
     job_status = func(**args)
-    assert job_status == JobItem(status="PENDING", id=job_status.id, client=model)
+    assert job_status == JobItem(
+        status="PENDING",
+        id=job_status.id,
+        client=model,
+        description="test job description",
+    ), str(job_status)
 
     with pytest.raises(TimeoutError):
         job_status.wait(timeout=JOB_TIMEOUT_SEC)
 
     status = job_status.wait()
 
-    assert replace(status, id=None) == JobItem(status="PENDING", id=None, client=model)
+    assert replace(status, id=None) == JobItem(
+        status="PENDING", id=None, client=model, description="test job description"
+    )
 
 
 @patch(

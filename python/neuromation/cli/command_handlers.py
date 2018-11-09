@@ -419,9 +419,19 @@ class JobHandlerOperations(PlatformStorageOperation):
 
     def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
         def short_format(item) -> str:
-            image = item.image if item.image else ""
-            command = item.command if item.command else ""
-            return f"{item.id}    {item.status:<10}    {image:<25}    {command}"
+            tab = "\t"
+            image = item.image or ""
+            description = item.description or ""
+            command = item.command or ""
+            return tab.join(
+                [
+                    item.id,
+                    f"{item.status:<10}",
+                    f"{image:<15}",
+                    f"{description:<50}",
+                    f"{command:<50}",
+                ]
+            )
 
         def job_sort_key(job: JobDescription) -> datetime:
             created_str = job.history.created_at
@@ -491,6 +501,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         ssh,
         volumes,
         jobs: Callable,
+        description: str,
     ) -> JobDescription:
 
         cmd = " ".join(cmd) if cmd is not None else None
@@ -506,7 +517,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 resources=resources,
                 network=network,
                 volumes=volumes,
-                description=None,
+                description=description,
             )
 
     def start_ssh(
@@ -636,6 +647,7 @@ class ModelHandlerOperations(JobHandlerOperations):
         model,
         http,
         ssh,
+        description: str,
     ):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
@@ -663,7 +675,7 @@ class ModelHandlerOperations(JobHandlerOperations):
                 resources=Resources.create(cpu, gpu, gpu_model, memory, extshm),
                 dataset=f"storage:/{dataset_platform_path}",
                 results=f"storage:/{resultset_platform_path}",
-                description=None,
+                description=description,
             )
 
         return job
@@ -706,6 +718,7 @@ class ModelHandlerOperations(JobHandlerOperations):
             model,
             http,
             ssh,
+            description=None,
         )
         job_id = job.id
         # wait for a job to leave pending stage

@@ -56,7 +56,7 @@ def test_job_filtering(run, tmpdir):
 
     _, captured = run(["job", "list", "--status", "running"])
     store_out = captured.out
-    job_ids = [x.split(" ")[0] for x in store_out.split("\n")]
+    job_ids = [x.split("\t")[0] for x in store_out.split("\n")]
 
     # Start the job
     command = 'bash -c "sleep 1m; false"'
@@ -83,7 +83,7 @@ def test_job_filtering(run, tmpdir):
     _, captured = run(["job", "list", "--status", "running"])
     store_out = captured.out
     assert command in captured.out
-    job_ids2 = [x.split(" ")[0] for x in store_out.split("\n")]
+    job_ids2 = [x.split("\t")[0] for x in store_out.split("\n")]
     assert job_ids != job_ids2
     assert job_id in job_ids2
 
@@ -141,6 +141,8 @@ def test_model_train_with_http(run, loop):
             "storage://" + _path_src,
             "storage://" + _path_dst,
             command,
+            "-d",
+            "simple test job",
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
@@ -197,6 +199,8 @@ def test_model_without_command(run, loop):
             NGINX_IMAGE_NAME,
             "storage://" + _path_src,
             "storage://" + _path_dst,
+            "-d",
+            "simple test job",
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
