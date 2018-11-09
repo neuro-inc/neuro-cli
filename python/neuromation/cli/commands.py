@@ -58,6 +58,26 @@ def parse(doc, argv):
     return docopt.docopt(doc, argv=head, help=False), tail
 
 
+def get_help(target, tail, stack):
+    while True:
+        try:
+            options, tail = parse(target.__doc__, stack + tail)
+        except docopt.DocoptExit:
+            raise ValueError(dedent(target.__doc__))
+
+        command = options.get("COMMAND", None)
+        if not command:
+            return dedent(target.__doc__)
+
+        res = target(**{**normalize_options(options, stack + ["COMMAND"])})
+        target = commands(res).get(command, None)
+
+        if not target:
+            raise ValueError(f"Invalid command: {command}")
+
+        stack += [command]
+
+
 def dispatch(target, tail, **kwargs):
     stack = []
 
@@ -73,8 +93,8 @@ def dispatch(target, tail, **kwargs):
         kwargs = {}
 
         command = options.get("COMMAND", None)
-        if command == "help":
-            return dedent(target.__doc__)
+        if command == "help" and not stack:
+            return get_help(target, tail, stack)
 
         if not command and tail:
             raise ValueError(f'Invalid arguments: {" ".join(tail)}')
