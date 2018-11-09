@@ -57,6 +57,7 @@ class TestJobOutputFormatter:
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
+            "Description: test job description\n"
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
@@ -89,6 +90,7 @@ class TestJobOutputFormatter:
         assert (
             status == "Job: test-job\n"
             "Owner: \n"
+            "Description: test job description\n"
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
@@ -116,9 +118,14 @@ class TestJobOutputFormatter:
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
-            status == "Job: test-job\nDescription: test job description\n"
-            "Status: pending (ContainerCreating)\nImage: test-image\n"
-            "Command: test-command\nResources: None\nCreated: NOW"
+            status == "Job: test-job\n"
+            "Owner: \n"
+            "Description: test job description\n"
+            "Status: pending (ContainerCreating)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            "Resources: None\n"
+            "Created: NOW"
         )
 
     def test_pending_job_no_description(self) -> None:
