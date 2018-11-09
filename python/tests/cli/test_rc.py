@@ -56,6 +56,15 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
+    def test_factory_update_url_malformed_trailing_slash(self, monkeypatch, nmrc):
+        self.patch_home_for_test(monkeypatch, nmrc)
+
+        config: Config = Config(url="http://abc.def", auth="token1")
+        with pytest.raises(ValueError):
+            rc.ConfigFactory.update_api_url(url="http://abc.def/")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
     def test_factory_update_url_malformed_with_fragment(self, monkeypatch, nmrc):
         self.patch_home_for_test(monkeypatch, nmrc)
 
