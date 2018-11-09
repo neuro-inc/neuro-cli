@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import yaml
+import yarl
 from jose import JWTError, jwt
 from yarl import URL
 
@@ -46,6 +47,15 @@ class ConfigFactory:
 
     @classmethod
     def update_api_url(cls, url: str) -> Config:
+        parsed_url = yarl.URL(url)
+
+        if parsed_url.scheme not in ["http", "https"]:
+            raise ValueError("Valid scheme options are http and https.")
+        if parsed_url.query_string != "":
+            raise ValueError("URL should not contain params.")
+        if parsed_url.fragment != "":
+            raise ValueError("URL should not contain fragments.")
+
         return cls._update_config(url=url)
 
     @classmethod
