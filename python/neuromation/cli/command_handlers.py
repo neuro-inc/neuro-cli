@@ -75,7 +75,7 @@ class PlatformSharingOperations(PlatformStorageOperation):
     ):
         what = urlparse(path_str, scheme="file")
         target_platform_path = self._render_platform_path_with_principal(what)
-        with resource_sharing() as rs:
+        async with resource_sharing() as rs:
             resource_uri = f"{what.scheme}:/{target_platform_path}"
             return await rs.share(resource_uri, op_type, whom)
 
