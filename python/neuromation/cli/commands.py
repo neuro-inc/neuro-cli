@@ -73,10 +73,11 @@ def get_help(target, tail, stack):
             return dedent(target.__doc__)
 
         res = target(**{**normalize_options(options, stack + ["COMMAND"])})
+        old_target = target
         target = commands(res).get(command, None)
-
         if not target:
-            raise ValueError(f"Invalid command: {command}")
+            help_msg = dedent(old_target.__doc__)
+            raise ValueError(f"Invalid command: {command}\n{help_msg}")
 
         stack += [command]
 

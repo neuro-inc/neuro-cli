@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+import pytest
+
 from neuromation.cli.main import neuro
 
 
@@ -20,3 +22,8 @@ def test_help(run):
         _, captured = run(["help", command], RC_TEXT)
         assert not captured.err
         assert captured.out == dedent(func.__doc__) + "\n"
+
+    with pytest.raises(SystemExit) as captured:
+        run(["help", "mississippi"], RC_TEXT)
+    assert captured.type == SystemExit
+    assert captured.value.code == 127
