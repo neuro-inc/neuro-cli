@@ -370,17 +370,17 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER               Number of GPUs to request [default: 1]
-                --gpu-model MODEL              GPU to use [default: nvidia-tesla-k80]
-                                               Other options available are
-                                                   nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER               Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT            Memory amount to request [default: 16G]
-                -x, --extshm                   Request extended '/dev/shm' space
-                --http NUMBER                  Enable HTTP port forwarding to container
-                --ssh NUMBER                   Enable SSH port forwarding to container
-                -d, --description DESCRIPTION  Add optional description to the job
-                -q, --quiet                    Run command in quiet mode
+                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
+                                          Other options available are
+                                              nvidia-tesla-p4, nvidia-tesla-v100.
+                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
+                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                -x, --extshm              Request extended '/dev/shm' space
+                --http NUMBER             Enable HTTP port forwarding to container
+                --ssh NUMBER              Enable SSH port forwarding to container
+                -d, --description DESC    Add optional description to the job
+                -q, --quiet               Run command in quiet mode
             """
 
             config: Config = rc.ConfigFactory.load()
