@@ -27,3 +27,8 @@ def test_help(run):
         run(["help", "mississippi"], RC_TEXT)
     assert captured.type == SystemExit
     assert captured.value.code == 127
+
+    with pytest.raises(SystemExit) as captured:
+        run(["help", "--mississippi"], RC_TEXT)
+    assert captured.type == SystemExit
+    assert captured.value.code == 127

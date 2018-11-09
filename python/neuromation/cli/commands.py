@@ -66,7 +66,8 @@ def get_help(target, tail, stack):
         try:
             options, tail = parse(target.__doc__, stack + tail)
         except docopt.DocoptExit:
-            raise ValueError(dedent(target.__doc__))
+            help_msg = dedent(target.__doc__)
+            raise ValueError(f'Invalid arguments: {" ".join(tail)}\n{help_msg}')
 
         command = options.get("COMMAND", None)
         if not command:
