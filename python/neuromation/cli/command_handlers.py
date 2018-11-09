@@ -81,11 +81,11 @@ class PlatformSharingOperations(PlatformStorageOperation):
 
 
 class PlatformMakeDirOperation(PlatformStorageOperation):
-    def mkdir(self, path_str: str, storage: Callable):
+    async def mkdir(self, path_str: str, storage: Callable):
         final_path = self.render_uri_path_with_principal(path_str)
         # TODO CHECK parent exists
-        with storage() as s:
-            return s.mkdirs(path=str(final_path))
+        async with storage() as s:
+            return await s.mkdirs(path=str(final_path))
 
 
 class PlatformListDirOperation(PlatformStorageOperation):
@@ -96,7 +96,7 @@ class PlatformListDirOperation(PlatformStorageOperation):
 
 
 class PlatformRemoveOperation(PlatformStorageOperation):
-    def remove(self, path_str: str, storage: Callable):
+    async def remove(self, path_str: str, storage: Callable):
         path = urlparse(path_str, scheme="file")
         self._is_storage_path_url(path)
         final_path = self.render_uri_path_with_principal(path_str)
@@ -109,8 +109,8 @@ class PlatformRemoveOperation(PlatformStorageOperation):
         if final_path == root_data_path or final_path.parent == root_data_path:
             raise ValueError("Invalid path value.")
 
-        with storage() as s:
-            return s.rm(path=str(final_path))
+        async with storage() as s:
+            return await s.rm(path=str(final_path))
 
 
 class PlatformRenameOperation(PlatformStorageOperation):

@@ -245,7 +245,7 @@ Commands:
         storage = partial(Storage, url, token)
 
         @command
-        def rm(path):
+        async def rm(path):
             """
             Usage:
                 neuro store rm PATH
@@ -259,7 +259,8 @@ Commands:
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            PlatformRemoveOperation(platform_user_name).remove(path, storage)
+            rm_ops = PlatformRemoveOperation(platform_user_name)
+            await rm_ops.remove(path, storage)
 
         @command
         async def ls(path):
