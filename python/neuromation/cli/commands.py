@@ -60,6 +60,9 @@ def parse(doc, argv):
 
 def get_help(target, tail, stack):
     while True:
+        if not tail:
+            return dedent(target.__doc__)
+
         try:
             options, tail = parse(target.__doc__, stack + tail)
         except docopt.DocoptExit:
