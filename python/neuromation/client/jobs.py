@@ -85,6 +85,7 @@ class JobDescription:
     ssh: str = ""
     history: Optional[JobStatusHistory] = None
     resources: Optional[Resources] = None
+    description: Optional[str] = None
 
     def jump_host(self) -> str:
         ssh_hostname = urlparse(self.ssh).hostname
@@ -99,6 +100,7 @@ class JobItem:
     client: ApiClient
     url: str = ""
     history: Optional[JobStatusHistory] = None
+    description: Optional[str] = None
 
     async def _call(self) -> "JobItem":
         return JobItem(
@@ -174,7 +176,9 @@ class Model(ApiClient):
             )
         )
 
-        return JobItem(id=res["job_id"], status=res["status"], client=self)
+        return JobItem(
+            id=res["job_id"], status=res["status"], client=self, description=description
+        )
 
     def train(
         self,
@@ -208,7 +212,9 @@ class Model(ApiClient):
             )
         )
 
-        return JobItem(id=res["job_id"], status=res["status"], client=self)
+        return JobItem(
+            id=res["job_id"], status=res["status"], client=self, description=description
+        )
 
 
 class Job(ApiClient):
@@ -289,6 +295,7 @@ class Job(ApiClient):
             resources=job_description.resources,
             url=job_description.url,
             ssh=job_description.ssh,
+            description=job_description.description,
         )
 
     def _dict_to_description(self, res: Dict[str, Any]) -> JobDescription:
@@ -318,6 +325,7 @@ class Job(ApiClient):
                 )
         http_url = res.get("http_url", "")
         ssh_conn = res.get("ssh_server", "")
+        description = res.get("description")
         return JobDescription(
             client=self,
             id=res["id"],
@@ -327,4 +335,5 @@ class Job(ApiClient):
             resources=job_resources,
             url=http_url,
             ssh=ssh_conn,
+            description=description,
         )

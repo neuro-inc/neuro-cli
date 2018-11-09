@@ -36,6 +36,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             id="test-job",
+            description="test job description",
             client=None,
             image="test-image",
             command="test-command",
@@ -53,7 +54,8 @@ class TestJobOutputFormatter:
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
-            status == "Job: test-job\nStatus: failed (ErrorReason)\nImage: test-image\n"
+            status == "Job: test-job\nDescription: test job description"
+            "\nStatus: failed (ErrorReason)\nImage: test-image\n"
             "Command: test-command\nResources: None\n"
             "Http URL: http://local.host.test/\n"
             "Created: NOW\nStarted: NOW1\nFinished: NOW2\n"
@@ -65,6 +67,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
+            description="test job description",
             client=None,
             image="test-image",
             command="test-command",
@@ -80,7 +83,8 @@ class TestJobOutputFormatter:
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
-            status == "Job: test-job\nStatus: pending\nImage: test-image\n"
+            status == "Job: test-job\nDescription: test job description\n"
+            "Status: pending\nImage: test-image\n"
             "Command: test-command\nResources: None\nCreated: NOW"
         )
 
@@ -88,6 +92,32 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
+            description="test job description",
+            client=None,
+            image="test-image",
+            command="test-command",
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ContainerCreating",
+                description=None,
+                created_at="NOW",
+                started_at=None,
+                finished_at=None,
+            ),
+        )
+
+        status = JobStatusFormatter.format_job_status(description)
+        assert (
+            status == "Job: test-job\nDescription: test job description\n"
+            "Status: pending (ContainerCreating)\nImage: test-image\n"
+            "Command: test-command\nResources: None\nCreated: NOW"
+        )
+
+    def test_pending_job_no_description(self) -> None:
+        description = JobDescription(
+            status=JobStatus.PENDING,
+            id="test-job",
+            description=None,
             client=None,
             image="test-image",
             command="test-command",

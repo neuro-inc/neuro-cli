@@ -357,6 +357,7 @@ Commands:
             http,
             ssh,
             cmd,
+            description,
             quiet,
         ):
             """
@@ -378,6 +379,7 @@ Commands:
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
+                -d, --description DESC    Add optional description to the job
                 -q, --quiet               Run command in quiet mode
             """
 
@@ -397,6 +399,7 @@ Commands:
                 model,
                 http,
                 ssh,
+                description,
             )
 
             return OutputFormatter.format_job(job, quiet)
@@ -458,7 +461,18 @@ Commands:
 
         @command
         def submit(
-            image, gpu, gpu_model, cpu, memory, extshm, http, ssh, cmd, volume, quiet
+            image,
+            gpu,
+            gpu_model,
+            cpu,
+            memory,
+            extshm,
+            http,
+            ssh,
+            cmd,
+            volume,
+            description,
+            quiet,
         ):
             """
             Usage:
@@ -478,7 +492,8 @@ Commands:
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
-                --volume MOUNT...         Mounts directory from vault into container
+                --volume MOUNT...         Mounts directory from vault into containr
+                -d, --description DESC    Add optional description to the job
                 -q, --quiet               Run command in quiet mode
 
 
@@ -502,7 +517,18 @@ Commands:
             platform_user_name = config.get_platform_user_name()
 
             job = JobHandlerOperations(platform_user_name).submit(
-                image, gpu, gpu_model, cpu, memory, extshm, cmd, http, ssh, volume, jobs
+                image,
+                gpu,
+                gpu_model,
+                cpu,
+                memory,
+                extshm,
+                cmd,
+                http,
+                ssh,
+                volume,
+                jobs,
+                description,
             )
             return OutputFormatter.format_job(job, quiet)
 
