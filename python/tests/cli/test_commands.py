@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from neuromation.cli.commands import command, commands, dispatch
@@ -113,12 +115,12 @@ def test_dispatch():
 
 def test_dispatch_help():
     argv = ["-n", "Vova", "rest", "--help"]
-    with pytest.raises(ValueError, match=r"person rest"):
-        dispatch(target=_person, tail=argv, city="Kyiv")
+    result = dispatch(target=_person, tail=argv, city="Kyiv")
+    assert re.match(".*Usage.+person rest", result, re.DOTALL)
 
     argv = ["-n", "Vova", "rest", "--any-long-option", "-any-short-option", "--help"]
-    with pytest.raises(ValueError, match=r"person rest"):
-        dispatch(target=_person, tail=argv, city="Kyiv")
+    result = dispatch(target=_person, tail=argv, city="Kyiv")
+    assert re.match(".*Usage.+person rest", result, re.DOTALL)
 
     argv = ["-n", "Vova", "rest", "Alabama", "-d", "1day", "--help"]
     try:
