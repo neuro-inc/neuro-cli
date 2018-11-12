@@ -78,10 +78,11 @@ def dispatch(target, tail, format_spec=None, **kwargs):
     stack = []
 
     while True:
+        target.__doc__ = help_format(target.__doc__, format_spec)
         try:
             options, tail = parse(target.__doc__, stack + tail)
         except docopt.DocoptExit:
-            raise ValueError(help_format(target.__doc__, format_spec))
+            raise ValueError(target.__doc__)
 
         res = target(**{**normalize_options(options, stack + ["COMMAND"]), **kwargs})
         # Don't pass to tested commands, they will be available through
@@ -90,7 +91,7 @@ def dispatch(target, tail, format_spec=None, **kwargs):
 
         command = options.get("COMMAND", None)
         if command == "help":
-            return help_format(target.__doc__, format_spec)
+            return target.__doc__
 
         if not command and tail:
             raise ValueError(f'Invalid arguments: {" ".join(tail)}')
