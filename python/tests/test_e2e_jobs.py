@@ -92,7 +92,7 @@ def test_job_filtering(run, tmpdir):
 
     _, captured = run(["job", "list", "--status", "running"])
     store_out = captured.out
-    job_ids2 = [x.split(" ")[0] for x in store_out.split("\n")]
+    job_ids2 = [x.split("\t")[0] for x in store_out.split("\n")]
     assert job_ids == job_ids2
     assert job_id not in job_ids2
 
