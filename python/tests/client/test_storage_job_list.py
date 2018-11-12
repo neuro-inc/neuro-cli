@@ -97,6 +97,19 @@ class TestJobListSort:
         assert jobs.index("id0-pending-new") > jobs.index("id0-pending-mid")
 
 
+class TestJobListTruncate:
+    def test_truncate_string(self, jobs_mock):
+        truncate = JobHandlerOperations("test-user")._truncate_string
+        assert truncate("not truncated", 15) == "not truncated"
+        assert truncate("A" * 10, 1) == "..."
+        assert truncate("A" * 10, 3) == "..."
+        assert truncate("A" * 10, 5) == "AA..."
+        assert truncate("A" * 6, 5) == "AA..."
+        assert truncate("A" * 7, 5) == "AA..."
+        assert truncate("A" * 10, 10) == "A" * 10
+        assert truncate("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
+
+
 def test_job_status_query(jobs_mock):
     jobs = JobHandlerOperations("test-user").status("id0", jobs_mock)
     assert jobs == JobDescription(
