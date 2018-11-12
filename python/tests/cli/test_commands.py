@@ -112,56 +112,34 @@ def test_dispatch():
 
 
 def test_dispatch_help():
-    argv = ['-n', 'Vova', 'rest', '--help']
-    with pytest.raises(ValueError, match=r'person rest'):
-        dispatch(
-            target=_person,
-            tail=argv,
-            city='Kyiv')
+    argv = ["-n", "Vova", "rest", "--help"]
+    with pytest.raises(ValueError, match=r"person rest"):
+        dispatch(target=_person, tail=argv, city="Kyiv")
 
-    argv = ['-n', 'Vova', 'rest',
-            '--any-long-option', '-any-short-option', '--help']
-    with pytest.raises(ValueError, match=r'person rest'):
-        dispatch(
-            target=_person,
-            tail=argv,
-            city='Kyiv')
+    argv = ["-n", "Vova", "rest", "--any-long-option", "-any-short-option", "--help"]
+    with pytest.raises(ValueError, match=r"person rest"):
+        dispatch(target=_person, tail=argv, city="Kyiv")
 
-    argv = ['-n', 'Vova', 'rest', 'Alabama', '-d', '1day', '--help']
+    argv = ["-n", "Vova", "rest", "Alabama", "-d", "1day", "--help"]
     try:
-        dispatch(
-            target=_person,
-            tail=argv,
-            city='Kyiv')
+        dispatch(target=_person, tail=argv, city="Kyiv")
     except ValueError as err:
-        if str(err) != 'Invalid arguments: --help':
-            pytest.fail('--help option error detection')
+        if str(err) != "Invalid arguments: --help":
+            pytest.fail("--help option error detection")
 
 
 def test_dispatch_help_format_spec():
-    argv = ['--help']
-    with pytest.raises(ValueError, match=r'2018'):
-        dispatch(
-            target=_person,
-            tail=argv,
-            format_spec={'year': 2018}
-        )
+    argv = ["--help"]
+    with pytest.raises(ValueError, match=r"2018"):
+        dispatch(target=_person, tail=argv, format_spec={"year": 2018})
 
-    argv = ['Vasya', 'work']
-    with pytest.raises(ValueError, match=r'2018'):
-        dispatch(
-            target=_person,
-            tail=argv,
-            format_spec={'year': 2018}
-        )
+    argv = ["Vasya", "work"]
+    with pytest.raises(ValueError, match=r"2018"):
+        dispatch(target=_person, tail=argv, format_spec={"year": 2018})
 
-    argv = ['Vasya', 'work', 'dig', 'hole']
-    with pytest.raises(ValueError, match=r'2018'):
-        dispatch(
-            target=_person,
-            tail=argv,
-            format_spec={'year': 2018}
-        )
+    argv = ["Vasya", "work", "dig", "hole"]
+    with pytest.raises(ValueError, match=r"2018"):
+        dispatch(target=_person, tail=argv, format_spec={"year": 2018})
 
 
 def test_commands():
