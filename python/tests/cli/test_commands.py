@@ -80,6 +80,15 @@ def _person(name, age, gender, city):
         """
         return f"{name} is resting {where} for {duration} hour"
 
+    @command
+    def absent():
+        """
+        Usage:
+          person absent
+
+        """
+        return f"{name} is absent"
+
     def nothing():
         pass
 
@@ -110,6 +119,12 @@ def test_dispatch():
     assert (
         dispatch(target=_person, tail=argv, city="Kyiv")
         == "Vova is resting home for 1 hour"
+    )
+
+    argv = ["-n", "Vova", "absent"]
+    assert (
+        dispatch(target=_person, tail=argv, city="Kyiv",)
+        == "Vova is absent"
     )
 
 
@@ -153,4 +168,4 @@ def test_invalid_command():
 def test_commands():
     assert commands(scope=globals()) == {"person": _person}
 
-    assert set(commands(scope=_person(None, None, None, None))) == {"work", "rest"}
+    assert set(commands(scope=_person(None, None, None, None))) == {"absent", "work", "rest"}
