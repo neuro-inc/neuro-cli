@@ -423,8 +423,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         len_tail, placeholder = 3, "..."
         if max_length < len_tail or max_length < len(placeholder):
             return placeholder
-        tail_index = len(input) - len_tail
-        tail = input[tail_index:] if max_length > len(placeholder) + len_tail else ""
+        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
         index_stop = max_length - len(placeholder) - len(tail)
         return input[:index_stop] + placeholder + tail
 
