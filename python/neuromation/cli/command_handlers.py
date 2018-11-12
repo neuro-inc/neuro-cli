@@ -418,13 +418,15 @@ class JobHandlerOperations(PlatformStorageOperation):
 
     @classmethod
     def _truncate_string(cls, input: str, max_length: int) -> str:
+        len_tail, placeholder = 3, "..."
+        if max_length < len_tail or max_length < len(placeholder):
+            return placeholder
         if len(input) <= max_length:
             return input
-        len_tail, dots = 4, "..."
         tail_index = len(input) - len_tail
-        tail = input[tail_index:] if max_length > len(dots) + len_tail else ""
-        index_stop = max_length - len(dots) - len(tail)
-        return input[:index_stop] + dots + tail
+        tail = input[tail_index:] if max_length > len(placeholder) + len_tail else ""
+        index_stop = max_length - len(placeholder) - len(tail)
+        return input[:index_stop] + placeholder + tail
 
     def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
         def short_format(item) -> str:
