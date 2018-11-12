@@ -8,9 +8,7 @@ import pytest
 
 from neuromation.cli.rc import ConfigFactory
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_from
-
-
-RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
+from tests.e2e.utils import RC_TEXT
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"

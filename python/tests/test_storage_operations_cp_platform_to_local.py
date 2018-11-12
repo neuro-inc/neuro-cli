@@ -161,16 +161,34 @@ class TestCopyRecursivePlatformToLocal:
         assert transfer_mock.call_count == 2
         transfer_mock.assert_any_call(
             "/alice/platform_existing/my_file.txt",
-            "/localdir/dir/my_file.txt",
+            "/localdir/dir/platform_existing/my_file.txt",
             FileStatus("my_file.txt", 100, "FILE", 0, "read"),
             partial_mocked_store,
         )
         transfer_mock.assert_any_call(
             "/alice/platform_existing/dir/my_file2.txt",
-            "/localdir/dir/dir/my_file2.txt",
+            "/localdir/dir/platform_existing/dir/my_file2.txt",
             FileStatus("my_file2.txt", 100, "FILE", 0, "read"),
             partial_mocked_store,
         )
+
+    def test_cannot_create_dir(self, mocked_store, partial_mocked_store, monkeypatch):
+        mkdir_mock = Mock()
+        transfer_mock = Mock()
+
+        self._structure(mocked_store, monkeypatch, mkdir_mock)
+
+        op = CopyOperation.create("alice", "storage", "file", True)
+        op.copy_file = transfer_mock
+        with pytest.raises(NotADirectoryError):
+            op.copy(
+                urlparse("storage:///platform_existing/"),
+                urlparse("file:///localdir/"),
+                partial_mocked_store,
+            )
+
+        assert mkdir_mock.call_count == 1
+        assert transfer_mock.call_count == 0
 
     def test_ok_copy_bob_data(self, mocked_store, partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)
@@ -223,6 +241,23 @@ class TestCopyRecursivePlatformToLocal:
                 urlparse("/localdir/dir/"),
                 partial_mocked_store,
             )
+        transfer_mock.assert_not_called()
+
+    def test_source_doesnot_exists(
+        self, mocked_store, partial_mocked_store, monkeypatch
+    ):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+
+        op = CopyOperation.create("alice", "storage", "file", True)
+        op.copy_file = transfer_mock
+        with pytest.raises(FileNotFoundError, match=r"Source file not found."):
+            op.copy(
+                urlparse("storage:///platform_existing/abracadabra.txt"),
+                urlparse("file:///localdir_non_existing/dir/"),
+                partial_mocked_store,
+            )
+
         transfer_mock.assert_not_called()
 
     def test_target_is_file(self, mocked_store, partial_mocked_store, monkeypatch):
