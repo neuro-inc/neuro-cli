@@ -418,11 +418,11 @@ class JobHandlerOperations(PlatformStorageOperation):
 
     @classmethod
     def _truncate_string(cls, input: str, max_length: int) -> str:
+        if len(input) <= max_length:
+            return input
         len_tail, placeholder = 3, "..."
         if max_length < len_tail or max_length < len(placeholder):
             return placeholder
-        if len(input) <= max_length:
-            return input
         tail_index = len(input) - len_tail
         tail = input[tail_index:] if max_length > len(placeholder) + len_tail else ""
         index_stop = max_length - len(placeholder) - len(tail)
