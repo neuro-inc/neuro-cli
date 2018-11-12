@@ -122,10 +122,7 @@ def test_dispatch():
     )
 
     argv = ["-n", "Vova", "absent"]
-    assert (
-        dispatch(target=_person, tail=argv, city="Kyiv",)
-        == "Vova is absent"
-    )
+    assert dispatch(target=_person, tail=argv, city="Kyiv") == "Vova is absent"
 
 
 def test_dispatch_help():
@@ -168,4 +165,8 @@ def test_invalid_command():
 def test_commands():
     assert commands(scope=globals()) == {"person": _person}
 
-    assert set(commands(scope=_person(None, None, None, None))) == {"absent", "work", "rest"}
+    assert set(commands(scope=_person(None, None, None, None))) == {
+        "absent",
+        "work",
+        "rest",
+    }
