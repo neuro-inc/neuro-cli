@@ -144,6 +144,12 @@ def test_dispatch_help_format_spec():
         dispatch(target=_person, tail=argv, format_spec={"year": 2018})
 
 
+def test_invalid_command():
+    argv = ["-n", "Vasya", "work", "unknown", "command"]
+    with pytest.raises(ValueError, match=r"Invalid command: unknown"):
+        dispatch(target=_person, tail=argv, format_spec={"year": 2018}, city="Kyiv")
+
+
 def test_commands():
     assert commands(scope=globals()) == {"person": _person}
 

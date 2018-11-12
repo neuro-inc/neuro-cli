@@ -387,7 +387,7 @@ Commands:
                 -q, --quiet               Run command in quiet mode
             """
 
-            config: Config = rc.ConfigFactory.load()
+            config: Config = rc.ConfneuroigFactory.load()
             platform_user_name = config.get_platform_user_name()
             model_operation = ModelHandlerOperations(platform_user_name)
             job = model_operation.train(

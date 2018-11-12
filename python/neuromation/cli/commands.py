@@ -67,7 +67,7 @@ def dispatch(target, tail, format_spec=None, **kwargs):
                 continue
             else:
                 return False
-        return False  # This line will never reached
+        raise RuntimeError("This line cannot be reached")  # pragma: no cover
 
     def help_format(help, format_spec):
         if format_spec:
