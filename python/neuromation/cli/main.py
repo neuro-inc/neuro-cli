@@ -251,9 +251,9 @@ Commands:
             By default PATH is equal user`s home dir (storage://{username}/)
             """
             if path is None:
-                path = 'storage:///'
+                path = "storage:///"
 
-            format = '{type:<15}{size:<15,}{name:<}'.format
+            format = "{type:<15}{size:<15,}{name:<}".format
 
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
@@ -784,19 +784,12 @@ def main():
     config = rc.ConfigFactory.load()
     doc_username = config.get_platform_user_name()
     if not doc_username:
-        doc_username = 'username'
-    format_spec = {
-        'api_url': config.url,
-        'username': doc_username
-    }
+        doc_username = "username"
+    format_spec = {"api_url": config.url, "username": doc_username}
 
     try:
-        res = dispatch(target=neuro, tail=sys.argv[1:], token=config.auth)
         res = dispatch(
-            target=neuro,
-            tail=sys.argv[1:],
-            format_spec=format_spec,
-            token=config.auth,
+            target=neuro, tail=sys.argv[1:], format_spec=format_spec, token=config.auth
         )
         if res:
             print(res)

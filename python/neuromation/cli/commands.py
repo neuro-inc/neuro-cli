@@ -61,13 +61,13 @@ def parse(doc, argv):
 def dispatch(target, tail, format_spec=None, **kwargs):
     def help_required(tail):
         for option in tail:
-            if option == '--help':
+            if option == "--help":
                 return True
-            elif option[:1] == '-':
+            elif option[:1] == "-":
                 continue
             else:
                 return False
-        return False    # This line will never reached
+        return False  # This line will never reached
 
     def help_format(help, format_spec):
         if format_spec:
