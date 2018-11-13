@@ -227,6 +227,22 @@ class MkDirsRequest(StorageRequest):
 
 
 @dataclass(frozen=True)
+class RenameRequest(StorageRequest):
+    op: ClassVar[str] = "RENAME"
+    src_path: str
+    dst_path: str
+
+    def to_http_request(self) -> http.Request:
+        return http.JsonRequest(
+            url=add_path("/storage/", self.src_path),
+            params={"op": self.op, "destination": self.dst_path},
+            method="POST",
+            json=None,
+            data=None,
+        )
+
+
+@dataclass(frozen=True)
 class ListRequest(StorageRequest):
     op: ClassVar[str] = "LISTSTATUS"
     path: str
@@ -308,6 +324,8 @@ def build(request: Request) -> http.Request:
             data=request.data,
         )
     elif isinstance(request, MkDirsRequest):
+        return request.to_http_request()
+    elif isinstance(request, RenameRequest):
         return request.to_http_request()
     elif isinstance(request, FileStatRequest):
         return request.to_http_request()

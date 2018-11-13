@@ -14,6 +14,7 @@ from .requests import (
     ListRequest,
     MkDirsRequest,
     OpenRequest,
+    RenameRequest,
 )
 
 
@@ -83,3 +84,7 @@ class Storage(ApiClient):
     def rm(self, *, path: str) -> str:
         self._fetch_sync(DeleteRequest(path=path))
         return path
+
+    def mv(self, *, src_path: str, dst_path: str) -> str:
+        self._fetch_sync(RenameRequest(src_path=src_path, dst_path=dst_path))
+        return dst_path
