@@ -6,6 +6,7 @@ from neuromation.cli.command_handlers import JobHandlerOperations
 from neuromation.client.jobs import JobDescription, JobStatusHistory
 
 
+
 @pytest.fixture
 def valid_job_description():
     return "non-empty job description 1234567890`!@#$%^&*()_+='\\/"
@@ -59,13 +60,12 @@ def jobs_to_test(sorted_timestamps, valid_job_description):
         for description in description_list
     ]
 
-
 @pytest.fixture
 def jobs_mock(mocked_jobs, jobs_to_test):
-    def job_list() -> List[JobDescription]:
+    async def job_list() -> List[JobDescription]:
         return jobs_to_test
 
-    def jobs_status(id) -> JobDescription:
+    async def jobs_status(id) -> JobDescription:
         return JobDescription(
             status="running", id=id, client=None, image="ubuntu", command="shell"
         )
@@ -80,6 +80,7 @@ def jobs_mock(mocked_jobs, jobs_to_test):
     return mock_
 
 
+@pytest.mark.asyncio
 class TestJobListFilter:
     @classmethod
     def _format(cls, jobs):
@@ -191,12 +192,14 @@ class TestJobListFilter:
         assert jobs == expected
 
 
+@pytest.mark.asyncio
 class TestJobListSort:
-    def test_sort(self, jobs_mock, sorted_timestamps, valid_job_description):
+    async def test_sort(self, jobs_mock, sorted_timestamps, valid_job_description):
         def slice_jobs_chronologically(jobs_list, substring):
             return [index for index, job in enumerate(jobs_list) if substring in job]
 
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock).split("\n")
+        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock)
+        jobs = jobs.split("\n")
         old_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[0])
         mid_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[1])
         new_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[2])
@@ -217,8 +220,9 @@ class TestJobListTruncate:
         assert truncate("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
 
 
-def test_job_status_query(jobs_mock):
-    jobs = JobHandlerOperations("test-user").status("id0", jobs_mock)
+@pytest.mark.asyncio
+async def test_job_status_query(jobs_mock):
+    jobs = await JobHandlerOperations("test-user").status("id0", jobs_mock)
     assert jobs == JobDescription(
         status="running", id="id0", client=None, image="ubuntu", command="shell"
     )

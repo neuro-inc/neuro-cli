@@ -137,14 +137,14 @@ class CopyOperation(PlatformStorageOperation):
             return None
 
     @abc.abstractmethod
-    def _copy(
+    async def _copy(
         self, src: ParseResult, dst: ParseResult, storage: Callable
     ):  # pragma: no cover
         pass
 
-    def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+    async def copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         log.debug(f"Copy {src} to {dst}.")
-        copy_result = self._copy(src, dst, storage)
+        copy_result = await self._copy(src, dst, storage)
         return copy_result
 
     @classmethod
@@ -205,7 +205,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
                     self.transfer(file, stream, f)
                     return dst
 
-    def _copy(
+    async def _copy(
         self, src: ParseResult, dst: ParseResult, storage: Callable
     ):  # pragma: no cover
         platform_file_name = self._render_platform_path_with_principal(src)
@@ -241,8 +241,8 @@ class NonRecursivePlatformToLocal(CopyOperation):
 
 
 class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
-    def _copy_obj(self, src: PosixPath, dst: Path, storage: Callable):
-        files: List[FileStatus] = PlatformListDirOperation(self.principal).ls(
+    async def _copy_obj(self, src: PosixPath, dst: Path, storage: Callable):
+        files: List[FileStatus] = await PlatformListDirOperation(self.principal).ls(
             path_str=f"storage:/{src}", storage=storage
         )
 
@@ -251,12 +251,12 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
             target = Path(dst, name)
             if file.type == "DIRECTORY":
                 os.mkdir(target)
-                self._copy_obj(PosixPath(src, name), target, storage)
+                await self._copy_obj(PosixPath(src, name), target, storage)
             else:
                 platform_file_name = f"{src}{PLATFORM_DELIMITER}{name}"
                 self.copy_file(platform_file_name, str(target), file, storage)
 
-    def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+    async def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
             raise FileNotFoundError(
                 "Target should exist. " "Please create target directory and try again."
@@ -282,17 +282,17 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                 )
                 return copy_operation.copy(src, dst, storage)
 
-        self._copy_obj(platform_file_name, Path(dst.path), storage)
+        await self._copy_obj(platform_file_name, Path(dst.path), storage)
 
         return dst.path
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
-    def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
+    async def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
         """Tests whether specified path is directory on a platform or not."""
         try:
-            with storage() as s:
-                file_status = s.stats(path=str(path))
+            async with storage() as s:
+                file_status = await s.stats(path=str(path))
                 return file_status.type == "DIRECTORY"
         except ResourceNotFound:
             return False
@@ -311,15 +311,15 @@ class NonRecursiveLocalToPlatform(CopyOperation):
                 data_chunk = f.read(BUFFER_SIZE_B)
             self.progress.complete(src)
 
-    def copy_file(
+    async def copy_file(
         self, src_path: str, dest_path: str, storage: Callable
     ):  # pragma: no cover
         data = self._copy_data_with_progress(src_path)
-        with storage() as s:
-            s.create(path=dest_path, data=data)
+        async with storage() as s:
+            await s.create(path=dest_path, data=data)
             return dest_path
 
-    def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+    async def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(src.path):
             raise FileNotFoundError("Source file not found.")
 
@@ -329,27 +329,27 @@ class NonRecursiveLocalToPlatform(CopyOperation):
         target_path: PosixPath = self._render_platform_path_with_principal(dst)
         target_dir_not_exists = "Target directory does not exist."
         if len(dst.path) and dst.path[-1] == PLATFORM_DELIMITER:
-            if not self._is_dir_on_platform(target_path, storage):
+            if not await self._is_dir_on_platform(target_path, storage):
                 raise NotADirectoryError(target_dir_not_exists)
             target_path = PosixPath(target_path, Path(src.path).name)
         else:
-            if not self._is_dir_on_platform(target_path, storage):
-                if not self._is_dir_on_platform(target_path.parent, storage):
+            if not await self._is_dir_on_platform(target_path, storage):
+                if not await self._is_dir_on_platform(target_path.parent, storage):
                     raise NotADirectoryError(target_dir_not_exists)
             else:
                 target_path = PosixPath(target_path, Path(src.path).name)
 
-        copy_file = self.copy_file(src.path, str(target_path), storage)
+        copy_file = await self.copy_file(src.path, str(target_path), storage)
         return f"storage:/{copy_file}"
 
 
 class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
-    def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
+    async def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(src.path):
             raise ValueError("Source should exist.")
 
         if not os.path.isdir(src.path):
-            return NonRecursiveLocalToPlatform._copy(self, src, dst, storage)
+            return await NonRecursiveLocalToPlatform._copy(self, src, dst, storage)
 
         final_path = self._render_platform_path_with_principal(dst)
         src_dir_path = PurePath(src.path).name
@@ -367,23 +367,23 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
             for file in files:
                 target_dest = f"{pref_path}{file}"
                 src_file = os.path.join(root, file)
-                self.copy_file(src_file, target_dest, storage)
+                await self.copy_file(src_file, target_dest, storage)
             for subdir in subdirs:
                 target_dest = f"{pref_path}{subdir}"
-                PlatformMakeDirOperation(self.principal).mkdir(
+                await PlatformMakeDirOperation(self.principal).mkdir(
                     f"storage:/{target_dest}", storage
                 )
         return final_path
 
 
 class JobHandlerOperations(PlatformStorageOperation):
-    def wait_job_transfer_from(
+    async def wait_job_transfer_from(
         self, id: str, from_state: str, jobs: Callable, sleep_interval_s: int = 1
     ) -> JobDescription:
         still_state = True
         job_status = None
         while still_state:
-            job_status = self.status(id, jobs)
+            job_status = await self.status(id, jobs)
             still_state = job_status.status == from_state
             if still_state:
                 sleep(sleep_interval_s)
@@ -411,9 +411,9 @@ class JobHandlerOperations(PlatformStorageOperation):
         else:
             raise ValueError(f"Job is not running. Job status is {job_status.status}")
 
-    def status(self, id: str, jobs: Callable) -> JobDescription:
-        with jobs() as j:
-            return j.status(id)
+    async def status(self, id: str, jobs: Callable) -> JobDescription:
+        async with jobs() as j:
+            return await j.status(id)
 
     @classmethod
     def _truncate_string(cls, input: str, max_length: int) -> str:
@@ -453,7 +453,7 @@ class JobHandlerOperations(PlatformStorageOperation):
 
         return sorted(job_list, key=job_sorting_key_by_creation_time)
 
-    def list_jobs(
+    async def list_jobs(
         self,
         jobs: Callable,
         status: Optional[str] = None,
@@ -464,7 +464,7 @@ class JobHandlerOperations(PlatformStorageOperation):
             filter_description = not description or item.description == description
             return filter_status and filter_description
 
-        with jobs() as j:
+        async with jobs() as j:
             job_list = j.list()
             return "\n".join(
                 [
@@ -510,7 +510,10 @@ class JobHandlerOperations(PlatformStorageOperation):
 
     def _parse_volumes(self, volumes) -> Optional[List[VolumeDescriptionPayload]]:
         if volumes:
-            return [self._parse_volume_str(volume) for volume in volumes]
+            try:
+                return [self._parse_volume_str(volume) for volume in volumes]
+            except ValueError as e:
+                raise ValueError from e
         return None
 
     async def submit(
@@ -532,7 +535,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         cmd = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
 
-        with jobs() as j:
+        async with jobs() as j:
             image = Image(image=image, command=cmd)
             network = self._network_parse(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
@@ -624,7 +627,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         )
         return None
 
-    def connect_ssh(
+    async def connect_ssh(
         self,
         job_id: str,
         jump_host_key: str,
@@ -637,12 +640,12 @@ class JobHandlerOperations(PlatformStorageOperation):
         )
         # Check if job is running
         try:
-            job_status = self.status(job_id, jobs)
+            job_status = await self.status(job_id, jobs)
             self._connect_ssh(job_status, jump_host_key, container_user, container_key)
         except BadRequestError as e:
             raise ValueError(f"Job not found. Job Id = {job_id}") from e
 
-    def python_remote_debug(
+    async def python_remote_debug(
         self, job_id: str, jump_host_key: str, local_port: int, jobs: Callable
     ) -> None:
         if not jump_host_key:
@@ -650,7 +653,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 "Configure Github RSA key path." "See for more info `neuro config`."
             )
         try:
-            job_status = self.status(job_id, jobs)
+            job_status = await self.status(job_id, jobs)
             ssh_hostname = job_status.jump_host()
             self._start_ssh_tunnel(
                 job_status, ssh_hostname, self.principal, jump_host_key, local_port
@@ -660,7 +663,7 @@ class JobHandlerOperations(PlatformStorageOperation):
 
 
 class ModelHandlerOperations(JobHandlerOperations):
-    def train(
+    async def train(
         self,
         image,
         dataset,
@@ -695,8 +698,8 @@ class ModelHandlerOperations(JobHandlerOperations):
         cmd = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
 
-        with model() as m:
-            job = m.train(
+        async with model() as m:
+            job = await m.train(
                 image=Image(image=image, command=cmd),
                 network=net,
                 resources=Resources.create(cpu, gpu, gpu_model, memory, extshm),
@@ -706,50 +709,3 @@ class ModelHandlerOperations(JobHandlerOperations):
             )
 
         return job
-
-    def develop(
-        self,
-        image,
-        dataset,
-        results,
-        gpu,
-        gpu_model,
-        cpu,
-        memory,
-        extshm,
-        model,
-        jobs,
-        http,
-        ssh,
-        jump_host_rsa,
-        container_user,
-        container_key_path,
-    ):
-        self._validate_args_for_ssh_session(
-            container_user, container_key_path, jump_host_rsa
-        )
-        if not ssh:
-            raise ValueError("Please enable SSH / specify ssh port.")
-
-        # Start the job, we expect it to have SSH server on board
-        job = self.train(
-            image,
-            dataset,
-            results,
-            gpu,
-            gpu_model,
-            cpu,
-            memory,
-            extshm,
-            None,
-            model,
-            http,
-            ssh,
-            description=None,
-        )
-        job_id = job.id
-        # wait for a job to leave pending stage
-        job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
-        # start ssh shell session
-        self._connect_ssh(job_status, jump_host_rsa, container_user, container_key_path)
-        return None

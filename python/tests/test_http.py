@@ -95,29 +95,23 @@ def test_call_session_with_token(build, loop):
 
 
 def test_session_with_timeout_api_client(loop):
-    with mock.patch("aiohttp.ClientSession") as runMock:
-        timeout = TimeoutSettings(total=1, connect=2, sock_connect=3, sock_read=4)
-        ApiClient(url="no-url", token="", timeout=timeout)
-        client_timeout = aiohttp.ClientTimeout(
-            total=1, connect=2, sock_connect=3, sock_read=4
-        )
-        assert runMock.call_count == 1
-        args = runMock.call_args_list[0]
-        assert args[1]["timeout"] == client_timeout
+    timeout = TimeoutSettings(total=1, connect=2, sock_connect=3, sock_read=4)
+    client = ApiClient(url="no-url", token="", timeout=timeout)
+    client_timeout = aiohttp.ClientTimeout(
+        total=1, connect=2, sock_connect=3, sock_read=4
+    )
+    assert client._timeout == client_timeout
 
 
 def test_session_without_timeout_api_client(loop):
-    with mock.patch("aiohttp.ClientSession") as runMock:
-        timeout = TimeoutSettings(
-            total=5 * 60, connect=None, sock_connect=None, sock_read=None
-        )
-        ApiClient(url="no-url", token="", timeout=timeout)
-        client_timeout = aiohttp.ClientTimeout(
-            total=5 * 60, connect=None, sock_connect=None, sock_read=None
-        )
-        assert runMock.call_count == 1
-        args = runMock.call_args_list[0]
-        assert args[1]["timeout"] == client_timeout
+    timeout = TimeoutSettings(
+        total=5 * 60, connect=None, sock_connect=None, sock_read=None
+    )
+    client = ApiClient(url="no-url", token="", timeout=timeout)
+    client_timeout = aiohttp.ClientTimeout(
+        total=5 * 60, connect=None, sock_connect=None, sock_read=None
+    )
+    assert client._timeout == client_timeout
 
 
 @patch(

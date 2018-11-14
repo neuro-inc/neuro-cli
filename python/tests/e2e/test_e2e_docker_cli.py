@@ -100,6 +100,8 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
 
 
 def test_docker_config_no_docker(run, monkeypatch):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(asyncio.new_event_loop())
     with mock.patch("subprocess.run") as runMock:
         runMock.side_effect = subprocess.CalledProcessError(
             returncode=2, cmd="no command"
@@ -111,6 +113,8 @@ def test_docker_config_no_docker(run, monkeypatch):
 
 
 def test_docker_push_no_docker(run, monkeypatch):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(asyncio.new_event_loop())
     with mock.patch("subprocess.run") as runMock:
         runMock.side_effect = subprocess.CalledProcessError(
             returncode=2, cmd="no command"
@@ -121,6 +125,8 @@ def test_docker_push_no_docker(run, monkeypatch):
 
 
 def test_docker_pull_no_docker(run, monkeypatch):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(asyncio.new_event_loop())
     with mock.patch("subprocess.run") as runMock:
         runMock.side_effect = subprocess.CalledProcessError(
             returncode=2, cmd="no command"
@@ -131,6 +137,8 @@ def test_docker_pull_no_docker(run, monkeypatch):
 
 
 def test_docker_config_with_docker(run, monkeypatch):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(asyncio.new_event_loop())
     with mock.patch("subprocess.run") as runMock:
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
         assert runMock.call_count == 2
@@ -139,12 +147,16 @@ def test_docker_config_with_docker(run, monkeypatch):
 
 
 def test_docker_push_with_docker(run, monkeypatch):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(asyncio.new_event_loop())
     with mock.patch("subprocess.run") as runMock:
         _, captured = run(["image", "push", "abrakadabra"])
         assert runMock.call_count == 3
 
 
 def test_docker_pull_with_docker(run, monkeypatch):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(asyncio.new_event_loop())
     with mock.patch("subprocess.run") as runMock:
         _, captured = run(["image", "pull", "abrakadabra"])
         assert runMock.call_count == 2

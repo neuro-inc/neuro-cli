@@ -7,7 +7,7 @@ from neuromation.cli.commands import command, commands, dispatch
 
 # NOTE: overriding command name to be 'person'
 @command("person")
-def _person(name, age, gender, city):
+async def _person(name, age, gender, city):
     """
     Usage:
       person -n NAME [options ...] COMMAND
@@ -26,7 +26,7 @@ def _person(name, age, gender, city):
     """
 
     @command
-    def work(intensity):
+    async def work(intensity):
         """
         Usage:
           person work [options] COMMAND
@@ -38,7 +38,7 @@ def _person(name, age, gender, city):
         """  # NOQA
 
         @command
-        def dig(depth, what):
+        async def dig(depth, what):
             """
             Usage:
               person work dig [options] WHAT
@@ -51,7 +51,7 @@ def _person(name, age, gender, city):
             return f"{name} is digging {depth} {what} in {city}"
 
         @command
-        def manage(style, whom):
+        async def manage(style, whom):
             """
             Usage:
               person work manage [options] WHOM
@@ -68,7 +68,7 @@ def _person(name, age, gender, city):
     # NOTE: options and operands have switched places in
     # method signature. We support that as well
     @command
-    def rest(where, duration):
+    async def rest(where, duration):
         """
         Usage:
           person rest [options] WHERE
@@ -81,7 +81,7 @@ def _person(name, age, gender, city):
         return f"{name} is resting {where} for {duration} hour"
 
     @command
-    def absent():
+    async def absent():
         """
         Usage:
           person absent
@@ -89,35 +89,36 @@ def _person(name, age, gender, city):
         """
         return f"{name} is absent"
 
-    def nothing():
+    async def nothing():
         pass
 
     return locals()
 
 
-def test_dispatch():
+@pytest.mark.asyncio
+async def test_dispatch():
     argv = ["-n", "Vasya", "work", "dig", "hole"]
     # 'manage', '-s', 'enabling', 'engineers']
     assert (
-        dispatch(target=_person, tail=argv, city="Kyiv")
+        await dispatch(target=_person, tail=argv, city="Kyiv")
         == "Vasya is digging BIG hole in Kyiv"
     )
 
     argv = ["-n", "Vova", "work", "manage", "Petya"]
     assert (
-        dispatch(target=_person, tail=argv, city="Kyiv")
+        await dispatch(target=_person, tail=argv, city="Kyiv")
         == "Vova is crushing Petya in Kyiv"
     )
 
     argv = ["-n", "Vova", "work", "manage", "-s", "enabling", "Petya"]
     assert (
-        dispatch(target=_person, tail=argv, city="Kyiv")
+        await dispatch(target=_person, tail=argv, city="Kyiv")
         == "Vova is enabling Petya in Kyiv"
     )
 
     argv = ["-n", "Vova", "rest", "home"]
     assert (
-        dispatch(target=_person, tail=argv, city="Kyiv")
+        await dispatch(target=_person, tail=argv, city="Kyiv")
         == "Vova is resting home for 1 hour"
     )
 
@@ -162,10 +163,11 @@ def test_invalid_command():
         dispatch(target=_person, tail=argv, format_spec={"year": 2018}, city="Kyiv")
 
 
-def test_commands():
+@pytest.mark.asyncio
+async def test_commands():
     assert commands(scope=globals()) == {"person": _person}
 
-    assert set(commands(scope=_person(None, None, None, None))) == {
+    assert set(commands(scope=await _person(None, None, None, None))) == {
         "absent",
         "work",
         "rest",

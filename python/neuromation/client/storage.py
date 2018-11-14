@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from io import BufferedReader, BytesIO
 from typing import Any, Dict, Iterator, List
 
+from async_generator import asynccontextmanager
+
 from neuromation.http.fetch import FetchError
 
 from .client import ApiClient
@@ -60,7 +62,7 @@ class Storage(ApiClient):
         await self._fetch(CreateRequest(path=path, data=data))
         return path
 
-    def stats(self, *, path: str) -> FileStatus:
+    async def stats(self, *, path: str) -> FileStatus:
         """
         Request file or directory stats.
         Throws NotFound exception in case path points to non existing object.
@@ -68,10 +70,10 @@ class Storage(ApiClient):
         :param path: path to object on storage.
         :return: Status of a file or directory.
         """
-        resp = self._fetch_sync(FileStatRequest(path=path))
+        resp = await self._fetch(FileStatRequest(path=path))
         return FileStatus.from_primitive(resp["FileStatus"])
 
-    @contextmanager
+    @asynccontextmanager
     async def open(self, *, path: str) -> Iterator[BufferedReader]:
         try:
             async with self._fetch(OpenRequest(path=path)) as content:

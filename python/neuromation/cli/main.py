@@ -110,7 +110,7 @@ Commands:
     from neuromation.client import Storage
 
     @command
-    def config():
+    async def config():
         """
         Usage:
             neuro config COMMAND
@@ -155,7 +155,7 @@ Commands:
             return
 
         @command
-        def url(url):
+        async def url(url):
             """
             Usage:
                 neuro config url URL
@@ -169,7 +169,7 @@ Commands:
             update_docker_config(config)
 
         @command
-        def id_rsa(file):
+        async def id_rsa(file):
             """
             Usage:
                 neuro config id_rsa FILE
@@ -187,7 +187,7 @@ Commands:
             rc.ConfigFactory.update_github_rsa_path(file)
 
         @command
-        def show():
+        async def show():
             """
             Usage:
                 neuro config show
@@ -198,7 +198,7 @@ Commands:
             print(config)
 
         @command
-        def auth(token):
+        async def auth(token):
             """
             Usage:
                 neuro config auth TOKEN
@@ -289,7 +289,7 @@ Commands:
             )
 
         @command
-        def cp(source, destination, recursive, progress):
+        async def cp(source, destination, recursive, progress):
             """
             Usage:
                 neuro store cp [options] SOURCE DESTINATION
@@ -327,14 +327,14 @@ Commands:
             )
 
             if operation:
-                return operation.copy(src, dst, storage)
+                return await operation.copy(src, dst, storage)
 
             raise neuromation.client.IllegalArgumentError(
                 "Invalid SOURCE or DESTINATION value"
             )
 
         @command
-        def mkdir(path):
+        async def mkdir(path):
             """
             Usage:
                 neuro store mkdir PATH
@@ -375,7 +375,7 @@ Commands:
         return locals()
 
     @command
-    def model():
+    async def model():
         """
         Usage:
             neuro model COMMAND
@@ -396,7 +396,7 @@ Commands:
         model = partial(Model, url, token)
 
         @command
-        def train(
+        async def train(
             image,
             dataset,
             results,
@@ -456,7 +456,7 @@ Commands:
             return OutputFormatter.format_job(job, quiet)
 
         @command
-        def debug(id, localport):
+        async def debug(id, localport):
             """
             Usage:
                 neuro model debug [options] ID
@@ -474,23 +474,23 @@ Commands:
             git_key = config.github_rsa_path
             platform_user_name = config.get_platform_user_name()
 
-            JobHandlerOperations(platform_user_name).python_remote_debug(
+            await JobHandlerOperations(platform_user_name).python_remote_debug(
                 id, git_key, localport, jobs
             )
             return None
 
         @command
-        def test():
+        async def test():
             pass
 
         @command
-        def infer():
+        async def infer():
             pass
 
         return locals()
 
     @command
-    def job():
+    async def job():
         """
         Usage:
             neuro job COMMAND
@@ -584,7 +584,7 @@ Commands:
             return OutputFormatter.format_job(job, quiet)
 
         @command
-        def ssh(id, user, key):
+        async def ssh(id, user, key):
             """
             Usage:
                 neuro job ssh [options] ID
@@ -603,20 +603,20 @@ Commands:
             git_key = config.github_rsa_path
             platform_user_name = config.get_platform_user_name()
 
-            JobHandlerOperations(platform_user_name).connect_ssh(
+            await JobHandlerOperations(platform_user_name).connect_ssh(
                 id, git_key, user, key, jobs
             )
             return None
 
         @command
-        def monitor(id):
+        async def monitor(id):
             """
             Usage:
                 neuro job monitor ID
 
             Monitor job output stream
             """
-            with jobs() as j:
+            async with jobs() as j:
                 with j.monitor(id) as stream:
                     while True:
                         chunk = stream.read(MONITOR_BUFFER_SIZE_BYTES)
@@ -625,7 +625,7 @@ Commands:
                         sys.stdout.write(chunk.decode(errors="ignore"))
 
         @command
-        def list(status, description):
+        async def list(status, description):
             """
             Usage:
                 neuro job list [options]
@@ -641,32 +641,32 @@ Commands:
             return JobHandlerOperations(token).list_jobs(jobs, status, description)
 
         @command
-        def status(id):
+        async def status(id):
             """
             Usage:
                 neuro job status ID
 
             Display status of a job
             """
-            res = JobHandlerOperations(token).status(id, jobs)
+            res = await JobHandlerOperations(token).status(id, jobs)
             return JobStatusFormatter.format_job_status(res)
 
         @command
-        def kill(id):
+        async def kill(id):
             """
             Usage:
                 neuro job kill ID
 
             Kill job
             """
-            with jobs() as j:
-                j.kill(id)
+            async with jobs() as j:
+                await j.kill(id)
             return "Job killed."
 
         return locals()
 
     @command
-    def image():
+    async def image():
         """
         Usage:
             neuro image COMMAND
@@ -686,7 +686,7 @@ Commands:
             return target_image_name
 
         @command
-        def push(image_name):
+        async def push(image_name):
             """
             Usage:
                 neuro image push IMAGE_NAME
@@ -715,7 +715,7 @@ Commands:
             return target_image_name
 
         @command
-        def pull(image_name):
+        async def pull(image_name):
             """
             Usage:
                 neuro image pull IMAGE_NAME
@@ -737,7 +737,7 @@ Commands:
         return locals()
 
     @command
-    def share(uri, whom, read, write, manage):
+    async def share(uri, whom, read, write, manage):
         """
             Usage:
                 neuro share URI WHOM (read|write|manage)
@@ -762,7 +762,7 @@ Commands:
         try:
             resource_sharing = partial(ResourceSharing, url, token)
             share_command = PlatformSharingOperations(platform_user_name)
-            share_command.share(uri, op_type, whom, resource_sharing)
+            await share_command.share(uri, op_type, whom, resource_sharing)
         except neuromation.client.IllegalArgumentError:
             print("Resource not shared. " "Please verify resource-uri, user name.")
             return None
@@ -770,7 +770,7 @@ Commands:
         return None
 
     @command
-    def completion():
+    async def completion():
         """
             Usage:
                 neuro completion COMMAND
@@ -790,7 +790,7 @@ Commands:
         activate_completion = "source '{}'".format(str(completion_file))
 
         @command
-        def generate():
+        async def generate():
             """
                Usage:
                    neuro completion generate
@@ -804,7 +804,7 @@ Commands:
             print(activate_completion)
 
         @command
-        def patch():
+        async def patch():
             """
                Usage:
                    neuro completion patch

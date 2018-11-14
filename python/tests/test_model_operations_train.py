@@ -11,9 +11,11 @@ def alice_model():
     return ModelHandlerOperations("alice")
 
 
+@pytest.mark.asyncio
 class TestNormalCases:
-    def test_model_submit(self, alice_model, partial_mocked_model):
-        alice_model.train(
+    async def test_model_submit(self, alice_model, partial_mocked_model):
+        partial_mocked_model().patch("train", None)
+        await alice_model.train(
             "ubuntu:tf_2.0_beta",
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
@@ -38,8 +40,9 @@ class TestNormalCases:
             description="test model",
         )
 
-    def test_model_submit_with_gpu_model(self, alice_model, partial_mocked_model):
-        alice_model.train(
+    async def test_model_submit_with_gpu_model(self, alice_model, partial_mocked_model):
+        partial_mocked_model().patch("train", None)
+        await alice_model.train(
             "ubuntu:tf_2.0_beta",
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
@@ -66,8 +69,9 @@ class TestNormalCases:
             description="blah blah blah",
         )
 
-    def test_model_submit_no_cmd(self, alice_model, partial_mocked_model):
-        alice_model.train(
+    async def test_model_submit_no_cmd(self, alice_model, partial_mocked_model):
+        partial_mocked_model().patch("train", None)
+        await alice_model.train(
             "ubuntu:tf_2.0_beta",
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
@@ -92,8 +96,9 @@ class TestNormalCases:
             description="woo hoo!",
         )
 
-    def test_model_submit_with_http(self, alice_model, partial_mocked_model):
-        alice_model.train(
+    async def test_model_submit_with_http(self, alice_model, partial_mocked_model):
+        partial_mocked_model().patch("train", None)
+        await alice_model.train(
             "ubuntu:tf_2.0_beta",
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
@@ -118,8 +123,9 @@ class TestNormalCases:
             description="hooray",
         )
 
-    def test_model_submit_with_ssh(self, alice_model, partial_mocked_model):
-        alice_model.train(
+    async def test_model_submit_with_ssh(self, alice_model, partial_mocked_model):
+        partial_mocked_model().patch("train", None)
+        await alice_model.train(
             "ubuntu:tf_2.0_beta",
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
@@ -144,8 +150,11 @@ class TestNormalCases:
             description="la vita è bella",
         )
 
-    def test_model_submit_with_ssh_and_http(self, alice_model, partial_mocked_model):
-        alice_model.train(
+    async def test_model_submit_with_ssh_and_http(
+        self, alice_model, partial_mocked_model
+    ):
+        partial_mocked_model().patch("train", None)
+        await alice_model.train(
             "ubuntu:tf_2.0_beta",
             "storage:///data/set.txt",
             "storage://~/results/result1.txt",
@@ -170,9 +179,10 @@ class TestNormalCases:
             description="la-la-la",
         )
 
-    def test_model_submit_wrong_src(self, alice_model, partial_mocked_model):
+    async def test_model_submit_wrong_src(self, alice_model, partial_mocked_model):
         with pytest.raises(ValueError):
-            alice_model.train(
+            partial_mocked_model().patch("train", None)
+            await alice_model.train(
                 "ubuntu:tf_2.0_beta",
                 "/data/set.txt",
                 "storage://~/results/result1.txt",
@@ -189,9 +199,10 @@ class TestNormalCases:
             )
         assert partial_mocked_model().train.call_count == 0
 
-    def test_model_submit_wrong_dst(self, alice_model, partial_mocked_model):
+    async def test_model_submit_wrong_dst(self, alice_model, partial_mocked_model):
+        partial_mocked_model().patch("train", None)
         with pytest.raises(ValueError):
-            alice_model.train(
+            await alice_model.train(
                 "ubuntu:tf_2.0_beta",
                 "storage://~/data/set.txt",
                 "http://results/result1.txt",

@@ -83,13 +83,15 @@ class ApiClient:
                 sock_connect=timeout.sock_connect,
                 sock_read=timeout.sock_read,
             )
-        self._session_object = session(token=token, timeout=client_timeout)
+        self._token = token
+        self._timeout = client_timeout
+        self._session = None
 
     async def __aenter__(self) -> "ApiClient":
-        self._session = await self._session_object
+        self._session = await session(token=self._token, timeout=self._timeout)
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(self, exc_type, exc, tb):
         await self.close()
 
     @property

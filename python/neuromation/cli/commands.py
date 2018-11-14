@@ -2,6 +2,7 @@ import logging
 import types
 from functools import singledispatch
 from textwrap import dedent
+from typing import Dict
 
 import docopt
 

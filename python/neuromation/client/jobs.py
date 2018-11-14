@@ -6,6 +6,8 @@ from io import BufferedReader
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import urlparse
 
+from async_generator import asynccontextmanager
+
 from neuromation.http.fetch import FetchError
 from neuromation.strings import parse
 
@@ -109,11 +111,9 @@ class JobItem:
             **await self.client._fetch(request=JobStatusRequest(id=self.id)),
         )
 
-    def wait(self, timeout: Optional[float] = None) -> "JobItem":
+    async def wait(self, timeout: Optional[float] = None) -> "JobItem":
         try:
-            return self.client.loop.run_until_complete(
-                asyncio.wait_for(self._call(), timeout=timeout)
-            )
+            return await asyncio.wait_for(self._call(), timeout=timeout)
         except asyncio.TimeoutError:
             raise TimeoutError
 
@@ -260,7 +260,7 @@ class Job(ApiClient):
         # TODO(artyom, 07/16/2018): what are we returning here?
         return True
 
-    @contextmanager
+    @asynccontextmanager
     async def monitor(self, id: str) -> Iterator[BufferedReader]:
         try:
             async with self._fetch(JobMonitorRequest(id=id)) as content:

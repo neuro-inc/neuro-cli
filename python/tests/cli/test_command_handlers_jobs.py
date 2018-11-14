@@ -1,5 +1,7 @@
 # unit tests ensure that handlers properly pass details to the underlying client
 # layer code
+from unittest.mock import MagicMock
+
 import pytest
 
 from neuromation.cli.command_handlers import JobHandlerOperations
@@ -8,15 +10,16 @@ from neuromation.client.jobs import NetworkPortForwarding, Resources
 from neuromation.client.requests import VolumeDescriptionPayload
 
 
+@pytest.mark.asyncio
 class TestJobSubmit:
     @pytest.mark.parametrize(
         "volumes",
         [("storage:///"), (":"), ("::::"), (""), ("storage:///data/:/data/rest:wrong")],
     )
-    def test_failed_volume(self, partial_mocked_job, volumes) -> None:
+    async def test_failed_volume(self, partial_mocked_job, volumes) -> None:
         with pytest.raises(ValueError):
             job = JobHandlerOperations("alice")
-            job.submit(
+            await job.submit(
                 "test-image",
                 "1",
                 "test-gpu",
@@ -33,9 +36,10 @@ class TestJobSubmit:
 
         assert partial_mocked_job().submit.call_count == 0
 
-    def test_job_submit_happy_path(self, partial_mocked_job) -> None:
+    async def test_job_submit_happy_path(self, partial_mocked_job) -> None:
+        partial_mocked_job().patch("submit", None)
         job = JobHandlerOperations("alice")
-        job.submit(
+        await job.submit(
             "test-image",
             "1",
             "test-gpu",
@@ -80,9 +84,11 @@ class TestJobSubmit:
             description="job description",
         )
 
-    def test_job_submit_no_volumes(self, partial_mocked_job) -> None:
+    async def test_job_submit_no_volumes(self, partial_mocked_job) -> None:
+        partial_mocked_job().patch("submit", None)
         job = JobHandlerOperations("alice")
-        job.submit(
+        partial_mocked_job.submit = MagicMock()
+        await job.submit(
             "test-image",
             "1",
             "test-gpu",
