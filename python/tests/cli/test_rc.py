@@ -24,31 +24,54 @@ def test_create(nmrc):
 
 
 class TestFactoryMethods:
-    def test_factory(self, monkeypatch, nmrc):
+    @pytest.fixture
+    def patch_home_for_test(self, monkeypatch, nmrc):
         def home():
             return PosixPath(nmrc.dirpath())
 
         monkeypatch.setattr(Path, "home", home)
+
+    def test_factory(self, patch_home_for_test):
         config: Config = Config(url="http://abc.def", auth="token1")
         rc.ConfigFactory._update_config(url="http://abc.def", auth="token1")
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_url(self, monkeypatch, nmrc):
-        def home():
-            return PosixPath(nmrc.dirpath())
-
-        monkeypatch.setattr(Path, "home", home)
+    def test_factory_update_url(self, patch_home_for_test):
         config: Config = Config(url="http://abc.def", auth="token1")
         rc.ConfigFactory.update_api_url(url="http://abc.def")
         config2: Config = rc.ConfigFactory.load()
         assert config.url == config2.url
 
-    def test_factory_update_id_rsa(self, monkeypatch, nmrc):
-        def home():
-            return PosixPath(nmrc.dirpath())
+    def test_factory_update_url_malformed(self, patch_home_for_test):
+        config: Config = Config(url="http://abc.def", auth="token1")
+        with pytest.raises(ValueError):
+            rc.ConfigFactory.update_api_url(url="ftp://abc.def")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
 
-        monkeypatch.setattr(Path, "home", home)
+    def test_factory_update_url_malformed_trailing_slash(self, patch_home_for_test):
+        config: Config = Config(url="http://abc.def", auth="token1")
+        with pytest.raises(ValueError):
+            rc.ConfigFactory.update_api_url(url="http://abc.def/")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
+    def test_factory_update_url_malformed_with_fragment(self, patch_home_for_test):
+        config: Config = Config(url="http://abc.def", auth="token1")
+        with pytest.raises(ValueError):
+            rc.ConfigFactory.update_api_url(url="http://abc.def?blabla")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
+    def test_factory_update_url_malformed_with_anchor(self, patch_home_for_test):
+        config: Config = Config(url="http://abc.def", auth="token1")
+        with pytest.raises(ValueError):
+            rc.ConfigFactory.update_api_url(url="http://abc.def#ping")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
+    def test_factory_update_id_rsa(self, patch_home_for_test):
         config: Config = Config(
             url=DEFAULTS.url, auth=DEFAULTS.auth, github_rsa_path="~/.ssh/id_rsa"
         )
@@ -56,19 +79,11 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_token_invalid(self, monkeypatch, nmrc):
-        def home():
-            return PosixPath(nmrc.dirpath())
-
-        monkeypatch.setattr(Path, "home", home)
+    def test_factory_update_token_invalid(self, patch_home_for_test):
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token="not-a-token")
 
-    def test_factory_update_token_no_identity(self, monkeypatch, nmrc):
-        def home():
-            return PosixPath(nmrc.dirpath())
-
-        monkeypatch.setattr(Path, "home", home)
+    def test_factory_update_token_no_identity(self, patch_home_for_test):
         jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
         jwt_claims = """eyJub3QtaWRlbnRpdHkiOiJub3QtaWRlbnRpdHkifQ"""
         jwt_sig = """ag9NbxxOvp2ufMCUXk2pU3MMf2zYftXHQdOZDJajlvE"""
