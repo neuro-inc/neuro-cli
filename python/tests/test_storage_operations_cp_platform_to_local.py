@@ -235,7 +235,7 @@ class TestCopyRecursivePlatformToLocal:
         op = CopyOperation.create("alice", "storage", "file", True)
 
         op.copy_file = transfer_mock
-        with pytest.raises(ResourceNotFound, match=r"Source directory not found."):
+        with pytest.raises(FileNotFoundError, match=r"Source file not found."):
             op.copy(
                 urlparse("storage:///platform_existing/abracadabra.txt"),
                 urlparse("/localdir/dir/"),
