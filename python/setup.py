@@ -27,6 +27,7 @@ setup(
         'async_generator==1.9',
         'python-jose==3.0.1',
         'python-dateutil==2.7.5',
+        'keyring>=16.0.2'
     ],
     include_package_data=True,
     description='Neuromation Platform API client',

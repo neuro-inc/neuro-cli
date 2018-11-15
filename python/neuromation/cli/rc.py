@@ -2,6 +2,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, Optional
 
+import keyring
 import yaml
 from jose import JWTError, jwt
 from yarl import URL
@@ -79,9 +80,23 @@ class ConfigFactory:
         return Config(**default)
 
 
+CREDENTIAL_FIELDS = ["auth"]
+CREDENTIAL_SERVICE_NAME = "neuro"
+
+
 def save(path, config: Config) -> Config:
+
+    dict_config = asdict(config)
+    for field in CREDENTIAL_FIELDS:
+        value = dict_config.get(field, None)
+        if value:
+            dict_config.pop(field)
+            keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
+        else:
+            keyring.delete_password(CREDENTIAL_SERVICE_NAME, "field")
+
     with open(path, "w") as file:
-        yaml.dump(asdict(config), file, default_flow_style=False)
+        yaml.dump(dict_config, file, default_flow_style=False)
 
     return config
 
@@ -91,7 +106,15 @@ def load(path) -> Config:
         return create(path, Config())
     except FileExistsError:
         with open(path, "r") as file:
-            return Config(**yaml.load(file))
+            dict_config = yaml.load(file)
+            for field in CREDENTIAL_FIELDS:
+                # Legacy fields from plain file will be supported too
+                value = dict_config.get(
+                    field, keyring.get_password(CREDENTIAL_SERVICE_NAME, field)
+                )
+                if value:
+                    dict_config[field] = value
+            return Config(**dict_config)
 
 
 def create(path, config):
