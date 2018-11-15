@@ -243,23 +243,6 @@ class TestCopyRecursivePlatformToLocal:
             )
         transfer_mock.assert_not_called()
 
-    def test_source_doesnot_exists(
-        self, mocked_store, partial_mocked_store, monkeypatch
-    ):
-        self._structure(mocked_store, monkeypatch)
-        transfer_mock = Mock()
-
-        op = CopyOperation.create("alice", "storage", "file", True)
-        op.copy_file = transfer_mock
-        with pytest.raises(FileNotFoundError, match=r"Source file not found."):
-            op.copy(
-                urlparse("storage:///platform_existing/abracadabra.txt"),
-                urlparse("file:///localdir_non_existing/dir/"),
-                partial_mocked_store,
-            )
-
-        transfer_mock.assert_not_called()
-
     def test_target_is_file(self, mocked_store, partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)
         transfer_mock = Mock()
