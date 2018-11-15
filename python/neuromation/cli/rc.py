@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import yaml
-import yarl
 from jose import JWTError, jwt
 from yarl import URL
 
@@ -50,7 +49,7 @@ class ConfigFactory:
         if url != "" and url[-1] == "/":
             raise ValueError("URL should not finish with trailing / symbol.")
 
-        parsed_url = yarl.URL(url)
+        parsed_url = URL(url)
 
         if parsed_url.scheme not in ["http", "https"]:
             raise ValueError("Valid scheme options are http and https.")
