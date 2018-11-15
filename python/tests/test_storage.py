@@ -216,6 +216,21 @@ def test_rm(storage):
 
 @patch(
     "aiohttp.ClientSession.request",
+    new=mocked_async_context_manager(JsonResponse(json={})),
+)
+def test_mv(storage):
+    assert storage.mv(src_path="foo", dst_path="bar")
+    aiohttp.ClientSession.request.assert_called_with(
+        method="POST",
+        json=None,
+        url="http://127.0.0.1/storage/foo",
+        params={"op": "RENAME", "destination": "bar"},
+        data=None,
+    )
+
+
+@patch(
+    "aiohttp.ClientSession.request",
     new=mocked_async_context_manager(PlainResponse(text="")),
 )
 def test_create(storage):

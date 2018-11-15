@@ -62,13 +62,13 @@ class TestNormalCases:
 class TestInvalidScenarios:
     def test_local(self, alice_mkdir, partial_mocked_store):
         with pytest.raises(
-            ValueError, match=r"Path should be " r"targeting platform storage."
+            ValueError, match=r"Path should be targeting platform storage."
         ):
             alice_mkdir.mkdir("/home/dir", partial_mocked_store)
 
     def test_http(self, alice_mkdir, partial_mocked_store):
         with pytest.raises(
-            ValueError, match=r"Path should be " r"targeting platform storage."
+            ValueError, match=r"Path should be targeting platform storage."
         ):
             alice_mkdir.mkdir("http:///home/dir", partial_mocked_store)
 
