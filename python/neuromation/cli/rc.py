@@ -11,7 +11,7 @@ from yarl import URL
 @dataclass
 class Config:
     url: str = "http://platform.dev.neuromation.io/api/v1"
-    auth: str = ""
+    auth: str = None
     github_rsa_path: str = ""
 
     def docker_registry_url(self) -> str:
@@ -44,6 +44,10 @@ class ConfigFactory:
             ) from e
 
         return cls._update_config(auth=token)
+
+    @classmethod
+    def forget_auth_token(cls) -> Config:
+        return cls._update_config(auth=None)
 
     @classmethod
     def update_api_url(cls, url: str) -> Config:
@@ -87,15 +91,14 @@ CREDENTIAL_SERVICE_NAME = "neuro"
 def save(path, config: Config) -> Config:
     dict_config = asdict(config)
     for field in CREDENTIAL_FIELDS:
-        value = dict_config.get(field, None)
-        if value is not None:
-            dict_config.pop(field)
-            keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
-        else:
+        value = dict_config.pop(field, None)
+        if value is None:
             try:
-                keyring.delete_password(CREDENTIAL_SERVICE_NAME, "field")
+                keyring.delete_password(CREDENTIAL_SERVICE_NAME, field)
             except keyring.errors.PasswordDeleteError:
                 pass
+        else:
+            keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
 
     with open(path, "w") as file:
         yaml.dump(dict_config, file, default_flow_style=False)
@@ -116,8 +119,6 @@ def load(path) -> Config:
                 if value is None:
                     try:
                         value = keyring.get_password(CREDENTIAL_SERVICE_NAME, field)
-                        if value is None:
-                            value = ""
                         dict_config[field] = value
                     except Exception:
                         # Just ignore errors

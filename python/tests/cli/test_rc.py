@@ -6,7 +6,7 @@ from neuromation.cli import rc
 from neuromation.cli.rc import Config, ConfigFactory
 
 
-DEFAULTS = rc.Config(url="http://platform.dev.neuromation.io/api/v1", auth="")
+DEFAULTS = rc.Config(url="http://platform.dev.neuromation.io/api/v1")
 
 
 @pytest.fixture
@@ -88,6 +88,26 @@ class TestFactoryMethods:
         no_identity = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token=no_identity)
+
+    def test_factory_forget_token(self, monkeypatch, nmrc):
+        def home():
+            return PosixPath(nmrc.dirpath())
+
+        monkeypatch.setattr(Path, "home", home)
+        jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
+        jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
+        jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
+        test_token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
+        config: Config = Config(
+            url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
+        )
+        rc.ConfigFactory.update_auth_token(test_token)
+        config2: Config = rc.ConfigFactory.load()
+        assert config == config2
+        rc.ConfigFactory.forget_auth_token()
+        config3: Config = rc.ConfigFactory.load()
+        default_config: config = Config()
+        assert config3 == default_config
 
 
 def test_docker_url():
