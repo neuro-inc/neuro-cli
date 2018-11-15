@@ -1,11 +1,12 @@
 import os
+from pathlib import PurePath
 from typing import Callable, Dict, List
 from unittest.mock import Mock
 from urllib.parse import urlparse
 
 import pytest
 
-from neuromation.cli.command_handlers import CopyOperation
+from neuromation.cli.command_handlers import CopyOperation, NonRecursivePlatformToLocal
 from neuromation.client import FileStatus, ResourceNotFound
 
 
@@ -49,10 +50,40 @@ def _platform_ls(dirs: List) -> Callable:
     return ls
 
 
+def _platform_stat(dirs: List) -> Callable:
+    def stat(path: str):
+        try:
+            item = next(v for v in dirs if v["path"] == path)
+            return FileStatus(
+                path=item["path"],
+                size=0,
+                type="DIRECTORY",
+                modification_time=0,
+                permission="",
+            )
+        except StopIteration:
+            path_ = PurePath(path).parent
+            name_ = PurePath(path).name
+            try:
+                item = next(v for v in dirs if v["path"] == str(path_))
+                item = next(v for v in item.get("files") if v.path == name_)
+                return item
+            except StopIteration:
+                raise ResourceNotFound()
+
+    return stat
+
+
 local_tree = {
     "c": {
         "localdir": {
-            "c": {"dir": {"c": {}, "_dir": True}, "abc.txt": {"_dir": False}},
+            "c": {
+                "dir": {
+                    "c": {"platform_existing": {"c": {}, "_dir": True}},
+                    "_dir": True,
+                },
+                "abc.txt": {"_dir": False},
+            },
             "_dir": True,
         }
     },
@@ -93,11 +124,12 @@ platform_tree = [
 
 
 class TestCopyRecursivePlatformToLocal:
-    def _structure(self, mocked_store, monkeypatch):
+    def _structure(self, mocked_store, monkeypatch, mkdir_mock=Mock()):
         monkeypatch.setattr(os.path, "exists", _os_exists(local_tree))
         monkeypatch.setattr(os.path, "isdir", _os_isdir(local_tree))
-        monkeypatch.setattr(os, "mkdir", Mock())
+        monkeypatch.setattr(os, "mkdir", mkdir_mock)
         mocked_store.ls = _platform_ls(platform_tree)
+        mocked_store.stats = _platform_stat(platform_tree)
 
     def test_source_file(self, mocked_store, partial_mocked_store, monkeypatch):
         # TODO should fallback to file copy
@@ -105,15 +137,14 @@ class TestCopyRecursivePlatformToLocal:
         transfer_mock = Mock()
 
         op = CopyOperation.create("alice", "storage", "file", True)
-        op.copy_file = transfer_mock
-        with pytest.raises(ValueError, match=r"Source directory not found"):
-            op.copy(
-                urlparse("storage:///platform_existing/my_file.txt"),
-                urlparse("file:///localdir/dir/"),
-                partial_mocked_store,
-            )
+        NonRecursivePlatformToLocal.copy_file = transfer_mock
+        op.copy(
+            urlparse("storage:///platform_existing/my_file.txt"),
+            urlparse("file:///localdir/dir/"),
+            partial_mocked_store,
+        )
 
-        transfer_mock.assert_not_called()
+        assert transfer_mock.call_count == 1
 
     def test_ok(self, mocked_store, partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)
@@ -178,6 +209,22 @@ class TestCopyRecursivePlatformToLocal:
 
         transfer_mock.assert_not_called()
 
+    def test_source_doesnot_exists(
+        self, mocked_store, partial_mocked_store, monkeypatch
+    ):
+        self._structure(mocked_store, monkeypatch)
+        transfer_mock = Mock()
+        op = CopyOperation.create("alice", "storage", "file", True)
+
+        op.copy_file = transfer_mock
+        with pytest.raises(ResourceNotFound, match=r"Source directory not found."):
+            op.copy(
+                urlparse("storage:///platform_existing/abracadabra.txt"),
+                urlparse("/localdir/dir/"),
+                partial_mocked_store,
+            )
+        transfer_mock.assert_not_called()
+
     def test_target_is_file(self, mocked_store, partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)
         transfer_mock = Mock()
@@ -200,6 +247,7 @@ class TestCopyNonRecursivePlatformToLocal:
         monkeypatch.setattr(os.path, "isdir", _os_isdir(local_tree))
         monkeypatch.setattr(os, "mkdir", Mock())
         mocked_store.ls = _platform_ls(platform_tree)
+        mocked_store.stats = _platform_stat(platform_tree)
 
     def test_source_dir(self, mocked_store, partial_mocked_store, monkeypatch):
         self._structure(mocked_store, monkeypatch)
@@ -266,9 +314,9 @@ class TestCopyNonRecursivePlatformToLocal:
         self._structure(mocked_store, monkeypatch)
         transfer_mock = Mock()
 
-        op = CopyOperation.create("alice", "storage", "file", True)
+        op = CopyOperation.create("alice", "storage", "file", False)
         op.copy_file = transfer_mock
-        with pytest.raises(FileNotFoundError, match=r"Target should exist"):
+        with pytest.raises(NotADirectoryError, match=r"Target should exist"):
             op.copy(
                 urlparse("storage:///platform_existing/my_file.txt"),
                 urlparse("file:///localdir_non_existing/dir/"),

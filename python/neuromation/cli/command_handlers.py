@@ -58,9 +58,6 @@ class PlatformStorageOperation:
         posix_path = PurePosixPath(PLATFORM_DELIMITER, target_principal, target_path)
         return posix_path
 
-    def _get_parent(self, path: PosixPath) -> PosixPath:
-        return path.parent
-
     def render_uri_path_with_principal(self, path: str):
         # Special case that shall be handled here, when path is '//'
         if path == "storage://":
@@ -119,6 +116,16 @@ class CopyOperation(PlatformStorageOperation):
         super().__init__(principal)
         self.progress = progress
 
+    def _file_stat_on_platform(
+        self, path: PosixPath, storage: Callable
+    ) -> Optional[FileStatus]:
+        try:
+            with storage() as s:
+                file_status = s.stats(path=str(path))
+                return file_status
+        except ResourceNotFound:
+            return None
+
     @abc.abstractmethod
     def _copy(
         self, src: ParseResult, dst: ParseResult, storage: Callable
@@ -129,10 +136,6 @@ class CopyOperation(PlatformStorageOperation):
         log.debug(f"Copy {src} to {dst}.")
         copy_result = self._copy(src, dst, storage)
         return copy_result
-
-    def _ls(self, path: str, storage: Callable) -> List[FileStatus]:
-        ls = PlatformListDirOperation(self.principal)
-        return ls.ls(f"storage:/{path}", storage)
 
     @classmethod
     def create(
@@ -205,29 +208,21 @@ class NonRecursivePlatformToLocal(CopyOperation):
             if dst.path.endswith(SYSTEM_PATH_DELIMITER):
                 raise NotADirectoryError(
                     "Target should exist. "
-                    "Please create directory, "
-                    "or point to existing file."
+                    "Please create directory, or point to existing file."
                 )
 
             try_dir = dirname(dst.path)
             if try_dir != "" and not os.path.isdir(try_dir):
                 raise FileNotFoundError(
                     "Target should exist. "
-                    "Please create directory, "
-                    "or point to existing file."
+                    "Please create directory, or point to existing file."
                 )
             dst_path = Path(dst.path)
 
         # check remote
-        files = self._ls(str(platform_file_name.parent), storage)
-        try:
-            file_info = next(
-                file
-                for file in files
-                if file.path == platform_file_name.name and file.type == "FILE"
-            )
-        except StopIteration as e:
-            raise ResourceNotFound(f"Source file {src.path} not found.") from e
+        file_info = self._file_stat_on_platform(platform_file_name, storage)
+        if not file_info or file_info.type != "FILE":
+            raise ResourceNotFound(f"Source file {src.path} not found.")
 
         copy_file = self.copy_file(
             str(platform_file_name), str(dst_path), file_info, storage
@@ -254,34 +249,28 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
             raise FileNotFoundError(
-                "Target should exist. "
-                "Please create target directory "
-                "and try again."
+                "Target should exist. " "Please create target directory and try again."
             )
 
         if not os.path.isdir(dst.path):
             raise NotADirectoryError(
                 "Target should be directory. "
-                "Please correct your "
-                "command line arguments."
+                "Please correct your command line arguments."
             )
 
         # Test that source directory exists.
         platform_file_name = self._render_platform_path_with_principal(src)
-        platform_file_path = self._get_parent(platform_file_name)
         # TODO here we should have work around when someone
         # tries to copy full directory of a person
-        if str(platform_file_path) != "/":
-            files = self._ls(str(platform_file_path), storage)
-            try:
-                next(
-                    file
-                    for file in files
-                    if file.path == str(platform_file_name.name)
-                    and file.type == "DIRECTORY"
+        if str(platform_file_name) != "/":
+            files = self._file_stat_on_platform(platform_file_name, storage)
+            if not files:
+                raise ResourceNotFound("Source directory not found.")
+            if files.type == "FILE":
+                copy_operation = NonRecursivePlatformToLocal(
+                    self.principal, self.progress
                 )
-            except StopIteration as e:
-                raise ResourceNotFound("Source directory not found.") from e
+                return copy_operation.copy(src, dst, storage)
 
         self._copy_obj(platform_file_name, Path(dst.path), storage)
 
