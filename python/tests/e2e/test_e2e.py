@@ -19,10 +19,6 @@ FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
 
-UBUNTU_IMAGE_NAME = "ubuntu:latest"
-
-format_list = "{type:<15}{size:<15,}{name:<}".format
-
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
