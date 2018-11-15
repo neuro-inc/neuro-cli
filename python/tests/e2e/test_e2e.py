@@ -1,6 +1,7 @@
 import asyncio
 import platform
 import re
+from math import ceil
 from os.path import join
 from time import sleep, time
 from uuid import uuid4 as uuid
@@ -10,7 +11,6 @@ import pytest
 from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list
-from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 
 
 BLOCK_SIZE_MB = 16
@@ -59,15 +59,6 @@ def data(tmpdir_factory):
     return loop.run_until_complete(
         generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
     )
-
-
-def hash_hex(file):
-    _hash = sha1()
-    with open(file, "rb") as f:
-        for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
-            _hash.update(block)
-
-    return _hash.hexdigest()
 
 
 @pytest.mark.e2e
