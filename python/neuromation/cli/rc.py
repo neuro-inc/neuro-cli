@@ -120,9 +120,8 @@ def load(path) -> Config:
                     try:
                         value = keyring.get_password(CREDENTIAL_SERVICE_NAME, field)
                         dict_config[field] = value
-                    except Exception:
-                        # Just ignore errors
-                        pass
+                    except Exception:  # pragma: no cover
+                        pass  # pragma: no cover
             return Config(**dict_config)
 
 
