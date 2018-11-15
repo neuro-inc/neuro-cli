@@ -10,7 +10,7 @@ DEFAULTS = rc.Config(url="http://platform.dev.neuromation.io/api/v1", auth="")
 
 
 @pytest.fixture
-def nmrc(tmpdir):
+def nmrc(tmpdir, setup_local_keyring):
     return tmpdir.join(".nmrc")
 
 
@@ -18,9 +18,7 @@ def test_create(nmrc):
     conf = rc.create(nmrc, Config())
     assert conf == DEFAULTS
     assert nmrc.check()
-    assert (
-        nmrc.read() == f"auth: ''\n" f"github_rsa_path: ''\n" f"url: {DEFAULTS.url}\n"
-    )
+    assert nmrc.read() == f"github_rsa_path: ''\n" f"url: {DEFAULTS.url}\n"
 
 
 class TestFactoryMethods:

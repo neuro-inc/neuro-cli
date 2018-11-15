@@ -85,15 +85,17 @@ CREDENTIAL_SERVICE_NAME = "neuro"
 
 
 def save(path, config: Config) -> Config:
-
     dict_config = asdict(config)
     for field in CREDENTIAL_FIELDS:
         value = dict_config.get(field, None)
-        if value:
+        if value is not None:
             dict_config.pop(field)
             keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
         else:
-            keyring.delete_password(CREDENTIAL_SERVICE_NAME, "field")
+            try:
+                keyring.delete_password(CREDENTIAL_SERVICE_NAME, "field")
+            except keyring.errors.PasswordDeleteError:
+                pass
 
     with open(path, "w") as file:
         yaml.dump(dict_config, file, default_flow_style=False)
@@ -108,12 +110,18 @@ def load(path) -> Config:
         with open(path, "r") as file:
             dict_config = yaml.load(file)
             for field in CREDENTIAL_FIELDS:
-                # Legacy fields from plain file will be supported too
-                value = dict_config.get(
-                    field, keyring.get_password(CREDENTIAL_SERVICE_NAME, field)
-                )
-                if value:
-                    dict_config[field] = value
+                # Legacy fields from plain file will be supported too,
+                # it`s usable for tests
+                value = dict_config.get(field, None)
+                if value is None:
+                    try:
+                        value = keyring.get_password(CREDENTIAL_SERVICE_NAME, field)
+                        if value is None:
+                            value = ""
+                        dict_config[field] = value
+                    except Exception:
+                        # Just ignore errors
+                        pass
             return Config(**dict_config)
 
 
