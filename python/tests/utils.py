@@ -2,6 +2,8 @@ import json
 from io import BytesIO
 from unittest.mock import Mock
 
+import aiohttp
+
 
 TRAIN_RESPONSE = {"status": "PENDING", "job_id": "iddqd"}
 
@@ -10,7 +12,7 @@ INFER_RESPONSE = {"status": "PENDING", "job_id": "iddqd"}
 
 
 class Response:
-    def __init__(self, payload, *, error=None):
+    def __init__(self, payload, *, error=None, status=200):
         if type(payload) in [dict, list]:
             self.content_type = "application/json"
             self._text = json.dumps(payload)
@@ -21,8 +23,11 @@ class Response:
         else:
             raise NotImplementedError(f"Unsupported type {type(payload)}")
         self._error = error
+        self.status = status
 
     async def json(self):
+        if self.content_type != "application/json":
+            raise aiohttp.ContentTypeError(None, None)
         return self._json
 
     async def text(self):
@@ -44,13 +49,17 @@ class PlainResponse(Response):
 
 
 class BinaryResponse(Response):
-    def __init__(self, data, *, error=None):
+    def __init__(self, data, *, error=None, status=200):
         self._stream = BytesIO(data)
         self.content_type = "application/octet-stream"
         self._error = error
         self.content = self
+        self.status = status
 
     async def read(self):
+        return self._stream.read()
+
+    async def text(self):
         return self._stream.read()
 
     async def readany(self):
