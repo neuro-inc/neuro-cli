@@ -233,7 +233,9 @@ def test_e2e(data, run, tmpdir):
     # Confirm file has been uploaded
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
-    assert "file           16,777,216     foo" in captured_output_list
+    expected_line = format_list(type="file", size=16777216, name="foo")
+    assert expected_line in captured_output_list
+
     assert not captured.err
 
     # Download into local file and confirm checksum
@@ -259,7 +261,8 @@ def test_e2e(data, run, tmpdir):
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
-    assert "file           16,777,216     bar" in captured_output_list
+    expected_line = format_list(type="file", size=16777216, name="bar")
+    assert expected_line in captured_output_list
     assert "foo" not in captured_output_list
 
     # Rename directory on the storage

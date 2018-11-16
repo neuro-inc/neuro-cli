@@ -15,8 +15,8 @@ from neuromation.cli.command_handlers import (
     ModelHandlerOperations,
     PlatformListDirOperation,
     PlatformMakeDirOperation,
-    PlatformMvOperation,
     PlatformRemoveOperation,
+    PlatformRenameOperation,
     PlatformSharingOperations,
 )
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
@@ -333,11 +333,24 @@ Commands:
             Usage:
                 neuro store mv SOURCE DESTINATION
 
-            Move or rename files and directories
+            Move or rename files and directories. SOURCE must contain path to the
+            file or directory existing on the storage, and DESCRIPTION must contain
+            the full path to the target file or directory.
+
+
+            Example:
+
+            # move or rename remote file
+            neuro store mv storage:///foo.txt storage:///bar.txt
+            neuro store mv storage:///foo.txt storage://~/bar/baz/foo.txt
+
+            # move or rename remote directory
+            neuro store mv storage:///foo/ storage:///bar/
+            neuro store mv storage:///foo/ storage:///bar/baz/foo/
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            operation = PlatformMvOperation(platform_user_name)
+            operation = PlatformRenameOperation(platform_user_name)
             return operation.mv(source, destination, storage)
 
         return locals()

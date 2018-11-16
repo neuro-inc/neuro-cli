@@ -3,13 +3,13 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 
-from neuromation.cli.command_handlers import PlatformMvOperation
+from neuromation.cli.command_handlers import PlatformRenameOperation
 from tests.utils import JsonResponse, mocked_async_context_manager
 
 
 @pytest.fixture
 def alice_op():
-    return PlatformMvOperation("alice")
+    return PlatformRenameOperation("alice")
 
 
 class TestNormalCases:
