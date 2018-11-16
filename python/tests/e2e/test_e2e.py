@@ -249,7 +249,9 @@ def test_e2e(data, run, tmpdir):
     assert hash_hex(_local_file) == checksum
 
     # Rename file on the storage
-    _, captured = run(["store", "mv", f"storage://{_path}/foo", f"storage://{_path}/bar"])
+    _, captured = run(
+        ["store", "mv", f"storage://{_path}/foo", f"storage://{_path}/bar"]
+    )
     assert not captured.err
     assert (_path + "/bar") in captured.out
 
