@@ -3,7 +3,7 @@ from textwrap import dedent
 from neuromation.cli.main import neuro
 
 
-RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: abc"
+RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"
 
 
 def test_help(run):
