@@ -248,10 +248,10 @@ Commands:
                 neuro store ls [PATH]
 
             List directory contents
-            By default PATH is equal user`s home dir (storage://{username}/)
+            By default PATH is equal user`s home dir (storage:)
             """
             if path is None:
-                path = "storage:///"
+                path = "storage:"
 
             format = "{type:<15}{size:<15,}{name:<}".format
 
