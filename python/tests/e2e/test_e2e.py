@@ -1,5 +1,4 @@
 import asyncio
-import os
 import platform
 import re
 from hashlib import sha1
