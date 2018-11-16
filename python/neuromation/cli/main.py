@@ -89,7 +89,7 @@ Usage:
   neuro [options] COMMAND
 
 Options:
-  -u, --url URL         Override API URL [default: {url}]
+  -u, --url URL         Override API URL [default: {api_url}]
   -t, --token TOKEN     API authentication token (not implemented)
   --verbose             Enable verbose logging
   -v, --version         Print version and exit
@@ -235,7 +235,7 @@ Commands:
             Example:
             neuro store rm storage:///foo/bar/
             neuro store rm storage:/foo/bar/
-            neuro store rm storage://alice/foo/bar/
+            neuro store rm storage://{username}/foo/bar/
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
@@ -245,10 +245,14 @@ Commands:
         def ls(path):
             """
             Usage:
-                neuro store ls PATH
+                neuro store ls [PATH]
 
             List directory contents
+            By default PATH is equal user`s home dir (storage:)
             """
+            if path is None:
+                path = "storage:"
+
             format = "{type:<15}{size:<15,}{name:<}".format
 
             config = rc.ConfigFactory.load()
@@ -778,10 +782,15 @@ def main():
         sys.exit(0)
 
     config = rc.ConfigFactory.load()
-    neuro.__doc__ = neuro.__doc__.format(url=config.url)
+    doc_username = config.get_platform_user_name()
+    if not doc_username:
+        doc_username = "username"
+    format_spec = {"api_url": config.url, "username": doc_username}
 
     try:
-        res = dispatch(target=neuro, tail=sys.argv[1:], token=config.auth)
+        res = dispatch(
+            target=neuro, tail=sys.argv[1:], format_spec=format_spec, token=config.auth
+        )
         if res:
             print(res)
 
