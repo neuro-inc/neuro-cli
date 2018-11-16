@@ -10,6 +10,8 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 import dateutil.parser
+import docker
+from docker.errors import APIError
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
@@ -751,3 +753,52 @@ class ModelHandlerOperations(JobHandlerOperations):
         # start ssh shell session
         self._connect_ssh(job_status, jump_host_rsa, container_user, container_key_path)
         return None
+
+
+class DockerHandler(PlatformStorageOperation):
+    def __init__(self, principal: str) -> None:
+        super().__init__(principal)
+        self._client = docker.from_env(timeout=30)
+
+    def _is_docker_available(self) -> bool:
+        try:
+            self._client.ping()
+            return True
+        except APIError:
+            return False
+
+    def login(self, username: str, password: str, registry: str) -> None:
+        if self._is_docker_available():
+            try:
+                self._client.login(
+                    username=username, password=password, registry=registry, reauth=True
+                )
+            except docker.errors.APIError as e:
+                raise ValueError(
+                    f"Failed to updated docker auth details. Error {e.explanation}"
+                ) from e
+
+    def push(self, registry: str, image_name: str) -> str:
+        if self._is_docker_available():
+            try:
+                container_image = self._client.images.get(image_name)
+                repository_url = f"{registry}/{self.principal}/{image_name}"
+                container_image.tag(repository_url, force=True)
+                self._client.images.push(repository_url)
+                return repository_url
+            except docker.errors.APIError as e:
+                raise ValueError(
+                    f"Cannot push container image to registry. Error {e.explanation}"
+                ) from e
+
+    def pull(self, registry: str, image_name: str) -> str:
+        if self._is_docker_available():
+            try:
+                # TODO consider here downloading other user data
+                repository_url = f"{registry}/{self.principal}/{image_name}"
+                self._client.images.pull(repository_url)
+                return repository_url
+            except docker.errors.APIError as e:
+                raise ValueError(
+                    f"Cannot pull container image from registry. Error {e.explanation}"
+                ) from e

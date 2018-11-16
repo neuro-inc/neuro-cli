@@ -1,6 +1,5 @@
 import logging
 import os
-import subprocess
 import sys
 from functools import partial
 from pathlib import Path
@@ -11,6 +10,7 @@ import aiohttp
 import neuromation
 from neuromation.cli.command_handlers import (
     CopyOperation,
+    DockerHandler,
     JobHandlerOperations,
     ModelHandlerOperations,
     PlatformListDirOperation,
@@ -61,16 +61,6 @@ def setup_console_handler(handler, verbose, noansi=False):
         loglevel = logging.INFO
 
     handler.setLevel(loglevel)
-
-
-def check_docker_installed():
-    try:
-        subprocess.run(
-            ["docker"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        return True
-    except subprocess.CalledProcessError as e:
-        return False
 
 
 @command
@@ -127,31 +117,11 @@ Commands:
 
         def update_docker_config(config: rc.Config) -> None:
             docker_registry_url = config.docker_registry_url()
-
-            if not check_docker_installed():
-                return
-
-            try:
-                if config.auth is None:
-                    subprocess.run(
-                        ["docker", "logout", docker_registry_url], check=True
-                    )
-                else:
-                    subprocess.run(
-                        [
-                            "docker",
-                            "login",
-                            "-p",
-                            config.auth,
-                            "-u",
-                            "token",
-                            docker_registry_url,
-                        ],
-                        check=True,
-                    )
-            except subprocess.CalledProcessError as e:
-                raise ValueError("Failed to updated docker auth details.")
-            return
+            platform_user_name = config.get_platform_user_name()
+            # TODO Add logout
+            DockerHandler(platform_user_name).login(
+                "token", config.auth, docker_registry_url
+            )
 
         @command
         def url(url):
@@ -691,26 +661,10 @@ Commands:
 
             Push an image to platform registry
             """
-            _check_docker_client_available()
-
-            target_image_name = _get_image_platform_full_name(image_name)
-            # Tag first, as otherwise it would fail
-            try:
-                subprocess.run(
-                    ["docker", "tag", image_name, target_image_name], check=True
-                )
-            except subprocess.CalledProcessError as e:
-                raise ValueError(f"Docker tag failed. " f"Error code {e.returncode}")
-
-            # PUSH Image to remote registry
-            try:
-                subprocess.run(["docker", "push", target_image_name], check=True)
-            except subprocess.CalledProcessError as e:
-                raise ValueError(
-                    f"Docker pull failed. " f"Error details {e.returncode}"
-                )
-
-            return target_image_name
+            config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            registry_url = config.docker_registry_url()
+            return DockerHandler(platform_user_name).push(registry_url, image_name)
 
         @command
         def pull(image_name):
@@ -720,17 +674,10 @@ Commands:
 
             Pull an image from platform registry
             """
-            _check_docker_client_available()
-
-            target_image_name = _get_image_platform_full_name(image_name)
-            try:
-                subprocess.run(["docker", "pull", target_image_name], check=True)
-            except subprocess.CalledProcessError as e:
-                raise ValueError(f"Docker pull failed. " f"Error code {e.returncode}")
-
-        def _check_docker_client_available():
-            if not check_docker_installed():
-                raise OSError("Docker client is not installed. " "Install it first.")
+            config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            registry_url = config.docker_registry_url()
+            return DockerHandler(platform_user_name).pull(registry_url, image_name)
 
         return locals()
 
