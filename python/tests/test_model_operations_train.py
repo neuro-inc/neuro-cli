@@ -26,6 +26,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=None,
+            description="test model",
         )
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
@@ -34,7 +35,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
-            description=None,
+            description="test model",
         )
 
     def test_model_submit_with_gpu_model(self, alice_model, partial_mocked_model):
@@ -51,6 +52,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=None,
+            description="blah blah blah",
         )
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
@@ -61,7 +63,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
-            description=None,
+            description="blah blah blah",
         )
 
     def test_model_submit_no_cmd(self, alice_model, partial_mocked_model):
@@ -78,6 +80,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=None,
+            description="woo hoo!",
         )
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
@@ -86,7 +89,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
-            description=None,
+            description="woo hoo!",
         )
 
     def test_model_submit_with_http(self, alice_model, partial_mocked_model):
@@ -103,6 +106,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=8888,
             ssh=None,
+            description="hooray",
         )
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
@@ -111,7 +115,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"http": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
-            description=None,
+            description="hooray",
         )
 
     def test_model_submit_with_ssh(self, alice_model, partial_mocked_model):
@@ -128,6 +132,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=8888,
+            description="la vita è bella",
         )
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
@@ -136,7 +141,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"ssh": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
-            description=None,
+            description="la vita è bella",
         )
 
     def test_model_submit_with_ssh_and_http(self, alice_model, partial_mocked_model):
@@ -153,6 +158,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=7878,
             ssh=8888,
+            description="la-la-la",
         )
         partial_mocked_model().train.assert_called_once()
         partial_mocked_model().train.assert_called_with(
@@ -161,7 +167,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"ssh": 8888, "http": 7878}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
-            description=None,
+            description="la-la-la",
         )
 
     def test_model_submit_wrong_src(self, alice_model, partial_mocked_model):
@@ -179,6 +185,7 @@ class TestNormalCases:
                 partial_mocked_model,
                 http=None,
                 ssh=None,
+                description="la-la-la",
             )
         assert partial_mocked_model().train.call_count == 0
 
@@ -197,5 +204,6 @@ class TestNormalCases:
                 partial_mocked_model,
                 http=None,
                 ssh=None,
+                description="la-la-la",
             )
         assert partial_mocked_model().train.call_count == 0

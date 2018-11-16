@@ -28,6 +28,7 @@ class TestJobSubmit:
                 "25",
                 [volumes],
                 partial_mocked_job,
+                description="job description",
             )
 
         assert partial_mocked_job().submit.call_count == 0
@@ -50,6 +51,7 @@ class TestJobSubmit:
                 "storage://bob/data1:/cob/data1:rw",
             ],
             partial_mocked_job,
+            description="job description",
         )
 
         partial_mocked_job().submit.assert_called_once()
@@ -75,7 +77,7 @@ class TestJobSubmit:
                     read_only=False,
                 ),
             ],
-            description=None,
+            description="job description",
         )
 
     def test_job_submit_no_volumes(self, partial_mocked_job) -> None:
@@ -92,6 +94,7 @@ class TestJobSubmit:
             "25",
             [],
             partial_mocked_job,
+            description="job description",
         )
 
         partial_mocked_job().submit.assert_called_once()
@@ -101,5 +104,5 @@ class TestJobSubmit:
             network=NetworkPortForwarding({"http": 8183, "ssh": 25}),
             resources=Resources.create("1.2", "1", "test-gpu", "1G", "False"),
             volumes=None,
-            description=None,
+            description="job description",
         )

@@ -152,6 +152,40 @@ def test_ls(storage):
 
 @patch(
     "aiohttp.ClientSession.request",
+    new=mocked_async_context_manager(
+        JsonResponse(
+            {
+                "FileStatus": {
+                    "path": "/home/dir",
+                    "length": 1024,
+                    "modificationTime": 1540809272,
+                    "permission": "read",
+                    "type": "FILE",
+                }
+            }
+        )
+    ),
+)
+def test_stats(storage):
+    assert storage.stats(path="/home/dir") == client.FileStatus(
+        path="/home/dir",
+        size=1024,
+        type="FILE",
+        modification_time=1540809272,
+        permission="read",
+    )
+
+    aiohttp.ClientSession.request.assert_called_with(
+        method="GET",
+        url="http://127.0.0.1/storage/home/dir",
+        params="GETFILESTATUS",
+        data=None,
+        json=None,
+    )
+
+
+@patch(
+    "aiohttp.ClientSession.request",
     new=mocked_async_context_manager(PlainResponse(text="")),
 )
 def test_mkdirs(storage):

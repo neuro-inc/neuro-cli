@@ -7,6 +7,7 @@ import pytest
 from neuromation.client.client import ApiClient, TimeoutSettings
 from neuromation.client.requests import build
 from neuromation.http import FetchError, JsonRequest, fetch, session
+from tests.utils import BinaryResponse
 from utils import JsonResponse, mocked_async_context_manager
 
 
@@ -143,6 +144,52 @@ def test_fetch(loop):
                 url="http://foo",
             )
         )
+
+
+@patch(
+    "aiohttp.ClientSession.request",
+    new=mocked_async_context_manager(
+        BinaryResponse(data=b"bla-bla, non-empty response")
+    ),
+)
+def test_fetch_non_empty_binary_response_as_json(loop):
+    _session = loop.run_until_complete(session())
+    with pytest.raises(aiohttp.ContentTypeError):
+        loop.run_until_complete(
+            fetch(
+                JsonRequest(
+                    method="GET", params=None, url="/foo", data=None, json=None
+                ),
+                session=_session,
+                url="http://foo",
+            )
+        )
+
+
+@patch(
+    "aiohttp.ClientSession.request",
+    new=mocked_async_context_manager(BinaryResponse(data=None, status=204)),
+)
+def test_fetch_empty_binary_response_as_json(loop):
+    _session = loop.run_until_complete(session())
+    method = "GET"
+    params = {"a": "A", "b": "B"}
+    url = "/foo"
+    json = {"x": "X", "y": "Y"}
+    loop.run_until_complete(
+        fetch(
+            JsonRequest(method=method, params=params, url=url, data=None, json=json),
+            session=_session,
+            url="http://foo",
+        )
+    )
+    aiohttp.ClientSession.request.assert_called_with(
+        method=method,
+        json=json,
+        params={"a": "A", "b": "B"},
+        url="http://foo" + url,
+        data=None,
+    )
 
 
 def test_unknown_request_type():

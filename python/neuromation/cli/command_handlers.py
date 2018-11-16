@@ -13,7 +13,7 @@ import dateutil.parser
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.client import FileStatus, IllegalArgumentError, Image, ResourceNotFound
+from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.client.requests import VolumeDescriptionPayload
 from neuromation.http import BadRequestError
@@ -57,9 +57,6 @@ class PlatformStorageOperation:
         target_principal = self._get_principal(path)
         posix_path = PurePosixPath(PLATFORM_DELIMITER, target_principal, target_path)
         return posix_path
-
-    def _get_parent(self, path: PosixPath) -> PosixPath:
-        return path.parent
 
     def render_uri_path_with_principal(self, path: str):
         # Special case that shall be handled here, when path is '//'
@@ -119,6 +116,16 @@ class CopyOperation(PlatformStorageOperation):
         super().__init__(principal)
         self.progress = progress
 
+    def _file_stat_on_platform(
+        self, path: PosixPath, storage: Callable
+    ) -> Optional[FileStatus]:
+        try:
+            with storage() as s:
+                file_status = s.stats(path=str(path))
+                return file_status
+        except ResourceNotFound:
+            return None
+
     @abc.abstractmethod
     def _copy(
         self, src: ParseResult, dst: ParseResult, storage: Callable
@@ -129,10 +136,6 @@ class CopyOperation(PlatformStorageOperation):
         log.debug(f"Copy {src} to {dst}.")
         copy_result = self._copy(src, dst, storage)
         return copy_result
-
-    def _ls(self, path: str, storage: Callable) -> List[FileStatus]:
-        ls = PlatformListDirOperation(self.principal)
-        return ls.ls(f"storage:/{path}", storage)
 
     @classmethod
     def create(
@@ -205,29 +208,21 @@ class NonRecursivePlatformToLocal(CopyOperation):
             if dst.path.endswith(SYSTEM_PATH_DELIMITER):
                 raise NotADirectoryError(
                     "Target should exist. "
-                    "Please create directory, "
-                    "or point to existing file."
+                    "Please create directory, or point to existing file."
                 )
 
             try_dir = dirname(dst.path)
             if try_dir != "" and not os.path.isdir(try_dir):
                 raise FileNotFoundError(
                     "Target should exist. "
-                    "Please create directory, "
-                    "or point to existing file."
+                    "Please create directory, or point to existing file."
                 )
             dst_path = Path(dst.path)
 
         # check remote
-        files = self._ls(str(platform_file_name.parent), storage)
-        try:
-            file_info = next(
-                file
-                for file in files
-                if file.path == platform_file_name.name and file.type == "FILE"
-            )
-        except StopIteration as e:
-            raise ResourceNotFound(f"Source file {src.path} not found.") from e
+        file_info = self._file_stat_on_platform(platform_file_name, storage)
+        if not file_info or file_info.type != "FILE":
+            raise ResourceNotFound(f"Source file {src.path} not found.")
 
         copy_file = self.copy_file(
             str(platform_file_name), str(dst_path), file_info, storage
@@ -254,34 +249,28 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
             raise FileNotFoundError(
-                "Target should exist. "
-                "Please create target directory "
-                "and try again."
+                "Target should exist. " "Please create target directory and try again."
             )
 
         if not os.path.isdir(dst.path):
             raise NotADirectoryError(
                 "Target should be directory. "
-                "Please correct your "
-                "command line arguments."
+                "Please correct your command line arguments."
             )
 
         # Test that source directory exists.
         platform_file_name = self._render_platform_path_with_principal(src)
-        platform_file_path = self._get_parent(platform_file_name)
         # TODO here we should have work around when someone
         # tries to copy full directory of a person
-        if str(platform_file_path) != "/":
-            files = self._ls(str(platform_file_path), storage)
-            try:
-                next(
-                    file
-                    for file in files
-                    if file.path == str(platform_file_name.name)
-                    and file.type == "DIRECTORY"
+        if str(platform_file_name) != "/":
+            files = self._file_stat_on_platform(platform_file_name, storage)
+            if not files:
+                raise ResourceNotFound("Source directory not found.")
+            if files.type == "FILE":
+                copy_operation = NonRecursivePlatformToLocal(
+                    self.principal, self.progress
                 )
-            except StopIteration as e:
-                raise ResourceNotFound("Source directory not found.") from e
+                return copy_operation.copy(src, dst, storage)
 
         self._copy_obj(platform_file_name, Path(dst.path), storage)
 
@@ -290,14 +279,13 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
 
 class NonRecursiveLocalToPlatform(CopyOperation):
     def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
-        """Tests whether specified path is directory on a platform or not.
-        Test is done by running LS command.
-        """
+        """Tests whether specified path is directory on a platform or not."""
         try:
-            self._ls(str(path), storage)
-        except (IllegalArgumentError, ResourceNotFound):
+            with storage() as s:
+                file_status = s.stats(path=str(path))
+                return file_status.type == "DIRECTORY"
+        except ResourceNotFound:
             return False
-        return True
 
     async def _copy_data_with_progress(self, src: str):  # pragma: no cover
         file_stat = os.stat(src)
@@ -417,11 +405,32 @@ class JobHandlerOperations(PlatformStorageOperation):
         with jobs() as j:
             return j.status(id)
 
+    @classmethod
+    def _truncate_string(cls, input: str, max_length: int) -> str:
+        if len(input) <= max_length:
+            return input
+        len_tail, placeholder = 3, "..."
+        if max_length < len_tail or max_length < len(placeholder):
+            return placeholder
+        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
+        index_stop = max_length - len(placeholder) - len(tail)
+        return input[:index_stop] + placeholder + tail
+
     def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
         def short_format(item) -> str:
-            image = item.image if item.image else ""
-            command = item.command if item.command else ""
-            return f"{item.id}    {item.status:<10}    {image:<25}    {command}"
+            tab = "\t"
+            image = item.image or ""
+            description = self._truncate_string(item.description or "", 50)
+            command = self._truncate_string(item.command or "", 50)
+            return tab.join(
+                [
+                    item.id,
+                    f"{item.status:<10}",
+                    f"{image:<15}",
+                    f"{description:<50}",
+                    f"{command:<50}",
+                ]
+            )
 
         def job_sort_key(job: JobDescription) -> datetime:
             created_str = job.history.created_at
@@ -491,6 +500,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         ssh,
         volumes,
         jobs: Callable,
+        description: str,
     ) -> JobDescription:
 
         cmd = " ".join(cmd) if cmd is not None else None
@@ -506,7 +516,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 resources=resources,
                 network=network,
                 volumes=volumes,
-                description=None,
+                description=description,
             )
 
     def start_ssh(
@@ -636,6 +646,7 @@ class ModelHandlerOperations(JobHandlerOperations):
         model,
         http,
         ssh,
+        description: str,
     ):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
@@ -663,7 +674,7 @@ class ModelHandlerOperations(JobHandlerOperations):
                 resources=Resources.create(cpu, gpu, gpu_model, memory, extshm),
                 dataset=f"storage:/{dataset_platform_path}",
                 results=f"storage:/{resultset_platform_path}",
-                description=None,
+                description=description,
             )
 
         return job
@@ -706,6 +717,7 @@ class ModelHandlerOperations(JobHandlerOperations):
             model,
             http,
             ssh,
+            description=None,
         )
         job_id = job.id
         # wait for a job to leave pending stage

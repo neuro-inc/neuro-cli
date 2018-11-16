@@ -10,7 +10,7 @@ from uuid import uuid4 as uuid
 
 import pytest
 
-from tests.test_e2e_utils import wait_for_job_to_change_state_to
+from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 
 
 BLOCK_SIZE_MB = 16

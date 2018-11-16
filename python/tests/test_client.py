@@ -29,7 +29,7 @@ def test_train_with_no_gpu(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -44,11 +44,14 @@ def test_train_with_no_gpu(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -64,7 +67,7 @@ def test_train(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -85,11 +88,14 @@ def test_train(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -105,7 +111,7 @@ def test_train_zero_gpu(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -120,11 +126,14 @@ def test_train_zero_gpu(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -140,7 +149,7 @@ def test_train_with_http(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"http": 7878}),
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -162,11 +171,14 @@ def test_train_with_http(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -182,7 +194,7 @@ def test_train_with_ssh(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878}),
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -204,11 +216,14 @@ def test_train_with_ssh(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -224,7 +239,7 @@ def test_train_with_ssh_and_http(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
-        description="test-job-name",
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -247,12 +262,15 @@ def test_train_with_ssh_and_http(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
-            "description": "test-job-name",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    exp = client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
+    assert result == exp, "\n" + str(result) + "\n" + str(exp)
 
 
 @patch(
@@ -268,7 +286,7 @@ def test_train_with_ssh_and_http_no_name(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -291,11 +309,14 @@ def test_train_with_ssh_and_http_no_name(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -311,7 +332,7 @@ def test_train_empty_command(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -333,11 +354,14 @@ def test_train_empty_command(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -354,7 +378,7 @@ def test_infer(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        description=None,
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -376,11 +400,14 @@ def test_infer(request, model, loop):
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
             "model_storage_uri": "schema://host/model",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(
@@ -397,7 +424,7 @@ def test_infer_with_name(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
-        description="test-job-name",
+        description="job description",
     )
 
     aiohttp.ClientSession.request.assert_called_with(
@@ -419,12 +446,14 @@ def test_infer_with_name(request, model, loop):
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
             "model_storage_uri": "schema://host/model",
-            "description": "test-job-name",
+            "description": "job description",
         },
         url="http://127.0.0.1/models",
     )
 
-    assert result == client.JobItem(client=model, status="PENDING", id="iddqd")
+    assert result == client.JobItem(
+        client=model, status="PENDING", id="iddqd", description="job description"
+    )
 
 
 @patch(

@@ -83,14 +83,31 @@ def get_help(target, tail, stack):
         stack += [command]
 
 
-def dispatch(target, tail, **kwargs):
+def dispatch(target, tail, format_spec=None, **kwargs):
+    def help_required(tail):
+        for option in tail:
+            if option == "--help":
+                return True
+            elif option[:1] == "-":
+                continue
+            else:
+                return False
+        return False
+
+    def help_format(help, format_spec):
+        if format_spec:
+            help = help.format(**format_spec)
+        help = dedent(help)
+        return help
+
     stack = []
 
     while True:
+        target.__doc__ = help_format(target.__doc__, format_spec)
         try:
             options, tail = parse(target.__doc__, stack + tail)
         except docopt.DocoptExit:
-            raise ValueError(dedent(target.__doc__))
+            raise ValueError(target.__doc__)
 
         res = target(**{**normalize_options(options, stack + ["COMMAND"]), **kwargs})
         # Don't pass to tested commands, they will be available through
@@ -111,5 +128,8 @@ def dispatch(target, tail, **kwargs):
 
         if not target:
             raise ValueError(f"Invalid command: {command}")
+
+        if help_required(tail):
+            return help_format(target.__doc__, format_spec)
 
         stack += [command]

@@ -1,3 +1,4 @@
+import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BufferedReader, BytesIO
@@ -9,10 +10,14 @@ from .client import ApiClient
 from .requests import (
     CreateRequest,
     DeleteRequest,
+    FileStatRequest,
     ListRequest,
     MkDirsRequest,
     OpenRequest,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -53,6 +58,17 @@ class Storage(ApiClient):
     def create(self, *, path: str, data: BytesIO) -> str:
         self._fetch_sync(CreateRequest(path=path, data=data))
         return path
+
+    def stats(self, *, path: str) -> FileStatus:
+        """
+        Request file or directory stats.
+        Throws NotFound exception in case path points to non existing object.
+
+        :param path: path to object on storage.
+        :return: Status of a file or directory.
+        """
+        resp = self._fetch_sync(FileStatRequest(path=path))
+        return FileStatus.from_primitive(resp["FileStatus"])
 
     @contextmanager
     def open(self, *, path: str) -> Iterator[BufferedReader]:
