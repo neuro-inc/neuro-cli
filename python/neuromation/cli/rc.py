@@ -46,6 +46,18 @@ class ConfigFactory:
 
     @classmethod
     def update_api_url(cls, url: str) -> Config:
+        if url != "" and url[-1] == "/":
+            raise ValueError("URL should not finish with trailing / symbol.")
+
+        parsed_url = URL(url)
+
+        if parsed_url.scheme not in ["http", "https"]:
+            raise ValueError("Valid scheme options are http and https.")
+        if parsed_url.query_string != "":
+            raise ValueError("URL should not contain params.")
+        if parsed_url.fragment != "":
+            raise ValueError("URL should not contain fragments.")
+
         return cls._update_config(url=url)
 
     @classmethod
