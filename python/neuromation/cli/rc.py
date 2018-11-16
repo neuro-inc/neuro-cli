@@ -95,10 +95,14 @@ def save(path, config: Config) -> Config:
         if value is None:
             try:
                 keyring.delete_password(CREDENTIAL_SERVICE_NAME, field)
-            except keyring.errors.PasswordDeleteError:
+            except Exception:
                 pass
         else:
-            keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
+            try:
+                keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
+            except Exception:
+                if value is not None:
+                    dict_config[field] = value
 
     with open(path, "w") as file:
         yaml.dump(dict_config, file, default_flow_style=False)
