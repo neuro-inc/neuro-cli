@@ -184,6 +184,8 @@ async def fetch(request, session, url: str):
 @fetch.register(JsonRequest)
 async def _(request, session, url: str):
     async with _fetch(request, session, url) as resp:
+        if resp.status == 204:  # HTTPNoContent response
+            return {}
         return await resp.json()
 
 
