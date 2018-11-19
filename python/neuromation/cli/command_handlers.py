@@ -426,10 +426,13 @@ class JobHandlerOperations(PlatformStorageOperation):
 
     @classmethod
     def _format_full_job_line(cls, item: JobDescription) -> str:
+        def wrap(text: str) -> str:
+            return f"'{text}'" if text else ""
+
         tab = "\t"
         image = item.image or ""
-        description = cls._truncate_string(item.description or "", 50)
-        command = cls._truncate_string(item.command or "", 50)
+        description = wrap(cls._truncate_string(item.description or "", 50))
+        command = wrap(cls._truncate_string(item.command or "", 50))
         return tab.join(
             [
                 item.id,
