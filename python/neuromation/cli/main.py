@@ -334,7 +334,7 @@ Commands:
                 neuro store mv SOURCE DESTINATION
 
             Move or rename files and directories. SOURCE must contain path to the
-            file or directory existing on the storage, and DESCRIPTION must contain
+            file or directory existing on the storage, and DESTINATION must contain
             the full path to the target file or directory.
 
 
