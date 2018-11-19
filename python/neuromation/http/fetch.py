@@ -91,6 +91,7 @@ async def session(
 
     _default_auth_headers = {"Authorization": f"Bearer {token}"} if token else {}
 
+    _default_auth_headers["Accept-Encoding"] = "deflate"
     client_session_settings = {
         "trace_configs": [trace_config],
         "headers": _default_auth_headers,

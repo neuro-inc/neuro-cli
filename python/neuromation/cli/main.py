@@ -31,7 +31,7 @@ from .commands import command, dispatch
 
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
-MONITOR_BUFFER_SIZE_BYTES = 256
+MONITOR_BUFFER_SIZE_BYTES = 1
 
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
@@ -597,6 +597,9 @@ Commands:
 
             Monitor job output stream
             """
+            timeout = TimeoutSettings(None, None, None, 30)
+            jobs = partial(Job, url, token, timeout)
+
             with jobs() as j:
                 with j.monitor(id) as stream:
                     while True:
