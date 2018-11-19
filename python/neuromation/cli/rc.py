@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import yaml
-
 from jose import JWTError, jwt
 from yarl import URL
 
