@@ -16,6 +16,7 @@ from neuromation.cli.command_handlers import (
     PlatformListDirOperation,
     PlatformMakeDirOperation,
     PlatformRemoveOperation,
+    PlatformRenameOperation,
     PlatformSharingOperations,
 )
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
@@ -219,6 +220,7 @@ Commands:
           rm                 Remove files or directories
           ls                 List directory contents
           cp                 Copy files and directories
+          mv                 Move or rename files and directories
           mkdir              Make directories
         """
 
@@ -309,7 +311,7 @@ Commands:
                 return operation.copy(src, dst, storage)
 
             raise neuromation.client.IllegalArgumentError(
-                "Invalid SOURCE or " "DESTINATION value"
+                "Invalid SOURCE or DESTINATION value"
             )
 
         @command
@@ -324,6 +326,32 @@ Commands:
             platform_user_name = config.get_platform_user_name()
             PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
             return path
+
+        @command
+        def mv(source, destination):
+            """
+            Usage:
+                neuro store mv SOURCE DESTINATION
+
+            Move or rename files and directories. SOURCE must contain path to the
+            file or directory existing on the storage, and DESCRIPTION must contain
+            the full path to the target file or directory.
+
+
+            Example:
+
+            # move or rename remote file
+            neuro store mv storage://{username}/foo.txt storage://{username}/bar.txt
+            neuro store mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+
+            # move or rename remote directory
+            neuro store mv storage://{username}/foo/ storage://{username}/bar/
+            neuro store mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+            """
+            config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            operation = PlatformRenameOperation(platform_user_name)
+            return operation.mv(source, destination, storage)
 
         return locals()
 

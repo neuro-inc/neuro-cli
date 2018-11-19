@@ -226,30 +226,55 @@ def test_e2e(data, run, tmpdir):
     assert captured.out == f"storage://{_path}\n"
 
     # Upload local file
-    _, captured = run(["store", "cp", file, "storage://" + _path + "/foo"])
+    _, captured = run(["store", "cp", file, f"storage://{_path}/foo"])
     assert not captured.err
     assert (_path + "/foo") in captured.out
 
     # Confirm file has been uploaded
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
-    assert "file           16,777,216     foo" in captured_output_list
+    expected_line = format_list(type="file", size=16777216, name="foo")
+    assert expected_line in captured_output_list
+
     assert not captured.err
 
     # Download into local file and confirm checksum
     _local = join(tmpdir, "bar")
-    _, captured = run(["store", "cp", "storage://" + _path + "/foo", _local])
+    _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
     assert hash_hex(_local) == checksum
 
     # Download into local dir and confirm checksum
     _local = join(tmpdir, "bardir")
     _local_file = join(_local, "foo")
     tmpdir.mkdir("bardir")
-    _, captured = run(["store", "cp", "storage://" + _path + "/foo", _local])
+    _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
     assert hash_hex(_local_file) == checksum
 
+    # Rename file on the storage
+    _, captured = run(
+        ["store", "mv", f"storage://{_path}/foo", f"storage://{_path}/bar"]
+    )
+    assert not captured.err
+    assert (_path + "/bar") in captured.out
+
+    # Confirm file has been renamed
+    _, captured = run(["store", "ls", f"storage://{_path}"])
+    captured_output_list = captured.out.split("\n")
+    assert not captured.err
+    expected_line = format_list(type="file", size=16777216, name="bar")
+    assert expected_line in captured_output_list
+    assert "foo" not in captured_output_list
+
+    # Rename directory on the storage
+    _dir2 = f"e2e-{uuid()}"
+    _path2 = f"/tmp/{_dir2}"
+    _, captured = run(["store", "mv", f"storage://{_path}", f"storage://{_path2}"])
+    assert not captured.err
+    assert _path not in captured.out
+    assert _path2 in captured.out
+
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
+    _, captured = run(["store", "rm", f"storage://{_path2}"])
     assert not captured.err
 
     # And confirm
