@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+import pytest
+
 from neuromation.cli.main import neuro
 
 
@@ -17,12 +19,19 @@ def test_help(run):
         if not hasattr(func, "_command_name"):
             continue
 
-        # the following commands don't have another
-        # command as an argument, hence COMMAND help
-        # is not applicable
-        if command in ["share"]:
-            continue
-
-        _, captured = run([command, "help"], RC_TEXT)
+        _, captured = run(["help", command], RC_TEXT)
         assert not captured.err
         assert captured.out == dedent(func.__doc__) + "\n"
+
+    with pytest.raises(SystemExit) as captured:
+        run(["help", "mississippi"], RC_TEXT)
+    assert captured.type == SystemExit
+    assert captured.value.code == 127
+
+    with pytest.raises(SystemExit) as captured:
+        run(["help", "--mississippi"], RC_TEXT)
+    assert captured.type == SystemExit
+    assert captured.value.code == 127
+
+    _, captured = run(["help", "job", "list", "--status", "pending"], RC_TEXT)
+    assert not captured.err
