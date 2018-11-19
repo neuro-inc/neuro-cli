@@ -46,7 +46,7 @@ def test_call(build, loop):
         data=expected_data,
     )
 
-    assert _session._default_headers == {}
+    assert _session._default_headers == {"Accept-Encoding": "deflate"}
 
     assert res == {"hello": "world"}
 

@@ -233,7 +233,7 @@ def test_e2e(data, run, tmpdir):
     # Confirm file has been uploaded
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
-    expected_line = format_list(type="file", size=16777216, name="foo")
+    expected_line = format_list(type="file", size=16_777_216, name="foo")
     assert expected_line in captured_output_list
 
     assert not captured.err
@@ -261,7 +261,7 @@ def test_e2e(data, run, tmpdir):
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
-    expected_line = format_list(type="file", size=16777216, name="bar")
+    expected_line = format_list(type="file", size=16_777_216, name="bar")
     assert expected_line in captured_output_list
     assert "foo" not in captured_output_list
 
