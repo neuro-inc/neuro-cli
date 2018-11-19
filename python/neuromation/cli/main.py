@@ -606,18 +606,20 @@ Commands:
                         sys.stdout.write(chunk.decode(errors="ignore"))
 
         @command
-        def list(status):
+        def list(status, description):
             """
             Usage:
                 neuro job list [options]
 
             Options:
-              --status (pending|running|succeeded|failed)
+              -s, --status (pending|running|succeeded|failed)
                   Filters out job by state
+              -d, --description DESC
+                  Filters out job by job description
 
             List all jobs
             """
-            return JobHandlerOperations(token).list_jobs(status, jobs)
+            return JobHandlerOperations(token).list_jobs(jobs, status, description)
 
         @command
         def status(id):
