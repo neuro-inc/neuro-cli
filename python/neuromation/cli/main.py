@@ -341,12 +341,12 @@ Commands:
             Example:
 
             # move or rename remote file
-            neuro store mv storage:///foo.txt storage:///bar.txt
-            neuro store mv storage:///foo.txt storage://~/bar/baz/foo.txt
+            neuro store mv storage://{username}/foo.txt storage://{username}/bar.txt
+            neuro store mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
 
             # move or rename remote directory
-            neuro store mv storage:///foo/ storage:///bar/
-            neuro store mv storage:///foo/ storage:///bar/baz/foo/
+            neuro store mv storage://{username}/foo/ storage://{username}/bar/
+            neuro store mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
