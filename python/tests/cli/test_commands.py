@@ -95,6 +95,38 @@ def _person(name, age, gender, city):
     return locals()
 
 
+@command
+def zombie():
+    """
+    Usage:
+      zombie COMMAND
+
+    Commands:
+      eat                Eats poor people
+      party              Has a party
+
+    (c) {year}
+    """
+
+    @command
+    def eat(persons):
+        """
+        Usage:
+          zombie eat PERSONS...
+        """
+        return f"zombie eats {(', '.join(persons))}"
+
+    @command
+    def party(persons):
+        """
+        Usage:
+          zombie party PERSONS [PERSONS...]
+        """
+        return f"zombie has a party with {(' and '.join(persons))}"
+
+    return locals()
+
+
 def test_dispatch():
     argv = ["-n", "Vasya", "work", "dig", "hole"]
     # 'manage', '-s', 'enabling', 'engineers']
@@ -123,6 +155,22 @@ def test_dispatch():
 
     argv = ["-n", "Vova", "absent"]
     assert dispatch(target=_person, tail=argv, city="Kyiv") == "Vova is absent"
+
+
+def test_dispatch_key_with_one_or_more_arguments():
+    argv = ["party", "Anna"]
+    assert dispatch(target=zombie, tail=argv) == "zombie has a party with Anna"
+
+    argv = ["party", "Anna", "Eve"]
+    assert dispatch(target=zombie, tail=argv) == "zombie has a party with Anna and Eve"
+
+    argv = ["eat", "apple"]
+    expected = "zombie eats apple"
+    assert dispatch(target=zombie, tail=argv) == expected
+
+    argv = ["eat", "Anne", "Eve", "Marie", "Antoinette", "Josephine"]
+    expected = "zombie eats Anne, Eve, Marie, Antoinette, Josephine"
+    assert dispatch(target=zombie, tail=argv) == expected
 
 
 def test_dispatch_help():
@@ -163,10 +211,12 @@ def test_invalid_command():
 
 
 def test_commands():
-    assert commands(scope=globals()) == {"person": _person}
+    assert commands(scope=globals()) == {"person": _person, "zombie": zombie}
 
     assert set(commands(scope=_person(None, None, None, None))) == {
         "absent",
         "work",
         "rest",
     }
+
+    assert set(commands(scope=zombie())) == {"eat", "party"}
