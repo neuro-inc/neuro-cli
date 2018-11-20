@@ -424,35 +424,51 @@ class JobHandlerOperations(PlatformStorageOperation):
         index_stop = max_length - len(placeholder) - len(tail)
         return input[:index_stop] + placeholder + tail
 
-    def list_jobs(self, status: Optional[str], jobs: Callable) -> str:
-        def short_format(item) -> str:
-            tab = "\t"
-            image = item.image or ""
-            description = self._truncate_string(item.description or "", 50)
-            command = self._truncate_string(item.command or "", 50)
-            return tab.join(
-                [
-                    item.id,
-                    f"{item.status:<10}",
-                    f"{image:<15}",
-                    f"{description:<50}",
-                    f"{command:<50}",
-                ]
-            )
+    @classmethod
+    def _format_full_job_line(cls, item: JobDescription) -> str:
+        def wrap(text: str) -> str:
+            return f"'{text}'" if text else ""
 
-        def job_sort_key(job: JobDescription) -> datetime:
+        tab = "\t"
+        image = item.image or ""
+        description = wrap(cls._truncate_string(item.description or "", 50))
+        command = wrap(cls._truncate_string(item.command or "", 50))
+        return tab.join(
+            [
+                item.id,
+                f"{item.status:<10}",
+                f"{image:<15}",
+                f"{description:<50}",
+                f"{command:<50}",
+            ]
+        )
+
+    @classmethod
+    def _sort_job_list(cls, job_list: List[JobDescription]) -> List[JobDescription]:
+        def job_sorting_key_by_creation_time(job: JobDescription) -> datetime:
             created_str = job.history.created_at
             return dateutil.parser.isoparse(created_str)
 
+        return sorted(job_list, key=job_sorting_key_by_creation_time)
+
+    def list_jobs(
+        self,
+        jobs: Callable,
+        status: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> str:
+        def apply_filter(item: JobDescription) -> bool:
+            filter_status = not status or item.status == status
+            filter_description = not description or item.description == description
+            return filter_status and filter_description
+
         with jobs() as j:
             job_list = j.list()
-
-            sorted_job_list = sorted(job_list, key=job_sort_key)
             return "\n".join(
                 [
-                    short_format(item)
-                    for item in sorted_job_list
-                    if not status or item.status == status
+                    self._format_full_job_line(item)
+                    for item in self._sort_job_list(job_list)
+                    if apply_filter(item)
                 ]
             )
 
