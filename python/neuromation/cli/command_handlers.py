@@ -465,7 +465,7 @@ class JobHandlerOperations(PlatformStorageOperation):
             return filter_status and filter_description
 
         async with jobs() as j:
-            job_list = j.list()
+            job_list = await j.list()
             return "\n".join(
                 [
                     self._format_full_job_line(item)

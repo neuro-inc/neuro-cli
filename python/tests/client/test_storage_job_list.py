@@ -6,7 +6,6 @@ from neuromation.cli.command_handlers import JobHandlerOperations
 from neuromation.client.jobs import JobDescription, JobStatusHistory
 
 
-
 @pytest.fixture
 def valid_job_description():
     return "non-empty job description 1234567890`!@#$%^&*()_+='\\/"
@@ -91,94 +90,94 @@ class TestJobListFilter:
             ]
         )
 
-    def test_job_filter_all(self, jobs_mock, jobs_to_test):
+    async def test_job_filter_all(self, jobs_mock, jobs_to_test):
         expected = self._format(jobs_to_test)
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, status=None)
+        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock, status=None)
         assert jobs == expected
 
-    def test_job_filter_running(self, jobs_mock, jobs_to_test):
+    async def test_job_filter_running(self, jobs_mock, jobs_to_test):
         expected = self._format([j for j in jobs_to_test if j.status == "running"])
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, status="running")
+        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock, status="running")
         assert jobs == expected
 
-    def test_job_filter_failed(self, jobs_mock, jobs_to_test):
+    async def test_job_filter_failed(self, jobs_mock, jobs_to_test):
         expected = self._format([j for j in jobs_to_test if j.status == "failed"])
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, status="failed")
+        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock, status="failed")
         assert jobs == expected
 
-    def test_job_filter_succeeded(self, jobs_mock, jobs_to_test):
+    async def test_job_filter_succeeded(self, jobs_mock, jobs_to_test):
         expected = self._format([j for j in jobs_to_test if j.status == "succeeded"])
-        jobs = JobHandlerOperations("test-user").list_jobs(
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, status="succeeded"
         )
         assert jobs == expected
 
-    def test_job_filter_dummy_status__not_found(self, jobs_mock, jobs_to_test):
-        jobs = JobHandlerOperations("test-user").list_jobs(
+    async def test_job_filter_dummy_status__not_found(self, jobs_mock, jobs_to_test):
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, status="not-a-status"
         )
         assert jobs == ""
 
-    def test_job_filter_with_empty_description__no_filter_applied(
+    async def test_job_filter_with_empty_description__no_filter_applied(
         self, jobs_mock, jobs_to_test
     ):
         expected = self._format(jobs_to_test)
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, description="")
+        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock, description="")
         assert jobs == expected
 
-    def test_job_filter_with_empty_status_empty_description__no_filter_applied(
+    async def test_job_filter_with_empty_status_empty_description__no_filter_applied(
         self, jobs_mock, jobs_to_test
     ):
         expected = self._format(jobs_to_test)
-        jobs = JobHandlerOperations("test-user").list_jobs(
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, status="", description=""
         )
         assert jobs == expected
 
-    def test_job_filter_status_and_empty_description__same_as_without(
+    async def test_job_filter_status_and_empty_description__same_as_without(
         self, jobs_mock, jobs_to_test
     ):
         expected = self._format([j for j in jobs_to_test if j.status == "running"])
-        jobs = JobHandlerOperations("test-user").list_jobs(
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, status="running", description=""
         )
         assert jobs == expected
 
-    def test_job_filter_by_description_(self, jobs_mock, jobs_to_test):
+    async def test_job_filter_by_description_(self, jobs_mock, jobs_to_test):
         expected = self._format(
             [j for j in jobs_to_test if j.description == valid_job_description]
         )
-        jobs = JobHandlerOperations("test-user").list_jobs(
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, description=valid_job_description
         )
         assert jobs == expected
 
-    def test_job_filter_description_not_found(self, jobs_mock, jobs_to_test):
-        jobs = JobHandlerOperations("test-user").list_jobs(
+    async def test_job_filter_description_not_found(self, jobs_mock, jobs_to_test):
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, description="non-existing job description!"
         )
         assert jobs == ""
 
-    def test_job_filter_empty_status_and_dummy_description__not_found(
+    async def test_job_filter_empty_status_and_dummy_description__not_found(
         self, jobs_mock, jobs_to_test
     ):
         expected = self._format(
             [j for j in jobs_to_test if j.description == "non-existing job description"]
         )
-        jobs = JobHandlerOperations("test-user").list_jobs(
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, status="", description="job not existing description"
         )
         assert jobs == expected
 
-    def test_job_filter_non_empty_status_and_dummy_description__not_found(
+    async def test_job_filter_non_empty_status_and_dummy_description__not_found(
         self, jobs_mock, jobs_to_test
     ):
-        jobs = JobHandlerOperations("test-user").list_jobs(
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, status="running", description="non-existing job description"
         )
         assert jobs == ""
 
-    def test_job_filter_status_and_description(self, jobs_mock, jobs_to_test):
+    async def test_job_filter_status_and_description(self, jobs_mock, jobs_to_test):
         expected = self._format(
             [
                 job
@@ -186,7 +185,7 @@ class TestJobListFilter:
                 if job.status == "running" and job.description == valid_job_description
             ]
         )
-        jobs = JobHandlerOperations("test-user").list_jobs(
+        jobs = await JobHandlerOperations("test-user").list_jobs(
             jobs_mock, status="running", description=valid_job_description
         )
         assert jobs == expected
