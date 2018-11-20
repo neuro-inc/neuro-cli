@@ -310,7 +310,9 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
-            timeout = TimeoutSettings(None, None, None, 30)
+            timeout = TimeoutSettings(
+                total=None, connect=None, sock_read=None, sock_connect=30
+            )
             storage = partial(Storage, url, token, timeout)
             src = urlparse(source, scheme="file")
             dst = urlparse(destination, scheme="file")
@@ -654,16 +656,34 @@ Commands:
             return JobStatusFormatter.format_job_status(res)
 
         @command
-        def kill(id):
+        def kill(job_ids):
             """
             Usage:
-                neuro job kill ID
+                neuro job kill JOB_IDS...
 
-            Kill job
+            Kill job(s)
             """
+            already_deads, errors = [], []
             with jobs() as j:
-                j.kill(id)
-            return "Job killed."
+                for job in job_ids:
+                    try:
+                        res = j.kill(job)
+                        if res is None:  # success
+                            print(job)
+                        else:
+                            already_deads.append((job, res))
+                    except ValueError as e:
+                        errors.append((job, e))
+
+            def format_fail(job: str, description: str) -> str:
+                return f"Cannot kill job {job}: {description}"
+
+            if already_deads:
+                msg = "\n".join([format_fail(job, res) for (job, res) in already_deads])
+                print(msg)
+            if errors:
+                msg = "\n".join([format_fail(job, e) for (job, e) in errors])
+                raise ValueError(msg)
 
         return locals()
 
