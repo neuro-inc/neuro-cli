@@ -429,6 +429,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         # TODO (A Yushkovskiy 20.11.2018) move this logic to a formatter
         def wrap(text: str) -> str:
             return f"'{text}'" if text else ""
+
         if quiet:
             details = ""
         else:
