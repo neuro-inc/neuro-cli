@@ -1,7 +1,5 @@
 from unittest import mock
-from unittest.mock import patch
 
-import aiohttp
 import pytest
 
 from neuromation.cli.command_handlers import PlatformSharingOperations
@@ -35,9 +33,10 @@ class TestNormalCases:
             "aiohttp.ClientSession.request",
             new=mocked_async_context_manager(PlainResponse(text="")),
         ) as my_mock:
-            resource_sharing.share(
-                "storage://alice/some/data/belongs/to_both", "manage", "bob"
-            )
+            async with resource_sharing as rs:
+                await rs.share(
+                    "storage://alice/some/data/belongs/to_both", "manage", "bob"
+                )
 
             my_mock.assert_called_with(
                 method="POST",

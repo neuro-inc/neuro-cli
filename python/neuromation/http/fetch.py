@@ -1,16 +1,18 @@
 import asyncio
 import logging
-from contextlib import AbstractContextManager
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import singledispatch
 from io import BytesIO
-from typing import Any, Dict, Optional, Union
+from typing import Any, AsyncContextManager, Dict, Optional, Union
 
 import aiohttp
 from async_generator import asynccontextmanager
 
 
 log = logging.getLogger(__name__)
+
+_executor = ThreadPoolExecutor(10)
 
 
 class FetchError(Exception):
@@ -102,28 +104,31 @@ async def session(
     return _session
 
 
-class SyncStreamWrapper(AbstractContextManager):
+class SyncStreamWrapper(AsyncContextManager):
     def __init__(self, context, *, loop=None):
         loop = loop or asyncio.get_event_loop()
         self._loop = loop
         self._context = context
         self._stream_reader = None
 
-    def __enter__(self):
-        self._stream_reader = self._run_sync(self._context.__aenter__()).content
+    async def __aenter__(self):
+        ctx_enter = await self._context.__aenter__()
+        self._stream_reader = ctx_enter.content
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        return self._run_sync(self._context.__aexit__(exc_type, exc_value, traceback))
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        return await self._context.__aexit__(exc_type, exc_value, traceback)
 
     def _run_sync(self, coro):
-        return self._loop.run_until_complete(coro)
+        vv = asyncio.ensure_future(coro, loop=self._loop)
+        self._loop.run_in_executor(_executor, vv)
+        return vv
 
     def readable(self):
         return True
 
-    def readinto(self, buf):
-        chunk = self._run_sync(self._stream_reader.read(len(buf)))
+    async def readinto(self, buf):
+        chunk = await self._stream_reader.read(len(buf))
         log.debug(f"chunk size={len(chunk)}")
         BytesIO(chunk).readinto(buf)
 
@@ -134,7 +139,7 @@ class SyncStreamWrapper(AbstractContextManager):
         return False
 
     def read(self):
-        return self._run_sync(self._stream_reader.readany())
+        return self._stream_reader.readany()
 
 
 @asynccontextmanager

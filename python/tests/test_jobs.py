@@ -1,5 +1,4 @@
 from unittest import mock
-from unittest.mock import patch
 
 import aiohttp
 import pytest
@@ -14,6 +13,9 @@ from utils import (
 )
 
 
+CONTAINER_COMMAND = "CONTAINER_CMD"
+
+
 @pytest.mark.asyncio
 async def test_jobnotfound_error(jobs):
     with mock.patch(
@@ -26,7 +28,7 @@ async def test_jobnotfound_error(jobs):
                 ),
             )
         ),
-    ) as my_mock:
+    ):
         async with jobs as j:
             with pytest.raises(ResourceNotFound):
                 await j.kill("blah")
@@ -65,8 +67,8 @@ async def test_monitor_notexistent_job(jobs):
     ):
         async with jobs as j:
             with pytest.raises(ResourceNotFound):
-                async with await j.monitor("blah") as stream:
-                    stream.read()
+                async with j.monitor("blah") as stream:
+                    await stream.read()
 
 
 @pytest.mark.asyncio
@@ -254,8 +256,7 @@ async def test_list_extended_output(jobs):
                             },
                             "container": {
                                 "image": "gcr.io/light-reality-205619/ubuntu:latest",
-                                "command": 'bash -c " / bin / df--block - size M--output '
-                                '= target, avail / dev / shm;false"',
+                                "command": CONTAINER_COMMAND,
                                 "resources": {
                                     "cpu": 1.0,
                                     "memory_mb": 16384,
@@ -278,8 +279,7 @@ async def test_list_extended_output(jobs):
                     status="failed",
                     owner="",
                     image="gcr.io/light-reality-205619/ubuntu:latest",
-                    command='bash -c " / bin / df--block - size M--output'
-                    ' = target, avail / dev / shm;false"',
+                    command=CONTAINER_COMMAND,
                     resources=Resources(
                         memory=16384,
                         cpu=1.0,
@@ -330,8 +330,7 @@ async def test_list_extended_output_with_http_url(jobs):
                             },
                             "container": {
                                 "image": "gcr.io/light-reality-205619/ubuntu:latest",
-                                "command": 'bash -c " / bin / df--block - size M--output '
-                                '= target, avail / dev / shm;false"',
+                                "command": CONTAINER_COMMAND,
                                 "resources": {
                                     "cpu": 1.0,
                                     "memory_mb": 16384,
@@ -358,8 +357,7 @@ async def test_list_extended_output_with_http_url(jobs):
                     url="http://my_host:8889",
                     ssh="ssh://my_host.ssh:22",
                     image="gcr.io/light-reality-205619/ubuntu:latest",
-                    command='bash -c " / bin / df--block - size M--output'
-                    ' = target, avail / dev / shm;false"',
+                    command=CONTAINER_COMMAND,
                     resources=Resources(
                         memory=16384,
                         cpu=1.0,
@@ -405,8 +403,7 @@ async def test_list_extended_output_no_shm(jobs):
                             },
                             "container": {
                                 "image": "gcr.io/light-reality-205619/ubuntu:latest",
-                                "command": 'bash -c " / bin / df--block - size M--output = '
-                                'target, avail / dev / shm;false"',
+                                "command": CONTAINER_COMMAND,
                                 "resources": {
                                     "cpu": 1.0,
                                     "memory_mb": 16384,
@@ -428,8 +425,7 @@ async def test_list_extended_output_no_shm(jobs):
                     owner="",
                     status="failed",
                     image="gcr.io/light-reality-205619/ubuntu:latest",
-                    command='bash -c " / bin / df--block - size M--output '
-                    '= target, avail / dev / shm;false"',
+                    command=CONTAINER_COMMAND,
                     resources=Resources(
                         memory=16384,
                         cpu=1.0,
@@ -479,8 +475,7 @@ async def test_list_extended_output_no_gpu(jobs):
                             },
                             "container": {
                                 "image": "gcr.io/light-reality-205619/ubuntu:latest",
-                                "command": 'bash -c " / bin / df--block - size M--output = '
-                                'target, avail / dev / shm;false"',
+                                "command": CONTAINER_COMMAND,
                                 "resources": {"cpu": 1.0, "memory_mb": 16384},
                             },
                         }
@@ -490,15 +485,14 @@ async def test_list_extended_output_no_gpu(jobs):
         ),
     ) as my_mock:
         async with jobs as j:
-            assert await jobs.list() == [
+            assert await j.list() == [
                 JobDescription(
                     client=jobs,
                     id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
                     owner="",
                     status="failed",
                     image="gcr.io/light-reality-205619/ubuntu:latest",
-                    command='bash -c " / bin / df--block - size M--output '
-                    '= target, avail / dev / shm;false"',
+                    command=CONTAINER_COMMAND,
                     resources=Resources(
                         memory=16384, cpu=1.0, gpu=None, shm=None, gpu_model=None
                     ),
@@ -575,7 +569,8 @@ async def test_list_extended_output_no_image(jobs):
                     history=JobStatusHistory(
                         status="failed",
                         reason="Error",
-                        description="Mounted on Avail\\n/dev/shm     64M\\n\\nExit code: 1",
+                        description="Mounted on Avail\\n/dev/shm    "
+                        " 64M\\n\\nExit code: 1",
                         created_at="2018-09-25T12:28:21.298672+00:00",
                         started_at="2018-09-25T12:28:59.759433+00:00",
                         finished_at="2018-09-25T12:28:59.759433+00:00",
@@ -598,8 +593,8 @@ async def test_monitor(jobs):
         new=mocked_async_context_manager(BinaryResponse(data=b"bar")),
     ) as my_mock:
         async with jobs as j:
-            with await j.monitor(id="1") as f:
-                assert f.read() == b"bar"
+            async with j.monitor(id="1") as f:
+                assert await f.read() == b"bar"
             my_mock.assert_called_with(
                 method="GET",
                 url="http://127.0.0.1/jobs/1/log",

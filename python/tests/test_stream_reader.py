@@ -1,9 +1,12 @@
 from unittest.mock import MagicMock
 
+import pytest
+
 from neuromation.http.fetch import SyncStreamWrapper
 
 
-def test_stream_reading(loop):
+@pytest.mark.asyncio
+async def test_stream_reading(loop):
     initial_buf_values = bytearray(range(100, 0, -1))
     values_read_from_stream = bytearray(range(len(initial_buf_values)))
 
@@ -17,6 +20,6 @@ def test_stream_reading(loop):
     wrapper._stream_reader = underlying_stream
 
     my_buf = initial_buf_values
-    wrapper.readinto(my_buf)
+    await wrapper.readinto(my_buf)
 
     assert my_buf == values_read_from_stream

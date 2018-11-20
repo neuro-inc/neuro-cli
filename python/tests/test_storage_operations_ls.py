@@ -1,7 +1,6 @@
 from unittest import mock
 from unittest.mock import patch
 
-import aiohttp
 import pytest
 
 from neuromation.cli.command_handlers import PlatformListDirOperation

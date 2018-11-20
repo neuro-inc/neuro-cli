@@ -490,7 +490,7 @@ async def test_job_status(request, model, loop):
     with mock.patch(
         "aiohttp.ClientSession.request",
         new=mocked_async_context_manager(JsonResponse(JOB_RESPONSE)),
-    ) as my_mock:
+    ):
         async with model as m:
             job = client.JobItem(client=m, **{**JOB_RESPONSE, "status": "PENDING"})
             res = await job.wait()
@@ -504,7 +504,7 @@ async def test_network_error_is_not_intercepted(storage):
         new=mocked_async_context_manager(
             JsonResponse({"error": "blah!"}, error=aiohttp.ClientConnectionError())
         ),
-    ) as my_mock:
+    ):
         with pytest.raises(aiohttp.ClientError):
             async with storage as s:
                 await s.ls(path="blah")

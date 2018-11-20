@@ -54,6 +54,8 @@ async def generate_test_data(root, count, size_mb):
 
 @pytest.fixture(scope="session")
 def data(tmpdir_factory):
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
         generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)

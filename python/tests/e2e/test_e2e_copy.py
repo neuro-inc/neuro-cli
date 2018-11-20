@@ -3,6 +3,7 @@ import os
 import platform
 from math import ceil
 from os.path import join
+from pathlib import PurePath
 from uuid import uuid4 as uuid
 
 import pytest
@@ -62,6 +63,7 @@ async def generate_test_data(root, count, size_mb):
 
 @pytest.fixture(scope="session")
 def nested_data(tmpdir_factory):
+    asyncio.set_event_loop(asyncio.new_event_loop())
     loop = asyncio.get_event_loop()
     root_tmp_dir = tmpdir_factory.mktemp("data")
     tmp_dir = root_tmp_dir.mkdir("nested").mkdir("directory").mkdir("for").mkdir("test")
@@ -92,7 +94,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir):
     # Try downloading non existing file
     _local = join(tmpdir, "bar")
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        _, captured = run(["store", "cp", "storage://" + _path + "/foo", _local])
+        _, _ = run(["store", "cp", "storage://" + _path + "/foo", _local])
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
@@ -142,6 +144,7 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     target_file_name = file.split("/")[-1]
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
+    dir_name = PurePath(dir_path).name
 
     # Create directory for the test
     _, captured = run(["store", "mkdir", f"storage://{_path}"])
@@ -154,29 +157,31 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     assert _path in captured.out
 
     # Check directory structure
-    _, captured = run(["store", "ls", f"storage://{_path}/data1"])
+    _, captured = run(["store", "ls", f"storage://{_path}/{dir_name}"])
     captured_output_list = captured.out.split("\n")
     assert f"directory      0              nested" in captured_output_list
     assert not captured.err
 
-    _, captured = run(["store", "ls", f"storage://{_path}/data1/nested"])
+    _, captured = run(["store", "ls", f"storage://{_path}/{dir_name}/nested"])
     captured_output_list = captured.out.split("\n")
     assert f"directory      0              directory" in captured_output_list
     assert not captured.err
 
-    _, captured = run(["store", "ls", f"storage://{_path}/data1/nested/directory"])
+    _, captured = run(["store", "ls", f"storage://{_path}/{dir_name}/nested/directory"])
     captured_output_list = captured.out.split("\n")
     assert f"directory      0              for" in captured_output_list
     assert not captured.err
 
-    _, captured = run(["store", "ls", f"storage://{_path}/data1/nested/directory/for"])
+    _, captured = run(
+        ["store", "ls", f"storage://{_path}/{dir_name}/nested/directory/for"]
+    )
     captured_output_list = captured.out.split("\n")
     assert f"directory      0              test" in captured_output_list
     assert not captured.err
 
     # Confirm file has been uploaded
     _, captured = run(
-        ["store", "ls", f"storage://{_path}/data1/nested/directory/for/test"]
+        ["store", "ls", f"storage://{_path}/{dir_name}/nested/directory/for/test"]
     )
     captured_output_list = captured.out.split("\n")
     assert f"file           16,777,216     {target_file_name}" in captured_output_list
@@ -187,7 +192,9 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     _local = join(tmpdir, "bar")
     _, captured = run(["store", "cp", "-r", "storage://" + _path + "/", _local])
     assert (
-        hash_hex(_local + f"/data1/nested/directory/for/" f"test/{target_file_name}")
+        hash_hex(
+            _local + f"/{dir_name}/nested/directory/for/" f"test/{target_file_name}"
+        )
         == checksum
     )
 

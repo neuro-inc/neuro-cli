@@ -67,13 +67,21 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
     def _home():
         return Path(tmpdir)
 
-    def _run(arguments):
+    async def _run(arguments):
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
         monkeypatch.setattr(Path, "home", _home)
         monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
 
         from neuromation.cli import main
 
-        return main(), capsys.readouterr()
+        try:
+            return await main(), capsys.readouterr()
+        except SystemExit as e:
+            capsys.readouterr()
+            raise e
+        finally:
+            capsys.readouterr()
 
     return _run
 

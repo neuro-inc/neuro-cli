@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, Mock
-
 import pytest
 
 from neuromation.cli.command_handlers import JobHandlerOperations

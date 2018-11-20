@@ -1,6 +1,6 @@
 import asyncio
 from typing import Any, Callable
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
 

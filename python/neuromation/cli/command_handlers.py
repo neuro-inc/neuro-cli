@@ -126,12 +126,12 @@ class CopyOperation(PlatformStorageOperation):
         super().__init__(principal)
         self.progress = progress
 
-    def _file_stat_on_platform(
+    async def _file_stat_on_platform(
         self, path: PosixPath, storage: Callable
     ) -> Optional[FileStatus]:
         try:
-            with storage() as s:
-                file_status = s.stats(path=str(path))
+            async with storage() as s:
+                file_status = await s.stats(path=str(path))
                 return file_status
         except ResourceNotFound:
             return None
@@ -178,7 +178,7 @@ class CopyOperation(PlatformStorageOperation):
 
 
 class NonRecursivePlatformToLocal(CopyOperation):
-    def transfer(self, file: FileStatus, i, o):  # pragma: no cover
+    async def transfer(self, file: FileStatus, i, o):  # pragma: no cover
         log.debug(f"Input: {i}")
         log.debug(f"Output: {o}")
 
@@ -186,7 +186,7 @@ class NonRecursivePlatformToLocal(CopyOperation):
         copied = 0
 
         while True:
-            buf = i.read(BUFFER_SIZE_MB * 1024 * 1024)
+            buf = await i.read()
 
             if not buf:
                 break
@@ -196,13 +196,13 @@ class NonRecursivePlatformToLocal(CopyOperation):
             self.progress.progress(file.path, copied)
         self.progress.complete(file.path)
 
-    def copy_file(
+    async def copy_file(
         self, src: str, dst: str, file: FileStatus, storage
     ):  # pragma: no cover
-        with storage() as s:
-            with s.open(path=src) as stream:
+        async with storage() as s:
+            async with s.open(path=src) as stream:
                 with open(dst, mode="wb") as f:
-                    self.transfer(file, stream, f)
+                    await self.transfer(file, stream, f)
                     return dst
 
     async def _copy(
@@ -230,11 +230,11 @@ class NonRecursivePlatformToLocal(CopyOperation):
             dst_path = Path(dst.path)
 
         # check remote
-        file_info = self._file_stat_on_platform(platform_file_name, storage)
+        file_info = await self._file_stat_on_platform(platform_file_name, storage)
         if not file_info or file_info.type != "FILE":
             raise ResourceNotFound(f"Source file {src.path} not found.")
 
-        copy_file = self.copy_file(
+        copy_file = await self.copy_file(
             str(platform_file_name), str(dst_path), file_info, storage
         )
         return copy_file
@@ -254,7 +254,7 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                 await self._copy_obj(PosixPath(src, name), target, storage)
             else:
                 platform_file_name = f"{src}{PLATFORM_DELIMITER}{name}"
-                self.copy_file(platform_file_name, str(target), file, storage)
+                await self.copy_file(platform_file_name, str(target), file, storage)
 
     async def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         if not os.path.exists(dst.path):
@@ -273,14 +273,14 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
         # TODO here we should have work around when someone
         # tries to copy full directory of a person
         if str(platform_file_name) != "/":
-            files = self._file_stat_on_platform(platform_file_name, storage)
+            files = await self._file_stat_on_platform(platform_file_name, storage)
             if not files:
                 raise ResourceNotFound("Source directory not found.")
             if files.type == "FILE":
                 copy_operation = NonRecursivePlatformToLocal(
                     self.principal, self.progress
                 )
-                return copy_operation.copy(src, dst, storage)
+                return await copy_operation.copy(src, dst, storage)
 
         await self._copy_obj(platform_file_name, Path(dst.path), storage)
 

@@ -123,44 +123,46 @@ async def test_dispatch():
     )
 
     argv = ["-n", "Vova", "absent"]
-    assert dispatch(target=_person, tail=argv, city="Kyiv") == "Vova is absent"
+    assert await dispatch(target=_person, tail=argv, city="Kyiv") == "Vova is absent"
 
 
-def test_dispatch_help():
+async def test_dispatch_help():
     argv = ["-n", "Vova", "rest", "--help"]
-    result = dispatch(target=_person, tail=argv, city="Kyiv")
+    result = await dispatch(target=_person, tail=argv, city="Kyiv")
     assert re.match(".*Usage.+person rest", result, re.DOTALL)
 
     argv = ["-n", "Vova", "rest", "--any-long-option", "-any-short-option", "--help"]
-    result = dispatch(target=_person, tail=argv, city="Kyiv")
+    result = await dispatch(target=_person, tail=argv, city="Kyiv")
     assert re.match(".*Usage.+person rest", result, re.DOTALL)
 
     argv = ["-n", "Vova", "rest", "Alabama", "-d", "1day", "--help"]
     try:
-        dispatch(target=_person, tail=argv, city="Kyiv")
+        await dispatch(target=_person, tail=argv, city="Kyiv")
     except ValueError as err:
         if str(err) != "Invalid arguments: --help":
             pytest.fail("--help option error detection")
 
 
-def test_dispatch_help_format_spec():
+async def test_dispatch_help_format_spec():
     argv = ["--help"]
     with pytest.raises(ValueError, match=r"2018"):
-        dispatch(target=_person, tail=argv, format_spec={"year": 2018})
+        await dispatch(target=_person, tail=argv, format_spec={"year": 2018})
 
     argv = ["Vasya", "work"]
     with pytest.raises(ValueError, match=r"2018"):
-        dispatch(target=_person, tail=argv, format_spec={"year": 2018})
+        await dispatch(target=_person, tail=argv, format_spec={"year": 2018})
 
     argv = ["Vasya", "work", "dig", "hole"]
     with pytest.raises(ValueError, match=r"2018"):
-        dispatch(target=_person, tail=argv, format_spec={"year": 2018})
+        await dispatch(target=_person, tail=argv, format_spec={"year": 2018})
 
 
-def test_invalid_command():
+async def test_invalid_command():
     argv = ["-n", "Vasya", "work", "unknown", "command"]
     with pytest.raises(ValueError, match=r"Invalid command: unknown"):
-        dispatch(target=_person, tail=argv, format_spec={"year": 2018}, city="Kyiv")
+        await dispatch(
+            target=_person, tail=argv, format_spec={"year": 2018}, city="Kyiv"
+        )
 
 
 @pytest.mark.asyncio

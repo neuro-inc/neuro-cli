@@ -81,26 +81,27 @@ async def test_job(job, cmd, model_uri, model, loop):
         new=mocked_async_context_manager(JsonResponse(TRAIN_RESPONSE)),
     ):
         with mock.patch("neuromation.client.JobItem._call", _call):
-            func = getattr(model, job)
-            job_status = await func(**args)
-            assert job_status == JobItem(
-                status="PENDING",
-                id=job_status.id,
-                client=model,
-                description="test job description",
-            ), str(job_status)
+            async with model as m:
+                func = getattr(m, job)
+                job_status = await func(**args)
+                assert job_status == JobItem(
+                    status="PENDING",
+                    id=job_status.id,
+                    client=model,
+                    description="test job description",
+                ), str(job_status)
 
-            with pytest.raises(TimeoutError):
-                job_status.wait(timeout=JOB_TIMEOUT_SEC)
+                with pytest.raises(TimeoutError):
+                    await job_status.wait(timeout=JOB_TIMEOUT_SEC)
 
-            status = job_status.wait()
+                status = await job_status.wait()
 
-            assert replace(status, id=None) == JobItem(
-                status="PENDING",
-                id=None,
-                client=model,
-                description="test job description",
-            )
+                assert replace(status, id=None) == JobItem(
+                    status="PENDING",
+                    id=None,
+                    client=model,
+                    description="test job description",
+                )
 
 
 @patch(

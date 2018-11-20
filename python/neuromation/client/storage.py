@@ -1,8 +1,7 @@
 import logging
-from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BufferedReader, BytesIO
-from typing import Any, Dict, Iterator, List
+from typing import Any, AsyncIterable, Dict, List
 
 from async_generator import asynccontextmanager
 
@@ -74,10 +73,11 @@ class Storage(ApiClient):
         return FileStatus.from_primitive(resp["FileStatus"])
 
     @asynccontextmanager
-    async def open(self, *, path: str) -> Iterator[BufferedReader]:
+    async def open(self, *, path: str) -> AsyncIterable[BufferedReader]:
         try:
-            async with self._fetch(OpenRequest(path=path)) as content:
-                yield BufferedReader(content)
+            open_ctx = await self._fetch(OpenRequest(path=path))
+            async with open_ctx as content:
+                yield content
         except FetchError as error:
             error_class = type(error)
             mapped_class = self._exception_map.get(error_class, error_class)

@@ -2,7 +2,6 @@ import logging
 import types
 from functools import singledispatch
 from textwrap import dedent
-from typing import Dict
 
 import docopt
 
@@ -104,6 +103,7 @@ async def dispatch(target, tail, format_spec=None, **kwargs):
             help = help.format(**format_spec)
         help = dedent(help)
         return help
+
     stack = []
 
     while True:

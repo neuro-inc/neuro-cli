@@ -343,7 +343,7 @@ Commands:
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
+            await PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
             return path
 
         @command
@@ -437,7 +437,7 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             model_operation = ModelHandlerOperations(platform_user_name)
-            job = model_operation.train(
+            job = await model_operation.train(
                 image,
                 dataset,
                 results,
@@ -638,7 +638,7 @@ Commands:
 
             List all jobs
             """
-            return JobHandlerOperations(token).list_jobs(jobs, status, description)
+            return await JobHandlerOperations(token).list_jobs(jobs, status, description)
 
         @command
         async def status(id):

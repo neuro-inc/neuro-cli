@@ -1,8 +1,6 @@
 import asyncio
 from textwrap import dedent
 
-import pytest
-
 from neuromation.cli.main import neuro
 
 

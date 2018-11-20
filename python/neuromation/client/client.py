@@ -1,8 +1,9 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Awaitable, Optional, Type
 
+import aiohttp
 from aiohttp.client import ClientTimeout
 
 from neuromation.http import fetch, session
@@ -85,14 +86,20 @@ class ApiClient:
             )
         self._token = token
         self._timeout = client_timeout
-        self._session = None
+        self._session: Optional[aiohttp.ClientSession] = None
 
     async def __aenter__(self) -> "ApiClient":
         self._session = await session(token=self._token, timeout=self._timeout)
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[Any],
+    ) -> Optional[Awaitable[Optional[bool]]]:
         await self.close()
+        return None
 
     @property
     def loop(self) -> asyncio.events.AbstractEventLoop:
@@ -100,10 +107,12 @@ class ApiClient:
 
     async def close(self) -> None:
         if self._session and self._session.closed:
-            return
+            return None
 
-        await self._session.close()
+        if self._session:
+            await self._session.close()
         self._session = None
+        return None
 
     async def _fetch(self, request: Request) -> Any:
         try:

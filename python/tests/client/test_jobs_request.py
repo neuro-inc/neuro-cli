@@ -3,9 +3,7 @@
 # and properly read response from server side
 from typing import List
 from unittest import mock
-from unittest.mock import patch
 
-import aiohttp
 import pytest
 
 from neuromation.client import Image

@@ -1,9 +1,8 @@
 import asyncio
 import enum
-from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BufferedReader
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, AsyncIterable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from async_generator import asynccontextmanager
@@ -261,10 +260,11 @@ class Job(ApiClient):
         return True
 
     @asynccontextmanager
-    async def monitor(self, id: str) -> Iterator[BufferedReader]:
+    async def monitor(self, id: str) -> AsyncIterable[BufferedReader]:
         try:
-            async with self._fetch(JobMonitorRequest(id=id)) as content:
-                yield BufferedReader(content)
+            job_ctx = await self._fetch(JobMonitorRequest(id=id))
+            async with job_ctx as content:
+                yield content
         except FetchError as error:
             error_class = type(error)
             mapped_class = self._exception_map.get(error_class, error_class)

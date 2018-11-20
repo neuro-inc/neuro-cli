@@ -1,6 +1,5 @@
 from io import BytesIO
 from unittest import mock
-from unittest.mock import patch
 
 import aiohttp
 import pytest
@@ -53,8 +52,8 @@ async def test_opem_notexists_file(storage):
     ):
         async with storage as s:
             with pytest.raises(ResourceNotFound):
-                with await s.open(path="/file-not-exists.here") as stream:
-                    stream.read()
+                async with s.open(path="/file-not-exists.here") as stream:
+                    await stream.read()
 
 
 @pytest.mark.asyncio
@@ -90,7 +89,7 @@ async def test_authentication_error(storage):
     ):
         async with storage as s:
             with pytest.raises(AuthenticationError):
-                await storage.rm(path="/any.file")
+                await s.rm(path="/any.file")
 
 
 @pytest.mark.asyncio
@@ -277,8 +276,8 @@ async def test_open(storage):
         new=mocked_async_context_manager(BinaryResponse(data=b"bar")),
     ):
         async with storage as s:
-            with s.open(path="foo") as f:
-                assert f.read() == b"bar"
+            async with s.open(path="foo") as f:
+                assert await f.read() == b"bar"
                 aiohttp.ClientSession.request.assert_called_with(
                     method="GET",
                     url="http://127.0.0.1/storage/foo",
