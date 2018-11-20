@@ -638,7 +638,9 @@ Commands:
 
             List all jobs
             """
-            return await JobHandlerOperations(token).list_jobs(jobs, status, description)
+            return await JobHandlerOperations(token).list_jobs(
+                jobs, status, description
+            )
 
         @command
         async def status(id):

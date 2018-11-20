@@ -1,5 +1,3 @@
-import asyncio
-import os
 import re
 from time import sleep, time
 from urllib.parse import urlparse

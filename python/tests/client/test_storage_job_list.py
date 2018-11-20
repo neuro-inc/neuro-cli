@@ -59,6 +59,7 @@ def jobs_to_test(sorted_timestamps, valid_job_description):
         for description in description_list
     ]
 
+
 @pytest.fixture
 def jobs_mock(mocked_jobs, jobs_to_test):
     async def job_list() -> List[JobDescription]:
@@ -97,12 +98,16 @@ class TestJobListFilter:
 
     async def test_job_filter_running(self, jobs_mock, jobs_to_test):
         expected = self._format([j for j in jobs_to_test if j.status == "running"])
-        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock, status="running")
+        jobs = await JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="running"
+        )
         assert jobs == expected
 
     async def test_job_filter_failed(self, jobs_mock, jobs_to_test):
         expected = self._format([j for j in jobs_to_test if j.status == "failed"])
-        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock, status="failed")
+        jobs = await JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="failed"
+        )
         assert jobs == expected
 
     async def test_job_filter_succeeded(self, jobs_mock, jobs_to_test):
@@ -122,7 +127,9 @@ class TestJobListFilter:
         self, jobs_mock, jobs_to_test
     ):
         expected = self._format(jobs_to_test)
-        jobs = await JobHandlerOperations("test-user").list_jobs(jobs_mock, description="")
+        jobs = await JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, description=""
+        )
         assert jobs == expected
 
     async def test_job_filter_with_empty_status_empty_description__no_filter_applied(
