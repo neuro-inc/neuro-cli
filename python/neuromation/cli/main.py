@@ -119,6 +119,7 @@ Commands:
         Settings:
             url             Updates API URL
             auth            Updates API Token
+            forget          Forget stored API Token
             id_rsa          Updates path to Github RSA token,
                             in use for SSH/Remote debug
             show            Print current settings
@@ -131,18 +132,23 @@ Commands:
                 return
 
             try:
-                subprocess.run(
-                    [
-                        "docker",
-                        "login",
-                        "-p",
-                        config.auth,
-                        "-u",
-                        "token",
-                        docker_registry_url,
-                    ],
-                    check=True,
-                )
+                if config.auth is None:
+                    subprocess.run(
+                        ["docker", "logout", docker_registry_url], check=True
+                    )
+                else:
+                    subprocess.run(
+                        [
+                            "docker",
+                            "login",
+                            "-p",
+                            config.auth,
+                            "-u",
+                            "token",
+                            docker_registry_url,
+                        ],
+                        check=True,
+                    )
             except subprocess.CalledProcessError as e:
                 raise ValueError("Failed to updated docker auth details.")
             return
@@ -204,6 +210,17 @@ Commands:
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
             config = rc.ConfigFactory.update_auth_token(token=token)
+            update_docker_config(config)
+
+        @command
+        def forget():
+            """
+            Usage:
+                neuro config forget
+
+            Forget authorization token
+            """
+            config = rc.ConfigFactory.forget_auth_token()
             update_docker_config(config)
 
         return locals()

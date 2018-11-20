@@ -2,6 +2,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, Optional
 
+import keyring
 import yaml
 from jose import JWTError, jwt
 from yarl import URL
@@ -10,7 +11,7 @@ from yarl import URL
 @dataclass
 class Config:
     url: str = "http://platform.dev.neuromation.io/api/v1"
-    auth: str = ""
+    auth: str = None
     github_rsa_path: str = ""
 
     def docker_registry_url(self) -> str:
@@ -43,6 +44,10 @@ class ConfigFactory:
             ) from e
 
         return cls._update_config(auth=token)
+
+    @classmethod
+    def forget_auth_token(cls) -> Config:
+        return cls._update_config(auth=None)
 
     @classmethod
     def update_api_url(cls, url: str) -> Config:
@@ -79,9 +84,28 @@ class ConfigFactory:
         return Config(**default)
 
 
+CREDENTIAL_FIELDS = ["auth"]
+CREDENTIAL_SERVICE_NAME = "neuro"
+
+
 def save(path, config: Config) -> Config:
+    dict_config = asdict(config)
+    for field in CREDENTIAL_FIELDS:
+        value = dict_config.pop(field, None)
+        if value is None:
+            try:
+                keyring.delete_password(CREDENTIAL_SERVICE_NAME, field)
+            except Exception:
+                pass
+        else:
+            try:
+                keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
+            except Exception:
+                if value is not None:
+                    dict_config[field] = value
+
     with open(path, "w") as file:
-        yaml.dump(asdict(config), file, default_flow_style=False)
+        yaml.dump(dict_config, file, default_flow_style=False)
 
     return config
 
@@ -91,7 +115,18 @@ def load(path) -> Config:
         return create(path, Config())
     except FileExistsError:
         with open(path, "r") as file:
-            return Config(**yaml.load(file))
+            dict_config = yaml.load(file)
+            for field in CREDENTIAL_FIELDS:
+                # Legacy fields from plain file will be supported too,
+                # it`s usable for tests
+                value = dict_config.get(field, None)
+                if value is None:
+                    try:
+                        value = keyring.get_password(CREDENTIAL_SERVICE_NAME, field)
+                        dict_config[field] = value
+                    except Exception:  # pragma: no cover
+                        pass  # pragma: no cover
+            return Config(**dict_config)
 
 
 def create(path, config):

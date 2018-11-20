@@ -115,7 +115,27 @@ def http_backed_storage(http_storage):
 
 
 @pytest.fixture
-def run(request, monkeypatch, capsys, tmpdir):
+def setup_local_keyring(tmpdir, monkeypatch):
+
+    import keyring
+    import keyrings.cryptfile.file
+    import keyrings.cryptfile.file_base
+
+    def file_path():
+        return str(tmpdir / "keystore")
+
+    stored_keyring = keyring.get_keyring()
+    keyring.set_keyring(keyrings.cryptfile.file.PlaintextKeyring())
+    monkeypatch.setattr(
+        keyrings.cryptfile.file_base.FileBacked, "file_path", file_path()
+    )
+    yield
+
+    keyring.set_keyring(stored_keyring)
+
+
+@pytest.fixture
+def run(request, monkeypatch, capsys, tmpdir, setup_local_keyring):
     import sys
     from pathlib import Path
 

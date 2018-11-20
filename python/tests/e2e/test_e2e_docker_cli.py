@@ -78,7 +78,7 @@ def nested_data(tmpdir_factory):
 
 
 @pytest.fixture
-def run(monkeypatch, capsys, tmpdir):
+def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
     import sys
     from pathlib import Path
 

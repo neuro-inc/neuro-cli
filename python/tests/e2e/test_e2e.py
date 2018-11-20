@@ -1,5 +1,4 @@
 import asyncio
-import os
 import platform
 import re
 from hashlib import sha1
@@ -59,30 +58,6 @@ def data(tmpdir_factory):
     return loop.run_until_complete(
         generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
     )
-
-
-@pytest.fixture
-def run(monkeypatch, capsys, tmpdir):
-    import sys
-    from pathlib import Path
-
-    e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
-
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-    tmpdir.join(".nmrc").open("w").write(rc_text)
-
-    def _home():
-        return Path(tmpdir)
-
-    def _run(arguments):
-        monkeypatch.setattr(Path, "home", _home)
-        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
-
-        from neuromation.cli import main
-
-        return main(), capsys.readouterr()
-
-    return _run
 
 
 def hash_hex(file):
