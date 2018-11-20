@@ -6,7 +6,7 @@ import pytest
 
 from neuromation.client.client import ApiClient, TimeoutSettings
 from neuromation.client.requests import build
-from neuromation.http import FetchError, JsonRequest, fetch, session
+from neuromation.http import FetchError, JsonRequest, PlainRequest, fetch, session
 from tests.utils import BinaryResponse
 from utils import JsonResponse, mocked_async_context_manager
 
@@ -170,7 +170,8 @@ def test_fetch_non_empty_binary_response_as_json(loop):
     "aiohttp.ClientSession.request",
     new=mocked_async_context_manager(BinaryResponse(data=None, status=204)),
 )
-def test_fetch_empty_binary_response_as_json(loop):
+@pytest.mark.parametrize("create_request", [JsonRequest, PlainRequest])
+def test_fetch_no_content_response_as_json(loop, create_request):
     _session = loop.run_until_complete(session())
     method = "GET"
     params = {"a": "A", "b": "B"}
@@ -178,7 +179,7 @@ def test_fetch_empty_binary_response_as_json(loop):
     json = {"x": "X", "y": "Y"}
     result = loop.run_until_complete(
         fetch(
-            JsonRequest(method=method, params=params, url=url, data=None, json=json),
+            create_request(method=method, params=params, url=url, data=None, json=json),
             session=_session,
             url="http://foo",
         )
