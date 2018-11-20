@@ -1,6 +1,8 @@
 import asyncio
 from textwrap import dedent
 
+import pytest
+
 from neuromation.cli.main import neuro
 
 
@@ -8,7 +10,6 @@ RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"
 
 
 def test_help(run):
-    loop = asyncio.new_event_loop()
     asyncio.set_event_loop(asyncio.new_event_loop())
 
     _, captured = run(["help"], RC_TEXT)
@@ -29,11 +30,13 @@ def test_help(run):
         assert captured.out == dedent(func.__doc__) + "\n"
 
     with pytest.raises(SystemExit) as captured:
+        asyncio.set_event_loop(asyncio.new_event_loop())
         run(["help", "mississippi"], RC_TEXT)
     assert captured.type == SystemExit
     assert captured.value.code == 127
 
     with pytest.raises(SystemExit) as captured:
+        asyncio.set_event_loop(asyncio.new_event_loop())
         run(["help", "--mississippi"], RC_TEXT)
     assert captured.type == SystemExit
     assert captured.value.code == 127

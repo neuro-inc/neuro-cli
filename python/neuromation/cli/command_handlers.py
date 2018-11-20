@@ -114,11 +114,11 @@ class PlatformRemoveOperation(PlatformStorageOperation):
 
 
 class PlatformRenameOperation(PlatformStorageOperation):
-    def mv(self, src_str: str, dst_str: str, storage: Callable):
+    async def mv(self, src_str: str, dst_str: str, storage: Callable):
         src_path_str = str(self.render_uri_path_with_principal(src_str))
         dst_path_str = str(self.render_uri_path_with_principal(dst_str))
-        with storage() as s:
-            return s.mv(src_path=src_path_str, dst_path=dst_path_str)
+        async with storage() as s:
+            return await s.mv(src_path=src_path_str, dst_path=dst_path_str)
 
 
 class CopyOperation(PlatformStorageOperation):

@@ -236,19 +236,21 @@ async def test_rm(storage):
         )
 
 
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(JsonResponse(json={})),
-)
-def test_mv(storage):
-    assert storage.mv(src_path="foo", dst_path="bar")
-    aiohttp.ClientSession.request.assert_called_with(
-        method="POST",
-        json=None,
-        url="http://127.0.0.1/storage/foo",
-        params={"op": "RENAME", "destination": "bar"},
-        data=None,
-    )
+@pytest.mark.asyncio
+async def test_mv(storage):
+    with mock.patch(
+        "aiohttp.ClientSession.request",
+        new=mocked_async_context_manager(JsonResponse(json={})),
+    ) as my_mock:
+        async with storage as s:
+            assert await s.mv(src_path="foo", dst_path="bar")
+        my_mock.assert_called_with(
+            method="POST",
+            json=None,
+            url="http://127.0.0.1/storage/foo",
+            params={"op": "RENAME", "destination": "bar"},
+            data=None,
+        )
 
 
 @pytest.mark.asyncio

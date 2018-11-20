@@ -62,7 +62,7 @@ def parse(doc, argv):
     return docopt.docopt(doc, argv=head, help=False), tail
 
 
-def get_help(target, tail, stack):
+async def get_help(target, tail, stack):
     while True:
         if not tail:
             return dedent(target.__doc__)
@@ -77,7 +77,7 @@ def get_help(target, tail, stack):
         if not command:
             return dedent(target.__doc__)
 
-        res = target(**{**normalize_options(options, stack + ["COMMAND"])})
+        res = await target(**{**normalize_options(options, stack + ["COMMAND"])})
         old_target = target
         target = commands(res).get(command, None)
         if not target:
@@ -125,7 +125,7 @@ async def dispatch(target, tail, format_spec=None, **kwargs):
         log.debug("===================")
         command = options.get("COMMAND", None)
         if command == "help" and not stack:
-            return get_help(target, tail, stack)
+            return await get_help(target, tail, stack)
 
         if not command and tail:
             raise ValueError(f'Invalid arguments: {" ".join(tail)}')

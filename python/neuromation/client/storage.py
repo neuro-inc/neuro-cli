@@ -87,6 +87,6 @@ class Storage(ApiClient):
         await self._fetch(DeleteRequest(path=path))
         return path
 
-    def mv(self, *, src_path: str, dst_path: str) -> str:
-        self._fetch_sync(RenameRequest(src_path=src_path, dst_path=dst_path))
+    async def mv(self, *, src_path: str, dst_path: str) -> str:
+        await self._fetch(RenameRequest(src_path=src_path, dst_path=dst_path))
         return dst_path
