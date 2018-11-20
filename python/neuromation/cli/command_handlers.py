@@ -458,9 +458,9 @@ class JobHandlerOperations(PlatformStorageOperation):
         description: Optional[str] = None,
     ) -> str:
         def apply_filter(item: JobDescription) -> bool:
-            return (not status or item.status == status) and (
-                not description or item.description == description
-            )
+            filter_status = not status or item.status == status
+            filter_description = not description or item.description == description
+            return filter_status and filter_description
 
         with jobs() as j:
             job_list = j.list()

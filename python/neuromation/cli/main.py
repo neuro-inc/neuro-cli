@@ -614,8 +614,8 @@ Commands:
             Options:
               -s, --status (pending|running|succeeded|failed)
                   Filters out job by state
-              -d, --description DESC
-                  Filters out job by job description
+              -d, --description DESCRIPTION
+                  Filters out job by job description (total match)
 
             List all jobs
             """
