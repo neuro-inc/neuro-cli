@@ -145,6 +145,8 @@ class TestSSHConnectionToJob:
                     "-i",
                     "jump_hst_key",
                     "alice@server",
+                    "-f",
+                    "-N",
                     "-L",
                     f"32121:my-job-id:22",
                 ],

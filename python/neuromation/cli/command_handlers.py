@@ -590,6 +590,8 @@ class JobHandlerOperations(PlatformStorageOperation):
                     "-i",
                     jump_key,
                     f"{jump_user}@{jump_host}",
+                    "-f",
+                    "-N",
                     "-L",
                     f"{local_port}:{job_status.id}:22",
                 ],
