@@ -82,113 +82,163 @@ def jobs_mock(mocked_jobs, jobs_to_test):
 
 class TestJobListFilter:
     @classmethod
-    def _format(cls, jobs):
+    def _format(cls, jobs, quiet):
         return "\n".join(
             [
-                JobHandlerOperations._format_full_job_line(j)
-                for j in JobHandlerOperations._sort_job_list(jobs)
+                JobHandlerOperations._format_job_line(job) if not quiet else job.id
+                for job in JobHandlerOperations._sort_job_list(jobs)
             ]
         )
 
+    @classmethod
+    def _format_quiet(cls, jobs):
+        return "\n".join([j.id for j in JobHandlerOperations._sort_job_list(jobs)])
+
     def test_job_filter_all(self, jobs_mock, jobs_to_test):
-        expected = self._format(jobs_to_test)
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, status=None)
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(jobs_to_test, quiet=quiet)
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, quiet=quiet, status=None
+            )
+            assert jobs == expected
 
     def test_job_filter_running(self, jobs_mock, jobs_to_test):
-        expected = self._format([j for j in jobs_to_test if j.status == "running"])
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, status="running")
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(
+                [j for j in jobs_to_test if j.status == "running"], quiet=quiet
+            )
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, status="running", quiet=quiet
+            )
+            assert jobs == expected
 
     def test_job_filter_failed(self, jobs_mock, jobs_to_test):
-        expected = self._format([j for j in jobs_to_test if j.status == "failed"])
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, status="failed")
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(
+                [j for j in jobs_to_test if j.status == "failed"], quiet=quiet
+            )
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, status="failed", quiet=quiet
+            )
+            assert jobs == expected
 
     def test_job_filter_succeeded(self, jobs_mock, jobs_to_test):
-        expected = self._format([j for j in jobs_to_test if j.status == "succeeded"])
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, status="succeeded"
-        )
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(
+                [j for j in jobs_to_test if j.status == "succeeded"], quiet=quiet
+            )
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, status="succeeded", quiet=quiet
+            )
+            assert jobs == expected
 
     def test_job_filter_dummy_status__not_found(self, jobs_mock, jobs_to_test):
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, status="not-a-status"
-        )
-        assert jobs == ""
+        for quiet in [True, False]:
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, status="not-a-status", quiet=quiet
+            )
+            assert jobs == ""
 
     def test_job_filter_with_empty_description__no_filter_applied(
         self, jobs_mock, jobs_to_test
     ):
-        expected = self._format(jobs_to_test)
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, description="")
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(jobs_to_test, quiet=quiet)
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, description="", quiet=quiet
+            )
+            assert jobs == expected
 
     def test_job_filter_with_empty_status_empty_description__no_filter_applied(
         self, jobs_mock, jobs_to_test
     ):
-        expected = self._format(jobs_to_test)
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, status="", description=""
-        )
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(jobs_to_test, quiet=quiet)
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, status="", description="", quiet=quiet
+            )
+            assert jobs == expected
 
     def test_job_filter_status_and_empty_description__same_as_without(
         self, jobs_mock, jobs_to_test
     ):
-        expected = self._format([j for j in jobs_to_test if j.status == "running"])
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, status="running", description=""
-        )
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(
+                [j for j in jobs_to_test if j.status == "running"], quiet=quiet
+            )
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, status="running", description="", quiet=quiet
+            )
+            assert jobs == expected
 
     def test_job_filter_by_description_(self, jobs_mock, jobs_to_test):
-        expected = self._format(
-            [j for j in jobs_to_test if j.description == valid_job_description]
-        )
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, description=valid_job_description
-        )
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(
+                [j for j in jobs_to_test if j.description == valid_job_description],
+                quiet=quiet,
+            )
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, description=valid_job_description, quiet=quiet
+            )
+            assert jobs == expected
 
     def test_job_filter_description_not_found(self, jobs_mock, jobs_to_test):
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, description="non-existing job description!"
-        )
-        assert jobs == ""
+        for quiet in [True, False]:
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock, description="non-existing job description!", quiet=quiet
+            )
+            assert jobs == ""
 
     def test_job_filter_empty_status_and_dummy_description__not_found(
         self, jobs_mock, jobs_to_test
     ):
-        expected = self._format(
-            [j for j in jobs_to_test if j.description == "non-existing job description"]
-        )
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, status="", description="job not existing description"
-        )
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(
+                [
+                    j
+                    for j in jobs_to_test
+                    if j.description == "non-existing job description"
+                ],
+                quiet=quiet,
+            )
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock,
+                status="",
+                description="job not existing description",
+                quiet=quiet,
+            )
+            assert jobs == expected
 
     def test_job_filter_non_empty_status_and_dummy_description__not_found(
         self, jobs_mock, jobs_to_test
     ):
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, status="running", description="non-existing job description"
-        )
-        assert jobs == ""
+        for quiet in [True, False]:
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock,
+                status="running",
+                description="non-existing job description",
+                quiet=quiet,
+            )
+            assert jobs == ""
 
     def test_job_filter_status_and_description(self, jobs_mock, jobs_to_test):
-        expected = self._format(
-            [
-                job
-                for job in jobs_to_test
-                if job.status == "running" and job.description == valid_job_description
-            ]
-        )
-        jobs = JobHandlerOperations("test-user").list_jobs(
-            jobs_mock, status="running", description=valid_job_description
-        )
-        assert jobs == expected
+        for quiet in [True, False]:
+            expected = self._format(
+                [
+                    job
+                    for job in jobs_to_test
+                    if job.status == "running"
+                    and job.description == valid_job_description
+                ],
+                quiet=quiet,
+            )
+            jobs = JobHandlerOperations("test-user").list_jobs(
+                jobs_mock,
+                status="running",
+                description=valid_job_description,
+                quiet=quiet,
+            )
+            assert jobs == expected
 
 
 class TestJobListSort:
@@ -196,12 +246,14 @@ class TestJobListSort:
         def slice_jobs_chronologically(jobs_list, substring):
             return [index for index, job in enumerate(jobs_list) if substring in job]
 
-        jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock).split("\n")
-        old_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[0])
-        mid_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[1])
-        new_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[2])
-        assert all(i > j for i in old_jobs for j in mid_jobs)
-        assert all(i > j for i in mid_jobs for j in new_jobs)
+        for quiet in [True, False]:
+            jobs = JobHandlerOperations("test-user").list_jobs(jobs_mock, quiet=quiet)
+            jobs = jobs.split("\n")
+            old_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[0])
+            mid_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[1])
+            new_jobs = slice_jobs_chronologically(jobs, sorted_timestamps[2])
+            assert all(i > j for i in old_jobs for j in mid_jobs)
+            assert all(i > j for i in mid_jobs for j in new_jobs)
 
 
 class TestJobListTruncate:

@@ -412,7 +412,7 @@ Commands:
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 -d, --description DESC    Add optional description to the job
-                -q, --quiet               Run command in quiet mode
+                -q, --quiet               Run command in quiet mode (print only job id)
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -606,7 +606,7 @@ Commands:
                         sys.stdout.write(chunk.decode(errors="ignore"))
 
         @command
-        def list(status, description):
+        def list(status, description, quiet):
             """
             Usage:
                 neuro job list [options]
@@ -615,11 +615,15 @@ Commands:
               -s, --status (pending|running|succeeded|failed)
                   Filters out job by state
               -d, --description DESCRIPTION
-                  Filters out job by job description (total match)
+                  Filters out job by job description (exact match)
+              -q, --quiet
+                  Run command in quiet mode (print only job ids)
 
             List all jobs
             """
-            return JobHandlerOperations(token).list_jobs(jobs, status, description)
+            return JobHandlerOperations(token).list_jobs(
+                jobs, quiet, status, description
+            )
 
         @command
         def status(id):
