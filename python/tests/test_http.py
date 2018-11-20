@@ -176,13 +176,14 @@ def test_fetch_empty_binary_response_as_json(loop):
     params = {"a": "A", "b": "B"}
     url = "/foo"
     json = {"x": "X", "y": "Y"}
-    loop.run_until_complete(
+    result = loop.run_until_complete(
         fetch(
             JsonRequest(method=method, params=params, url=url, data=None, json=json),
             session=_session,
             url="http://foo",
         )
     )
+    assert result is None
     aiohttp.ClientSession.request.assert_called_with(
         method=method,
         json=json,

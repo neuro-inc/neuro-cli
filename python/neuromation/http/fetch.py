@@ -185,7 +185,7 @@ async def fetch(request, session, url: str):
 async def _(request, session, url: str):
     async with _fetch(request, session, url) as resp:
         if resp.status == 204:  # HTTPNoContent response
-            return {}
+            return None
         return await resp.json()
 
 
