@@ -425,23 +425,28 @@ class JobHandlerOperations(PlatformStorageOperation):
         return input[:index_stop] + placeholder + tail
 
     @classmethod
-    def _format_full_job_line(cls, item: JobDescription) -> str:
+    def _format_job_line(cls, item: JobDescription, quiet: bool = False) -> str:
+        # TODO (A Yushkovskiy 20.11.2018) move this logic to a formatter
         def wrap(text: str) -> str:
             return f"'{text}'" if text else ""
 
-        tab = "\t"
-        image = item.image or ""
-        description = wrap(cls._truncate_string(item.description or "", 50))
-        command = wrap(cls._truncate_string(item.command or "", 50))
-        return tab.join(
-            [
-                item.id,
-                f"{item.status:<10}",
-                f"{image:<15}",
-                f"{description:<50}",
-                f"{command:<50}",
-            ]
-        )
+        if quiet:
+            details = ""
+        else:
+            tab = "\t"
+            image = item.image or ""
+            description = wrap(cls._truncate_string(item.description or "", 50))
+            command = wrap(cls._truncate_string(item.command or "", 50))
+            details = tab.join(
+                [
+                    "",  # empty line for the initial tab
+                    f"{item.status:<10}",
+                    f"{image:<15}",
+                    f"{description:<50}",
+                    f"{command:<50}",
+                ]
+            )
+        return item.id + details
 
     @classmethod
     def _sort_job_list(cls, job_list: List[JobDescription]) -> List[JobDescription]:
@@ -454,6 +459,7 @@ class JobHandlerOperations(PlatformStorageOperation):
     def list_jobs(
         self,
         jobs: Callable,
+        quiet: bool = False,
         status: Optional[str] = None,
         description: Optional[str] = None,
     ) -> str:
@@ -466,7 +472,7 @@ class JobHandlerOperations(PlatformStorageOperation):
             job_list = j.list()
             return "\n".join(
                 [
-                    self._format_full_job_line(item)
+                    self._format_job_line(item, quiet)
                     for item in self._sort_job_list(job_list)
                     if apply_filter(item)
                 ]
