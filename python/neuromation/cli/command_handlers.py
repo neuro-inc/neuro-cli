@@ -261,6 +261,9 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                 platform_file_name = f"{src}{PLATFORM_DELIMITER}{name}"
                 self.copy_file(platform_file_name, str(target), file, storage)
 
+    def _is_local_dir(self, path: str) -> bool:
+        return os.path.exists(path) and os.path.isdir(path)
+
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
         # Test if source is file or directory
         platform_file_name = self._render_platform_path_with_principal(src)
@@ -273,23 +276,19 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
             return copy_operation.copy(src, dst, storage)
 
         if file_status.type == "DIRECTORY":
-            if not os.path.exists(dst.path):
-                raise FileNotFoundError(
-                    "Target should exist. Please create target directory "
-                    "and try again."
-                )
-
-            if not os.path.isdir(dst.path):
-                raise NotADirectoryError(
-                    "Target should be directory. Please correct your "
-                    "command line arguments."
-                )
-
             target_dir_name = PurePath(src.path).name
             target_dir = f"{dst.path}{os.sep}{target_dir_name}"
-            if not os.path.exists(target_dir):
-                os.mkdir(target_dir)
+            if not self._is_local_dir(dst.path):
+                parent_dir = os.path.dirname(dst.path)
+                if not self._is_local_dir(parent_dir):
+                    raise NotADirectoryError(
+                        "Target should exist. Please create target directory "
+                        "and try again."
+                    )
+                target_dir = f"{dst.path}"
 
+            log.debug(target_dir)
+            os.mkdir(target_dir)
             if not os.path.isdir(target_dir):
                 raise NotADirectoryError(
                     "Target should be directory. Please correct your "
