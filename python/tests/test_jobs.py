@@ -3,15 +3,10 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 
-from neuromation.client import ClientError, IllegalArgumentError, ResourceNotFound
+from neuromation.client import ResourceNotFound
 from neuromation.client.jobs import JobDescription, JobStatusHistory, Resources
 from tests.utils import Response
-from utils import (
-    BinaryResponse,
-    JsonResponse,
-    PlainResponse,
-    mocked_async_context_manager,
-)
+from utils import BinaryResponse, JsonResponse, mocked_async_context_manager
 
 
 @patch(
