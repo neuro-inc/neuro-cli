@@ -192,6 +192,8 @@ async def _(request, session, url: str):
 @fetch.register(PlainRequest)  # NOQA
 async def _(request, session, url: str):
     async with _fetch(request, session, url) as resp:
+        if resp.status == 204:  # HTTPNoContent response
+            return None
         return await resp.text()
 
 
