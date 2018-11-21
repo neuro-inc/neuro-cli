@@ -8,7 +8,6 @@ import pytest
 
 from neuromation.cli.rc import ConfigFactory
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_from
-from tests.e2e.utils import RC_TEXT
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
