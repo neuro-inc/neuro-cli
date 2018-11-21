@@ -66,27 +66,27 @@ _neuro_filedir()
 
     local -a toks
     local x tmp
- 
+
     x=$( compgen -d -- "$cur" ) &&
     while read -r tmp; do
-        toks+=( "$tmp/" )
+	toks+=( "$tmp/" )
     done <<< "$x"
     if [[ "$1" != -d ]]; then
-        local quoted=$(_neuro_quote $cur)
-	
-        local xspec=${1:+"!*.@($1)"}
+	local quoted=$(_neuro_quote $cur)
+
+	local xspec=${1:+"!*.@($1)"}
 	if [[ "$1" = -a ]]
 	then
 	    xspec="!*"
 	fi
-        x=$( compgen -f -X "$xspec" -- $quoted ) &&
-        while read -r tmp; do
+	x=$( compgen -f -X "$xspec" -- $quoted ) &&
+	while read -r tmp; do
 	    if [[ -d "$tmp" ]]
 	    then
 		continue
 	    fi
 	    toks+=( "$tmp" )
-        done <<< "$x"
+	done <<< "$x"
     fi
     echo "${toks[@]}"
     return 0
@@ -99,7 +99,7 @@ _neuro_filedir()
 _neuro_listjobs()
 {
     status=$1
-    
+
     local neurocmd="neuro job list"
 
     local words=
@@ -140,9 +140,9 @@ _neuro_complete-storage()
     path=${path#/}
     path=${path%/}
     if [[ $path == '' ]]
-    then 
+    then
 	prefix="storage\://"
-    else 
+    else
 	prefix="storage\://$path/"
     fi
     if [[ $path == "" ]]; then path=.; fi
@@ -205,7 +205,7 @@ _neuro_complete-uri()
     if [[ "storage\://" == "$cur"*/ ]]
     then
 	toks="$toks storage\://"
-    fi 
+    fi
     if [[ $cur == "storage\\://"* ]]
     then
 	local path=${cur#storage\\://}
@@ -218,7 +218,7 @@ _neuro_complete-uri()
 	if [[ "file\\://" == "$cur"*/ ]]
 	then
 	    toks="$toks file\://"
-	fi 
+	fi
 
 	local path=
 
@@ -245,7 +245,7 @@ _neuro-completion()
     toks=()  # array to accumulate possible completions
     cur=${COMP_WORDS[COMP_CWORD]}  # current word
     local state=init
-    for i in `seq 0 $((COMP_CWORD - 1))`	     
+    for i in `seq 0 $((COMP_CWORD - 1))`
     do
 	local cword=${COMP_WORDS[i]}
 	local recursive=n
@@ -291,86 +291,19 @@ _neuro-completion()
 		    share)
 			state=share
 			;;
+		    help)
+			state=base
+			;;
 		    *)
 			state=error
 			;;
 		esac
 		;;
-            url)
+	    url)
 		state=base
 		;;
 	    token)
 		state=base
-		;;
-	    store)
-		case $cword in
-		    ls)
-			state=store-ls
-			;;
-		    rm)
-			state=store-rm
-			;;
-		    mkdir)
-			state=store-mkdir
-			;;
-		    cp)
-			state=store-cp
-			;;
-		    *)
-			state=erro
-			;;
-		esac
-		;;
-	    store-ls|store-rm|store-mkdir)
-		state=done
-		;;
-	    store-cp)
-		case $cword in
-		    -r|--recursive)
-			recursive=y
-			;;
-		    *)
-			state=store-cp2
-			;;
-		esac
-		;;
-	    job)
-		case $cword in
-		    list)
-			state=done
-			;;
-		    status)
-			state=job-status
-			;;
-		    kill)
-			state=job-kill
-			;;
-		    monitor)
-			state=job-monitor
-			;;
-		    ssh)
-			state=job-ssh
-			;;
-		    *)
-			state=error
-			;;
-		esac
-		;;
-	    job-status|job-kill|job-monitor)
-		state=done
-		;;
-	    job-ssh)
-		case $cword in
-		    --user)
-			state=job-ssh-user
-		    ;;
-		    --key)
-			state=job-ssh-key
-		    ;;
-		esac
-		;;
-	    job-ssh-user|job-ssh-key)
-		state=job-ssh
 		;;
 	    model)
 		case $cword in
@@ -387,14 +320,19 @@ _neuro-completion()
 		;;
 	    model-train)
 		case $cword in
-		    -c|--cpu)
-			state=model-train-cpu
-			;;
 		    -g|--gpu)
 			state=model-train-gpu
 			;;
+		    --gpu-model)
+			state=model-train-gpu-model
+			;;
+		    -c|--cpu)
+			state=model-train-cpu
+			;;
 		    -m|--memory)
 			state=model-train-memory
+			;;
+		    -x|--extshm)
 			;;
 		    --http)
 			state=model-train-http
@@ -402,9 +340,10 @@ _neuro-completion()
 		    --ssh)
 			state=model-train-ssh
 			;;
-		    --quite|-q)
+		    -d|--description)
+			state=model-train-description
 			;;
-		    -x|--extshm)
+		    --q|--quite)
 			;;
 		    *)
 			state=model-train-dataset
@@ -414,7 +353,10 @@ _neuro-completion()
 	    model-train-memory|model-train-gpu|model-train-cpu)
 		state=model-train
 		;;
-	    model-train-http|model-train-ssh)
+	    model-train-http|model-train-ssh|model-train-gpu-model)
+		state=model-train
+		;;
+	    model-train-description)
 		state=model-train
 		;;
 	    model-train-dataset)
@@ -438,6 +380,151 @@ _neuro-completion()
 		;;
 	    model-debug-localport)
 		state=model-debug
+		;;
+	    job)
+		case $cword in
+		    submit)
+			state=job-submit
+			;;
+		    monitor)
+			state=job-monitor
+			;;
+		    list)
+			state=job-list
+			;;
+		    status)
+			state=job-status
+			;;
+		    kill)
+			state=job-kill
+			;;
+		    ssh)
+			state=job-ssh
+			;;
+		    *)
+			state=error
+			;;
+		esac
+		;;
+	    job-submit)
+		case $cword in
+		    -g|--gpu)
+			state=job-submit-gpu
+			;;
+		    --gpu-model)
+			state=job-submit-gpu-model
+			;;
+		    -c|--cpu)
+			state=job-submit-cpu
+			;;
+		    -m|--memory)
+			state=job-submit-memory
+			;;
+		    -x|--extshm)
+			;;
+		    --http)
+			state=job-submit-http
+			;;
+		    --ssh)
+			state=job-submit-ssh
+			;;
+		    -d|--description)
+			state=job-submit-description
+			;;
+		    --q|--quite)
+			;;
+		    --volume)
+			state=job-submit-volume
+			;;
+		    *)
+			state=job-submit-cmd
+		esac
+		;;
+	    job-submit-memory|job-submit-gpu|job-submit-cpu)
+		state=job-submit
+		;;
+	    job-submit-http|job-submit-ssh|job-submit-gpu-model)
+		state=job-submit
+		;;
+	    job-submit-description|job-submit-volume)
+		state=job-submit
+		;;
+	    job-submit-cmd)
+		state=job-submit-cmd
+		;;
+	    job-list)
+		case $cword in
+		    --status)
+			state=job-list-status
+			;;
+		    *)
+			state=done
+			;;
+		esac
+		;;
+	    job-list-status)
+		state=done
+		;;
+	    job-status|job-kill|job-monitor)
+		state=done
+		;;
+	    job-ssh)
+		case $cword in
+		    --user)
+			state=job-ssh-user
+		    ;;
+		    --key)
+			state=job-ssh-key
+		    ;;
+		esac
+		;;
+	    job-ssh-user|job-ssh-key)
+		state=job-ssh
+		;;
+	    store)
+		case $cword in
+		    ls)
+			state=store-ls
+			;;
+		    rm)
+			state=store-rm
+			;;
+		    mkdir)
+			state=store-mkdir
+			;;
+		    cp)
+			state=store-cp
+			;;
+		    mv)
+			state=store-mv
+			;;
+		    *)
+			state=erro
+			;;
+		esac
+		;;
+	    store-ls|store-rm|store-mkdir)
+		state=done
+		;;
+	    store-cp)
+		case $cword in
+		    -r|--recursive)
+			recursive=y
+			;;
+		    *)
+			state=store-cp2
+			;;
+		esac
+		;;
+	    store-mv)
+		case $cword in
+		    *)
+			state=store-mv2
+			;;
+		esac
+		;;
+	    store-mv2)
+		state=done
 		;;
 	    config)
 		case $cword in
@@ -496,13 +583,13 @@ _neuro-completion()
 	    share-access)
 		state=done
 		;;
-        esac
+	esac
     done
     case $state in
 	base)
 	    toks='-u --url -t --token -v --verbose
-                  -v --version model job store help 
-		  config image completion share'
+		  -v --version model job store image
+		  config completion share help'
 	    ;;
 	url)
 	    toks='http\://'
@@ -513,8 +600,8 @@ _neuro-completion()
 	    toks='train debug'
 	    ;;
 	model-train)
-	    toks='-c --cpu -g --gpu -m --memory -x --extshm
-	    	  --http --ssh -q --quite'	     
+	    toks='-c --cpu -g --gpu --gpu-model -m --memory -x --extshm
+		  --http --ssh -q --quite --description'
 	    ;;
 	model-train-dataset)
 	    toks=$(_neuro_complete-uri "$cur" n y)
@@ -522,15 +609,31 @@ _neuro-completion()
 	model-train-result)
 	    toks=$(_neuro_complete-uri "$cur" n y)
 	    ;;
+	model-train-gpu-model|job-submit-gpu-model)
+	    toks="nvidia-tesla-k80 nvidia-tesla-p4 nvidia-tesla-v100"
+	    ;;
 	model-debug)
 	    toks=$(_neuro_listjobs running)
 	    toks="$toks --localport"
 	    ;;
 	job)
-	    toks='list status monitor kill'
+	    toks='submit list status monitor kill'
+	    ;;
+	job-submit)
+	    toks='-c --cpu -g --gpu --gpu-model -m --memory -x --extshm
+		  --http --ssh -q --quite --volume --description'
+	    ;;
+	job-submit-volume)
+	    toks=$(_neuro_complete-uri "$cur" n y)
 	    ;;
 	job-status)
 	    toks=$(_neuro_listjobs)
+	    ;;
+	job-list)
+	    toks="--status"
+	    ;;
+	job-list-status)
+	    toks="pending running succeeded failed"
 	    ;;
 	job-kill|job-monitor)
 	    toks=$(_neuro_listjobs running)
@@ -540,7 +643,7 @@ _neuro-completion()
 	    toks="$toks --user --key"
 	    ;;
 	store)
-	    toks='ls cp rm mkdir'
+	    toks='rm ls cp mv mkdir'
 	    ;;
 	store-ls|store-mkdir)
 	    toks=$(_neuro_complete-uri "$cur" n y)
@@ -554,6 +657,12 @@ _neuro-completion()
 	    ;;
 	store-cp2)
 	    toks=$(_neuro_complete-uri "$cur" y $recursive)
+	    ;;
+	store-mv)
+	    toks=$(_neuro_complete-uri "$cur" n n)
+	    ;;
+	store-mv2)
+	    toks=$(_neuro_complete-uri "$cur" n n)
 	    ;;
 	config)
 	    toks='url auth show id_rsa'
@@ -583,4 +692,3 @@ _neuro-completion()
 } # _neuro_completion()
 
 complete -o nospace -F _neuro-completion neuro
-
