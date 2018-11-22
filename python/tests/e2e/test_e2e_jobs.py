@@ -76,14 +76,7 @@ def test_job_complete_lifecycle(run, tmpdir):
     assert job_id_second.startswith("job-")
 
     _, captured = run(
-        [
-            "job",
-            "submit",
-            UBUNTU_IMAGE_NAME,
-            "--memory",
-            "2000000000000M",
-            "-q",
-        ]
+        ["job", "submit", UBUNTU_IMAGE_NAME, "--memory", "2000000000000M", "-q"]
     )
     job_id_third = captured.out.strip()
     assert job_id_third.startswith("job-")
