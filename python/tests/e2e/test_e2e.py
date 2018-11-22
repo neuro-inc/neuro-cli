@@ -10,7 +10,7 @@ import pytest
 
 from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
-from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list
+from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list, fs_sync
 
 
 BLOCK_SIZE_MB = 16
@@ -68,6 +68,7 @@ def test_empty_directory_ls_output(run):
     assert captured.out == f"storage://{_path}\n"
 
     # Ensure output of ls - empty directory shall print nothing.
+    fs_sync()
     _, captured = run(["store", "ls", f"storage://{_path}"])
     assert not captured.err
     assert captured.out.isspace()
@@ -194,6 +195,7 @@ def test_e2e(data, run, tmpdir):
     assert (_path + "/foo") in captured.out
 
     # Confirm file has been uploaded
+    fs_sync()
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     expected_line = format_list(type="file", size=16777216, name="foo")
@@ -202,6 +204,7 @@ def test_e2e(data, run, tmpdir):
     assert not captured.err
 
     # Download into local file and confirm checksum
+    fs_sync()
     _local = join(tmpdir, "bar")
     _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
     assert hash_hex(_local) == checksum
@@ -221,6 +224,7 @@ def test_e2e(data, run, tmpdir):
     assert (_path + "/bar") in captured.out
 
     # Confirm file has been renamed
+    fs_sync()
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
@@ -237,10 +241,12 @@ def test_e2e(data, run, tmpdir):
     assert _path2 in captured.out
 
     # Remove test dir
+    fs_sync()
     _, captured = run(["store", "rm", f"storage://{_path2}"])
     assert not captured.err
 
     # And confirm
+    fs_sync()
     _, captured = run(["store", "ls", f"storage:///tmp"])
 
     split = captured.out.split("\n")

@@ -5,7 +5,7 @@ from uuid import uuid4 as uuid
 
 import pytest
 
-from tests.e2e.utils import format_list
+from tests.e2e.utils import format_list, fs_sync
 
 
 @pytest.mark.e2e
@@ -21,11 +21,13 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     assert _path in captured.out
 
     # Ensure file is there
+    fs_sync()
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert format_list(name=file_name, size=16777216, type="file") in split
 
     # Remove the file from platform
+    fs_sync()
     _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
     assert not captured.err
 
@@ -52,6 +54,7 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     assert _path in captured.out
 
     # Ensure file is there
+    fs_sync()
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert format_list(name=file_name, size=16777216, type="file") in split
@@ -61,6 +64,7 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     assert not captured.err
 
     # Ensure file is not there
+    fs_sync()
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert format_list(name=file_name, size=16777216, type="file") not in split
@@ -85,6 +89,7 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     assert _path in captured.out
 
     # Ensure file is there
+    fs_sync()
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert format_list(name="different_name.txt", size=16777216, type="file") in split
@@ -95,6 +100,7 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     assert not captured.err
 
     # Ensure file is not there
+    fs_sync()
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert (
@@ -122,6 +128,7 @@ def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_loca
         assert _path in captured.out
 
     # Ensure file is there
+    fs_sync()
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert format_list(name="non_existing_dir", size=0, type="directory") not in split
@@ -142,6 +149,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
     assert captured.out == f"storage://{_path}" + "\n"
 
     # Try downloading non existing file
+    fs_sync()
     _local = join(tmpdir, "bar")
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         _, _ = run(["store", "cp", "storage://" + _path + "/foo", _local])
@@ -152,6 +160,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
     assert not captured.err
 
     # And confirm
+    fs_sync()
     _, captured = run(["store", "ls", f"storage:///tmp"])
 
     split = captured.out.split("\n")
@@ -171,6 +180,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsy
     assert captured.out == f"storage://{_path}" + "\n"
 
     # Try downloading non existing file
+    fs_sync()
     _local = join(tmpdir)
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         _, captured = run(["store", "cp", "storage://" + _path + "/foo", _local])
@@ -181,6 +191,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsy
     assert not captured.err
 
     # And confirm
+    fs_sync()
     _, captured = run(["store", "ls", f"storage:///tmp"])
 
     split = captured.out.split("\n")

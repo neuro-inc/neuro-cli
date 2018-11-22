@@ -5,7 +5,7 @@ from uuid import uuid4 as uuid
 import pytest
 
 from tests.e2e.conftest import hash_hex
-from tests.e2e.utils import format_list
+from tests.e2e.utils import format_list, fs_sync
 
 
 @pytest.mark.e2e
@@ -28,6 +28,7 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     assert _path in captured.out
 
     # Check directory structure
+    fs_sync()
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     assert f"directory      0              {dir_name}" in captured_output_list
@@ -79,6 +80,7 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     assert not captured.err
 
     # And confirm
+    fs_sync()
     _, captured = run(["store", "ls", f"storage:///tmp"])
 
     split = captured.out.split("\n")
