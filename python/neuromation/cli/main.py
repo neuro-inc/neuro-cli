@@ -4,6 +4,7 @@ import subprocess
 import sys
 from functools import partial
 from pathlib import Path
+from typing import Union
 from urllib.parse import urlparse
 
 import aiohttp
@@ -310,7 +311,9 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
-            timeout = TimeoutSettings(None, None, None, 30)
+            timeout = TimeoutSettings(
+                total=None, connect=None, sock_read=None, sock_connect=30
+            )
             storage = partial(Storage, url, token, timeout)
             src = urlparse(source, scheme="file")
             dst = urlparse(destination, scheme="file")
@@ -654,16 +657,32 @@ Commands:
             return JobStatusFormatter.format_job_status(res)
 
         @command
-        def kill(id):
+        def kill(job_ids):
             """
             Usage:
-                neuro job kill ID
+                neuro job kill JOB_IDS...
 
-            Kill job
+            Kill job(s)
             """
+            already_deads, errors = [], []
             with jobs() as j:
-                j.kill(id)
-            return "Job killed."
+                for job in job_ids:
+                    try:
+                        error = j.kill(job)
+                        if error is None:  # success
+                            print(job)
+                        else:
+                            already_deads.append((job, error))
+                    except ValueError as e:
+                        errors.append((job, e))
+
+            def format_fail(job: str, reason: Union[str, Exception]) -> str:
+                return f"Cannot kill job {job}: {reason}"
+
+            for job, reason in already_deads:
+                print(format_fail(job, reason))
+            for job, error in errors:
+                print(format_fail(job, error))
 
         return locals()
 

@@ -255,10 +255,13 @@ class Job(ApiClient):
         res = self._fetch_sync(JobListRequest())
         return [self._dict_to_description_with_history(job) for job in res["jobs"]]
 
-    def kill(self, id: str) -> bool:
-        self._fetch_sync(JobKillRequest(id=id))
-        # TODO(artyom, 07/16/2018): what are we returning here?
-        return True
+    def kill(self, id: str) -> str:
+        """
+        the method returns None when the server has responded
+        with HTTPNoContent in case of successful job deletion,
+        and the text response otherwise (possibly empty).
+        """
+        return self._fetch_sync(JobKillRequest(id=id))
 
     @contextmanager
     def monitor(self, id: str) -> Iterator[BufferedReader]:
