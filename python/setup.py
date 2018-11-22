@@ -29,7 +29,8 @@ setup(
         'python-jose==3.0.1',
         'python-dateutil==2.7.5',
         'keyring~=13.0',
-        'keyrings.cryptfile==1.2.1'
+        'keyrings.cryptfile==1.2.1',
+        'tqdm==4.1.0',
     ],
     include_package_data=True,
     description='Neuromation Platform API client',

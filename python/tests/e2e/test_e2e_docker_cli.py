@@ -2,7 +2,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
-from docker import DockerClient
+from docker import APIClient
 from docker.errors import APIError
 
 from neuromation.cli.rc import ConfigFactory
@@ -30,9 +30,13 @@ def docker_throw_error(*args, **kwargs):
     raise APIError(message="test")
 
 
+def docker_return_false(*args, **kwargs):
+    return False
+
+
 def test_no_docker(run, monkeypatch):
-    with mock.patch("docker.from_env") as mocked_client:
-        docker_client = MagicMock(DockerClient)
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
         mocked_client.return_value = docker_client
         docker_client.ping.side_effect = docker_throw_error
 
@@ -52,8 +56,8 @@ def test_no_docker(run, monkeypatch):
 
 
 def test_docker_config_with_docker(run, monkeypatch):
-    with mock.patch("docker.from_env") as mocked_client:
-        docker_client = MagicMock(DockerClient)
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
         mocked_client.return_value = docker_client
 
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
@@ -65,32 +69,31 @@ def test_docker_config_with_docker(run, monkeypatch):
 
 
 def test_docker_push_with_docker(run, monkeypatch):
-    with mock.patch("docker.from_env") as mocked_client:
-        docker_client = MagicMock(DockerClient)
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
         mocked_client.return_value = docker_client
 
-        _, captured = run(["image", "push", "abrakadabra"])
+        _, captured = run(["image", "push", "abrakadabra:latest"])
 
         assert docker_client.ping.call_count == 1
-        assert docker_client.images.get.call_count == 1
-        assert docker_client.images.push.call_count == 1
+        assert docker_client.tag.call_count == 1
+        assert docker_client.push.call_count == 1
 
 
 def test_docker_pull_with_docker(run, monkeypatch):
-    with mock.patch("docker.from_env") as mocked_client:
-        docker_client = MagicMock(DockerClient)
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
         mocked_client.return_value = docker_client
 
-        _, captured = run(["image", "pull", "abrakadabra"])
+        _, captured = run(["image", "pull", "abrakadabra:2"])
 
         assert docker_client.ping.call_count == 1
-        assert docker_client.images.get.call_count == 0
-        assert docker_client.images.pull.call_count == 1
+        assert docker_client.pull.call_count == 1
 
 
 def test_docker_error_scenarios(run, monkeypatch):
-    with mock.patch("docker.from_env") as mocked_client:
-        docker_client = MagicMock(DockerClient)
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
         mocked_client.return_value = docker_client
 
         with pytest.raises(SystemExit):
@@ -100,13 +103,19 @@ def test_docker_error_scenarios(run, monkeypatch):
             docker_client.login = old_value
 
         with pytest.raises(SystemExit):
-            old_value = docker_client.images.get
-            docker_client.images.get = docker_throw_error
-            _, captured = run(["image", "push", "abrakadabra"])
-            docker_client.images.get = old_value
+            old_value = docker_client.tag
+            docker_client.tag = docker_throw_error
+            _, captured = run(["image", "push", "abrakadabra:2"])
+            docker_client.get = old_value
+
+        with pytest.raises(SystemExit):
+            old_value = docker_client.tag
+            docker_client.tag = docker_return_false
+            _, captured = run(["image", "push", "abrakadabra:2"])
+            docker_client.get = old_value
 
         with pytest.raises(SystemExit):
             old_value = docker_client.images.pull
-            docker_client.images.pull = docker_throw_error
-            _, captured = run(["image", "pull", "abrakadabra"])
+            docker_client.pull = docker_throw_error
+            _, captured = run(["image", "pull", "abrakadabra:2"])
             docker_client.images.pull = old_value
