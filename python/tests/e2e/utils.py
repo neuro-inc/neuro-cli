@@ -1,8 +1,6 @@
 import os
 from time import sleep
 
-import pytest
-
 
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
