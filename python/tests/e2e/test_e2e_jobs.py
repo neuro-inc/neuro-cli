@@ -51,7 +51,6 @@ def test_job_complete_lifecycle(run, tmpdir):
     )
     job_id_first = re.match("Job ID: (.+) Status:", captured.out).group(1)
     assert job_id_first.startswith("job-")
-
     command_second = 'bash -c "sleep 2m; false"'
     _, captured = run(
         [
@@ -112,20 +111,21 @@ def test_job_complete_lifecycle(run, tmpdir):
     assert job_id_first in job_ids_before_killing
     assert job_id_second in job_ids_before_killing
     assert job_ids_orig != job_ids_before_killing
-
     # test the job list -q
     _, captured = run(["job", "list", "--status", "running", "-q"])
     job_ids_before_killing_quiet = [x.strip() for x in captured.out.split("\n") if x]
     assert job_ids_before_killing == job_ids_before_killing_quiet
 
     # kill multiple
-    _, captured = run(["job", "kill", job_id_first, job_id_second])
+    _, captured = run(["job", "kill", job_id_first, job_id_second, job_id_third])
     kill_output_list = [x.strip() for x in captured.out.split("\n") if x]
-    assert len(kill_output_list) == 2
+    assert len(kill_output_list) == 3
     assert job_id_first in kill_output_list
     assert job_id_second in kill_output_list
+    assert job_id_third in kill_output_list
     wait_for_job_to_change_state_from(run, job_id_first, "Status: running")
     wait_for_job_to_change_state_from(run, job_id_second, "Status: running")
+    wait_for_job_to_change_state_from(run, job_id_third, "Status: pending")
 
     # check killed
     _, captured = run(["job", "list", "--status", "running", "-q"])
@@ -133,6 +133,7 @@ def test_job_complete_lifecycle(run, tmpdir):
     assert job_ids_orig == job_ids_after_kill_quiet
     assert job_id_first not in job_ids_after_kill_quiet
     assert job_id_second not in job_ids_after_kill_quiet
+    assert job_id_third not in job_ids_after_kill_quiet
 
     # try to kill already killed
     _, captured = run(["job", "kill", job_id_first])
