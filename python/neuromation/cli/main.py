@@ -4,6 +4,7 @@ import subprocess
 import sys
 from functools import partial
 from pathlib import Path
+from typing import Union
 from urllib.parse import urlparse
 
 import aiohttp
@@ -667,23 +668,21 @@ Commands:
             with jobs() as j:
                 for job in job_ids:
                     try:
-                        res = j.kill(job)
-                        if res is None:  # success
+                        error = j.kill(job)
+                        if error is None:  # success
                             print(job)
                         else:
-                            already_deads.append((job, res))
+                            already_deads.append((job, error))
                     except ValueError as e:
                         errors.append((job, e))
 
-            def format_fail(job: str, description: str) -> str:
-                return f"Cannot kill job {job}: {description}"
+            def format_fail(job: str, reason: Union[str, Exception]) -> str:
+                return f"Cannot kill job {job}: {reason}"
 
-            if already_deads:
-                msg = "\n".join([format_fail(job, res) for (job, res) in already_deads])
-                print(msg)
-            if errors:
-                msg = "\n".join([format_fail(job, e) for (job, e) in errors])
-                raise ValueError(msg)
+            for job, reason in already_deads:
+                print(format_fail(job, reason))
+            for job, error in errors:
+                print(format_fail(job, error))
 
         return locals()
 

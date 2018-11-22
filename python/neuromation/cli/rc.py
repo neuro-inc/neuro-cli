@@ -6,8 +6,6 @@ import yaml
 from jose import JWTError, jwt
 from yarl import URL
 
-import keyring
-
 
 @dataclass
 class Config:
