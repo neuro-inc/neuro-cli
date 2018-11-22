@@ -134,6 +134,13 @@ class CopyOperation(PlatformStorageOperation):
         except ResourceNotFound:
             return None
 
+    def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
+        """Tests whether specified path is directory on a platform or not."""
+        platform = self._file_stat_on_platform(path, storage)
+        if platform:
+            return platform.type == "DIRECTORY"
+        return False
+
     @abc.abstractmethod
     def _copy(
         self, src: ParseResult, dst: ParseResult, storage: Callable
@@ -254,47 +261,45 @@ class RecursivePlatformToLocal(NonRecursivePlatformToLocal):
                 platform_file_name = f"{src}{PLATFORM_DELIMITER}{name}"
                 self.copy_file(platform_file_name, str(target), file, storage)
 
+    def _is_local_dir(self, path: str) -> bool:
+        return os.path.exists(path) and os.path.isdir(path)
+
     def _copy(self, src: ParseResult, dst: ParseResult, storage: Callable):
-        if not os.path.exists(dst.path):
-            raise FileNotFoundError(
-                "Target should exist. " "Please create target directory and try again."
-            )
-
-        if not os.path.isdir(dst.path):
-            raise NotADirectoryError(
-                "Target should be directory. "
-                "Please correct your command line arguments."
-            )
-
-        # Test that source directory exists.
+        # Test if source is file or directory
         platform_file_name = self._render_platform_path_with_principal(src)
-        # TODO here we should have work around when someone
-        # tries to copy full directory of a person
-        if str(platform_file_name) != "/":
-            files = self._file_stat_on_platform(platform_file_name, storage)
-            if not files:
-                raise ResourceNotFound("Source directory not found.")
-            if files.type == "FILE":
-                copy_operation = NonRecursivePlatformToLocal(
-                    self.principal, self.progress
+        file_status = self._file_stat_on_platform(platform_file_name, storage)
+        if not file_status:
+            raise FileNotFoundError("Source file not found.")
+
+        if file_status.type == "FILE":
+            copy_operation = NonRecursivePlatformToLocal(self.principal, self.progress)
+            return copy_operation.copy(src, dst, storage)
+
+        if file_status.type == "DIRECTORY":
+            target_dir_name = PurePath(src.path).name
+            target_dir = f"{dst.path}{os.sep}{target_dir_name}"
+            if not self._is_local_dir(dst.path):
+                parent_dir = os.path.dirname(dst.path)
+                if not self._is_local_dir(parent_dir):
+                    raise NotADirectoryError(
+                        "Target should exist. Please create target directory "
+                        "and try again."
+                    )
+                target_dir = f"{dst.path}"
+
+            log.debug(target_dir)
+            os.mkdir(target_dir)
+            if not os.path.isdir(target_dir):
+                raise NotADirectoryError(
+                    "Target should be directory. Please correct your "
+                    "command line arguments."
                 )
-                return copy_operation.copy(src, dst, storage)
 
-        self._copy_obj(platform_file_name, Path(dst.path), storage)
-
-        return dst.path
+            self._copy_obj(platform_file_name, Path(target_dir), storage)
+            return dst.path
 
 
 class NonRecursiveLocalToPlatform(CopyOperation):
-    def _is_dir_on_platform(self, path: PosixPath, storage: Callable) -> bool:
-        """Tests whether specified path is directory on a platform or not."""
-        try:
-            with storage() as s:
-                file_status = s.stats(path=str(path))
-                return file_status.type == "DIRECTORY"
-        except ResourceNotFound:
-            return False
-
     async def _copy_data_with_progress(self, src: str):  # pragma: no cover
         file_stat = os.stat(src)
         total_file_size = file_stat.st_size

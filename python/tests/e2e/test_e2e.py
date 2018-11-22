@@ -1,7 +1,6 @@
 import asyncio
 import platform
 import re
-from hashlib import sha1
 from math import ceil
 from os.path import join
 from time import sleep, time
@@ -9,7 +8,9 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
+from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list
 
 
 BLOCK_SIZE_MB = 16
@@ -17,10 +18,6 @@ FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
-
-UBUNTU_IMAGE_NAME = "ubuntu:latest"
-
-format_list = "{type:<15}{size:<15,}{name:<}".format
 
 
 async def generate_test_data(root, count, size_mb):
@@ -58,15 +55,6 @@ def data(tmpdir_factory):
     return loop.run_until_complete(
         generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
     )
-
-
-def hash_hex(file):
-    _hash = sha1()
-    with open(file, "rb") as f:
-        for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
-            _hash.update(block)
-
-    return _hash.hexdigest()
 
 
 @pytest.mark.e2e
