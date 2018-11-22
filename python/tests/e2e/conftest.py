@@ -108,3 +108,38 @@ def nested_data(tmpdir_factory):
         generate_test_data(tmp_dir, FILE_COUNT, FILE_SIZE_MB)
     )
     return data[0][0], data[0][1], root_tmp_dir.strpath
+
+
+@pytest.fixture(scope="function", autouse=True)  # TODO: better scope="session"
+# NOTE: this fixture is not used anywhere explicitly
+def kill_all_running_jobs(request, run):
+    # NOTE: the scope of this fixture is "function"
+    # because the fixture "run" it depends on has
+    # the scope "function" too
+
+    # NOTE: This is how pytest documentation suggests to create
+    # test finalization fixtures https://docs.pytest.org/en/latest/funcarg_compare.html
+    # def fin():
+    #     _, captured = run(["job", "list", "--status", "running", "-q"])
+    #     dangling_jobs = [job for job in captured.out.strip().split("\n") if job]
+    #     if dangling_jobs:
+    #         _, captured = run(["job", "kill"] + dangling_jobs)
+    #
+    # request.addfinalizer(fin)
+
+    # this is to be executed before tests
+    asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    loop.set_debug(True)
+    asyncio.set_event_loop(loop)
+
+    yield
+
+    # this is to be executed after tests
+    _, captured = run(["job", "list", "--status", "running", "-q"])
+    dangling_jobs = [job for job in captured.out.strip().split("\n") if job]
+    if dangling_jobs:
+        _, captured = run(["job", "kill"] + dangling_jobs)
+
+    loop.close()
+    asyncio.set_event_loop(None)
