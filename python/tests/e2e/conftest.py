@@ -78,15 +78,6 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
     return _run
 
 
-def hash_hex(file):
-    _hash = sha1()
-    with open(file, "rb") as f:
-        for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
-            _hash.update(block)
-
-    return _hash.hexdigest()
-
-
 @pytest.fixture
 def remote_and_local(run):
     _dir = f"e2e-{uuid()}"
@@ -108,3 +99,12 @@ def nested_data(tmpdir_factory):
         generate_test_data(tmp_dir, FILE_COUNT, FILE_SIZE_MB)
     )
     return data[0][0], data[0][1], root_tmp_dir.strpath
+
+
+def hash_hex(file):
+    _hash = sha1()
+    with open(file, "rb") as f:
+        for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
+            _hash.update(block)
+
+    return _hash.hexdigest()
