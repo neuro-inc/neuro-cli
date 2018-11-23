@@ -5,7 +5,19 @@ from uuid import uuid4 as uuid
 
 import pytest
 
-from tests.e2e.utils import format_list, try_or_assert
+from tests.e2e.utils import (
+    FILE_SIZE_MB,
+    check_create_dir_on_storage,
+    check_dir_absent_on_storage,
+    check_file_absent_on_storage,
+    check_file_exists_on_storage,
+    check_rm_file_on_storage,
+    check_rmdir_on_storage,
+    check_upload_file_to_storage,
+)
+
+
+FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 
 
 @pytest.mark.e2e
@@ -16,36 +28,19 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     file_name = str(PurePath(file).name)
 
     # Upload local file to existing directory
-    _, captured = run(["store", "cp", file, "storage://" + _path + "/"])
-    assert not captured.err
-    assert _path in captured.out
+    check_upload_file_to_storage(run, None, f"{_path}/", file)
 
     # Ensure file is there
-    def file_must_be_uploaded():
-        _, captured = run(["store", "ls", "storage://" + _path + "/"])
-        split = captured.out.split("\n")
-        assert format_list(name=file_name, size=16777216, type="file") in split
-
-    try_or_assert(file_must_be_uploaded)
+    check_file_exists_on_storage(run, file_name, _path, FILE_SIZE_B)
 
     # Remove the file from platform
-    def file_can_be_removed():
-        _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
-        assert not captured.err
-
-    try_or_assert(file_can_be_removed)
+    check_rm_file_on_storage(run, file_name, _path)
 
     # Ensure file is not there
-    def file_must_be_removed():
-        _, captured = run(["store", "ls", "storage://" + _path + "/"])
-        split = captured.out.split("\n")
-        assert format_list(name=file_name, size=16777216, type="file") not in split
-
-    try_or_assert(file_must_be_removed)
+    check_file_absent_on_storage(run, file_name, _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -56,36 +51,19 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     file_name = str(PurePath(file).name)
 
     # Upload local file to existing directory
-    _, captured = run(["store", "cp", file, "storage://" + _path])
-    assert not captured.err
-    assert _path in captured.out
+    check_upload_file_to_storage(run, None, _path, file)
 
     # Ensure file is there
-    def file_must_be_uploaded():
-        _, captured = run(["store", "ls", "storage://" + _path + "/"])
-        split = captured.out.split("\n")
-        assert format_list(name=file_name, size=16777216, type="file") in split
+    check_file_exists_on_storage(run, file_name, _path, FILE_SIZE_B)
 
-    try_or_assert(file_must_be_uploaded)
-
-    # Remove the file from
-    def file_can_be_removed():
-        _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
-        assert not captured.err
-
-    try_or_assert(file_can_be_removed)
+    # Remove the file from platform
+    check_rm_file_on_storage(run, file_name, _path)
 
     # Ensure file is not there
-    def file_must_be_removed():
-        _, captured = run(["store", "ls", "storage://" + _path + "/"])
-        split = captured.out.split("\n")
-        assert format_list(name=file_name, size=16777216, type="file") not in split
-
-    try_or_assert(file_must_be_removed)
+    check_file_absent_on_storage(run, file_name, _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -93,48 +71,21 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     # case when copy happens with rename to 'different_name.txt'
     _path, _dir = remote_and_local
     file, checksum = data[0]
-    file_name = str(PurePath(file).name)
 
     # Upload local file to existing directory
-    _, captured = run(
-        ["store", "cp", file, "storage://" + _path + "/different_name.txt"]
-    )
-    assert not captured.err
-    assert _path in captured.out
+    check_upload_file_to_storage(run, "different_name.txt", _path, file)
 
     # Ensure file is there
-    def file_must_be_uploaded():
-        _, captured = run(["store", "ls", "storage://" + _path + "/"])
-        split = captured.out.split("\n")
-        assert (
-            format_list(name="different_name.txt", size=16777216, type="file") in split
-        )
-        assert format_list(name=file_name, size=16777216, type="file") not in split
-
-    try_or_assert(file_must_be_uploaded)
+    check_file_exists_on_storage(run, "different_name.txt", _path, FILE_SIZE_B)
 
     # Remove the file from platform
-    def file_can_be_removed():
-        _, captured = run(["store", "rm", f"storage://{_path}/different_name.txt"])
-        assert not captured.err
-
-    try_or_assert(file_can_be_removed)
+    check_rm_file_on_storage(run, "different_name.txt", _path)
 
     # Ensure file is not there
-    def file_must_be_removed():
-        _, captured = run(["store", "ls", "storage://" + _path + "/"])
-        split = captured.out.split("\n")
-        assert (
-            format_list(name="different_name.txt", size=16777216, type="file")
-            not in split
-        )
-        assert format_list(name=file_name, size=16777216, type="file") not in split
-
-    try_or_assert(file_must_be_removed)
+    check_file_absent_on_storage(run, "different_name.txt", _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -151,19 +102,11 @@ def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_loca
         assert not captured.err
         assert _path in captured.out
 
-    # Ensure file is there
-    def file_must_be_uploaded():
-        _, captured = run(["store", "ls", "storage://" + _path + "/"])
-        split = captured.out.split("\n")
-        assert (
-            format_list(name="non_existing_dir", size=0, type="directory") not in split
-        )
-
-    try_or_assert(file_must_be_uploaded)
+    # Ensure dir is not created
+    check_dir_absent_on_storage(run, "non_existing_dir", _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -172,31 +115,19 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
     _path = f"/tmp/{_dir}"
 
     # Create directory for the test
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
-    assert not captured.err
-    assert captured.out == f"storage://{_path}" + "\n"
+    check_create_dir_on_storage(run, _path)
 
     # Try downloading non existing file
-    def copying_non_existing_file_will_raise_error():
-        _local = join(tmpdir, "bar")
-        with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-            _, _ = run(["store", "cp", "storage://" + _path + "/foo", _local])
-        capsys.readouterr()
-
-    try_or_assert(copying_non_existing_file_will_raise_error)
+    _local = join(tmpdir, "bar")
+    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
+        _, _ = run(["store", "cp", "storage://" + _path + "/foo", _local])
+    capsys.readouterr()
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
     # And confirm
-    def temporary_dir_must_be_empty():
-        _, captured = run(["store", "ls", f"storage:///tmp"])
-        split = captured.out.split("\n")
-        assert format_list(name=_dir, size=0, type="directory") not in split
-        assert not captured.err
-
-    try_or_assert(temporary_dir_must_be_empty)
+    check_dir_absent_on_storage(run, _path, "/tmp")
 
 
 @pytest.mark.e2e
@@ -205,28 +136,16 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsy
     _path = f"/tmp/{_dir}"
 
     # Create directory for the test
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
-    assert not captured.err
-    assert captured.out == f"storage://{_path}" + "\n"
+    check_create_dir_on_storage(run, _path)
 
     # Try downloading non existing file
-    def copying_non_existing_file_will_raise_error():
-        _local = join(tmpdir)
-        with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-            _, captured = run(["store", "cp", "storage://" + _path + "/foo", _local])
-        capsys.readouterr()
-
-    try_or_assert(copying_non_existing_file_will_raise_error)
+    _local = join(tmpdir)
+    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
+        _, captured = run(["store", "cp", "storage://" + _path + "/foo", _local])
+    capsys.readouterr()
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
     # And confirm
-    def temporary_dir_must_be_empty():
-        _, captured = run(["store", "ls", f"storage:///tmp"])
-        split = captured.out.split("\n")
-        assert format_list(name=_dir, size=0, type="directory") not in split
-        assert not captured.err
-
-    try_or_assert(temporary_dir_must_be_empty)
+    check_dir_absent_on_storage(run, _path, "/tmp")

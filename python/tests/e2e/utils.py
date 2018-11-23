@@ -1,4 +1,5 @@
 import os
+import re
 from os.path import join
 from time import sleep
 
@@ -12,6 +13,7 @@ GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\nauth: {token}"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 format_list = "{type:<15}{size:<15,}{name:<}".format
+format_list_pattern = "(file|directory)\s*\d+\s*{name}".format
 FS_SYNC_TIME = int(os.environ.get("CLIENT_TEST_E2E_FS_SYNC_TIME", 20))
 
 
@@ -31,28 +33,6 @@ def fs_sync(periods: float = 1.0):
     :return:
     """
     sleep(periods * FS_SYNC_TIME)
-
-
-def try_or_assert(func: callable, attempts: int = 4, periods: float = 1.0):
-    """
-    Try to execute func few times
-    :param func: function to execute
-    :param attempts: attempts count
-    :param periods: how many periods waits before next try
-    :return:
-    """
-    num = attempts
-    while True:
-        num -= 1
-        if num > 0:
-            try:
-                result = func()
-                return result
-            except BaseException:
-                pass
-        else:
-            return func()
-        fs_sync(periods)
 
 
 def attempt(attempts: int = 4, periods: float = 1.0):
@@ -101,6 +81,14 @@ def check_dir_absent_on_storage(run, name: str, path: str):
 
 
 @attempt()
+def check_file_absent_on_storage(run, name: str, path: str):
+    _, captured = run(["store", "ls", f"storage://{path}"])
+    pattern = format_list_pattern(name=name)
+    assert not re.search(pattern, captured.out)
+    assert not captured.err
+
+
+@attempt()
 def check_file_on_storage_checksum(
     run, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
 ):
@@ -121,10 +109,22 @@ def check_rmdir_on_storage(run, path: str):
     assert not captured.err
 
 
-def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
-    _, captured = run(["store", "cp", local_file, f"storage://{path}/{name}"])
+@attempt()
+def check_rm_file_on_storage(run, name: str, path: str):
+    _, captured = run(["store", "rm", f"storage://{path}/{name}"])
     assert not captured.err
-    assert f"{path}/{name}" in captured.out
+
+
+def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
+    if name is None:
+        _, captured = run(["store", "cp", local_file, f"storage://{path}"])
+        assert not captured.err
+        assert f"{path}" in captured.out
+
+    else:
+        _, captured = run(["store", "cp", local_file, f"storage://{path}/{name}"])
+        assert not captured.err
+        assert f"{path}/{name}" in captured.out
 
 
 @attempt()

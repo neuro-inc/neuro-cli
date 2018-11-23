@@ -21,7 +21,6 @@ from tests.e2e.utils import (
     check_rmdir_on_storage,
     check_upload_file_to_storage,
     hash_hex,
-    try_or_assert,
 )
 
 
@@ -81,16 +80,14 @@ def test_empty_directory_ls_output(run):
     assert captured.out == f"storage://{_path}\n"
 
     # Ensure output of ls - empty directory shall print nothing.
+    @attempt()
     def dir_must_be_empty():
         _, captured = run(["store", "ls", f"storage://{_path}"])
         assert not captured.err
         assert captured.out.isspace()
 
-    try_or_assert(dir_must_be_empty)
-
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -214,9 +211,9 @@ def test_e2e(data, run, tmpdir):
     # Download into local dir and confirm checksum
     @attempt()
     def check_file_on_storage_checksum_custom_download():
-        _local = join(tmpdir, "bardir")
+        _local = join(tmpdir, "downloaddir")
         _local_file = join(_local, "foo")
-        tmpdir.mkdir("bardir")
+        tmpdir.mkdir("downloaddir")
         _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
         assert hash_hex(_local_file) == checksum
 
