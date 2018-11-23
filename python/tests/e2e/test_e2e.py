@@ -85,6 +85,7 @@ def test_empty_directory_ls_output(run):
         _, captured = run(["store", "ls", f"storage://{_path}"])
         assert not captured.err
         assert captured.out.isspace()
+    dir_must_be_empty()
 
     # Remove test dir
     check_rmdir_on_storage(run, _path)
