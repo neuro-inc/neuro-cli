@@ -10,7 +10,7 @@ import pytest
 
 from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
-from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list, fs_sync
+from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list, try_or_assert
 
 
 BLOCK_SIZE_MB = 16
@@ -68,10 +68,12 @@ def test_empty_directory_ls_output(run):
     assert captured.out == f"storage://{_path}\n"
 
     # Ensure output of ls - empty directory shall print nothing.
-    fs_sync()
-    _, captured = run(["store", "ls", f"storage://{_path}"])
-    assert not captured.err
-    assert captured.out.isspace()
+    def dir_must_be_empty():
+        _, captured = run(["store", "ls", f"storage://{_path}"])
+        assert not captured.err
+        assert captured.out.isspace()
+
+    try_or_assert(dir_must_be_empty)
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
@@ -195,26 +197,32 @@ def test_e2e(data, run, tmpdir):
     assert (_path + "/foo") in captured.out
 
     # Confirm file has been uploaded
-    fs_sync()
-    _, captured = run(["store", "ls", f"storage://{_path}"])
-    captured_output_list = captured.out.split("\n")
-    expected_line = format_list(type="file", size=16777216, name="foo")
-    assert expected_line in captured_output_list
+    def file_must_be_uploaded():
+        _, captured = run(["store", "ls", f"storage://{_path}"])
+        captured_output_list = captured.out.split("\n")
+        expected_line = format_list(type="file", size=16777216, name="foo")
+        assert expected_line in captured_output_list
+        assert not captured.err
 
-    assert not captured.err
+    try_or_assert(file_must_be_uploaded)
 
     # Download into local file and confirm checksum
-    fs_sync()
-    _local = join(tmpdir, "bar")
-    _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
-    assert hash_hex(_local) == checksum
+    def downloaded_file_must_have_same_hash():
+        _local = join(tmpdir, "bar")
+        _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
+        assert hash_hex(_local) == checksum
+
+    try_or_assert(downloaded_file_must_have_same_hash)
 
     # Download into local dir and confirm checksum
-    _local = join(tmpdir, "bardir")
-    _local_file = join(_local, "foo")
-    tmpdir.mkdir("bardir")
-    _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
-    assert hash_hex(_local_file) == checksum
+    def downloaded_to_custom_dir_file_must_have_same_hash():
+        _local = join(tmpdir, "bardir")
+        _local_file = join(_local, "foo")
+        tmpdir.mkdir("bardir")
+        _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
+        assert hash_hex(_local_file) == checksum
+
+    try_or_assert(downloaded_to_custom_dir_file_must_have_same_hash)
 
     # Rename file on the storage
     _, captured = run(
@@ -224,13 +232,15 @@ def test_e2e(data, run, tmpdir):
     assert (_path + "/bar") in captured.out
 
     # Confirm file has been renamed
-    fs_sync()
-    _, captured = run(["store", "ls", f"storage://{_path}"])
-    captured_output_list = captured.out.split("\n")
-    assert not captured.err
-    expected_line = format_list(type="file", size=16777216, name="bar")
-    assert expected_line in captured_output_list
-    assert "foo" not in captured_output_list
+    def file_must_be_renamed():
+        _, captured = run(["store", "ls", f"storage://{_path}"])
+        captured_output_list = captured.out.split("\n")
+        assert not captured.err
+        expected_line = format_list(type="file", size=16777216, name="bar")
+        assert expected_line in captured_output_list
+        assert "foo" not in captured_output_list
+
+    try_or_assert(file_must_be_renamed)
 
     # Rename directory on the storage
     _dir2 = f"e2e-{uuid()}"
@@ -241,15 +251,17 @@ def test_e2e(data, run, tmpdir):
     assert _path2 in captured.out
 
     # Remove test dir
-    fs_sync()
-    _, captured = run(["store", "rm", f"storage://{_path2}"])
-    assert not captured.err
+    def directory_can_be_removed():
+        _, captured = run(["store", "rm", f"storage://{_path2}"])
+        assert not captured.err
+
+    try_or_assert(directory_can_be_removed)
 
     # And confirm
-    fs_sync()
-    _, captured = run(["store", "ls", f"storage:///tmp"])
+    def temporary_dir_must_be_empty():
+        _, captured = run(["store", "ls", f"storage:///tmp"])
+        split = captured.out.split("\n")
+        assert format_list(name=_dir, size=0, type="directory") not in split
+        assert not captured.err
 
-    split = captured.out.split("\n")
-    assert format_list(name=_dir, size=0, type="directory") not in split
-
-    assert not captured.err
+    try_or_assert(temporary_dir_must_be_empty)
