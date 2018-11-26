@@ -6,10 +6,13 @@ import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 import dateutil.parser
+import docker
+import tqdm
+from docker.errors import APIError
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
@@ -762,3 +765,109 @@ class ModelHandlerOperations(JobHandlerOperations):
         # start ssh shell session
         self._connect_ssh(job_status, jump_host_rsa, container_user, container_key_path)
         return None
+
+
+class DockerHandler(PlatformStorageOperation):
+    def __init__(self, principal: str) -> None:
+        super().__init__(principal)
+        self._client = docker.APIClient()
+
+    def _is_docker_available(self) -> bool:
+        try:
+            self._client.ping()
+            return True
+        except APIError:
+            return False
+
+    def _progress(
+        self, line: Dict[str, Any], bars: Dict[str, Any]
+    ) -> None:  # pragma no cover
+        try:
+            if "id" in line:
+                status = line["status"]
+                if status == "Pushed" or status == "Download complete":
+                    if line["id"] in bars:
+                        progress = bars[line["id"]]
+                        delta = progress["total"] - progress["current"]
+                        if delta < 0:
+                            delta = 0
+                        progress["progress"].update(delta)
+                        progress["progress"].close()
+                elif status == "Pushing" or status == "Downloading":
+                    if line["id"] not in bars:
+                        if "progressDetail" in line:
+                            progress_details = line["progressDetail"]
+                            total_progress = progress_details.get(
+                                "total", progress_details.get("current", 1)
+                            )
+                            if total_progress > 0:
+                                bars[line["id"]] = {
+                                    "progress": tqdm.tqdm(
+                                        total=total_progress,
+                                        leave=False,
+                                        unit="B",
+                                        unit_scale=True,
+                                    ),
+                                    "current": 0,
+                                    "total": total_progress,
+                                }
+                    if "progressDetail" in line and "current" in line["progressDetail"]:
+                        delta = (
+                            line["progressDetail"]["current"]
+                            - bars[line["id"]]["current"]
+                        )
+                        if delta < 0:
+                            delta = 0
+                        bars[line["id"]]["current"] = line["progressDetail"]["current"]
+                        bars[line["id"]]["progress"].update(delta)
+        except BaseException:
+            pass
+
+    def login(self, username: str, password: str, registry: str) -> None:
+        if self._is_docker_available():
+            try:
+                res = self._client.login(
+                    username=username, password=password, registry=registry, reauth=True
+                )
+                print(res)
+            except docker.errors.APIError as e:
+                raise ValueError(
+                    f"Failed to updated docker auth details. Error {e.explanation}"
+                ) from e
+
+    def push(self, registry: str, image_name: str) -> str:
+        if self._is_docker_available():
+            try:
+                image, tag = image_name.split(":")
+
+                repository_url = f"{registry}/{self.principal}/{image}"
+                if not self._client.tag(image, repository_url, tag, force=True):
+                    raise ValueError("Error tagging image.")
+                bars = {}
+                for line in self._client.push(
+                    repository_url, stream=True, decode=True
+                ):  # pragma no cover
+                    self._progress(line, bars)
+                return repository_url
+            except docker.errors.APIError as e:
+                raise ValueError(
+                    f"Cannot push container image to registry. Error {e.explanation}"
+                ) from e
+
+    def pull(self, registry: str, image_name: str) -> str:
+        if self._is_docker_available():
+            try:
+                image, tag = image_name.split(":")
+
+                bars = {}
+                repository_url = image
+                for line in self._client.pull(
+                    repository_url, tag=tag, stream=True, decode=True
+                ):  # pragma no cover
+                    self._progress(line, bars)
+                return repository_url
+            except docker.errors.APIError as e:
+                log.error(e)
+                raise ValueError(
+                    f"Cannot pull container image from registry. Error {e.explanation}"
+                ) from e

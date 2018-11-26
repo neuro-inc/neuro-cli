@@ -1,12 +1,9 @@
-import asyncio
-import platform
-import subprocess
-from math import ceil
-from os.path import join
 from unittest import mock
-from uuid import uuid4 as uuid
+from unittest.mock import MagicMock
 
 import pytest
+from docker import APIClient
+from docker.errors import APIError
 
 from neuromation.cli.rc import ConfigFactory
 
@@ -29,122 +26,96 @@ CUSTOM_TOKEN_FOR_TESTS = f"{JWT_HDR}.{JWT_CLAIM}.{JWT_SIG}"
 format_list = "{type:<15}{size:<15,}{name:<}".format
 
 
-async def generate_test_data(root, count, size_mb):
-    async def generate_file(name):
-        exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"
-
-        process = await asyncio.create_subprocess_shell(
-            f"""(dd if=/dev/urandom \
-                    bs={BLOCK_SIZE_MB * 1024 * 1024} \
-                    count={ceil(size_mb / BLOCK_SIZE_MB)} \
-                    2>/dev/null) | \
-                    tee {name} | \
-                    {exec_sha_name}""",
-            stdout=asyncio.subprocess.PIPE,
-        )
-
-        stdout, _ = await asyncio.wait_for(
-            process.communicate(), timeout=GENERATION_TIMEOUT_SEC
-        )
-
-        # sha1sum appends file name to the output
-        return name, stdout.decode()[:40]
-
-    return await asyncio.gather(
-        *[
-            generate_file(join(root, name))
-            for name in (str(uuid()) for _ in range(count))
-        ]
-    )
+def docker_throw_error(*args, **kwargs):
+    raise APIError(message="test")
 
 
-@pytest.fixture(scope="session")
-def data(tmpdir_factory):
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
-        generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
-    )
+def docker_return_false(*args, **kwargs):
+    return False
 
 
-@pytest.fixture(scope="session")
-def nested_data(tmpdir_factory):
-    loop = asyncio.get_event_loop()
-    root_tmp_dir = tmpdir_factory.mktemp("data")
-    tmp_dir = root_tmp_dir.mkdir("nested").mkdir("directory").mkdir("for").mkdir("test")
-    data = loop.run_until_complete(
-        generate_test_data(tmp_dir, FILE_COUNT, FILE_SIZE_MB)
-    )
-    return data[0][0], data[0][1], root_tmp_dir.strpath
+def test_no_docker(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+        docker_client.ping.side_effect = docker_throw_error
 
-
-@pytest.fixture
-def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
-    import sys
-    from pathlib import Path
-
-    rc_text = RC_TEXT.format(token=CUSTOM_TOKEN_FOR_TESTS)
-    tmpdir.join(".nmrc").open("w").write(rc_text)
-
-    def _home():
-        return Path(tmpdir)
-
-    def _run(arguments):
-        monkeypatch.setattr(Path, "home", _home)
-        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
-
-        from neuromation.cli import main
-
-        return main(), capsys.readouterr()
-
-    return _run
-
-
-def test_docker_config_no_docker(run, monkeypatch):
-    with mock.patch("subprocess.run") as runMock:
-        runMock.side_effect = subprocess.CalledProcessError(
-            returncode=2, cmd="no command"
-        )
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
-        assert runMock.call_count == 1
+        assert docker_client.login.call_count == 0
+        assert docker_client.ping.call_count == 1
+
+        _, captured = run(["image", "push", "abrakadabra"])
+        assert docker_client.images.get.call_count == 0
+        assert docker_client.ping.call_count == 2
+
+        _, captured = run(["image", "pull", "abrakadabra"])
+        assert docker_client.images.get.call_count == 0
+        assert docker_client.ping.call_count == 3
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
-def test_docker_push_no_docker(run, monkeypatch):
-    with mock.patch("subprocess.run") as runMock:
-        runMock.side_effect = subprocess.CalledProcessError(
-            returncode=2, cmd="no command"
-        )
-        with pytest.raises(OSError):
-            _, captured = run(["image", "push", "abrakadabra"])
-        assert runMock.call_count == 1
-
-
-def test_docker_pull_no_docker(run, monkeypatch):
-    with mock.patch("subprocess.run") as runMock:
-        runMock.side_effect = subprocess.CalledProcessError(
-            returncode=2, cmd="no command"
-        )
-        with pytest.raises(OSError):
-            _, captured = run(["image", "pull", "abrakadabra"])
-        assert runMock.call_count == 1
-
-
 def test_docker_config_with_docker(run, monkeypatch):
-    with mock.patch("subprocess.run") as runMock:
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
-        assert runMock.call_count == 2
+
+        assert docker_client.ping.call_count == 1
+        assert docker_client.login.call_count == 1
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
 def test_docker_push_with_docker(run, monkeypatch):
-    with mock.patch("subprocess.run") as runMock:
-        _, captured = run(["image", "push", "abrakadabra"])
-        assert runMock.call_count == 3
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        _, captured = run(["image", "push", "abrakadabra:latest"])
+
+        assert docker_client.ping.call_count == 1
+        assert docker_client.tag.call_count == 1
+        assert docker_client.push.call_count == 1
 
 
 def test_docker_pull_with_docker(run, monkeypatch):
-    with mock.patch("subprocess.run") as runMock:
-        _, captured = run(["image", "pull", "abrakadabra"])
-        assert runMock.call_count == 2
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        _, captured = run(["image", "pull", "abrakadabra:2"])
+
+        assert docker_client.ping.call_count == 1
+        assert docker_client.pull.call_count == 1
+
+
+def test_docker_error_scenarios(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        with pytest.raises(SystemExit):
+            old_value = docker_client.login
+            docker_client.login = docker_throw_error
+            _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
+            docker_client.login = old_value
+
+        with pytest.raises(SystemExit):
+            old_value = docker_client.tag
+            docker_client.tag = docker_throw_error
+            _, captured = run(["image", "push", "abrakadabra:2"])
+            docker_client.get = old_value
+
+        with pytest.raises(SystemExit):
+            old_value = docker_client.tag
+            docker_client.tag = docker_return_false
+            _, captured = run(["image", "push", "abrakadabra:2"])
+            docker_client.get = old_value
+
+        with pytest.raises(SystemExit):
+            old_value = docker_client.images.pull
+            docker_client.pull = docker_throw_error
+            _, captured = run(["image", "pull", "abrakadabra:2"])
+            docker_client.images.pull = old_value
