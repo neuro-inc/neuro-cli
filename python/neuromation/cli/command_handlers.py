@@ -6,7 +6,7 @@ import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 import dateutil.parser
@@ -423,7 +423,9 @@ class JobHandlerOperations(PlatformStorageOperation):
             return j.status(id)
 
     @classmethod
-    def _sort_job_list(cls, job_list: List[JobDescription]) -> List[JobDescription]:
+    def _sort_job_list(
+        cls, job_list: Iterable[JobDescription]
+    ) -> Iterable[JobDescription]:
         def job_sorting_key_by_creation_time(job: JobDescription) -> datetime:
             created_str = job.history.created_at
             return dateutil.parser.isoparse(created_str)
@@ -444,15 +446,9 @@ class JobHandlerOperations(PlatformStorageOperation):
 
         formatter = JobListFormatter(quiet=quiet)
 
-        with jobs() as jobs:
-            return "\n".join(
-                [formatter.format_header_line()]
-                + [
-                    formatter.format_job_line(item)
-                    for item in self._sort_job_list(jobs.list())
-                    if apply_filter(item)
-                ]
-            )
+        with jobs() as j:
+            job_list = self._sort_job_list(filter(apply_filter, j.list()))
+            return formatter.format_jobs(job_list)
 
     def _network_parse(self, http, ssh) -> Optional[NetworkPortForwarding]:
         net = None

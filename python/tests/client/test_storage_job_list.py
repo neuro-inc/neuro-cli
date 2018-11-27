@@ -86,9 +86,9 @@ class TestJobListFilter:
     def _format(cls, jobs, quiet):
         formatter = JobListFormatter(quiet)
         return "\n".join(
-            [formatter.format_header_line()] +
-            [
-                formatter.format_job_line(job)
+            [formatter._format_header_line()]
+            + [
+                formatter._format_job_line(job)
                 for job in JobHandlerOperations._sort_job_list(jobs)
             ]
         )

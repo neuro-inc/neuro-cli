@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Union
+from typing import Callable, Iterable, List, Optional, Union
 
 from neuromation.client.jobs import JobDescription, JobItem, JobStatus
 
@@ -76,48 +76,55 @@ class JobListFormatter:
         return input[:index_stop] + placeholder + tail
 
     @classmethod
-    def _get_job_id(cls, job: Optional[JobDescription]):
+    def _format_job_id(cls, job: Optional[JobDescription]):
         length = 40
         return f"{(job.id if job else 'ID'):<{length}}"
 
     @classmethod
-    def _get_job_status(cls, job: Optional[JobDescription]):
-        length = 40
+    def _format_job_status(cls, job: Optional[JobDescription]):
+        length = 10
         return f"{(job.status if job else 'STATUS'):<{length}}"
 
     @classmethod
-    def _get_job_image(cls, job: Optional[JobDescription]):
-        length = 50
+    def _format_job_image(cls, job: Optional[JobDescription]):
+        length = 15
         return f"{(job.image if job else 'IMAGE'):<{length}}"
 
     @classmethod
-    def _get_job_description(cls, job: Optional[JobDescription]):
+    def _format_job_description(cls, job: Optional[JobDescription]):
         length = 50
         default = "DESCRIPTION"
         line = cls._wrap(cls._truncate(job.description, length - 2)) if job else default
         return f"{line:<{length}}"
 
     @classmethod
-    def _get_job_command(cls, job: Optional[JobDescription]):
+    def _format_job_command(cls, job: Optional[JobDescription]):
         length = 50
         line = cls._wrap(cls._truncate(job.command, length - 2)) if job else "COMMAND"
         return f"{line:<{length}}"
 
-    def _get_job_job_line_list(self, job: Optional[JobDescription]) -> str:
-        line_list = [self._get_job_id(job)]
+    def _format_job_job_line_list(self, job: Optional[JobDescription]) -> str:
+        line_list = [self._format_job_id(job)]
         if not self.quiet:
             line_list.extend(
                 [
-                    self._get_job_status(job),
-                    self._get_job_image(job),
-                    self._get_job_description(job),
-                    self._get_job_command(job),
+                    self._format_job_status(job),
+                    self._format_job_image(job),
+                    self._format_job_description(job),
+                    self._format_job_command(job),
                 ]
             )
         return self.tab.join(line_list)
 
-    def format_job_line(self, job: JobDescription) -> str:
-        return self._get_job_job_line_list(job)
+    def _format_job_line(self, job: JobDescription) -> str:
+        return self._format_job_job_line_list(job)
 
-    def format_header_line(self) -> str:
-        return self._get_job_job_line_list(None)
+    def _format_header_line(self) -> str:
+        return self._format_job_job_line_list(None)
+
+    def format_jobs(self, jobs: Iterable[JobDescription]) -> str:
+        lines = list()
+        if not self.quiet:
+            lines.append(self._format_header_line())
+        lines.extend(map(self._format_job_line, jobs))
+        return "\n".join(lines)

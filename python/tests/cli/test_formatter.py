@@ -163,6 +163,9 @@ class TestJobOutputFormatter:
 
 
 class TestJobListFormatter:
+    quiet = JobListFormatter(quiet=True)
+    loud = JobListFormatter(quiet=False)
+
     def test_truncate_string(self):
         truncate = JobListFormatter(quiet=False)._truncate
         assert truncate(None, 15) == ""
@@ -175,3 +178,99 @@ class TestJobListFormatter:
         assert truncate("A" * 7, 5) == "AA..."
         assert truncate("A" * 10, 10) == "A" * 10
         assert truncate("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
+
+    def test_header_line_quiet(self):
+        assert self.quiet._format_header_line() == f"{'ID':<40}"
+
+    def test_header_line_non_quiet(self):
+        expected = "\t".join(
+            [
+                f"{'ID':<40}",
+                f"{'STATUS':<10}",
+                f"{'IMAGE':<15}",
+                f"{'DESCRIPTION':<50}",
+                f"{'COMMAND':<50}",
+            ]
+        )
+        assert self.loud._format_header_line() == expected
+
+    def test_format_jobs_quiet(self):
+        def assert_format_jobs_quiet(num_jobs):
+            jobs = [
+                JobDescription(
+                    status=JobStatus.RUNNING,
+                    id=f"test-job-{index}",
+                    description=f"test-description-{index}",
+                    client=None,
+                    image=f"test-image-{index}",
+                    command=f"test-command-{index}",
+                    history=JobStatusHistory(
+                        status=JobStatus.PENDING,
+                        reason="ContainerCreating",
+                        description=None,
+                        created_at="NOW",
+                        started_at=None,
+                        finished_at=None,
+                    ),
+                )
+                for index in range(num_jobs)
+            ]
+
+            def format_expected_job_line(index):
+                return f"test-job-{index}".ljust(40)
+
+            expected = "\n".join(
+                [format_expected_job_line(index) for index in range(num_jobs)]
+            )
+            assert self.quiet.format_jobs(jobs) == expected, expected
+
+        assert_format_jobs_quiet(0)
+        assert_format_jobs_quiet(1)
+        assert_format_jobs_quiet(2)
+        assert_format_jobs_quiet(10)
+        assert_format_jobs_quiet(10_000)
+
+    def test_format_jobs_non_quiet(self):
+        def assert_format_jobs_non_quiet(num_jobs):
+            jobs = [
+                JobDescription(
+                    status=JobStatus.RUNNING,
+                    id=f"test-job-{index}",
+                    description=f"test-description-{index}",
+                    client=None,
+                    image=f"test-image-{index}",
+                    command=f"test-command-{index}",
+                    history=JobStatusHistory(
+                        status=JobStatus.PENDING,
+                        reason="ContainerCreating",
+                        description=None,
+                        created_at="NOW",
+                        started_at=None,
+                        finished_at=None,
+                    ),
+                )
+                for index in range(num_jobs)
+            ]
+
+            def format_expected_job_line(index):
+                return "\t".join(
+                    [
+                        f"test-job-{index}".ljust(40),
+                        f"running".ljust(10),
+                        f"test-image-{index}".ljust(15),
+                        f"'test-description-{index}'".ljust(50),
+                        f"'test-command-{index}'".ljust(50),
+                    ]
+                )
+
+            expected = "\n".join(
+                [self.loud._format_header_line()]
+                + [format_expected_job_line(index) for index in range(num_jobs)]
+            )
+            assert self.loud.format_jobs(jobs) == expected, expected
+
+        assert_format_jobs_non_quiet(0)
+        assert_format_jobs_non_quiet(1)
+        assert_format_jobs_non_quiet(2)
+        assert_format_jobs_non_quiet(10)
+        assert_format_jobs_non_quiet(10_000)
