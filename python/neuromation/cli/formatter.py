@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Callable, List, Optional, Union
 
 from neuromation.client.jobs import JobDescription, JobItem, JobStatus
 
@@ -51,3 +51,73 @@ class JobStatusFormatter:
             result += "\n===Description===\n"
             result += f"{job_status.history.description}\n================="
         return result
+
+
+class JobListFormatter:
+    def __init__(self, quiet: bool = False):
+        self.quiet = quiet
+        self.tab = "\t"
+
+    @classmethod
+    def _wrap(cls, text: str) -> str:
+        return f"'{(text if text is not None else '')}'"
+
+    @classmethod
+    def _truncate(cls, input: Optional[str], max_length: int) -> str:
+        if input is None:
+            return ""
+        if len(input) <= max_length:
+            return input
+        len_tail, placeholder = 3, "..."
+        if max_length < len_tail or max_length < len(placeholder):
+            return placeholder
+        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
+        index_stop = max_length - len(placeholder) - len(tail)
+        return input[:index_stop] + placeholder + tail
+
+    @classmethod
+    def _get_job_id(cls, job: Optional[JobDescription]):
+        length = 40
+        return f"{(job.id if job else 'ID'):<{length}}"
+
+    @classmethod
+    def _get_job_status(cls, job: Optional[JobDescription]):
+        length = 40
+        return f"{(job.status if job else 'STATUS'):<{length}}"
+
+    @classmethod
+    def _get_job_image(cls, job: Optional[JobDescription]):
+        length = 50
+        return f"{(job.image if job else 'IMAGE'):<{length}}"
+
+    @classmethod
+    def _get_job_description(cls, job: Optional[JobDescription]):
+        length = 50
+        default = "DESCRIPTION"
+        line = cls._wrap(cls._truncate(job.description, length - 2)) if job else default
+        return f"{line:<{length}}"
+
+    @classmethod
+    def _get_job_command(cls, job: Optional[JobDescription]):
+        length = 50
+        line = cls._wrap(cls._truncate(job.command, length - 2)) if job else "COMMAND"
+        return f"{line:<{length}}"
+
+    def _get_job_job_line_list(self, job: Optional[JobDescription]) -> str:
+        line_list = [self._get_job_id(job)]
+        if not self.quiet:
+            line_list.extend(
+                [
+                    self._get_job_status(job),
+                    self._get_job_image(job),
+                    self._get_job_description(job),
+                    self._get_job_command(job),
+                ]
+            )
+        return self.tab.join(line_list)
+
+    def format_job_line(self, job: JobDescription) -> str:
+        return self._get_job_job_line_list(job)
+
+    def format_header_line(self) -> str:
+        return self._get_job_job_line_list(None)

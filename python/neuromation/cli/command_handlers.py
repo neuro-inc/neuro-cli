@@ -16,6 +16,7 @@ from docker.errors import APIError
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
+from neuromation.cli.formatter import JobListFormatter
 from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.client.requests import VolumeDescriptionPayload
@@ -422,41 +423,6 @@ class JobHandlerOperations(PlatformStorageOperation):
             return j.status(id)
 
     @classmethod
-    def _truncate_string(cls, input: str, max_length: int) -> str:
-        if len(input) <= max_length:
-            return input
-        len_tail, placeholder = 3, "..."
-        if max_length < len_tail or max_length < len(placeholder):
-            return placeholder
-        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
-        index_stop = max_length - len(placeholder) - len(tail)
-        return input[:index_stop] + placeholder + tail
-
-    @classmethod
-    def _format_job_line(cls, item: JobDescription, quiet: bool = False) -> str:
-        # TODO (A Yushkovskiy 20.11.2018) move this logic to a formatter
-        def wrap(text: str) -> str:
-            return f"'{text}'" if text else ""
-
-        if quiet:
-            details = ""
-        else:
-            tab = "\t"
-            image = item.image or ""
-            description = wrap(cls._truncate_string(item.description or "", 50))
-            command = wrap(cls._truncate_string(item.command or "", 50))
-            details = tab.join(
-                [
-                    "",  # empty line for the initial tab
-                    f"{item.status:<10}",
-                    f"{image:<15}",
-                    f"{description:<50}",
-                    f"{command:<50}",
-                ]
-            )
-        return item.id + details
-
-    @classmethod
     def _sort_job_list(cls, job_list: List[JobDescription]) -> List[JobDescription]:
         def job_sorting_key_by_creation_time(job: JobDescription) -> datetime:
             created_str = job.history.created_at
@@ -476,12 +442,14 @@ class JobHandlerOperations(PlatformStorageOperation):
             filter_description = not description or item.description == description
             return filter_status and filter_description
 
-        with jobs() as j:
-            job_list = j.list()
+        formatter = JobListFormatter(quiet=quiet)
+
+        with jobs() as jobs:
             return "\n".join(
-                [
-                    self._format_job_line(item, quiet)
-                    for item in self._sort_job_list(job_list)
+                [formatter.format_header_line()]
+                + [
+                    formatter.format_job_line(item)
+                    for item in self._sort_job_list(jobs.list())
                     if apply_filter(item)
                 ]
             )

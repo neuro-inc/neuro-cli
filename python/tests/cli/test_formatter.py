@@ -3,7 +3,11 @@ from unittest.mock import MagicMock
 import pytest
 
 from neuromation import JobItem
-from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
+from neuromation.cli.formatter import (
+    JobListFormatter,
+    JobStatusFormatter,
+    OutputFormatter,
+)
 from neuromation.client.jobs import JobDescription, JobStatus, JobStatusHistory
 
 
@@ -156,3 +160,18 @@ class TestJobOutputFormatter:
             "Resources: None\n"
             "Created: NOW"
         )
+
+
+class TestJobListFormatter:
+    def test_truncate_string(self):
+        truncate = JobListFormatter(quiet=False)._truncate
+        assert truncate(None, 15) == ""
+        assert truncate("", 15) == ""
+        assert truncate("not truncated", 15) == "not truncated"
+        assert truncate("A" * 10, 1) == "..."
+        assert truncate("A" * 10, 3) == "..."
+        assert truncate("A" * 10, 5) == "AA..."
+        assert truncate("A" * 6, 5) == "AA..."
+        assert truncate("A" * 7, 5) == "AA..."
+        assert truncate("A" * 10, 10) == "A" * 10
+        assert truncate("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
