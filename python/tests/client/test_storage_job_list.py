@@ -85,13 +85,14 @@ class TestJobListFilter:
     @classmethod
     def _format(cls, jobs, quiet):
         formatter = JobListFormatter(quiet)
-        return "\n".join(
-            [formatter._format_header_line()]
-            + [
-                formatter._format_job_line(job)
-                for job in JobHandlerOperations._sort_job_list(jobs)
-            ]
+        lines = list()
+        if not quiet:
+            lines.append(formatter._format_header_line())
+        lines.extend(
+            formatter._format_job_line(job)
+            for job in JobHandlerOperations._sort_job_list(jobs)
         )
+        return "\n".join(lines)
 
     @classmethod
     def _format_quiet(cls, jobs):

@@ -76,42 +76,28 @@ class JobListFormatter:
         return input[:index_stop] + placeholder + tail
 
     @classmethod
-    def _format_job_id(cls, job: Optional[JobDescription]):
-        length = 40
-        return f"{(job.id if job else 'ID'):<{length}}"
+    def _format_short(cls, job: Optional[JobDescription], member: str, length: int):
+        value = (job.__getattribute__(member) or "") if job else member.upper()
+        return f"{value:<{length}}"
 
     @classmethod
-    def _format_job_status(cls, job: Optional[JobDescription]):
-        length = 10
-        return f"{(job.status if job else 'STATUS'):<{length}}"
-
-    @classmethod
-    def _format_job_image(cls, job: Optional[JobDescription]):
-        length = 15
-        return f"{(job.image if job else 'IMAGE'):<{length}}"
-
-    @classmethod
-    def _format_job_description(cls, job: Optional[JobDescription]):
-        length = 50
-        default = "DESCRIPTION"
-        line = cls._wrap(cls._truncate(job.description, length - 2)) if job else default
-        return f"{line:<{length}}"
-
-    @classmethod
-    def _format_job_command(cls, job: Optional[JobDescription]):
-        length = 50
-        line = cls._wrap(cls._truncate(job.command, length - 2)) if job else "COMMAND"
-        return f"{line:<{length}}"
+    def _format_long(cls, job: Optional[JobDescription], member: str, length: int):
+        if job:
+            member = job.__getattribute__(member) or ""
+            value = cls._wrap(cls._truncate(member, length - 2))
+        else:
+            value = member.upper()
+        return f"{value:<{length}}"
 
     def _format_job_job_line_list(self, job: Optional[JobDescription]) -> str:
-        line_list = [self._format_job_id(job)]
+        line_list = [self._format_short(job, "id", 40)]
         if not self.quiet:
             line_list.extend(
                 [
-                    self._format_job_status(job),
-                    self._format_job_image(job),
-                    self._format_job_description(job),
-                    self._format_job_command(job),
+                    self._format_short(job, "status", 10),
+                    self._format_short(job, "image", 15),
+                    self._format_long(job, "description", 50),
+                    self._format_long(job, "command", 50),
                 ]
             )
         return self.tab.join(line_list)
