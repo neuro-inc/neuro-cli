@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, List, Optional, Union
+from typing import Iterable, Optional, Union
 
 from neuromation.client.jobs import JobDescription, JobItem, JobStatus
 
