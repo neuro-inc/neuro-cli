@@ -602,7 +602,7 @@ Commands:
                 neuro job list [options]
 
             Options:
-              -s, --status (pending|running|succeeded|failed)
+              -s, --status (pending|running|succeeded|failed|all)
                   Filters out job by state
               -d, --description DESCRIPTION
                   Filters out job by job description (exact match)
