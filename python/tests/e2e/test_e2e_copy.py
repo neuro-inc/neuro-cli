@@ -23,7 +23,7 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     # Ensure file is there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16777216, type="file") in split
+    assert format_list(name=file_name, size=16_777_216, type="file") in split
 
     # Remove the file from platform
     _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
@@ -32,7 +32,7 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     # Ensure file is not there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16777216, type="file") not in split
+    assert format_list(name=file_name, size=16_777_216, type="file") not in split
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
@@ -54,7 +54,7 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     # Ensure file is there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16777216, type="file") in split
+    assert format_list(name=file_name, size=16_777_216, type="file") in split
 
     # Remove the file from platform
     _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
@@ -63,7 +63,7 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     # Ensure file is not there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16777216, type="file") not in split
+    assert format_list(name=file_name, size=16_777_216, type="file") not in split
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
@@ -87,8 +87,8 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     # Ensure file is there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name="different_name.txt", size=16777216, type="file") in split
-    assert format_list(name=file_name, size=16777216, type="file") not in split
+    assert format_list(name="different_name.txt", size=16_777_216, type="file") in split
+    assert format_list(name=file_name, size=16_777_216, type="file") not in split
 
     # Remove the file from platform
     _, captured = run(["store", "rm", f"storage://{_path}/different_name.txt"])
@@ -98,9 +98,10 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert (
-        format_list(name="different_name.txt", size=16777216, type="file") not in split
+        format_list(name="different_name.txt", size=16_777_216, type="file")
+        not in split
     )
-    assert format_list(name=file_name, size=16777216, type="file") not in split
+    assert format_list(name=file_name, size=16_777_216, type="file") not in split
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
