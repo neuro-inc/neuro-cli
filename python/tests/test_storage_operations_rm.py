@@ -87,6 +87,7 @@ def test_rm_alice_no_user(alice_rm, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params=None,
+        headers=None,
         data=None,
     )
 
@@ -103,6 +104,7 @@ def test_rm_alice_tilde_user(alice_rm, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params=None,
+        headers=None,
         data=None,
     )
 
@@ -119,6 +121,7 @@ def test_rm_alice_omitted_user(alice_rm, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params=None,
+        headers=None,
         data=None,
     )
 
@@ -135,6 +138,7 @@ def test_rm_alice_omitted_user_no_leading_slash(alice_rm, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params=None,
+        headers=None,
         data=None,
     )
 
@@ -151,6 +155,7 @@ def test_rm_alice_removes_bob_data(alice_rm, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo",
         params=None,
+        headers=None,
         data=None,
     )
 
@@ -167,5 +172,6 @@ def test_rm_alice_removes_bob_data_file(alice_rm, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo/data.txt",
         params=None,
+        headers=None,
         data=None,
     )

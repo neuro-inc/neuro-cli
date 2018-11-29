@@ -84,6 +84,7 @@ def test_mkdir_alice_no_user(alice_mkdir, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="MKDIRS",
+        headers=None,
         data=None,
     )
 
@@ -99,6 +100,7 @@ def test_mkdir_alice_tilde_user(alice_mkdir, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="MKDIRS",
+        headers=None,
         data=None,
     )
 
@@ -114,6 +116,7 @@ def test_mkdir_alice_omitted_user(alice_mkdir, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="MKDIRS",
+        headers=None,
         data=None,
     )
 
@@ -129,6 +132,7 @@ def test_mkdir_alice_omitted_user_no_leading_slash(alice_mkdir, http_backed_stor
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="MKDIRS",
+        headers=None,
         data=None,
     )
 
@@ -144,6 +148,7 @@ def test_mkdir_alice_removes_bob_data(alice_mkdir, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo",
         params="MKDIRS",
+        headers=None,
         data=None,
     )
 
@@ -159,5 +164,6 @@ def test_mkdir_alice_removes_bob_data_file(alice_mkdir, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo/data.txt",
         params="MKDIRS",
+        headers=None,
         data=None,
     )
