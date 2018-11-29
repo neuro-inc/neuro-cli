@@ -39,6 +39,7 @@ class TestNormalCases:
             method="POST",
             url="http://127.0.0.1/users/bob/permissions",
             params=None,
+            headers=None,
             data=None,
             json=[
                 {"uri": "storage://alice/some/data/belongs/to_both", "action": "manage"}

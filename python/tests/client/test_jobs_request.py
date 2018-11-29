@@ -47,7 +47,12 @@ def test_status_running(jobs):
     } == expected
 
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", url="http://127.0.0.1/jobs/1", params=None, data=None, json=None
+        method="GET",
+        url="http://127.0.0.1/jobs/1",
+        params=None,
+        headers=None,
+        data=None,
+        json=None,
     )
 
 
@@ -109,6 +114,7 @@ def test_job_submit(jobs):
         method="POST",
         url="http://127.0.0.1/jobs",
         params=None,
+        headers=None,
         data=None,
         json={
             "container": {
@@ -194,6 +200,7 @@ def test_job_submit_no_volumes(jobs):
         method="POST",
         url="http://127.0.0.1/jobs",
         params=None,
+        headers=None,
         data=None,
         json={
             "container": {

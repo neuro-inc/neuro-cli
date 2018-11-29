@@ -37,6 +37,7 @@ def test_kill_already_killed_job_error(jobs):
         method="DELETE",
         url="http://127.0.0.1/jobs/blah",
         params=None,
+        headers=None,
         data=None,
         json=None,
     )
@@ -70,6 +71,7 @@ def test_kill(jobs):
         method="DELETE",
         url="http://127.0.0.1/jobs/1",
         params=None,
+        headers=None,
         data=None,
         json=None,
     )
@@ -122,7 +124,12 @@ def test_status_failed(jobs):
     } == expected
 
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", url="http://127.0.0.1/jobs/1", params=None, data=None, json=None
+        method="GET",
+        url="http://127.0.0.1/jobs/1",
+        params=None,
+        headers=None,
+        data=None,
+        json=None,
     )
 
 
@@ -179,7 +186,12 @@ def test_status_with_ssh_and_http(jobs):
     } == expected
 
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", url="http://127.0.0.1/jobs/1", params=None, data=None, json=None
+        method="GET",
+        url="http://127.0.0.1/jobs/1",
+        params=None,
+        headers=None,
+        data=None,
+        json=None,
     )
 
 
@@ -202,7 +214,12 @@ def test_list(jobs):
         JobDescription(client=jobs, id="bar", status="STARTING", owner=""),
     ]
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", json=None, url="http://127.0.0.1/jobs", params=None, data=None
+        method="GET",
+        json=None,
+        url="http://127.0.0.1/jobs",
+        params=None,
+        headers=None,
+        data=None,
     )
 
 
@@ -266,7 +283,12 @@ def test_list_extended_output(jobs):
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", json=None, url="http://127.0.0.1/jobs", params=None, data=None
+        method="GET",
+        json=None,
+        url="http://127.0.0.1/jobs",
+        params=None,
+        headers=None,
+        data=None,
     )
 
 
@@ -335,7 +357,12 @@ def test_list_extended_output_with_http_url(jobs):
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", json=None, url="http://127.0.0.1/jobs", params=None, data=None
+        method="GET",
+        json=None,
+        url="http://127.0.0.1/jobs",
+        params=None,
+        headers=None,
+        data=None,
     )
 
 
@@ -398,7 +425,12 @@ def test_list_extended_output_no_shm(jobs):
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", json=None, url="http://127.0.0.1/jobs", params=None, data=None
+        method="GET",
+        json=None,
+        url="http://127.0.0.1/jobs",
+        params=None,
+        headers=None,
+        data=None,
     )
 
 
@@ -456,7 +488,12 @@ def test_list_extended_output_no_gpu(jobs):
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", json=None, url="http://127.0.0.1/jobs", params=None, data=None
+        method="GET",
+        json=None,
+        url="http://127.0.0.1/jobs",
+        params=None,
+        headers=None,
+        data=None,
     )
 
 
@@ -515,7 +552,12 @@ def test_list_extended_output_no_image(jobs):
         )
     ]
     aiohttp.ClientSession.request.assert_called_with(
-        method="GET", json=None, url="http://127.0.0.1/jobs", params=None, data=None
+        method="GET",
+        json=None,
+        url="http://127.0.0.1/jobs",
+        params=None,
+        headers=None,
+        data=None,
     )
 
 
@@ -530,6 +572,7 @@ def test_monitor(jobs):
             method="GET",
             url="http://127.0.0.1/jobs/1/log",
             params=None,
+            headers={"Accept-Encoding": "identity"},
             json=None,
             data=None,
         )
