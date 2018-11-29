@@ -72,47 +72,52 @@ class JobListFormatter(BaseFormatter):
     def __init__(self, quiet: bool = False):
         self.quiet = quiet
         self.tab = "\t"
+        self.column_lengths = {
+            "id": 40,
+            "status": 10,
+            "image": 15,
+            "description": 50,
+            "command": 50,
+        }
 
-    @classmethod
-    def _wrap(cls, text: str) -> str:
-        return f"'{(text if text is not None else '')}'"
-
-    @classmethod
-    def _format_short(cls, job: Optional[JobDescription], member: str, length: int):
-        value = (job.__getattribute__(member) or "") if job else member.upper()
-        return f"{value:<{length}}"
-
-    @classmethod
-    def _format_long(cls, job: Optional[JobDescription], member: str, length: int):
-        if job:
-            member = job.__getattribute__(member) or ""
-            value = cls._wrap(cls._truncate_string(member, length - 2))
-        else:
-            value = member.upper()
-        return f"{value:<{length}}"
-
-    def _format_job_job_line_list(self, job: Optional[JobDescription]) -> str:
-        line_list = [self._format_short(job, "id", 40)]
-        if not self.quiet:
-            line_list.extend(
-                [
-                    self._format_short(job, "status", 10),
-                    self._format_short(job, "image", 15),
-                    self._format_long(job, "description", 50),
-                    self._format_long(job, "command", 50),
-                ]
-            )
-        return self.tab.join(line_list)
-
-    def _format_job_line(self, job: JobDescription) -> str:
-        return self._format_job_job_line_list(job)
-
-    def _format_header_line(self) -> str:
-        return self._format_job_job_line_list(None)
+    def format_header_line(self) -> str:
+        return self.tab.join(
+            [
+                "ID".ljust(self.column_lengths["id"]),
+                "STATUS".ljust(self.column_lengths["status"]),
+                "IMAGE".ljust(self.column_lengths["image"]),
+                "DESCRIPTION".ljust(self.column_lengths["description"]),
+                "COMMAND".ljust(self.column_lengths["command"]),
+            ]
+        )
 
     def format_jobs(self, jobs: Iterable[JobDescription]) -> str:
         lines = list()
         if not self.quiet:
-            lines.append(self._format_header_line())
+            lines.append(self.format_header_line())
         lines.extend(map(self._format_job_line, jobs))
         return "\n".join(lines)
+
+    @classmethod
+    def _wrap(cls, text: str) -> str:
+        return "'" + (text or "") + "'"
+
+    def _format_job_line(self, job: Optional[JobDescription]) -> str:
+        def truncate_then_wrap(value: str, key: str) -> str:
+            return self._wrap(self._truncate_string(value, self.column_lengths[key]))
+
+        line_list = [job.id.ljust(self.column_lengths["id"])]
+        if not self.quiet:
+            description = truncate_then_wrap(job.description, "description")
+            command = truncate_then_wrap(job.description, "command")
+            status = job.status
+            image = job.image
+            line_list.extend(
+                [
+                    status.ljust(self.column_lengths["status"]),
+                    image.ljust(self.column_lengths["image"]),
+                    description.ljust(self.column_lengths["description"]),
+                    command.ljust(self.column_lengths["command"]),
+                ]
+            )
+        return self.tab.join(line_list)
