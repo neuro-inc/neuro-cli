@@ -67,7 +67,7 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     # Ensure file is not there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=BLOCK_SIZE_B216, type="file") in split
+    assert format_list(name=file_name, size=BLOCK_SIZE_B, type="file") in split
     assert format_list(name=file_name, size=BLOCK_SIZE_B, type="file") not in split
 
     # Remove the file from platform
