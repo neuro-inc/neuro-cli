@@ -177,15 +177,20 @@ class TestBaseFormatter:
         assert truncate("A" * 10, 10) == "A" * 10
         assert truncate("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
 
+    def test_wrap_string(self):
+        wrap = BaseFormatter()._wrap
+        assert wrap("123") == "'123'"
+        assert wrap(" ") == "' '"
+        assert wrap("") == "''"
+        assert wrap(None) == "''"
+        assert wrap(r"\0") == "'\\0'"
+
 
 class TestJobListFormatter:
     quiet = JobListFormatter(quiet=True)
     loud = JobListFormatter(quiet=False)
 
-    def test_header_line_quiet(self):
-        assert self.quiet._format_header_line() == f"{'ID':<40}"
-
-    def test_header_line_non_quiet(self):
+    def test_header_line_quiet_and_non_quiet(self):
         expected = "\t".join(
             [
                 f"{'ID':<40}",
@@ -196,6 +201,7 @@ class TestJobListFormatter:
             ]
         )
         assert self.loud._format_header_line() == expected
+        assert self.quiet._format_header_line() == expected
 
     @pytest.mark.parametrize("number_of_jobs", [0, 1, 2, 10, 10_000])
     def test_format_jobs_quiet(self, number_of_jobs):
@@ -227,7 +233,7 @@ class TestJobListFormatter:
         )
         assert self.quiet.format_jobs(jobs) == expected, expected
 
-    @pytest.mark.parametrize("number_of_jobs", [0, 1, 2, 10, 10_000])
+    @pytest.mark.parametrize("number_of_jobs", [0, 1, 2, 10, 100, 1000])
     def test_format_jobs_non_quiet(self, number_of_jobs):
         jobs = [
             JobDescription(
@@ -264,4 +270,4 @@ class TestJobListFormatter:
             [self.loud._format_header_line()]
             + [format_expected_job_line(index) for index in range(number_of_jobs)]
         )
-        assert self.loud.format_jobs(jobs) == expected, expected
+        assert self.loud.format_jobs(jobs) == expected

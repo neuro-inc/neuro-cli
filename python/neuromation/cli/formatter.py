@@ -17,6 +17,10 @@ class BaseFormatter:
         index_stop = max_length - len(placeholder) - len(tail)
         return input[:index_stop] + placeholder + tail
 
+    @classmethod
+    def _wrap(cls, text: Optional[str]) -> str:
+        return "'" + (text or "") + "'"
+
 
 class OutputFormatter(BaseFormatter):
     @classmethod
@@ -80,7 +84,14 @@ class JobListFormatter(BaseFormatter):
             "command": 50,
         }
 
-    def format_header_line(self) -> str:
+    def format_jobs(self, jobs: Iterable[JobDescription]) -> str:
+        lines = list()
+        if not self.quiet:
+            lines.append(self._format_header_line())
+        lines.extend(map(self._format_job_line, jobs))
+        return "\n".join(lines)
+
+    def _format_header_line(self) -> str:
         return self.tab.join(
             [
                 "ID".ljust(self.column_lengths["id"]),
@@ -91,33 +102,21 @@ class JobListFormatter(BaseFormatter):
             ]
         )
 
-    def format_jobs(self, jobs: Iterable[JobDescription]) -> str:
-        lines = list()
-        if not self.quiet:
-            lines.append(self.format_header_line())
-        lines.extend(map(self._format_job_line, jobs))
-        return "\n".join(lines)
-
-    @classmethod
-    def _wrap(cls, text: str) -> str:
-        return "'" + (text or "") + "'"
-
     def _format_job_line(self, job: Optional[JobDescription]) -> str:
         def truncate_then_wrap(value: str, key: str) -> str:
             return self._wrap(self._truncate_string(value, self.column_lengths[key]))
 
-        line_list = [job.id.ljust(self.column_lengths["id"])]
-        if not self.quiet:
-            description = truncate_then_wrap(job.description, "description")
-            command = truncate_then_wrap(job.description, "command")
-            status = job.status
-            image = job.image
-            line_list.extend(
-                [
-                    status.ljust(self.column_lengths["status"]),
-                    image.ljust(self.column_lengths["image"]),
-                    description.ljust(self.column_lengths["description"]),
-                    command.ljust(self.column_lengths["command"]),
-                ]
-            )
-        return self.tab.join(line_list)
+        if self.quiet:
+            return job.id.ljust(self.column_lengths["id"])
+
+        description = truncate_then_wrap(job.description, "description")
+        command = truncate_then_wrap(job.command, "command")
+        return self.tab.join(
+            [
+                job.id.ljust(self.column_lengths["id"]),
+                job.status.ljust(self.column_lengths["status"]),
+                job.image.ljust(self.column_lengths["image"]),
+                description.ljust(self.column_lengths["description"]),
+                command.ljust(self.column_lengths["command"]),
+            ]
+        )

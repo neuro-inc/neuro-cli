@@ -85,167 +85,156 @@ class TestJobListFilter:
     @classmethod
     def _format(cls, jobs, quiet):
         formatter = JobListFormatter(quiet)
-        lines = list()
-        if not quiet:
-            lines.append(formatter._format_header_line())
-        lines.extend(
-            formatter._format_job_line(job)
-            for job in JobHandlerOperations._sort_job_list(jobs)
-        )
-        return "\n".join(lines)
+        return formatter.format_jobs(JobHandlerOperations._sort_job_list(jobs))
 
     @classmethod
     def _format_quiet(cls, jobs):
         return "\n".join([j.id for j in JobHandlerOperations._sort_job_list(jobs)])
 
-    def test_job_filter_all(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format(jobs_to_test, quiet=quiet)
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, quiet=quiet, status=None
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_all(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format(jobs_to_test, quiet=quiet)
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, quiet=quiet, status=None
+        )
+        assert jobs == expected
 
-    def test_job_filter_running(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format(
-                [j for j in jobs_to_test if j.status == "running"], quiet=quiet
-            )
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, status="running", quiet=quiet
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_running(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format(
+            [j for j in jobs_to_test if j.status == "running"], quiet=quiet
+        )
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="running", quiet=quiet
+        )
+        assert jobs == expected
 
-    def test_job_filter_failed(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format(
-                [j for j in jobs_to_test if j.status == "failed"], quiet=quiet
-            )
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, status="failed", quiet=quiet
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_failed(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format(
+            [j for j in jobs_to_test if j.status == "failed"], quiet=quiet
+        )
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="failed", quiet=quiet
+        )
+        assert jobs == expected
 
-    def test_job_filter_succeeded(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format(
-                [j for j in jobs_to_test if j.status == "succeeded"], quiet=quiet
-            )
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, status="succeeded", quiet=quiet
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_succeeded(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format(
+            [j for j in jobs_to_test if j.status == "succeeded"], quiet=quiet
+        )
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="succeeded", quiet=quiet
+        )
+        assert jobs == expected
 
-    def test_job_filter_dummy_status__not_found(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format([], quiet=quiet)
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, status="not-a-status", quiet=quiet
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_dummy_status__not_found(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format([], quiet=quiet)
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="not-a-status", quiet=quiet
+        )
+        assert jobs == expected
 
+    @pytest.mark.parametrize("quiet", [True, False])
     def test_job_filter_with_empty_description__no_filter_applied(
-        self, jobs_mock, jobs_to_test
+        self, jobs_mock, jobs_to_test, quiet
     ):
-        for quiet in [True, False]:
-            expected = self._format(jobs_to_test, quiet=quiet)
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, description="", quiet=quiet
-            )
-            assert jobs == expected
+        expected = self._format(jobs_to_test, quiet=quiet)
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, description="", quiet=quiet
+        )
+        assert jobs == expected
 
+    @pytest.mark.parametrize("quiet", [True, False])
     def test_job_filter_with_empty_status_empty_description__no_filter_applied(
-        self, jobs_mock, jobs_to_test
+        self, jobs_mock, jobs_to_test, quiet
     ):
-        for quiet in [True, False]:
-            expected = self._format(jobs_to_test, quiet=quiet)
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, status="", description="", quiet=quiet
-            )
-            assert jobs == expected
+        expected = self._format(jobs_to_test, quiet=quiet)
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="", description="", quiet=quiet
+        )
+        assert jobs == expected
 
+    @pytest.mark.parametrize("quiet", [True, False])
     def test_job_filter_status_and_empty_description__same_as_without(
-        self, jobs_mock, jobs_to_test
+        self, jobs_mock, jobs_to_test, quiet
     ):
-        for quiet in [True, False]:
-            expected = self._format(
-                [j for j in jobs_to_test if j.status == "running"], quiet=quiet
-            )
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, status="running", description="", quiet=quiet
-            )
-            assert jobs == expected
+        expected = self._format(
+            [j for j in jobs_to_test if j.status == "running"], quiet=quiet
+        )
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="running", description="", quiet=quiet
+        )
+        assert jobs == expected
 
-    def test_job_filter_by_description_(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format(
-                [j for j in jobs_to_test if j.description == valid_job_description],
-                quiet=quiet,
-            )
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, description=valid_job_description, quiet=quiet
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_by_description_(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format(
+            [j for j in jobs_to_test if j.description == valid_job_description],
+            quiet=quiet,
+        )
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, description=valid_job_description, quiet=quiet
+        )
+        assert jobs == expected
 
-    def test_job_filter_description_not_found(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format([], quiet=quiet)
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock, description="non-existing job description!", quiet=quiet
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_description_not_found(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format([], quiet=quiet)
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, description="non-existing job description!", quiet=quiet
+        )
+        assert jobs == expected
 
+    @pytest.mark.parametrize("quiet", [True, False])
     def test_job_filter_empty_status_and_dummy_description__not_found(
-        self, jobs_mock, jobs_to_test
+        self, jobs_mock, jobs_to_test, quiet
     ):
-        for quiet in [True, False]:
-            expected = self._format(
-                [
-                    j
-                    for j in jobs_to_test
-                    if j.description == "non-existing job description"
-                ],
-                quiet=quiet,
-            )
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock,
-                status="",
-                description="job not existing description",
-                quiet=quiet,
-            )
-            assert jobs == expected
+        expected = self._format(
+            [
+                j
+                for j in jobs_to_test
+                if j.description == "non-existing job description"
+            ],
+            quiet=quiet,
+        )
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock,
+            status="",
+            description="job not existing description",
+            quiet=quiet,
+        )
+        assert jobs == expected
 
+    @pytest.mark.parametrize("quiet", [True, False])
     def test_job_filter_non_empty_status_and_dummy_description__not_found(
-        self, jobs_mock, jobs_to_test
+        self, jobs_mock, jobs_to_test, quiet
     ):
-        for quiet in [True, False]:
-            expected = self._format([], quiet=quiet)
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock,
-                status="running",
-                description="non-existing job description",
-                quiet=quiet,
-            )
-            assert jobs == expected
+        expected = self._format([], quiet=quiet)
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock,
+            status="running",
+            description="non-existing job description",
+            quiet=quiet,
+        )
+        assert jobs == expected
 
-    def test_job_filter_status_and_description(self, jobs_mock, jobs_to_test):
-        for quiet in [True, False]:
-            expected = self._format(
-                [
-                    job
-                    for job in jobs_to_test
-                    if job.status == "running"
-                    and job.description == valid_job_description
-                ],
-                quiet=quiet,
-            )
-            jobs = JobHandlerOperations("test-user").list_jobs(
-                jobs_mock,
-                status="running",
-                description=valid_job_description,
-                quiet=quiet,
-            )
-            assert jobs == expected
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_job_filter_status_and_description(self, jobs_mock, jobs_to_test, quiet):
+        expected = self._format(
+            [
+                job
+                for job in jobs_to_test
+                if job.status == "running" and job.description == valid_job_description
+            ],
+            quiet=quiet,
+        )
+        jobs = JobHandlerOperations("test-user").list_jobs(
+            jobs_mock, status="running", description=valid_job_description, quiet=quiet
+        )
+        assert jobs == expected
 
 
 class TestJobListSort:
