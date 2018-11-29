@@ -36,6 +36,7 @@ def test_train_with_no_gpu(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -74,6 +75,7 @@ def test_train(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -118,6 +120,7 @@ def test_train_zero_gpu(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -156,6 +159,7 @@ def test_train_with_http(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -201,6 +205,7 @@ def test_train_with_ssh(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -246,6 +251,7 @@ def test_train_with_ssh_and_http(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -293,6 +299,7 @@ def test_train_with_ssh_and_http_no_name(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -339,6 +346,7 @@ def test_train_empty_command(request, model, loop):
         method="POST",
         data=None,
         params=None,
+        headers=None,
         json={
             "container": {
                 "image": "repo/image",
@@ -384,6 +392,7 @@ def test_infer(request, model, loop):
     aiohttp.ClientSession.request.assert_called_with(
         method="POST",
         params=None,
+        headers=None,
         data=None,
         json={
             "container": {
@@ -430,6 +439,7 @@ def test_infer_with_name(request, model, loop):
     aiohttp.ClientSession.request.assert_called_with(
         method="POST",
         params=None,
+        headers=None,
         data=None,
         json={
             "container": {

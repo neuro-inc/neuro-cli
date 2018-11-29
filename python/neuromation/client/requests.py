@@ -94,6 +94,7 @@ class ShareResourceRequest(Request):
         return http.PlainRequest(
             url=f"/users/{self.whom}/permissions",
             params=None,
+            headers=None,
             method="POST",
             json=self.permissions,
             data=None,
