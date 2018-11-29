@@ -111,6 +111,7 @@ class TestJobSubmit:
             is_preemptible=False,
             description="job description",
         )
+
     def test_job_submit_no_volumes_preemptible(self, partial_mocked_job) -> None:
         job = JobHandlerOperations("alice")
         job.submit(

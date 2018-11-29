@@ -245,7 +245,10 @@ class Job(ApiClient):
         )
         res = self._fetch_sync(
             JobSubmissionRequest(
-                container=container, volumes=volumes, description=description, is_preemptible=is_preemptible,
+                container=container,
+                volumes=volumes,
+                description=description,
+                is_preemptible=is_preemptible,
             )
         )
 

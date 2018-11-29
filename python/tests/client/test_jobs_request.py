@@ -290,6 +290,7 @@ def test_job_submit_no_volumes_preemptible(jobs):
         },
     )
 
+
 @patch(
     "aiohttp.ClientSession.request",
     new=mocked_async_context_manager(
