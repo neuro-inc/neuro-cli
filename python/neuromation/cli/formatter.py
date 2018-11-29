@@ -3,7 +3,22 @@ from typing import Iterable, Optional, Union
 from neuromation.client.jobs import JobDescription, JobItem, JobStatus
 
 
-class OutputFormatter:
+class BaseFormatter:
+    @classmethod
+    def _truncate_string(cls, input: Optional[str], max_length: int) -> str:
+        if input is None:
+            return ""
+        if len(input) <= max_length:
+            return input
+        len_tail, placeholder = 3, "..."
+        if max_length < len_tail or max_length < len(placeholder):
+            return placeholder
+        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
+        index_stop = max_length - len(placeholder) - len(tail)
+        return input[:index_stop] + placeholder + tail
+
+
+class OutputFormatter(BaseFormatter):
     @classmethod
     def format_job(cls, job: Union[JobItem, JobDescription], quiet: bool = True) -> str:
         if quiet:
@@ -17,7 +32,7 @@ class OutputFormatter:
         )
 
 
-class JobStatusFormatter:
+class JobStatusFormatter(BaseFormatter):
     @classmethod
     def format_job_status(cls, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
@@ -53,7 +68,7 @@ class JobStatusFormatter:
         return result
 
 
-class JobListFormatter:
+class JobListFormatter(BaseFormatter):
     def __init__(self, quiet: bool = False):
         self.quiet = quiet
         self.tab = "\t"
@@ -61,19 +76,6 @@ class JobListFormatter:
     @classmethod
     def _wrap(cls, text: str) -> str:
         return f"'{(text if text is not None else '')}'"
-
-    @classmethod
-    def _truncate(cls, input: Optional[str], max_length: int) -> str:
-        if input is None:
-            return ""
-        if len(input) <= max_length:
-            return input
-        len_tail, placeholder = 3, "..."
-        if max_length < len_tail or max_length < len(placeholder):
-            return placeholder
-        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
-        index_stop = max_length - len(placeholder) - len(tail)
-        return input[:index_stop] + placeholder + tail
 
     @classmethod
     def _format_short(cls, job: Optional[JobDescription], member: str, length: int):
@@ -84,7 +86,7 @@ class JobListFormatter:
     def _format_long(cls, job: Optional[JobDescription], member: str, length: int):
         if job:
             member = job.__getattribute__(member) or ""
-            value = cls._wrap(cls._truncate(member, length - 2))
+            value = cls._wrap(cls._truncate_string(member, length - 2))
         else:
             value = member.upper()
         return f"{value:<{length}}"
