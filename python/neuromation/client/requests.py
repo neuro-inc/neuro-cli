@@ -306,6 +306,9 @@ def build(request: Request) -> http.Request:
             url=f"/jobs/{request.id}/log",
             params=None,
             method="GET",
+            headers={
+                "Accept-Encoding": "identity"  # Needed to prevent træfik from buffering
+            },
             json=None,
             data=None,
         )

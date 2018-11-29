@@ -46,6 +46,7 @@ class Request:
     url: str
     data: Optional[BytesIO]
     json: Any
+    headers: Optional[Dict[str, str]] = None
 
 
 @dataclass(frozen=True, init=True)
@@ -145,6 +146,7 @@ async def _fetch(request: Request, session, url: str):
         url=url + request.url,
         data=request.data,
         json=request.json,
+        headers=request.headers,
     ) as resp:
         try:
             resp.raise_for_status()
