@@ -17,6 +17,7 @@ BLOCK_SIZE_MB = 16
 BLOCK_SIZE_B = BLOCK_SIZE_MB * 1024 * 1024
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
+FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
 
@@ -197,7 +198,7 @@ def test_e2e(data, run, tmpdir):
     # Confirm file has been uploaded
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
-    expected_line = format_list(type="file", size=BLOCK_SIZE_B, name="foo")
+    expected_line = format_list(type="file", size=FILE_SIZE_B, name="foo")
     assert expected_line in captured_output_list
 
     assert not captured.err
@@ -225,7 +226,7 @@ def test_e2e(data, run, tmpdir):
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
-    expected_line = format_list(type="file", size=BLOCK_SIZE_B, name="bar")
+    expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
     assert expected_line in captured_output_list
     assert "foo" not in captured_output_list
 
