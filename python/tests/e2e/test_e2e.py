@@ -14,6 +14,7 @@ from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list
 
 
 BLOCK_SIZE_MB = 16
+BLOCK_SIZE_B = BLOCK_SIZE_MB * 1024 * 1024
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
@@ -26,7 +27,7 @@ async def generate_test_data(root, count, size_mb):
 
         process = await asyncio.create_subprocess_shell(
             f"""(dd if=/dev/urandom \
-                    bs={BLOCK_SIZE_MB * 1024 * 1024} \
+                    bs={BLOCK_SIZE_B} \
                     count={ceil(size_mb / BLOCK_SIZE_MB)} \
                     2>/dev/null) | \
                     tee {name} | \
@@ -196,7 +197,7 @@ def test_e2e(data, run, tmpdir):
     # Confirm file has been uploaded
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
-    expected_line = format_list(type="file", size=16_777_216, name="foo")
+    expected_line = format_list(type="file", size=BLOCK_SIZE_B, name="foo")
     assert expected_line in captured_output_list
 
     assert not captured.err
@@ -224,7 +225,7 @@ def test_e2e(data, run, tmpdir):
     _, captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
-    expected_line = format_list(type="file", size=16_777_216, name="bar")
+    expected_line = format_list(type="file", size=BLOCK_SIZE_B, name="bar")
     assert expected_line in captured_output_list
     assert "foo" not in captured_output_list
 

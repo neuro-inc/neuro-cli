@@ -8,6 +8,10 @@ import pytest
 from tests.e2e.utils import format_list
 
 
+BLOCK_SIZE_MB = 16
+BLOCK_SIZE_B = BLOCK_SIZE_MB * 1024 * 1024
+
+
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_local):
     # case when copy happens with the trailing '/'
@@ -23,7 +27,7 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     # Ensure file is there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16_777_216, type="file") in split
+    assert format_list(name=file_name, size=BLOCK_SIZE_B, type="file") in split
 
     # Remove the file from platform
     _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
@@ -32,7 +36,7 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     # Ensure file is not there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16_777_216, type="file") not in split
+    assert format_list(name=file_name, size=BLOCK_SIZE_B, type="file") not in split
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
@@ -54,7 +58,7 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     # Ensure file is there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16_777_216, type="file") in split
+    assert format_list(name=file_name, size=BLOCK_SIZE_B, type="file") in split
 
     # Remove the file from platform
     _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
@@ -63,32 +67,8 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     # Ensure file is not there
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
-    assert format_list(name=file_name, size=16_777_216, type="file") not in split
-
-    # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
-
-
-@pytest.mark.e2e
-def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_local):
-    # case when copy happens with rename to 'different_name.txt'
-    _path, _dir = remote_and_local
-    file, checksum = data[0]
-    file_name = str(PurePath(file).name)
-
-    # Upload local file to existing directory
-    _, captured = run(
-        ["store", "cp", file, "storage://" + _path + "/different_name.txt"]
-    )
-    assert not captured.err
-    assert _path in captured.out
-
-    # Ensure file is there
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
-    split = captured.out.split("\n")
-    assert format_list(name="different_name.txt", size=16_777_216, type="file") in split
-    assert format_list(name=file_name, size=16_777_216, type="file") not in split
+    assert format_list(name=file_name, size=BLOCK_SIZE_B216, type="file") in split
+    assert format_list(name=file_name, size=BLOCK_SIZE_B, type="file") not in split
 
     # Remove the file from platform
     _, captured = run(["store", "rm", f"storage://{_path}/different_name.txt"])
@@ -98,10 +78,10 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert (
-        format_list(name="different_name.txt", size=16_777_216, type="file")
+        format_list(name="different_name.txt", size=BLOCK_SIZE_B, type="file")
         not in split
     )
-    assert format_list(name=file_name, size=16_777_216, type="file") not in split
+    assert format_list(name=file_name, size=BLOCK_SIZE_B, type="file") not in split
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
