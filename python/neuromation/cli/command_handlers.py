@@ -538,6 +538,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         ssh,
         volumes,
         jobs: Callable,
+        is_preemptible: bool,
         description: str,
     ) -> JobDescription:
 
@@ -554,6 +555,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 resources=resources,
                 network=network,
                 volumes=volumes,
+                is_preemptible=is_preemptible,
                 description=description,
             )
 

@@ -492,6 +492,7 @@ Commands:
             ssh,
             cmd,
             volume,
+            preemptible,
             description,
             quiet,
         ):
@@ -513,7 +514,8 @@ Commands:
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
-                --volume MOUNT...         Mounts directory from vault into containr
+                --volume MOUNT...         Mounts directory from vault into container
+                -p, --preemptible         Run job on a lower-cost preemptible instance
                 -d, --description DESC    Add optional description to the job
                 -q, --quiet               Run command in quiet mode
 
@@ -549,6 +551,7 @@ Commands:
                 ssh,
                 volume,
                 jobs,
+                preemptible,
                 description,
             )
             return OutputFormatter.format_job(job, quiet)

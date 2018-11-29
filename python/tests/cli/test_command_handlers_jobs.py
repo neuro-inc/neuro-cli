@@ -17,17 +17,18 @@ class TestJobSubmit:
         with pytest.raises(ValueError):
             job = JobHandlerOperations("alice")
             job.submit(
-                "test-image",
-                "1",
-                "test-gpu",
-                "1.2",
-                "1G",
-                "False",
-                ["test-command"],
-                "8183",
-                "25",
-                [volumes],
-                partial_mocked_job,
+                image="test-image",
+                gpu="1",
+                gpu_model="test-gpu",
+                cpu="1.2",
+                memory="1G",
+                extshm="False",
+                cmd=["test-command"],
+                http="8183",
+                ssh="25",
+                volumes=[volumes],
+                jobs=partial_mocked_job,
+                is_preemptible=False,
                 description="job description",
             )
 
@@ -36,21 +37,22 @@ class TestJobSubmit:
     def test_job_submit_happy_path(self, partial_mocked_job) -> None:
         job = JobHandlerOperations("alice")
         job.submit(
-            "test-image",
-            "1",
-            "test-gpu",
-            "1.2",
-            "1G",
-            "False",
-            ["test-command"],
-            "8183",
-            "25",
-            [
+            image="test-image",
+            gpu="1",
+            gpu_model="test-gpu",
+            cpu="1.2",
+            memory="1G",
+            extshm="False",
+            cmd=["test-command"],
+            http="8183",
+            ssh="25",
+            volumes=[
                 "storage://bob/data:/cob/data:ro",
                 "storage://bob/data0:/cob/data0",
                 "storage://bob/data1:/cob/data1:rw",
             ],
-            partial_mocked_job,
+            jobs=partial_mocked_job,
+            is_preemptible=False,
             description="job description",
         )
 
@@ -77,6 +79,7 @@ class TestJobSubmit:
                     read_only=False,
                 ),
             ],
+            is_preemptible=False,
             description="job description",
         )
 
@@ -94,6 +97,7 @@ class TestJobSubmit:
             "25",
             [],
             partial_mocked_job,
+            is_preemptible=False,
             description="job description",
         )
 
@@ -104,5 +108,34 @@ class TestJobSubmit:
             network=NetworkPortForwarding({"http": 8183, "ssh": 25}),
             resources=Resources.create("1.2", "1", "test-gpu", "1G", "False"),
             volumes=None,
+            is_preemptible=False,
+            description="job description",
+        )
+    def test_job_submit_no_volumes_preemptible(self, partial_mocked_job) -> None:
+        job = JobHandlerOperations("alice")
+        job.submit(
+            image="test-image",
+            gpu="1",
+            gpu_model="test-gpu",
+            cpu="1.2",
+            memory="1G",
+            extshm="False",
+            cmd=["test-command"],
+            http="8183",
+            ssh="25",
+            volumes=[],
+            jobs=partial_mocked_job,
+            is_preemptible=True,
+            description="job description",
+        )
+
+        partial_mocked_job().submit.assert_called_once()
+
+        partial_mocked_job().submit.assert_called_with(
+            image=Image(image="test-image", command="test-command"),
+            network=NetworkPortForwarding({"http": 8183, "ssh": 25}),
+            resources=Resources.create("1.2", "1", "test-gpu", "1G", "False"),
+            volumes=None,
+            is_preemptible=True,
             description="job description",
         )

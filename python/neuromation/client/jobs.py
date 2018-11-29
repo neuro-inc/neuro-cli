@@ -226,6 +226,7 @@ class Job(ApiClient):
         network: NetworkPortForwarding,
         volumes: Optional[List[VolumeDescriptionPayload]],
         description: Optional[str],
+        is_preemptible: Optional[bool] = False,
     ) -> JobDescription:
         http, ssh = network_to_api(network)
         resources_payload: ResourcesPayload = ResourcesPayload(
@@ -244,7 +245,7 @@ class Job(ApiClient):
         )
         res = self._fetch_sync(
             JobSubmissionRequest(
-                container=container, volumes=volumes, description=description
+                container=container, volumes=volumes, description=description, is_preemptible=is_preemptible,
             )
         )
 
