@@ -46,6 +46,7 @@ class Request:
     url: str
     data: Optional[BytesIO]
     json: Any
+    headers: Optional[Dict[str, str]] = None
 
 
 @dataclass(frozen=True, init=True)
@@ -90,7 +91,7 @@ async def session(
         trace_config.on_request_end.append(trace)
 
     _default_auth_headers = {"Authorization": f"Bearer {token}"} if token else {}
-    _default_auth_headers["Accept-Encoding"] = "identity"
+
     client_session_settings = {
         "trace_configs": [trace_config],
         "headers": _default_auth_headers,
@@ -145,6 +146,7 @@ async def _fetch(request: Request, session, url: str):
         url=url + request.url,
         data=request.data,
         json=request.json,
+        headers=request.headers
     ) as resp:
         try:
             resp.raise_for_status()
