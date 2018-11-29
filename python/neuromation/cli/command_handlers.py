@@ -383,7 +383,6 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
 
 class JobHandlerOperations(PlatformStorageOperation):
-
     def wait_job_transfer_from(
         self, id: str, from_state: str, jobs: Callable, sleep_interval_s: int = 1
     ) -> JobDescription:
