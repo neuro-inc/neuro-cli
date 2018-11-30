@@ -28,8 +28,8 @@ def test_job_complete_lifecycle(run, tmpdir):
 
     # remember original set or running jobs
     _, captured = run(["job", "list", "--status", "running"])
-    store_out = captured.out.strip()
-    job_ids_orig = [x.split("\t")[0] for x in store_out.split("\n") if x]
+    store_out_list = captured.out.strip().split("\n")[1:]  # cut out the header line
+    job_ids_orig = [x.split("\t")[0] for x in store_out_list if x]
 
     # Start the jobs
     command_first = 'bash -c "sleep 1m; false"'
@@ -107,7 +107,8 @@ def test_job_complete_lifecycle(run, tmpdir):
     store_out = captured.out.strip()
     assert command_first in store_out
     assert command_second in store_out
-    job_ids_before_killing = [x.split("\t")[0] for x in store_out.split("\n") if x]
+    store_out_list = store_out.split("\n")[1:]  # cut out the header line
+    job_ids_before_killing = [x.split("\t")[0] for x in store_out_list if x]
     assert job_id_first in job_ids_before_killing
     assert job_id_second in job_ids_before_killing
     assert job_ids_orig != job_ids_before_killing
