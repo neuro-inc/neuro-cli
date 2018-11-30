@@ -36,12 +36,11 @@ test-all:
 
 .PHONY: isort
 isort:
-	isort -rc neuromation
-	isort -rc tests
-	isort -rc .
+	isort -rc neuromation tests
 
 .PHONY: lint
 lint:
+	isort -c -rc neuromation tests
 	black --check neuromation tests
 	mypy neuromation/client neuromation/logging neuromation/strings
 	flake8
@@ -54,9 +53,13 @@ publish:
 coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
-format:
-	isort -rc neuromation tests
+.PHONY: black
+black:
 	black neuromation tests
+
+.PHONY: format
+format: isort black
+
 
 # TODO (artyom, 07/16/2018): swap e2e and test once coverage output
 # of both is combined. Otherwise e2e will override unit tests with
