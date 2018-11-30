@@ -1,4 +1,3 @@
-
 from neuromation.cli.command_progress_report import (
     ProgressBase,
     StandardPrintPercentOnly,

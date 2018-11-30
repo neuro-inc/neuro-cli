@@ -123,6 +123,7 @@ def test_ls_alice_no_user(alice_ls, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="LISTSTATUS",
+        headers=None,
         data=None,
     )
 
@@ -138,6 +139,7 @@ def test_ls_alice_tilde_user(alice_ls, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="LISTSTATUS",
+        headers=None,
         data=None,
     )
 
@@ -153,6 +155,7 @@ def test_ls_alice_omitted_user(alice_ls, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="LISTSTATUS",
+        headers=None,
         data=None,
     )
 
@@ -168,6 +171,7 @@ def test_ls_alice_omitted_user_no_leading_slash(alice_ls, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params="LISTSTATUS",
+        headers=None,
         data=None,
     )
 
@@ -183,6 +187,7 @@ def test_ls_alice_removes_bob_data(alice_ls, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo",
         params="LISTSTATUS",
+        headers=None,
         data=None,
     )
 
@@ -198,5 +203,6 @@ def test_ls_alice_removes_bob_data_file(alice_ls, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo/data.txt",
         params="LISTSTATUS",
+        headers=None,
         data=None,
     )
