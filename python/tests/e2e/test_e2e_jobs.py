@@ -35,7 +35,7 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
     # Start the jobs
-    command_first = 'bash -c "sleep 20m; false"'
+    command_first = 'bash -c "sleep 1m; false"'
     _, captured = run(
         [
             "model",
@@ -58,7 +58,7 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_first.startswith("job-")
     assert job_id_first not in jobs_orig
 
-    command_second = 'bash -c "sleep 1m; false"'
+    command_second = 'bash -c "sleep 2m; false"'
     _, captured = run(
         [
             "job",
