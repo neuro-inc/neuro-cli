@@ -7,7 +7,10 @@ import aiohttp
 import pytest
 
 from neuromation.cli.rc import ConfigFactory
-from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_from
+from tests.e2e.test_e2e_utils import (
+    wait_for_job_to_change_state_from,
+    wait_for_job_to_change_state_to,
+)
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
@@ -15,7 +18,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 
 @pytest.mark.e2e
-def test_job_complete_lifecycle(run, tmpdir):
+def test_job_complete_lifecycle(run, loop, tmpdir):
     _dir_src = f"e2e-{uuid()}"
     _path_src = f"/tmp/{_dir_src}"
 
@@ -27,9 +30,9 @@ def test_job_complete_lifecycle(run, tmpdir):
     run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # remember original set or running jobs
-    _, captured = run(["job", "list", "--status", "running"])
+    _, captured = run(["job", "list", "--status", "running,pending"])
     store_out_list = captured.out.strip().split("\n")[1:]  # cut out the header line
-    job_ids_orig = [x.split("\t")[0] for x in store_out_list if x]
+    jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
     # Start the jobs
     command_first = 'bash -c "sleep 1m; false"'
@@ -43,6 +46,8 @@ def test_job_complete_lifecycle(run, tmpdir):
             "0.1",
             "-g",
             "0",
+            "--http",
+            "80",
             UBUNTU_IMAGE_NAME,
             "storage://" + _path_src,
             "storage://" + _path_dst,
@@ -51,6 +56,8 @@ def test_job_complete_lifecycle(run, tmpdir):
     )
     job_id_first = re.match("Job ID: (.+) Status:", captured.out).group(1)
     assert job_id_first.startswith("job-")
+    assert job_id_first not in jobs_orig
+
     command_second = 'bash -c "sleep 2m; false"'
     _, captured = run(
         [
@@ -62,6 +69,8 @@ def test_job_complete_lifecycle(run, tmpdir):
             "20M",
             "--gpu",
             "0",
+            "--http",
+            "80",
             "--quiet",
             UBUNTU_IMAGE_NAME,
             "--volume",
@@ -73,9 +82,19 @@ def test_job_complete_lifecycle(run, tmpdir):
     )
     job_id_second = captured.out.strip()
     assert job_id_second.startswith("job-")
+    assert job_id_second not in jobs_orig
 
     _, captured = run(
-        ["job", "submit", UBUNTU_IMAGE_NAME, "--memory", "2000000000000M", "-q"]
+        [
+            "job",
+            "submit",
+            UBUNTU_IMAGE_NAME,
+            "--memory",
+            "2000000000000M",
+            "-g",
+            "0",
+            "-q",
+        ]
     )
     job_id_third = captured.out.strip()
     assert job_id_third.startswith("job-")
@@ -102,44 +121,49 @@ def test_job_complete_lifecycle(run, tmpdir):
         )
         assert "Cluster doesn't have resources to fulfill request" in str(e)
 
-    # check running
+    wait_for_job_to_change_state_to(run, job_id_first, "Status: running")
+    wait_for_job_to_change_state_to(run, job_id_second, "Status: running")
+    wait_for_job_to_change_state_to(run, job_id_third, "Status: pending")
+
+    # check running via job list
     _, captured = run(["job", "list", "--status", "running"])
     store_out = captured.out.strip()
     assert command_first in store_out
     assert command_second in store_out
-    store_out_list = store_out.split("\n")[1:]  # cut out the header line
-    job_ids_before_killing = [x.split("\t")[0] for x in store_out_list if x]
-    assert job_id_first in job_ids_before_killing
-    assert job_id_second in job_ids_before_killing
-    assert job_ids_orig != job_ids_before_killing
-    # test the job list -q
-    _, captured = run(["job", "list", "--status", "running", "-q"])
-    job_ids_before_killing_quiet = [x.strip() for x in captured.out.split("\n") if x]
-    assert job_id_first in job_ids_before_killing_quiet
-    assert job_id_second in job_ids_before_killing_quiet
+    jobs_before_killing = [x.split("\t")[0] for x in store_out.split("\n")]
+    assert job_id_first in jobs_before_killing
+    assert job_id_second in jobs_before_killing
 
-    # kill multiple
+    # do the same with job list -q
+    _, captured = run(["job", "list", "--status", "running", "-q"])
+    jobs_before_killing_q = [x.strip() for x in captured.out.strip().split("\n")]
+    assert job_id_first in jobs_before_killing_q
+    assert job_id_second in jobs_before_killing_q
+
+    # kill multiple jobs
     _, captured = run(["job", "kill", job_id_first, job_id_second, job_id_third])
-    kill_output_list = [x.strip() for x in captured.out.split("\n") if x]
-    assert len(kill_output_list) == 3
-    assert job_id_first in kill_output_list
-    assert job_id_second in kill_output_list
-    assert job_id_third in kill_output_list
+    kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
+    assert kill_output_list == [job_id_first, job_id_second, job_id_third]
+
     wait_for_job_to_change_state_from(run, job_id_first, "Status: running")
     wait_for_job_to_change_state_from(run, job_id_second, "Status: running")
     wait_for_job_to_change_state_from(run, job_id_third, "Status: pending")
 
-    # check killed
-    _, captured = run(["job", "list", "--status", "running", "-q"])
-    job_ids_after_kill_quiet = [x.strip() for x in captured.out.split("\n") if x]
-    assert job_ids_orig == job_ids_after_kill_quiet
-    assert job_id_first not in job_ids_after_kill_quiet
-    assert job_id_second not in job_ids_after_kill_quiet
-    assert job_id_third not in job_ids_after_kill_quiet
+    wait_for_job_to_change_state_to(run, job_id_first, "Status: succeeded")
+    wait_for_job_to_change_state_to(run, job_id_second, "Status: succeeded")
+    wait_for_job_to_change_state_to(run, job_id_third, "Status: failed")
 
-    # try to kill already killed
+    # check killed running,pending
+    _, captured = run(["job", "list", "--status", "running,pending", "-q"])
+    jobs_after_kill_q = [x.strip() for x in captured.out.strip().split("\n")]
+    assert job_id_first not in jobs_after_kill_q
+    assert job_id_second not in jobs_after_kill_q
+    assert job_id_third not in jobs_after_kill_q
+
+    # try to kill already killed: same output
     _, captured = run(["job", "kill", job_id_first])
-    assert job_id_first == captured.out.strip()
+    kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
+    assert kill_output_list == [job_id_first]
 
 
 @pytest.mark.e2e
@@ -148,7 +172,8 @@ def test_job_kill_non_existing(run, loop):
     phantom_id = "NOT_A_JOB_ID"
     expected_out = f"Cannot kill job {phantom_id}: no such job {phantom_id}"
     _, captured = run(["job", "kill", phantom_id])
-    assert captured.out.strip() == expected_out
+    killed_jobs = [x.strip() for x in captured.out.strip().split("\n")]
+    assert killed_jobs == [expected_out]
 
 
 @pytest.mark.e2e
