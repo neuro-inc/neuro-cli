@@ -57,6 +57,30 @@ jobs:
             . .env/bin/activate
             make -C python devpi_upload
 
+  pypi_deploy:
+    steps:
+      - checkout
+
+      - run:
+          name: pypi setup
+          command: |
+            python3 -m venv .env
+            . .env/bin/activate
+            pip install --upgrade pip
+            pip install twine
+
+      - run:
+          name: build distribution
+          command: |
+            . .env/bin/activate
+            env SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0.3 python setup.py sdist bdist_wheel
+
+      - run:
+          name: pypi upload
+          command: |
+            . .env/bin/activate
+            twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
 workflows:
   version: 2
 
@@ -75,5 +99,15 @@ workflows:
             tags:
               only: /^v.*/
             branches:
-              ignore: /.*/            
+              ignore: /.*/
+      - pypi_deploy:
+          context: org-global
+          requires:
+            - build
+          filters:
+#            tags:
+#              only: /^v.*/
+            branches:
+              only: 244-PyPi-distribution
+#              ignore: /.*/
                 
