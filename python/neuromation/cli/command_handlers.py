@@ -9,10 +9,10 @@ from time import sleep
 from typing import Callable, Dict, Iterable, List, Optional
 from urllib.parse import ParseResult, urlparse
 
-import dateutil.parser
 import docker
 from docker.errors import APIError
 
+import dateutil.parser
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.formatter import JobListFormatter

@@ -4,6 +4,7 @@ from typing import Dict, Optional
 
 import keyring
 import yaml
+
 from jose import JWTError, jwt
 from yarl import URL
 

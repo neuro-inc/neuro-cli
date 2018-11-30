@@ -203,7 +203,7 @@ class TestJobListFormatter:
         assert self.loud._format_header_line() == expected
         assert self.quiet._format_header_line() == expected
 
-    @pytest.mark.parametrize("number_of_jobs", [0, 1, 2, 10, 10_000])
+    @pytest.mark.parametrize("number_of_jobs", [0, 1, 2, 10, 10000])
     def test_format_jobs_quiet(self, number_of_jobs):
         jobs = [
             JobDescription(
