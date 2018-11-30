@@ -58,6 +58,7 @@ jobs:
             make -C python devpi_upload
 
   pypi_deploy:
+    <<: *defaults
     steps:
       - checkout
 
