@@ -80,7 +80,7 @@ jobs:
           name: pypi upload
           command: |
             . .env/bin/activate
-            make -C python init
+            make -C python publish
 
       - save_cache:
           paths:
