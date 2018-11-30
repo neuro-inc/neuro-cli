@@ -75,12 +75,14 @@ jobs:
           name: build distribution
           command: |
             . .env/bin/activate
-            env SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0.3 python python/setup.py sdist bdist_wheel
+            cd python
+            env SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0.4 python setup.py sdist bdist_wheel
 
       - run:
           name: pypi upload
           command: |
             . .env/bin/activate
+            cd python
             twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 workflows:
