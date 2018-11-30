@@ -111,9 +111,8 @@ workflows:
           requires:
             - build
           filters:
-#            tags:
-#              only: /^v.*/
+            tags:
+              only: /^v.*/
             branches:
-              only: 244-PyPi-distribution
-#              ignore: /.*/
+              ignore: /.*/
                 
