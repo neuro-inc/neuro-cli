@@ -6,7 +6,7 @@ import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 import dateutil.parser
