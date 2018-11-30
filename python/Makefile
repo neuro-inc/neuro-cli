@@ -62,7 +62,7 @@ format:
 # of both is combined. Otherwise e2e will override unit tests with
 # lower coverage
 .PHONY: ci
-ci: lint e2e test coverage
+ci: lint test e2e coverage
 
 .PHONY: clean
 clean:
@@ -79,4 +79,3 @@ devpi_login:
 
 devpi_upload: devpi_login
 	devpi upload --formats bdist_wheel
-	

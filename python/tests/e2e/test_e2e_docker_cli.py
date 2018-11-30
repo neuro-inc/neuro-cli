@@ -34,6 +34,7 @@ def docker_return_false(*args, **kwargs):
     return False
 
 
+@pytest.mark.e2e
 def test_no_docker(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
@@ -55,6 +56,7 @@ def test_no_docker(run, monkeypatch):
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
+@pytest.mark.e2e
 def test_docker_config_with_docker(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
@@ -68,6 +70,7 @@ def test_docker_config_with_docker(run, monkeypatch):
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
 
+@pytest.mark.e2e
 def test_docker_push_with_docker(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
@@ -80,6 +83,7 @@ def test_docker_push_with_docker(run, monkeypatch):
         assert docker_client.push.call_count == 1
 
 
+@pytest.mark.e2e
 def test_docker_pull_with_docker(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
@@ -91,6 +95,7 @@ def test_docker_pull_with_docker(run, monkeypatch):
         assert docker_client.pull.call_count == 1
 
 
+@pytest.mark.e2e
 def test_docker_error_scenarios(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
