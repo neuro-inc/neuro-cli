@@ -46,9 +46,23 @@ lint:
 	mypy neuromation/client neuromation/logging neuromation/strings
 	flake8
 
+.PHONY: dist_clean
+dist-clean:
+	rm -rf dist || true
+	rm -rf build || true
+
+.PHONY: dist
+dist: dist_clean
+	python setup.py bdist_wheel
+
+.PHONY: publish_prepare
+publish_lint:
+	twine check dist/*
+
+
 .PHONY: publish
-publish:
-	echo 'Not implemented'
+publish: dist publish_lint
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 .PHONY: coverage
 coverage:
@@ -79,4 +93,4 @@ devpi_login:
 
 devpi_upload: devpi_login
 	devpi upload --formats bdist_wheel
-	
+

@@ -7,6 +7,8 @@ from setuptools import find_packages, setup
 with open('README.md') as f:
     readme = f.read()
 
+# TODO: Add license
+license = None
 # with open('LICENSE') as f:
 #     license = f.read()
 
@@ -17,7 +19,7 @@ setup(
     use_scm_version={'root': '..', 'relative_to': __file__},
     setup_requires=['setuptools_scm'],
 
-    python_requires='>=3.5.0, <4',
+    python_requires='>=3.6.0',
     # Make sure to pin versions of install_requires
     install_requires=[
         'aiohttp==3.4.4',
@@ -35,7 +37,7 @@ setup(
     include_package_data=True,
     description='Neuromation Platform API client',
     long_description=readme,
-    long_description_content_type="text/markdown",
+    long_description_content_type='text/markdown',
     author='Neuromation Team',
     author_email='pypi@neuromation.io',  # TODO: change this email
     license=license,

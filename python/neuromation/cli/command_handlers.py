@@ -10,9 +10,8 @@ from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 import dateutil.parser
-import tqdm
-
 import docker
+import tqdm
 from docker.errors import APIError
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
