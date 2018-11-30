@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from docker import APIClient
 from docker.errors import APIError
+
 from neuromation.cli.rc import ConfigFactory
 
 
