@@ -13,7 +13,8 @@ with open('README.md') as f:
 setup(
     name='neuromation',
 
-    use_scm_version={'root': '..', 'relative_to': __file__},  # TODO: decide where take/store versions
+    # TODO: decide where take/store versions
+    use_scm_version={'root': '..', 'relative_to': __file__},
     setup_requires=['setuptools_scm'],
 
     python_requires='>=3.5.0, <4',
