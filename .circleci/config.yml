@@ -74,7 +74,7 @@ jobs:
           name: build distribution
           command: |
             . .env/bin/activate
-            env SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0.3 python setup.py sdist bdist_wheel
+            env SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0.3 python python/setup.py sdist bdist_wheel
 
       - run:
           name: pypi upload
