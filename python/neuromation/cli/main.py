@@ -515,7 +515,7 @@ Commands:
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
-                -p, --preemptible         Run job on a lower-cost preemptible instance
+                --preemptible             Run job on a lower-cost preemptible instance
                 -d, --description DESC    Add optional description to the job
                 -q, --quiet               Run command in quiet mode
 
