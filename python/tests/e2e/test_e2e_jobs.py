@@ -85,7 +85,16 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_2 not in jobs_orig
 
     _, captured = run(
-        ["job", "submit", UBUNTU_IMAGE_NAME, "--memory", "2000000000000M", "-q"]
+        [
+            "job",
+            "submit",
+            UBUNTU_IMAGE_NAME,
+            "--memory",
+            "2000000000000M",
+            "-g",
+            "0",
+            "-q",
+        ]
     )
     job_id_3 = captured.out.strip()
     assert job_id_3.startswith("job-")
@@ -150,20 +159,6 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_1 not in jobs_after_kill_q
     assert job_id_2 not in jobs_after_kill_q
     assert job_id_3 not in jobs_after_kill_q
-
-    # check killed succeeded
-    _, captured = run(["job", "list", "--status", "succeeded", "-q"])
-    jobs_after_kill_q = [x.strip() for x in captured.out.strip().split("\n")]
-    assert job_id_1 in jobs_after_kill_q  # were killed => manually set to succeeded
-    assert job_id_2 in jobs_after_kill_q  # were killed => manually set to succeeded
-    assert job_id_3 not in jobs_after_kill_q  # failed even before
-
-    # check killed failed
-    _, captured = run(["job", "list", "--status", "failed", "-q"])
-    jobs_after_kill_q = [x.strip() for x in captured.out.strip().split("\n")]
-    assert job_id_1 not in jobs_after_kill_q
-    assert job_id_2 not in jobs_after_kill_q
-    assert job_id_3 in jobs_after_kill_q
 
     # try to kill already killed: same output
     _, captured = run(["job", "kill", job_id_1])
