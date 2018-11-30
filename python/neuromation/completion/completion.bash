@@ -461,6 +461,8 @@ _neuro-completion()
 			;;
 		    --q|--quite)
 			;;
+		    --preemptible)
+			;;
 		    --volume)
 			state=job-submit-volume
 			;;
@@ -649,7 +651,7 @@ _neuro-completion()
 	    ;;
 	job-submit)
 	    toks='-c --cpu -g --gpu --gpu-model -m --memory -x --extshm
-		  --http --ssh -q --quite --volume --description'
+		  --http --ssh -q --quite --volume --description --preemptible'
 	    ;;
 	job-submit-volume)
 	    toks=$(_neuro_complete-uri "$cur" n y)
