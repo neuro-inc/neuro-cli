@@ -276,6 +276,7 @@ def test_job_submit_no_volumes_preemptible(jobs):
         method="POST",
         url="http://127.0.0.1/jobs",
         params=None,
+        headers=None,
         data=None,
         json={
             "container": {
@@ -351,6 +352,7 @@ def test_job_submit_no_volumes_non_preemptible(jobs):
         method="POST",
         url="http://127.0.0.1/jobs",
         params=None,
+        headers=None,
         data=None,
         json={
             "container": {
