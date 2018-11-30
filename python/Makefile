@@ -34,10 +34,6 @@ test-all:
 		--cov-report xml:coverage.xml \
 		tests
 
-.PHONY: isort
-isort:
-	isort -rc neuromation tests
-
 .PHONY: lint
 lint:
 	isort -c -rc neuromation tests
@@ -53,13 +49,10 @@ publish:
 coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
-.PHONY: black
-black:
-	black neuromation tests
-
 .PHONY: format
-format: isort black
-
+format:
+	isort -rc neuromation tests
+	black neuromation tests
 
 # TODO (artyom, 07/16/2018): swap e2e and test once coverage output
 # of both is combined. Otherwise e2e will override unit tests with
