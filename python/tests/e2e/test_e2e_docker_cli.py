@@ -42,15 +42,15 @@ def test_no_docker(run, monkeypatch):
 
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
         assert docker_client.login.call_count == 0
-        assert docker_client.ping.call_count == 1
+        assert docker_client.ping.call_count == 0
 
         _, captured = run(["image", "push", "abrakadabra"])
         assert docker_client.images.get.call_count == 0
-        assert docker_client.ping.call_count == 2
+        assert docker_client.ping.call_count == 1
 
         _, captured = run(["image", "pull", "abrakadabra"])
         assert docker_client.images.get.call_count == 0
-        assert docker_client.ping.call_count == 3
+        assert docker_client.ping.call_count == 2
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
@@ -62,8 +62,8 @@ def test_docker_config_with_docker(run, monkeypatch):
 
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
 
-        assert docker_client.ping.call_count == 1
-        assert docker_client.login.call_count == 1
+        assert docker_client.ping.call_count == 0
+        assert docker_client.login.call_count == 0
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
@@ -95,12 +95,6 @@ def test_docker_error_scenarios(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
         mocked_client.return_value = docker_client
-
-        with pytest.raises(SystemExit):
-            old_value = docker_client.login
-            docker_client.login = docker_throw_error
-            _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
-            docker_client.login = old_value
 
         with pytest.raises(SystemExit):
             old_value = docker_client.tag

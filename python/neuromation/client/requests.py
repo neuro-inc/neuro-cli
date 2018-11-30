@@ -173,6 +173,7 @@ class JobSubmissionRequest(JobRequest):
     container: ContainerPayload
     description: Optional[str]
     volumes: Optional[List[VolumeDescriptionPayload]]
+    is_preemptible: Optional[bool]
 
     def _convert_volumes_to_primitive(self) -> List[Dict[str, Any]]:
         if self.volumes:
@@ -186,6 +187,8 @@ class JobSubmissionRequest(JobRequest):
         request_details["container"]["volumes"] = self._convert_volumes_to_primitive()
         if self.description:
             request_details["description"] = self.description
+        if self.is_preemptible is not None:
+            request_details["is_preemptible"] = self.is_preemptible
         return http.JsonRequest(
             url="/jobs", params=None, method="POST", json=request_details, data=None
         )

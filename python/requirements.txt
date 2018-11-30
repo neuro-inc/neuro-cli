@@ -7,3 +7,4 @@ pytest-aiohttp==0.3.0
 black==18.6b4
 keyring~=13.0
 keyrings.cryptfile==1.2.1
+pytest-xdist==1.24.1

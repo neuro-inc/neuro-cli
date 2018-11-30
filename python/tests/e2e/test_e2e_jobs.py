@@ -115,7 +115,8 @@ def test_job_complete_lifecycle(run, tmpdir):
     # test the job list -q
     _, captured = run(["job", "list", "--status", "running", "-q"])
     job_ids_before_killing_quiet = [x.strip() for x in captured.out.split("\n") if x]
-    assert job_ids_before_killing == job_ids_before_killing_quiet
+    assert job_id_first in job_ids_before_killing_quiet
+    assert job_id_second in job_ids_before_killing_quiet
 
     # kill multiple
     _, captured = run(["job", "kill", job_id_first, job_id_second, job_id_third])
