@@ -6,16 +6,16 @@ import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional
 from urllib.parse import ParseResult, urlparse
 
 import dateutil.parser
 import docker
-import tqdm
 from docker.errors import APIError
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
+from neuromation.cli.formatter import JobListFormatter
 from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.client.requests import VolumeDescriptionPayload
@@ -31,6 +31,12 @@ BUFFER_SIZE_B = BUFFER_SIZE_MB * 1024 * 1024
 PLATFORM_DELIMITER = "/"
 
 SYSTEM_PATH_DELIMITER = os.sep
+
+
+class PlatformOperation:
+    def __init__(self, principal: str, token: str) -> None:
+        self._principal = principal
+        self._token = token
 
 
 class PlatformStorageOperation:
@@ -422,42 +428,9 @@ class JobHandlerOperations(PlatformStorageOperation):
             return j.status(id)
 
     @classmethod
-    def _truncate_string(cls, input: str, max_length: int) -> str:
-        if len(input) <= max_length:
-            return input
-        len_tail, placeholder = 3, "..."
-        if max_length < len_tail or max_length < len(placeholder):
-            return placeholder
-        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
-        index_stop = max_length - len(placeholder) - len(tail)
-        return input[:index_stop] + placeholder + tail
-
-    @classmethod
-    def _format_job_line(cls, item: JobDescription, quiet: bool = False) -> str:
-        # TODO (A Yushkovskiy 20.11.2018) move this logic to a formatter
-        def wrap(text: str) -> str:
-            return f"'{text}'" if text else ""
-
-        if quiet:
-            details = ""
-        else:
-            tab = "\t"
-            image = item.image or ""
-            description = wrap(cls._truncate_string(item.description or "", 50))
-            command = wrap(cls._truncate_string(item.command or "", 50))
-            details = tab.join(
-                [
-                    "",  # empty line for the initial tab
-                    f"{item.status:<10}",
-                    f"{image:<15}",
-                    f"{description:<50}",
-                    f"{command:<50}",
-                ]
-            )
-        return item.id + details
-
-    @classmethod
-    def _sort_job_list(cls, job_list: List[JobDescription]) -> List[JobDescription]:
+    def _sort_job_list(
+        cls, job_list: Iterable[JobDescription]
+    ) -> Iterable[JobDescription]:
         def job_sorting_key_by_creation_time(job: JobDescription) -> datetime:
             created_str = job.history.created_at
             return dateutil.parser.isoparse(created_str)
@@ -480,15 +453,11 @@ class JobHandlerOperations(PlatformStorageOperation):
             filter_description = not description or item.description == description
             return filter_status and filter_description
 
+        formatter = JobListFormatter(quiet=quiet)
+
         with jobs() as j:
-            job_list = j.list()
-            return "\n".join(
-                [
-                    self._format_job_line(item, quiet)
-                    for item in self._sort_job_list(job_list)
-                    if apply_filter(item)
-                ]
-            )
+            job_list = self._sort_job_list(filter(apply_filter, j.list()))
+            return formatter.format_jobs(job_list)
 
     def _network_parse(self, http, ssh) -> Optional[NetworkPortForwarding]:
         net = None
@@ -542,6 +511,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         ssh,
         volumes,
         jobs: Callable,
+        is_preemptible: bool,
         description: str,
     ) -> JobDescription:
 
@@ -558,6 +528,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 resources=resources,
                 network=network,
                 volumes=volumes,
+                is_preemptible=is_preemptible,
                 description=description,
             )
 
@@ -771,9 +742,9 @@ class ModelHandlerOperations(JobHandlerOperations):
         return None
 
 
-class DockerHandler(PlatformStorageOperation):
-    def __init__(self, principal: str) -> None:
-        super().__init__(principal)
+class DockerHandler(PlatformOperation):
+    def __init__(self, principal: str, token: str) -> None:
+        super().__init__(principal, token)
         self._client = docker.APIClient()
 
     def _is_docker_available(self) -> bool:
@@ -783,75 +754,28 @@ class DockerHandler(PlatformStorageOperation):
         except APIError:
             return False
 
-    def _progress(
-        self, line: Dict[str, Any], bars: Dict[str, Any]
-    ) -> None:  # pragma no cover
-        try:
-            if "id" in line:
-                status = line["status"]
-                if status == "Pushed" or status == "Download complete":
-                    if line["id"] in bars:
-                        progress = bars[line["id"]]
-                        delta = progress["total"] - progress["current"]
-                        if delta < 0:
-                            delta = 0
-                        progress["progress"].update(delta)
-                        progress["progress"].close()
-                elif status == "Pushing" or status == "Downloading":
-                    if line["id"] not in bars:
-                        if "progressDetail" in line:
-                            progress_details = line["progressDetail"]
-                            total_progress = progress_details.get(
-                                "total", progress_details.get("current", 1)
-                            )
-                            if total_progress > 0:
-                                bars[line["id"]] = {
-                                    "progress": tqdm.tqdm(
-                                        total=total_progress,
-                                        leave=False,
-                                        unit="B",
-                                        unit_scale=True,
-                                    ),
-                                    "current": 0,
-                                    "total": total_progress,
-                                }
-                    if "progressDetail" in line and "current" in line["progressDetail"]:
-                        delta = (
-                            line["progressDetail"]["current"]
-                            - bars[line["id"]]["current"]
-                        )
-                        if delta < 0:
-                            delta = 0
-                        bars[line["id"]]["current"] = line["progressDetail"]["current"]
-                        bars[line["id"]]["progress"].update(delta)
-        except BaseException:
-            pass
-
-    def login(self, username: str, password: str, registry: str) -> None:
-        if self._is_docker_available():
-            try:
-                res = self._client.login(
-                    username=username, password=password, registry=registry, reauth=True
-                )
-                print(res)
-            except docker.errors.APIError as e:
-                raise ValueError(
-                    f"Failed to updated docker auth details. Error {e.explanation}"
-                ) from e
+    def _auth(self) -> Dict[str, str]:
+        return {"username": "token", "password": self._token}
 
     def push(self, registry: str, image_name: str) -> str:
         if self._is_docker_available():
             try:
                 image, tag = image_name.split(":")
 
-                repository_url = f"{registry}/{self.principal}/{image}"
-                if not self._client.tag(image, repository_url, tag, force=True):
+                repository_url = f"{registry}/{self._principal}/{image}:{tag}"
+                if not self._client.tag(image_name, repository_url, tag, force=True):
                     raise ValueError("Error tagging image.")
-                bars = {}
+                progress = "|\\-/"
+                cnt = 0
                 for line in self._client.push(
-                    repository_url, stream=True, decode=True
+                    repository_url,
+                    stream=True,
+                    decode=True,
+                    tag=tag,
+                    auth_config=self._auth(),
                 ):  # pragma no cover
-                    self._progress(line, bars)
+                    cnt = (cnt + 1) % len(progress)
+                    print(f"\r{progress[cnt]}", end="")
                 return repository_url
             except docker.errors.APIError as e:
                 raise ValueError(
@@ -863,12 +787,18 @@ class DockerHandler(PlatformStorageOperation):
             try:
                 image, tag = image_name.split(":")
 
-                bars = {}
                 repository_url = image
+                progress = "|\\-/"
+                cnt = 0
                 for line in self._client.pull(
-                    repository_url, tag=tag, stream=True, decode=True
+                    repository_url,
+                    tag=tag,
+                    stream=True,
+                    decode=True,
+                    auth_config=self._auth(),
                 ):  # pragma no cover
-                    self._progress(line, bars)
+                    cnt = (cnt + 1) % len(progress)
+                    print(f"\r{progress[cnt]}", end="")
                 return repository_url
             except docker.errors.APIError as e:
                 log.error(e)

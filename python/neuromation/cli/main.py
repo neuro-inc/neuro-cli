@@ -115,14 +115,6 @@ Commands:
             show            Print current settings
         """
 
-        def update_docker_config(config: rc.Config) -> None:
-            docker_registry_url = config.docker_registry_url()
-            platform_user_name = config.get_platform_user_name()
-            # TODO Add logout
-            DockerHandler(platform_user_name).login(
-                "token", config.auth, docker_registry_url
-            )
-
         @command
         def url(url):
             """
@@ -134,8 +126,7 @@ Commands:
             Example:
             neuro config url http://platform.neuromation.io/api/v1
             """
-            config = rc.ConfigFactory.update_api_url(url)
-            update_docker_config(config)
+            rc.ConfigFactory.update_api_url(url)
 
         @command
         def id_rsa(file):
@@ -179,8 +170,7 @@ Commands:
             # Do not overwrite token in case new one does not work
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
-            config = rc.ConfigFactory.update_auth_token(token=token)
-            update_docker_config(config)
+            rc.ConfigFactory.update_auth_token(token=token)
 
         @command
         def forget():
@@ -190,8 +180,7 @@ Commands:
 
             Forget authorization token
             """
-            config = rc.ConfigFactory.forget_auth_token()
-            update_docker_config(config)
+            rc.ConfigFactory.forget_auth_token()
 
         return locals()
 
@@ -492,6 +481,7 @@ Commands:
             ssh,
             cmd,
             volume,
+            preemptible,
             description,
             quiet,
         ):
@@ -513,7 +503,8 @@ Commands:
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
-                --volume MOUNT...         Mounts directory from vault into containr
+                --volume MOUNT...         Mounts directory from vault into container
+                --preemptible             Run job on a lower-cost preemptible instance
                 -d, --description DESC    Add optional description to the job
                 -q, --quiet               Run command in quiet mode
 
@@ -549,6 +540,7 @@ Commands:
                 ssh,
                 volume,
                 jobs,
+                preemptible,
                 description,
             )
             return OutputFormatter.format_job(job, quiet)
@@ -699,7 +691,9 @@ Commands:
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             registry_url = config.docker_registry_url()
-            return DockerHandler(platform_user_name).push(registry_url, image_name)
+            return DockerHandler(platform_user_name, config.auth).push(
+                registry_url, image_name
+            )
 
         @command
         def pull(image_name):
@@ -712,7 +706,9 @@ Commands:
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             registry_url = config.docker_registry_url()
-            return DockerHandler(platform_user_name).pull(registry_url, image_name)
+            return DockerHandler(platform_user_name, config.auth).pull(
+                registry_url, image_name
+            )
 
         return locals()
 
