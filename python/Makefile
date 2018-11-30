@@ -46,22 +46,22 @@ lint:
 	mypy neuromation/client neuromation/logging neuromation/strings
 	flake8
 
-.PHONY: dist_clean
+.PHONY: dist-clean
 dist-clean:
 	rm -rf dist || true
 	rm -rf build || true
 
 .PHONY: dist
-dist: dist_clean
+dist: dist-clean
 	python setup.py bdist_wheel
 
-.PHONY: publish_prepare
-publish_lint:
+.PHONY: publish-lint
+publish-lint:
 	twine check dist/*
 
 
 .PHONY: publish
-publish: dist publish_lint
+publish: dist publish-lint
 	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 .PHONY: coverage
