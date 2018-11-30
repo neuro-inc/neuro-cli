@@ -132,7 +132,6 @@ def test_job_complete_lifecycle(run, tmpdir):
     # check killed
     _, captured = run(["job", "list", "--status", "running", "-q"])
     job_ids_after_kill_quiet = [x.strip() for x in captured.out.split("\n") if x]
-    assert job_ids_orig == job_ids_after_kill_quiet
     assert job_id_first not in job_ids_after_kill_quiet
     assert job_id_second not in job_ids_after_kill_quiet
     assert job_id_third not in job_ids_after_kill_quiet
