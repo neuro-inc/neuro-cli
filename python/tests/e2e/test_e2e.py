@@ -127,7 +127,7 @@ def test_e2e_shm_run_without(run, tmpdir):
     run(["store", "rm", f"storage://{_path_dst}"])
 
     assert "/dev/shm" in out
-    assert "64M" in out
+    assert "20M" in out
 
 
 @pytest.mark.e2e
