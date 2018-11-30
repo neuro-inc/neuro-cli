@@ -445,7 +445,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         description: Optional[str] = None,
     ) -> str:
 
-        statuses = set(status.split(","))
+        statuses = set(status.split(",")) if status else set()
         has_all_status = "all" in statuses
 
         def apply_filter(item: JobDescription) -> bool:
