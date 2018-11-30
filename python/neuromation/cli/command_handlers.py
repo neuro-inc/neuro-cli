@@ -440,12 +440,16 @@ class JobHandlerOperations(PlatformStorageOperation):
     def list_jobs(
         self,
         jobs: Callable,
+        status: str,
         quiet: bool = False,
-        status: Optional[str] = None,
         description: Optional[str] = None,
     ) -> str:
+
+        statuses = set(status.split(",")) if status else set()
+        has_all_status = "all" in statuses
+
         def apply_filter(item: JobDescription) -> bool:
-            filter_status = not status or item.status == status
+            filter_status = has_all_status or item.status in statuses
             filter_description = not description or item.description == description
             return filter_status and filter_description
 

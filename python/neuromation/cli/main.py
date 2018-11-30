@@ -598,17 +598,25 @@ Commands:
                 neuro job list [options]
 
             Options:
-              -s, --status (pending|running|succeeded|failed)
-                  Filters out job by state
+              -s, --status (pending|running|succeeded|failed|all)
+                  Filter out job by status(es) (comma delimited if multiple)
               -d, --description DESCRIPTION
-                  Filters out job by job description (exact match)
+                  Filter out job by job description (exact match)
               -q, --quiet
                   Run command in quiet mode (print only job ids)
 
             List all jobs
+
+            Example:
+            neuro job list --description="my favourite job"
+            neuro job list --status=all
+            neuro job list --status=pending,running --quiet
             """
+
+            status = status or "running,pending"
+            # TODO (Artem Yushkovskiy, 29.11.2018): add validation of status values
             return JobHandlerOperations(token).list_jobs(
-                jobs, quiet, status, description
+                jobs, status, quiet, description
             )
 
         @command
