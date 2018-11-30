@@ -1,6 +1,5 @@
 import re
 from time import sleep, time
-from typing import Callable
 from urllib.parse import urlparse
 from uuid import uuid4 as uuid
 
