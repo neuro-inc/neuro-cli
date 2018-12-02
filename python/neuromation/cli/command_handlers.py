@@ -757,10 +757,21 @@ class DockerHandler(PlatformOperation):
     def _auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._token}
 
+    @classmethod
+    def _split_tagged_image_name(cls, image_name: str):
+        colon_count = image_name.count(":")
+        if colon_count == 0:
+            return image_name, ""
+        if colon_count == 1:
+            name, tag = image_name.split(":")
+            if name:
+                return name, tag
+        raise ValueError(f"Invalid image name format: {image_name}")
+
     def push(self, registry: str, image_name: str) -> str:
         if self._is_docker_available():
             try:
-                image, tag = image_name.split(":")
+                image, tag = self._split_tagged_image_name(image_name)
 
                 repository_url = f"{registry}/{self._principal}/{image}:{tag}"
                 if not self._client.tag(image_name, repository_url, tag, force=True):
@@ -785,7 +796,7 @@ class DockerHandler(PlatformOperation):
     def pull(self, registry: str, image_name: str) -> str:
         if self._is_docker_available():
             try:
-                image, tag = image_name.split(":")
+                image, tag = self._split_tagged_image_name(image_name)
 
                 repository_url = image
                 progress = "|\\-/"

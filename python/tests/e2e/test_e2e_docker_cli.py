@@ -80,6 +80,18 @@ def test_docker_push_with_docker(run, monkeypatch):
         assert docker_client.push.call_count == 1
 
 
+def test_docker_push_with_docker_no_tag(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        _, captured = run(["image", "push", "abrakadabra"])
+
+        assert docker_client.ping.call_count == 1
+        assert docker_client.tag.call_count == 1
+        assert docker_client.push.call_count == 1
+
+
 def test_docker_pull_with_docker(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
@@ -89,6 +101,36 @@ def test_docker_pull_with_docker(run, monkeypatch):
 
         assert docker_client.ping.call_count == 1
         assert docker_client.pull.call_count == 1
+
+
+def test_docker_pull_with_docker_no_tag(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        _, captured = run(["image", "pull", "abrakadabra"])
+
+        assert docker_client.ping.call_count == 1
+        assert docker_client.tag.call_count == 1
+        assert docker_client.push.call_count == 1
+
+
+def test_docker_too_many_image_tags(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        with pytest.raises(SystemExit):
+            _, captured = run(["image", "pull", "abrakadabra:tag1:tag2"])
+
+        with pytest.raises(SystemExit):
+            _, captured = run(["image", "push", "abrakadabra:tag1:tag2"])
+
+        with pytest.raises(SystemExit):
+            _, captured = run(["image", "pull", ":tag"])  # no image name
+
+        with pytest.raises(SystemExit):
+            _, captured = run(["image", "push", ":tag"])  # no image name
 
 
 def test_docker_error_scenarios(run, monkeypatch):
