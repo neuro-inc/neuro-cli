@@ -494,13 +494,13 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Other options available are
-                                              nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT       Memory amount to request [default: 16G]
                 -x, --extshm              Request extended '/dev/shm' space
+                                          Available options:
+                                              nvidia-tesla-k80, nvidia-tesla-p4, nvidia-tesla-v100
+                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
+                -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
