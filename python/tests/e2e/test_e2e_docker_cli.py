@@ -111,8 +111,7 @@ def test_docker_pull_with_docker_no_tag(run, monkeypatch):
         _, captured = run(["image", "pull", "abrakadabra"])
 
         assert docker_client.ping.call_count == 1
-        assert docker_client.tag.call_count == 1
-        assert docker_client.push.call_count == 1
+        assert docker_client.pull.call_count == 1
 
 
 def test_docker_too_many_image_tags(run, monkeypatch):
