@@ -498,11 +498,11 @@ Commands:
             Options:
                 -g, --gpu NUMBER          Number of GPUs to request [default: 0]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                -x, --extshm              Request extended '/dev/shm' space
                                           Available options:
                                               nvidia-tesla-k80
                                               nvidia-tesla-p4
                                               nvidia-tesla-v100
+                -x, --extshm              Request extended '/dev/shm' space
                 -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
                 -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 --http NUMBER             Enable HTTP port forwarding to container
