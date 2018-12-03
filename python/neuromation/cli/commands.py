@@ -109,17 +109,17 @@ def dispatch(target, tail, format_spec=None, **kwargs):
         except docopt.DocoptExit:
             raise ValueError(target.__doc__)
 
-        res = target(**{**normalize_options(options, stack + ["COMMAND"]), **kwargs})
-        # Don't pass to tested commands, they will be available through
-        # closure anyways
-        kwargs = {}
-
         command = options.get("COMMAND", None)
         if command == "help" and not stack:
             return get_help(target, tail, stack)
 
         if not command and tail:
             raise ValueError(f'Invalid arguments: {" ".join(tail)}')
+
+        res = target(**{**normalize_options(options, stack + ["COMMAND"]), **kwargs})
+        # Don't pass to tested commands, they will be available through
+        # closure anyways
+        kwargs = {}
 
         if not command and not tail:
             return res
