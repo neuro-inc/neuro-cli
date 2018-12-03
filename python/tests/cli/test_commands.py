@@ -232,10 +232,10 @@ def test_invalid_command():
 def test_commands():
     assert commands(scope=globals()) == {"person": _person, "zombie": zombie}
 
-    assert set(commands(scope=_person(None, None, None, None))) == {
+    assert set(commands(scope=_person(None, None, None, None, None))) == {
         "absent",
         "work",
         "rest",
     }
 
-    assert set(commands(scope=zombie())) == {"eat", "party"}
+    assert set(commands(scope=zombie())) == {"eat", "fail", "party"}
