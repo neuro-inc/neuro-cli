@@ -7,7 +7,7 @@ from neuromation.cli.commands import command, commands, dispatch
 
 # NOTE: overriding command name to be 'person'
 @command("person")
-def _person(name, age, gender, city):
+def _person(name, age, gender, city, verbose):
     """
     Usage:
       person -n NAME [options ...] COMMAND
@@ -16,6 +16,7 @@ def _person(name, age, gender, city):
       -n, --name NAME             Name
       -a, --age AGE               Age
       -g, --gender GENDER         Gender
+      --verbose                   Verbose output
 
     Commands:
       work               Work
@@ -78,7 +79,8 @@ def _person(name, age, gender, city):
 
         (c) {year}
         """
-        return f"{name} is resting {where} for {duration} hour"
+        suffix = ": \"Zzzz...\"" if verbose else ""
+        return f"{name} is resting {where} for {duration} hour" + suffix
 
     @command
     def absent():
@@ -123,6 +125,14 @@ def zombie():
           zombie party PERSONS [PERSONS...]
         """
         return f"zombie has a party with {(' and '.join(persons))}"
+
+    @command
+    def fail():
+        """
+        Usage:
+          zombie fail
+        """
+        raise ValueError("legal fail")
 
     return locals()
 
@@ -171,6 +181,15 @@ def test_dispatch_key_with_one_or_more_arguments():
     argv = ["eat", "Anne", "Eve", "Marie", "Antoinette", "Josephine"]
     expected = "zombie eats Anne, Eve, Marie, Antoinette, Josephine"
     assert dispatch(target=zombie, tail=argv) == expected
+
+    with pytest.raises(ValueError, match="legal fail"):
+        argv = ["fail"]
+        dispatch(target=zombie, tail=argv)
+
+    with pytest.raises(ValueError, match="Invalid arguments: --not-an-option"):
+        # first fail with incorrect arguments, then execute target function
+        argv = ["fail", "--not-an-option"]
+        dispatch(target=zombie, tail=argv)
 
 
 def test_dispatch_help():
