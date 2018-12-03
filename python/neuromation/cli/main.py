@@ -798,8 +798,12 @@ Commands:
 
 
 def main():
+    is_verbose = "--verbose" in sys.argv
+    if is_verbose:
+        sys.argv.remove("--verbose")
+
     setup_logging()
-    setup_console_handler(console_handler, verbose=("--verbose" in sys.argv))
+    setup_console_handler(console_handler, verbose=is_verbose)
 
     version = f"Neuromation Platform Client {neuromation.__version__}"
     if "-v" in sys.argv:
