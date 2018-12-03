@@ -807,7 +807,7 @@ def main():
 
     if any(version_key in sys.argv for version_key in ["-v", "--version"]):
         print(f"Neuromation Platform Client {neuromation.__version__}")
-        sys.exit(0)
+        return
 
     config = rc.ConfigFactory.load()
     doc_username = config.get_platform_user_name()

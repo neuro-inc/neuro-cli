@@ -63,7 +63,7 @@ def data(tmpdir_factory):
 @pytest.mark.e2e
 @pytest.mark.parametrize("version_key", ["-v", "--version"])
 def test_print_version(run, version_key):
-    expected_out = f"Neuromation Platform Client {neuromation.__version__}"
+    expected_out = f"Neuromation Platform Client {neuromation.__version__}\n"
 
     _, captured = run([version_key])
     assert not captured.err
