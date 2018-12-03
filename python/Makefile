@@ -37,14 +37,9 @@ test-all:
 		--cov-report xml:coverage.xml \
 		tests
 
-.PHONY: isort
-isort:
-	isort -rc neuromation
-	isort -rc tests
-	isort -rc .
-
 .PHONY: lint
 lint:
+	isort -c -rc neuromation tests
 	black --check neuromation tests
 	mypy neuromation/client neuromation/logging neuromation/strings
 	flake8
@@ -71,6 +66,7 @@ publish: dist publish-lint
 coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
+.PHONY: format
 format:
 	isort -rc neuromation tests
 	black neuromation tests
