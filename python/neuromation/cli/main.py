@@ -805,9 +805,8 @@ def main():
     setup_logging()
     setup_console_handler(console_handler, verbose=is_verbose)
 
-    version = f"Neuromation Platform Client {neuromation.__version__}"
-    if "-v" in sys.argv:
-        print(version)
+    if any(version_key in sys.argv for version_key in ["-v", "--version"]):
+        print(f"Neuromation Platform Client {neuromation.__version__}")
         sys.exit(0)
 
     config = rc.ConfigFactory.load()

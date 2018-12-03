@@ -8,6 +8,7 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+import neuromation
 from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list
@@ -57,6 +58,24 @@ def data(tmpdir_factory):
     return loop.run_until_complete(
         generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
     )
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("version_key", ["-v", "--version"])
+def test_print_version(run, version_key):
+    expected_out = f"Neuromation Platform Client {neuromation.__version__}"
+
+    _, captured = run([version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+    _, captured = run(["job", version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+    _, captured = run(["job", "submit", "ubuntu", version_key])
+    assert not captured.err
+    assert captured.out == expected_out
 
 
 @pytest.mark.e2e

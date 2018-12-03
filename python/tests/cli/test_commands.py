@@ -79,7 +79,7 @@ def _person(name, age, gender, city, verbose):
 
         (c) {year}
         """
-        suffix = ": \"Zzzz...\"" if verbose else ""
+        suffix = ': "Zzzz..."' if verbose else ""
         return f"{name} is resting {where} for {duration} hour" + suffix
 
     @command
