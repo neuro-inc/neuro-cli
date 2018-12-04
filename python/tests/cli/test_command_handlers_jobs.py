@@ -11,7 +11,16 @@ from neuromation.client.requests import VolumeDescriptionPayload
 class TestJobSubmit:
     @pytest.mark.parametrize(
         "volumes",
-        [("storage:///"), (":"), ("::::"), (""), ("storage:///data/:/data/rest:wrong")],
+        [
+            ["storage:///"],
+            [":"],
+            ["::::"],
+            [""],
+            ["storage:///data/:/data/rest:wrong"],
+            ["storage://path_A:/path_A", "storage://path_A:/path_B"],
+            ["storage://path_A:/path_A", "storage://path_B:/path_A"],
+            ["storage://path_s1:storage:///path_c1"],
+        ],
     )
     def test_failed_volume(self, partial_mocked_job, volumes) -> None:
         with pytest.raises(ValueError):
@@ -26,7 +35,7 @@ class TestJobSubmit:
                 cmd=["test-command"],
                 http="8183",
                 ssh="25",
-                volumes=[volumes],
+                volumes=volumes,
                 jobs=partial_mocked_job,
                 is_preemptible=False,
                 description="job description",

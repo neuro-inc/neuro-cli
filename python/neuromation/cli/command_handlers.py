@@ -495,7 +495,20 @@ class JobHandlerOperations(PlatformStorageOperation):
 
     def _parse_volumes(self, volumes) -> Optional[List[VolumeDescriptionPayload]]:
         if volumes:
-            return [self._parse_volume_str(volume) for volume in volumes]
+            store_paths, cont_paths, result = set(), set(), list()
+            for volume in volumes:
+                payload = self._parse_volume_str(volume)
+                sp, cp = payload.storage_path, payload.container_path
+                if sp in store_paths:
+                    raise ValueError(f"Cannot mount same volumes '{sp}'")
+                if cp in cont_paths:
+                    raise ValueError(
+                        f"Cannot mount multiple volumes to the same mountpoint: '{cp}'"
+                    )
+                store_paths.add(sp)
+                cont_paths.add(cp)
+                result.append(payload)
+            return result
         return None
 
     def submit(
