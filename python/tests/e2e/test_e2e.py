@@ -91,7 +91,7 @@ def test_empty_directory_ls_output(run):
     # Ensure output of ls - empty directory shall print nothing.
     _, captured = run(["store", "ls", f"storage://{_path}"])
     assert not captured.err
-    assert captured.out.isspace()
+    assert not captured.out
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])
