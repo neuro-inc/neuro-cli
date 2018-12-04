@@ -7,10 +7,7 @@ import aiohttp
 import pytest
 
 from neuromation.cli.rc import ConfigFactory
-from tests.e2e.test_e2e_utils import (
-    wait_for_job_to_change_state_from,
-    wait_for_job_to_change_state_to,
-)
+from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
@@ -18,7 +15,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 
 @pytest.mark.e2e
-def test_job_complete_lifecycle(run, loop, tmpdir):
+def test_job_complete_lifecycle(run):
     _dir_src = f"e2e-{uuid()}"
     _path_src = f"/tmp/{_dir_src}"
 
@@ -100,30 +97,26 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_third.startswith("job-")
 
     # wait jobs for becoming running
-    wait_for_job_to_change_state_from(
+    wait_for_job_to_change_state_to(
         run,
         job_id_first,
         "Status: pending",
         "Cluster doesn't have resources to fulfill request",
     )
-    wait_for_job_to_change_state_from(
+    wait_for_job_to_change_state_to(
         run,
         job_id_second,
         "Status: pending",
         "Cluster doesn't have resources to fulfill request",
     )
     with pytest.raises(Exception) as e:
-        wait_for_job_to_change_state_from(
+        wait_for_job_to_change_state_to(
             run,
             job_id_third,
             "Status: pending",
             "Cluster doesn't have resources to fulfill request",
         )
         assert "Cluster doesn't have resources to fulfill request" in str(e)
-
-    wait_for_job_to_change_state_to(run, job_id_first, "Status: running")
-    wait_for_job_to_change_state_to(run, job_id_second, "Status: running")
-    wait_for_job_to_change_state_to(run, job_id_third, "Status: pending")
 
     # check running via job list
     _, captured = run(["job", "list", "--status", "running"])
@@ -145,13 +138,9 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
     assert kill_output_list == [job_id_first, job_id_second, job_id_third]
 
-    wait_for_job_to_change_state_from(run, job_id_first, "Status: running")
-    wait_for_job_to_change_state_from(run, job_id_second, "Status: running")
-    wait_for_job_to_change_state_from(run, job_id_third, "Status: pending")
-
     wait_for_job_to_change_state_to(run, job_id_first, "Status: succeeded")
     wait_for_job_to_change_state_to(run, job_id_second, "Status: succeeded")
-    wait_for_job_to_change_state_to(run, job_id_third, "Status: failed")
+    wait_for_job_to_change_state_to(run, job_id_third, "Status: succeeded")
 
     # check killed running,pending
     _, captured = run(["job", "list", "--status", "running,pending", "-q"])
@@ -225,7 +214,7 @@ def test_model_train_with_http(run, loop):
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_to(run, job_id, "Status: running")
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
@@ -233,7 +222,7 @@ def test_model_train_with_http(run, loop):
     assert loop.run_until_complete(get_(parsed_url.netloc))
 
     _, captured = run(["job", "kill", job_id])
-    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+    wait_for_job_to_change_state_to(run, job_id, "Status: succeeded")
 
 
 @pytest.mark.e2e
@@ -283,7 +272,7 @@ def test_model_without_command(run, loop):
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_to(run, job_id, "Status: succeeded")
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
@@ -291,4 +280,4 @@ def test_model_without_command(run, loop):
     assert loop.run_until_complete(get_(parsed_url.netloc))
 
     _, captured = run(["job", "kill", job_id])
-    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+    wait_for_job_to_change_state_to(run, job_id, "Status: succeeded")
