@@ -667,14 +667,20 @@ class ModelHandlerOperations(JobHandlerOperations):
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
         except ValueError as e:
             raise ValueError(
-                f"Dataset path should be on platform. " f"Current value {dataset}"
+                f"Dataset path should be on platform. Current value: {dataset}"
             )
 
         try:
             resultset_platform_path = self.render_uri_path_with_principal(results)
         except ValueError as e:
             raise ValueError(
-                f"Results path should be on platform. " f"Current value {results}"
+                f"Results path should be on platform. Current value: {results}"
+            )
+
+        if dataset_platform_path == resultset_platform_path:
+            raise ValueError(
+                f"Dataset path and Results path should be different. "
+                + f"Received: '{dataset_platform_path}'"
             )
 
         net = self._network_parse(http, ssh)

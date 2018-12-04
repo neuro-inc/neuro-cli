@@ -171,7 +171,7 @@ class TestNormalCases:
         )
 
     def test_model_submit_wrong_src(self, alice_model, partial_mocked_model):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Dataset path should be on platform"):
             alice_model.train(
                 "ubuntu:tf_2.0_beta",
                 "/data/set.txt",
@@ -190,7 +190,7 @@ class TestNormalCases:
         assert partial_mocked_model().train.call_count == 0
 
     def test_model_submit_wrong_dst(self, alice_model, partial_mocked_model):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Results path should be on platform"):
             alice_model.train(
                 "ubuntu:tf_2.0_beta",
                 "storage://~/data/set.txt",
@@ -207,3 +207,22 @@ class TestNormalCases:
                 description="la-la-la",
             )
         assert partial_mocked_model().train.call_count == 0
+
+    def test_model_submit_same_volumes(self, alice_model, partial_mocked_model):
+        error_str = "Dataset path and Results path should be different"
+        with pytest.raises(ValueError, match=error_str):
+            alice_model.train(
+                "ubuntu:tf_2.0_beta",
+                "storage:///data/set.txt",
+                "storage:///data/set.txt",
+                0,
+                None,
+                1,
+                100,
+                False,
+                "",
+                partial_mocked_model,
+                http=None,
+                ssh=None,
+                description="test model",
+            )
