@@ -1,8 +1,8 @@
 from time import sleep, time
 
 
-JOB_TIMEOUT = 10
-JOB_WAIT_SLEEP_SECONDS = 2
+JOB_TIMEOUT = 10 * 60
+JOB_WAIT_SLEEP_SECONDS = 5
 
 
 # TODO (R Zubairov, 09/13/2018): once we would have wait for job
