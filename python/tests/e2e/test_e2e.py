@@ -148,12 +148,8 @@ def test_e2e_shm_run_with(run):
     _dir_src = f"e2e-{uuid()}"
     _path_src = f"/tmp/{_dir_src}"
 
-    _dir_dst = f"e2e-{uuid()}"
-    _path_dst = f"/tmp/{_dir_dst}"
-
     # Create directory for the test, going to be model and result output
     run(["store", "mkdir", f"storage://{_path_src}"])
-    run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # Start the df test job
     bash_script = "/bin/df --block-size M ' '--output=target,avail /dev/shm; false"
@@ -171,9 +167,7 @@ def test_e2e_shm_run_with(run):
             "0",
             UBUNTU_IMAGE_NAME,
             "--volume",
-            "storage://" + _path_src + ":rw",
-            "--volume",
-            "storage://" + _path_dst,
+            f"storage://{_path_src}:/tmp",
             command,
         ]
     )
@@ -184,7 +178,6 @@ def test_e2e_shm_run_with(run):
 
     # Remove test dir
     run(["store", "rm", f"storage://{_path_src}"])
-    run(["store", "rm", f"storage://{_path_dst}"])
 
     _, captured = run(["job", "status", job_id])
     out = captured.out
