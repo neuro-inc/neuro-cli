@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -8,7 +8,6 @@ from neuromation.cli.commands import dispatch
 from neuromation.cli.main import neuro
 from neuromation.client import FileStatus
 from neuromation.client.jobs import JobItem
-from tests.utils import mocked_async_context_manager
 
 
 @pytest.fixture
