@@ -51,8 +51,8 @@ test-all:
 
 .PHONY: lint
 lint:
-	isort -c -rc neuromation tests
-	black --check neuromation tests
+	isort -c -rc neuromation tests build-tools
+	black --check neuromation tests build-tools
 	mypy neuromation/client neuromation/logging neuromation/strings
 	flake8
 
@@ -80,8 +80,8 @@ coverage:
 
 .PHONY: format
 format:
-	isort -rc neuromation tests
-	black neuromation tests
+	isort -rc neuromation tests build-tools
+	black neuromation tests build-tools
 
 # TODO (artyom, 07/16/2018): swap e2e and test once coverage output
 # of both is combined. Otherwise e2e will override unit tests with

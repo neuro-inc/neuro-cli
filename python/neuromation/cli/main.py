@@ -33,6 +33,7 @@ from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
 from .commands import command, dispatch
+from .defaults import DEFAULTS
 
 
 # For stream copying from file to http or from http to file
@@ -376,14 +377,16 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
-                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Available options:
+                -g, --gpu NUMBER          Number of GPUs to request \
+[default: {model_train_gpu_number}]
+                --gpu-model MODEL         GPU to use [default: {model_train_gpu_model}]
+                                          Other options available are
                                               nvidia-tesla-k80
                                               nvidia-tesla-p4
-                                              nvidia-tesla-v100
-                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
-                -m, --memory AMOUNT       Memory amount to request [default: 1G]
+                                              nvidia-tesla-v100                -c, --cpu NUMBER          Number of CPUs to request \
+[default: {model_train_cpu_number}]
+                -m, --memory AMOUNT       Memory amount to request \
+[default: {model_train_memory_amount}]
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
@@ -422,7 +425,8 @@ Commands:
             Job should be started with SSH support enabled.
 
             Options:
-                --localport NUMBER    Local port number for debug [default: 31234]
+                --localport NUMBER    Local port number for debug \
+[default: {model_debug_local_port}]
 
             Example:
             neuro model debug --localport 12789 job-abc-def-ghk
@@ -487,15 +491,18 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
-                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Available options:
+                -g, --gpu NUMBER          Number of GPUs to request \
+[default: {job_submit_gpu_number}]
+                --gpu-model MODEL         GPU to use [default: {job_submit_gpu_model}]
+                                          Other options available are
                                               nvidia-tesla-k80
                                               nvidia-tesla-p4
                                               nvidia-tesla-v100
+                -c, --cpu NUMBER          Number of CPUs to request \
+[default: {job_submit_cpu_number}]
+                -m, --memory AMOUNT       Memory amount to request \
+[default: {job_submit_memory_amount}]
                 -x, --extshm              Request extended '/dev/shm' space
-                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
-                -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
@@ -574,7 +581,7 @@ Commands:
             Job should be started with SSH support enabled.
 
             Options:
-                --user STRING         Container user name [default: root]
+                --user STRING         Container user name [default: {job_ssh_user}]
                 --key STRING          Path to container private key.
 
             Example:
@@ -822,10 +829,12 @@ def main():
         return
 
     config = rc.ConfigFactory.load()
-    doc_username = config.get_platform_user_name()
-    if not doc_username:
-        doc_username = "username"
-    format_spec = {"api_url": config.url, "username": doc_username}
+    format_spec = DEFAULTS.copy()
+    platform_username = config.get_platform_user_name()
+    if platform_username:
+        format_spec["username"] = platform_username
+    if config.url:
+        format_spec["api_url"] = config.url
 
     try:
         res = dispatch(
@@ -857,6 +866,9 @@ def main():
         log.error(f"Connection error ({error})")
         sys.exit(os.EX_IOERR)
 
+    except NotImplementedError as error:
+        log.error(f"{error}")
+        sys.exit(os.EX_SOFTWARE)
     except FileNotFoundError as error:
         log.error(f"File not found ({error})")
         sys.exit(os.EX_OSFILE)

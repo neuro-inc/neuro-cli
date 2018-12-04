@@ -91,6 +91,15 @@ def get_help(target, tail, stack):
         stack += [command]
 
 
+def help_format(help, format_spec):
+    if not help:
+        return ""
+    if format_spec:
+        help = help.format(**format_spec)
+    help = dedent(help)
+    return help
+
+
 def dispatch(target, tail, format_spec=None, **kwargs):
     def help_required(tail):
         for option in tail:
@@ -102,15 +111,11 @@ def dispatch(target, tail, format_spec=None, **kwargs):
                 return False
         return False
 
-    def help_format(help, format_spec):
-        if format_spec:
-            help = help.format(**format_spec)
-        help = dedent(help)
-        return help
-
     stack = []
 
     while True:
+        if not target.__doc__:
+            raise NotImplementedError("Not implemented")
         target.__doc__ = help_format(target.__doc__, format_spec)
         try:
             options, tail = parse(target.__doc__, stack + tail)
