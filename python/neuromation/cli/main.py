@@ -238,11 +238,9 @@ Commands:
             ls_op = PlatformListDirOperation(platform_user_name)
             storage_objects = ls_op.ls(path, storage)
 
-            print(
-                "\n".join(
-                    format(type=status.type.lower(), name=status.path, size=status.size)
-                    for status in storage_objects
-                )
+            return "\n".join(
+                format(type=status.type.lower(), name=status.path, size=status.size)
+                for status in storage_objects
             )
 
         @command
@@ -285,12 +283,7 @@ Commands:
                 platform_user_name, src.scheme, dst.scheme, recursive, progress
             )
 
-            if operation:
-                return operation.copy(src, dst, storage)
-
-            raise neuromation.client.IllegalArgumentError(
-                "Invalid SOURCE or DESTINATION value"
-            )
+            return operation.copy(src, dst, storage)
 
         @command
         def mkdir(path):
@@ -484,6 +477,7 @@ Commands:
             cmd,
             volume,
             preemptible,
+            non_preemptible,
             description,
             quiet,
         ):
@@ -508,7 +502,8 @@ Commands:
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
-                --preemptible             Run job on a lower-cost preemptible instance
+                --preemptible             Force job to run on a preemptible instance
+                --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
                 -q, --quiet               Run command in quiet mode (print only job id)
 
@@ -532,6 +527,15 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
 
+            if not preemptible and not non_preemptible:
+                is_preemptible = True  # default value
+            elif preemptible and non_preemptible:
+                raise neuromation.client.IllegalArgumentError(
+                    "Incompatible options: --preemptible and --non-preemptible"
+                )
+            else:
+                is_preemptible = preemptible or not non_preemptible
+
             job = JobHandlerOperations(platform_user_name).submit(
                 image,
                 gpu,
@@ -544,7 +548,7 @@ Commands:
                 ssh,
                 volume,
                 jobs,
-                preemptible,
+                is_preemptible,
                 description,
             )
             return OutputFormatter.format_job(job, quiet)
