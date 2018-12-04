@@ -802,13 +802,16 @@ Commands:
 
 
 def main():
-    setup_logging()
-    setup_console_handler(console_handler, verbose=("--verbose" in sys.argv))
+    is_verbose = "--verbose" in sys.argv
+    if is_verbose:
+        sys.argv.remove("--verbose")
 
-    version = f"Neuromation Platform Client {neuromation.__version__}"
-    if "-v" in sys.argv:
-        print(version)
-        sys.exit(0)
+    setup_logging()
+    setup_console_handler(console_handler, verbose=is_verbose)
+
+    if any(version_key in sys.argv for version_key in ["-v", "--version"]):
+        print(f"Neuromation Platform Client {neuromation.__version__}")
+        return
 
     config = rc.ConfigFactory.load()
     doc_username = config.get_platform_user_name()
