@@ -112,7 +112,7 @@ Commands:
 
         Client configuration settings commands
 
-        Settings:
+        Commands:
             url             Updates API URL
             auth            Updates API Token
             forget          Forget stored API Token

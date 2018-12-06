@@ -2,85 +2,589 @@
 
 # Welcome to Neuromation API Python client
 
-## Hello World
+# Command line tool
 
-```python
-from neuromation import model, storage
+Package ship command line tool caled _neuro_. With _neuro_ you can:
+* Execute and debug jobs
+* Manipulate Data
+* Find some fun
 
-# Authentication information is retrieved from environment
-# variables or from ~/.neuromation
+### neuro
 
-# Upload training dataset
-#
-# Option 1. Use stream as source and write it
-# to file in Neuromation object storage
-#
-# TODO: if file exists, shall we throw or overwrite?
-uri = storage.upload(
-    source=open('file://~/local/file', 'rb'),
-    destination='storage://~/hello_world_data/file')
+**Usage:**
 
-# Option 2. Use local file or directory and copy it
-# similar to cp -r
-#
-# TODO: support for globs?
-uri = storage.upload(
-    source='file://~/local/',
-    destination='storage://~/hello_world_data/')
-
-# Train using container image from neuromation repo
-# and use a newly uploaded dataset
-#
-# status is a handle that contains job id and allows to:
-# 1. query training process
-# 2. wait for job to complete (via await)
-# 3. subscribe to job completion by passing handle
-# 4. retrieve job results. In case of training it is the uri
-#    for model checkpoint that is passed in results argument
-#    or auto-generated if results not specified or None (default)
-# 5. Future: stop, pause, resume job
-training_job = model.train(
-    image='neuromation/hello-world',
-    resources=model.Resources(memory='64G', cpu=4, gpu=4),
-    dataset=uri,
-    results='storage://~/hello-world/model')
-
-# Wait for job to complete and retrieve weights uri
-model_uri = training_job.wait().uri
-
-# Upload dataset for inference from client's local file system
-#
-dataset_uri = storage.upload(
-    source='file://~/local/dataset',
-    destination='storage://~/hello_world_data/dataset')
-
-# Run inference on newly trained model
-inference_job = model.infer(
-    image='neuromation/hello-world',
-    resources=model.Resources(memory='16G', cpu=2, gpu=1)
-    model=model_uri,
-    dataset=dataset_uri,
-    cmd='arg1' # Optional
-    )
-
-# Wait for job to complete and retrieve result set uri
-results_uri = inference_job.wait().uri
-
-# Download result set
-storage.download(
-    source=results_uri,
-    destination='file://~/local/results')
+```bash
+neuro [options] COMMAND
 ```
 
-## Errors(Exceptions)
+**Options:**
 
-* ClientError
-  * IllegalArgumentError!!!(bultins.ValueError)
-  * ResourceNotFoundError
-  * AuthError
-    * AuthenticationError
-    * AuthorizationError
-   
+* _-u, --url URL_: Override API URL [default: http://platform.dev.neuromation.io/api/v1]* _-t, --token TOKEN_: API authentication token (not implemented)* _--verbose_: Enable verbose logging* _-v, --version_: Print version and exit
+
+**Commands:**
+
+* _[model](neuro-model)_: Model training, testing and inference
+
+* _[job](neuro-job)_: Manage existing jobs
+
+* _[store](neuro-store)_: Storage operations
+
+* _[image](neuro-image)_: Docker container image operations
+
+* _[config](neuro-config)_: Configure API connection settings
+
+* _[completion](neuro-completion)_: Generate code to enable completion
+
+* _[share](neuro-share)_: Resource sharing management
+
+* _[help](neuro-help)_: Get help on a command
+
+
+
+#### neuro config
+
+Client configuration settings commands
+
+**Usage:**
+
+```bash
+neuro config COMMAND
+```
+
+**Commands:**
+
+* _[url](neuro-config-url)_: Updates API URL
+
+* _[auth](neuro-config-auth)_: Updates API Token
+
+* _[forget](neuro-config-forget)_: Forget stored API Token
+
+* _[id_rsa](neuro-config-id_rsa)_: Updates path to Github RSA token,
+in use for SSH/Remote debug
+
+* _[show](neuro-config-show)_: Print current settings
+
+
+
+##### neuro config url
+
+Updates settings with provided platform URL.
+
+**Usage:**
+
+```bash
+neuro config url URL
+```
+
+**Examples:**
+
+```bash
+neuro config url http://platform.neuromation.io/api/v1
+```
+
+
+
+##### neuro config id_rsa
+
+Updates path to id_rsa file with private key.
+File is being used for accessing remote shell, remote debug.
+Note: this is temporal and going to be
+replaced in future by JWT token.
+
+**Usage:**
+
+```bash
+neuro config id_rsa FILE
+```
+
+
+
+##### neuro config show
+
+Prints current settings.
+
+**Usage:**
+
+```bash
+neuro config show
+```
+
+
+
+##### neuro config auth
+
+Updates authorization token
+
+**Usage:**
+
+```bash
+neuro config auth TOKEN
+```
+
+
+
+##### neuro config forget
+
+Forget authorization token
+
+**Usage:**
+
+```bash
+neuro config forget
+```
+
+
+
+#### neuro store
+
+Storage operations
+
+**Usage:**
+
+```bash
+neuro store COMMAND
+```
+
+**Commands:**
+
+* _[rm](neuro-store-rm)_: Remove files or directories
+
+* _[ls](neuro-store-ls)_: List directory contents
+
+* _[cp](neuro-store-cp)_: Copy files and directories
+
+* _[mv](neuro-store-mv)_: Move or rename files and directories
+
+* _[mkdir](neuro-store-mkdir)_: Make directories
+
+
+
+##### neuro store rm
+
+Remove files or directories.
+
+**Usage:**
+
+```bash
+neuro store rm PATH
+```
+
+**Examples:**
+
+```bash
+neuro store rm storage:///foo/bar/
+neuro store rm storage:/foo/bar/
+neuro store rm storage://username/foo/bar/
+```
+
+
+
+##### neuro store ls
+
+List directory contents
+By default PATH is equal user`s home dir (storage:)
+
+**Usage:**
+
+```bash
+neuro store ls [PATH]
+```
+
+
+
+##### neuro store cp
+
+Copy files and directories
+Either SOURCE or DESTINATION should have storage:// scheme.
+If scheme is omitted, file:// scheme is assumed.
+
+**Usage:**
+
+```bash
+neuro store cp [options] SOURCE DESTINATION
+```
+
+**Options:**
+
+* _-r, --recursive_: Recursive copy* _-p, --progress_: Show progress
+
+**Examples:**
+
+```bash
+# copy local file ./foo into remote storage root
+neuro store cp ./foo storage:///
+neuro store cp ./foo storage:/
+# download remote file foo into local file foo with
+# explicit file:// scheme set
+neuro store cp storage:///foo file:///foo
+```
+
+
+
+##### neuro store mkdir
+
+Make directories
+
+**Usage:**
+
+```bash
+neuro store mkdir PATH
+```
+
+
+
+##### neuro store mv
+
+Move or rename files and directories. SOURCE must contain path to the
+file or directory existing on the storage, and DESTINATION must contain
+the full path to the target file or directory.
+
+**Usage:**
+
+```bash
+neuro store mv SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+# move or rename remote file
+neuro store mv storage://username/foo.txt storage://username/bar.txt
+neuro store mv storage://username/foo.txt storage://~/bar/baz/foo.txt
+# move or rename remote directory
+neuro store mv storage://username/foo/ storage://username/bar/
+neuro store mv storage://username/foo/ storage://username/bar/baz/foo/
+```
+
+
+
+#### neuro model
+
+Model operations
+
+**Usage:**
+
+```bash
+neuro model COMMAND
+```
+
+**Commands:**
+
+* _[train](neuro-model-train)_: Start model training
+
+* _[test](neuro-model-test)_: Test trained model against validation dataset
+
+* _[infer](neuro-model-infer)_: Start batch inference
+
+* _[debug](neuro-model-debug)_: Prepare debug tunnel for PyCharm
+
+
+
+##### neuro model train
+
+Start training job using model from IMAGE, dataset from DATASET and
+store output weights in RESULTS.
+COMMANDS list will be passed as commands to model container.
+
+**Usage:**
+
+```bash
+neuro model train [options] IMAGE DATASET RESULTS [CMD...]
+```
+
+**Options:**
+
+* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]* _-x, --extshm_: Request extended '/dev/shm' space* _--http NUMBER_: Enable HTTP port forwarding to container* _--ssh NUMBER_: Enable SSH port forwarding to container* _-d, --description DESC_: Add optional description to the job* _-q, --quiet_: Run command in quiet mode (print only job id)
+
+
+
+##### neuro model debug
+
+Starts ssh terminal connected to running job.
+Job should be started with SSH support enabled.
+
+**Usage:**
+
+```bash
+neuro model debug [options] ID
+```
+
+**Options:**
+
+* _--localport NUMBER_: Local port number for debug [default: 31234]
+
+**Examples:**
+
+```bash
+neuro model debug --localport 12789 job-abc-def-ghk
+```
+
+
+
+##### neuro model test
+
+Not implemented
+
+
+
+##### neuro model infer
+
+Not implemented
+
+
+
+#### neuro job
+
+Model operations
+
+**Usage:**
+
+```bash
+neuro job COMMAND
+```
+
+**Commands:**
+
+* _[submit](neuro-job-submit)_: Starts Job on a platform
+
+* _[monitor](neuro-job-monitor)_: Monitor job output stream
+
+* _[list](neuro-job-list)_: List all jobs
+
+* _[status](neuro-job-status)_: Display status of a job
+
+* _[kill](neuro-job-kill)_: Kill job
+
+* _[ssh](neuro-job-ssh)_: Start SSH terminal
+
+
+
+##### neuro job submit
+
+Start job using IMAGE
+COMMANDS list will be passed as commands to model container.
+
+**Usage:**
+
+```bash
+neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
+```
+
+**Options:**
+
+* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]* _-x, --extshm_: Request extended '/dev/shm' space* _--http NUMBER_: Enable HTTP port forwarding to container* _--ssh NUMBER_: Enable SSH port forwarding to container* _--volume MOUNT..._: Mounts directory from vault into container* _--preemptible_: Run job on a lower-cost preemptible instance* _-d, --description DESC_: Add optional description to the job* _-q, --quiet_: Run command in quiet mode
+
+**Examples:**
+
+```bash
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
+pytorch:latest
+Starts a container pytorch:latest with two paths mounted. Directory
+/q1/ is mounter in read only mode to /qm directory
+within container. Directory /mod mounted to /mod
+directory in read-write mode.
+neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
+pytorch:latest
+Starts a container pytorch:latest with connection enabled to port 22.
+Please note that SSH server should be provided by container.
+```
+
+
+
+##### neuro job ssh
+
+Starts ssh terminal connected to running job.
+Job should be started with SSH support enabled.
+
+**Usage:**
+
+```bash
+neuro job ssh [options] ID
+```
+
+**Options:**
+
+* _--user STRING_: Container user name [default: root]* _--key STRING_: Path to container private key.
+
+**Examples:**
+
+```bash
+neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
+```
+
+
+
+##### neuro job monitor
+
+Monitor job output stream
+
+**Usage:**
+
+```bash
+neuro job monitor ID
+```
+
+
+
+##### neuro job list
+
+**Usage:**
+
+```bash
+neuro job list [options]
+```
+
+**Options:**
+
+* _-s, --status (pending|running|succeeded|failed|all)_: None* _-d, --description DESCRIPTION_: None* _-q, --quiet_: None
+
+**Examples:**
+
+```bash
+neuro job list --description="my favourite job"
+neuro job list --status=all
+neuro job list --status=pending,running --quiet
+```
+
+
+
+##### neuro job status
+
+Display status of a job
+
+**Usage:**
+
+```bash
+neuro job status ID
+```
+
+
+
+##### neuro job kill
+
+Kill job(s)
+
+**Usage:**
+
+```bash
+neuro job kill JOB_IDS...
+```
+
+
+
+#### neuro image
+
+Docker image operations
+
+**Usage:**
+
+```bash
+neuro image COMMAND
+```
+
+**Commands:**
+
+* _[push](neuro-image-push)_: Push docker image from local machine to cloud registry.
+
+* _[pull](neuro-image-pull)_: Pull docker image from cloud registry to local machine.
+
+
+
+##### neuro image push
+
+Push an image to platform registry
+
+**Usage:**
+
+```bash
+neuro image push IMAGE_NAME
+```
+
+
+
+##### neuro image pull
+
+Pull an image from platform registry
+
+**Usage:**
+
+```bash
+neuro image pull IMAGE_NAME
+```
+
+
+
+#### neuro share
+
+Shares resource specified by URI to a user specified by WHOM
+allowing to read, write or manage it.
+
+**Usage:**
+
+```bash
+neuro share URI WHOM (read|write|manage)
+```
+
+**Examples:**
+
+```bash
+neuro share storage:///sample_data/ alice manage
+neuro share image:///resnet50 bob read
+neuro share job:///my_job_id alice write
+```
+
+
+
+#### neuro completion
+
+Generates code to enable bash-completion.
+
+**Usage:**
+
+```bash
+neuro completion COMMAND
+```
+
+**Commands:**
+
+* _[generate](neuro-completion-generate)_: Generate code enabling bash-completion.
+eval $(neuro completion generate) enables completion
+for the current session.
+Adding eval $(neuro completion generate) to
+.bashrc_profile enables completion permanently.
+
+* _[patch](neuro-completion-patch)_: Automatically patch .bash_profile to enable completion
+
+
+
+##### neuro completion generate
+
+Generate code enabling bash-completion.
+eval $(
+
+**Usage:**
+
+```bash
+neuro completion generate
+```
+
+
+
+##### neuro completion patch
+
+Automatically patch .bash_profile to enable completion
+
+**Usage:**
+
+```bash
+neuro completion patch
+```
+
+
+
+# Api library
+
+*TODO*
 
 ## Contributing
 
