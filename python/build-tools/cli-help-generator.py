@@ -160,7 +160,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
     if info.options:
         md += "**Options:**\n\n"
         for option in info.options:
-            md += f"* _{option.pattern}_: {option.description}"
+            md += f"* _{option.pattern}_: {option.description}\n"
         md += "\n\n"
 
     for argument in info.arguments:

@@ -19,7 +19,11 @@ neuro [options] COMMAND
 
 **Options:**
 
-* _-u, --url URL_: Override API URL [default: http://platform.dev.neuromation.io/api/v1]* _-t, --token TOKEN_: API authentication token (not implemented)* _--verbose_: Enable verbose logging* _-v, --version_: Print version and exit
+* _-u, --url URL_: Override API URL [default: http://platform.dev.neuromation.io/api/v1]
+* _-t, --token TOKEN_: API authentication token (not implemented)
+* _--verbose_: Enable verbose logging
+* _-v, --version_: Print version and exit
+
 
 **Commands:**
 
@@ -206,7 +210,9 @@ neuro store cp [options] SOURCE DESTINATION
 
 **Options:**
 
-* _-r, --recursive_: Recursive copy* _-p, --progress_: Show progress
+* _-r, --recursive_: Recursive copy
+* _-p, --progress_: Show progress
+
 
 **Examples:**
 
@@ -294,7 +300,16 @@ neuro model train [options] IMAGE DATASET RESULTS [CMD...]
 
 **Options:**
 
-* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]* _-x, --extshm_: Request extended '/dev/shm' space* _--http NUMBER_: Enable HTTP port forwarding to container* _--ssh NUMBER_: Enable SSH port forwarding to container* _-d, --description DESC_: Add optional description to the job* _-q, --quiet_: Run command in quiet mode (print only job id)
+* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
+* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
+* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
+* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
+* _-x, --extshm_: Request extended '/dev/shm' space
+* _--http NUMBER_: Enable HTTP port forwarding to container
+* _--ssh NUMBER_: Enable SSH port forwarding to container
+* _-d, --description DESC_: Add optional description to the job
+* _-q, --quiet_: Run command in quiet mode (print only job id)
+
 
 
 
@@ -312,6 +327,7 @@ neuro model debug [options] ID
 **Options:**
 
 * _--localport NUMBER_: Local port number for debug [default: 31234]
+
 
 **Examples:**
 
@@ -372,7 +388,18 @@ neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
 
 **Options:**
 
-* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]* _-x, --extshm_: Request extended '/dev/shm' space* _--http NUMBER_: Enable HTTP port forwarding to container* _--ssh NUMBER_: Enable SSH port forwarding to container* _--volume MOUNT..._: Mounts directory from vault into container* _--preemptible_: Run job on a lower-cost preemptible instance* _-d, --description DESC_: Add optional description to the job* _-q, --quiet_: Run command in quiet mode
+* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
+* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
+* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
+* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
+* _-x, --extshm_: Request extended '/dev/shm' space
+* _--http NUMBER_: Enable HTTP port forwarding to container
+* _--ssh NUMBER_: Enable SSH port forwarding to container
+* _--volume MOUNT..._: Mounts directory from vault into container
+* _--preemptible_: Run job on a lower-cost preemptible instance
+* _-d, --description DESC_: Add optional description to the job
+* _-q, --quiet_: Run command in quiet mode
+
 
 **Examples:**
 
@@ -404,7 +431,9 @@ neuro job ssh [options] ID
 
 **Options:**
 
-* _--user STRING_: Container user name [default: root]* _--key STRING_: Path to container private key.
+* _--user STRING_: Container user name [default: root]
+* _--key STRING_: Path to container private key.
+
 
 **Examples:**
 
@@ -436,7 +465,10 @@ neuro job list [options]
 
 **Options:**
 
-* _-s, --status (pending|running|succeeded|failed|all)_: None* _-d, --description DESCRIPTION_: None* _-q, --quiet_: None
+* _-s, --status (pending|running|succeeded|failed|all)_: None
+* _-d, --description DESCRIPTION_: None
+* _-q, --quiet_: None
+
 
 **Examples:**
 
