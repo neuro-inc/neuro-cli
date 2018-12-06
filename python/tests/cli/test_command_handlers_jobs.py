@@ -58,7 +58,7 @@ class TestJobSubmit:
             volumes=[
                 "storage://bob/data:/cob/data:ro",
                 "storage://bob/data0:/cob/data0",
-                "storage://bob/data1:/cob/data1:rw",
+                "storage://bob/UpperCase/Data1:/cob/Data1:rw",
             ],
             jobs=partial_mocked_job,
             is_preemptible=False,
@@ -83,8 +83,8 @@ class TestJobSubmit:
                     read_only=False,
                 ),
                 VolumeDescriptionPayload(
-                    storage_path="storage://bob/data1",
-                    container_path="/data1",
+                    storage_path="storage://bob/UpperCase/Data1",
+                    container_path="/cob/Data1",
                     read_only=False,
                 ),
             ],
