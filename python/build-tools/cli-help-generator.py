@@ -168,7 +168,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         for value in argument.values:
             if argument.name == "Commands":
                 anchor = info.name + " " + value.name
-                anchor = anchor.replace(" ", "-")
+                anchor = '#' + anchor.replace(" ", "-")
                 md += f"* _[{value.name}]({anchor})_: {value.description}"
             else:
                 md += f"* _{value.name}_: {value.description}"

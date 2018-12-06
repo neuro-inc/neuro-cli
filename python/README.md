@@ -23,21 +23,21 @@ neuro [options] COMMAND
 
 **Commands:**
 
-* _[model](neuro-model)_: Model training, testing and inference
+* _[model](#neuro-model)_: Model training, testing and inference
 
-* _[job](neuro-job)_: Manage existing jobs
+* _[job](#neuro-job)_: Manage existing jobs
 
-* _[store](neuro-store)_: Storage operations
+* _[store](#neuro-store)_: Storage operations
 
-* _[image](neuro-image)_: Docker container image operations
+* _[image](#neuro-image)_: Docker container image operations
 
-* _[config](neuro-config)_: Configure API connection settings
+* _[config](#neuro-config)_: Configure API connection settings
 
-* _[completion](neuro-completion)_: Generate code to enable completion
+* _[completion](#neuro-completion)_: Generate code to enable completion
 
-* _[share](neuro-share)_: Resource sharing management
+* _[share](#neuro-share)_: Resource sharing management
 
-* _[help](neuro-help)_: Get help on a command
+* _[help](#neuro-help)_: Get help on a command
 
 
 
@@ -53,16 +53,16 @@ neuro config COMMAND
 
 **Commands:**
 
-* _[url](neuro-config-url)_: Updates API URL
+* _[url](#neuro-config-url)_: Updates API URL
 
-* _[auth](neuro-config-auth)_: Updates API Token
+* _[auth](#neuro-config-auth)_: Updates API Token
 
-* _[forget](neuro-config-forget)_: Forget stored API Token
+* _[forget](#neuro-config-forget)_: Forget stored API Token
 
-* _[id_rsa](neuro-config-id_rsa)_: Updates path to Github RSA token,
+* _[id_rsa](#neuro-config-id_rsa)_: Updates path to Github RSA token,
 in use for SSH/Remote debug
 
-* _[show](neuro-config-show)_: Print current settings
+* _[show](#neuro-config-show)_: Print current settings
 
 
 
@@ -147,15 +147,15 @@ neuro store COMMAND
 
 **Commands:**
 
-* _[rm](neuro-store-rm)_: Remove files or directories
+* _[rm](#neuro-store-rm)_: Remove files or directories
 
-* _[ls](neuro-store-ls)_: List directory contents
+* _[ls](#neuro-store-ls)_: List directory contents
 
-* _[cp](neuro-store-cp)_: Copy files and directories
+* _[cp](#neuro-store-cp)_: Copy files and directories
 
-* _[mv](neuro-store-mv)_: Move or rename files and directories
+* _[mv](#neuro-store-mv)_: Move or rename files and directories
 
-* _[mkdir](neuro-store-mkdir)_: Make directories
+* _[mkdir](#neuro-store-mkdir)_: Make directories
 
 
 
@@ -270,13 +270,13 @@ neuro model COMMAND
 
 **Commands:**
 
-* _[train](neuro-model-train)_: Start model training
+* _[train](#neuro-model-train)_: Start model training
 
-* _[test](neuro-model-test)_: Test trained model against validation dataset
+* _[test](#neuro-model-test)_: Test trained model against validation dataset
 
-* _[infer](neuro-model-infer)_: Start batch inference
+* _[infer](#neuro-model-infer)_: Start batch inference
 
-* _[debug](neuro-model-debug)_: Prepare debug tunnel for PyCharm
+* _[debug](#neuro-model-debug)_: Prepare debug tunnel for PyCharm
 
 
 
@@ -345,17 +345,17 @@ neuro job COMMAND
 
 **Commands:**
 
-* _[submit](neuro-job-submit)_: Starts Job on a platform
+* _[submit](#neuro-job-submit)_: Starts Job on a platform
 
-* _[monitor](neuro-job-monitor)_: Monitor job output stream
+* _[monitor](#neuro-job-monitor)_: Monitor job output stream
 
-* _[list](neuro-job-list)_: List all jobs
+* _[list](#neuro-job-list)_: List all jobs
 
-* _[status](neuro-job-status)_: Display status of a job
+* _[status](#neuro-job-status)_: Display status of a job
 
-* _[kill](neuro-job-kill)_: Kill job
+* _[kill](#neuro-job-kill)_: Kill job
 
-* _[ssh](neuro-job-ssh)_: Start SSH terminal
+* _[ssh](#neuro-job-ssh)_: Start SSH terminal
 
 
 
@@ -484,9 +484,9 @@ neuro image COMMAND
 
 **Commands:**
 
-* _[push](neuro-image-push)_: Push docker image from local machine to cloud registry.
+* _[push](#neuro-image-push)_: Push docker image from local machine to cloud registry.
 
-* _[pull](neuro-image-pull)_: Pull docker image from cloud registry to local machine.
+* _[pull](#neuro-image-pull)_: Pull docker image from cloud registry to local machine.
 
 
 
@@ -547,13 +547,13 @@ neuro completion COMMAND
 
 **Commands:**
 
-* _[generate](neuro-completion-generate)_: Generate code enabling bash-completion.
+* _[generate](#neuro-completion-generate)_: Generate code enabling bash-completion.
 eval $(neuro completion generate) enables completion
 for the current session.
 Adding eval $(neuro completion generate) to
 .bashrc_profile enables completion permanently.
 
-* _[patch](neuro-completion-patch)_: Automatically patch .bash_profile to enable completion
+* _[patch](#neuro-completion-patch)_: Automatically patch .bash_profile to enable completion
 
 
 
