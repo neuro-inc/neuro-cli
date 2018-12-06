@@ -100,13 +100,13 @@ def test_job_complete_lifecycle(run):
     wait_for_job_to_change_state_to(
         run,
         job_id_first,
-        "Status: pending",
+        "Status: running",
         "Cluster doesn't have resources to fulfill request",
     )
     wait_for_job_to_change_state_to(
         run,
         job_id_second,
-        "Status: pending",
+        "Status: running",
         "Cluster doesn't have resources to fulfill request",
     )
     with pytest.raises(Exception) as e:

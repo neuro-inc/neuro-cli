@@ -144,20 +144,24 @@ def test_e2e_shm_run_without(run, tmpdir):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_with(run):
+def test_e2e_shm_run_with(run, tmpdir):
     _dir_src = f"e2e-{uuid()}"
     _path_src = f"/tmp/{_dir_src}"
 
+    _dir_dst = f"e2e-{uuid()}"
+    _path_dst = f"/tmp/{_dir_dst}"
+
     # Create directory for the test, going to be model and result output
     run(["store", "mkdir", f"storage://{_path_src}"])
+    run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # Start the df test job
     bash_script = "/bin/df --block-size M ' '--output=target,avail /dev/shm; false"
     command = f"bash -c {bash_script}"
     _, captured = run(
         [
-            "job",
-            "submit",
+            "model",
+            "train",
             "-x",
             "-m",
             "20M",
@@ -166,8 +170,8 @@ def test_e2e_shm_run_with(run):
             "-g",
             "0",
             UBUNTU_IMAGE_NAME,
-            "--volume",
-            f"storage://{_path_src}:/tmp",
+            "storage://" + _path_src,
+            "storage://" + _path_dst,
             command,
         ]
     )
@@ -178,6 +182,7 @@ def test_e2e_shm_run_with(run):
 
     # Remove test dir
     run(["store", "rm", f"storage://{_path_src}"])
+    run(["store", "rm", f"storage://{_path_dst}"])
 
     _, captured = run(["job", "status", job_id])
     out = captured.out
