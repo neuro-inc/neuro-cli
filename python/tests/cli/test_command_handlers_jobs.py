@@ -92,7 +92,9 @@ class TestJobSubmit:
             description="job description",
         )
 
-    def test_job_submit_happy_path__same_volumes_diff_mountpoints(self, partial_mocked_job) -> None:
+    def test_job_submit_happy_path__same_volumes_diff_mountpoints(
+        self, partial_mocked_job
+    ) -> None:
         job = JobHandlerOperations("alice")
         job.submit(
             image="test-image",
