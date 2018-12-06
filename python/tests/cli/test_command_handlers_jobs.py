@@ -17,8 +17,8 @@ class TestJobSubmit:
             ["::::"],
             [""],
             ["storage:///data/:/data/rest:wrong"],
-            ["storage://path_A:/path_A", "storage://path_A:/path_B"],
-            ["storage://path_A:/path_A", "storage://path_B:/path_A"],
+            ["storage://path_A:/path_A", "storage://path_B:/path_A"],  # same mountpoint
+            ["storage://path_A:/path_A", "storage://path_A:/path_A"],  # same mountpoint
             ["storage://path_s1:storage:///path_c1"],
         ],
     )
@@ -84,8 +84,105 @@ class TestJobSubmit:
                 ),
                 VolumeDescriptionPayload(
                     storage_path="storage://bob/data1",
-                    container_path="/cob/data1",
+                    container_path="/data1",
                     read_only=False,
+                ),
+            ],
+            is_preemptible=False,
+            description="job description",
+        )
+
+    def test_job_submit_happy_path__same_volumes_diff_mountpoints(self, partial_mocked_job) -> None:
+        job = JobHandlerOperations("alice")
+        job.submit(
+            image="test-image",
+            gpu="1",
+            gpu_model="test-gpu",
+            cpu="1.2",
+            memory="1G",
+            extshm="False",
+            cmd=["test-command"],
+            http="8183",
+            ssh="25",
+            volumes=[
+                "storage://path_a:/path_A",
+                "storage://path_a:/path_B:rw",
+                "storage://path_a:/path_C:ro",
+                "storage://path_a:~/path_D",
+            ],
+            jobs=partial_mocked_job,
+            is_preemptible=False,
+            description="job description",
+        )
+
+        partial_mocked_job().submit.assert_called_once()
+
+        partial_mocked_job().submit.assert_called_with(
+            image=Image(image="test-image", command="test-command"),
+            network=NetworkPortForwarding({"http": 8183, "ssh": 25}),
+            resources=Resources.create("1.2", "1", "test-gpu", "1G", "False"),
+            volumes=[
+                VolumeDescriptionPayload(
+                    storage_path="storage://path_a",
+                    container_path="/path_A",
+                    read_only=False,
+                ),
+                VolumeDescriptionPayload(
+                    storage_path="storage://path_a",
+                    container_path="/path_B",
+                    read_only=False,
+                ),
+                VolumeDescriptionPayload(
+                    storage_path="storage://path_a",
+                    container_path="/path_C",
+                    read_only=True,
+                ),
+                VolumeDescriptionPayload(
+                    storage_path="storage://path_a",
+                    container_path="~/path_D",
+                    read_only=False,
+                ),
+            ],
+            is_preemptible=False,
+            description="job description",
+        )
+
+    def test_job_submit_happy_path__same_volume_diff_mountpoints(
+        self, partial_mocked_job
+    ) -> None:
+        job = JobHandlerOperations("alice")
+        job.submit(
+            image="test-image",
+            gpu="1",
+            gpu_model="test-gpu",
+            cpu="1.2",
+            memory="1G",
+            extshm="False",
+            cmd=["test-command"],
+            http="8183",
+            ssh="25",
+            volumes=["storage://path_a:/path_A:rw", "storage://path_a:~/path_B:ro"],
+            jobs=partial_mocked_job,
+            is_preemptible=False,
+            description="job description",
+        )
+
+        partial_mocked_job().submit.assert_called_once()
+
+        partial_mocked_job().submit.assert_called_with(
+            image=Image(image="test-image", command="test-command"),
+            network=NetworkPortForwarding({"http": 8183, "ssh": 25}),
+            resources=Resources.create("1.2", "1", "test-gpu", "1G", "False"),
+            volumes=[
+                VolumeDescriptionPayload(
+                    storage_path="storage://path_a",
+                    container_path="/path_A",
+                    read_only=False,
+                ),
+                VolumeDescriptionPayload(
+                    storage_path="storage://path_a",
+                    container_path="~/path_B",
+                    read_only=True,
                 ),
             ],
             is_preemptible=False,
