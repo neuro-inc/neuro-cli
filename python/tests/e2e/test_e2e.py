@@ -131,7 +131,7 @@ def test_e2e_shm_run_without(run, tmpdir):
     )
     job_id = captured.out.strip()
 
-    wait_for_job_to_change_state_to(run, job_id, "Status: succeeded")
+    wait_for_job_to_change_state_to(run, job_id, "Status: failed")
 
     # Remove test dir
     run(["store", "rm", f"storage://{_path_src}"])

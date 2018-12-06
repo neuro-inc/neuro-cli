@@ -113,7 +113,7 @@ def test_job_complete_lifecycle(run):
         wait_for_job_to_change_state_to(
             run,
             job_id_third,
-            "Status: pending",
+            "<any non-empty string>",
             "Cluster doesn't have resources to fulfill request",
         )
         assert "Cluster doesn't have resources to fulfill request" in str(e)
@@ -221,7 +221,6 @@ def test_model_train_with_http(run, loop):
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_for_job_to_change_state_to(run, job_id, "Status: running")
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
@@ -276,10 +275,10 @@ def test_model_without_command(run, loop):
             "storage://" + _path_dst,
             "-d",
             "simple test job",
+            "--quiet",
         ]
     )
-    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_for_job_to_change_state_to(run, job_id, "Status: succeeded")
+    job_id = captured.out.strip()
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
