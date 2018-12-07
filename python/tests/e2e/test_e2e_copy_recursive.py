@@ -6,7 +6,6 @@ import pytest
 
 from tests.e2e.utils import (
     FILE_SIZE_MB,
-    attempt,
     check_create_dir_on_storage,
     check_dir_absent_on_storage,
     check_dir_exists_on_storage,
@@ -50,7 +49,6 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     )
 
     # Download into local directory and confirm checksum
-    @attempt()
     def recursive_download_and_check_cheksum():
         tmpdir.mkdir("bar")
         _local = join(tmpdir, "bar")

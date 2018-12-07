@@ -14,8 +14,6 @@ RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\nauth: {token}"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 format_list = "{type:<15}{size:<15,}{name:<}".format
 format_list_pattern = "(file|directory)\s*\d+\s*{name}".format
-FS_SYNC_TIME = int(os.environ.get("CLIENT_TEST_E2E_FS_SYNC_TIME", 20))
-
 
 def hash_hex(file):
     _hash = sha1()
@@ -26,16 +24,14 @@ def hash_hex(file):
     return _hash.hexdigest()
 
 
-def fs_sync(periods: float = 1.0):
+def attempt(attempts: int = 4, sleep_time: float = 15.0):
     """
-    Just wait given count of time periods for FS sync
-    :param periods:
+    This decorator allow function fail up to _attempts_ times with
+    pause _sleep_timeout_ seconds between each attempt
+    :param attempts:
+    :param sleep_time:
     :return:
     """
-    sleep(periods * FS_SYNC_TIME)
-
-
-def attempt(attempts: int = 4, periods: float = 1.0):
     def _attempt(func, *args, **kwargs):
         def wrapped(*args, **kwargs):
             nonlocal attempts
@@ -46,7 +42,7 @@ def attempt(attempts: int = 4, periods: float = 1.0):
                         return func(*args, **kwargs)
                     except BaseException:
                         pass
-                    fs_sync(periods)
+                    sleep(sleep_time)
                 else:
                     return func(*args, **kwargs)
 
@@ -55,8 +51,17 @@ def attempt(attempts: int = 4, periods: float = 1.0):
     return _attempt
 
 
-@attempt()
 def check_file_exists_on_storage(run, name: str, path: str, size: int):
+    """
+    Tests if file with given name and size exists in given path
+    Assert if file absent or something went bad
+
+    :param run: Runtime environment
+    :param name: File name
+    :param path: Path on storage
+    :param size: File size
+    :return:
+    """
     _, captured = run(["store", "ls", f"storage://{path}"])
     captured_output_list = captured.out.split("\n")
     expected_line = format_list(type="file", size=size, name=name)
@@ -64,58 +69,117 @@ def check_file_exists_on_storage(run, name: str, path: str, size: int):
     assert not captured.err
 
 
-@attempt()
 def check_dir_exists_on_storage(run, name: str, path: str):
+    """
+    Tests if dir exists in given path
+    Assert if dir absent or something went bad
+
+    :param run: Runtime environment
+    :param name: Directory name
+    :param path: Path on storage
+    :return:
+    """
     _, captured = run(["store", "ls", f"storage://{path}"])
     captured_output_list = captured.out.split("\n")
     assert f"directory      0              {name}" in captured_output_list
     assert not captured.err
 
 
-@attempt()
 def check_dir_absent_on_storage(run, name: str, path: str):
+    """
+    Tests if dir with given name absent in given path.
+    Assert if dir present or something went bad
+
+    :param run: Runtime environment
+    :param name: Dir name
+    :param path: Path on storage
+    :return:
+    """
     _, captured = run(["store", "ls", f"storage://{path}"])
     split = captured.out.split("\n")
     assert format_list(name=name, size=0, type="directory") not in split
     assert not captured.err
 
 
-@attempt()
 def check_file_absent_on_storage(run, name: str, path: str):
+    """
+    Tests if file with given name absent in given path.
+    Assert if file present or something went bad
+    :param run: Runtime environment
+    :param name: File name
+    :param path: Path on storage
+    :return:
+    """
     _, captured = run(["store", "ls", f"storage://{path}"])
     pattern = format_list_pattern(name=name)
     assert not re.search(pattern, captured.out)
     assert not captured.err
 
 
-@attempt()
 def check_file_on_storage_checksum(
     run, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
 ):
+    """
+    Tests if file on storage in given path has same checksum. File will be downloaded
+    to temporary folder first. Assert if checksum mismatched
+    :param run: Runtime environment
+    :param name: File name
+    :param path: Path on storage
+    :param checksum: Checksum string
+    :param tmpdir: Temporary dir
+    :param tmpname:  Temporary name
+    :return:
+    """
     _local = join(tmpdir, tmpname)
     _, captured = run(["store", "cp", f"storage://{path}/{name}", _local])
     assert hash_hex(_local) == checksum
 
 
 def check_create_dir_on_storage(run, path: str):
+    """
+    Create dir on storage and assert if something went bad
+    :param run: Runtime environment
+    :param path: Path on storage
+    :return:
+    """
     _, captured = run(["store", "mkdir", f"storage://{path}"])
     assert not captured.err
     assert captured.out == f"storage://{path}\n"
 
 
-@attempt()
 def check_rmdir_on_storage(run, path: str):
+    """
+    Remove dir on storage and assert if something went bad
+    :param run: Runtime environment
+    :param path: Path on storage
+    :return:
+    """
     _, captured = run(["store", "rm", f"storage://{path}"])
     assert not captured.err
 
 
-@attempt()
 def check_rm_file_on_storage(run, name: str, path: str):
+    """
+    Remove file in given path in storage and if something went bad
+    :param run: Runtime environment
+    :param name: File name
+    :param path: Path on storage
+    :return:
+    """
     _, captured = run(["store", "rm", f"storage://{path}/{name}"])
     assert not captured.err
 
 
 def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
+    """
+    Upload local file with given name to storage and assert if something went bad
+
+    :param run: Runtime environment
+    :param name: File name on storage, can be ommited
+    :param path: Path on storage
+    :param local_file: Local file name with path
+    :return:
+    """
     if name is None:
         _, captured = run(["store", "cp", local_file, f"storage://{path}"])
         assert not captured.err
@@ -127,10 +191,18 @@ def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
         assert f"{path}/{name}" in captured.out
 
 
-@attempt()
 def check_rename_file_on_storage(
     run, name_from: str, path_from: str, name_to: str, path_to: str
 ):
+    """
+    Rename file on storage and assert if something went bad
+    :param run: Runtime environment
+    :param name_from: Source file name
+    :param path_from: Source path
+    :param name_to: Destination file name
+    :param path_to: Destination path
+    :return:
+    """
     _, captured = run(
         [
             "store",
@@ -143,8 +215,15 @@ def check_rename_file_on_storage(
     assert f"{path_to}/{name_to}" in captured.out
 
 
-@attempt()
 def check_rename_directory_on_storage(run, path_from: str, path_to: str):
+    """
+    Rename directory on storage and assert if something went bad
+
+    :param run:
+    :param path_from:
+    :param path_to:
+    :return:
+    """
     _, captured = run(["store", "mv", f"storage://{path_from}", f"storage://{path_to}"])
     assert not captured.err
     assert path_from not in captured.out

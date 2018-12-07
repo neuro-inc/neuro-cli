@@ -9,11 +9,9 @@ from uuid import uuid4 as uuid
 import pytest
 
 import neuromation
-from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 from tests.e2e.utils import (
     UBUNTU_IMAGE_NAME,
-    attempt,
     check_create_dir_on_storage,
     check_dir_absent_on_storage,
     check_file_exists_on_storage,
@@ -23,6 +21,7 @@ from tests.e2e.utils import (
     check_rmdir_on_storage,
     check_upload_file_to_storage,
     hash_hex,
+    format_list
 )
 
 
@@ -227,14 +226,12 @@ def test_e2e(data, run, tmpdir):
     # Download into local file and confirm checksum
     check_file_on_storage_checksum(run, "foo", _path, checksum, tmpdir, "bar")
 
-    # Download into local dir and confirm checksum
+    # Download into deeper local dir and confirm checksum
     _local = join(tmpdir, "bardir")
     _local_file = join(_local, "foo")
     tmpdir.mkdir("bardir")
     _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
     assert hash_hex(_local_file) == checksum
-
-    check_file_on_storage_checksum_custom_download()
 
     # Rename file on the storage
     check_rename_file_on_storage(run, "foo", _path, "bar", _path)
