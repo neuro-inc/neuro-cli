@@ -7,7 +7,6 @@ from uuid import uuid4 as uuid
 
 import pytest
 
-from _sha1 import sha1
 from tests.e2e.utils import (
     BLOCK_SIZE_MB,
     FILE_COUNT,
@@ -76,15 +75,6 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
         return main(), capsys.readouterr()
 
     return _run
-
-
-def hash_hex(file):
-    _hash = sha1()
-    with open(file, "rb") as f:
-        for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
-            _hash.update(block)
-
-    return _hash.hexdigest()
 
 
 @pytest.fixture

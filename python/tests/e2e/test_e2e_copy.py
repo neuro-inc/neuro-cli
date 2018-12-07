@@ -5,7 +5,16 @@ from uuid import uuid4 as uuid
 
 import pytest
 
-from tests.e2e.utils import format_list
+from tests.e2e.utils import (
+    check_create_dir_on_storage,
+    check_dir_absent_on_storage,
+    check_file_absent_on_storage,
+    check_file_exists_on_storage,
+    check_rm_file_on_storage,
+    check_rmdir_on_storage,
+    check_upload_file_to_storage,
+    format_list,
+)
 
 
 FILE_SIZE_MB = 16
@@ -20,27 +29,19 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     file_name = str(PurePath(file).name)
 
     # Upload local file to existing directory
-    _, captured = run(["store", "cp", file, "storage://" + _path + "/"])
-    assert not captured.err
-    assert _path in captured.out
+    check_upload_file_to_storage(run, None, f"{_path}/", file)
 
     # Ensure file is there
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
-    split = captured.out.split("\n")
-    assert format_list(name=file_name, size=FILE_SIZE_B, type="file") in split
+    check_file_exists_on_storage(run, file_name, _path, FILE_SIZE_B)
 
     # Remove the file from platform
-    _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
-    assert not captured.err
+    check_rm_file_on_storage(run, file_name, _path)
 
     # Ensure file is not there
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
-    split = captured.out.split("\n")
-    assert format_list(name=file_name, size=FILE_SIZE_B, type="file") not in split
+    check_file_absent_on_storage(run, file_name, _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -51,27 +52,19 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
     file_name = str(PurePath(file).name)
 
     # Upload local file to existing directory
-    _, captured = run(["store", "cp", file, "storage://" + _path])
-    assert not captured.err
-    assert _path in captured.out
+    check_upload_file_to_storage(run, None, _path, file)
 
     # Ensure file is there
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
-    split = captured.out.split("\n")
-    assert format_list(name=file_name, size=FILE_SIZE_B, type="file") in split
+    check_file_exists_on_storage(run, file_name, _path, FILE_SIZE_B)
 
     # Remove the file from platform
-    _, captured = run(["store", "rm", f"storage://{_path}/{file_name}"])
-    assert not captured.err
+    check_rm_file_on_storage(run, file_name, _path)
 
     # Ensure file is not there
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
-    split = captured.out.split("\n")
-    assert format_list(name=file_name, size=FILE_SIZE_B, type="file") not in split
+    check_file_absent_on_storage(run, file_name, _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -82,13 +75,10 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     file_name = str(PurePath(file).name)
 
     # Upload local file to existing directory
-    _, captured = run(
-        ["store", "cp", file, "storage://" + _path + "/different_name.txt"]
-    )
-    assert not captured.err
-    assert _path in captured.out
+    check_upload_file_to_storage(run, "different_name.txt", _path, file)
 
     # Ensure file is there
+    check_file_exists_on_storage(run, "different_name.txt", _path, FILE_SIZE_B)
     _, captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert (
@@ -97,21 +87,13 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     assert format_list(name=file_name, size=FILE_SIZE_B, type="file") not in split
 
     # Remove the file from platform
-    _, captured = run(["store", "rm", f"storage://{_path}/different_name.txt"])
-    assert not captured.err
+    check_rm_file_on_storage(run, "different_name.txt", _path)
 
     # Ensure file is not there
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
-    split = captured.out.split("\n")
-    assert (
-        format_list(name="different_name.txt", size=FILE_SIZE_B, type="file")
-        not in split
-    )
-    assert format_list(name=file_name, size=FILE_SIZE_B, type="file") not in split
+    check_file_absent_on_storage(run, "different_name.txt", _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -128,14 +110,11 @@ def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_loca
         assert not captured.err
         assert _path in captured.out
 
-    # Ensure file is there
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
-    split = captured.out.split("\n")
-    assert format_list(name="non_existing_dir", size=0, type="directory") not in split
+    # Ensure dir is not created
+    check_dir_absent_on_storage(run, "non_existing_dir", _path)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -144,9 +123,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
     _path = f"/tmp/{_dir}"
 
     # Create directory for the test
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
-    assert not captured.err
-    assert captured.out == f"storage://{_path}" + "\n"
+    check_create_dir_on_storage(run, _path)
 
     # Try downloading non existing file
     _local = join(tmpdir, "bar")
@@ -155,16 +132,10 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
     capsys.readouterr()
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
     # And confirm
-    _, captured = run(["store", "ls", f"storage:///tmp"])
-
-    split = captured.out.split("\n")
-    assert format_list(name=_dir, size=0, type="directory") not in split
-
-    assert not captured.err
+    check_dir_absent_on_storage(run, _path, "/tmp")
 
 
 @pytest.mark.e2e
@@ -173,9 +144,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsy
     _path = f"/tmp/{_dir}"
 
     # Create directory for the test
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
-    assert not captured.err
-    assert captured.out == f"storage://{_path}" + "\n"
+    check_create_dir_on_storage(run, _path)
 
     # Try downloading non existing file
     _local = join(tmpdir)
@@ -184,13 +153,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsy
     capsys.readouterr()
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
     # And confirm
-    _, captured = run(["store", "ls", f"storage:///tmp"])
-
-    split = captured.out.split("\n")
-    assert format_list(name=_dir, size=0, type="directory") not in split
-
-    assert not captured.err
+    check_dir_absent_on_storage(run, _path, "/tmp")

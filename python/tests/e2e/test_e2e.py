@@ -9,9 +9,20 @@ from uuid import uuid4 as uuid
 import pytest
 
 import neuromation
-from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
-from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list
+from tests.e2e.utils import (
+    UBUNTU_IMAGE_NAME,
+    check_create_dir_on_storage,
+    check_dir_absent_on_storage,
+    check_file_exists_on_storage,
+    check_file_on_storage_checksum,
+    check_rename_directory_on_storage,
+    check_rename_file_on_storage,
+    check_rmdir_on_storage,
+    check_upload_file_to_storage,
+    format_list,
+    hash_hex,
+)
 
 
 BLOCK_SIZE_MB = 16
@@ -94,8 +105,7 @@ def test_empty_directory_ls_output(run):
     assert not captured.out
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -205,29 +215,18 @@ def test_e2e(data, run, tmpdir):
     _path = f"/tmp/{_dir}"
 
     # Create directory for the test
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
-    assert not captured.err
-    assert captured.out == f"storage://{_path}\n"
+    check_create_dir_on_storage(run, _path)
 
     # Upload local file
-    _, captured = run(["store", "cp", file, f"storage://{_path}/foo"])
-    assert not captured.err
-    assert (_path + "/foo") in captured.out
+    check_upload_file_to_storage(run, "foo", _path, file)
 
     # Confirm file has been uploaded
-    _, captured = run(["store", "ls", f"storage://{_path}"])
-    captured_output_list = captured.out.split("\n")
-    expected_line = format_list(type="file", size=FILE_SIZE_B, name="foo")
-    assert expected_line in captured_output_list
-
-    assert not captured.err
+    check_file_exists_on_storage(run, "foo", _path, FILE_SIZE_B)
 
     # Download into local file and confirm checksum
-    _local = join(tmpdir, "bar")
-    _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
-    assert hash_hex(_local) == checksum
+    check_file_on_storage_checksum(run, "foo", _path, checksum, tmpdir, "bar")
 
-    # Download into local dir and confirm checksum
+    # Download into deeper local dir and confirm checksum
     _local = join(tmpdir, "bardir")
     _local_file = join(_local, "foo")
     tmpdir.mkdir("bardir")
@@ -235,11 +234,7 @@ def test_e2e(data, run, tmpdir):
     assert hash_hex(_local_file) == checksum
 
     # Rename file on the storage
-    _, captured = run(
-        ["store", "mv", f"storage://{_path}/foo", f"storage://{_path}/bar"]
-    )
-    assert not captured.err
-    assert (_path + "/bar") in captured.out
+    check_rename_file_on_storage(run, "foo", _path, "bar", _path)
 
     # Confirm file has been renamed
     _, captured = run(["store", "ls", f"storage://{_path}"])
@@ -252,19 +247,10 @@ def test_e2e(data, run, tmpdir):
     # Rename directory on the storage
     _dir2 = f"e2e-{uuid()}"
     _path2 = f"/tmp/{_dir2}"
-    _, captured = run(["store", "mv", f"storage://{_path}", f"storage://{_path2}"])
-    assert not captured.err
-    assert _path not in captured.out
-    assert _path2 in captured.out
+    check_rename_directory_on_storage(run, _path, _path2)
 
     # Remove test dir
-    _, captured = run(["store", "rm", f"storage://{_path2}"])
-    assert not captured.err
+    check_rmdir_on_storage(run, _path2)
 
     # And confirm
-    _, captured = run(["store", "ls", f"storage:///tmp"])
-
-    split = captured.out.split("\n")
-    assert format_list(name=_dir, size=0, type="directory") not in split
-
-    assert not captured.err
+    check_dir_absent_on_storage(run, _dir, "/tmp")
