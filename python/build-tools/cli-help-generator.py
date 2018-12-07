@@ -44,7 +44,7 @@ class CommandInfo:
 
 def parse_doc(doc, name=None) -> CommandInfo:
     usage = docopt.printable_usage(doc)
-    parts = re.split("usage\s*:", usage, maxsplit=2, flags=re.IGNORECASE)
+    parts = re.split(r'usage\s*:', usage, maxsplit=2, flags=re.IGNORECASE)
     usage = parts[1].strip()
     if not name:
         name = usage
@@ -52,7 +52,7 @@ def parse_doc(doc, name=None) -> CommandInfo:
     parts = doc.split(info.usage, 2)
     remains = parts[1]
     remains = dedent(remains)
-    lines = re.split(r"^", remains, flags=re.MULTILINE)
+    lines = re.split(r'^', remains, flags=re.MULTILINE)
     mode = "description"
     description = []
     examples = []
@@ -72,14 +72,14 @@ def parse_doc(doc, name=None) -> CommandInfo:
                 option.description = parts[1].strip()
             info.options.append(option)
         # just options block, special case
-        elif re.match("options:\s*", line, flags=re.IGNORECASE):
+        elif re.match(r"options:\s*", line, flags=re.IGNORECASE):
             mode = "options"
         # examples block
-        elif re.match("example(?:s){0,1}:\s*", line, flags=re.IGNORECASE):
+        elif re.match(r"example(?:s){0,1}:\s*", line, flags=re.IGNORECASE):
             mode = "examples"
         # like as argument section
-        elif re.fullmatch("\w+:\s*", line):
-            match = re.match("(\w+):\s*", line)
+        elif re.fullmatch(r"\w+:\s*", line):
+            match = re.match(r"(\w+):\s*", line)
             argument = Argument(name=match.group(1))
             info.arguments.append(argument)
             mode = "arguments"
@@ -92,7 +92,7 @@ def parse_doc(doc, name=None) -> CommandInfo:
             description.append(line.strip())
         elif mode == "arguments":
             ident = len(line) - len(line.lstrip())
-            match = re.match("\s*(\w+)\s*(.+)*", line)
+            match = re.match(r"\s*(\w+)\s*(.+)*", line)
             if match and (
                 argument_value_ident == ident or argument_value_ident is None
             ):
