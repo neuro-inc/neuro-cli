@@ -57,6 +57,36 @@ jobs:
             . .env/bin/activate
             make -C python devpi_upload
 
+  pypi_deploy:
+    <<: *defaults
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "python/requirements.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv .env
+            . .env/bin/activate
+            make -C python init
+
+      - run:
+          name: pypi upload
+          command: |
+            . .env/bin/activate
+            make -C python publish
+
+      - save_cache:
+          paths:
+            - ./.env
+          key: v1-dependencies-{{ checksum "python/requirements.txt" }}
+
 workflows:
   version: 2
 
@@ -75,5 +105,14 @@ workflows:
             tags:
               only: /^v.*/
             branches:
-              ignore: /.*/            
+              ignore: /.*/
+      - pypi_deploy:
+          context: org-global
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
                 

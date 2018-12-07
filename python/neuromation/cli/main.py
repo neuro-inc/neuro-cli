@@ -1,9 +1,9 @@
 import logging
 import os
-import subprocess
 import sys
 from functools import partial
 from pathlib import Path
+from typing import Union
 from urllib.parse import urlparse
 
 import aiohttp
@@ -11,6 +11,7 @@ import aiohttp
 import neuromation
 from neuromation.cli.command_handlers import (
     CopyOperation,
+    DockerHandler,
     JobHandlerOperations,
     ModelHandlerOperations,
     PlatformListDirOperation,
@@ -31,7 +32,6 @@ from .commands import command, dispatch
 
 # For stream copying from file to http or from http to file
 BUFFER_SIZE_MB = 16
-MONITOR_BUFFER_SIZE_BYTES = 256
 
 log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
@@ -61,16 +61,6 @@ def setup_console_handler(handler, verbose, noansi=False):
         loglevel = logging.INFO
 
     handler.setLevel(loglevel)
-
-
-def check_docker_installed():
-    try:
-        subprocess.run(
-            ["docker"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        return True
-    except subprocess.CalledProcessError as e:
-        return False
 
 
 @command
@@ -125,34 +115,6 @@ Commands:
             show            Print current settings
         """
 
-        def update_docker_config(config: rc.Config) -> None:
-            docker_registry_url = config.docker_registry_url()
-
-            if not check_docker_installed():
-                return
-
-            try:
-                if config.auth is None:
-                    subprocess.run(
-                        ["docker", "logout", docker_registry_url], check=True
-                    )
-                else:
-                    subprocess.run(
-                        [
-                            "docker",
-                            "login",
-                            "-p",
-                            config.auth,
-                            "-u",
-                            "token",
-                            docker_registry_url,
-                        ],
-                        check=True,
-                    )
-            except subprocess.CalledProcessError as e:
-                raise ValueError("Failed to updated docker auth details.")
-            return
-
         @command
         def url(url):
             """
@@ -164,8 +126,7 @@ Commands:
             Example:
             neuro config url http://platform.neuromation.io/api/v1
             """
-            config = rc.ConfigFactory.update_api_url(url)
-            update_docker_config(config)
+            rc.ConfigFactory.update_api_url(url)
 
         @command
         def id_rsa(file):
@@ -209,8 +170,7 @@ Commands:
             # Do not overwrite token in case new one does not work
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
-            config = rc.ConfigFactory.update_auth_token(token=token)
-            update_docker_config(config)
+            rc.ConfigFactory.update_auth_token(token=token)
 
         @command
         def forget():
@@ -220,8 +180,7 @@ Commands:
 
             Forget authorization token
             """
-            config = rc.ConfigFactory.forget_auth_token()
-            update_docker_config(config)
+            rc.ConfigFactory.forget_auth_token()
 
         return locals()
 
@@ -279,11 +238,9 @@ Commands:
             ls_op = PlatformListDirOperation(platform_user_name)
             storage_objects = ls_op.ls(path, storage)
 
-            print(
-                "\n".join(
-                    format(type=status.type.lower(), name=status.path, size=status.size)
-                    for status in storage_objects
-                )
+            return "\n".join(
+                format(type=status.type.lower(), name=status.path, size=status.size)
+                for status in storage_objects
             )
 
         @command
@@ -310,7 +267,9 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
-            timeout = TimeoutSettings(None, None, None, 30)
+            timeout = TimeoutSettings(
+                total=None, connect=None, sock_read=None, sock_connect=30
+            )
             storage = partial(Storage, url, token, timeout)
             src = urlparse(source, scheme="file")
             dst = urlparse(destination, scheme="file")
@@ -324,12 +283,7 @@ Commands:
                 platform_user_name, src.scheme, dst.scheme, recursive, progress
             )
 
-            if operation:
-                return operation.copy(src, dst, storage)
-
-            raise neuromation.client.IllegalArgumentError(
-                "Invalid SOURCE or DESTINATION value"
-            )
+            return operation.copy(src, dst, storage)
 
         @command
         def mkdir(path):
@@ -419,12 +373,14 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Other options available are
-                                              nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                                          Available options:
+                                              nvidia-tesla-k80
+                                              nvidia-tesla-p4
+                                              nvidia-tesla-v100
+                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
+                -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
@@ -520,6 +476,8 @@ Commands:
             ssh,
             cmd,
             volume,
+            preemptible,
+            non_preemptible,
             description,
             quiet,
         ):
@@ -532,18 +490,22 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Other options available are
-                                              nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                                          Available options:
+                                              nvidia-tesla-k80
+                                              nvidia-tesla-p4
+                                              nvidia-tesla-v100
                 -x, --extshm              Request extended '/dev/shm' space
+                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
+                -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
-                --volume MOUNT...         Mounts directory from vault into containr
+                --volume MOUNT...         Mounts directory from vault into container
+                --preemptible             Force job to run on a preemptible instance
+                --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
-                -q, --quiet               Run command in quiet mode
+                -q, --quiet               Run command in quiet mode (print only job id)
 
 
             Examples:
@@ -565,6 +527,15 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
 
+            if not preemptible and not non_preemptible:
+                is_preemptible = True  # default value
+            elif preemptible and non_preemptible:
+                raise neuromation.client.IllegalArgumentError(
+                    "Incompatible options: --preemptible and --non-preemptible"
+                )
+            else:
+                is_preemptible = preemptible or not non_preemptible
+
             job = JobHandlerOperations(platform_user_name).submit(
                 image,
                 gpu,
@@ -577,6 +548,7 @@ Commands:
                 ssh,
                 volume,
                 jobs,
+                is_preemptible,
                 description,
             )
             return OutputFormatter.format_job(job, quiet)
@@ -614,10 +586,15 @@ Commands:
 
             Monitor job output stream
             """
+            timeout = TimeoutSettings(
+                total=None, connect=None, sock_read=None, sock_connect=30
+            )
+            jobs = partial(Job, url, token, timeout)
+
             with jobs() as j:
                 with j.monitor(id) as stream:
                     while True:
-                        chunk = stream.read(MONITOR_BUFFER_SIZE_BYTES)
+                        chunk = stream.read()
                         if not chunk:
                             break
                         sys.stdout.write(chunk.decode(errors="ignore"))
@@ -629,17 +606,25 @@ Commands:
                 neuro job list [options]
 
             Options:
-              -s, --status (pending|running|succeeded|failed)
-                  Filters out job by state
+              -s, --status (pending|running|succeeded|failed|all)
+                  Filter out job by status(es) (comma delimited if multiple)
               -d, --description DESCRIPTION
-                  Filters out job by job description (exact match)
+                  Filter out job by job description (exact match)
               -q, --quiet
                   Run command in quiet mode (print only job ids)
 
             List all jobs
+
+            Example:
+            neuro job list --description="my favourite job"
+            neuro job list --status=all
+            neuro job list --status=pending,running --quiet
             """
+
+            status = status or "running,pending"
+            # TODO (Artem Yushkovskiy, 29.11.2018): add validation of status values
             return JobHandlerOperations(token).list_jobs(
-                jobs, quiet, status, description
+                jobs, status, quiet, description
             )
 
         @command
@@ -654,16 +639,32 @@ Commands:
             return JobStatusFormatter.format_job_status(res)
 
         @command
-        def kill(id):
+        def kill(job_ids):
             """
             Usage:
-                neuro job kill ID
+                neuro job kill JOB_IDS...
 
-            Kill job
+            Kill job(s)
             """
+            already_deads, errors = [], []
             with jobs() as j:
-                j.kill(id)
-            return "Job killed."
+                for job in job_ids:
+                    try:
+                        error = j.kill(job)
+                        if error is None:  # success
+                            print(job)
+                        else:
+                            already_deads.append((job, error))
+                    except ValueError as e:
+                        errors.append((job, e))
+
+            def format_fail(job: str, reason: Union[str, Exception]) -> str:
+                return f"Cannot kill job {job}: {reason}"
+
+            for job, reason in already_deads:
+                print(format_fail(job, reason))
+            for job, error in errors:
+                print(format_fail(job, error))
 
         return locals()
 
@@ -695,26 +696,12 @@ Commands:
 
             Push an image to platform registry
             """
-            _check_docker_client_available()
-
-            target_image_name = _get_image_platform_full_name(image_name)
-            # Tag first, as otherwise it would fail
-            try:
-                subprocess.run(
-                    ["docker", "tag", image_name, target_image_name], check=True
-                )
-            except subprocess.CalledProcessError as e:
-                raise ValueError(f"Docker tag failed. " f"Error code {e.returncode}")
-
-            # PUSH Image to remote registry
-            try:
-                subprocess.run(["docker", "push", target_image_name], check=True)
-            except subprocess.CalledProcessError as e:
-                raise ValueError(
-                    f"Docker pull failed. " f"Error details {e.returncode}"
-                )
-
-            return target_image_name
+            config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            registry_url = config.docker_registry_url()
+            return DockerHandler(platform_user_name, config.auth).push(
+                registry_url, image_name
+            )
 
         @command
         def pull(image_name):
@@ -724,17 +711,12 @@ Commands:
 
             Pull an image from platform registry
             """
-            _check_docker_client_available()
-
-            target_image_name = _get_image_platform_full_name(image_name)
-            try:
-                subprocess.run(["docker", "pull", target_image_name], check=True)
-            except subprocess.CalledProcessError as e:
-                raise ValueError(f"Docker pull failed. " f"Error code {e.returncode}")
-
-        def _check_docker_client_available():
-            if not check_docker_installed():
-                raise OSError("Docker client is not installed. " "Install it first.")
+            config = rc.ConfigFactory.load()
+            platform_user_name = config.get_platform_user_name()
+            registry_url = config.docker_registry_url()
+            return DockerHandler(platform_user_name, config.auth).pull(
+                registry_url, image_name
+            )
 
         return locals()
 
@@ -824,13 +806,16 @@ Commands:
 
 
 def main():
-    setup_logging()
-    setup_console_handler(console_handler, verbose=("--verbose" in sys.argv))
+    is_verbose = "--verbose" in sys.argv
+    if is_verbose:
+        sys.argv.remove("--verbose")
 
-    version = f"Neuromation Platform Client {neuromation.__version__}"
-    if "-v" in sys.argv:
-        print(version)
-        sys.exit(0)
+    setup_logging()
+    setup_console_handler(console_handler, verbose=is_verbose)
+
+    if any(version_key in sys.argv for version_key in ["-v", "--version"]):
+        print(f"Neuromation Platform Client {neuromation.__version__}")
+        return
 
     config = rc.ConfigFactory.load()
     doc_username = config.get_platform_user_name()

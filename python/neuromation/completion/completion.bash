@@ -237,6 +237,34 @@ _neuro_complete-uri()
     return 0
 } # _neuro_complete-uri()
 
+_neuro_complete-status()
+{
+    local toks="all"
+    local statuses="pending running succeeded failed"
+    for s1 in $statuses
+    do
+	toks="$toks $s1"
+	for s2 in $statuses
+	do
+	    if [[ $s1 == $s2 ]]
+	    then
+		continue
+	    fi
+	    toks="$toks $s1,$s2"
+	    for s3 in $statuses
+	    do
+		if [[ $s1 == $s3 ]] || [[ $s2 == $s3 ]]
+		then
+		    continue
+		fi
+		toks="$toks $s1,$s2,$s3"
+	    done
+	done
+    done
+    echo $toks
+    return 0
+} # _neuro_complete-status
+
 ######################################################################
 # Main function for completion
 ######################################################################
@@ -433,6 +461,8 @@ _neuro-completion()
 			;;
 		    --q|--quite)
 			;;
+		    --preemptible)
+			;;
 		    --volume)
 			state=job-submit-volume
 			;;
@@ -621,7 +651,7 @@ _neuro-completion()
 	    ;;
 	job-submit)
 	    toks='-c --cpu -g --gpu --gpu-model -m --memory -x --extshm
-		  --http --ssh -q --quite --volume --description'
+		  --http --ssh -q --quite --volume --description --preemptible'
 	    ;;
 	job-submit-volume)
 	    toks=$(_neuro_complete-uri "$cur" n y)
@@ -633,7 +663,7 @@ _neuro-completion()
 	    toks="--status"
 	    ;;
 	job-list-status)
-	    toks="pending running succeeded failed"
+	    toks=$(_neuro_complete-status)
 	    ;;
 	job-kill|job-monitor)
 	    toks=$(_neuro_listjobs running)
@@ -653,7 +683,7 @@ _neuro-completion()
 	    ;;
 	store-cp)
 	    local newtoks=$(_neuro_complete-uri "$cur" y $recursive)
-	    toks="-r --recursive $newtoks"
+	    toks="-r --recursive -p --progress $newtoks"
 	    ;;
 	store-cp2)
 	    toks=$(_neuro_complete-uri "$cur" y $recursive)

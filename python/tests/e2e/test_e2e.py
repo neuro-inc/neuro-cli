@@ -8,6 +8,8 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+import neuromation
+from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 from tests.e2e.utils import (
     UBUNTU_IMAGE_NAME,
@@ -25,6 +27,7 @@ from tests.e2e.utils import (
 
 
 BLOCK_SIZE_MB = 16
+BLOCK_SIZE_B = BLOCK_SIZE_MB * 1024 * 1024
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
@@ -38,7 +41,7 @@ async def generate_test_data(root, count, size_mb):
 
         process = await asyncio.create_subprocess_shell(
             f"""(dd if=/dev/urandom \
-                    bs={BLOCK_SIZE_MB * 1024 * 1024} \
+                    bs={BLOCK_SIZE_B} \
                     count={ceil(size_mb / BLOCK_SIZE_MB)} \
                     2>/dev/null) | \
                     tee {name} | \
@@ -70,6 +73,24 @@ def data(tmpdir_factory):
 
 
 @pytest.mark.e2e
+@pytest.mark.parametrize("version_key", ["-v", "--version"])
+def test_print_version(run, version_key):
+    expected_out = f"Neuromation Platform Client {neuromation.__version__}\n"
+
+    _, captured = run([version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+    _, captured = run(["job", version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+    _, captured = run(["job", "submit", "ubuntu", version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+
+@pytest.mark.e2e
 def test_empty_directory_ls_output(run):
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
@@ -80,13 +101,9 @@ def test_empty_directory_ls_output(run):
     assert captured.out == f"storage://{_path}\n"
 
     # Ensure output of ls - empty directory shall print nothing.
-    @attempt()
-    def dir_must_be_empty():
-        _, captured = run(["store", "ls", f"storage://{_path}"])
-        assert not captured.err
-        assert captured.out.isspace()
-
-    dir_must_be_empty()
+    _, captured = run(["store", "ls", f"storage://{_path}"])
+    assert not captured.err
+    assert not captured.out
 
     # Remove test dir
     check_rmdir_on_storage(run, _path)
@@ -211,13 +228,11 @@ def test_e2e(data, run, tmpdir):
     check_file_on_storage_checksum(run, "foo", _path, checksum, tmpdir, "bar")
 
     # Download into local dir and confirm checksum
-    @attempt()
-    def check_file_on_storage_checksum_custom_download():
-        _local = join(tmpdir, "downloaddir")
-        _local_file = join(_local, "foo")
-        tmpdir.mkdir("downloaddir")
-        _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
-        assert hash_hex(_local_file) == checksum
+    _local = join(tmpdir, "bardir")
+    _local_file = join(_local, "foo")
+    tmpdir.mkdir("bardir")
+    _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
+    assert hash_hex(_local_file) == checksum
 
     check_file_on_storage_checksum_custom_download()
 
@@ -225,7 +240,12 @@ def test_e2e(data, run, tmpdir):
     check_rename_file_on_storage(run, "foo", _path, "bar", _path)
 
     # Confirm file has been renamed
-    check_file_exists_on_storage(run, "bar", _path, FILE_SIZE_B)
+    _, captured = run(["store", "ls", f"storage://{_path}"])
+    captured_output_list = captured.out.split("\n")
+    assert not captured.err
+    expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
+    assert expected_line in captured_output_list
+    assert "foo" not in captured_output_list
 
     # Rename directory on the storage
     _dir2 = f"e2e-{uuid()}"

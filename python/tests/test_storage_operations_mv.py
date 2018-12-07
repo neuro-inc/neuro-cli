@@ -122,6 +122,7 @@ def test_mv_alice_no_user(alice_op, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params={"op": "RENAME", "destination": "/alice/bar"},
+        headers=None,
         data=None,
     )
 
@@ -137,6 +138,7 @@ def test_mv_alice_tilde_user(alice_op, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params={"op": "RENAME", "destination": "/alice/bar"},
+        headers=None,
         data=None,
     )
 
@@ -152,6 +154,7 @@ def test_mv_alice_omitted_user(alice_op, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params={"op": "RENAME", "destination": "/alice/bar"},
+        headers=None,
         data=None,
     )
 
@@ -167,6 +170,7 @@ def test_mv_alice_omitted_user_no_leading_slash(alice_op, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/alice/foo",
         params={"op": "RENAME", "destination": "/alice/bar"},
+        headers=None,
         data=None,
     )
 
@@ -182,6 +186,7 @@ def test_mv_alice_removes_bob_data(alice_op, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo",
         params={"op": "RENAME", "destination": "/alice/bar"},
+        headers=None,
         data=None,
     )
 
@@ -197,5 +202,6 @@ def test_mv_alice_removes_bob_data_file(alice_op, http_backed_storage):
         json=None,
         url="http://127.0.0.1/storage/bob/foo/data.txt",
         params={"op": "RENAME", "destination": "/alice/bar"},
+        headers=None,
         data=None,
     )

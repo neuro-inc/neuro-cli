@@ -145,6 +145,7 @@ def test_ls(storage):
         method="GET",
         url="http://127.0.0.1/storage/home/dir",
         params="LISTSTATUS",
+        headers=None,
         data=None,
         json=None,
     )
@@ -179,6 +180,7 @@ def test_stats(storage):
         method="GET",
         url="http://127.0.0.1/storage/home/dir",
         params="GETFILESTATUS",
+        headers=None,
         data=None,
         json=None,
     )
@@ -195,6 +197,7 @@ def test_mkdirs(storage):
         json=None,
         url="http://127.0.0.1/storage/root/foo",
         params="MKDIRS",
+        headers=None,
         data=None,
     )
 
@@ -210,6 +213,7 @@ def test_rm(storage):
         json=None,
         url="http://127.0.0.1/storage/foo",
         params=None,
+        headers=None,
         data=None,
     )
 
@@ -225,6 +229,7 @@ def test_mv(storage):
         json=None,
         url="http://127.0.0.1/storage/foo",
         params={"op": "RENAME", "destination": "bar"},
+        headers=None,
         data=None,
     )
 
@@ -240,6 +245,7 @@ def test_create(storage):
         method="PUT",
         url="http://127.0.0.1/storage/foo",
         params=None,
+        headers=None,
         data=data,
         json=None,
     )
@@ -256,6 +262,7 @@ def test_open(storage):
             method="GET",
             url="http://127.0.0.1/storage/foo",
             params=None,
+            headers=None,
             json=None,
             data=None,
         )

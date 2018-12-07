@@ -19,6 +19,7 @@ from utils import JsonResponse, mocked_async_context_manager
 def test_call(build, loop):
     expected_json = {"a": "b"}
     expected_params = {"foo": "bar"}
+    expected_headers = {"Header-1": "Value-1", "Header-2": "Value-2"}
     expected_url = "http://test/my"
     expected_data = b"content"
     expected_method = "GET"
@@ -29,6 +30,7 @@ def test_call(build, loop):
             JsonRequest(
                 url="/my",
                 params=expected_params,
+                headers=expected_headers,
                 method=expected_method,
                 json=expected_json,
                 data=expected_data,
@@ -42,6 +44,7 @@ def test_call(build, loop):
         method="GET",
         json=expected_json,
         params=expected_params,
+        headers=expected_headers,
         url=expected_url,
         data=expected_data,
     )
@@ -59,6 +62,7 @@ def test_call(build, loop):
 def test_call_session_with_token(build, loop):
     expected_json = {"a": "b"}
     expected_params = {"foo": "bar"}
+    expected_headers = {"Header-1": "Value-1", "Header-2": "Value-2"}
     expected_url = "http://test/my"
     expected_data = b"content"
     expected_method = "GET"
@@ -70,6 +74,7 @@ def test_call_session_with_token(build, loop):
             JsonRequest(
                 url="/my",
                 params=expected_params,
+                headers=expected_headers,
                 method=expected_method,
                 json=expected_json,
                 data=expected_data,
@@ -83,6 +88,7 @@ def test_call_session_with_token(build, loop):
         method="GET",
         json=expected_json,
         params=expected_params,
+        headers=expected_headers,
         url=expected_url,
         data=expected_data,
     )
@@ -138,7 +144,12 @@ def test_fetch(loop):
         loop.run_until_complete(
             fetch(
                 JsonRequest(
-                    method="GET", params=None, url="/foo", data=None, json=None
+                    method="GET",
+                    params=None,
+                    headers=None,
+                    url="/foo",
+                    data=None,
+                    json=None,
                 ),
                 session=_session,
                 url="http://foo",
@@ -158,7 +169,12 @@ def test_fetch_non_empty_binary_response_as_json(loop):
         loop.run_until_complete(
             fetch(
                 JsonRequest(
-                    method="GET", params=None, url="/foo", data=None, json=None
+                    method="GET",
+                    params=None,
+                    headers=None,
+                    url="/foo",
+                    data=None,
+                    json=None,
                 ),
                 session=_session,
                 url="http://foo",
@@ -179,7 +195,14 @@ def test_fetch_no_content_response_as_json(loop, create_request):
     json = {"x": "X", "y": "Y"}
     result = loop.run_until_complete(
         fetch(
-            create_request(method=method, params=params, url=url, data=None, json=json),
+            create_request(
+                method=method,
+                params=params,
+                headers=None,
+                url=url,
+                data=None,
+                json=json,
+            ),
             session=_session,
             url="http://foo",
         )
@@ -189,6 +212,7 @@ def test_fetch_no_content_response_as_json(loop, create_request):
         method=method,
         json=json,
         params={"a": "A", "b": "B"},
+        headers=None,
         url="http://foo" + url,
         data=None,
     )

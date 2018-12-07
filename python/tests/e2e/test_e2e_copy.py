@@ -17,6 +17,7 @@ from tests.e2e.utils import (
 )
 
 
+FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 
 
@@ -71,12 +72,19 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     # case when copy happens with rename to 'different_name.txt'
     _path, _dir = remote_and_local
     file, checksum = data[0]
+    file_name = str(PurePath(file).name)
 
     # Upload local file to existing directory
     check_upload_file_to_storage(run, "different_name.txt", _path, file)
 
     # Ensure file is there
     check_file_exists_on_storage(run, "different_name.txt", _path, FILE_SIZE_B)
+    _, captured = run(["store", "ls", "storage://" + _path + "/"])
+    split = captured.out.split("\n")
+    assert (
+        format_list(name="different_name.txt", size=FILE_SIZE_B, type="file") in split
+    )
+    assert format_list(name=file_name, size=FILE_SIZE_B, type="file") not in split
 
     # Remove the file from platform
     check_rm_file_on_storage(run, "different_name.txt", _path)
