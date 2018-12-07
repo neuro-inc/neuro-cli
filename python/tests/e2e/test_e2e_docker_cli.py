@@ -43,15 +43,15 @@ def test_no_docker(run, monkeypatch):
 
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
         assert docker_client.login.call_count == 0
-        assert docker_client.ping.call_count == 1
+        assert docker_client.ping.call_count == 0
 
         _, captured = run(["image", "push", "abrakadabra"])
         assert docker_client.images.get.call_count == 0
-        assert docker_client.ping.call_count == 2
+        assert docker_client.ping.call_count == 1
 
         _, captured = run(["image", "pull", "abrakadabra"])
         assert docker_client.images.get.call_count == 0
-        assert docker_client.ping.call_count == 3
+        assert docker_client.ping.call_count == 2
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
@@ -64,8 +64,8 @@ def test_docker_config_with_docker(run, monkeypatch):
 
         _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
 
-        assert docker_client.ping.call_count == 1
-        assert docker_client.login.call_count == 1
+        assert docker_client.ping.call_count == 0
+        assert docker_client.login.call_count == 0
 
     assert CUSTOM_TOKEN_FOR_TESTS == ConfigFactory.load().auth
 
@@ -77,6 +77,19 @@ def test_docker_push_with_docker(run, monkeypatch):
         mocked_client.return_value = docker_client
 
         _, captured = run(["image", "push", "abrakadabra:latest"])
+
+        assert docker_client.ping.call_count == 1
+        assert docker_client.tag.call_count == 1
+        assert docker_client.push.call_count == 1
+
+
+@pytest.mark.e2e
+def test_docker_push_with_docker_no_tag(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        _, captured = run(["image", "push", "abrakadabra"])
 
         assert docker_client.ping.call_count == 1
         assert docker_client.tag.call_count == 1
@@ -96,16 +109,41 @@ def test_docker_pull_with_docker(run, monkeypatch):
 
 
 @pytest.mark.e2e
-def test_docker_error_scenarios(run, monkeypatch):
+def test_docker_pull_with_docker_no_tag(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
+
+        _, captured = run(["image", "pull", "abrakadabra"])
+
+        assert docker_client.ping.call_count == 1
+        assert docker_client.pull.call_count == 1
+
+
+@pytest.mark.e2e
+def test_docker_too_many_image_tags(run, monkeypatch):
     with mock.patch("docker.APIClient") as mocked_client:
         docker_client = MagicMock(APIClient)
         mocked_client.return_value = docker_client
 
         with pytest.raises(SystemExit):
-            old_value = docker_client.login
-            docker_client.login = docker_throw_error
-            _, captured = run(["config", "auth", CUSTOM_TOKEN_FOR_TESTS])
-            docker_client.login = old_value
+            _, captured = run(["image", "pull", "abrakadabra:tag1:tag2"])
+
+        with pytest.raises(SystemExit):
+            _, captured = run(["image", "push", "abrakadabra:tag1:tag2"])
+
+        with pytest.raises(SystemExit):
+            _, captured = run(["image", "pull", ":tag"])  # no image name
+
+        with pytest.raises(SystemExit):
+            _, captured = run(["image", "push", ":tag"])  # no image name
+
+
+@pytest.mark.e2e
+def test_docker_error_scenarios(run, monkeypatch):
+    with mock.patch("docker.APIClient") as mocked_client:
+        docker_client = MagicMock(APIClient)
+        mocked_client.return_value = docker_client
 
         with pytest.raises(SystemExit):
             old_value = docker_client.tag

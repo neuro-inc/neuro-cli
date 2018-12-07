@@ -115,14 +115,6 @@ Commands:
             show            Print current settings
         """
 
-        def update_docker_config(config: rc.Config) -> None:
-            docker_registry_url = config.docker_registry_url()
-            platform_user_name = config.get_platform_user_name()
-            # TODO Add logout
-            DockerHandler(platform_user_name).login(
-                "token", config.auth, docker_registry_url
-            )
-
         @command
         def url(url):
             """
@@ -134,8 +126,7 @@ Commands:
             Example:
             neuro config url http://platform.neuromation.io/api/v1
             """
-            config = rc.ConfigFactory.update_api_url(url)
-            update_docker_config(config)
+            rc.ConfigFactory.update_api_url(url)
 
         @command
         def id_rsa(file):
@@ -179,8 +170,7 @@ Commands:
             # Do not overwrite token in case new one does not work
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
-            config = rc.ConfigFactory.update_auth_token(token=token)
-            update_docker_config(config)
+            rc.ConfigFactory.update_auth_token(token=token)
 
         @command
         def forget():
@@ -190,8 +180,7 @@ Commands:
 
             Forget authorization token
             """
-            config = rc.ConfigFactory.forget_auth_token()
-            update_docker_config(config)
+            rc.ConfigFactory.forget_auth_token()
 
         return locals()
 
@@ -249,11 +238,9 @@ Commands:
             ls_op = PlatformListDirOperation(platform_user_name)
             storage_objects = ls_op.ls(path, storage)
 
-            print(
-                "\n".join(
-                    format(type=status.type.lower(), name=status.path, size=status.size)
-                    for status in storage_objects
-                )
+            return "\n".join(
+                format(type=status.type.lower(), name=status.path, size=status.size)
+                for status in storage_objects
             )
 
         @command
@@ -296,12 +283,7 @@ Commands:
                 platform_user_name, src.scheme, dst.scheme, recursive, progress
             )
 
-            if operation:
-                return operation.copy(src, dst, storage)
-
-            raise neuromation.client.IllegalArgumentError(
-                "Invalid SOURCE or DESTINATION value"
-            )
+            return operation.copy(src, dst, storage)
 
         @command
         def mkdir(path):
@@ -391,12 +373,14 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Other options available are
-                                              nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                                          Available options:
+                                              nvidia-tesla-k80
+                                              nvidia-tesla-p4
+                                              nvidia-tesla-v100
+                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
+                -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
@@ -492,6 +476,8 @@ Commands:
             ssh,
             cmd,
             volume,
+            preemptible,
+            non_preemptible,
             description,
             quiet,
         ):
@@ -504,18 +490,22 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 1]
+                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
                 --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Other options available are
-                                              nvidia-tesla-p4, nvidia-tesla-v100.
-                -c, --cpu NUMBER          Number of CPUs to request [default: 1.0]
-                -m, --memory AMOUNT       Memory amount to request [default: 16G]
+                                          Available options:
+                                              nvidia-tesla-k80
+                                              nvidia-tesla-p4
+                                              nvidia-tesla-v100
                 -x, --extshm              Request extended '/dev/shm' space
+                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
+                -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
-                --volume MOUNT...         Mounts directory from vault into containr
+                --volume MOUNT...         Mounts directory from vault into container
+                --preemptible             Force job to run on a preemptible instance
+                --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
-                -q, --quiet               Run command in quiet mode
+                -q, --quiet               Run command in quiet mode (print only job id)
 
 
             Examples:
@@ -537,6 +527,15 @@ Commands:
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
 
+            if not preemptible and not non_preemptible:
+                is_preemptible = True  # default value
+            elif preemptible and non_preemptible:
+                raise neuromation.client.IllegalArgumentError(
+                    "Incompatible options: --preemptible and --non-preemptible"
+                )
+            else:
+                is_preemptible = preemptible or not non_preemptible
+
             job = JobHandlerOperations(platform_user_name).submit(
                 image,
                 gpu,
@@ -549,6 +548,7 @@ Commands:
                 ssh,
                 volume,
                 jobs,
+                is_preemptible,
                 description,
             )
             return OutputFormatter.format_job(job, quiet)
@@ -606,17 +606,25 @@ Commands:
                 neuro job list [options]
 
             Options:
-              -s, --status (pending|running|succeeded|failed)
-                  Filters out job by state
+              -s, --status (pending|running|succeeded|failed|all)
+                  Filter out job by status(es) (comma delimited if multiple)
               -d, --description DESCRIPTION
-                  Filters out job by job description (exact match)
+                  Filter out job by job description (exact match)
               -q, --quiet
                   Run command in quiet mode (print only job ids)
 
             List all jobs
+
+            Example:
+            neuro job list --description="my favourite job"
+            neuro job list --status=all
+            neuro job list --status=pending,running --quiet
             """
+
+            status = status or "running,pending"
+            # TODO (Artem Yushkovskiy, 29.11.2018): add validation of status values
             return JobHandlerOperations(token).list_jobs(
-                jobs, quiet, status, description
+                jobs, status, quiet, description
             )
 
         @command
@@ -691,7 +699,9 @@ Commands:
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             registry_url = config.docker_registry_url()
-            return DockerHandler(platform_user_name).push(registry_url, image_name)
+            return DockerHandler(platform_user_name, config.auth).push(
+                registry_url, image_name
+            )
 
         @command
         def pull(image_name):
@@ -704,7 +714,9 @@ Commands:
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             registry_url = config.docker_registry_url()
-            return DockerHandler(platform_user_name).pull(registry_url, image_name)
+            return DockerHandler(platform_user_name, config.auth).pull(
+                registry_url, image_name
+            )
 
         return locals()
 
@@ -794,13 +806,16 @@ Commands:
 
 
 def main():
-    setup_logging()
-    setup_console_handler(console_handler, verbose=("--verbose" in sys.argv))
+    is_verbose = "--verbose" in sys.argv
+    if is_verbose:
+        sys.argv.remove("--verbose")
 
-    version = f"Neuromation Platform Client {neuromation.__version__}"
-    if "-v" in sys.argv:
-        print(version)
-        sys.exit(0)
+    setup_logging()
+    setup_console_handler(console_handler, verbose=is_verbose)
+
+    if any(version_key in sys.argv for version_key in ["-v", "--version"]):
+        print(f"Neuromation Platform Client {neuromation.__version__}")
+        return
 
     config = rc.ConfigFactory.load()
     doc_username = config.get_platform_user_name()

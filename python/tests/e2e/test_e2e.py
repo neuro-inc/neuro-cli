@@ -8,6 +8,7 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+import neuromation
 from tests.e2e.conftest import hash_hex
 from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
 from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list
@@ -60,6 +61,24 @@ def data(tmpdir_factory):
 
 
 @pytest.mark.e2e
+@pytest.mark.parametrize("version_key", ["-v", "--version"])
+def test_print_version(run, version_key):
+    expected_out = f"Neuromation Platform Client {neuromation.__version__}\n"
+
+    _, captured = run([version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+    _, captured = run(["job", version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+    _, captured = run(["job", "submit", "ubuntu", version_key])
+    assert not captured.err
+    assert captured.out == expected_out
+
+
+@pytest.mark.e2e
 def test_empty_directory_ls_output(run):
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
@@ -72,7 +91,7 @@ def test_empty_directory_ls_output(run):
     # Ensure output of ls - empty directory shall print nothing.
     _, captured = run(["store", "ls", f"storage://{_path}"])
     assert not captured.err
-    assert captured.out.isspace()
+    assert not captured.out
 
     # Remove test dir
     _, captured = run(["store", "rm", f"storage://{_path}"])

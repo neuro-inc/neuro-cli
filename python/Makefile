@@ -11,6 +11,7 @@ init:
 .PHONY: e2e
 e2e:
 	pytest \
+	    -n auto \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -20,6 +21,7 @@ e2e:
 .PHONY: test
 test:
 	pytest \
+	    -n auto \
 		-m "not e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -29,31 +31,42 @@ test:
 .PHONY: test-all
 test-all:
 	pytest \
+	    -n 4 \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		tests
 
-.PHONY: isort
-isort:
-	isort -rc neuromation
-	isort -rc tests
-	isort -rc .
-
 .PHONY: lint
 lint:
+	isort -c -rc neuromation tests
 	black --check neuromation tests
 	mypy neuromation/client neuromation/logging neuromation/strings
 	flake8
 
+.PHONY: dist-clean
+dist-clean:
+	rm -rf dist || true
+	rm -rf build || true
+
+.PHONY: dist
+dist: dist-clean
+	python setup.py bdist_wheel
+
+.PHONY: publish-lint
+publish-lint:
+	twine check dist/*
+
+
 .PHONY: publish
-publish:
-	echo 'Not implemented'
+publish: dist publish-lint
+	twine upload dist/*
 
 .PHONY: coverage
 coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
+.PHONY: format
 format:
 	isort -rc neuromation tests
 	black neuromation tests
@@ -79,3 +92,4 @@ devpi_login:
 
 devpi_upload: devpi_login
 	devpi upload --formats bdist_wheel
+
