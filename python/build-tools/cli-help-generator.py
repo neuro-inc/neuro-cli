@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+import os
 import re
+import sys
 from dataclasses import dataclass, field
-from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional
+from textwrap import dedent
+from typing import Any, List
 
 import docopt
 
@@ -168,7 +170,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         for value in argument.values:
             if argument.name == "Commands":
                 anchor = info.name + " " + value.name
-                anchor = '#' + anchor.replace(" ", "-")
+                anchor = "#" + anchor.replace(" ", "-")
                 md += f"* _[{value.name}]({anchor})_: {value.description}"
             else:
                 md += f"* _{value.name}_: {value.description}"
@@ -193,11 +195,17 @@ def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
 
 
 def main():
-    with open("README.in.md", "r") as input:
-        with open("README.md", "w") as output:
+    if len(sys.argv) != 3:
+        print("Usage cli-help-generator.py input_file output_file")
+        exit(os.EX_USAGE)
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    with open(input_file, "r") as input:
+        with open(output_file, "w") as output:
             template = input.read()
             info = parse_command(neuro, DEFAULTS, ["neuro"])
-            cli_doc = generate_command_markdown(info, "##")
+            cli_doc = generate_command_markdown(info, "")
             generated_md = template.format(cli_doc=cli_doc)
             output.write(generated_md)
 

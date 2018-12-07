@@ -1,21 +1,20 @@
 [![codecov](https://codecov.io/gh/neuromation/platform-api-clients/branch/master/graph/badge.svg?token=FwM6ZV3gDj)](https://codecov.io/gh/neuromation/platform-api-clients)
 
-# Welcome to Neuromation API Python client
+# Preface
 
-# Command line tool
-
-Package ship command line tool caled _neuro_. With _neuro_ you can:
-* Execute and debug jobs
-* Manipulate Data
-* Find some fun
+Welcome to Neuromation API Python client.
+Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) you can:
+* [Execute and debug jobs](#neuro-job)
+* [Manipulate Data](#neuro-storage)
+* Make some fun
 
 {cli_doc}
 
-# Api library
+# Api
 
 *TODO*
 
-## Contributing
+# Contributing
 
 ```shell
 git clone https://github.com/neuromation/platform-api-clients.git

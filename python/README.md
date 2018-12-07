@@ -1,15 +1,52 @@
 [![codecov](https://codecov.io/gh/neuromation/platform-api-clients/branch/master/graph/badge.svg?token=FwM6ZV3gDj)](https://codecov.io/gh/neuromation/platform-api-clients)
 
-# Welcome to Neuromation API Python client
+# Table of Contents
+* [Preface](#Preface)
+* [neuro](#neuro)
+	* [neuro config](#neuro-config)
+		* [neuro config url](#neuro-config-url)
+		* [neuro config id_rsa](#neuro-config-id_rsa)
+		* [neuro config show](#neuro-config-show)
+		* [neuro config auth](#neuro-config-auth)
+		* [neuro config forget](#neuro-config-forget)
+	* [neuro store](#neuro-store)
+		* [neuro store rm](#neuro-store-rm)
+		* [neuro store ls](#neuro-store-ls)
+		* [neuro store cp](#neuro-store-cp)
+		* [neuro store mkdir](#neuro-store-mkdir)
+		* [neuro store mv](#neuro-store-mv)
+	* [neuro model](#neuro-model)
+		* [neuro model train](#neuro-model-train)
+		* [neuro model debug](#neuro-model-debug)
+		* [neuro model test](#neuro-model-test)
+		* [neuro model infer](#neuro-model-infer)
+	* [neuro job](#neuro-job)
+		* [neuro job submit](#neuro-job-submit)
+		* [neuro job ssh](#neuro-job-ssh)
+		* [neuro job monitor](#neuro-job-monitor)
+		* [neuro job list](#neuro-job-list)
+		* [neuro job status](#neuro-job-status)
+		* [neuro job kill](#neuro-job-kill)
+	* [neuro image](#neuro-image)
+		* [neuro image push](#neuro-image-push)
+		* [neuro image pull](#neuro-image-pull)
+	* [neuro share](#neuro-share)
+	* [neuro completion](#neuro-completion)
+		* [neuro completion generate](#neuro-completion-generate)
+		* [neuro completion patch](#neuro-completion-patch)
+* [Api](#Api)
+* [Contributing](#Contributing)
 
-# Command line tool
 
-Package ship command line tool caled _neuro_. With _neuro_ you can:
-* Execute and debug jobs
-* Manipulate Data
-* Find some fun
+# Preface
 
-### neuro
+Welcome to Neuromation API Python client.
+Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) you can:
+* [Execute and debug jobs](#neuro-job)
+* [Manipulate Data](#neuro-storage)
+* Make some fun
+
+# neuro
 
 **Usage:**
 
@@ -45,7 +82,7 @@ neuro [options] COMMAND
 
 
 
-#### neuro config
+## neuro config
 
 Client configuration settings commands
 
@@ -70,7 +107,7 @@ in use for SSH/Remote debug
 
 
 
-##### neuro config url
+### neuro config url
 
 Updates settings with provided platform URL.
 
@@ -88,7 +125,7 @@ neuro config url http://platform.neuromation.io/api/v1
 
 
 
-##### neuro config id_rsa
+### neuro config id_rsa
 
 Updates path to id_rsa file with private key.
 File is being used for accessing remote shell, remote debug.
@@ -103,7 +140,7 @@ neuro config id_rsa FILE
 
 
 
-##### neuro config show
+### neuro config show
 
 Prints current settings.
 
@@ -115,7 +152,7 @@ neuro config show
 
 
 
-##### neuro config auth
+### neuro config auth
 
 Updates authorization token
 
@@ -127,7 +164,7 @@ neuro config auth TOKEN
 
 
 
-##### neuro config forget
+### neuro config forget
 
 Forget authorization token
 
@@ -139,7 +176,7 @@ neuro config forget
 
 
 
-#### neuro store
+## neuro store
 
 Storage operations
 
@@ -163,7 +200,7 @@ neuro store COMMAND
 
 
 
-##### neuro store rm
+### neuro store rm
 
 Remove files or directories.
 
@@ -183,7 +220,7 @@ neuro store rm storage://username/foo/bar/
 
 
 
-##### neuro store ls
+### neuro store ls
 
 List directory contents
 By default PATH is equal user`s home dir (storage:)
@@ -196,7 +233,7 @@ neuro store ls [PATH]
 
 
 
-##### neuro store cp
+### neuro store cp
 
 Copy files and directories
 Either SOURCE or DESTINATION should have storage:// scheme.
@@ -227,7 +264,7 @@ neuro store cp storage:///foo file:///foo
 
 
 
-##### neuro store mkdir
+### neuro store mkdir
 
 Make directories
 
@@ -239,7 +276,7 @@ neuro store mkdir PATH
 
 
 
-##### neuro store mv
+### neuro store mv
 
 Move or rename files and directories. SOURCE must contain path to the
 file or directory existing on the storage, and DESTINATION must contain
@@ -264,7 +301,7 @@ neuro store mv storage://username/foo/ storage://username/bar/baz/foo/
 
 
 
-#### neuro model
+## neuro model
 
 Model operations
 
@@ -286,7 +323,7 @@ neuro model COMMAND
 
 
 
-##### neuro model train
+### neuro model train
 
 Start training job using model from IMAGE, dataset from DATASET and
 store output weights in RESULTS.
@@ -313,7 +350,7 @@ neuro model train [options] IMAGE DATASET RESULTS [CMD...]
 
 
 
-##### neuro model debug
+### neuro model debug
 
 Starts ssh terminal connected to running job.
 Job should be started with SSH support enabled.
@@ -337,19 +374,19 @@ neuro model debug --localport 12789 job-abc-def-ghk
 
 
 
-##### neuro model test
+### neuro model test
 
 Not implemented
 
 
 
-##### neuro model infer
+### neuro model infer
 
 Not implemented
 
 
 
-#### neuro job
+## neuro job
 
 Model operations
 
@@ -375,7 +412,7 @@ neuro job COMMAND
 
 
 
-##### neuro job submit
+### neuro job submit
 
 Start job using IMAGE
 COMMANDS list will be passed as commands to model container.
@@ -418,7 +455,7 @@ Please note that SSH server should be provided by container.
 
 
 
-##### neuro job ssh
+### neuro job ssh
 
 Starts ssh terminal connected to running job.
 Job should be started with SSH support enabled.
@@ -443,7 +480,7 @@ neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
 
 
 
-##### neuro job monitor
+### neuro job monitor
 
 Monitor job output stream
 
@@ -455,7 +492,7 @@ neuro job monitor ID
 
 
 
-##### neuro job list
+### neuro job list
 
 **Usage:**
 
@@ -480,7 +517,7 @@ neuro job list --status=pending,running --quiet
 
 
 
-##### neuro job status
+### neuro job status
 
 Display status of a job
 
@@ -492,7 +529,7 @@ neuro job status ID
 
 
 
-##### neuro job kill
+### neuro job kill
 
 Kill job(s)
 
@@ -504,7 +541,7 @@ neuro job kill JOB_IDS...
 
 
 
-#### neuro image
+## neuro image
 
 Docker image operations
 
@@ -522,7 +559,7 @@ neuro image COMMAND
 
 
 
-##### neuro image push
+### neuro image push
 
 Push an image to platform registry
 
@@ -534,7 +571,7 @@ neuro image push IMAGE_NAME
 
 
 
-##### neuro image pull
+### neuro image pull
 
 Pull an image from platform registry
 
@@ -546,7 +583,7 @@ neuro image pull IMAGE_NAME
 
 
 
-#### neuro share
+## neuro share
 
 Shares resource specified by URI to a user specified by WHOM
 allowing to read, write or manage it.
@@ -567,7 +604,7 @@ neuro share job:///my_job_id alice write
 
 
 
-#### neuro completion
+## neuro completion
 
 Generates code to enable bash-completion.
 
@@ -589,7 +626,7 @@ Adding eval $(neuro completion generate) to
 
 
 
-##### neuro completion generate
+### neuro completion generate
 
 Generate code enabling bash-completion.
 eval $(
@@ -602,7 +639,7 @@ neuro completion generate
 
 
 
-##### neuro completion patch
+### neuro completion patch
 
 Automatically patch .bash_profile to enable completion
 
@@ -614,11 +651,11 @@ neuro completion patch
 
 
 
-# Api library
+# Api
 
 *TODO*
 
-## Contributing
+# Contributing
 
 ```shell
 git clone https://github.com/neuromation/platform-api-clients.git

@@ -50,7 +50,7 @@ test-all:
 		tests
 
 .PHONY: lint
-lint:
+lint: lint-docs
 	isort -c -rc neuromation tests build-tools
 	black --check neuromation tests build-tools
 	mypy neuromation/client neuromation/logging neuromation/strings
@@ -93,6 +93,7 @@ ci: lint test _e2e coverage
 clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
+	rm README.md
 
 devpi_setup:
 	pip install devpi-client
@@ -105,3 +106,15 @@ devpi_login:
 devpi_upload: devpi_login
 	devpi upload --formats bdist_wheel
 
+.PHONY: docs
+docs:
+	build-tools/cli-help-generator.py README.in.md README.md
+	markdown-toc -t github -h 6 README.md
+
+
+.PHONY: lint-docs
+lint-docs: TMP:=$(shell mktemp -t README.XXXXXXXX.md)
+lint-docs:
+	build-tools/cli-help-generator.py README.in.md ${TMP}
+	markdown-toc -t github -h 6 ${TMP}
+	diff -q ${TMP} README.md
