@@ -20,8 +20,8 @@ from tests.e2e.utils import (
     check_rename_file_on_storage,
     check_rmdir_on_storage,
     check_upload_file_to_storage,
+    format_list,
     hash_hex,
-    format_list
 )
 
 

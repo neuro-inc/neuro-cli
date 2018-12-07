@@ -6,7 +6,6 @@ from uuid import uuid4 as uuid
 import pytest
 
 from tests.e2e.utils import (
-    format_list,
     check_create_dir_on_storage,
     check_dir_absent_on_storage,
     check_file_absent_on_storage,
@@ -14,6 +13,7 @@ from tests.e2e.utils import (
     check_rm_file_on_storage,
     check_rmdir_on_storage,
     check_upload_file_to_storage,
+    format_list,
 )
 
 

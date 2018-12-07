@@ -1,4 +1,3 @@
-import os
 import re
 from os.path import join
 from time import sleep
@@ -14,6 +13,7 @@ RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\nauth: {token}"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 format_list = "{type:<15}{size:<15,}{name:<}".format
 format_list_pattern = "(file|directory)\s*\d+\s*{name}".format
+
 
 def hash_hex(file):
     _hash = sha1()
@@ -32,6 +32,7 @@ def attempt(attempts: int = 4, sleep_time: float = 15.0):
     :param sleep_time:
     :return:
     """
+
     def _attempt(func, *args, **kwargs):
         def wrapped(*args, **kwargs):
             nonlocal attempts
