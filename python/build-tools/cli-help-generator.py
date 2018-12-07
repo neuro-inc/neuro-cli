@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import string
 import os
 import re
 import sys
@@ -52,7 +53,7 @@ def parse_doc(doc, name=None) -> CommandInfo:
     parts = doc.split(info.usage, 2)
     remains = parts[1]
     remains = dedent(remains)
-    lines = re.split(r'^', remains, flags=re.MULTILINE)
+    lines = remains.splitlines(True)
     mode = "description"
     description = []
     examples = []
