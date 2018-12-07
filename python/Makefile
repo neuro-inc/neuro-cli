@@ -18,6 +18,18 @@ e2e:
 		--cov-report xml:coverage.xml \
 		tests
 
+.PHONY: _e2e
+_e2e:
+	pytest \
+	    -n auto \
+		-m "e2e" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		--cov-append \
+		tests
+
+
 .PHONY: test
 test:
 	pytest \
@@ -75,7 +87,7 @@ format:
 # of both is combined. Otherwise e2e will override unit tests with
 # lower coverage
 .PHONY: ci
-ci: lint test e2e coverage
+ci: lint test _e2e coverage
 
 .PHONY: clean
 clean:
