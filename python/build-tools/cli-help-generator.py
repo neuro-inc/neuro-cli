@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import string
 import os
 import re
 import sys
@@ -45,7 +44,7 @@ class CommandInfo:
 
 def parse_doc(doc, name=None) -> CommandInfo:
     usage = docopt.printable_usage(doc)
-    parts = re.split(r'usage\s*:', usage, maxsplit=2, flags=re.IGNORECASE)
+    parts = re.split(r"usage\s*:", usage, maxsplit=2, flags=re.IGNORECASE)
     usage = parts[1].strip()
     if not name:
         name = usage
