@@ -164,7 +164,6 @@ def test_e2e_shm_run_with(run, tmpdir):
     assert_job_state(run, job_id, "Status: failed")
 
 
-
 @pytest.mark.e2e
 def test_e2e(data, run, tmpdir):
     file, checksum = data[0]
