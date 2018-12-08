@@ -138,7 +138,7 @@ def test_e2e_shm_run_without(run, tmpdir):
 @pytest.mark.e2e
 def test_e2e_shm_run_with(run, tmpdir):
     # Start the df test job
-    bash_script = "/bin/df --block-size M ' '--output=target,avail /dev/shm | grep 64M"
+    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c {bash_script}"
     _, captured = run(
         [
