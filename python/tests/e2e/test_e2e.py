@@ -9,7 +9,7 @@ from uuid import uuid4 as uuid
 import pytest
 
 import neuromation
-from tests.e2e.test_e2e_utils import wait_for_job_to_change_state_to
+from tests.e2e.test_e2e_utils import assert_job_state, wait_for_job_to_change_state_from
 from tests.e2e.utils import (
     UBUNTU_IMAGE_NAME,
     check_create_dir_on_storage,
@@ -121,7 +121,7 @@ def test_e2e_shm_run_without(run, tmpdir):
     run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # Start the df test job
-    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm; false"
+    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
     _, captured = run(
         [
@@ -145,18 +145,13 @@ def test_e2e_shm_run_without(run, tmpdir):
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    start_time = time()
-    while ("Status: failed" not in out) and (int(time() - start_time) < 10):
-        sleep(2)
-        _, captured = run(["job", "status", job_id])
-        out = captured.out
+    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+    assert_job_state(run, job_id, "Status: succeeded")
 
     # Remove test dir
     run(["store", "rm", f"storage://{_path_src}"])
     run(["store", "rm", f"storage://{_path_dst}"])
-
-    assert "/dev/shm" in out
-    assert "64M" in out
 
 
 @pytest.mark.e2e
@@ -172,7 +167,7 @@ def test_e2e_shm_run_with(run, tmpdir):
     run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # Start the df test job
-    bash_script = "/bin/df --block-size M ' '--output=target,avail /dev/shm; false"
+    bash_script = "/bin/df --block-size M ' '--output=target,avail /dev/shm | grep 64M"
     command = f"bash -c {bash_script}"
     _, captured = run(
         [
@@ -194,17 +189,12 @@ def test_e2e_shm_run_with(run, tmpdir):
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_for_job_to_change_state_to(run, job_id, "Status: failed")
-
+    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+    assert_job_state(run, job_id, "Status: failed")
     # Remove test dir
     run(["store", "rm", f"storage://{_path_src}"])
     run(["store", "rm", f"storage://{_path_dst}"])
-
-    _, captured = run(["job", "status", job_id])
-    out = captured.out
-
-    assert "/dev/shm" in out
-    assert "64M" not in out
 
 
 @pytest.mark.e2e
