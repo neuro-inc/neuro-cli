@@ -3,7 +3,6 @@ import platform
 import re
 from math import ceil
 from os.path import join
-from time import sleep, time
 from uuid import uuid4 as uuid
 
 import pytest

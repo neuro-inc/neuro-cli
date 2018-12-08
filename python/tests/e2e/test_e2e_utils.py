@@ -10,7 +10,7 @@ JOB_WAIT_SLEEP_SECONDS = 2
 
 def assert_job_state(run, job_id, state):
     _, captured = run(["job", "status", job_id])
-    assert status in captured.out
+    assert state in captured.out
 
 
 def wait_for_job_to_change_state_from(run, job_id, str_wait, str_stop=None):
