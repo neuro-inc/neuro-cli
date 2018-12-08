@@ -139,7 +139,7 @@ def test_e2e_shm_run_without(run, tmpdir):
 def test_e2e_shm_run_with(run, tmpdir):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
-    command = f"bash -c {bash_script}"
+    command = f"bash -c '{bash_script}'"
     _, captured = run(
         [
             "job",
@@ -155,7 +155,6 @@ def test_e2e_shm_run_with(run, tmpdir):
             command,
         ]
     )
-
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
     wait_for_job_to_change_state_from(run, job_id, "Status: pending")
