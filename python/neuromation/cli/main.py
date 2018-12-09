@@ -22,7 +22,6 @@ from neuromation.cli.command_handlers import (
 )
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
-from neuromation.client.client import TimeoutSettings
 from neuromation.client.jobs import ResourceSharing
 from neuromation.logging import ConsoleWarningFormatter
 
@@ -267,7 +266,7 @@ Commands:
             # explicit file:// scheme set
             neuro store cp storage:///foo file:///foo
             """
-            timeout = TimeoutSettings(
+            timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
             storage = partial(Storage, url, token, timeout)
@@ -586,7 +585,7 @@ Commands:
 
             Monitor job output stream
             """
-            timeout = TimeoutSettings(
+            timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
             jobs = partial(Job, url, token, timeout)
