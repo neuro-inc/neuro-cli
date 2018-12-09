@@ -26,12 +26,12 @@ def command(arg):
 
 
 @command.register(types.FunctionType)
-def _(f):
+def _func(f):
     return add_command_name(f, f.__name__)
 
 
 @command.register(types.CoroutineType)
-def _(f):
+def _coro(f):
     return add_command_name(f, f.__name__)
 
 

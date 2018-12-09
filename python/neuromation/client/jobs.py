@@ -1,11 +1,9 @@
 import asyncio
 import enum
-from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from neuromation.http.fetch import FetchError, SyncStreamWrapper
 from neuromation.strings import parse
 
 from .client import ApiClient
