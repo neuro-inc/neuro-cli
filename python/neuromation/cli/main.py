@@ -3,7 +3,6 @@ import os
 import sys
 from functools import partial
 from pathlib import Path
-from typing import Union
 from urllib.parse import urlparse
 
 import aiohttp
