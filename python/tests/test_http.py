@@ -4,7 +4,7 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 
-from neuromation.client.client import ApiClient, TimeoutSettings
+from neuromation.client.client import ApiClient
 from neuromation.client.requests import build
 from neuromation.http import FetchError, JsonRequest, PlainRequest, fetch, session
 from tests.utils import BinaryResponse
@@ -102,7 +102,7 @@ def test_call_session_with_token(build, loop):
 
 def test_session_with_timeout_api_client(loop):
     with mock.patch("aiohttp.ClientSession") as runMock:
-        timeout = TimeoutSettings(total=1, connect=2, sock_connect=3, sock_read=4)
+        timeout = aiohttp.ClientTimeout(total=1, connect=2, sock_connect=3, sock_read=4)
         ApiClient(url="no-url", token="", timeout=timeout)
         client_timeout = aiohttp.ClientTimeout(
             total=1, connect=2, sock_connect=3, sock_read=4
@@ -114,7 +114,7 @@ def test_session_with_timeout_api_client(loop):
 
 def test_session_without_timeout_api_client(loop):
     with mock.patch("aiohttp.ClientSession") as runMock:
-        timeout = TimeoutSettings(
+        timeout = aiohttp.ClientTimeout(
             total=5 * 60, connect=None, sock_connect=None, sock_read=None
         )
         ApiClient(url="no-url", token="", timeout=timeout)
