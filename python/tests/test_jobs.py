@@ -45,23 +45,6 @@ def test_kill_already_killed_job_error(jobs):
 
 @patch(
     "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(
-        JsonResponse(
-            {"error": "blah!"},
-            error=aiohttp.ClientResponseError(
-                request_info=None, history=None, status=404, message="ah!"
-            ),
-        )
-    ),
-)
-def test_monitor_notexistent_job(jobs):
-    with pytest.raises(ResourceNotFound):
-        with jobs.monitor("blah") as stream:
-            stream.read()
-
-
-@patch(
-    "aiohttp.ClientSession.request",
     new=mocked_async_context_manager(BinaryResponse(data=None, status=204)),
 )
 def test_kill(jobs):
@@ -559,20 +542,3 @@ def test_list_extended_output_no_image(jobs):
         headers=None,
         data=None,
     )
-
-
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(BinaryResponse(data=b"bar")),
-)
-def test_monitor(jobs):
-    with jobs.monitor(id="1") as f:
-        assert f.read() == b"bar"
-        aiohttp.ClientSession.request.assert_called_with(
-            method="GET",
-            url="http://127.0.0.1/jobs/1/log",
-            params=None,
-            headers={"Accept-Encoding": "identity"},
-            json=None,
-            data=None,
-        )
