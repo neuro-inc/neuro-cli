@@ -10,7 +10,6 @@ from .client import ApiClient
 from .requests import (
     ContainerPayload,
     InferRequest,
-    JobKillRequest,
     JobListRequest,
     JobStatusRequest,
     JobSubmissionRequest,
@@ -254,14 +253,6 @@ class Job(ApiClient):
     def list(self) -> List[JobDescription]:
         res = self._fetch_sync(JobListRequest())
         return [self._dict_to_description_with_history(job) for job in res["jobs"]]
-
-    def kill(self, id: str) -> str:
-        """
-        the method returns None when the server has responded
-        with HTTPNoContent in case of successful job deletion,
-        and the text response otherwise (possibly empty).
-        """
-        return self._fetch_sync(JobKillRequest(id=id))
 
     def status(self, id: str) -> JobDescription:
         res = self._fetch_sync(JobStatusRequest(id=id))

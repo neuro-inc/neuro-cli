@@ -1,63 +1,9 @@
 from unittest.mock import patch
 
 import aiohttp
-import pytest
 
-from neuromation.client import ResourceNotFound
 from neuromation.client.jobs import JobDescription, JobStatusHistory, Resources
-from tests.utils import Response
-from utils import BinaryResponse, JsonResponse, mocked_async_context_manager
-
-
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(
-        JsonResponse(
-            {"error": "blah!"},
-            error=aiohttp.ClientResponseError(
-                request_info=None, history=None, status=404, message="ah!"
-            ),
-        )
-    ),
-)
-def test_kill_not_found_error(jobs):
-    with pytest.raises(ResourceNotFound):
-        jobs.kill("blah")
-
-
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(
-        Response(payload="Job blah is not running", status=410)
-    ),
-)
-def test_kill_already_killed_job_error(jobs):
-    assert jobs.kill("blah") == "Job blah is not running"
-    aiohttp.ClientSession.request.assert_called_with(
-        method="DELETE",
-        url="http://127.0.0.1/jobs/blah",
-        params=None,
-        headers=None,
-        data=None,
-        json=None,
-    )
-
-
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(BinaryResponse(data=None, status=204)),
-)
-def test_kill(jobs):
-    assert jobs.kill("1") is None  # success
-
-    aiohttp.ClientSession.request.assert_called_with(
-        method="DELETE",
-        url="http://127.0.0.1/jobs/1",
-        params=None,
-        headers=None,
-        data=None,
-        json=None,
-    )
+from utils import JsonResponse, mocked_async_context_manager
 
 
 @patch(
