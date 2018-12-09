@@ -1,8 +1,11 @@
 import types
+from asyncio import iscoroutine
 from functools import singledispatch
 from textwrap import dedent
 
 import docopt
+
+from neuromation.utils import run
 
 
 def add_command_name(f, name):
@@ -23,6 +26,11 @@ def command(arg):
 
 
 @command.register(types.FunctionType)
+def _(f):
+    return add_command_name(f, f.__name__)
+
+
+@command.register(types.CoroutineType)
 def _(f):
     return add_command_name(f, f.__name__)
 
@@ -117,6 +125,8 @@ def dispatch(target, tail, format_spec=None, **kwargs):
             raise ValueError(f'Invalid arguments: {" ".join(tail)}')
 
         res = target(**{**normalize_options(options, stack + ["COMMAND"]), **kwargs})
+        if iscoroutine(res):
+            res = run(res)
         # Don't pass to tested commands, they will be available through
         # closure anyways
         kwargs = {}
