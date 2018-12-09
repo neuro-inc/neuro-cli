@@ -7,7 +7,7 @@ from neuromation.clientv2 import ClientV2
 
 async def test_jobs_monitor(aiohttp_server):
     async def log_stream(request):
-        assert request.headers['Accept-Encoding'] == 'identity'
+        assert request.headers["Accept-Encoding"] == "identity"
         resp = web.StreamResponse()
         resp.enable_chunked_encoding()
         resp.enable_compression(web.ContentCoding.identity)
