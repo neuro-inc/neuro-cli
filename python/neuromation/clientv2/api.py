@@ -41,7 +41,7 @@ class API:
         self, method: str, rel_url: URL, headers: Optional[Dict[str, str]] = None
     ) -> aiohttp.ClientResponse:
         assert not rel_url.is_absolute()
-        url = (self._url / '').join(rel_url)
+        url = (self._url / "").join(rel_url)
         async with self._session.request(method, url, headers=headers) as resp:
             try:
                 resp.raise_for_status()
