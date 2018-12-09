@@ -39,9 +39,7 @@ class Jobs:
         and the text response otherwise (possibly empty).
         """
         url = URL(f"jobs/{id}")
-        async with self._api.request(
-            "DELETE", url
-        ):
+        async with self._api.request("DELETE", url):
             # an error is raised for status >= 400
             return None  # 201 status code
 
