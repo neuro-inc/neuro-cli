@@ -1,5 +1,6 @@
 import aiohttp
-from typing import Union
+from types import TracebackType
+from typing import Union, Type, Optional
 from yarl import URL
 
 from .api import API
@@ -24,6 +25,17 @@ class ClientV2:
 
     async def close(self) -> None:
         await self._api.close()
+
+    async def __aenter__(self) -> "ClientV2":
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]] = None,
+        exc_val: Optional[BaseException] = None,
+        exc_tb: Optional[TracebackType] = None,
+    ) -> None:
+        await self.close()
 
     @property
     def jobs(self) -> Jobs:

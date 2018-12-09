@@ -590,11 +590,11 @@ Commands:
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
 
-            client = ClientV2(url, token, timeout=timeout)
-            async for chunk in client.jobs.monitor(id):
-                if not chunk:
-                    break
-                sys.stdout.write(chunk.decode(errors="ignore"))
+            async with ClientV2(url, token, timeout=timeout) as client:
+                async for chunk in client.jobs.monitor(id):
+                    if not chunk:
+                        break
+                    sys.stdout.write(chunk.decode(errors="ignore"))
 
         @command
         def list(status, description, quiet):
