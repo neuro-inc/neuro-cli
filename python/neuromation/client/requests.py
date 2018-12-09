@@ -205,11 +205,6 @@ class JobKillRequest(JobRequest):
 
 
 @dataclass(frozen=True)
-class JobMonitorRequest(JobRequest):
-    id: str
-
-
-@dataclass(frozen=True)
 class StorageRequest(Request):
     def to_http_request(self) -> http.Request:  # pragma: no cover
         raise NotImplementedError
@@ -302,17 +297,6 @@ def build(request: Request) -> http.Request:
             url=f"/jobs/{request.id}",
             params=None,
             method="DELETE",
-            json=None,
-            data=None,
-        )
-    elif isinstance(request, JobMonitorRequest):
-        return http.StreamRequest(
-            url=f"/jobs/{request.id}/log",
-            params=None,
-            method="GET",
-            headers={
-                "Accept-Encoding": "identity"  # Needed to prevent træfik from buffering
-            },
             json=None,
             data=None,
         )

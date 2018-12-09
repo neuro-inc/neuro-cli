@@ -30,7 +30,8 @@ def run(main, *, debug=False):
         current_loop = asyncio.get_event_loop()
         if current_loop.is_running():
             raise RuntimeError(
-                "asyncio.run() cannot be called from a running event loop")
+                "asyncio.run() cannot be called from a running event loop"
+            )
     except RuntimeError:
         # there is no current loop
         pass
@@ -61,19 +62,22 @@ def _cancel_all_tasks(loop):
         task.cancel()
 
     loop.run_until_complete(
-        asyncio.gather(*to_cancel, loop=loop, return_exceptions=True))
+        asyncio.gather(*to_cancel, loop=loop, return_exceptions=True)
+    )
 
     for task in to_cancel:
         if task.cancelled():
             continue
         if task.exception() is not None:
-            loop.call_exception_handler({
-                'message': 'unhandled exception during asyncio.run() shutdown',
-                'exception': task.exception(),
-                'task': task,
-            })
+            loop.call_exception_handler(
+                {
+                    "message": "unhandled exception during asyncio.run() shutdown",
+                    "exception": task.exception(),
+                    "task": task,
+                }
+            )
 
 
 if sys.version_info >= (3, 7):
     # Use system asyncio.run()
-    run = asyncio.run   # noqa
+    run = asyncio.run  # noqa

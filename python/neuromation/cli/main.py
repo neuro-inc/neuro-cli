@@ -23,7 +23,9 @@ from neuromation.cli.command_handlers import (
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
 from neuromation.client.jobs import ResourceSharing
+from neuromation.clientv2 import ClientV2
 from neuromation.logging import ConsoleWarningFormatter
+from neuromation.utils import run
 
 from . import rc
 from .commands import command, dispatch
@@ -585,18 +587,18 @@ Commands:
 
             Monitor job output stream
             """
+            run(_monitor(id))
+
+        async def _monitor(id):
             timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
-            jobs = partial(Job, url, token, timeout)
 
-            with jobs() as j:
-                with j.monitor(id) as stream:
-                    while True:
-                        chunk = stream.read()
-                        if not chunk:
-                            break
-                        sys.stdout.write(chunk.decode(errors="ignore"))
+            client = ClientV2(url, token, timeout=timeout)
+            async for chunk in client.monitor(id):
+                if not chunk:
+                    break
+                sys.stdout.write(chunk.decode(errors="ignore"))
 
         @command
         def list(status, description, quiet):

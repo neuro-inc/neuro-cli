@@ -14,7 +14,6 @@ from .requests import (
     InferRequest,
     JobKillRequest,
     JobListRequest,
-    JobMonitorRequest,
     JobStatusRequest,
     JobSubmissionRequest,
     ResourcesPayload,
@@ -265,16 +264,6 @@ class Job(ApiClient):
         and the text response otherwise (possibly empty).
         """
         return self._fetch_sync(JobKillRequest(id=id))
-
-    @contextmanager
-    def monitor(self, id: str) -> Iterator[SyncStreamWrapper]:
-        try:
-            with self._fetch_sync(JobMonitorRequest(id=id)) as content:
-                yield content
-        except FetchError as error:
-            error_class = type(error)
-            mapped_class = self._exception_map.get(error_class, error_class)
-            raise mapped_class(error) from error
 
     def status(self, id: str) -> JobDescription:
         res = self._fetch_sync(JobStatusRequest(id=id))
