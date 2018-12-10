@@ -4,8 +4,8 @@ SHELL := /bin/bash
 
 .PHONY: init
 init:
+	cp -n README.in.md README.md
 	pip install -r requirements.txt
-	cp README.in.md README.md
 	pip install -e .
 	cp .hooks/* ../.git/hooks
 .PHONY: e2e

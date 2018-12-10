@@ -4,6 +4,7 @@ import sys
 from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
+
 import aiohttp
 
 import neuromation
@@ -822,6 +823,7 @@ Commands:
         pass
 
     return locals()
+
 
 def main():
     is_verbose = "--verbose" in sys.argv
