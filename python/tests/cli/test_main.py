@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from neuromation.cli import rc
+from neuromation.cli.defaults import DEFAULTS
 from neuromation.cli.commands import dispatch
 from neuromation.cli.main import neuro
 from neuromation.client import FileStatus
@@ -11,7 +12,9 @@ from neuromation.client import FileStatus
 @pytest.fixture
 def dispatch_mocked(mocked_jobs):
     config = rc.ConfigFactory.load()
-    format_spec = {"api_url": config.url, "username": "test-user"}
+    format_spec = DEFAULTS.copy()
+    format_spec["username"] = 'test-user'
+    format_spec["api_url"] = config.url
 
     def _dispatch(args):
         return dispatch(
