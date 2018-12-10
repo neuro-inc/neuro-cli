@@ -44,7 +44,7 @@
 Welcome to Neuromation API Python client.
 Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) you can:
 * [Execute and debug jobs](#neuro-job)
-* [Manipulate Data](#neuro-storage)
+* [Manipulate Data](#neuro-store)
 * Make some fun
 
 # neuro
@@ -57,10 +57,12 @@ neuro [options] COMMAND
 
 **Options:**
 
-* _-u, --url URL_: Override API URL [default: http://platform.dev.neuromation.io/api/v1]
-* _-t, --token TOKEN_: API authentication token (not implemented)
-* _--verbose_: Enable verbose logging
-* _-v, --version_: Print version and exit
+Name | Description|
+|----|------------|
+|_\-u, -\-url URL_|Override API URL \[default: http://platform.dev.neuromation.io/api/v1\]|
+|_\-t, -\-token TOKEN_|API authentication token \(not implemented\)|
+|_--verbose_|Enable verbose logging|
+|_\-v, -\-version_|Print version and exit|
 
 
 **Commands:**
@@ -107,9 +109,7 @@ neuro model COMMAND
 
 ### neuro model train
 
-Start training job using model from IMAGE, dataset from DATASET and
-store output weights in RESULTS.
-COMMANDS list will be passed as commands to model container.
+Start training job using model from IMAGE, dataset from DATASET and<br/>store output weights in RESULTS.<br/>COMMANDS list will be passed as commands to model container.
 
 **Usage:**
 
@@ -119,15 +119,17 @@ neuro model train [options] IMAGE DATASET RESULTS [CMD...]
 
 **Options:**
 
-* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
-* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
-* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
-* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
-* _-x, --extshm_: Request extended '/dev/shm' space
-* _--http NUMBER_: Enable HTTP port forwarding to container
-* _--ssh NUMBER_: Enable SSH port forwarding to container
-* _-d, --description DESC_: Add optional description to the job
-* _-q, --quiet_: Run command in quiet mode (print only job id)
+Name | Description|
+|----|------------|
+|_\-g, -\-gpu NUMBER_|Number of GPUs to request \[default: 1\]|
+|_\--gpu\-model MODEL_|GPU to use \[default: nvidia\-tesla\-k80\]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla\-v100.|
+|_\-c, -\-cpu NUMBER_|Number of CPUs to request \[default: 1.0\]|
+|_\-m, -\-memory AMOUNT_|Memory amount to request \[default: 16G\]|
+|_\-x, -\-extshm_|Request extended '/dev/shm' space|
+|_--http NUMBER_|Enable HTTP port forwarding to container|
+|_--ssh NUMBER_|Enable SSH port forwarding to container|
+|_\-d, -\-description DESC_|Add optional description to the job|
+|_\-q, -\-quiet_|Run command in quiet mode \(print only job id\)|
 
 
 
@@ -146,8 +148,7 @@ Not implemented
 
 ### neuro model debug
 
-Starts ssh terminal connected to running job.
-Job should be started with SSH support enabled.
+Starts ssh terminal connected to running job.<br/>Job should be started with SSH support enabled.
 
 **Usage:**
 
@@ -157,7 +158,9 @@ neuro model debug [options] ID
 
 **Options:**
 
-* _--localport NUMBER_: Local port number for debug [default: 31234]
+Name | Description|
+|----|------------|
+|_--localport NUMBER_|Local port number for debug \[default: 31234\]|
 
 
 **Examples:**
@@ -196,8 +199,7 @@ neuro job COMMAND
 
 ### neuro job submit
 
-Start job using IMAGE
-COMMANDS list will be passed as commands to model container.
+Start job using IMAGE<br/>COMMANDS list will be passed as commands to model container.
 
 **Usage:**
 
@@ -207,17 +209,19 @@ neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
 
 **Options:**
 
-* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
-* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
-* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
-* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
-* _-x, --extshm_: Request extended '/dev/shm' space
-* _--http NUMBER_: Enable HTTP port forwarding to container
-* _--ssh NUMBER_: Enable SSH port forwarding to container
-* _--volume MOUNT..._: Mounts directory from vault into container
-* _--preemptible_: Run job on a lower-cost preemptible instance
-* _-d, --description DESC_: Add optional description to the job
-* _-q, --quiet_: Run command in quiet mode
+Name | Description|
+|----|------------|
+|_\-g, -\-gpu NUMBER_|Number of GPUs to request \[default: 1\]|
+|_\--gpu\-model MODEL_|GPU to use \[default: nvidia\-tesla\-k80\]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla\-v100.|
+|_\-c, -\-cpu NUMBER_|Number of CPUs to request \[default: 1.0\]|
+|_\-m, -\-memory AMOUNT_|Memory amount to request \[default: 16G\]|
+|_\-x, -\-extshm_|Request extended '/dev/shm' space|
+|_--http NUMBER_|Enable HTTP port forwarding to container|
+|_--ssh NUMBER_|Enable SSH port forwarding to container|
+|_--volume MOUNT..._|Mounts directory from vault into container|
+|_--preemptible_|Run job on a lower-cost preemptible instance|
+|_\-d, -\-description DESC_|Add optional description to the job|
+|_\-q, -\-quiet_|Run command in quiet mode|
 
 
 **Examples:**
@@ -259,9 +263,11 @@ neuro job list [options]
 
 **Options:**
 
-* _-s, --status (pending|running|succeeded|failed|all)_: None
-* _-d, --description DESCRIPTION_: None
-* _-q, --quiet_: None
+Name | Description|
+|----|------------|
+|_\-s, -\-status \(pending|running|succeeded|failed|all\)_|<br/>Filter out job by status\(es\) \(comma delimited if multiple\)|
+|_\-d, -\-description DESCRIPTION_|<br/>Filter out job by job description \(exact match\)|
+|_\-q, -\-quiet_|<br/>Run command in quiet mode \(print only job ids\)<br/>List all jobs|
 
 
 **Examples:**
@@ -288,7 +294,7 @@ neuro job status ID
 
 ### neuro job kill
 
-Kill job(s)
+Kill job\(s\)
 
 **Usage:**
 
@@ -300,8 +306,7 @@ neuro job kill JOB_IDS...
 
 ### neuro job ssh
 
-Starts ssh terminal connected to running job.
-Job should be started with SSH support enabled.
+Starts ssh terminal connected to running job.<br/>Job should be started with SSH support enabled.
 
 **Usage:**
 
@@ -311,8 +316,10 @@ neuro job ssh [options] ID
 
 **Options:**
 
-* _--user STRING_: Container user name [default: root]
-* _--key STRING_: Path to container private key.
+Name | Description|
+|----|------------|
+|_--user STRING_|Container user name \[default: root\]|
+|_--key STRING_|Path to container private key.|
 
 
 **Examples:**
@@ -369,8 +376,7 @@ neuro store rm storage://username/foo/bar/
 
 ### neuro store ls
 
-List directory contents
-By default PATH is equal user`s home dir (storage:)
+List directory contents<br/>By default PATH is equal user`s home dir \(storage:\)
 
 **Usage:**
 
@@ -382,9 +388,7 @@ neuro store ls [PATH]
 
 ### neuro store cp
 
-Copy files and directories
-Either SOURCE or DESTINATION should have storage:// scheme.
-If scheme is omitted, file:// scheme is assumed.
+Copy files and directories<br/>Either SOURCE or DESTINATION should have storage:// scheme.<br/>If scheme is omitted, file:// scheme is assumed.
 
 **Usage:**
 
@@ -394,8 +398,10 @@ neuro store cp [options] SOURCE DESTINATION
 
 **Options:**
 
-* _-r, --recursive_: Recursive copy
-* _-p, --progress_: Show progress
+Name | Description|
+|----|------------|
+|_\-r, -\-recursive_|Recursive copy|
+|_\-p, -\-progress_|Show progress|
 
 
 **Examples:**
@@ -413,9 +419,7 @@ neuro store cp storage:///foo file:///foo
 
 ### neuro store mv
 
-Move or rename files and directories. SOURCE must contain path to the
-file or directory existing on the storage, and DESTINATION must contain
-the full path to the target file or directory.
+Move or rename files and directories. SOURCE must contain path to the<br/>file or directory existing on the storage, and DESTINATION must contain<br/>the full path to the target file or directory.
 
 **Usage:**
 
@@ -559,10 +563,7 @@ neuro config forget
 
 ### neuro config id_rsa
 
-Updates path to id_rsa file with private key.
-File is being used for accessing remote shell, remote debug.
-Note: this is temporal and going to be
-replaced in future by JWT token.
+Updates path to id_rsa file with private key.<br/>File is being used for accessing remote shell, remote debug.<br/>Note: this is temporal and going to be<br/>replaced in future by JWT token.
 
 **Usage:**
 
@@ -608,8 +609,7 @@ Adding eval $(neuro completion generate) to
 
 ### neuro completion generate
 
-Generate code enabling bash-completion.
-eval $(
+Generate code enabling bash-completion.<br/>eval $(
 
 **Usage:**
 
@@ -633,8 +633,7 @@ neuro completion patch
 
 ## neuro share
 
-Shares resource specified by URI to a user specified by WHOM
-allowing to read, write or manage it.
+Shares resource specified by URI to a user specified by WHOM<br/>allowing to read, write or manage it.
 
 **Usage:**
 

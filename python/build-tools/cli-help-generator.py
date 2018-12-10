@@ -64,12 +64,15 @@ def parse_doc(doc, name=None) -> CommandInfo:
         if not line.strip():
             continue
         # it`s like as option
-        if re.match(r"^\s*-[-\w\d]+", line):
-            mode = "options"
+        if (mode == "options" or mode == "option") and re.match(r"^\s*-[-\w\d]+", line):
+            mode = "option"
             parts = re.split(r"\s{2,}", line.strip(), maxsplit=2)
             option = Option(pattern=parts[0])
             if len(parts) == 2:
                 option.description = parts[1].strip()
+            else:
+                # Description will starts from next line
+                option.description = ""
             info.options.append(option)
         # just options block, special case
         elif re.match(r"options:\s*", line, flags=re.IGNORECASE):
@@ -89,7 +92,7 @@ def parse_doc(doc, name=None) -> CommandInfo:
         elif mode == "examples":
             examples.append(line.strip())
         elif mode == "option":
-            description.append(line.strip())
+            option.description += "\n" + line.strip()
         elif mode == "arguments":
             ident = len(line) - len(line.lstrip())
             match = re.match(r"\s*(\w+)\s*(.+)*", line)
@@ -146,15 +149,34 @@ def parse_command(command, format_spec, stack) -> CommandInfo:
 
 
 def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
-    def fix_eol(text):
-        return re.sub(r"[\n\r]+", "\n\n", text)
+    def simple_escape_line(text: str) -> str:
+        escaped = re.sub(r"\*(\S[^*]*)\*", r"\\*\1\\*", text)
+        escaped = re.sub(r"\-(\S[^*]*)\-", r"\\-\1\\-", escaped)
+        escaped = re.sub(r"\_(\S[^*]*)\_", r"\\_\1\\_", escaped)
+        escaped = re.sub(r"\[(\S[^\]]*)\]", r"\\[\1\\]", escaped)
+        escaped = re.sub(r"\((\S[^)]*)\)", r"\\(\1\\)", escaped)
+
+        return escaped
+
+    def escape(text: str) -> str:
+        # escaped = text.replace('\\', '\\\\')
+        escaped = []
+        lines = text.splitlines()
+        for line in lines:
+            before = line
+            after = simple_escape_line(line)
+            while before != after:
+                before = after
+                after = simple_escape_line(line)
+            escaped.append(after)
+        return "<br/>".join(escaped)
 
     md = ""
     md += f"{header_prefix}# {info.name}"
     md += "\n\n"
 
     if info.description:
-        md += info.description
+        md += escape(info.description)
         md += "\n\n"
 
     if info.usage:
@@ -165,8 +187,11 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
 
     if info.options:
         md += "**Options:**\n\n"
+        md += "Name | Description|\n"
+        md += "|----|------------|\n"
         for option in info.options:
-            md += f"* _{option.pattern}_: {option.description}\n"
+            md += f"|_{escape(option.pattern)}_|{escape(option.description)}|\n"
+
         md += "\n\n"
 
     for argument in info.arguments:
@@ -227,16 +252,13 @@ def main():
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    try:
-        with open(input_file, "r") as input:
-            with open(output_file, "w") as output:
-                template = input.read()
-                info = parse_command(neuro, DEFAULTS, ["neuro"])
-                cli_doc = generate_command_markdown(info, "")
-                generated_md = template.format(cli_doc=cli_doc)
-                output.write(generated_md)
-    except BaseException as error:
-        print(error)
+    with open(input_file, "r") as input:
+        with open(output_file, "w") as output:
+            template = input.read()
+            info = parse_command(neuro, DEFAULTS, ["neuro"])
+            cli_doc = generate_command_markdown(info, "")
+            generated_md = template.format(cli_doc=cli_doc)
+            output.write(generated_md)
 
 
 if __name__ == "__main__":
