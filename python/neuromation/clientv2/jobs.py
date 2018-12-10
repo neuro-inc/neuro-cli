@@ -38,7 +38,10 @@ class Jobs:
         with HTTPNoContent in case of successful job deletion,
         and the text response otherwise (possibly empty).
         """
-        raise NotImplementedError
+        url = URL(f"jobs/{id}")
+        async with self._api.request("DELETE", url):
+            # an error is raised for status >= 400
+            return None  # 201 status code
 
     async def monitor(
         self, id: str

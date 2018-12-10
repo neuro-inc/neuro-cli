@@ -3,7 +3,6 @@ import os
 import sys
 from functools import partial
 from pathlib import Path
-from typing import Union
 from urllib.parse import urlparse
 
 import aiohttp
@@ -636,30 +635,25 @@ Commands:
             return JobStatusFormatter.format_job_status(res)
 
         @command
-        def kill(job_ids):
+        async def kill(job_ids):
             """
             Usage:
                 neuro job kill JOB_IDS...
 
             Kill job(s)
             """
-            already_deads, errors = [], []
-            with jobs() as j:
+            errors = []
+            async with ClientV2(url, token) as client:
                 for job in job_ids:
                     try:
-                        error = j.kill(job)
-                        if error is None:  # success
-                            print(job)
-                        else:
-                            already_deads.append((job, error))
+                        await client.jobs.kill(job)
+                        print(job)
                     except ValueError as e:
                         errors.append((job, e))
 
-            def format_fail(job: str, reason: Union[str, Exception]) -> str:
+            def format_fail(job: str, reason: Exception) -> str:
                 return f"Cannot kill job {job}: {reason}"
 
-            for job, reason in already_deads:
-                print(format_fail(job, reason))
             for job, error in errors:
                 print(format_fail(job, error))
 

@@ -22,9 +22,9 @@ async def test_jobs_monitor(aiohttp_server):
     srv = await aiohttp_server(app)
 
     lst = []
-    client = ClientV2(srv.make_url("/"), "token")
-    async for data in client.jobs.monitor("job-id"):
-        lst.append(data)
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        async for data in client.jobs.monitor("job-id"):
+            lst.append(data)
 
     assert b"".join(lst) == b"".join(
         [
@@ -43,13 +43,46 @@ async def test_jobs_monitor(aiohttp_server):
 
 
 async def test_monitor_notexistent_job(aiohttp_server):
+    async def handler(request):
+        raise web.HTTPNotFound()
+
     app = web.Application()
+    app.router.add_get("/jobs/job-id/log", handler)
 
     srv = await aiohttp_server(app)
 
     lst = []
-    client = ClientV2(srv.make_url("/"), "token")
-    with pytest.raises(ResourceNotFound):
-        async for data in client.jobs.monitor("job-id"):
-            lst.append(data)
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        with pytest.raises(ResourceNotFound):
+            async for data in client.jobs.monitor("job-id"):
+                lst.append(data)
     assert lst == []
+
+
+async def test_kill_not_found_error(aiohttp_server):
+    async def handler(request):
+        raise web.HTTPNotFound()
+
+    app = web.Application()
+    app.router.add_delete("/jobs/job-id", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        with pytest.raises(ResourceNotFound):
+            await client.jobs.kill("job-id")
+
+
+async def test_kill(aiohttp_server):
+    async def handler(request):
+        raise web.HTTPNoContent()
+
+    app = web.Application()
+    app.router.add_delete("/jobs/job-id", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        ret = await client.jobs.kill("job-id")
+
+    assert ret is None
