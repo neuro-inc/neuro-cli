@@ -662,6 +662,13 @@ Display help for given COMMAND
 neuro help COMMAND [SUBCOMMAND[...]]
 ```
 
+**Examples:**
+
+```bash
+neuro help store
+neuro help store ls
+```
+
 
 
 # Api

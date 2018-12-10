@@ -129,7 +129,7 @@ Commands:
 
             Updates settings with provided platform URL.
 
-            Example:
+            Examples:
             neuro config url http://platform.neuromation.io/api/v1
             """
             rc.ConfigFactory.update_api_url(url)
@@ -216,7 +216,7 @@ Commands:
 
             Remove files or directories.
 
-            Example:
+            Examples:
             neuro store rm storage:///foo/bar/
             neuro store rm storage:/foo/bar/
             neuro store rm storage://{username}/foo/bar/
@@ -263,7 +263,7 @@ Commands:
               -r, --recursive             Recursive copy
               -p, --progress              Show progress
 
-            Example:
+            Examples:
 
             # copy local file ./foo into remote storage root
             neuro store cp ./foo storage:///
@@ -315,7 +315,7 @@ Commands:
             the full path to the target file or directory.
 
 
-            Example:
+            Examples:
 
             # move or rename remote file
             neuro store mv storage://{username}/foo.txt storage://{username}/bar.txt
@@ -428,7 +428,7 @@ Commands:
                 --localport NUMBER    Local port number for debug \
 [default: {model_debug_local_port}]
 
-            Example:
+            Examples:
             neuro model debug --localport 12789 job-abc-def-ghk
             """
             config: Config = rc.ConfigFactory.load()
@@ -583,7 +583,7 @@ Commands:
                 --user STRING         Container user name [default: {job_ssh_user}]
                 --key STRING          Path to container private key.
 
-            Example:
+            Examples:
             neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
             """
             config: Config = rc.ConfigFactory.load()
@@ -629,7 +629,7 @@ Commands:
 
             List all jobs
 
-            Example:
+            Examples:
             neuro job list --description="my favourite job"
             neuro job list --status=all
             neuro job list --status=pending,running --quiet
@@ -739,7 +739,7 @@ Commands:
             Shares resource specified by URI to a user specified by WHOM
              allowing to read, write or manage it.
 
-            Example:
+            Examples:
             neuro share storage:///sample_data/ alice manage
             neuro share image:///resnet50 bob read
             neuro share job:///my_job_id alice write
@@ -819,6 +819,11 @@ Commands:
                 neuro help COMMAND [SUBCOMMAND[...]]
 
             Display help for given COMMAND
+
+            Examples:
+                neuro help store
+                neuro help store ls
+
         """
         pass
 
