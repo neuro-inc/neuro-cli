@@ -3,7 +3,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.client import ResourceNotFound
-from neuromation.clientv2 import ClientV2, JobDescription, JobStatusHistory, JobStatus
+from neuromation.clientv2 import ClientV2, JobDescription, JobStatus, JobStatusHistory
 
 
 async def test_jobs_monitor(aiohttp_server):
