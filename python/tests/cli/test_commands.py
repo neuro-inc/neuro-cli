@@ -239,7 +239,7 @@ def test_commands():
     assert set(commands(scope=_person(None, None, None, None, None))) == {
         "absent",
         "work",
-        "rest"
+        "rest",
     }
 
     assert set(commands(scope=zombie())) == {"eat", "fail", "party", "dance"}
