@@ -128,6 +128,7 @@ class JobStatus(str, enum.Enum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    UNKNOWN = "unknown"  # invalid status code, a default value is status is not sent
 
 
 class ResourceSharing(ApiClient):
