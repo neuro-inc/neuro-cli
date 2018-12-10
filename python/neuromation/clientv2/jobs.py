@@ -110,12 +110,8 @@ class Jobs:
         job_resources = None
 
         if "container" in res:
-            job_container_image = (
-                res["container"]["image"] if "image" in res["container"] else None
-            )
-            job_command = (
-                res["container"]["command"] if "command" in res["container"] else None
-            )
+            job_container_image = res["container"].get("image", None)
+            job_command = res["container"].get("command", None)
 
             if "resources" in res["container"]:
                 container_resources = res["container"]["resources"]
