@@ -5,7 +5,7 @@ from yarl import URL
 
 from neuromation.client.jobs import (
     Image,
-    JobStatusHistory,
+    JobStatus,
     NetworkPortForwarding,
     Resources,
     VolumeDescriptionPayload,
@@ -15,8 +15,18 @@ from .api import API
 
 
 @dataclass(frozen=True)
+class JobStatusHistory:
+    status: JobStatus
+    reason: str
+    description: str
+    created_at: str
+    started_at: str
+    finished_at: str
+
+
+@dataclass(frozen=True)
 class JobDescription:
-    status: str
+    status: JobStatus
     id: str
     image: Optional[str] = None
     command: Optional[str] = None
@@ -84,7 +94,7 @@ class Jobs:
         job_history = None
         if "history" in res:
             job_history = JobStatusHistory(
-                status=res["history"].get("status", ""),
+                status=JobStatus(res["history"].get("status", "unknown")),
                 reason=res["history"].get("reason", ""),
                 description=res["history"].get("description", ""),
                 created_at=res["history"].get("created_at", ""),
@@ -131,7 +141,7 @@ class Jobs:
         job_owner = res.get("owner", None)
         return JobDescription(
             id=res["id"],
-            status=res["status"],
+            status=JobStatus(res["status"]),
             image=job_container_image,
             command=job_command,
             resources=job_resources,

@@ -8,6 +8,7 @@ from .jobs import (
     Jobs,
     Image,
     JobDescription,
+    JobStatus,
     JobStatusHistory,
     NetworkPortForwarding,
     Resources,
@@ -17,6 +18,7 @@ from .jobs import (
 __all__ = (
     "Image",
     "JobDescription",
+    "JobStatus",
     "JobStatusHistory",
     "NetworkPortForwarding",
     "Resources",

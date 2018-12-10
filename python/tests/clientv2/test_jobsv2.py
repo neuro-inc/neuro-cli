@@ -3,7 +3,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.client import ResourceNotFound
-from neuromation.clientv2 import ClientV2, JobDescription, JobStatusHistory
+from neuromation.clientv2 import ClientV2, JobDescription, JobStatusHistory, JobStatus
 
 
 async def test_jobs_monitor(aiohttp_server):
@@ -116,13 +116,13 @@ async def test_status_failed(aiohttp_server):
 
     assert ret == JobDescription(
         id="job-id",
-        status="failed",
+        status=JobStatus.FAILED,
         description="This is job description, not a history description",
         history=JobStatusHistory(
             created_at="2018-08-29T12:23:13.981621+00:00",
             started_at="2018-08-29T12:23:15.988054+00:00",
             finished_at="2018-08-29T12:59:31.427795+00:00",
-            status="",
+            status=JobStatus.UNKNOWN,
             reason="ContainerCannotRun",
             description="Not enough coffee",
         ),
@@ -158,13 +158,13 @@ async def test_status_with_ssh_and_http(aiohttp_server):
 
     assert ret == JobDescription(
         id="job-id",
-        status="running",
+        status=JobStatus.RUNNING,
         description="This is job description, not a history description",
         history=JobStatusHistory(
             created_at="2018-08-29T12:23:13.981621+00:00",
             started_at="2018-08-29T12:23:15.988054+00:00",
             finished_at="2018-08-29T12:59:31.427795+00:00",
-            status="",
+            status=JobStatus.UNKNOWN,
             reason="OK",
             description="Everything is fine",
         ),
