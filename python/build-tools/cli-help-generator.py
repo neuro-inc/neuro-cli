@@ -137,7 +137,9 @@ def parse_command(command, format_spec, stack) -> CommandInfo:
         for command_name in commands(command_result):
             info.children.append(
                 parse_command(
-                    command_result.get(command_name), format_spec, stack + [command_name]
+                    command_result.get(command_name),
+                    format_spec,
+                    stack + [command_name],
                 )
             )
     return info
@@ -190,14 +192,24 @@ def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
     md = generate_markdown(info, header_prefix)
     if info.children:
         # Lets find Commands argument for iterationg
-        command_args = [argument for argument in info.arguments if argument.name.lower() == 'commands']
+        command_args = [
+            argument
+            for argument in info.arguments
+            if argument.name.lower() == "commands"
+        ]
         if command_args:
             arg = command_args[0]
             for value in arg.values:
-                sub_commands = [sub_command for sub_command in info.children if sub_command.name == info.name + " " + value.name]
+                sub_commands = [
+                    sub_command
+                    for sub_command in info.children
+                    if sub_command.name == info.name + " " + value.name
+                ]
                 if not sub_commands:
-                    raise Exception(f'Children command {value.name} not found in {info.name}')
-                md += "\n\n";
+                    raise Exception(
+                        f"Children command {value.name} not found in {info.name}"
+                    )
+                md += "\n\n"
                 md += generate_command_markdown(sub_commands[0], header_prefix + "#")
         # Ok, we can iterate sub commands in random order too
         else:
@@ -225,6 +237,7 @@ def main():
                 output.write(generated_md)
     except BaseException as error:
         print(error)
+
 
 if __name__ == "__main__":
     main()
