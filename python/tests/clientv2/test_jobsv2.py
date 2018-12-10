@@ -1,7 +1,7 @@
 import pytest
 from aiohttp import web
-
 from yarl import URL
+
 from neuromation.client import ResourceNotFound
 from neuromation.clientv2 import ClientV2, JobDescription, JobStatusHistory
 
@@ -168,6 +168,6 @@ async def test_status_with_ssh_and_http(aiohttp_server):
             reason="OK",
             description="Everything is fine",
         ),
-        url=URL('http://my_host:8889'),
+        url=URL("http://my_host:8889"),
         ssh=URL("ssh://my_host.ssh:22"),
     )
