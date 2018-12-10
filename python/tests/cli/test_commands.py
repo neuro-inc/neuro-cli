@@ -134,6 +134,10 @@ def zombie():
         """
         raise ValueError("legal fail")
 
+    @command
+    def dance():
+        pass
+
     return locals()
 
 
@@ -235,7 +239,13 @@ def test_commands():
     assert set(commands(scope=_person(None, None, None, None, None))) == {
         "absent",
         "work",
-        "rest",
+        "rest"
     }
 
-    assert set(commands(scope=zombie())) == {"eat", "fail", "party"}
+    assert set(commands(scope=zombie())) == {"eat", "fail", "party", "dance"}
+
+
+def test_not_implemented_command():
+    argv = ["dance"]
+    with pytest.raises(NotImplementedError):
+        dispatch(target=zombie, tail=argv)
