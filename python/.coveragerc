@@ -3,3 +3,4 @@ omit = tests/*
        neuromation/logging/colors.py
        neuromation/logging/formatter.py
        neuromation/cli/main.py
+       neuromation/build-tools/cli-help-generator.py

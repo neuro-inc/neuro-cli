@@ -10,7 +10,7 @@ init:
 	cp .hooks/* ../.git/hooks
 .PHONY: e2e
 e2e:
-	pytest \
+	pyьфлу \
 	    -n auto \
 		-m "e2e" \
 		--cov=neuromation \
