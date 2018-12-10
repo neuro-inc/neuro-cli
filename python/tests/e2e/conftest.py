@@ -16,13 +16,6 @@ from tests.e2e.utils import (
 )
 
 
-@pytest.fixture
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    return loop
-
-
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
         exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"

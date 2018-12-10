@@ -11,7 +11,7 @@ init:
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n auto \
+	    -n 0 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -21,7 +21,7 @@ e2e:
 .PHONY: _e2e
 _e2e:
 	pytest \
-	    -n auto \
+	    -n 0 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
