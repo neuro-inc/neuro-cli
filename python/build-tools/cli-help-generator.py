@@ -113,7 +113,7 @@ def parse_doc(doc, name=None) -> CommandInfo:
 
 def parse_command(command, format_spec, stack) -> CommandInfo:
     """
-    Walk given command and all subcopmmands and create corresponding CommandInfo
+    Walk given command and all subcommands and create corresponding CommandInfo
     """
 
     name = " ".join(stack)
@@ -127,17 +127,19 @@ def parse_command(command, format_spec, stack) -> CommandInfo:
         options, _ = parse(doc, stack)
         command_result = command(**{**normalize_options(options, ["COMMAND"])})
     except docopt.DocoptExit:
-        #  dead end
+        # dead end
         if not re.search(r"\sCOMMAND\s*$", doc, re.M):
             return info
+        # Try execute command without options
         command_result = command()
 
-    for command_name in commands(command_result):
-        info.children.append(
-            parse_command(
-                command_result.get(command_name), format_spec, stack + [command_name]
+    if command_result:
+        for command_name in commands(command_result):
+            info.children.append(
+                parse_command(
+                    command_result.get(command_name), format_spec, stack + [command_name]
+                )
             )
-        )
     return info
 
 
@@ -187,10 +189,22 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
 def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
     md = generate_markdown(info, header_prefix)
     if info.children:
-        md += "\n\n" + "\n\n".join(
-            generate_command_markdown(sub_command, header_prefix + "#")
-            for sub_command in info.children
-        )
+        # Lets find Commands argument for iterationg
+        command_args = [argument for argument in info.arguments if argument.name.lower() == 'commands']
+        if command_args:
+            arg = command_args[0]
+            for value in arg.values:
+                sub_commands = [sub_command for sub_command in info.children if sub_command.name == info.name + " " + value.name]
+                if not sub_commands:
+                    raise Exception(f'Children command {value.name} not found in {info.name}')
+                md += "\n\n";
+                md += generate_command_markdown(sub_commands[0], header_prefix + "#")
+        # Ok, we can iterate sub commands in random order too
+        else:
+            md += "\n\n" + "\n\n".join(
+                generate_command_markdown(sub_command, header_prefix + "#")
+                for sub_command in info.children
+            )
     return md
 
 
@@ -201,14 +215,16 @@ def main():
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    with open(input_file, "r") as input:
-        with open(output_file, "w") as output:
-            template = input.read()
-            info = parse_command(neuro, DEFAULTS, ["neuro"])
-            cli_doc = generate_command_markdown(info, "")
-            generated_md = template.format(cli_doc=cli_doc)
-            output.write(generated_md)
-
+    try:
+        with open(input_file, "r") as input:
+            with open(output_file, "w") as output:
+                template = input.read()
+                info = parse_command(neuro, DEFAULTS, ["neuro"])
+                cli_doc = generate_command_markdown(info, "")
+                generated_md = template.format(cli_doc=cli_doc)
+                output.write(generated_md)
+    except BaseException as error:
+        print(error)
 
 if __name__ == "__main__":
     main()

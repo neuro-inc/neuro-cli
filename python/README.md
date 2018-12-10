@@ -1,43 +1,5 @@
 [![codecov](https://codecov.io/gh/neuromation/platform-api-clients/branch/master/graph/badge.svg?token=FwM6ZV3gDj)](https://codecov.io/gh/neuromation/platform-api-clients)
 
-# Table of Contents
-* [Preface](#Preface)
-* [neuro](#neuro)
-	* [neuro config](#neuro-config)
-		* [neuro config url](#neuro-config-url)
-		* [neuro config id_rsa](#neuro-config-id_rsa)
-		* [neuro config show](#neuro-config-show)
-		* [neuro config auth](#neuro-config-auth)
-		* [neuro config forget](#neuro-config-forget)
-	* [neuro store](#neuro-store)
-		* [neuro store rm](#neuro-store-rm)
-		* [neuro store ls](#neuro-store-ls)
-		* [neuro store cp](#neuro-store-cp)
-		* [neuro store mkdir](#neuro-store-mkdir)
-		* [neuro store mv](#neuro-store-mv)
-	* [neuro model](#neuro-model)
-		* [neuro model train](#neuro-model-train)
-		* [neuro model debug](#neuro-model-debug)
-		* [neuro model test](#neuro-model-test)
-		* [neuro model infer](#neuro-model-infer)
-	* [neuro job](#neuro-job)
-		* [neuro job submit](#neuro-job-submit)
-		* [neuro job ssh](#neuro-job-ssh)
-		* [neuro job monitor](#neuro-job-monitor)
-		* [neuro job list](#neuro-job-list)
-		* [neuro job status](#neuro-job-status)
-		* [neuro job kill](#neuro-job-kill)
-	* [neuro image](#neuro-image)
-		* [neuro image push](#neuro-image-push)
-		* [neuro image pull](#neuro-image-pull)
-	* [neuro share](#neuro-share)
-	* [neuro completion](#neuro-completion)
-		* [neuro completion generate](#neuro-completion-generate)
-		* [neuro completion patch](#neuro-completion-patch)
-* [Api](#Api)
-* [Contributing](#Contributing)
-
-
 # Preface
 
 Welcome to Neuromation API Python client.
@@ -82,96 +44,242 @@ neuro [options] COMMAND
 
 
 
-## neuro config
+## neuro model
 
-Client configuration settings commands
+Model operations
 
 **Usage:**
 
 ```bash
-neuro config COMMAND
+neuro model COMMAND
 ```
 
 **Commands:**
 
-* _[url](#neuro-config-url)_: Updates API URL
+* _[train](#neuro-model-train)_: Start model training
 
-* _[auth](#neuro-config-auth)_: Updates API Token
+* _[test](#neuro-model-test)_: Test trained model against validation dataset
 
-* _[forget](#neuro-config-forget)_: Forget stored API Token
+* _[infer](#neuro-model-infer)_: Start batch inference
 
-* _[id_rsa](#neuro-config-id_rsa)_: Updates path to Github RSA token,
-in use for SSH/Remote debug
-
-* _[show](#neuro-config-show)_: Print current settings
+* _[debug](#neuro-model-debug)_: Prepare debug tunnel for PyCharm
 
 
 
-### neuro config url
+### neuro model train
 
-Updates settings with provided platform URL.
+Start training job using model from IMAGE, dataset from DATASET and
+store output weights in RESULTS.
+COMMANDS list will be passed as commands to model container.
 
 **Usage:**
 
 ```bash
-neuro config url URL
+neuro model train [options] IMAGE DATASET RESULTS [CMD...]
 ```
+
+**Options:**
+
+* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
+* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
+* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
+* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
+* _-x, --extshm_: Request extended '/dev/shm' space
+* _--http NUMBER_: Enable HTTP port forwarding to container
+* _--ssh NUMBER_: Enable SSH port forwarding to container
+* _-d, --description DESC_: Add optional description to the job
+* _-q, --quiet_: Run command in quiet mode (print only job id)
+
+
+
+
+### neuro model test
+
+Not implemented
+
+
+
+### neuro model infer
+
+Not implemented
+
+
+
+### neuro model debug
+
+Starts ssh terminal connected to running job.
+Job should be started with SSH support enabled.
+
+**Usage:**
+
+```bash
+neuro model debug [options] ID
+```
+
+**Options:**
+
+* _--localport NUMBER_: Local port number for debug [default: 31234]
+
 
 **Examples:**
 
 ```bash
-neuro config url http://platform.neuromation.io/api/v1
+neuro model debug --localport 12789 job-abc-def-ghk
 ```
 
 
 
-### neuro config id_rsa
+## neuro job
 
-Updates path to id_rsa file with private key.
-File is being used for accessing remote shell, remote debug.
-Note: this is temporal and going to be
-replaced in future by JWT token.
+Model operations
 
 **Usage:**
 
 ```bash
-neuro config id_rsa FILE
+neuro job COMMAND
+```
+
+**Commands:**
+
+* _[submit](#neuro-job-submit)_: Starts Job on a platform
+
+* _[monitor](#neuro-job-monitor)_: Monitor job output stream
+
+* _[list](#neuro-job-list)_: List all jobs
+
+* _[status](#neuro-job-status)_: Display status of a job
+
+* _[kill](#neuro-job-kill)_: Kill job
+
+* _[ssh](#neuro-job-ssh)_: Start SSH terminal
+
+
+
+### neuro job submit
+
+Start job using IMAGE
+COMMANDS list will be passed as commands to model container.
+
+**Usage:**
+
+```bash
+neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
+```
+
+**Options:**
+
+* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
+* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
+* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
+* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
+* _-x, --extshm_: Request extended '/dev/shm' space
+* _--http NUMBER_: Enable HTTP port forwarding to container
+* _--ssh NUMBER_: Enable SSH port forwarding to container
+* _--volume MOUNT..._: Mounts directory from vault into container
+* _--preemptible_: Run job on a lower-cost preemptible instance
+* _-d, --description DESC_: Add optional description to the job
+* _-q, --quiet_: Run command in quiet mode
+
+
+**Examples:**
+
+```bash
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
+pytorch:latest
+Starts a container pytorch:latest with two paths mounted. Directory
+/q1/ is mounter in read only mode to /qm directory
+within container. Directory /mod mounted to /mod
+directory in read-write mode.
+neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
+pytorch:latest
+Starts a container pytorch:latest with connection enabled to port 22.
+Please note that SSH server should be provided by container.
 ```
 
 
 
-### neuro config show
+### neuro job monitor
 
-Prints current settings.
+Monitor job output stream
 
 **Usage:**
 
 ```bash
-neuro config show
+neuro job monitor ID
 ```
 
 
 
-### neuro config auth
-
-Updates authorization token
+### neuro job list
 
 **Usage:**
 
 ```bash
-neuro config auth TOKEN
+neuro job list [options]
+```
+
+**Options:**
+
+* _-s, --status (pending|running|succeeded|failed|all)_: None
+* _-d, --description DESCRIPTION_: None
+* _-q, --quiet_: None
+
+
+**Examples:**
+
+```bash
+neuro job list --description="my favourite job"
+neuro job list --status=all
+neuro job list --status=pending,running --quiet
 ```
 
 
 
-### neuro config forget
+### neuro job status
 
-Forget authorization token
+Display status of a job
 
 **Usage:**
 
 ```bash
-neuro config forget
+neuro job status ID
+```
+
+
+
+### neuro job kill
+
+Kill job(s)
+
+**Usage:**
+
+```bash
+neuro job kill JOB_IDS...
+```
+
+
+
+### neuro job ssh
+
+Starts ssh terminal connected to running job.
+Job should be started with SSH support enabled.
+
+**Usage:**
+
+```bash
+neuro job ssh [options] ID
+```
+
+**Options:**
+
+* _--user STRING_: Container user name [default: root]
+* _--key STRING_: Path to container private key.
+
+
+**Examples:**
+
+```bash
+neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
 ```
 
 
@@ -264,18 +372,6 @@ neuro store cp storage:///foo file:///foo
 
 
 
-### neuro store mkdir
-
-Make directories
-
-**Usage:**
-
-```bash
-neuro store mkdir PATH
-```
-
-
-
 ### neuro store mv
 
 Move or rename files and directories. SOURCE must contain path to the
@@ -301,242 +397,14 @@ neuro store mv storage://username/foo/ storage://username/bar/baz/foo/
 
 
 
-## neuro model
+### neuro store mkdir
 
-Model operations
-
-**Usage:**
-
-```bash
-neuro model COMMAND
-```
-
-**Commands:**
-
-* _[train](#neuro-model-train)_: Start model training
-
-* _[test](#neuro-model-test)_: Test trained model against validation dataset
-
-* _[infer](#neuro-model-infer)_: Start batch inference
-
-* _[debug](#neuro-model-debug)_: Prepare debug tunnel for PyCharm
-
-
-
-### neuro model train
-
-Start training job using model from IMAGE, dataset from DATASET and
-store output weights in RESULTS.
-COMMANDS list will be passed as commands to model container.
+Make directories
 
 **Usage:**
 
 ```bash
-neuro model train [options] IMAGE DATASET RESULTS [CMD...]
-```
-
-**Options:**
-
-* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
-* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
-* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
-* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
-* _-x, --extshm_: Request extended '/dev/shm' space
-* _--http NUMBER_: Enable HTTP port forwarding to container
-* _--ssh NUMBER_: Enable SSH port forwarding to container
-* _-d, --description DESC_: Add optional description to the job
-* _-q, --quiet_: Run command in quiet mode (print only job id)
-
-
-
-
-### neuro model debug
-
-Starts ssh terminal connected to running job.
-Job should be started with SSH support enabled.
-
-**Usage:**
-
-```bash
-neuro model debug [options] ID
-```
-
-**Options:**
-
-* _--localport NUMBER_: Local port number for debug [default: 31234]
-
-
-**Examples:**
-
-```bash
-neuro model debug --localport 12789 job-abc-def-ghk
-```
-
-
-
-### neuro model test
-
-Not implemented
-
-
-
-### neuro model infer
-
-Not implemented
-
-
-
-## neuro job
-
-Model operations
-
-**Usage:**
-
-```bash
-neuro job COMMAND
-```
-
-**Commands:**
-
-* _[submit](#neuro-job-submit)_: Starts Job on a platform
-
-* _[monitor](#neuro-job-monitor)_: Monitor job output stream
-
-* _[list](#neuro-job-list)_: List all jobs
-
-* _[status](#neuro-job-status)_: Display status of a job
-
-* _[kill](#neuro-job-kill)_: Kill job
-
-* _[ssh](#neuro-job-ssh)_: Start SSH terminal
-
-
-
-### neuro job submit
-
-Start job using IMAGE
-COMMANDS list will be passed as commands to model container.
-
-**Usage:**
-
-```bash
-neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
-```
-
-**Options:**
-
-* _-g, --gpu NUMBER_: Number of GPUs to request [default: 1]
-* _--gpu-model MODEL_: GPU to use [default: nvidia-tesla-k80]
-* _-c, --cpu NUMBER_: Number of CPUs to request [default: 1.0]
-* _-m, --memory AMOUNT_: Memory amount to request [default: 16G]
-* _-x, --extshm_: Request extended '/dev/shm' space
-* _--http NUMBER_: Enable HTTP port forwarding to container
-* _--ssh NUMBER_: Enable SSH port forwarding to container
-* _--volume MOUNT..._: Mounts directory from vault into container
-* _--preemptible_: Run job on a lower-cost preemptible instance
-* _-d, --description DESC_: Add optional description to the job
-* _-q, --quiet_: Run command in quiet mode
-
-
-**Examples:**
-
-```bash
-neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
-pytorch:latest
-Starts a container pytorch:latest with two paths mounted. Directory
-/q1/ is mounter in read only mode to /qm directory
-within container. Directory /mod mounted to /mod
-directory in read-write mode.
-neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
-pytorch:latest
-Starts a container pytorch:latest with connection enabled to port 22.
-Please note that SSH server should be provided by container.
-```
-
-
-
-### neuro job ssh
-
-Starts ssh terminal connected to running job.
-Job should be started with SSH support enabled.
-
-**Usage:**
-
-```bash
-neuro job ssh [options] ID
-```
-
-**Options:**
-
-* _--user STRING_: Container user name [default: root]
-* _--key STRING_: Path to container private key.
-
-
-**Examples:**
-
-```bash
-neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
-```
-
-
-
-### neuro job monitor
-
-Monitor job output stream
-
-**Usage:**
-
-```bash
-neuro job monitor ID
-```
-
-
-
-### neuro job list
-
-**Usage:**
-
-```bash
-neuro job list [options]
-```
-
-**Options:**
-
-* _-s, --status (pending|running|succeeded|failed|all)_: None
-* _-d, --description DESCRIPTION_: None
-* _-q, --quiet_: None
-
-
-**Examples:**
-
-```bash
-neuro job list --description="my favourite job"
-neuro job list --status=all
-neuro job list --status=pending,running --quiet
-```
-
-
-
-### neuro job status
-
-Display status of a job
-
-**Usage:**
-
-```bash
-neuro job status ID
-```
-
-
-
-### neuro job kill
-
-Kill job(s)
-
-**Usage:**
-
-```bash
-neuro job kill JOB_IDS...
+neuro store mkdir PATH
 ```
 
 
@@ -583,23 +451,96 @@ neuro image pull IMAGE_NAME
 
 
 
-## neuro share
+## neuro config
 
-Shares resource specified by URI to a user specified by WHOM
-allowing to read, write or manage it.
+Client configuration settings commands
 
 **Usage:**
 
 ```bash
-neuro share URI WHOM (read|write|manage)
+neuro config COMMAND
+```
+
+**Commands:**
+
+* _[url](#neuro-config-url)_: Updates API URL
+
+* _[auth](#neuro-config-auth)_: Updates API Token
+
+* _[forget](#neuro-config-forget)_: Forget stored API Token
+
+* _[id_rsa](#neuro-config-id_rsa)_: Updates path to Github RSA token,
+in use for SSH/Remote debug
+
+* _[show](#neuro-config-show)_: Print current settings
+
+
+
+### neuro config url
+
+Updates settings with provided platform URL.
+
+**Usage:**
+
+```bash
+neuro config url URL
 ```
 
 **Examples:**
 
 ```bash
-neuro share storage:///sample_data/ alice manage
-neuro share image:///resnet50 bob read
-neuro share job:///my_job_id alice write
+neuro config url http://platform.neuromation.io/api/v1
+```
+
+
+
+### neuro config auth
+
+Updates authorization token
+
+**Usage:**
+
+```bash
+neuro config auth TOKEN
+```
+
+
+
+### neuro config forget
+
+Forget authorization token
+
+**Usage:**
+
+```bash
+neuro config forget
+```
+
+
+
+### neuro config id_rsa
+
+Updates path to id_rsa file with private key.
+File is being used for accessing remote shell, remote debug.
+Note: this is temporal and going to be
+replaced in future by JWT token.
+
+**Usage:**
+
+```bash
+neuro config id_rsa FILE
+```
+
+
+
+### neuro config show
+
+Prints current settings.
+
+**Usage:**
+
+```bash
+neuro config show
 ```
 
 
@@ -647,6 +588,39 @@ Automatically patch .bash_profile to enable completion
 
 ```bash
 neuro completion patch
+```
+
+
+
+## neuro share
+
+Shares resource specified by URI to a user specified by WHOM
+allowing to read, write or manage it.
+
+**Usage:**
+
+```bash
+neuro share URI WHOM (read|write|manage)
+```
+
+**Examples:**
+
+```bash
+neuro share storage:///sample_data/ alice manage
+neuro share image:///resnet50 bob read
+neuro share job:///my_job_id alice write
+```
+
+
+
+## neuro help
+
+Display help for given COMMAND
+
+**Usage:**
+
+```bash
+neuro help COMMAND [SUBCOMMAND[...]]
 ```
 
 

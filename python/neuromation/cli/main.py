@@ -4,7 +4,6 @@ import sys
 from functools import partial
 from pathlib import Path
 from urllib.parse import urlparse
-
 import aiohttp
 
 import neuromation
@@ -812,8 +811,17 @@ Commands:
 
         return locals()
 
-    return locals()
+    @command
+    def help():
+        """
+            Usage:
+                neuro help COMMAND [SUBCOMMAND[...]]
 
+            Display help for given COMMAND
+        """
+        pass
+
+    return locals()
 
 def main():
     is_verbose = "--verbose" in sys.argv

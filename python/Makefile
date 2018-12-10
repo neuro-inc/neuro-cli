@@ -5,9 +5,9 @@ SHELL := /bin/bash
 .PHONY: init
 init:
 	pip install -r requirements.txt
+	cp README.in.md README.md
 	pip install -e .
 	cp .hooks/* ../.git/hooks
-
 .PHONY: e2e
 e2e:
 	pytest \
