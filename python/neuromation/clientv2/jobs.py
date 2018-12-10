@@ -84,12 +84,12 @@ class Jobs:
         job_history = None
         if "history" in res:
             job_history = JobStatusHistory(
-                status=res["history"].get("status", None),
-                reason=res["history"].get("reason", None),
-                description=res["history"].get("description", None),
-                created_at=res["history"].get("created_at", None),
-                started_at=res["history"].get("started_at", None),
-                finished_at=res["history"].get("finished_at", None),
+                status=res["history"].get("status", ""),
+                reason=res["history"].get("reason", ""),
+                description=res["history"].get("description", ""),
+                created_at=res["history"].get("created_at", ""),
+                started_at=res["history"].get("started_at", ""),
+                finished_at=res["history"].get("finished_at", ""),
             )
         return JobDescription(
             id=job_description.id,
