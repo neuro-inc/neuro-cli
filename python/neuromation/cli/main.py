@@ -383,7 +383,8 @@ Commands:
                                           Other options available are
                                               nvidia-tesla-k80
                                               nvidia-tesla-p4
-                                              nvidia-tesla-v100                -c, --cpu NUMBER          Number of CPUs to request \
+                                              nvidia-tesla-v100
+                -c, --cpu NUMBER          Number of CPUs to request \
 [default: {model_train_cpu_number}]
                 -m, --memory AMOUNT       Memory amount to request \
 [default: {model_train_memory_amount}]

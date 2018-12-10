@@ -122,7 +122,7 @@ neuro model train [options] IMAGE DATASET RESULTS [CMD...]
 Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request \[default: 1]|
-|_\--gpu-model MODEL_|GPU to use \[default: nvidia\-tesla-k80]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla-v100.|
+|_\--gpu-model MODEL_|GPU to use \[default: nvidia\-tesla-k80]<br/>Other options available are<br/>nvidia\-tesla-k80<br/>nvidia\-tesla-p4<br/>nvidia\-tesla-v100|
 |_\-c, --cpu NUMBER_|Number of CPUs to request \[default: 1.0]|
 |_\-m, --memory AMOUNT_|Memory amount to request \[default: 16G]|
 |_\-x, --extshm_|Request extended '/dev/shm' space|
@@ -212,16 +212,17 @@ neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
 Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request \[default: 1]|
-|_\--gpu-model MODEL_|GPU to use \[default: nvidia\-tesla-k80]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla-v100.|
+|_\--gpu-model MODEL_|GPU to use \[default: nvidia\-tesla-k80]<br/>Other options available are<br/>nvidia\-tesla-k80<br/>nvidia\-tesla-p4<br/>nvidia\-tesla-v100|
 |_\-c, --cpu NUMBER_|Number of CPUs to request \[default: 1.0]|
 |_\-m, --memory AMOUNT_|Memory amount to request \[default: 16G]|
 |_\-x, --extshm_|Request extended '/dev/shm' space|
 |_--http NUMBER_|Enable HTTP port forwarding to container|
 |_--ssh NUMBER_|Enable SSH port forwarding to container|
 |_--volume MOUNT..._|Mounts directory from vault into container|
-|_--preemptible_|Run job on a lower-cost preemptible instance|
+|_--preemptible_|Force job to run on a preemptible instance|
+|_\--non-preemptible_|Force job to run on a non-preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
-|_\-q, --quiet_|Run command in quiet mode|
+|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 
 
 **Examples:**
