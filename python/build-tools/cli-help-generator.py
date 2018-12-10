@@ -150,11 +150,11 @@ def parse_command(command, format_spec, stack) -> CommandInfo:
 
 def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
     def simple_escape_line(text: str) -> str:
-        escaped = re.sub(r"\*(\S[^*]*)\*", r"\\*\1\\*", text)
-        escaped = re.sub(r"\-(\S[^*]*)\-", r"\\-\1\\-", escaped)
-        escaped = re.sub(r"\_(\S[^*]*)\_", r"\\_\1\\_", escaped)
-        escaped = re.sub(r"\[(\S[^\]]*)\]", r"\\[\1\\]", escaped)
-        escaped = re.sub(r"\((\S[^)]*)\)", r"\\(\1\\)", escaped)
+        escaped = re.sub(r"\*(\S[^*]*)\*", r"\\*\1*", text)
+        escaped = re.sub(r"\-(\S[^*]*)\-", r"\\-\1-", escaped)
+        escaped = re.sub(r"\_(\S[^*]*)\_", r"\\_\1_", escaped)
+        escaped = re.sub(r"\[(\S[^\]]*)\]", r"\\[\1]", escaped)
+        escaped = re.sub(r"\((\S[^)]*)\)", r"\\(\1)", escaped)
 
         return escaped
 

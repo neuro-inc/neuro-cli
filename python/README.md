@@ -59,10 +59,10 @@ neuro [options] COMMAND
 
 Name | Description|
 |----|------------|
-|_\-u, -\-url URL_|Override API URL \[default: http://platform.dev.neuromation.io/api/v1\]|
-|_\-t, -\-token TOKEN_|API authentication token \(not implemented\)|
+|_\-u, --url URL_|Override API URL \[default: http://platform.dev.neuromation.io/api/v1]|
+|_\-t, --token TOKEN_|API authentication token \(not implemented)|
 |_--verbose_|Enable verbose logging|
-|_\-v, -\-version_|Print version and exit|
+|_\-v, --version_|Print version and exit|
 
 
 **Commands:**
@@ -121,15 +121,15 @@ neuro model train [options] IMAGE DATASET RESULTS [CMD...]
 
 Name | Description|
 |----|------------|
-|_\-g, -\-gpu NUMBER_|Number of GPUs to request \[default: 1\]|
-|_\--gpu\-model MODEL_|GPU to use \[default: nvidia\-tesla\-k80\]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla\-v100.|
-|_\-c, -\-cpu NUMBER_|Number of CPUs to request \[default: 1.0\]|
-|_\-m, -\-memory AMOUNT_|Memory amount to request \[default: 16G\]|
-|_\-x, -\-extshm_|Request extended '/dev/shm' space|
+|_\-g, --gpu NUMBER_|Number of GPUs to request \[default: 1]|
+|_\--gpu-model MODEL_|GPU to use \[default: nvidia\-tesla-k80]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla-v100.|
+|_\-c, --cpu NUMBER_|Number of CPUs to request \[default: 1.0]|
+|_\-m, --memory AMOUNT_|Memory amount to request \[default: 16G]|
+|_\-x, --extshm_|Request extended '/dev/shm' space|
 |_--http NUMBER_|Enable HTTP port forwarding to container|
 |_--ssh NUMBER_|Enable SSH port forwarding to container|
-|_\-d, -\-description DESC_|Add optional description to the job|
-|_\-q, -\-quiet_|Run command in quiet mode \(print only job id\)|
+|_\-d, --description DESC_|Add optional description to the job|
+|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 
 
 
@@ -160,7 +160,7 @@ neuro model debug [options] ID
 
 Name | Description|
 |----|------------|
-|_--localport NUMBER_|Local port number for debug \[default: 31234\]|
+|_--localport NUMBER_|Local port number for debug \[default: 31234]|
 
 
 **Examples:**
@@ -211,17 +211,17 @@ neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
 
 Name | Description|
 |----|------------|
-|_\-g, -\-gpu NUMBER_|Number of GPUs to request \[default: 1\]|
-|_\--gpu\-model MODEL_|GPU to use \[default: nvidia\-tesla\-k80\]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla\-v100.|
-|_\-c, -\-cpu NUMBER_|Number of CPUs to request \[default: 1.0\]|
-|_\-m, -\-memory AMOUNT_|Memory amount to request \[default: 16G\]|
-|_\-x, -\-extshm_|Request extended '/dev/shm' space|
+|_\-g, --gpu NUMBER_|Number of GPUs to request \[default: 1]|
+|_\--gpu-model MODEL_|GPU to use \[default: nvidia\-tesla-k80]<br/>Other options available are<br/>nvidia\-tesla-p4, nvidia-tesla-v100.|
+|_\-c, --cpu NUMBER_|Number of CPUs to request \[default: 1.0]|
+|_\-m, --memory AMOUNT_|Memory amount to request \[default: 16G]|
+|_\-x, --extshm_|Request extended '/dev/shm' space|
 |_--http NUMBER_|Enable HTTP port forwarding to container|
 |_--ssh NUMBER_|Enable SSH port forwarding to container|
 |_--volume MOUNT..._|Mounts directory from vault into container|
 |_--preemptible_|Run job on a lower-cost preemptible instance|
-|_\-d, -\-description DESC_|Add optional description to the job|
-|_\-q, -\-quiet_|Run command in quiet mode|
+|_\-d, --description DESC_|Add optional description to the job|
+|_\-q, --quiet_|Run command in quiet mode|
 
 
 **Examples:**
@@ -265,9 +265,9 @@ neuro job list [options]
 
 Name | Description|
 |----|------------|
-|_\-s, -\-status \(pending|running|succeeded|failed|all\)_|<br/>Filter out job by status\(es\) \(comma delimited if multiple\)|
-|_\-d, -\-description DESCRIPTION_|<br/>Filter out job by job description \(exact match\)|
-|_\-q, -\-quiet_|<br/>Run command in quiet mode \(print only job ids\)<br/>List all jobs|
+|_\-s, --status \(pending|running|succeeded|failed|all)_|<br/>Filter out job by status\(es) \(comma delimited if multiple)|
+|_\-d, --description DESCRIPTION_|<br/>Filter out job by job description \(exact match)|
+|_\-q, --quiet_|<br/>Run command in quiet mode \(print only job ids)<br/>List all jobs|
 
 
 **Examples:**
@@ -294,7 +294,7 @@ neuro job status ID
 
 ### neuro job kill
 
-Kill job\(s\)
+Kill job\(s)
 
 **Usage:**
 
@@ -318,7 +318,7 @@ neuro job ssh [options] ID
 
 Name | Description|
 |----|------------|
-|_--user STRING_|Container user name \[default: root\]|
+|_--user STRING_|Container user name \[default: root]|
 |_--key STRING_|Path to container private key.|
 
 
@@ -376,7 +376,7 @@ neuro store rm storage://username/foo/bar/
 
 ### neuro store ls
 
-List directory contents<br/>By default PATH is equal user`s home dir \(storage:\)
+List directory contents<br/>By default PATH is equal user`s home dir \(storage:)
 
 **Usage:**
 
@@ -400,8 +400,8 @@ neuro store cp [options] SOURCE DESTINATION
 
 Name | Description|
 |----|------------|
-|_\-r, -\-recursive_|Recursive copy|
-|_\-p, -\-progress_|Show progress|
+|_\-r, --recursive_|Recursive copy|
+|_\-p, --progress_|Show progress|
 
 
 **Examples:**
