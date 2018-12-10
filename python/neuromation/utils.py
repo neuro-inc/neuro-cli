@@ -26,6 +26,11 @@ def run(main, *, debug=False):
 
         asyncio.run(main())
     """
+    # Temporary don't close the loop to make e2e tests passing
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(main)
+
+
     try:
         current_loop = asyncio.get_event_loop()
         if current_loop.is_running():
