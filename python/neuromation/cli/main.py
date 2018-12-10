@@ -624,15 +624,16 @@ Commands:
             )
 
         @command
-        def status(id):
+        async def status(id):
             """
             Usage:
                 neuro job status ID
 
             Display status of a job
             """
-            res = JobHandlerOperations(token).status(id, jobs)
-            return JobStatusFormatter.format_job_status(res)
+            async with ClientV2(url, token) as client:
+                res = await client.jobs.status(id)
+                return JobStatusFormatter.format_job_status(res)
 
         @command
         async def kill(job_ids):

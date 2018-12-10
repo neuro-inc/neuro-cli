@@ -4,8 +4,25 @@ from typing import Union, Type, Optional
 from yarl import URL
 
 from .api import API
-from .jobs import Jobs
+from .jobs import (
+    Jobs,
+    Image,
+    JobDescription,
+    JobStatusHistory,
+    NetworkPortForwarding,
+    Resources,
+    VolumeDescriptionPayload,
+)
 
+__all__ = (
+    "Image",
+    "JobDescription",
+    "JobStatusHistory",
+    "NetworkPortForwarding",
+    "Resources",
+    "VolumeDescriptionPayload",
+    "ClientV2",
+)
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)  # type: ignore
 
