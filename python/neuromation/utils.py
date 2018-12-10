@@ -30,7 +30,6 @@ def run(main, *, debug=False):
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(main)
 
-
     try:
         current_loop = asyncio.get_event_loop()
         if current_loop.is_running():
