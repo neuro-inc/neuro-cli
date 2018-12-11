@@ -9,7 +9,6 @@ from neuromation.strings import parse
 from .client import ApiClient
 from .requests import (
     ContainerPayload,
-    InferRequest,
     JobListRequest,
     JobStatusRequest,
     ResourcesPayload,

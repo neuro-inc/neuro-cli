@@ -83,43 +83,6 @@ class ShareResourceRequest(Request):
         )
 
 
-def container_to_primitive(req_container_payload: ContainerPayload) -> Dict[str, Any]:
-    """
-    Converts request object to json object.
-
-    :param req: http.Request
-    :return: request as a Dict(Json)
-    """
-    return req_container_payload.to_primitive()
-
-
-@dataclass(frozen=True)
-class InferRequest(Request):
-    container: ContainerPayload
-    dataset_storage_uri: str
-    result_storage_uri: str
-    model_storage_uri: str
-    description: Optional[str]
-
-    def to_primitive(self) -> Dict[str, Any]:
-        json_params: Dict[str, Any] = {
-            "container": container_to_primitive(self.container),
-            "dataset_storage_uri": self.dataset_storage_uri,
-            "result_storage_uri": self.result_storage_uri,
-            "model_storage_uri": self.model_storage_uri,
-        }
-
-        if self.description:
-            json_params["description"] = self.description
-        return json_params
-
-    def to_http_request(self) -> JsonRequest:
-        json_params = self.to_primitive()
-        return http.JsonRequest(
-            url="/models", params=None, method="POST", json=json_params, data=None
-        )
-
-
 @dataclass(frozen=True)
 class TrainRequest(Request):
     container: ContainerPayload
@@ -129,7 +92,7 @@ class TrainRequest(Request):
 
     def to_primitive(self) -> Dict[str, Any]:
         json_params: Dict[str, Any] = {
-            "container": container_to_primitive(self.container),
+            "container": self.container.to_primitive(),
             "dataset_storage_uri": self.dataset_storage_uri,
             "result_storage_uri": self.result_storage_uri,
         }
@@ -244,8 +207,6 @@ def build(request: Request) -> http.Request:
             url="/jobs", params=None, method="GET", json=None, data=None
         )
     elif isinstance(request, TrainRequest):
-        return request.to_http_request()
-    elif isinstance(request, InferRequest):
         return request.to_http_request()
     elif isinstance(request, CreateRequest):
         return http.PlainRequest(
