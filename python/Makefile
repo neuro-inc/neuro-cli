@@ -8,6 +8,7 @@ init:
 	pip install -r requirements.txt
 	pip install -e .
 	cp .hooks/* ../.git/hooks
+
 .PHONY: e2e
 e2e:
 	pytest \
@@ -40,6 +41,14 @@ test:
 		--cov-report xml:coverage.xml \
 		tests
 
+.PHONY: test-fast
+test-fast:
+	pytest \
+			--quiet \
+			--testmon --tlf \
+			-m "not e2e" \
+			tests || test $$? -eq 5
+
 .PHONY: test-all
 test-all:
 	pytest \
@@ -57,6 +66,7 @@ lint: lint-docs
 	flake8
 
 .PHONY: lint-git-pre-commit
+lint-git-pre-commit: test-fast
 lint-git-pre-commit: ISORT_AND_BLACK_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/neuromation/.+\\.py" ||  $$NF ~ "^python/tests/.+\\.py") print substr($$NF, 8)}')
 lint-git-pre-commit: MYPY_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/(neuromation/(client|logging|strings)/.+\\.py)") print substr($$NF, 8)}')
 lint-git-pre-commit: FLAKE8_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/(neuromation/.+\\.py)") print substr($$NF, 8)}')
@@ -106,6 +116,7 @@ clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
 	rm README.md
+	rm -rf .testmondata .tmontmp
 
 devpi_setup:
 	pip install devpi-client
