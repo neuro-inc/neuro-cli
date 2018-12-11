@@ -307,8 +307,8 @@ def test_model_without_command(run, loop):
 
 @pytest.mark.e2e
 def test_e2e_no_env(run):
-    bash_script = 'echo "begin"$VAR"end"'
-    command = f"bash -c '{bash_script}' | grep beginend"
+    bash_script = 'echo "begin"$VAR"end"  | grep beginend'
+    command = f"bash -c '{bash_script}'"
     _, captured = run(
         [
             "job",
@@ -335,8 +335,8 @@ def test_e2e_no_env(run):
 
 @pytest.mark.e2e
 def test_e2e_env(run):
-    bash_script = 'echo "begin"$VAR"end"'
-    command = f"bash -c '{bash_script}' | grep beginVALend"
+    bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
+    command = f"bash -c '{bash_script}'"
     _, captured = run(
         [
             "job",
@@ -365,8 +365,8 @@ def test_e2e_env(run):
 
 @pytest.mark.e2e
 def test_e2e_multiple_env(run):
-    bash_script = 'echo begin"$VAR""$VAR2"end'
-    command = f"bash -c '{bash_script}' | grep beginVALVAL2end"
+    bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
+    command = f"bash -c '{bash_script}'"
     _, captured = run(
         [
             "job",
