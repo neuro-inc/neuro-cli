@@ -503,7 +503,7 @@ Commands:
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
-                -e, --env VAR=VAL..       Passes an environment value to the container
+                -e, --env VAR=VAL...      Passes an environment value to the container
                 --preemptible             Force job to run on a preemptible instance
                 --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
@@ -512,7 +512,7 @@ Commands:
 
             Examples:
             neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
-                  pytorch:latest
+               pytorch:latest
 
             Starts a container pytorch:latest with two paths mounted. Directory
             /q1/ is mounter in read only mode to /qm directory
@@ -646,7 +646,7 @@ Commands:
 
             Display status of a job
             """
-            async with ClientV2(url, token) as client:
+            async with ClientV25(url, token) as client:
                 res = await client.jobs.status(id)
                 return JobStatusFormatter.format_job_status(res)
 
@@ -883,3 +883,4 @@ def main():
     except Exception as e:
         log.error(f"{e}")
         raise e
+x
