@@ -540,14 +540,13 @@ Commands:
                 is_preemptible = preemptible or not non_preemptible
 
             env_dict = {}
-            try:
-                for line in env:
-                    var, val = line.split("=")
-                    env_dict[var] = val
-            except ValueError as e:
-                raise neuromation.client.IllegalArgumentError(
-                    f"{line} is not a valid env parameter description."
-                )
+            for line in env:
+                splited = line.split("=", 1)
+                if len(splited) == 1:
+                    val = os.getenv(splited[0], "")
+                    env_dict[splited[0]] = val
+                else:
+                    env_dict[splited[0]] = splited[1]
 
             job = JobHandlerOperations(platform_user_name).submit(
                 image,
