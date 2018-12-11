@@ -30,6 +30,7 @@ class TestJobSubmit:
                 jobs=partial_mocked_job,
                 is_preemptible=False,
                 description="job description",
+                env=None,
             )
 
         assert partial_mocked_job().submit.call_count == 0
@@ -54,6 +55,7 @@ class TestJobSubmit:
             jobs=partial_mocked_job,
             is_preemptible=False,
             description="job description",
+            env={"var": "val"},
         )
 
         partial_mocked_job().submit.assert_called_once()
@@ -81,6 +83,7 @@ class TestJobSubmit:
             ],
             is_preemptible=False,
             description="job description",
+            env={"var": "val"},
         )
 
     def test_job_submit_no_volumes(self, partial_mocked_job) -> None:
@@ -96,6 +99,7 @@ class TestJobSubmit:
             "8183",
             "25",
             [],
+            {"variable": "value"},
             partial_mocked_job,
             is_preemptible=False,
             description="job description",
@@ -110,6 +114,7 @@ class TestJobSubmit:
             volumes=None,
             is_preemptible=False,
             description="job description",
+            env={"variable": "value"},
         )
 
     def test_job_submit_no_volumes_preemptible(self, partial_mocked_job) -> None:
@@ -125,6 +130,7 @@ class TestJobSubmit:
             http="8183",
             ssh="25",
             volumes=[],
+            env={"var": "val"},
             jobs=partial_mocked_job,
             is_preemptible=True,
             description="job description",
@@ -139,4 +145,5 @@ class TestJobSubmit:
             volumes=None,
             is_preemptible=True,
             description="job description",
+            env={"var": "val"},
         )

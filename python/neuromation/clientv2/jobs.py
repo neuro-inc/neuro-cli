@@ -32,6 +32,7 @@ class JobDescription:
     command: Optional[str] = None
     url: URL = URL()
     ssh: URL = URL()
+    env: Optional[Dict[str, str]] = None
     owner: Optional[str] = None
     history: Optional[JobStatusHistory] = None
     resources: Optional[Resources] = None
@@ -112,22 +113,26 @@ class Jobs:
             ssh=job_description.ssh,
             owner=job_description.owner,
             description=job_description.description,
+            env=job_description.env,
         )
 
     def _dict_to_description(self, res: Dict[str, Any]) -> JobDescription:
         job_container_image = None
         job_command = None
         job_resources = None
+        job_env = None
 
         if "container" in res:
             job_container_image = res["container"].get("image", None)
             job_command = res["container"].get("command", None)
+            job_env = res["container"].get("env", None)
 
             if "resources" in res["container"]:
                 container_resources = res["container"]["resources"]
                 shm = container_resources.get("shm", None)
                 gpu = container_resources.get("gpu", None)
                 gpu_model = container_resources.get("gpu_model", None)
+
                 job_resources = Resources(
                     cpu=container_resources["cpu"],
                     memory=container_resources["memory_mb"],
@@ -149,4 +154,5 @@ class Jobs:
             ssh=ssh_conn,
             owner=job_owner,
             description=description,
+            env=job_env,
         )

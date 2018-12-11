@@ -510,6 +510,7 @@ class JobHandlerOperations(PlatformStorageOperation):
         http,
         ssh,
         volumes,
+        env: Dict[str, str],
         jobs: Callable,
         is_preemptible: bool,
         description: str,
@@ -528,6 +529,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 resources=resources,
                 network=network,
                 volumes=volumes,
+                env=env,
                 is_preemptible=is_preemptible,
                 description=description,
             )
