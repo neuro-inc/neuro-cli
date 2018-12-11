@@ -60,14 +60,12 @@ lint: lint-docs
 lint-git-pre-commit: ISORT_AND_BLACK_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/neuromation/.+\\.py" ||  $$NF ~ "^python/tests/.+\\.py") print substr($$NF, 8)}')
 lint-git-pre-commit: MYPY_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/(neuromation/(client|logging|strings)/.+\\.py)") print substr($$NF, 8)}')
 lint-git-pre-commit: FLAKE8_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/(neuromation/.+\\.py)") print substr($$NF, 8)}')
-
 lint-git-pre-commit:
 	@ [ -z "${ISORT_AND_BLACK_TARGETS}" ] || (echo "Lint isort" && isort -c -rc ${ISORT_AND_BLACK_TARGETS})
 	@ [ -z "${ISORT_AND_BLACK_TARGETS}" ] || (echo "Lint black" && black -q --check ${ISORT_AND_BLACK_TARGETS})
 	@ [ -z "${MYPY_TARGETS}" ] || (echo "Lint mypy" && mypy ${MYPY_TARGETS})
 	@ [ -z "${FLAKE8_TARGETS}" ] || (echo "Lint flake8" && flake8 ${FLAKE8_TARGETS})
 
-#lint-git-pre-commit: FLAKE8_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($NF ~ "^python/.+.py/") print $NF}')
 
 
 .PHONY: dist-clean
