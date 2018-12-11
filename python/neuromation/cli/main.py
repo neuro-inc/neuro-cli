@@ -22,7 +22,13 @@ from neuromation.cli.command_handlers import (
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
 from neuromation.client.jobs import ResourceSharing
-from neuromation.clientv2 import ClientV2
+from neuromation.clientv2 import (
+    ClientV2,
+    Image,
+    NetworkPortForwarding,
+    Resources,
+    VolumeDescriptionPayload,
+)
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
@@ -464,7 +470,7 @@ Commands:
         jobs = partial(Job, url, token)
 
         @command
-        def submit(
+        async def submit(
             image,
             gpu,
             gpu_model,
@@ -535,22 +541,24 @@ Commands:
             else:
                 is_preemptible = preemptible or not non_preemptible
 
-            job = JobHandlerOperations(platform_user_name).submit(
-                image,
-                gpu,
-                gpu_model,
-                cpu,
-                memory,
-                extshm,
-                cmd,
-                http,
-                ssh,
-                volume,
-                jobs,
-                is_preemptible,
-                description,
-            )
-            return OutputFormatter.format_job(job, quiet)
+            cmd = " ".join(cmd) if cmd is not None else None
+            log.debug(f'cmd="{cmd}"')
+
+            image = Image(image=image, command=cmd)
+            network = NetworkPortForwarding.from_cli(http, ssh)
+            resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+            volumes = VolumeDescriptionPayload.from_cli_list(platform_user_name, volume)
+
+            async with ClientV2(url, token) as client:
+                job = await client.jobs.submit(
+                    image=image,
+                    resources=resources,
+                    network=network,
+                    volumes=volumes,
+                    is_preemptible=is_preemptible,
+                    description=description,
+                )
+                return OutputFormatter.format_job(job, quiet)
 
         @command
         def ssh(id, user, key):

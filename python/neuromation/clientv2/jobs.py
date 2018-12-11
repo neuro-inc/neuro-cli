@@ -9,7 +9,10 @@ from neuromation.client.jobs import (
     NetworkPortForwarding,
     Resources,
     VolumeDescriptionPayload,
+    network_to_api,
 )
+from neuromation.client.requests import ContainerPayload, ResourcesPayload
+from neuromation.strings import parse
 
 from .api import API
 
@@ -36,6 +39,7 @@ class JobDescription:
     history: Optional[JobStatusHistory] = None
     resources: Optional[Resources] = None
     description: Optional[str] = None
+    is_preemptible: bool = True
 
     def jump_host(self) -> str:
         ssh_hostname = self.ssh.hostname
@@ -55,9 +59,38 @@ class Jobs:
         network: NetworkPortForwarding,
         volumes: Optional[List[VolumeDescriptionPayload]],
         description: Optional[str],
-        is_preemptible: Optional[bool] = False,
+        is_preemptible: bool = False,
     ) -> JobDescription:
-        raise NotImplementedError
+        http, ssh = network_to_api(network)
+        resources_payload: ResourcesPayload = ResourcesPayload(
+            memory_mb=parse.to_megabytes_str(resources.memory),
+            cpu=resources.cpu,
+            gpu=resources.gpu,
+            gpu_model=resources.gpu_model,
+            shm=resources.shm,
+        )
+        container = ContainerPayload(
+            image=image.image,
+            command=image.command,
+            http=http,
+            ssh=ssh,
+            resources=resources_payload,
+        )
+
+        url = URL("jobs")
+        request_details: Dict[str, Any] = {"container": container.to_primitive()}
+        if volumes:
+            prim_volumes = [v.to_primitive() for v in volumes]
+        else:
+            prim_volumes = []
+        request_details["container"]["volumes"] = prim_volumes
+        if description:
+            request_details["description"] = description
+        if is_preemptible is not None:
+            request_details["is_preemptible"] = is_preemptible
+        async with self._api.request("POST", url, json=request_details) as resp:
+            res = await resp.json()
+            return self._dict_to_description(res)
 
     async def list(self) -> List[JobDescription]:
         raise NotImplementedError
@@ -112,6 +145,7 @@ class Jobs:
             ssh=job_description.ssh,
             owner=job_description.owner,
             description=job_description.description,
+            is_preemptible=job_description.is_preemptible,
         )
 
     def _dict_to_description(self, res: Dict[str, Any]) -> JobDescription:
@@ -149,4 +183,5 @@ class Jobs:
             ssh=ssh_conn,
             owner=job_owner,
             description=description,
+            is_preemptible=res["is_preemptible"],
         )

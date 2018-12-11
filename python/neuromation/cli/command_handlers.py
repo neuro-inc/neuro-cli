@@ -459,17 +459,6 @@ class JobHandlerOperations(PlatformStorageOperation):
             job_list = self._sort_job_list(filter(apply_filter, j.list()))
             return formatter.format_jobs(job_list)
 
-    def _network_parse(self, http, ssh) -> Optional[NetworkPortForwarding]:
-        net = None
-        ports: Dict[str, int] = {}
-        if http:
-            ports["http"] = int(http)
-        if ssh:
-            ports["ssh"] = int(ssh)
-        if ports:
-            net = NetworkPortForwarding(ports)
-        return net
-
     def _parse_volume_str(self, volume: str) -> VolumeDescriptionPayload:
         volume_desc_parts = volume.split(":")
         if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
@@ -520,7 +509,7 @@ class JobHandlerOperations(PlatformStorageOperation):
 
         with jobs() as j:
             image = Image(image=image, command=cmd)
-            network = self._network_parse(http, ssh)
+            network = NetworkPortForwarding.from_cli(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
             volumes = self._parse_volumes(volumes)
             return j.submit(
@@ -677,7 +666,7 @@ class ModelHandlerOperations(JobHandlerOperations):
                 f"Results path should be on platform. " f"Current value {results}"
             )
 
-        net = self._network_parse(http, ssh)
+        net = NetworkPortForwarding.from_cli(http, ssh)
 
         cmd = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
