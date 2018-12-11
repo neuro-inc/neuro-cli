@@ -2,12 +2,10 @@ from unittest.mock import patch
 
 import pytest
 
-import neuromation
 from neuromation.cli import rc
 from neuromation.cli.commands import dispatch
 from neuromation.cli.main import neuro
 from neuromation.client import FileStatus
-from neuromation.client.jobs import JobItem
 
 
 @pytest.fixture

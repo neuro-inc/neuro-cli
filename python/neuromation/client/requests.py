@@ -113,7 +113,7 @@ class VolumeDescriptionPayload:
     ) -> Optional[List["VolumeDescriptionPayload"]]:
         if not lst:
             return None
-        return [cls.from_cli(s) for s in lst]
+        return [cls.from_cli(username, s) for s in lst]
 
 
 @dataclass(frozen=True)

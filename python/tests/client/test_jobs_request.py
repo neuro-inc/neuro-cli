@@ -1,14 +1,10 @@
 # Test sets defined to ensure proper payload is being sent to the server
 # API calls are mocked, tests ensure that client side wrappers pass correct json
 # and properly read response from server side
-from typing import List
 from unittest.mock import patch
 
 import aiohttp
 
-from neuromation.client import Image
-from neuromation.client.jobs import NetworkPortForwarding, Resources
-from neuromation.client.requests import VolumeDescriptionPayload
 from tests.utils import JsonResponse, mocked_async_context_manager
 
 

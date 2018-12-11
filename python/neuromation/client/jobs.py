@@ -53,7 +53,9 @@ class NetworkPortForwarding:
     ports: Dict[str, int]
 
     @classmethod
-    def from_cli(cls, http: SupportsInt, ssh: SupportsInt) -> "NetworkPortForwarding":
+    def from_cli(
+        cls, http: SupportsInt, ssh: SupportsInt
+    ) -> Optional["NetworkPortForwarding"]:
         net = None
         ports: Dict[str, int] = {}
         if http:
