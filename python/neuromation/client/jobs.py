@@ -151,44 +151,6 @@ class ResourceSharing(ApiClient):
 
 
 class Model(ApiClient):
-    def infer(
-        self,
-        *,
-        image: Image,
-        resources: Resources,
-        network: Optional[NetworkPortForwarding],
-        model: str,
-        dataset: str,
-        results: str,
-        description: Optional[str],
-    ) -> JobItem:
-        http, ssh = network_to_api(network)
-        res = self._fetch_sync(
-            InferRequest(
-                container=ContainerPayload(
-                    image=image.image,
-                    command=image.command,
-                    http=http,
-                    ssh=ssh,
-                    resources=ResourcesPayload(
-                        memory_mb=parse.to_megabytes_str(resources.memory),
-                        cpu=resources.cpu,
-                        gpu=resources.gpu,
-                        gpu_model=resources.gpu_model,
-                        shm=resources.shm,
-                    ),
-                ),
-                model_storage_uri=model,
-                dataset_storage_uri=dataset,
-                result_storage_uri=results,
-                description=description,
-            )
-        )
-
-        return JobItem(
-            id=res["job_id"], status=res["status"], client=self, description=description
-        )
-
     def train(
         self,
         *,
