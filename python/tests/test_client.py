@@ -6,7 +6,6 @@ import pytest
 from neuromation import client
 from neuromation.client.jobs import NetworkPortForwarding
 from utils import (
-    INFER_RESPONSE,
     TRAIN_RESPONSE,
     JsonResponse,
     mocked_async_context_manager,

@@ -8,9 +8,6 @@ import aiohttp
 TRAIN_RESPONSE = {"status": "PENDING", "job_id": "iddqd"}
 
 
-INFER_RESPONSE = {"status": "PENDING", "job_id": "iddqd"}
-
-
 class Response:
     def __init__(self, payload, *, error=None, status=200):
         if type(payload) in [dict, list]:
