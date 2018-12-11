@@ -484,3 +484,12 @@ async def test_job_submit_preemptible(aiohttp_server):
         ssh=URL("ssh://my_host.ssh:22"),
         is_preemptible=True,
     )
+
+
+@pytest.mark.parametrize(
+    "volume",
+    [("storage:///"), (":"), ("::::"), (""), ("storage:///data/:/data/rest:wrong")],
+)
+def test_volume_from_str_fail(volume):
+    with pytest.raises(ValueError):
+        VolumeDescriptionPayload.from_cli('testuser', volume)

@@ -459,43 +459,6 @@ class JobHandlerOperations(PlatformStorageOperation):
             job_list = self._sort_job_list(filter(apply_filter, j.list()))
             return formatter.format_jobs(job_list)
 
-    def _parse_volumes(self, volumes) -> Optional[List[VolumeDescriptionPayload]]:
-        return VolumeDescriptionPayload.from_cli_list(self.principal, volumes)
-
-    def submit(
-        self,
-        image,
-        gpu: str,
-        gpu_model: str,
-        cpu: str,
-        memory: str,
-        extshm: str,
-        cmd,
-        http,
-        ssh,
-        volumes,
-        jobs: Callable,
-        is_preemptible: bool,
-        description: str,
-    ) -> JobDescription:
-
-        cmd = " ".join(cmd) if cmd is not None else None
-        log.debug(f'cmd="{cmd}"')
-
-        with jobs() as j:
-            image = Image(image=image, command=cmd)
-            network = NetworkPortForwarding.from_cli(http, ssh)
-            resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-            volumes = self._parse_volumes(volumes)
-            return j.submit(
-                image=image,
-                resources=resources,
-                network=network,
-                volumes=volumes,
-                is_preemptible=is_preemptible,
-                description=description,
-            )
-
     def start_ssh(
         self,
         job_id: str,
