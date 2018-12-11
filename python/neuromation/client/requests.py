@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, ClassVar, Dict, List, Optional
-from urllib.parse import urlparse
 
 from neuromation import http
 from neuromation.http import JsonRequest
@@ -60,60 +59,6 @@ class ContainerPayload:
         if self.ssh:
             primitive["ssh"] = self.ssh
         return primitive
-
-
-@dataclass(frozen=True)
-class VolumeDescriptionPayload:
-    storage_path: str
-    container_path: str
-    read_only: bool
-
-    def to_primitive(self) -> Dict[str, Any]:
-        resp: Dict[str, Any] = {
-            "src_storage_uri": self.storage_path,
-            "dst_path": self.container_path,
-        }
-        if self.read_only:
-            resp["read_only"] = bool(self.read_only)
-        else:
-            resp["read_only"] = False
-        return resp
-
-    @classmethod
-    def from_cli(cls, username: str, volume: str) -> "VolumeDescriptionPayload":
-        volume_desc_parts = volume.split(":")
-        if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
-            raise ValueError(f"Invalid volume specification '{volume}'")
-
-        storage_path = ":".join(volume_desc_parts[:-1])
-        container_path = volume_desc_parts[2]
-        read_only = False
-        if len(volume_desc_parts) == 4:
-            if not volume_desc_parts[-1] in ["ro", "rw"]:
-                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
-            read_only = volume_desc_parts[-1] == "ro"
-            storage_path = ":".join(volume_desc_parts[:-2])
-
-        # TODO: Refactor PlatformStorageOperation tight coupling
-        from neuromation.cli.command_handlers import PlatformStorageOperation
-
-        pso = PlatformStorageOperation(username)
-        pso._is_storage_path_url(urlparse(storage_path, scheme="file"))
-        storage_path_with_principal = (
-            f"storage:/{str(pso.render_uri_path_with_principal(storage_path))}"
-        )
-
-        return VolumeDescriptionPayload(
-            storage_path_with_principal, container_path, read_only
-        )
-
-    @classmethod
-    def from_cli_list(
-        cls, username: str, lst: List[str]
-    ) -> Optional[List["VolumeDescriptionPayload"]]:
-        if not lst:
-            return None
-        return [cls.from_cli(username, s) for s in lst]
 
 
 @dataclass(frozen=True)
@@ -203,32 +148,6 @@ class TrainRequest(Request):
 @dataclass(frozen=True)
 class JobRequest(Request):
     pass
-
-
-@dataclass(frozen=True)
-class JobSubmissionRequest(JobRequest):
-    container: ContainerPayload
-    description: Optional[str]
-    volumes: Optional[List[VolumeDescriptionPayload]]
-    is_preemptible: Optional[bool]
-
-    def _convert_volumes_to_primitive(self) -> List[Dict[str, Any]]:
-        if self.volumes:
-            return [volume.to_primitive() for volume in self.volumes]
-        return []
-
-    def to_http_request(self) -> JsonRequest:
-        request_details: Dict[str, Any] = {
-            "container": container_to_primitive(self.container)
-        }
-        request_details["container"]["volumes"] = self._convert_volumes_to_primitive()
-        if self.description:
-            request_details["description"] = self.description
-        if self.is_preemptible is not None:
-            request_details["is_preemptible"] = self.is_preemptible
-        return http.JsonRequest(
-            url="/jobs", params=None, method="POST", json=request_details, data=None
-        )
 
 
 @dataclass(frozen=True)
@@ -327,8 +246,6 @@ def build(request: Request) -> http.Request:
     elif isinstance(request, TrainRequest):
         return request.to_http_request()
     elif isinstance(request, InferRequest):
-        return request.to_http_request()
-    elif isinstance(request, JobSubmissionRequest):
         return request.to_http_request()
     elif isinstance(request, CreateRequest):
         return http.PlainRequest(

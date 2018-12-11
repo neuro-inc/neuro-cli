@@ -12,11 +12,9 @@ from .requests import (
     InferRequest,
     JobListRequest,
     JobStatusRequest,
-    JobSubmissionRequest,
     ResourcesPayload,
     ShareResourceRequest,
     TrainRequest,
-    VolumeDescriptionPayload,
 )
 
 

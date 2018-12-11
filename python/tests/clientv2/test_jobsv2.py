@@ -492,4 +492,4 @@ async def test_job_submit_preemptible(aiohttp_server):
 )
 def test_volume_from_str_fail(volume):
     with pytest.raises(ValueError):
-        VolumeDescriptionPayload.from_cli('testuser', volume)
+        VolumeDescriptionPayload.from_cli("testuser", volume)

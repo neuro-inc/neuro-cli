@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 from yarl import URL
 
@@ -8,13 +9,66 @@ from neuromation.client.jobs import (
     JobStatus,
     NetworkPortForwarding,
     Resources,
-    VolumeDescriptionPayload,
     network_to_api,
 )
 from neuromation.client.requests import ContainerPayload, ResourcesPayload
 from neuromation.strings import parse
 
 from .api import API
+
+
+@dataclass(frozen=True)
+class VolumeDescriptionPayload:
+    storage_path: str
+    container_path: str
+    read_only: bool
+
+    def to_primitive(self) -> Dict[str, Any]:
+        resp: Dict[str, Any] = {
+            "src_storage_uri": self.storage_path,
+            "dst_path": self.container_path,
+        }
+        if self.read_only:
+            resp["read_only"] = bool(self.read_only)
+        else:
+            resp["read_only"] = False
+        return resp
+
+    @classmethod
+    def from_cli(cls, username: str, volume: str) -> "VolumeDescriptionPayload":
+        volume_desc_parts = volume.split(":")
+        if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
+            raise ValueError(f"Invalid volume specification '{volume}'")
+
+        storage_path = ":".join(volume_desc_parts[:-1])
+        container_path = volume_desc_parts[2]
+        read_only = False
+        if len(volume_desc_parts) == 4:
+            if not volume_desc_parts[-1] in ["ro", "rw"]:
+                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
+            read_only = volume_desc_parts[-1] == "ro"
+            storage_path = ":".join(volume_desc_parts[:-2])
+
+        # TODO: Refactor PlatformStorageOperation tight coupling
+        from neuromation.cli.command_handlers import PlatformStorageOperation
+
+        pso = PlatformStorageOperation(username)
+        pso._is_storage_path_url(urlparse(storage_path, scheme="file"))
+        storage_path_with_principal = (
+            f"storage:/{str(pso.render_uri_path_with_principal(storage_path))}"
+        )
+
+        return VolumeDescriptionPayload(
+            storage_path_with_principal, container_path, read_only
+        )
+
+    @classmethod
+    def from_cli_list(
+        cls, username: str, lst: List[str]
+    ) -> Optional[List["VolumeDescriptionPayload"]]:
+        if not lst:
+            return None
+        return [cls.from_cli(username, s) for s in lst]
 
 
 @dataclass(frozen=True)

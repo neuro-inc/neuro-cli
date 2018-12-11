@@ -18,7 +18,6 @@ from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.formatter import JobListFormatter
 from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
-from neuromation.client.requests import VolumeDescriptionPayload
 from neuromation.http import BadRequestError
 
 
