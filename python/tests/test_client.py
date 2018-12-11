@@ -5,11 +5,7 @@ import pytest
 
 from neuromation import client
 from neuromation.client.jobs import NetworkPortForwarding
-from utils import (
-    TRAIN_RESPONSE,
-    JsonResponse,
-    mocked_async_context_manager,
-)
+from utils import TRAIN_RESPONSE, JsonResponse, mocked_async_context_manager
 
 
 JOB_RESPONSE = {"status": "SUCCEEDED", "id": "iddqd"}

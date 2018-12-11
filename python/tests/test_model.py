@@ -7,11 +7,7 @@ from aiohttp import web
 
 from neuromation import JobItem, Resources
 from neuromation.client import Image
-from utils import (
-    TRAIN_RESPONSE,
-    JsonResponse,
-    mocked_async_context_manager,
-)
+from utils import TRAIN_RESPONSE, JsonResponse, mocked_async_context_manager
 
 
 JOB_ARGS = {
