@@ -9,14 +9,11 @@ from neuromation.strings import parse
 from .client import ApiClient
 from .requests import (
     ContainerPayload,
-    InferRequest,
     JobListRequest,
     JobStatusRequest,
-    JobSubmissionRequest,
     ResourcesPayload,
     ShareResourceRequest,
     TrainRequest,
-    VolumeDescriptionPayload,
 )
 
 
@@ -153,44 +150,6 @@ class ResourceSharing(ApiClient):
 
 
 class Model(ApiClient):
-    def infer(
-        self,
-        *,
-        image: Image,
-        resources: Resources,
-        network: Optional[NetworkPortForwarding],
-        model: str,
-        dataset: str,
-        results: str,
-        description: Optional[str],
-    ) -> JobItem:
-        http, ssh = network_to_api(network)
-        res = self._fetch_sync(
-            InferRequest(
-                container=ContainerPayload(
-                    image=image.image,
-                    command=image.command,
-                    http=http,
-                    ssh=ssh,
-                    resources=ResourcesPayload(
-                        memory_mb=parse.to_megabytes_str(resources.memory),
-                        cpu=resources.cpu,
-                        gpu=resources.gpu,
-                        gpu_model=resources.gpu_model,
-                        shm=resources.shm,
-                    ),
-                ),
-                model_storage_uri=model,
-                dataset_storage_uri=dataset,
-                result_storage_uri=results,
-                description=description,
-            )
-        )
-
-        return JobItem(
-            id=res["job_id"], status=res["status"], client=self, description=description
-        )
-
     def train(
         self,
         *,
@@ -229,42 +188,6 @@ class Model(ApiClient):
 
 
 class Job(ApiClient):
-    def submit(
-        self,
-        *,
-        image: Image,
-        resources: Resources,
-        network: NetworkPortForwarding,
-        volumes: Optional[List[VolumeDescriptionPayload]],
-        description: Optional[str],
-        is_preemptible: Optional[bool] = False,
-    ) -> JobDescription:
-        http, ssh = network_to_api(network)
-        resources_payload: ResourcesPayload = ResourcesPayload(
-            memory_mb=parse.to_megabytes_str(resources.memory),
-            cpu=resources.cpu,
-            gpu=resources.gpu,
-            gpu_model=resources.gpu_model,
-            shm=resources.shm,
-        )
-        container = ContainerPayload(
-            image=image.image,
-            command=image.command,
-            http=http,
-            ssh=ssh,
-            resources=resources_payload,
-        )
-        res = self._fetch_sync(
-            JobSubmissionRequest(
-                container=container,
-                volumes=volumes,
-                description=description,
-                is_preemptible=is_preemptible,
-            )
-        )
-
-        return self._dict_to_description(res)
-
     def list(self) -> List[JobDescription]:
         res = self._fetch_sync(JobListRequest())
         return [self._dict_to_description_with_history(job) for job in res["jobs"]]

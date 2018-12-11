@@ -341,8 +341,6 @@ Commands:
 
         Commands:
           train              Start model training
-          test               Test trained model against validation dataset
-          infer              Start batch inference
           debug              Prepare debug tunnel for PyCharm
         """
 
@@ -437,14 +435,6 @@ Commands:
                 id, git_key, localport, jobs
             )
             return None
-
-        @command
-        def test():
-            pass
-
-        @command
-        def infer():
-            pass
 
         return locals()
 

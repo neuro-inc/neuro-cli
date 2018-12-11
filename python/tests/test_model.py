@@ -7,12 +7,7 @@ from aiohttp import web
 
 from neuromation import JobItem, Resources
 from neuromation.client import Image
-from utils import (
-    INFER_RESPONSE,
-    TRAIN_RESPONSE,
-    JsonResponse,
-    mocked_async_context_manager,
-)
+from utils import TRAIN_RESPONSE, JsonResponse, mocked_async_context_manager
 
 
 JOB_ARGS = {
@@ -64,11 +59,7 @@ async def _call(self):
     "job,cmd,model_uri",
     [
         ("train", 'bash -c "echo foo"', None),
-        ("infer", 'bash -c "echo foo"', "storage://~/model"),
-        ("infer", 'bash -c "echo foo"', "storage://~/model"),
         ("train", ["bash", "-c", "echo foo"], None),
-        ("infer", ["bash", "-c", "echo foo"], "storage://~/model"),
-        ("infer", ["bash", "-c", "echo foo"], "storage://~/model"),
     ],
 )
 @patch(
@@ -106,17 +97,3 @@ def test_train_errors(request, model):
     pass
     # TODO (artyom, 06/07/2018): implement input validation and uncomment tests
     # train_or_infer_value_errors(model.train, JOB_ARGS)
-
-
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(web.json_response(INFER_RESPONSE)),
-)
-def test_infer_errors(request, model):
-    pass
-    # TODO (artyom, 06/07/2018): implement input validation and uncomment tests
-    # args = {**JOB_ARGS, 'model': 'storage://~/model'}
-    # train_or_infer_value_errors(model.infer, args)
-
-    # with pytest.raises(ValueError, match=r'Invalid uri: .*'):
-    #     model.infer({**args, 'model': 'bad-uri'})
