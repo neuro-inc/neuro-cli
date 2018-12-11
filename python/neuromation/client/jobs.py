@@ -1,7 +1,7 @@
 import asyncio
 import enum
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from neuromation.strings import parse
@@ -51,6 +51,20 @@ class Resources:
 @dataclass()
 class NetworkPortForwarding:
     ports: Dict[str, int]
+
+    @classmethod
+    def from_cli(
+        cls, http: SupportsInt, ssh: SupportsInt
+    ) -> Optional["NetworkPortForwarding"]:
+        net = None
+        ports: Dict[str, int] = {}
+        if http:
+            ports["http"] = int(http)
+        if ssh:
+            ports["ssh"] = int(ssh)
+        if ports:
+            net = NetworkPortForwarding(ports)
+        return net
 
 
 @dataclass(frozen=True)

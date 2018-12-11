@@ -1,9 +1,20 @@
+from typing import List
+
 import pytest
 from aiohttp import web
 from yarl import URL
 
 from neuromation.client import ResourceNotFound
-from neuromation.clientv2 import ClientV2, JobDescription, JobStatus, JobStatusHistory
+from neuromation.clientv2 import (
+    ClientV2,
+    Image,
+    JobDescription,
+    JobStatus,
+    JobStatusHistory,
+    NetworkPortForwarding,
+    Resources,
+    VolumeDescriptionPayload,
+)
 
 
 async def test_jobs_monitor(aiohttp_server):
@@ -103,6 +114,7 @@ async def test_status_failed(aiohttp_server):
                     "reason": "ContainerCannotRun",
                     "description": "Not enough coffee",
                 },
+                "is_preemptible": True,
             }
         )
 
@@ -145,6 +157,7 @@ async def test_status_with_ssh_and_http(aiohttp_server):
                     "reason": "OK",
                     "description": "Everything is fine",
                 },
+                "is_preemptible": True,
             }
         )
 
@@ -170,4 +183,304 @@ async def test_status_with_ssh_and_http(aiohttp_server):
         ),
         url=URL("http://my_host:8889"),
         ssh=URL("ssh://my_host.ssh:22"),
+    )
+
+
+async def test_job_submit(aiohttp_server):
+    async def handler(request):
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181},
+                "ssh": {"port": 22},
+                "resources": {
+                    "memory_mb": "4096",
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "volumes": [
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_only",
+                        "dst_path": "/container/read_only",
+                        "read_only": True,
+                    },
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_write",
+                        "dst_path": "/container/path_read_write",
+                        "read_only": False,
+                    },
+                ],
+            },
+            "is_preemptible": False,
+            "description": "job description",
+        }
+
+        return web.json_response(
+            {
+                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+                "status": "failed",
+                "history": {
+                    "status": "failed",
+                    "reason": "Error",
+                    "description": "Mounted on Avail\\n/dev/shm     "
+                    "64M\\n\\nExit code: 1",
+                    "created_at": "2018-09-25T12:28:21.298672+00:00",
+                    "started_at": "2018-09-25T12:28:59.759433+00:00",
+                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
+                },
+                "container": {
+                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
+                    "command": "date",
+                    "resources": {
+                        "cpu": 1.0,
+                        "memory_mb": 16384,
+                        "gpu": 1,
+                        "shm": False,
+                        "gpu_model": "nvidia-tesla-p4",
+                    },
+                },
+                "http_url": "http://my_host:8889",
+                "ssh_server": "ssh://my_host.ssh:22",
+                "is_preemptible": False,
+            }
+        )
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        image = Image(image="submit-image-name", command="submit-command")
+        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        resources = Resources.create("7", "1", "test-gpu-model", "4G", "true")
+        volumes: List[VolumeDescriptionPayload] = [
+            VolumeDescriptionPayload(
+                "storage://test-user/path_read_only", "/container/read_only", True
+            ),
+            VolumeDescriptionPayload(
+                "storage://test-user/path_read_write",
+                "/container/path_read_write",
+                False,
+            ),
+        ]
+        ret = await client.jobs.submit(
+            image=image,
+            resources=resources,
+            network=network,
+            volumes=volumes,
+            is_preemptible=False,
+            description="job description",
+        )
+
+    assert ret == JobDescription(
+        id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        status=JobStatus.FAILED,
+        image="gcr.io/light-reality-205619/ubuntu:latest",
+        command="date",
+        description=None,
+        resources=Resources(
+            memory=16384, cpu=1.0, gpu=1, gpu_model="nvidia-tesla-p4", shm=False
+        ),
+        history=None,
+        url=URL("http://my_host:8889"),
+        ssh=URL("ssh://my_host.ssh:22"),
+        is_preemptible=False,
+    )
+
+
+async def test_job_submit_no_volumes(aiohttp_server):
+    async def handler(request):
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181},
+                "ssh": {"port": 22},
+                "resources": {
+                    "memory_mb": "4096",
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "volumes": [],
+            },
+            "is_preemptible": False,
+            "description": "job description",
+        }
+
+        return web.json_response(
+            {
+                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+                "status": "failed",
+                "history": {
+                    "status": "failed",
+                    "reason": "Error",
+                    "description": "Mounted on Avail\\n/dev/shm     "
+                    "64M\\n\\nExit code: 1",
+                    "created_at": "2018-09-25T12:28:21.298672+00:00",
+                    "started_at": "2018-09-25T12:28:59.759433+00:00",
+                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
+                },
+                "container": {
+                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
+                    "command": "date",
+                    "resources": {
+                        "cpu": 1.0,
+                        "memory_mb": 16384,
+                        "gpu": 1,
+                        "shm": False,
+                        "gpu_model": "nvidia-tesla-p4",
+                    },
+                },
+                "http_url": "http://my_host:8889",
+                "ssh_server": "ssh://my_host.ssh:22",
+                "is_preemptible": False,
+            }
+        )
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        image = Image(image="submit-image-name", command="submit-command")
+        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        resources = Resources.create("7", "1", "test-gpu-model", "4G", "true")
+        ret = await client.jobs.submit(
+            image=image,
+            resources=resources,
+            network=network,
+            volumes=None,
+            is_preemptible=False,
+            description="job description",
+        )
+
+    assert ret == JobDescription(
+        id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        status=JobStatus.FAILED,
+        image="gcr.io/light-reality-205619/ubuntu:latest",
+        command="date",
+        description=None,
+        resources=Resources(
+            memory=16384, cpu=1.0, gpu=1, gpu_model="nvidia-tesla-p4", shm=False
+        ),
+        history=None,
+        url=URL("http://my_host:8889"),
+        ssh=URL("ssh://my_host.ssh:22"),
+        is_preemptible=False,
+    )
+
+
+async def test_job_submit_preemptible(aiohttp_server):
+    async def handler(request):
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181},
+                "ssh": {"port": 22},
+                "resources": {
+                    "memory_mb": "4096",
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "volumes": [
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_only",
+                        "dst_path": "/container/read_only",
+                        "read_only": True,
+                    },
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_write",
+                        "dst_path": "/container/path_read_write",
+                        "read_only": False,
+                    },
+                ],
+            },
+            "is_preemptible": True,
+            "description": "job description",
+        }
+
+        return web.json_response(
+            {
+                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+                "status": "failed",
+                "history": {
+                    "status": "failed",
+                    "reason": "Error",
+                    "description": "Mounted on Avail\\n/dev/shm     "
+                    "64M\\n\\nExit code: 1",
+                    "created_at": "2018-09-25T12:28:21.298672+00:00",
+                    "started_at": "2018-09-25T12:28:59.759433+00:00",
+                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
+                },
+                "container": {
+                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
+                    "command": "date",
+                    "resources": {
+                        "cpu": 1.0,
+                        "memory_mb": 16384,
+                        "gpu": 1,
+                        "shm": False,
+                        "gpu_model": "nvidia-tesla-p4",
+                    },
+                },
+                "is_preemptible": True,
+                "http_url": "http://my_host:8889",
+                "ssh_server": "ssh://my_host.ssh:22",
+            }
+        )
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        image = Image(image="submit-image-name", command="submit-command")
+        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        resources = Resources.create("7", "1", "test-gpu-model", "4G", "true")
+        volumes: List[VolumeDescriptionPayload] = [
+            VolumeDescriptionPayload(
+                "storage://test-user/path_read_only", "/container/read_only", True
+            ),
+            VolumeDescriptionPayload(
+                "storage://test-user/path_read_write",
+                "/container/path_read_write",
+                False,
+            ),
+        ]
+        ret = await client.jobs.submit(
+            image=image,
+            resources=resources,
+            network=network,
+            volumes=volumes,
+            is_preemptible=True,
+            description="job description",
+        )
+
+    assert ret == JobDescription(
+        id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        status=JobStatus.FAILED,
+        image="gcr.io/light-reality-205619/ubuntu:latest",
+        command="date",
+        description=None,
+        resources=Resources(
+            memory=16384, cpu=1.0, gpu=1, gpu_model="nvidia-tesla-p4", shm=False
+        ),
+        history=None,
+        url=URL("http://my_host:8889"),
+        ssh=URL("ssh://my_host.ssh:22"),
+        is_preemptible=True,
     )

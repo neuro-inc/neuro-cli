@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 from async_generator import asynccontextmanager
@@ -38,11 +38,18 @@ class API:
 
     @asynccontextmanager
     async def request(
-        self, method: str, rel_url: URL, headers: Optional[Dict[str, str]] = None
+        self,
+        method: str,
+        rel_url: URL,
+        *,
+        json: Any = None,
+        headers: Optional[Dict[str, str]] = None,
     ) -> aiohttp.ClientResponse:
         assert not rel_url.is_absolute()
         url = (self._url / "").join(rel_url)
-        async with self._session.request(method, url, headers=headers) as resp:
+        async with self._session.request(
+            method, url, json=json, headers=headers
+        ) as resp:
             try:
                 resp.raise_for_status()
             except aiohttp.ClientResponseError as exc:

@@ -459,44 +459,8 @@ class JobHandlerOperations(PlatformStorageOperation):
             job_list = self._sort_job_list(filter(apply_filter, j.list()))
             return formatter.format_jobs(job_list)
 
-    def _network_parse(self, http, ssh) -> Optional[NetworkPortForwarding]:
-        net = None
-        ports: Dict[str, int] = {}
-        if http:
-            ports["http"] = int(http)
-        if ssh:
-            ports["ssh"] = int(ssh)
-        if ports:
-            net = NetworkPortForwarding(ports)
-        return net
-
-    def _parse_volume_str(self, volume: str) -> VolumeDescriptionPayload:
-        volume_desc_parts = volume.split(":")
-        if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
-            raise ValueError(f"Invalid volume specification '{volume}'")
-
-        storage_path = ":".join(volume_desc_parts[:-1])
-        container_path = volume_desc_parts[2]
-        read_only = False
-        if len(volume_desc_parts) == 4:
-            if not volume_desc_parts[-1] in ["ro", "rw"]:
-                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
-            read_only = volume_desc_parts[-1] == "ro"
-            storage_path = ":".join(volume_desc_parts[:-2])
-
-        self._is_storage_path_url(urlparse(storage_path, scheme="file"))
-        storage_path_with_principal = (
-            f"storage:/{str(self.render_uri_path_with_principal(storage_path))}"
-        )
-
-        return VolumeDescriptionPayload(
-            storage_path_with_principal, container_path, read_only
-        )
-
     def _parse_volumes(self, volumes) -> Optional[List[VolumeDescriptionPayload]]:
-        if volumes:
-            return [self._parse_volume_str(volume) for volume in volumes]
-        return None
+        return VolumeDescriptionPayload.from_cli_list(self.principal, volumes)
 
     def submit(
         self,
@@ -520,7 +484,7 @@ class JobHandlerOperations(PlatformStorageOperation):
 
         with jobs() as j:
             image = Image(image=image, command=cmd)
-            network = self._network_parse(http, ssh)
+            network = NetworkPortForwarding.from_cli(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
             volumes = self._parse_volumes(volumes)
             return j.submit(
@@ -677,7 +641,7 @@ class ModelHandlerOperations(JobHandlerOperations):
                 f"Results path should be on platform. " f"Current value {results}"
             )
 
-        net = self._network_parse(http, ssh)
+        net = NetworkPortForwarding.from_cli(http, ssh)
 
         cmd = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmd="{cmd}"')
