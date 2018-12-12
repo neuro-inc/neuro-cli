@@ -514,8 +514,8 @@ Commands:
 
 
             Examples:
-            # Starts a container pytorch:latest with two paths mounted. Directory /q1/ is
-            # mounted in read only mode to /qm directory within container.
+            # Starts a container pytorch:latest with two paths mounted. Directory /q1/
+            # is mounted in read only mode to /qm directory within container.
             # Directory /mod mounted to /mod directory in read-write mode.
             neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
 pytorch:latest
