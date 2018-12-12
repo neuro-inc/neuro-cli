@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 from yarl import URL
 
@@ -8,10 +9,66 @@ from neuromation.client.jobs import (
     JobStatus,
     NetworkPortForwarding,
     Resources,
-    VolumeDescriptionPayload,
+    network_to_api,
 )
+from neuromation.client.requests import ContainerPayload, ResourcesPayload
+from neuromation.strings import parse
 
 from .api import API
+
+
+@dataclass(frozen=True)
+class VolumeDescriptionPayload:
+    storage_path: str
+    container_path: str
+    read_only: bool
+
+    def to_primitive(self) -> Dict[str, Any]:
+        resp: Dict[str, Any] = {
+            "src_storage_uri": self.storage_path,
+            "dst_path": self.container_path,
+        }
+        if self.read_only:
+            resp["read_only"] = bool(self.read_only)
+        else:
+            resp["read_only"] = False
+        return resp
+
+    @classmethod
+    def from_cli(cls, username: str, volume: str) -> "VolumeDescriptionPayload":
+        volume_desc_parts = volume.split(":")
+        if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
+            raise ValueError(f"Invalid volume specification '{volume}'")
+
+        storage_path = ":".join(volume_desc_parts[:-1])
+        container_path = volume_desc_parts[2]
+        read_only = False
+        if len(volume_desc_parts) == 4:
+            if not volume_desc_parts[-1] in ["ro", "rw"]:
+                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
+            read_only = volume_desc_parts[-1] == "ro"
+            storage_path = ":".join(volume_desc_parts[:-2])
+
+        # TODO: Refactor PlatformStorageOperation tight coupling
+        from neuromation.cli.command_handlers import PlatformStorageOperation
+
+        pso = PlatformStorageOperation(username)
+        pso._is_storage_path_url(urlparse(storage_path, scheme="file"))
+        storage_path_with_principal = (
+            f"storage:/{str(pso.render_uri_path_with_principal(storage_path))}"
+        )
+
+        return VolumeDescriptionPayload(
+            storage_path_with_principal, container_path, read_only
+        )
+
+    @classmethod
+    def from_cli_list(
+        cls, username: str, lst: List[str]
+    ) -> Optional[List["VolumeDescriptionPayload"]]:
+        if not lst:
+            return None
+        return [cls.from_cli(username, s) for s in lst]
 
 
 @dataclass(frozen=True)
@@ -37,6 +94,7 @@ class JobDescription:
     history: Optional[JobStatusHistory] = None
     resources: Optional[Resources] = None
     description: Optional[str] = None
+    is_preemptible: bool = True
 
     def jump_host(self) -> str:
         ssh_hostname = self.ssh.hostname
@@ -56,9 +114,40 @@ class Jobs:
         network: NetworkPortForwarding,
         volumes: Optional[List[VolumeDescriptionPayload]],
         description: Optional[str],
-        is_preemptible: Optional[bool] = False,
+        is_preemptible: bool = False,
+        env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
-        raise NotImplementedError
+        http, ssh = network_to_api(network)
+        resources_payload: ResourcesPayload = ResourcesPayload(
+            memory_mb=parse.to_megabytes_str(resources.memory),
+            cpu=resources.cpu,
+            gpu=resources.gpu,
+            gpu_model=resources.gpu_model,
+            shm=resources.shm,
+        )
+        container = ContainerPayload(
+            image=image.image,
+            command=image.command,
+            http=http,
+            ssh=ssh,
+            resources=resources_payload,
+            env=env,
+        )
+
+        url = URL("jobs")
+        request_details: Dict[str, Any] = {"container": container.to_primitive()}
+        if volumes:
+            prim_volumes = [v.to_primitive() for v in volumes]
+        else:
+            prim_volumes = []
+        request_details["container"]["volumes"] = prim_volumes
+        if description:
+            request_details["description"] = description
+        if is_preemptible is not None:
+            request_details["is_preemptible"] = is_preemptible
+        async with self._api.request("POST", url, json=request_details) as resp:
+            res = await resp.json()
+            return self._dict_to_description(res)
 
     async def list(self) -> List[JobDescription]:
         raise NotImplementedError
@@ -114,6 +203,7 @@ class Jobs:
             owner=job_description.owner,
             description=job_description.description,
             env=job_description.env,
+            is_preemptible=job_description.is_preemptible,
         )
 
     def _dict_to_description(self, res: Dict[str, Any]) -> JobDescription:
@@ -155,4 +245,5 @@ class Jobs:
             owner=job_owner,
             description=description,
             env=job_env,
+            is_preemptible=res["is_preemptible"],
         )

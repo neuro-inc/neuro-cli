@@ -65,24 +65,6 @@ class ContainerPayload:
 
 
 @dataclass(frozen=True)
-class VolumeDescriptionPayload:
-    storage_path: str
-    container_path: str
-    read_only: bool
-
-    def to_primitive(self) -> Dict[str, Any]:
-        resp: Dict[str, Any] = {
-            "src_storage_uri": self.storage_path,
-            "dst_path": self.container_path,
-        }
-        if self.read_only:
-            resp["read_only"] = bool(self.read_only)
-        else:
-            resp["read_only"] = False
-        return resp
-
-
-@dataclass(frozen=True)
 class JobStatusRequest(Request):
     id: str
 
@@ -104,43 +86,6 @@ class ShareResourceRequest(Request):
         )
 
 
-def container_to_primitive(req_container_payload: ContainerPayload) -> Dict[str, Any]:
-    """
-    Converts request object to json object.
-
-    :param req: http.Request
-    :return: request as a Dict(Json)
-    """
-    return req_container_payload.to_primitive()
-
-
-@dataclass(frozen=True)
-class InferRequest(Request):
-    container: ContainerPayload
-    dataset_storage_uri: str
-    result_storage_uri: str
-    model_storage_uri: str
-    description: Optional[str]
-
-    def to_primitive(self) -> Dict[str, Any]:
-        json_params: Dict[str, Any] = {
-            "container": container_to_primitive(self.container),
-            "dataset_storage_uri": self.dataset_storage_uri,
-            "result_storage_uri": self.result_storage_uri,
-            "model_storage_uri": self.model_storage_uri,
-        }
-
-        if self.description:
-            json_params["description"] = self.description
-        return json_params
-
-    def to_http_request(self) -> JsonRequest:
-        json_params = self.to_primitive()
-        return http.JsonRequest(
-            url="/models", params=None, method="POST", json=json_params, data=None
-        )
-
-
 @dataclass(frozen=True)
 class TrainRequest(Request):
     container: ContainerPayload
@@ -150,7 +95,7 @@ class TrainRequest(Request):
 
     def to_primitive(self) -> Dict[str, Any]:
         json_params: Dict[str, Any] = {
-            "container": container_to_primitive(self.container),
+            "container": self.container.to_primitive(),
             "dataset_storage_uri": self.dataset_storage_uri,
             "result_storage_uri": self.result_storage_uri,
         }
@@ -169,32 +114,6 @@ class TrainRequest(Request):
 @dataclass(frozen=True)
 class JobRequest(Request):
     pass
-
-
-@dataclass(frozen=True)
-class JobSubmissionRequest(JobRequest):
-    container: ContainerPayload
-    description: Optional[str]
-    volumes: Optional[List[VolumeDescriptionPayload]]
-    is_preemptible: Optional[bool]
-
-    def _convert_volumes_to_primitive(self) -> List[Dict[str, Any]]:
-        if self.volumes:
-            return [volume.to_primitive() for volume in self.volumes]
-        return []
-
-    def to_http_request(self) -> JsonRequest:
-        request_details: Dict[str, Any] = {
-            "container": container_to_primitive(self.container)
-        }
-        request_details["container"]["volumes"] = self._convert_volumes_to_primitive()
-        if self.description:
-            request_details["description"] = self.description
-        if self.is_preemptible is not None:
-            request_details["is_preemptible"] = self.is_preemptible
-        return http.JsonRequest(
-            url="/jobs", params=None, method="POST", json=request_details, data=None
-        )
 
 
 @dataclass(frozen=True)
@@ -291,10 +210,6 @@ def build(request: Request) -> http.Request:
             url="/jobs", params=None, method="GET", json=None, data=None
         )
     elif isinstance(request, TrainRequest):
-        return request.to_http_request()
-    elif isinstance(request, InferRequest):
-        return request.to_http_request()
-    elif isinstance(request, JobSubmissionRequest):
         return request.to_http_request()
     elif isinstance(request, CreateRequest):
         return http.PlainRequest(
