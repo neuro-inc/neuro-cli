@@ -89,6 +89,7 @@ class JobDescription:
     command: Optional[str] = None
     url: str = ""
     ssh: str = ""
+    env: Optional[Dict[str, str]] = None
     owner: Optional[str] = None
     history: Optional[JobStatusHistory] = None
     resources: Optional[Resources] = None
@@ -218,6 +219,7 @@ class Job(ApiClient):
             resources=job_description.resources,
             url=job_description.url,
             ssh=job_description.ssh,
+            env=job_description.env,
             owner=job_description.owner,
             description=job_description.description,
         )
@@ -226,6 +228,7 @@ class Job(ApiClient):
         job_container_image = None
         job_command = None
         job_resources = None
+        job_env = None
 
         if "container" in res:
             job_container_image = (
@@ -235,6 +238,7 @@ class Job(ApiClient):
                 res["container"]["command"] if "command" in res["container"] else None
             )
 
+            job_env = res["container"].get("env", None)
             if "resources" in res["container"]:
                 container_resources = res["container"]["resources"]
                 shm = container_resources.get("shm", None)
@@ -262,4 +266,5 @@ class Job(ApiClient):
             ssh=ssh_conn,
             owner=job_owner,
             description=description,
+            env=job_env,
         )

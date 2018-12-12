@@ -471,6 +471,7 @@ Commands:
             ssh,
             cmd,
             volume,
+            env,
             preemptible,
             non_preemptible,
             description,
@@ -478,7 +479,8 @@ Commands:
         ):
             """
             Usage:
-                neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
+                neuro job submit [options] [--volume MOUNT]...
+                      [--env VAR=VAL]... IMAGE [CMD...]
 
             Start job using IMAGE
 
@@ -497,6 +499,7 @@ Commands:
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
+                -e, --env VAR=VAL...      Passes an environment value to the container
                 --preemptible             Force job to run on a preemptible instance
                 --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
@@ -505,7 +508,7 @@ Commands:
 
             Examples:
             neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
-                pytorch:latest
+                  pytorch:latest
 
             Starts a container pytorch:latest with two paths mounted. Directory
             /q1/ is mounter in read only mode to /qm directory
@@ -515,7 +518,8 @@ Commands:
             neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
                pytorch:latest
 
-            Starts a container pytorch:latest with connection enabled to port 22.
+            Starts a container pytorch:latest with connection enabled to port 22 and
+            sets PYTHONPATH environment value to /python.
             Please note that SSH server should be provided by container.
             """
 
@@ -530,6 +534,15 @@ Commands:
                 )
             else:
                 is_preemptible = preemptible or not non_preemptible
+
+            env_dict = {}
+            for line in env:
+                splited = line.split("=", 1)
+                if len(splited) == 1:
+                    val = os.environ.get(splited[0], "")
+                    env_dict[splited[0]] = val
+                else:
+                    env_dict[splited[0]] = splited[1]
 
             cmd = " ".join(cmd) if cmd is not None else None
             log.debug(f'cmd="{cmd}"')
@@ -547,6 +560,7 @@ Commands:
                     volumes=volumes,
                     is_preemptible=is_preemptible,
                     description=description,
+                    env=env_dict,
                 )
                 return OutputFormatter.format_job(job, quiet)
 
