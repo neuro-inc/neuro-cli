@@ -385,17 +385,6 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
 
 class JobHandlerOperations(PlatformStorageOperation):
-    def wait_job_transfer_from(
-        self, id: str, from_state: str, jobs: Callable, sleep_interval_s: int = 1
-    ) -> JobDescription:
-        still_state = True
-        job_status = None
-        while still_state:
-            job_status = self.status(id, jobs)
-            still_state = job_status.status == from_state
-            if still_state:
-                sleep(sleep_interval_s)
-        return job_status
 
     def _validate_args_for_ssh_session(
         self, container_user: str, container_key: str, jump_host_key: str
