@@ -228,16 +228,13 @@ Name | Description|
 **Examples:**
 
 ```bash
-neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
-pytorch:latest
-Starts a container pytorch:latest with two paths mounted. Directory
-/q1/ is mounter in read only mode to /qm directory
-within container. Directory /mod mounted to /mod
-directory in read-write mode.
-neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
-pytorch:latest
-Starts a container pytorch:latest with connection enabled to port 22.
-Please note that SSH server should be provided by container.
+# Starts a container pytorch:latest with two paths mounted. Directory /q1/ is
+# mounted in read only mode to /qm directory within container.
+# Directory /mod mounted to /mod directory in read-write mode.
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
+# Starts a container pytorch:latest with connection enabled to port 22.
+# Please note that SSH server should be provided by container.
+neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 ```
 
 
@@ -266,7 +263,7 @@ neuro job list [options]
 
 Name | Description|
 |----|------------|
-|_\-s, --status \(pending|running|succeeded|failed|all)_|<br/>Filter out job by status\(es) \(comma delimited if multiple)|
+|_\-s, --status \(pending|running|succeeded|failed|all)_|<br/>Filter out job by status\(es) \(comma delimited if multiple)<br/>\[Default: running,pending]|
 |_\-d, --description DESCRIPTION_|<br/>Filter out job by job description \(exact match)|
 |_\-q, --quiet_|<br/>Run command in quiet mode \(print only job ids)<br/>List all jobs|
 
@@ -274,8 +271,12 @@ Name | Description|
 **Examples:**
 
 ```bash
+# List jobs with description "my favourite job", only jobs with running and
+# pending statuses will be listed
 neuro job list --description="my favourite job"
+# List jobs with any status
 neuro job list --status=all
+# List only job ids for pending and running jobs
 neuro job list --status=pending,running --quiet
 ```
 
@@ -533,6 +534,7 @@ neuro config url URL
 **Examples:**
 
 ```bash
+# Setup neuro for using http://platform.neuromation.io/api/v1 as api url
 neuro config url http://platform.neuromation.io/api/v1
 ```
 
@@ -645,8 +647,11 @@ neuro share URI WHOM (read|write|manage)
 **Examples:**
 
 ```bash
+# Grant manage permission to alice on storage:///sample_data/
 neuro share storage:///sample_data/ alice manage
+# Allow bob read-only permission on image:///resnet50
 neuro share image:///resnet50 bob read
+# Grant write access to alice on job:///my_job_id
 neuro share job:///my_job_id alice write
 ```
 
@@ -654,7 +659,7 @@ neuro share job:///my_job_id alice write
 
 ## neuro help
 
-Display help for given COMMAND
+Display help for given COMMAND<br/>Alternative form:<br/>neuro COMMAND --help
 
 **Usage:**
 
@@ -665,7 +670,9 @@ neuro help COMMAND [SUBCOMMAND[...]]
 **Examples:**
 
 ```bash
+# Display help fot 'store' command
 neuro help store
+# Display help for 'store ls' command
 neuro help store ls
 ```
 

@@ -514,20 +514,19 @@ Commands:
 
 
             Examples:
-            neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
-                pytorch:latest
+            # Starts a container pytorch:latest with two paths mounted. Directory /q1/ is
+            # mounted in read only mode to /qm directory within container.
+            # Directory /mod mounted to /mod directory in read-write mode.
+            neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
+pytorch:latest
 
-            Starts a container pytorch:latest with two paths mounted. Directory
-            /q1/ is mounter in read only mode to /qm directory
-            within container. Directory /mod mounted to /mod
-            directory in read-write mode.
+            # Starts a container pytorch:latest with connection enabled to port 22 and
+            # sets PYTHONPATH environment value to /python.
+            # Please note that SSH server should be provided by container.
+            neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22 \
+pytorch:latest
 
-            neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
-               pytorch:latest
 
-            Starts a container pytorch:latest with connection enabled to port 22 and
-            sets PYTHONPATH environment value to /python.
-            Please note that SSH server should be provided by container.
             """
 
             config: Config = rc.ConfigFactory.load()
