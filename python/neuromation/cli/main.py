@@ -509,7 +509,7 @@ Commands:
                 --volume MOUNT...         Mounts directory from vault into container
                                           Use multiple options to mount more than one \
 volume
-                --env VAR=VAL...          Set environment variable in container
+                -e, --env VAR=VAL...      Set environment variable in container
                                           Use multiple options to define more than one \
 variable
                 --preemptible             Force job to run on a preemptible instance
