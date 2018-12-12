@@ -585,53 +585,6 @@ class ModelHandlerOperations(JobHandlerOperations):
 
         return job
 
-    def develop(
-        self,
-        image,
-        dataset,
-        results,
-        gpu,
-        gpu_model,
-        cpu,
-        memory,
-        extshm,
-        model,
-        jobs,
-        http,
-        ssh,
-        jump_host_rsa,
-        container_user,
-        container_key_path,
-    ):
-        self._validate_args_for_ssh_session(
-            container_user, container_key_path, jump_host_rsa
-        )
-        if not ssh:
-            raise ValueError("Please enable SSH / specify ssh port.")
-
-        # Start the job, we expect it to have SSH server on board
-        job = self.train(
-            image,
-            dataset,
-            results,
-            gpu,
-            gpu_model,
-            cpu,
-            memory,
-            extshm,
-            None,
-            model,
-            http,
-            ssh,
-            description=None,
-        )
-        job_id = job.id
-        # wait for a job to leave pending stage
-        job_status = self.wait_job_transfer_from(job_id, "pending", jobs)
-        # start ssh shell session
-        self._connect_ssh(job_status, jump_host_rsa, container_user, container_key_path)
-        return None
-
 
 class DockerHandler(PlatformOperation):
     def __init__(self, principal: str, token: str) -> None:
