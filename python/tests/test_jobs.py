@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import aiohttp
 
-from neuromation.client.jobs import JobDescription, JobStatusHistory, Resources
 from utils import JsonResponse, mocked_async_context_manager
 
 
