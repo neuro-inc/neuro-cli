@@ -33,6 +33,7 @@ from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
 from .commands import command, dispatch
+from .defaults import DEFAULTS
 
 
 # For stream copying from file to http or from http to file
@@ -111,7 +112,7 @@ Commands:
 
         Client configuration settings commands
 
-        Settings:
+        Commands:
             url             Updates API URL
             auth            Updates API Token
             forget          Forget stored API Token
@@ -128,7 +129,7 @@ Commands:
 
             Updates settings with provided platform URL.
 
-            Example:
+            Examples:
             neuro config url http://platform.neuromation.io/api/v1
             """
             rc.ConfigFactory.update_api_url(url)
@@ -215,7 +216,7 @@ Commands:
 
             Remove files or directories.
 
-            Example:
+            Examples:
             neuro store rm storage:///foo/bar/
             neuro store rm storage:/foo/bar/
             neuro store rm storage://{username}/foo/bar/
@@ -262,7 +263,7 @@ Commands:
               -r, --recursive             Recursive copy
               -p, --progress              Show progress
 
-            Example:
+            Examples:
 
             # copy local file ./foo into remote storage root
             neuro store cp ./foo storage:///
@@ -314,7 +315,7 @@ Commands:
             the full path to the target file or directory.
 
 
-            Example:
+            Examples:
 
             # move or rename remote file
             neuro store mv storage://{username}/foo.txt storage://{username}/bar.txt
@@ -376,14 +377,17 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
-                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Available options:
+                -g, --gpu NUMBER          Number of GPUs to request \
+[default: {model_train_gpu_number}]
+                --gpu-model MODEL         GPU to use [default: {model_train_gpu_model}]
+                                          Other options available are
                                               nvidia-tesla-k80
                                               nvidia-tesla-p4
                                               nvidia-tesla-v100
-                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
-                -m, --memory AMOUNT       Memory amount to request [default: 1G]
+                -c, --cpu NUMBER          Number of CPUs to request \
+[default: {model_train_cpu_number}]
+                -m, --memory AMOUNT       Memory amount to request \
+[default: {model_train_memory_amount}]
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
@@ -422,9 +426,10 @@ Commands:
             Job should be started with SSH support enabled.
 
             Options:
-                --localport NUMBER    Local port number for debug [default: 31234]
+                --localport NUMBER    Local port number for debug \
+[default: {model_debug_local_port}]
 
-            Example:
+            Examples:
             neuro model debug --localport 12789 job-abc-def-ghk
             """
             config: Config = rc.ConfigFactory.load()
@@ -487,19 +492,26 @@ Commands:
             COMMANDS list will be passed as commands to model container.
 
             Options:
-                -g, --gpu NUMBER          Number of GPUs to request [default: 0]
-                --gpu-model MODEL         GPU to use [default: nvidia-tesla-k80]
-                                          Available options:
+                -g, --gpu NUMBER          Number of GPUs to request \
+[default: {job_submit_gpu_number}]
+                --gpu-model MODEL         GPU to use [default: {job_submit_gpu_model}]
+                                          Other options available are
                                               nvidia-tesla-k80
                                               nvidia-tesla-p4
                                               nvidia-tesla-v100
+                -c, --cpu NUMBER          Number of CPUs to request \
+[default: {job_submit_cpu_number}]
+                -m, --memory AMOUNT       Memory amount to request \
+[default: {job_submit_memory_amount}]
                 -x, --extshm              Request extended '/dev/shm' space
-                -c, --cpu NUMBER          Number of CPUs to request [default: 0.1]
-                -m, --memory AMOUNT       Memory amount to request [default: 1G]
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
-                -e, --env VAR=VAL...      Passes an environment value to the container
+                                          Use multiple options to mount more than one \
+volume
+                -e, --env VAR=VAL...      Set environment variable in container
+                                          Use multiple options to define more than one \
+variable
                 --preemptible             Force job to run on a preemptible instance
                 --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
@@ -507,20 +519,17 @@ Commands:
 
 
             Examples:
-            neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw
-                  pytorch:latest
+            # Starts a container pytorch:latest with two paths mounted. Directory /q1/
+            # is mounted in read only mode to /qm directory within container.
+            # Directory /mod mounted to /mod directory in read-write mode.
+            neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
+pytorch:latest
 
-            Starts a container pytorch:latest with two paths mounted. Directory
-            /q1/ is mounter in read only mode to /qm directory
-            within container. Directory /mod mounted to /mod
-            directory in read-write mode.
-
-            neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22
-               pytorch:latest
-
-            Starts a container pytorch:latest with connection enabled to port 22 and
-            sets PYTHONPATH environment value to /python.
-            Please note that SSH server should be provided by container.
+            # Starts a container pytorch:latest with connection enabled to port 22 and
+            # sets PYTHONPATH environment value to /python.
+            # Please note that SSH server should be provided by container.
+            neuro job submit --env PYTHONPATH=/python --volume \
+storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             """
 
             config: Config = rc.ConfigFactory.load()
@@ -574,10 +583,10 @@ Commands:
             Job should be started with SSH support enabled.
 
             Options:
-                --user STRING         Container user name [default: root]
+                --user STRING         Container user name [default: {job_ssh_user}]
                 --key STRING          Path to container private key.
 
-            Example:
+            Examples:
             neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
             """
             config: Config = rc.ConfigFactory.load()
@@ -623,7 +632,7 @@ Commands:
 
             List all jobs
 
-            Example:
+            Examples:
             neuro job list --description="my favourite job"
             neuro job list --status=all
             neuro job list --status=pending,running --quiet
@@ -733,7 +742,7 @@ Commands:
             Shares resource specified by URI to a user specified by WHOM
              allowing to read, write or manage it.
 
-            Example:
+            Examples:
             neuro share storage:///sample_data/ alice manage
             neuro share image:///resnet50 bob read
             neuro share job:///my_job_id alice write
@@ -806,6 +815,21 @@ Commands:
 
         return locals()
 
+    @command
+    def help():
+        """
+            Usage:
+                neuro help COMMAND [SUBCOMMAND[...]]
+
+            Display help for given COMMAND
+
+            Examples:
+                neuro help store
+                neuro help store ls
+
+        """
+        pass
+
     return locals()
 
 
@@ -822,10 +846,12 @@ def main():
         return
 
     config = rc.ConfigFactory.load()
-    doc_username = config.get_platform_user_name()
-    if not doc_username:
-        doc_username = "username"
-    format_spec = {"api_url": config.url, "username": doc_username}
+    format_spec = DEFAULTS.copy()
+    platform_username = config.get_platform_user_name()
+    if platform_username:
+        format_spec["username"] = platform_username
+    if config.url:
+        format_spec["api_url"] = config.url
 
     try:
         res = dispatch(
@@ -857,6 +883,9 @@ def main():
         log.error(f"Connection error ({error})")
         sys.exit(os.EX_IOERR)
 
+    except NotImplementedError as error:
+        log.error(f"{error}")
+        sys.exit(os.EX_SOFTWARE)
     except FileNotFoundError as error:
         log.error(f"File not found ({error})")
         sys.exit(os.EX_OSFILE)

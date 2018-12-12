@@ -12,3 +12,4 @@ wheel==0.32.3
 cmarkgfm==0.4.2
 twine==1.12.1
 pytest-xdist==1.24.1
+markdown-toc==1.2.4
