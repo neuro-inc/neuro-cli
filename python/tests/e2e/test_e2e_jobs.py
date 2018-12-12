@@ -437,7 +437,6 @@ def test_e2e_multiple_env_from_file(run):
         env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
         bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
         command = f"bash -c '{bash_script}'"
-        assert env_file.read_text() == "banana"
         _, captured = run(
             [
                 "job",
