@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from tempfile import mkdtemp
+from tempfile import TemporaryDirectory
 from time import sleep, time
 from urllib.parse import urlparse
 from uuid import uuid4 as uuid
@@ -431,36 +431,36 @@ def test_e2e_multiple_env(run):
 
 @pytest.mark.e2e
 def test_e2e_multiple_env_from_file(run):
-    tmpdir = Path(mkdtemp())
-    env_file = tmpdir / "env_file"
-    env_file.write_text("VAR2=VAL2\n" "VAR3=VAL3")
-    bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
-    command = f"bash -c '{bash_script}'"
-    _, captured = run(
-        [
-            "job",
-            "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "-e",
-            "VAR=VAL",
-            "-e",
-            "VAR2=LAV2",
-            "-env_file",
-            str(env_file),
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
+    with TemporaryDirectory as tmpdir:
+        env_file = tmpdir / "env_file"
+        env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
+        bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
+        command = f"bash -c '{bash_script}'"
+        _, captured = run(
+            [
+                "job",
+                "submit",
+                "-m",
+                "20M",
+                "-c",
+                "0.1",
+                "-g",
+                "0",
+                "-e",
+                "VAR=VAL",
+                "-e",
+                "VAR2=VAL2",
+                "-env_file",
+                str(env_file),
+                UBUNTU_IMAGE_NAME,
+                command,
+            ]
+        )
 
-    out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+        out = captured.out
+        job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
-    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+        wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+        wait_for_job_to_change_state_from(run, job_id, "Status: running")
 
-    assert_job_state(run, job_id, "Status: succeeded")
+        assert_job_state(run, job_id, "Status: succeeded")
