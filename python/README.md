@@ -203,6 +203,7 @@ Name | Description|
 |_--ssh NUMBER_|Enable SSH port forwarding to container|
 |_--volume MOUNT..._|Mounts directory from vault into container<br/>Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL..._|Set environment variable in container<br/>Use multiple options to define more than one variable|
+|_\--env-file FILE_|File with environment variables to pass|
 |_--preemptible_|Force job to run on a preemptible instance|
 |_\--non-preemptible_|Force job to run on a non-preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
