@@ -1,6 +1,6 @@
 from typing import Iterable, Optional, Union
 
-import dateutil
+import dateutil.parser
 
 from neuromation.client.jobs import JobDescription, JobItem, JobStatus
 
