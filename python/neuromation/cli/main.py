@@ -632,18 +632,16 @@ Commands:
 
             status = status or "running,pending"
 
-            statuses = set(status.split(",")) if status else set()
+            # TODO: add validation of status values
+            statuses = set(status.split(","))
+            if "all" in statuses:
+                statuses = set()
 
             async with ClientV2(url, token) as client:
                 jobs = await client.jobs.list()
 
-            if "all" not in statuses:
-                jobs = [j for j in jobs if j.status in statuses]
-            if description:
-                jobs = [j for j in jobs if j.description == description]
-
             formatter = JobListFormatter(quiet=quiet)
-            return formatter.format_jobs(jobs)
+            return formatter.format_jobs(jobs, statuses, description)
 
         @command
         async def status(id):
