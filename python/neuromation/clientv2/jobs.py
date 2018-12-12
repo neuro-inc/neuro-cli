@@ -157,11 +157,6 @@ class Jobs:
             return [self._dict_to_description_with_history(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
-        """
-        the method returns None when the server has responded
-        with HTTPNoContent in case of successful job deletion,
-        and the text response otherwise (possibly empty).
-        """
         url = URL(f"jobs/{id}")
         async with self._api.request("DELETE", url):
             # an error is raised for status >= 400
