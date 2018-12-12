@@ -507,6 +507,11 @@ Commands:
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
                 --volume MOUNT...         Mounts directory from vault into container
+                                          Use multiple options to mount more than one \
+volume
+                --env VAR=VAL...          Set environment variable in container
+                                          Use multiple options to define more than one \
+variable
                 --preemptible             Force job to run on a preemptible instance
                 --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
@@ -523,8 +528,8 @@ pytorch:latest
             # Starts a container pytorch:latest with connection enabled to port 22 and
             # sets PYTHONPATH environment value to /python.
             # Please note that SSH server should be provided by container.
-            neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22 \
-pytorch:latest
+            neuro job submit --env PYTHONPATH=/python --volume \
+storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             """
 
             config: Config = rc.ConfigFactory.load()

@@ -201,7 +201,8 @@ Name | Description|
 |_\-x, --extshm_|Request extended '/dev/shm' space|
 |_--http NUMBER_|Enable HTTP port forwarding to container|
 |_--ssh NUMBER_|Enable SSH port forwarding to container|
-|_--volume MOUNT..._|Mounts directory from vault into container|
+|_--volume MOUNT..._|Mounts directory from vault into container<br/>Use multiple options to mount more than one volume|
+|_--env VAR=VAL..._|Set environment variable in container<br/>Use multiple options to define more than one variable|
 |_--preemptible_|Force job to run on a preemptible instance|
 |_\--non-preemptible_|Force job to run on a non-preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
@@ -218,7 +219,7 @@ neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytor
 # Starts a container pytorch:latest with connection enabled to port 22 and
 # sets PYTHONPATH environment value to /python.
 # Please note that SSH server should be provided by container.
-neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 ```
 
 
