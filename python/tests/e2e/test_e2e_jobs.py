@@ -451,7 +451,7 @@ def test_e2e_multiple_env_from_file(run):
                 "VAR=VAL",
                 "-e",
                 "VAR2=VAL2",
-                "--env_file",
+                "--env-file",
                 str(env_file),
                 UBUNTU_IMAGE_NAME,
                 command,
