@@ -12,7 +12,7 @@ GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\nauth: {token}"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 format_list = "{type:<15}{size:<15,}{name:<}".format
-format_list_pattern = "(file|directory)\s*\d+\s*{name}".format
+format_list_pattern = "(file|directory)\\s*\\d+\\s*{name}".format
 
 
 def hash_hex(file):

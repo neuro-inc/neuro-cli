@@ -451,7 +451,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 ],
                 check=True,
             )
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             # TODO (R Zubairov) check what ssh returns
             # on disconnect due to network issues.
             pass
@@ -480,7 +480,7 @@ class JobHandlerOperations(PlatformStorageOperation):
                 ],
                 check=True,
             )
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             # TODO (R Zubairov) check what ssh returns
             # on disconnect due to network issues.
             pass
@@ -559,14 +559,14 @@ class ModelHandlerOperations(JobHandlerOperations):
     ):
         try:
             dataset_platform_path = self.render_uri_path_with_principal(dataset)
-        except ValueError as e:
+        except ValueError:
             raise ValueError(
                 f"Dataset path should be on platform. " f"Current value {dataset}"
             )
 
         try:
             resultset_platform_path = self.render_uri_path_with_principal(results)
-        except ValueError as e:
+        except ValueError:
             raise ValueError(
                 f"Results path should be on platform. " f"Current value {results}"
             )
