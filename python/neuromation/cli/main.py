@@ -637,7 +637,7 @@ Commands:
             async with ClientV2(url, token) as client:
                 jobs = await client.jobs.list()
 
-            if 'all' not in statuses:
+            if "all" not in statuses:
                 jobs = [j.status in statuses for j in jobs]
             if description:
                 jobs = [j.description == description for j in jobs]

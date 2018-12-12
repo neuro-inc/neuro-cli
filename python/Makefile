@@ -53,7 +53,7 @@ test-all:
 lint:
 	isort -c -rc neuromation tests
 	black --check neuromation tests
-	mypy neuromation/client neuromation/logging neuromation/strings
+	mypy neuromation/client neuromation/logging neuromation/strings neuromation/clientv2
 	flake8
 
 .PHONY: dist-clean

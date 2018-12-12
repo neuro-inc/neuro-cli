@@ -9,7 +9,6 @@ from neuromation.strings import parse
 from .client import ApiClient
 from .requests import (
     ContainerPayload,
-    JobListRequest,
     JobStatusRequest,
     ResourcesPayload,
     ShareResourceRequest,
@@ -189,10 +188,6 @@ class Model(ApiClient):
 
 
 class Job(ApiClient):
-    def list(self) -> List[JobDescription]:
-        res = self._fetch_sync(JobListRequest())
-        return [self._dict_to_description_with_history(job) for job in res["jobs"]]
-
     def status(self, id: str) -> JobDescription:
         res = self._fetch_sync(JobStatusRequest(id=id))
         return self._dict_to_description_with_history(res)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 import aiohttp
 from async_generator import asynccontextmanager
@@ -44,7 +44,7 @@ class API:
         *,
         json: Any = None,
         headers: Optional[Dict[str, str]] = None,
-    ) -> aiohttp.ClientResponse:
+    ) -> AsyncIterator[aiohttp.ClientResponse]:
         assert not rel_url.is_absolute()
         url = (self._url / "").join(rel_url)
         async with self._session.request(

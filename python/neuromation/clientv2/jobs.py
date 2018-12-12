@@ -97,7 +97,8 @@ class JobDescription:
     is_preemptible: bool = True
 
     def jump_host(self) -> str:
-        ssh_hostname = self.ssh.hostname
+        ssh_hostname = self.ssh.host
+        assert ssh_hostname is not None
         ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
         return ssh_hostname
 
@@ -150,9 +151,12 @@ class Jobs:
             return self._dict_to_description(res)
 
     async def list(self) -> List[JobDescription]:
-        raise NotImplementedError
+        url = URL(f"jobs")
+        async with self._api.request("GET", url) as resp:
+            ret = await resp.json()
+            return [self._dict_to_description_with_history(j) for j in ret]
 
-    async def kill(self, id: str) -> str:
+    async def kill(self, id: str) -> None:
         """
         the method returns None when the server has responded
         with HTTPNoContent in case of successful job deletion,
