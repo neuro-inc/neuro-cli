@@ -431,7 +431,7 @@ def test_e2e_multiple_env(run):
 
 @pytest.mark.e2e
 def test_e2e_multiple_env_from_file(run):
-    with TemporaryDirectory as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         env_file = tmpdir / "env_file"
         env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
