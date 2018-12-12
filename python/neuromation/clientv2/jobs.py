@@ -89,6 +89,7 @@ class JobDescription:
     command: Optional[str] = None
     url: URL = URL()
     ssh: URL = URL()
+    env: Optional[Dict[str, str]] = None
     owner: Optional[str] = None
     history: Optional[JobStatusHistory] = None
     resources: Optional[Resources] = None
@@ -114,6 +115,7 @@ class Jobs:
         volumes: Optional[List[VolumeDescriptionPayload]],
         description: Optional[str],
         is_preemptible: bool = False,
+        env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
         http, ssh = network_to_api(network)
         resources_payload: ResourcesPayload = ResourcesPayload(
@@ -129,6 +131,7 @@ class Jobs:
             http=http,
             ssh=ssh,
             resources=resources_payload,
+            env=env,
         )
 
         url = URL("jobs")
@@ -199,6 +202,7 @@ class Jobs:
             ssh=job_description.ssh,
             owner=job_description.owner,
             description=job_description.description,
+            env=job_description.env,
             is_preemptible=job_description.is_preemptible,
         )
 
@@ -206,16 +210,19 @@ class Jobs:
         job_container_image = None
         job_command = None
         job_resources = None
+        job_env = None
 
         if "container" in res:
             job_container_image = res["container"].get("image", None)
             job_command = res["container"].get("command", None)
+            job_env = res["container"].get("env", None)
 
             if "resources" in res["container"]:
                 container_resources = res["container"]["resources"]
                 shm = container_resources.get("shm", None)
                 gpu = container_resources.get("gpu", None)
                 gpu_model = container_resources.get("gpu_model", None)
+
                 job_resources = Resources(
                     cpu=container_resources["cpu"],
                     memory=container_resources["memory_mb"],
@@ -237,5 +244,6 @@ class Jobs:
             ssh=ssh_conn,
             owner=job_owner,
             description=description,
+            env=job_env,
             is_preemptible=res["is_preemptible"],
         )

@@ -1,3 +1,4 @@
+import os
 import re
 from time import sleep, time
 from urllib.parse import urlparse
@@ -8,6 +9,7 @@ import pytest
 
 from neuromation.cli.rc import ConfigFactory
 from tests.e2e.test_e2e_utils import (
+    assert_job_state,
     wait_for_job_to_change_state_from,
     wait_for_job_to_change_state_to,
 )
@@ -302,3 +304,124 @@ def test_model_without_command(run, loop):
 
     _, captured = run(["job", "kill", job_id])
     wait_for_job_to_change_state_from(run, job_id, "Status: running")
+
+
+@pytest.mark.e2e
+def test_e2e_no_env(run):
+    bash_script = 'echo "begin"$VAR"end"  | grep beginend'
+    command = f"bash -c '{bash_script}'"
+    _, captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+
+    assert_job_state(run, job_id, "Status: succeeded")
+
+
+@pytest.mark.e2e
+def test_e2e_env(run):
+    bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
+    command = f"bash -c '{bash_script}'"
+    _, captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "-e",
+            "VAR=VAL",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+
+    assert_job_state(run, job_id, "Status: succeeded")
+
+
+@pytest.mark.e2e
+def test_e2e_env_from_local(run):
+    os.environ["VAR"] = "VAL"
+    bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
+    command = f"bash -c '{bash_script}'"
+    _, captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "-e",
+            "VAR",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+
+    assert_job_state(run, job_id, "Status: succeeded")
+
+
+@pytest.mark.e2e
+def test_e2e_multiple_env(run):
+    bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
+    command = f"bash -c '{bash_script}'"
+    _, captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "-e",
+            "VAR=VAL",
+            "-e",
+            "VAR2=VAL2",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
+    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+
+    assert_job_state(run, job_id, "Status: succeeded")
