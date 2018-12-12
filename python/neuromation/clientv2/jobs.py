@@ -154,7 +154,7 @@ class Jobs:
         url = URL(f"jobs")
         async with self._api.request("GET", url) as resp:
             ret = await resp.json()
-            return [self._dict_to_description_with_history(j) for j in ret]
+            return [self._dict_to_description_with_history(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         """

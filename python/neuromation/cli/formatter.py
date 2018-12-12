@@ -93,7 +93,9 @@ class JobListFormatter(BaseFormatter):
         }
 
     def format_jobs(self, jobs: Iterable[JobDescription]) -> str:
-        jobs = sorted(jobs, key=lambda j: dateutil.parser.isoparse(j.created_at))
+        jobs = sorted(
+            jobs, key=lambda j: dateutil.parser.isoparse(j.history.created_at)
+        )
         lines = list()
         if not self.quiet:
             lines.append(self._format_header_line())

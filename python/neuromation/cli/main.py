@@ -638,9 +638,9 @@ Commands:
                 jobs = await client.jobs.list()
 
             if "all" not in statuses:
-                jobs = [j.status in statuses for j in jobs]
+                jobs = [j for j in jobs if j.status in statuses]
             if description:
-                jobs = [j.description == description for j in jobs]
+                jobs = [j for j in jobs if j.description == description]
 
             formatter = JobListFormatter(quiet=quiet)
             return formatter.format_jobs(jobs)
