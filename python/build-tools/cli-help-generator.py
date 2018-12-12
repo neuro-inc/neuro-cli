@@ -15,25 +15,25 @@ from neuromation.cli.main import DEFAULTS, neuro
 
 @dataclass()
 class ArgumentValue:
-    name: str
+    name: str = None
     description: str = None
 
 
 @dataclass()
 class Argument:
-    name: str
+    name: str = None
     values: List[ArgumentValue] = field(default_factory=list)
 
 
 @dataclass()
 class Option:
-    pattern: str
+    pattern: str = None
     description: str = None
 
 
 @dataclass()
 class CommandInfo:
-    name: str
+    name: str = None
     usage: str = None
     description: str = None
     options: List[Option] = field(default_factory=list)
