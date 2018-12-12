@@ -5,8 +5,6 @@
 * [neuro](#neuro)
 	* [neuro model](#neuro-model)
 		* [neuro model train](#neuro-model-train)
-		* [neuro model test](#neuro-model-test)
-		* [neuro model infer](#neuro-model-infer)
 		* [neuro model debug](#neuro-model-debug)
 	* [neuro job](#neuro-job)
 		* [neuro job submit](#neuro-job-submit)
@@ -99,10 +97,6 @@ neuro model COMMAND
 
 * _[train](#neuro-model-train)_: Start model training
 
-* _[test](#neuro-model-test)_: Test trained model against validation dataset
-
-* _[infer](#neuro-model-infer)_: Start batch inference
-
 * _[debug](#neuro-model-debug)_: Prepare debug tunnel for PyCharm
 
 
@@ -131,18 +125,6 @@ Name | Description|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 
-
-
-
-### neuro model test
-
-Not implemented
-
-
-
-### neuro model infer
-
-Not implemented
 
 
 
@@ -204,7 +186,8 @@ Start job using IMAGE<br/>COMMANDS list will be passed as commands to model cont
 **Usage:**
 
 ```bash
-neuro job submit [options] [--volume MOUNT]... IMAGE [CMD...]
+neuro job submit [options] [--volume MOUNT]...
+          [--env VAR=VAL]... IMAGE [CMD...]
 ```
 
 **Options:**
@@ -232,7 +215,8 @@ Name | Description|
 # is mounted in read only mode to /qm directory within container.
 # Directory /mod mounted to /mod directory in read-write mode.
 neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
-# Starts a container pytorch:latest with connection enabled to port 22.
+# Starts a container pytorch:latest with connection enabled to port 22 and
+# sets PYTHONPATH environment value to /python.
 # Please note that SSH server should be provided by container.
 neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 ```
@@ -263,7 +247,7 @@ neuro job list [options]
 
 Name | Description|
 |----|------------|
-|_\-s, --status \(pending|running|succeeded|failed|all)_|<br/>Filter out job by status\(es) \(comma delimited if multiple)<br/>\[Default: running,pending]|
+|_\-s, --status \(pending|running|succeeded|failed|all)_|<br/>Filter out job by status\(es) \(comma delimited if multiple)|
 |_\-d, --description DESCRIPTION_|<br/>Filter out job by job description \(exact match)|
 |_\-q, --quiet_|<br/>Run command in quiet mode \(print only job ids)<br/>List all jobs|
 
@@ -271,12 +255,8 @@ Name | Description|
 **Examples:**
 
 ```bash
-# List jobs with description "my favourite job", only jobs with running and
-# pending statuses will be listed
 neuro job list --description="my favourite job"
-# List jobs with any status
 neuro job list --status=all
-# List only job ids for pending and running jobs
 neuro job list --status=pending,running --quiet
 ```
 
@@ -534,7 +514,6 @@ neuro config url URL
 **Examples:**
 
 ```bash
-# Setup neuro for using http://platform.neuromation.io/api/v1 as api url
 neuro config url http://platform.neuromation.io/api/v1
 ```
 
@@ -647,11 +626,8 @@ neuro share URI WHOM (read|write|manage)
 **Examples:**
 
 ```bash
-# Grant manage permission to alice on storage:///sample_data/
 neuro share storage:///sample_data/ alice manage
-# Allow bob read-only permission on image:///resnet50
 neuro share image:///resnet50 bob read
-# Grant write access to alice on job:///my_job_id
 neuro share job:///my_job_id alice write
 ```
 
@@ -659,7 +635,7 @@ neuro share job:///my_job_id alice write
 
 ## neuro help
 
-Display help for given COMMAND<br/>Alternative form:<br/>neuro COMMAND --help
+Display help for given COMMAND
 
 **Usage:**
 
@@ -670,9 +646,7 @@ neuro help COMMAND [SUBCOMMAND[...]]
 **Examples:**
 
 ```bash
-# Display help fot 'store' command
 neuro help store
-# Display help for 'store ls' command
 neuro help store ls
 ```
 
