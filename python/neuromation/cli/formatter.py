@@ -51,11 +51,17 @@ class JobStatusFormatter(BaseFormatter):
         ):
             result += f" ({job_status.history.reason})"
         result += f"\nImage: {job_status.image}\n"
+
         result += f"Command: {job_status.command}\n"
         result += f"Resources: {job_status.resources}\n"
 
         if job_status.url:
             result = f"{result}Http URL: {job_status.url}\n"
+
+        if job_status.env:
+            result += f"Environment:\n"
+            for key, value in job_status.env.items():
+                result += f"{key}={value}\n"
 
         result = f"{result}Created: {job_status.history.created_at}"
         if job_status.status in [

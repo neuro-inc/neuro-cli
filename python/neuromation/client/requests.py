@@ -49,6 +49,7 @@ class ContainerPayload:
     http: Optional[Dict[str, int]]
     ssh: Optional[Dict[str, int]]
     resources: ResourcesPayload
+    env: Optional[Dict[str, str]] = None
 
     def to_primitive(self) -> Dict[str, Any]:
         primitive = {"image": self.image, "resources": self.resources.to_primitive()}
@@ -58,6 +59,8 @@ class ContainerPayload:
             primitive["http"] = self.http
         if self.ssh:
             primitive["ssh"] = self.ssh
+        if self.env:
+            primitive["env"] = self.env
         return primitive
 
 
