@@ -9,7 +9,7 @@ from neuromation.cli.command_handlers import (
     JobHandlerOperations,
     ModelHandlerOperations,
 )
-from neuromation.client.jobs import JobDescription, JobItem
+from neuromation.client.jobs import JobDescription
 from neuromation.http import BadRequestError
 
 
