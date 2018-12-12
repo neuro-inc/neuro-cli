@@ -525,8 +525,6 @@ pytorch:latest
             # Please note that SSH server should be provided by container.
             neuro job submit  --volume storage:/data/2018q1:/data:ro --ssh 22 \
 pytorch:latest
-
-
             """
 
             config: Config = rc.ConfigFactory.load()
