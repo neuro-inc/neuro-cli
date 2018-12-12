@@ -33,6 +33,7 @@ from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
 from .commands import command, dispatch
+from .formatter import JobListFormatter
 
 
 # For stream copying from file to http or from http to file
@@ -594,7 +595,7 @@ Commands:
                     sys.stdout.write(chunk.decode(errors="ignore"))
 
         @command
-        def list(status, description, quiet):
+        async def list(status, description, quiet):
             """
             Usage:
                 neuro job list [options]
@@ -616,10 +617,19 @@ Commands:
             """
 
             status = status or "running,pending"
-            # TODO (Artem Yushkovskiy, 29.11.2018): add validation of status values
-            return JobHandlerOperations(token).list_jobs(
-                jobs, status, quiet, description
-            )
+
+            statuses = set(status.split(",")) if status else set()
+
+            async with ClientV2(url, token) as client:
+                jobs = await client.jobs.list()
+
+            if 'all' not in statuses:
+                jobs = [j.status in statuses for j in jobs]
+            if description:
+                jobs = [j.description == description for j in jobs]
+
+            formatter = JobListFormatter(quiet=quiet)
+            return formatter.format_jobs(jobs)
 
         @command
         async def status(id):

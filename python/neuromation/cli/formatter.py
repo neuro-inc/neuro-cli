@@ -1,6 +1,7 @@
 from typing import Iterable, Optional, Union
 
 from neuromation.client.jobs import JobDescription, JobItem, JobStatus
+import dateutil
 
 
 class BaseFormatter:
@@ -85,6 +86,7 @@ class JobListFormatter(BaseFormatter):
         }
 
     def format_jobs(self, jobs: Iterable[JobDescription]) -> str:
+        jobs = sorted(jobs, key=lambda j: dateutil.parser.isoparse(j.created_at))
         lines = list()
         if not self.quiet:
             lines.append(self._format_header_line())
