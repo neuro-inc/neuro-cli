@@ -547,7 +547,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                 is_preemptible = preemptible or not non_preemptible
 
             # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
-            # sepparate function.
+            # separate function.
             if env_file:
                 with open(env_file, "r") as ef:
                     env = ef.read().splitlines() + env
