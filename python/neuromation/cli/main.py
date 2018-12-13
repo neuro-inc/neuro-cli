@@ -477,6 +477,7 @@ Commands:
             cmd,
             volume,
             env,
+            env_file,
             preemptible,
             non_preemptible,
             description,
@@ -512,6 +513,7 @@ volume
                 -e, --env VAR=VAL...      Set environment variable in container
                                           Use multiple options to define more than one \
 variable
+                --env-file FILE           File with environment variables to pass
                 --preemptible             Force job to run on a preemptible instance
                 --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
@@ -543,6 +545,12 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                 )
             else:
                 is_preemptible = preemptible or not non_preemptible
+
+            # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
+            # separate function.
+            if env_file:
+                with open(env_file, "r") as ef:
+                    env = ef.read().splitlines() + env
 
             env_dict = {}
             for line in env:
