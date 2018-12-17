@@ -534,17 +534,17 @@ pytorch:latest
 storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             """
 
+            def get_preemptible():  # pragma: no cover
+                if preemptible and non_preemptible:
+                    raise neuromation.client.IllegalArgumentError(
+                        "Incompatible options: --preemptible and --non-preemptible"
+                    )
+                return preemptible or not non_preemptible  # preemptible by default
+
+            is_preemptible = get_preemptible()
+
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-
-            if not preemptible and not non_preemptible:
-                is_preemptible = True  # default value
-            elif preemptible and non_preemptible:
-                raise neuromation.client.IllegalArgumentError(
-                    "Incompatible options: --preemptible and --non-preemptible"
-                )
-            else:
-                is_preemptible = preemptible or not non_preemptible
 
             # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
             # separate function.
