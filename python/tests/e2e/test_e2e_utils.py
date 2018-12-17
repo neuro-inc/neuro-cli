@@ -4,6 +4,11 @@ from time import sleep, time
 JOB_TIMEOUT = 60 * 5
 JOB_WAIT_SLEEP_SECONDS = 2
 
+STAT_PENDING = "Status: pending"
+STAT_NOT_ENOUGH = "Cluster doesn't have resources to fulfill request"
+STAT_RUNNING = "Status: running"
+STAT_FAILED = "Status: failed"
+STAT_SUCCEEDED = "Status: succeeded"
 
 # TODO (R Zubairov, 09/13/2018): once we would have wait for job
 
