@@ -65,12 +65,11 @@ lint: lint-docs
 	mypy neuromation/client neuromation/logging neuromation/strings neuromation/clientv2 neuromation/cli/ssh_utils.py neuromation/cli/formatter.py
 	flake8
 
-.PHONY: lint-git-pre-commit
-lint-git-pre-commit: test-fast
-lint-git-pre-commit: ISORT_AND_BLACK_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/neuromation/.+\\.py" ||  $$NF ~ "^python/tests/.+\\.py") print substr($$NF, 8)}')
-lint-git-pre-commit: MYPY_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/(neuromation/(client|logging|strings)/.+\\.py)") print substr($$NF, 8)}')
-lint-git-pre-commit: FLAKE8_TARGETS:=$(shell git diff --cached --name-status --diff-filter=d |  awk '{if ($$NF ~ "^python/(neuromation/.+\\.py)") print substr($$NF, 8)}')
-lint-git-pre-commit:
+.PHONY: lint-diff
+lint-diff: ISORT_AND_BLACK_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "^python/neuromation/.+\\.py" ||  $$NF ~ "^python/tests/.+\\.py") print substr($$NF, 8)}')
+lint-diff: MYPY_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "^python/(neuromation/(client|logging|strings)/.+\\.py)") print substr($$NF, 8)}')
+lint-diff: FLAKE8_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "^python/(neuromation/.+\\.py)") print substr($$NF, 8)}')
+lint-diff:
 	@ [ -z "${ISORT_AND_BLACK_TARGETS}" ] || (echo "Lint isort" && isort -c -rc ${ISORT_AND_BLACK_TARGETS})
 	@ [ -z "${ISORT_AND_BLACK_TARGETS}" ] || (echo "Lint black" && black -q --check ${ISORT_AND_BLACK_TARGETS})
 	@ [ -z "${MYPY_TARGETS}" ] || (echo "Lint mypy" && mypy ${MYPY_TARGETS})
