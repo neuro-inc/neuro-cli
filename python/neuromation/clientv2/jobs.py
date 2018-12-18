@@ -96,7 +96,7 @@ class JobDescription:
     description: Optional[str] = None
     is_preemptible: bool = True
 
-    def jump_host(self) -> str:
+    def jump_host(self) -> Optional[str]:
         ssh_hostname = self.ssh.host
         if ssh_hostname is None:
             return None
