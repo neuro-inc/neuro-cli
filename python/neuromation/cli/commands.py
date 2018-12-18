@@ -66,29 +66,37 @@ def parse(doc, argv):
     return docopt.docopt(doc, argv=head, help=False), tail
 
 
-def get_help(target, tail, stack):
+def get_help(target, tail, stack, format_spec):
     while True:
         if not tail:
-            return dedent(target.__doc__)
+            return help_format(target.__doc__, format_spec)
 
         try:
             options, tail = parse(target.__doc__, stack + tail)
         except docopt.DocoptExit:
-            help_msg = dedent(target.__doc__)
+            help_msg = help_format(target.__doc__, format_spec)
             raise ValueError(f'Invalid arguments: {" ".join(tail)}\n{help_msg}')
 
         command = options.get("COMMAND", None)
         if not command:
-            return dedent(target.__doc__)
+            return help_format(target.__doc__, format_spec)
 
         res = target(**{**normalize_options(options, stack + ["COMMAND"])})
-        old_target = target
         target = commands(res).get(command, None)
         if not target:
-            help_msg = dedent(old_target.__doc__)
+            help_msg = help_format(target.__doc__, format_spec)
             raise ValueError(f"Invalid command: {command}\n{help_msg}")
 
         stack += [command]
+
+
+def help_format(help, format_spec):
+    if not help:
+        return ""
+    if format_spec:
+        help = help.format(**format_spec)
+    help = dedent(help)
+    return help
 
 
 def dispatch(target, tail, format_spec=None, **kwargs):
@@ -102,15 +110,11 @@ def dispatch(target, tail, format_spec=None, **kwargs):
                 return False
         return False
 
-    def help_format(help, format_spec):
-        if format_spec:
-            help = help.format(**format_spec)
-        help = dedent(help)
-        return help
-
     stack = []
 
     while True:
+        if not target.__doc__:
+            raise NotImplementedError("Not implemented")
         target.__doc__ = help_format(target.__doc__, format_spec)
         try:
             options, tail = parse(target.__doc__, stack + tail)
@@ -119,7 +123,7 @@ def dispatch(target, tail, format_spec=None, **kwargs):
 
         command = options.get("COMMAND", None)
         if command == "help" and not stack:
-            return get_help(target, tail, stack)
+            return get_help(target, tail, stack, format_spec)
 
         if not command and tail:
             raise ValueError(f'Invalid arguments: {" ".join(tail)}')
