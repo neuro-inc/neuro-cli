@@ -2,7 +2,8 @@ from typing import AbstractSet, Iterable, Optional, Union
 
 import dateutil.parser
 
-from neuromation.client.jobs import JobDescription, JobItem, JobStatus
+from neuromation.clientv2 import JobDescription, JobStatus
+from neuromation.client.jobs import JobItem
 
 
 class BaseFormatter:
