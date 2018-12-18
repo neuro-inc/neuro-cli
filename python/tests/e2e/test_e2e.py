@@ -188,7 +188,7 @@ def test_e2e(data, run, tmpdir):
             break
         except AssertionError as e:
             exc = e
-            time.sleep(1)
+            time.sleep(5)
     else:
         raise exc
 
