@@ -134,17 +134,18 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
     assert kill_output_list == [job_id_first, job_id_second, job_id_third]
 
-    wait_job_change_state_from(run, job_id_first, Status.RUNNING, Status.FAILED)
-    wait_job_change_state_from(run, job_id_second, Status.RUNNING, Status.FAILED)
-
     # TODO (A Yushkovskiy, 6.12.2018): when the flaky tests in try-catch block below
     # are fixed, we don't need to wait 'wait_for_job_to_change_state_from',
     # so leave here only 'wait_for_job_to_change_state_to'
+
+    wait_job_change_state_from(run, job_id_first, Status.RUNNING, Status.FAILED)
+    wait_job_change_state_from(run, job_id_second, Status.RUNNING, Status.FAILED)
+    wait_job_change_state_from(run, job_id_third, Status.RUNNING, Status.FAILED)
+
     try:
         wait_job_change_state_to(run, job_id_first, Status.SUCCEEDED, Status.FAILED)
         wait_job_change_state_to(run, job_id_second, Status.SUCCEEDED, Status.FAILED)
-        # failed job that was killed is succeeded:
-        wait_job_change_state_to(run, job_id_third, Status.SUCCEEDED)
+        wait_job_change_state_to(run, job_id_third, Status.SUCCEEDED, Status.FAILED)
 
         # check killed running,pending
         _, captured = run(["job", "list", "--status", "running,pending", "-q"])
