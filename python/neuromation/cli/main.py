@@ -33,8 +33,8 @@ from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
 from .commands import command, dispatch
-from .formatter import JobListFormatter
 from .defaults import DEFAULTS
+from .formatter import JobListFormatter
 
 
 # For stream copying from file to http or from http to file
