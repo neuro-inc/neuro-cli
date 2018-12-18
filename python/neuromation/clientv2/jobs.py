@@ -105,7 +105,7 @@ class JobDescription:
     @classmethod
     def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
         job_container_image = res["container"]["image"]
-        job_command = res["container"]["command"]
+        job_command = res["container"].get("command", None)
         job_env = res["container"].get("env", None)
 
         job_owner = res["owner"]
