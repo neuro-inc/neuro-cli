@@ -111,7 +111,7 @@ class JobDescription:
         job_owner = res["owner"]
         container_resources = res["container"]["resources"]
         shm = container_resources.get("shm", None)
-        gpu = container_resources["gpu"]
+        gpu = container_resources.get("gpu", None)
         gpu_model = container_resources.get("gpu_model", None)
 
         job_resources = Resources(
