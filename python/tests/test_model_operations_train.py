@@ -26,6 +26,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=None,
+            is_preemptible=False,
             description="test model",
         )
         partial_mocked_model().train.assert_called_once()
@@ -35,6 +36,35 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            is_preemptible=False,
+            description="test model",
+        )
+
+    def test_model_submit_preemptible(self, alice_model, partial_mocked_model):
+        alice_model.train(
+            "ubuntu:tf_2.0_beta",
+            "storage:///data/set.txt",
+            "storage://~/results/result1.txt",
+            0,
+            None,
+            1,
+            100,
+            False,
+            "",
+            partial_mocked_model,
+            http=None,
+            ssh=None,
+            is_preemptible=True,
+            description="test model",
+        )
+        partial_mocked_model().train.assert_called_once()
+        partial_mocked_model().train.assert_called_with(
+            image=Image(image="ubuntu:tf_2.0_beta", command=""),
+            resources=Resources(memory=100, gpu=0, cpu=1.0, shm=False, gpu_model=None),
+            network=None,
+            dataset=f"storage://alice/data/set.txt",
+            results=f"storage://alice/results/result1.txt",
+            is_preemptible=True,
             description="test model",
         )
 
@@ -52,6 +82,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=None,
+            is_preemptible=False,
             description="blah blah blah",
         )
         partial_mocked_model().train.assert_called_once()
@@ -63,6 +94,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            is_preemptible=False,
             description="blah blah blah",
         )
 
@@ -80,6 +112,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=None,
+            is_preemptible=False,
             description="woo hoo!",
         )
         partial_mocked_model().train.assert_called_once()
@@ -89,6 +122,7 @@ class TestNormalCases:
             network=None,
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            is_preemptible=False,
             description="woo hoo!",
         )
 
@@ -106,6 +140,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=8888,
             ssh=None,
+            is_preemptible=False,
             description="hooray",
         )
         partial_mocked_model().train.assert_called_once()
@@ -115,6 +150,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"http": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            is_preemptible=False,
             description="hooray",
         )
 
@@ -132,6 +168,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=None,
             ssh=8888,
+            is_preemptible=False,
             description="la vita è bella",
         )
         partial_mocked_model().train.assert_called_once()
@@ -141,6 +178,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"ssh": 8888}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            is_preemptible=False,
             description="la vita è bella",
         )
 
@@ -158,6 +196,7 @@ class TestNormalCases:
             partial_mocked_model,
             http=7878,
             ssh=8888,
+            is_preemptible=False,
             description="la-la-la",
         )
         partial_mocked_model().train.assert_called_once()
@@ -167,6 +206,7 @@ class TestNormalCases:
             network=NetworkPortForwarding({"ssh": 8888, "http": 7878}),
             dataset=f"storage://alice/data/set.txt",
             results=f"storage://alice/results/result1.txt",
+            is_preemptible=False,
             description="la-la-la",
         )
 
@@ -185,6 +225,7 @@ class TestNormalCases:
                 partial_mocked_model,
                 http=None,
                 ssh=None,
+                is_preemptible=False,
                 description="la-la-la",
             )
         assert partial_mocked_model().train.call_count == 0
@@ -204,6 +245,7 @@ class TestNormalCases:
                 partial_mocked_model,
                 http=None,
                 ssh=None,
+                is_preemptible=False,
                 description="la-la-la",
             )
         assert partial_mocked_model().train.call_count == 0

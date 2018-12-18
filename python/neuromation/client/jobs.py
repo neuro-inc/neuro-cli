@@ -158,6 +158,7 @@ class Model(ApiClient):
         network: Optional[NetworkPortForwarding],
         dataset: str,
         results: str,
+        is_preemptible: bool,
         description: Optional[str],
     ) -> JobItem:
         http, ssh = network_to_api(network)
@@ -178,6 +179,7 @@ class Model(ApiClient):
                 ),
                 dataset_storage_uri=dataset,
                 result_storage_uri=results,
+                is_preemptible=is_preemptible,
                 description=description,
             )
         )

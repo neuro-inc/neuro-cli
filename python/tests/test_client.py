@@ -24,6 +24,7 @@ def test_train_with_no_gpu(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
+        is_preemptible=False,
         description="job description",
     )
 
@@ -40,6 +41,7 @@ def test_train_with_no_gpu(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": False,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
@@ -63,6 +65,7 @@ def test_train(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
+        is_preemptible=True,
         description="job description",
     )
 
@@ -85,6 +88,7 @@ def test_train(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": True,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
@@ -108,6 +112,7 @@ def test_train_zero_gpu(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=None,
+        is_preemptible=True,
         description="job description",
     )
 
@@ -124,6 +129,7 @@ def test_train_zero_gpu(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": True,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
@@ -147,6 +153,7 @@ def test_train_with_http(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"http": 7878}),
+        is_preemptible=True,
         description="job description",
     )
 
@@ -170,6 +177,7 @@ def test_train_with_http(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": True,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
@@ -193,6 +201,7 @@ def test_train_with_ssh(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878}),
+        is_preemptible=True,
         description="job description",
     )
 
@@ -216,6 +225,7 @@ def test_train_with_ssh(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": True,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
@@ -239,6 +249,7 @@ def test_train_with_ssh_and_http(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
+        is_preemptible=False,
         description="job description",
     )
 
@@ -263,6 +274,7 @@ def test_train_with_ssh_and_http(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": False,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
@@ -287,6 +299,7 @@ def test_train_with_ssh_and_http_no_name(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
+        is_preemptible=False,
         description="job description",
     )
 
@@ -311,6 +324,7 @@ def test_train_with_ssh_and_http_no_name(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": False,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
@@ -334,6 +348,7 @@ def test_train_empty_command(request, model, loop):
         dataset="schema://host/data",
         results="schema://host/results",
         network=NetworkPortForwarding({"ssh": 7878, "http": 8787}),
+        is_preemptible=False,
         description="job description",
     )
 
@@ -357,6 +372,7 @@ def test_train_empty_command(request, model, loop):
             },
             "dataset_storage_uri": "schema://host/data",
             "result_storage_uri": "schema://host/results",
+            "is_preemptible": False,
             "description": "job description",
         },
         url="http://127.0.0.1/models",
