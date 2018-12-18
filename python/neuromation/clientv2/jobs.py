@@ -98,7 +98,8 @@ class JobDescription:
 
     def jump_host(self) -> str:
         ssh_hostname = self.ssh.host
-        assert ssh_hostname is not None
+        if ssh_hostname is None:
+            return None
         ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
         return ssh_hostname
 

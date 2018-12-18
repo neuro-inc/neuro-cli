@@ -60,7 +60,6 @@ class JobStatusFormatter(BaseFormatter):
 
         if job_status.url:
             result = f"{result}Http URL: {job_status.url}\n"
-
         if job_status.env:
             result += f"Environment:\n"
             for key, value in job_status.env.items():

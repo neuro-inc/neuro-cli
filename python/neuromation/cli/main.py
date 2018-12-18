@@ -35,6 +35,7 @@ from . import rc
 from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter
+from .ssh_utils import remote_debug
 
 
 # For stream copying from file to http or from http to file
@@ -418,7 +419,7 @@ Commands:
             return OutputFormatter.format_job(job, quiet)
 
         @command
-        def debug(id, localport):
+        async def debug(id, localport):
             """
             Usage:
                 neuro model debug [options] ID
@@ -435,12 +436,12 @@ Commands:
             """
             config: Config = rc.ConfigFactory.load()
             git_key = config.github_rsa_path
-            platform_user_name = config.get_platform_user_name()
+            username = config.get_platform_user_name()
 
-            JobHandlerOperations(platform_user_name).python_remote_debug(
-                id, git_key, localport, jobs
-            )
-            return None
+            async with ClientV2(url, token) as client:
+                await remote_debug(
+                    client, username, id, git_key, localport
+                )
 
         return locals()
 

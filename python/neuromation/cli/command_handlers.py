@@ -385,7 +385,6 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
 
 
 class JobHandlerOperations(PlatformStorageOperation):
-
     def _validate_args_for_ssh_session(
         self, container_user: str, container_key: str, jump_host_key: str
     ):
@@ -506,22 +505,6 @@ class JobHandlerOperations(PlatformStorageOperation):
         try:
             job_status = self.status(job_id, jobs)
             self._connect_ssh(job_status, jump_host_key, container_user, container_key)
-        except BadRequestError as e:
-            raise ValueError(f"Job not found. Job Id = {job_id}") from e
-
-    def python_remote_debug(
-        self, job_id: str, jump_host_key: str, local_port: int, jobs: Callable
-    ) -> None:
-        if not jump_host_key:
-            raise ValueError(
-                "Configure Github RSA key path." "See for more info `neuro config`."
-            )
-        try:
-            job_status = self.status(job_id, jobs)
-            ssh_hostname = job_status.jump_host()
-            self._start_ssh_tunnel(
-                job_status, ssh_hostname, self.principal, jump_host_key, local_port
-            )
         except BadRequestError as e:
             raise ValueError(f"Job not found. Job Id = {job_id}") from e
 
