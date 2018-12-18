@@ -1,6 +1,6 @@
 from typing import AbstractSet, Iterable, Optional, Union
 
-import dateutil.parser
+from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client.jobs import JobItem
 from neuromation.clientv2 import JobDescription, JobStatus
@@ -66,6 +66,7 @@ class JobStatusFormatter(BaseFormatter):
             for key, value in job_status.env.items():
                 result += f"{key}={value}\n"
 
+        assert job_status.history
         result = f"{result}Created: {job_status.history.created_at}"
         if job_status.status in [
             JobStatus.RUNNING,
@@ -104,9 +105,7 @@ class JobListFormatter(BaseFormatter):
         if description:
             jobs = [j for j in jobs if j.description == description]
 
-        jobs = sorted(
-            jobs, key=lambda j: dateutil.parser.isoparse(j.history.created_at)
-        )
+        jobs = sorted(jobs, key=lambda j: isoparse(j.history.created_at))
         lines = list()
         if not self.quiet:
             lines.append(self._format_header_line())
@@ -124,15 +123,15 @@ class JobListFormatter(BaseFormatter):
             ]
         )
 
-    def _format_job_line(self, job: Optional[JobDescription]) -> str:
+    def _format_job_line(self, job: JobDescription) -> str:
         def truncate_then_wrap(value: str, key: str) -> str:
             return self._wrap(self._truncate_string(value, self.column_lengths[key]))
 
         if self.quiet:
             return job.id.ljust(self.column_lengths["id"])
 
-        description = truncate_then_wrap(job.description, "description")
-        command = truncate_then_wrap(job.command, "command")
+        description = truncate_then_wrap(job.description or "", "description")
+        command = truncate_then_wrap(job.command or "", "command")
         return self.tab.join(
             [
                 job.id.ljust(self.column_lengths["id"]),

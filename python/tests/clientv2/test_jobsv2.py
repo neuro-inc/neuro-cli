@@ -2,15 +2,12 @@ from typing import List
 
 import pytest
 from aiohttp import web
-from yarl import URL
 
 from neuromation.client import ResourceNotFound
 from neuromation.clientv2 import (
     ClientV2,
     Image,
     JobDescription,
-    JobStatus,
-    JobStatusHistory,
     NetworkPortForwarding,
     Resources,
     VolumeDescriptionPayload,
@@ -101,22 +98,48 @@ async def test_kill(aiohttp_server):
 
 
 async def test_status_failed(aiohttp_server):
-    async def handler(request):
-        return web.json_response(
-            {
-                "status": "failed",
-                "id": "job-id",
-                "description": "This is job description, not a history description",
-                "history": {
-                    "created_at": "2018-08-29T12:23:13.981621+00:00",
-                    "started_at": "2018-08-29T12:23:15.988054+00:00",
-                    "finished_at": "2018-08-29T12:59:31.427795+00:00",
-                    "reason": "ContainerCannotRun",
-                    "description": "Not enough coffee",
+    JSON = {
+        "status": "failed",
+        "id": "job-id",
+        "description": "This is job description, not a history description",
+        "history": {
+            "created_at": "2018-08-29T12:23:13.981621+00:00",
+            "started_at": "2018-08-29T12:23:15.988054+00:00",
+            "finished_at": "2018-08-29T12:59:31.427795+00:00",
+            "reason": "ContainerCannotRun",
+            "description": "Not enough coffee",
+        },
+        "is_preemptible": True,
+        "owner": "owner",
+        "container": {
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "http": {"port": 8181},
+            "ssh": {"port": 22},
+            "resources": {
+                "memory_mb": "4096",
+                "cpu": 7.0,
+                "shm": True,
+                "gpu": 1,
+                "gpu_model": "test-gpu-model",
+            },
+            "volumes": [
+                {
+                    "src_storage_uri": "storage://test-user/path_read_only",
+                    "dst_path": "/container/read_only",
+                    "read_only": True,
                 },
-                "is_preemptible": True,
-            }
-        )
+                {
+                    "src_storage_uri": "storage://test-user/path_read_write",
+                    "dst_path": "/container/path_read_write",
+                    "read_only": False,
+                },
+            ],
+        },
+    }
+
+    async def handler(request):
+        return web.json_response(JSON)
 
     app = web.Application()
     app.router.add_get("/jobs/job-id", handler)
@@ -126,40 +149,54 @@ async def test_status_failed(aiohttp_server):
     async with ClientV2(srv.make_url("/"), "token") as client:
         ret = await client.jobs.status("job-id")
 
-    assert ret == JobDescription(
-        id="job-id",
-        status=JobStatus.FAILED,
-        description="This is job description, not a history description",
-        history=JobStatusHistory(
-            created_at="2018-08-29T12:23:13.981621+00:00",
-            started_at="2018-08-29T12:23:15.988054+00:00",
-            finished_at="2018-08-29T12:59:31.427795+00:00",
-            status=JobStatus.UNKNOWN,
-            reason="ContainerCannotRun",
-            description="Not enough coffee",
-        ),
-    )
+    assert ret == JobDescription.from_api(JSON)
 
 
 async def test_status_with_ssh_and_http(aiohttp_server):
-    async def handler(request):
-        return web.json_response(
-            {
-                "status": "running",
-                "id": "job-id",
-                "description": "This is job description, not a history description",
-                "http_url": "http://my_host:8889",
-                "ssh_server": "ssh://my_host.ssh:22",
-                "history": {
-                    "created_at": "2018-08-29T12:23:13.981621+00:00",
-                    "started_at": "2018-08-29T12:23:15.988054+00:00",
-                    "finished_at": "2018-08-29T12:59:31.427795+00:00",
-                    "reason": "OK",
-                    "description": "Everything is fine",
+    JSON = {
+        "status": "running",
+        "id": "job-id",
+        "description": "This is job description, not a history description",
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "history": {
+            "created_at": "2018-08-29T12:23:13.981621+00:00",
+            "started_at": "2018-08-29T12:23:15.988054+00:00",
+            "finished_at": "2018-08-29T12:59:31.427795+00:00",
+            "reason": "OK",
+            "description": "Everything is fine",
+        },
+        "is_preemptible": True,
+        "owner": "owner",
+        "container": {
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "http": {"port": 8181},
+            "ssh": {"port": 22},
+            "resources": {
+                "memory_mb": "4096",
+                "cpu": 7.0,
+                "shm": True,
+                "gpu": 1,
+                "gpu_model": "test-gpu-model",
+            },
+            "volumes": [
+                {
+                    "src_storage_uri": "storage://test-user/path_read_only",
+                    "dst_path": "/container/read_only",
+                    "read_only": True,
                 },
-                "is_preemptible": True,
-            }
-        )
+                {
+                    "src_storage_uri": "storage://test-user/path_read_write",
+                    "dst_path": "/container/path_read_write",
+                    "read_only": False,
+                },
+            ],
+        },
+    }
+
+    async def handler(request):
+        return web.json_response(JSON)
 
     app = web.Application()
     app.router.add_get("/jobs/job-id", handler)
@@ -169,24 +206,38 @@ async def test_status_with_ssh_and_http(aiohttp_server):
     async with ClientV2(srv.make_url("/"), "token") as client:
         ret = await client.jobs.status("job-id")
 
-    assert ret == JobDescription(
-        id="job-id",
-        status=JobStatus.RUNNING,
-        description="This is job description, not a history description",
-        history=JobStatusHistory(
-            created_at="2018-08-29T12:23:13.981621+00:00",
-            started_at="2018-08-29T12:23:15.988054+00:00",
-            finished_at="2018-08-29T12:59:31.427795+00:00",
-            status=JobStatus.UNKNOWN,
-            reason="OK",
-            description="Everything is fine",
-        ),
-        url=URL("http://my_host:8889"),
-        ssh=URL("ssh://my_host.ssh:22"),
-    )
+    assert ret == JobDescription.from_api(JSON)
 
 
 async def test_job_submit(aiohttp_server):
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
     async def handler(request):
         data = await request.json()
         assert data == {
@@ -219,35 +270,7 @@ async def test_job_submit(aiohttp_server):
             "description": "job description",
         }
 
-        return web.json_response(
-            {
-                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-                "status": "failed",
-                "history": {
-                    "status": "failed",
-                    "reason": "Error",
-                    "description": "Mounted on Avail\\n/dev/shm     "
-                    "64M\\n\\nExit code: 1",
-                    "created_at": "2018-09-25T12:28:21.298672+00:00",
-                    "started_at": "2018-09-25T12:28:59.759433+00:00",
-                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
-                },
-                "container": {
-                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
-                    "command": "date",
-                    "resources": {
-                        "cpu": 1.0,
-                        "memory_mb": 16384,
-                        "gpu": 1,
-                        "shm": False,
-                        "gpu_model": "nvidia-tesla-p4",
-                    },
-                },
-                "http_url": "http://my_host:8889",
-                "ssh_server": "ssh://my_host.ssh:22",
-                "is_preemptible": False,
-            }
-        )
+        return web.json_response(JSON)
 
     app = web.Application()
     app.router.add_post("/jobs", handler)
@@ -277,23 +300,38 @@ async def test_job_submit(aiohttp_server):
             description="job description",
         )
 
-    assert ret == JobDescription(
-        id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-        status=JobStatus.FAILED,
-        image="gcr.io/light-reality-205619/ubuntu:latest",
-        command="date",
-        description=None,
-        resources=Resources(
-            memory=16384, cpu=1.0, gpu=1, gpu_model="nvidia-tesla-p4", shm=False
-        ),
-        history=None,
-        url=URL("http://my_host:8889"),
-        ssh=URL("ssh://my_host.ssh:22"),
-        is_preemptible=False,
-    )
+    assert ret == JobDescription.from_api(JSON)
 
 
 async def test_job_submit_no_volumes(aiohttp_server):
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
     async def handler(request):
         data = await request.json()
         assert data == {
@@ -315,35 +353,7 @@ async def test_job_submit_no_volumes(aiohttp_server):
             "description": "job description",
         }
 
-        return web.json_response(
-            {
-                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-                "status": "failed",
-                "history": {
-                    "status": "failed",
-                    "reason": "Error",
-                    "description": "Mounted on Avail\\n/dev/shm     "
-                    "64M\\n\\nExit code: 1",
-                    "created_at": "2018-09-25T12:28:21.298672+00:00",
-                    "started_at": "2018-09-25T12:28:59.759433+00:00",
-                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
-                },
-                "container": {
-                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
-                    "command": "date",
-                    "resources": {
-                        "cpu": 1.0,
-                        "memory_mb": 16384,
-                        "gpu": 1,
-                        "shm": False,
-                        "gpu_model": "nvidia-tesla-p4",
-                    },
-                },
-                "http_url": "http://my_host:8889",
-                "ssh_server": "ssh://my_host.ssh:22",
-                "is_preemptible": False,
-            }
-        )
+        return web.json_response(JSON)
 
     app = web.Application()
     app.router.add_post("/jobs", handler)
@@ -363,23 +373,38 @@ async def test_job_submit_no_volumes(aiohttp_server):
             description="job description",
         )
 
-    assert ret == JobDescription(
-        id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-        status=JobStatus.FAILED,
-        image="gcr.io/light-reality-205619/ubuntu:latest",
-        command="date",
-        description=None,
-        resources=Resources(
-            memory=16384, cpu=1.0, gpu=1, gpu_model="nvidia-tesla-p4", shm=False
-        ),
-        history=None,
-        url=URL("http://my_host:8889"),
-        ssh=URL("ssh://my_host.ssh:22"),
-        is_preemptible=False,
-    )
+    assert ret == JobDescription.from_api(JSON)
 
 
 async def test_job_submit_preemptible(aiohttp_server):
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "is_preemptible": True,
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+    }
+
     async def handler(request):
         data = await request.json()
         assert data == {
@@ -412,35 +437,7 @@ async def test_job_submit_preemptible(aiohttp_server):
             "description": "job description",
         }
 
-        return web.json_response(
-            {
-                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-                "status": "failed",
-                "history": {
-                    "status": "failed",
-                    "reason": "Error",
-                    "description": "Mounted on Avail\\n/dev/shm     "
-                    "64M\\n\\nExit code: 1",
-                    "created_at": "2018-09-25T12:28:21.298672+00:00",
-                    "started_at": "2018-09-25T12:28:59.759433+00:00",
-                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
-                },
-                "container": {
-                    "image": "gcr.io/light-reality-205619/ubuntu:latest",
-                    "command": "date",
-                    "resources": {
-                        "cpu": 1.0,
-                        "memory_mb": 16384,
-                        "gpu": 1,
-                        "shm": False,
-                        "gpu_model": "nvidia-tesla-p4",
-                    },
-                },
-                "is_preemptible": True,
-                "http_url": "http://my_host:8889",
-                "ssh_server": "ssh://my_host.ssh:22",
-            }
-        )
+        return web.json_response(JSON)
 
     app = web.Application()
     app.router.add_post("/jobs", handler)
@@ -470,20 +467,7 @@ async def test_job_submit_preemptible(aiohttp_server):
             description="job description",
         )
 
-    assert ret == JobDescription(
-        id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-        status=JobStatus.FAILED,
-        image="gcr.io/light-reality-205619/ubuntu:latest",
-        command="date",
-        description=None,
-        resources=Resources(
-            memory=16384, cpu=1.0, gpu=1, gpu_model="nvidia-tesla-p4", shm=False
-        ),
-        history=None,
-        url=URL("http://my_host:8889"),
-        ssh=URL("ssh://my_host.ssh:22"),
-        is_preemptible=True,
-    )
+    assert ret == JobDescription.from_api(JSON)
 
 
 @pytest.mark.parametrize(
@@ -496,35 +480,38 @@ def test_volume_from_str_fail(volume):
 
 
 async def test_list(aiohttp_server):
-    async def handler(request):
-        return web.json_response(
+    JSON = {
+        "jobs": [
             {
-                "jobs": [
-                    {
-                        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-                        "status": "pending",
-                        "history": {
-                            "status": "failed",
-                            "reason": "Error",
-                            "description": "Mounted on Avail\\n/dev/shm     "
-                            "64M\\n\\nExit code: 1",
-                            "created_at": "2018-09-25T12:28:21.298672+00:00",
-                            "started_at": "2018-09-25T12:28:59.759433+00:00",
-                            "finished_at": "2018-09-25T12:28:59.759433+00:00",
-                        },
-                        "container": {
-                            "resources": {
-                                "cpu": 1.0,
-                                "memory_mb": 16384,
-                                "gpu": 1,
-                                "gpu_model": "nvidia-tesla-v100",
-                            }
-                        },
-                        "is_preemptible": True,
-                    }
-                ]
+                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+                "status": "pending",
+                "history": {
+                    "status": "failed",
+                    "reason": "Error",
+                    "description": "Mounted on Avail\\n/dev/shm     "
+                    "64M\\n\\nExit code: 1",
+                    "created_at": "2018-09-25T12:28:21.298672+00:00",
+                    "started_at": "2018-09-25T12:28:59.759433+00:00",
+                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
+                },
+                "container": {
+                    "image": "submit-image-name",
+                    "command": "submit-command",
+                    "resources": {
+                        "cpu": 1.0,
+                        "memory_mb": 16384,
+                        "gpu": 1,
+                        "gpu_model": "nvidia-tesla-v100",
+                    },
+                },
+                "is_preemptible": True,
+                "owner": "owner",
             }
-        )
+        ]
+    }
+
+    async def handler(request):
+        return web.json_response(JSON)
 
     app = web.Application()
     app.router.add_get("/jobs", handler)
@@ -534,23 +521,4 @@ async def test_list(aiohttp_server):
     async with ClientV2(srv.make_url("/"), "token") as client:
         ret = await client.jobs.list()
 
-    assert ret == [
-        JobDescription(
-            id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-            owner=None,
-            status=JobStatus.PENDING,
-            image=None,
-            command=None,
-            resources=Resources(
-                memory=16384, cpu=1.0, gpu=1, shm=None, gpu_model="nvidia-tesla-v100"
-            ),
-            history=JobStatusHistory(
-                status=JobStatus.FAILED,
-                reason="Error",
-                description="Mounted on Avail\\n/dev/shm     64M\\n\\nExit code: 1",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at="2018-09-25T12:28:59.759433+00:00",
-            ),
-        )
-    ]
+    assert ret == [JobDescription.from_api(j) for j in JSON["jobs"]]

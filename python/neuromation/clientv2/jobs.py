@@ -85,22 +85,67 @@ class JobStatusHistory:
 class JobDescription:
     status: JobStatus
     id: str
-    image: Optional[str] = None
+    image: str
+    owner: str
+    history: JobStatusHistory
+    resources: Resources
+    is_preemptible: bool
+    description: Optional[str] = None
     command: Optional[str] = None
     url: URL = URL()
     ssh: URL = URL()
     env: Optional[Dict[str, str]] = None
-    owner: Optional[str] = None
-    history: Optional[JobStatusHistory] = None
-    resources: Optional[Resources] = None
-    description: Optional[str] = None
-    is_preemptible: bool = True
 
     def jump_host(self) -> str:
         ssh_hostname = self.ssh.host
         assert ssh_hostname is not None
         ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
         return ssh_hostname
+
+    @classmethod
+    def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
+        job_container_image = res["container"]["image"]
+        job_command = res["container"].get("command", None)
+        job_env = res["container"].get("env", None)
+
+        job_owner = res["owner"]
+        container_resources = res["container"]["resources"]
+        shm = container_resources.get("shm", None)
+        gpu = container_resources.get("gpu", None)
+        gpu_model = container_resources.get("gpu_model", None)
+
+        job_resources = Resources(
+            cpu=container_resources["cpu"],
+            memory=container_resources["memory_mb"],
+            gpu=gpu,
+            shm=shm,
+            gpu_model=gpu_model,
+        )
+        http_url = URL(res.get("http_url", ""))
+        ssh_conn = URL(res.get("ssh_server", ""))
+        description = res.get("description", None)
+        job_history = JobStatusHistory(
+            status=JobStatus(res["history"].get("status", "unknown")),
+            reason=res["history"].get("reason", ""),
+            description=res["history"].get("description", ""),
+            created_at=res["history"].get("created_at", ""),
+            started_at=res["history"].get("started_at", ""),
+            finished_at=res["history"].get("finished_at", ""),
+        )
+        return JobDescription(
+            id=res["id"],
+            status=JobStatus(res["status"]),
+            image=job_container_image,
+            command=job_command,
+            resources=job_resources,
+            history=job_history,
+            url=http_url,
+            ssh=ssh_conn,
+            owner=job_owner,
+            description=description,
+            env=job_env,
+            is_preemptible=res["is_preemptible"],
+        )
 
 
 class Jobs:
@@ -148,13 +193,13 @@ class Jobs:
             request_details["is_preemptible"] = is_preemptible
         async with self._api.request("POST", url, json=request_details) as resp:
             res = await resp.json()
-            return self._dict_to_description(res)
+            return JobDescription.from_api(res)
 
     async def list(self) -> List[JobDescription]:
         url = URL(f"jobs")
         async with self._api.request("GET", url) as resp:
             ret = await resp.json()
-            return [self._dict_to_description_with_history(j) for j in ret["jobs"]]
+            return [JobDescription.from_api(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
@@ -176,73 +221,4 @@ class Jobs:
         url = URL(f"jobs/{id}")
         async with self._api.request("GET", url) as resp:
             ret = await resp.json()
-            return self._dict_to_description_with_history(ret)
-
-    def _dict_to_description_with_history(self, res: Dict[str, Any]) -> JobDescription:
-        job_description = self._dict_to_description(res)
-        job_history = None
-        if "history" in res:
-            job_history = JobStatusHistory(
-                status=JobStatus(res["history"].get("status", "unknown")),
-                reason=res["history"].get("reason", ""),
-                description=res["history"].get("description", ""),
-                created_at=res["history"].get("created_at", ""),
-                started_at=res["history"].get("started_at", ""),
-                finished_at=res["history"].get("finished_at", ""),
-            )
-        return JobDescription(
-            id=job_description.id,
-            status=job_description.status,
-            image=job_description.image,
-            command=job_description.command,
-            history=job_history,
-            resources=job_description.resources,
-            url=job_description.url,
-            ssh=job_description.ssh,
-            owner=job_description.owner,
-            description=job_description.description,
-            env=job_description.env,
-            is_preemptible=job_description.is_preemptible,
-        )
-
-    def _dict_to_description(self, res: Dict[str, Any]) -> JobDescription:
-        job_container_image = None
-        job_command = None
-        job_resources = None
-        job_env = None
-
-        if "container" in res:
-            job_container_image = res["container"].get("image", None)
-            job_command = res["container"].get("command", None)
-            job_env = res["container"].get("env", None)
-
-            if "resources" in res["container"]:
-                container_resources = res["container"]["resources"]
-                shm = container_resources.get("shm", None)
-                gpu = container_resources.get("gpu", None)
-                gpu_model = container_resources.get("gpu_model", None)
-
-                job_resources = Resources(
-                    cpu=container_resources["cpu"],
-                    memory=container_resources["memory_mb"],
-                    gpu=gpu,
-                    shm=shm,
-                    gpu_model=gpu_model,
-                )
-        http_url = URL(res.get("http_url", ""))
-        ssh_conn = URL(res.get("ssh_server", ""))
-        description = res.get("description")
-        job_owner = res.get("owner", None)
-        return JobDescription(
-            id=res["id"],
-            status=JobStatus(res["status"]),
-            image=job_container_image,
-            command=job_command,
-            resources=job_resources,
-            url=http_url,
-            ssh=ssh_conn,
-            owner=job_owner,
-            description=description,
-            env=job_env,
-            is_preemptible=res["is_preemptible"],
-        )
+            return JobDescription.from_api(ret)
