@@ -122,6 +122,8 @@ Name | Description|
 |_\-x, --extshm_|Request extended '/dev/shm' space|
 |_--http NUMBER_|Enable HTTP port forwarding to container|
 |_--ssh NUMBER_|Enable SSH port forwarding to container|
+|_--preemptible_|Run job on a lower-cost preemptible instance|
+|_\--non-preemptible_|Force job to run on a non-preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 
