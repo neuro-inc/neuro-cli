@@ -131,7 +131,7 @@ class JobListFormatter(BaseFormatter):
             return job.id.ljust(self.column_lengths["id"])
 
         description = truncate_then_wrap(job.description, "description")
-        command = truncate_then_wrap(job.command, "command")
+        command = truncate_then_wrap(job.command or "", "command")
         return self.tab.join(
             [
                 job.id.ljust(self.column_lengths["id"]),
