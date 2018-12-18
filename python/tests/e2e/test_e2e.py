@@ -1,6 +1,7 @@
 import asyncio
 import platform
 import re
+import time
 from math import ceil
 from os.path import join
 from uuid import uuid4 as uuid
@@ -180,7 +181,16 @@ def test_e2e(data, run, tmpdir):
     check_file_exists_on_storage(run, "foo", _path, FILE_SIZE_B)
 
     # Download into local file and confirm checksum
-    check_file_on_storage_checksum(run, "foo", _path, checksum, tmpdir, "bar")
+    exc = None
+    for i in range(5):
+        try:
+            check_file_on_storage_checksum(run, "foo", _path, checksum, tmpdir, "bar")
+            break
+        except AssertionError as e:
+            exc = e
+            time.sleep(5)
+    else:
+        raise exc
 
     # Download into deeper local dir and confirm checksum
     _local = join(tmpdir, "bardir")

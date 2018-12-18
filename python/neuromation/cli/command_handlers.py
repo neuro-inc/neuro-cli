@@ -1,21 +1,18 @@
 import abc
-import datetime
 import logging
 import os
 import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
 from time import sleep
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 
-import dateutil.parser
 import docker
 from docker.errors import APIError
 
 from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.cli.formatter import JobListFormatter
 from neuromation.client import FileStatus, Image, ResourceNotFound
 from neuromation.client.jobs import JobDescription, NetworkPortForwarding
 from neuromation.http import BadRequestError
@@ -425,38 +422,6 @@ class JobHandlerOperations(PlatformStorageOperation):
     def status(self, id: str, jobs: Callable) -> JobDescription:
         with jobs() as j:
             return j.status(id)
-
-    @classmethod
-    def _sort_job_list(
-        cls, job_list: Iterable[JobDescription]
-    ) -> Iterable[JobDescription]:
-        def job_sorting_key_by_creation_time(job: JobDescription) -> datetime:
-            created_str = job.history.created_at
-            return dateutil.parser.isoparse(created_str)
-
-        return sorted(job_list, key=job_sorting_key_by_creation_time)
-
-    def list_jobs(
-        self,
-        jobs: Callable,
-        status: str,
-        quiet: bool = False,
-        description: Optional[str] = None,
-    ) -> str:
-
-        statuses = set(status.split(",")) if status else set()
-        has_all_status = "all" in statuses
-
-        def apply_filter(item: JobDescription) -> bool:
-            filter_status = has_all_status or item.status in statuses
-            filter_description = not description or item.description == description
-            return filter_status and filter_description
-
-        formatter = JobListFormatter(quiet=quiet)
-
-        with jobs() as j:
-            job_list = self._sort_job_list(filter(apply_filter, j.list()))
-            return formatter.format_jobs(job_list)
 
     def start_ssh(
         self,

@@ -52,9 +52,9 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="NOW",
-                started_at="NOW1",
-                finished_at="NOW2",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
             ),
         )
 
@@ -68,7 +68,9 @@ class TestJobOutputFormatter:
             "Command: test-command\n"
             "Resources: None\n"
             "Http URL: http://local.host.test/\n"
-            "Created: NOW\nStarted: NOW1\nFinished: NOW2\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "===Description===\n"
             "ErrorDesc\n================="
         )
@@ -85,7 +87,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason=None,
                 description=None,
-                created_at="NOW",
+                created_at="2018-09-25T12:28:21.298672+00:00",
                 started_at=None,
                 finished_at=None,
             ),
@@ -100,7 +102,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             "Resources: None\n"
-            "Created: NOW"
+            "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
     def test_pending_job_with_reason(self) -> None:
@@ -115,7 +117,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description=None,
-                created_at="NOW",
+                created_at="2018-09-25T12:28:21.298672+00:00",
                 started_at=None,
                 finished_at=None,
             ),
@@ -130,7 +132,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             "Resources: None\n"
-            "Created: NOW"
+            "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
     def test_pending_job_no_description(self) -> None:
@@ -145,7 +147,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description=None,
-                created_at="NOW",
+                created_at="2018-09-25T12:28:21.298672+00:00",
                 started_at=None,
                 finished_at=None,
             ),
@@ -159,7 +161,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             "Resources: None\n"
-            "Created: NOW"
+            "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
 
@@ -217,7 +219,7 @@ class TestJobListFormatter:
                     status=JobStatus.PENDING,
                     reason="ContainerCreating",
                     description=None,
-                    created_at="NOW",
+                    created_at="2018-09-25T12:28:21.298672+00:00",
                     started_at=None,
                     finished_at=None,
                 ),
@@ -247,7 +249,7 @@ class TestJobListFormatter:
                     status=JobStatus.PENDING,
                     reason="ContainerCreating",
                     description=None,
-                    created_at="NOW",
+                    created_at="2018-09-25T12:28:21.298672+00:00",
                     started_at=None,
                     finished_at=None,
                 ),
@@ -271,3 +273,32 @@ class TestJobListFormatter:
             + [format_expected_job_line(index) for index in range(number_of_jobs)]
         )
         assert self.loud.format_jobs(jobs) == expected
+
+    def test_format_jobs_description_filter(self):
+        jobs = [
+            JobDescription(
+                status=JobStatus.RUNNING,
+                id=f"test-job-{index}",
+                description=f"test-description-{index}",
+                client=None,
+                image=f"test-image-{index}",
+                command=f"test-command-{index}",
+                history=JobStatusHistory(
+                    status=JobStatus.PENDING,
+                    reason="ContainerCreating",
+                    description=None,
+                    created_at="2018-09-25T12:28:21.298672+00:00",
+                    started_at=None,
+                    finished_at=None,
+                ),
+            )
+            for index in range(2)
+        ]
+
+        def format_expected_job_line(index):
+            return f"test-job-{index}".ljust(40)
+
+        expected = "\n".join([format_expected_job_line(0)])
+        assert (
+            self.quiet.format_jobs(jobs, description="test-description-0") == expected
+        ), expected

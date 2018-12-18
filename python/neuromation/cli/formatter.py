@@ -1,6 +1,9 @@
-from typing import Iterable, Optional, Union
+from typing import AbstractSet, Iterable, Optional, Union
 
-from neuromation.client.jobs import JobDescription, JobItem, JobStatus
+import dateutil.parser
+
+from neuromation.client.jobs import JobItem
+from neuromation.clientv2 import JobDescription, JobStatus
 
 
 class BaseFormatter:
@@ -90,7 +93,20 @@ class JobListFormatter(BaseFormatter):
             "command": 50,
         }
 
-    def format_jobs(self, jobs: Iterable[JobDescription]) -> str:
+    def format_jobs(
+        self,
+        jobs: Iterable[JobDescription],
+        statuses: AbstractSet[str] = frozenset(),
+        description: str = "",
+    ) -> str:
+        if statuses:
+            jobs = [j for j in jobs if j.status in statuses]
+        if description:
+            jobs = [j for j in jobs if j.description == description]
+
+        jobs = sorted(
+            jobs, key=lambda j: dateutil.parser.isoparse(j.history.created_at)
+        )
         lines = list()
         if not self.quiet:
             lines.append(self._format_header_line())

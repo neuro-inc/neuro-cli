@@ -117,11 +117,6 @@ class JobRequest(Request):
 
 
 @dataclass(frozen=True)
-class JobListRequest(JobRequest):
-    pass
-
-
-@dataclass(frozen=True)
 class StorageRequest(Request):
     def to_http_request(self) -> http.Request:  # pragma: no cover
         raise NotImplementedError
@@ -204,10 +199,6 @@ def build(request: Request) -> http.Request:
     if isinstance(request, JobStatusRequest):
         return http.JsonRequest(
             url=f"/jobs/{request.id}", params=None, method="GET", json=None, data=None
-        )
-    elif isinstance(request, JobListRequest):
-        return http.JsonRequest(
-            url="/jobs", params=None, method="GET", json=None, data=None
         )
     elif isinstance(request, TrainRequest):
         return request.to_http_request()

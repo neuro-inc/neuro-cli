@@ -493,3 +493,64 @@ async def test_job_submit_preemptible(aiohttp_server):
 def test_volume_from_str_fail(volume):
     with pytest.raises(ValueError):
         VolumeDescriptionPayload.from_cli("testuser", volume)
+
+
+async def test_list(aiohttp_server):
+    async def handler(request):
+        return web.json_response(
+            {
+                "jobs": [
+                    {
+                        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+                        "status": "pending",
+                        "history": {
+                            "status": "failed",
+                            "reason": "Error",
+                            "description": "Mounted on Avail\\n/dev/shm     "
+                            "64M\\n\\nExit code: 1",
+                            "created_at": "2018-09-25T12:28:21.298672+00:00",
+                            "started_at": "2018-09-25T12:28:59.759433+00:00",
+                            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+                        },
+                        "container": {
+                            "resources": {
+                                "cpu": 1.0,
+                                "memory_mb": 16384,
+                                "gpu": 1,
+                                "gpu_model": "nvidia-tesla-v100",
+                            }
+                        },
+                        "is_preemptible": True,
+                    }
+                ]
+            }
+        )
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "token") as client:
+        ret = await client.jobs.list()
+
+    assert ret == [
+        JobDescription(
+            id="job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+            owner=None,
+            status=JobStatus.PENDING,
+            image=None,
+            command=None,
+            resources=Resources(
+                memory=16384, cpu=1.0, gpu=1, shm=None, gpu_model="nvidia-tesla-v100"
+            ),
+            history=JobStatusHistory(
+                status=JobStatus.FAILED,
+                reason="Error",
+                description="Mounted on Avail\\n/dev/shm     64M\\n\\nExit code: 1",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
+            ),
+        )
+    ]

@@ -53,7 +53,7 @@ test-all:
 lint: lint-docs
 	isort -c -rc neuromation tests build-tools
 	black --check neuromation tests build-tools
-	mypy neuromation/client neuromation/logging neuromation/strings
+	mypy neuromation/client neuromation/logging neuromation/strings neuromation/clientv2
 	flake8
 
 .PHONY: dist-clean
