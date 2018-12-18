@@ -439,9 +439,7 @@ Commands:
             username = config.get_platform_user_name()
 
             async with ClientV2(url, token) as client:
-                await remote_debug(
-                    client, username, id, git_key, localport
-                )
+                await remote_debug(client, username, id, git_key, localport)
 
         return locals()
 
