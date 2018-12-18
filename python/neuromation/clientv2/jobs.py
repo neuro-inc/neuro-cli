@@ -86,12 +86,12 @@ class JobDescription:
     status: JobStatus
     id: str
     image: str
-    command: str
     owner: str
     history: JobStatusHistory
     description: str
     resources: Resources
     is_preemptible: bool
+    command: Optional[str] = None
     url: URL = URL()
     ssh: URL = URL()
     env: Optional[Dict[str, str]] = None
