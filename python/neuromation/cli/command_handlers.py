@@ -4,7 +4,6 @@ import os
 import subprocess
 from os.path import dirname
 from pathlib import Path, PosixPath, PurePath, PurePosixPath
-from time import sleep
 from typing import Callable, Dict, List, Optional
 from urllib.parse import ParseResult, urlparse
 

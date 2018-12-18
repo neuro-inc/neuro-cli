@@ -1,6 +1,5 @@
 import asyncio
 import subprocess
-from typing import Callable
 
 import aiohttp
 
@@ -9,7 +8,7 @@ from neuromation.clientv2 import ClientV2, JobDescription
 
 def _validate_args_for_ssh_session(
     container_user: str, container_key: str, jump_host_key: str
-):
+) -> None:
     # Temporal solution - pending custom Jump Server with JWT support
     if not container_user:
         raise ValueError("Specify container user name")
@@ -21,7 +20,7 @@ def _validate_args_for_ssh_session(
         )
 
 
-def _validate_job_status_for_ssh_session(job_status: JobDescription):
+def _validate_job_status_for_ssh_session(job_status: JobDescription) -> None:
     if job_status.status == "running":
         if job_status.ssh:
             pass
@@ -38,7 +37,7 @@ def start_ssh(
     jump_key: str,
     container_user: str,
     container_key: str,
-):
+) -> None:
     nc_command = f"nc {job_id} 22"
     proxy_command = (
         f"ProxyCommand=ssh -i {jump_key} {jump_user}@{jump_host} {nc_command}"
@@ -87,12 +86,12 @@ async def _start_ssh_tunnel(
 
 
 def _connect_ssh(
-    principal: str,
+    username: str,
     job_status: JobDescription,
     jump_host_key: str,
     container_user: str,
     container_key: str,
-):
+) -> None:
     _validate_job_status_for_ssh_session(job_status)
     # We shall make an attempt to connect only in case it has SSH
     ssh_hostname = job_status.jump_host()
@@ -101,7 +100,7 @@ def _connect_ssh(
     start_ssh(
         job_status.id,
         ssh_hostname,
-        principal,
+        username,
         jump_host_key,
         container_user,
         container_key,
@@ -111,11 +110,11 @@ def _connect_ssh(
 
 async def connect_ssh(
     client: ClientV2,
+    username: str,
     job_id: str,
     jump_host_key: str,
     container_user: str,
     container_key: str,
-    jobs: Callable,
 ) -> None:
     _validate_args_for_ssh_session(container_user, container_key, jump_host_key)
     # Check if job is running
@@ -123,7 +122,7 @@ async def connect_ssh(
         job_status = await client.jobs.status(job_id)
     except aiohttp.ClientError as e:
         raise ValueError(f"Job not found. Job Id = {job_id}") from e
-    _connect_ssh(job_status, jump_host_key, container_user, container_key)
+    _connect_ssh(username, job_status, jump_host_key, container_user, container_key)
 
 
 async def remote_debug(
