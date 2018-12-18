@@ -1,5 +1,4 @@
 import asyncio
-import subprocess
 
 import aiohttp
 
@@ -30,37 +29,6 @@ def _validate_job_status_for_ssh_session(job_status: JobDescription) -> None:
         raise ValueError(f"Job is not running. Job status is {job_status.status}")
 
 
-def start_ssh(
-    job_id: str,
-    jump_host: str,
-    jump_user: str,
-    jump_key: str,
-    container_user: str,
-    container_key: str,
-) -> None:
-    nc_command = f"nc {job_id} 22"
-    proxy_command = (
-        f"ProxyCommand=ssh -i {jump_key} {jump_user}@{jump_host} {nc_command}"
-    )
-    try:
-        subprocess.run(
-            args=[
-                "ssh",
-                "-o",
-                proxy_command,
-                "-i",
-                container_key,
-                f"{container_user}@{job_id}",
-            ],
-            check=True,
-        )
-    except subprocess.CalledProcessError:
-        # TODO (R Zubairov) check what ssh returns
-        # on disconnect due to network issues.
-        pass
-    return None
-
-
 async def _start_ssh_tunnel(
     job_status: JobDescription,
     jump_host: str,
@@ -78,14 +46,11 @@ async def _start_ssh_tunnel(
         "-N",
         "-L",
         f"{local_port}:{job_status.id}:22",
-        stderr=subprocess.STDOUT,
     )
     await proc.wait()
-    # TODO (ASvetlov) check ssh returncode
-    # on disconnect due to network issues.
 
 
-def _connect_ssh(
+async def _connect_ssh(
     username: str,
     job_status: JobDescription,
     jump_host_key: str,
@@ -97,15 +62,19 @@ def _connect_ssh(
     ssh_hostname = job_status.jump_host()
     if not ssh_hostname:
         raise RuntimeError("Job has no SSH server enabled")
-    start_ssh(
-        job_status.id,
-        ssh_hostname,
-        username,
-        jump_host_key,
-        container_user,
-        container_key,
+    nc_command = f"nc {job_status.id} 22"
+    proxy_command = (
+        f"ProxyCommand=ssh -i {jump_host_key} {username}@{ssh_hostname} {nc_command}"
     )
-    return None
+    proc = await asyncio.create_subprocess_exec(
+        "ssh",
+        "-o",
+        proxy_command,
+        "-i",
+        container_key,
+        f"{container_user}@{job_status.id}",
+    )
+    await proc.wait()
 
 
 async def connect_ssh(
@@ -122,7 +91,9 @@ async def connect_ssh(
         job_status = await client.jobs.status(job_id)
     except aiohttp.ClientError as e:
         raise ValueError(f"Job not found. Job Id = {job_id}") from e
-    _connect_ssh(username, job_status, jump_host_key, container_user, container_key)
+    await _connect_ssh(
+        username, job_status, jump_host_key, container_user, container_key
+    )
 
 
 async def remote_debug(
