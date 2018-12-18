@@ -88,9 +88,9 @@ class JobDescription:
     image: str
     owner: str
     history: JobStatusHistory
-    description: str
     resources: Resources
     is_preemptible: bool
+    description: Optional[str] = None
     command: Optional[str] = None
     url: URL = URL()
     ssh: URL = URL()
@@ -123,7 +123,7 @@ class JobDescription:
         )
         http_url = URL(res.get("http_url", ""))
         ssh_conn = URL(res.get("ssh_server", ""))
-        description = res.get("description", "")
+        description = res.get("description", None)
         job_history = JobStatusHistory(
             status=JobStatus(res["history"].get("status", "unknown")),
             reason=res["history"].get("reason", ""),
