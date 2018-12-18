@@ -7,3 +7,5 @@
 coverage.xml
 build
 dist
+.eggs
+.mypy_cache
