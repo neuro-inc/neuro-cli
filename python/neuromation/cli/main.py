@@ -35,6 +35,7 @@ from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter
 from .ssh_utils import connect_ssh, remote_debug
+from yarl import URL
 
 
 # For stream copying from file to http or from http to file
@@ -395,14 +396,14 @@ Commands:
             pso = PlatformStorageOperation(username)
 
             try:
-                dataset_platform_path = pso.render_uri_path_with_principal(dataset)
+                dataset_platform_path = URL(pso.render_uri_path_with_principal(dataset))
             except ValueError:
                 raise ValueError(
                     f"Dataset path should be on platform. " f"Current value {dataset}"
                 )
 
             try:
-                resultset_platform_path = pso.render_uri_path_with_principal(results)
+                resultset_platform_path = URL(pso.render_uri_path_with_principal(results))
             except ValueError:
                 raise ValueError(
                     f"Results path should be on platform. " f"Current value {results}"

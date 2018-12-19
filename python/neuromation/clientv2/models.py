@@ -46,8 +46,8 @@ class Models:
         )
         payload = {
             "container": container.to_primitive(),
-            "dataset_storage_uri": dataset,
-            "result_storage_uri": results,
+            "dataset_storage_uri": str(dataset),
+            "result_storage_uri": str(results),
         }
         if description:
             payload["description"] = description
