@@ -9,7 +9,7 @@ from uuid import uuid4 as uuid
 import pytest
 
 import neuromation
-from tests.e2e.test_e2e_utils import assert_job_state, wait_for_job_to_change_state_from
+from tests.e2e.test_e2e_utils import assert_job_state, wait_job_change_state_from
 from tests.e2e.utils import (
     UBUNTU_IMAGE_NAME,
     check_create_dir_on_storage,
@@ -130,8 +130,8 @@ def test_e2e_shm_run_without(run, tmpdir):
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
-    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+    wait_job_change_state_from(run, job_id, "Status: pending")
+    wait_job_change_state_from(run, job_id, "Status: running")
 
     assert_job_state(run, job_id, "Status: succeeded")
 
@@ -158,8 +158,8 @@ def test_e2e_shm_run_with(run, tmpdir):
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_for_job_to_change_state_from(run, job_id, "Status: pending")
-    wait_for_job_to_change_state_from(run, job_id, "Status: running")
+    wait_job_change_state_from(run, job_id, "Status: pending")
+    wait_job_change_state_from(run, job_id, "Status: running")
 
     assert_job_state(run, job_id, "Status: failed")
 
