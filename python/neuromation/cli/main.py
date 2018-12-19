@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import aiohttp
+from yarl import URL
 
 import neuromation
 from neuromation.cli.command_handlers import (
@@ -35,7 +36,6 @@ from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter
 from .ssh_utils import connect_ssh, remote_debug
-from yarl import URL
 
 
 # For stream copying from file to http or from http to file
@@ -403,7 +403,9 @@ Commands:
                 )
 
             try:
-                resultset_platform_path = URL(pso.render_uri_path_with_principal(results))
+                resultset_platform_path = URL(
+                    pso.render_uri_path_with_principal(results)
+                )
             except ValueError:
                 raise ValueError(
                     f"Results path should be on platform. " f"Current value {results}"
