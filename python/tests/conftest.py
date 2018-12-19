@@ -2,15 +2,8 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from neuromation import Model, Storage
 from neuromation.client.jobs import ResourceSharing
-
-
-@pytest.fixture
-def model(loop):
-    model = Model(url="http://127.0.0.1", token="test-token-for-model", loop=loop)
-    yield model
-    loop.run_until_complete(model.close())
+from neuromation.client.storage import Storage
 
 
 @pytest.fixture(scope="function")
@@ -32,14 +25,6 @@ def resource_sharing(loop):
 @pytest.fixture(scope="function")
 def mocked_store(loop):
     my_mock = MagicMock(Storage("no-url", "no-token", loop=loop))
-    my_mock.__enter__ = Mock(return_value=my_mock)
-    my_mock.__exit__ = Mock(return_value=False)
-    return my_mock
-
-
-@pytest.fixture(scope="function")
-def mocked_model(loop):
-    my_mock = MagicMock(Model("no-url", "no-token", loop=loop))
     my_mock.__enter__ = Mock(return_value=my_mock)
     my_mock.__exit__ = Mock(return_value=False)
     return my_mock

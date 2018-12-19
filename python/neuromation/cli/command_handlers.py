@@ -9,9 +9,8 @@ from urllib.parse import ParseResult, urlparse
 import docker
 from docker.errors import APIError
 
-from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.client import FileStatus, Image, ResourceNotFound
+from neuromation.client import FileStatus, Image, ResourceNotFound, Resources
 from neuromation.client.jobs import NetworkPortForwarding
 
 

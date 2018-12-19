@@ -1,10 +1,9 @@
 import logging
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import ClassVar, Dict, List
 
 from neuromation import http
-from neuromation.http import JsonRequest
 
 
 log = logging.getLogger(__name__)
@@ -27,44 +26,6 @@ class Request:
 
 
 @dataclass(frozen=True)
-class ResourcesPayload:
-    memory_mb: str
-    cpu: float
-    gpu: Optional[int]
-    gpu_model: Optional[str]
-    shm: Optional[bool]
-
-    def to_primitive(self) -> Dict[str, Any]:
-        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
-        if self.gpu:
-            value["gpu"] = self.gpu
-            value["gpu_model"] = self.gpu_model
-        return value
-
-
-@dataclass(frozen=True)
-class ContainerPayload:
-    image: str
-    command: Optional[str]
-    http: Optional[Dict[str, int]]
-    ssh: Optional[Dict[str, int]]
-    resources: ResourcesPayload
-    env: Optional[Dict[str, str]] = None
-
-    def to_primitive(self) -> Dict[str, Any]:
-        primitive = {"image": self.image, "resources": self.resources.to_primitive()}
-        if self.command:
-            primitive["command"] = self.command
-        if self.http:
-            primitive["http"] = self.http
-        if self.ssh:
-            primitive["ssh"] = self.ssh
-        if self.env:
-            primitive["env"] = self.env
-        return primitive
-
-
-@dataclass(frozen=True)
 class JobStatusRequest(Request):
     id: str
 
@@ -84,36 +45,6 @@ class ShareResourceRequest(Request):
             json=self.permissions,
             data=None,
         )
-
-
-@dataclass(frozen=True)
-class TrainRequest(Request):
-    container: ContainerPayload
-    dataset_storage_uri: str
-    result_storage_uri: str
-    description: Optional[str]
-
-    def to_primitive(self) -> Dict[str, Any]:
-        json_params: Dict[str, Any] = {
-            "container": self.container.to_primitive(),
-            "dataset_storage_uri": self.dataset_storage_uri,
-            "result_storage_uri": self.result_storage_uri,
-        }
-
-        if self.description:
-            json_params["description"] = self.description
-        return json_params
-
-    def to_http_request(self) -> JsonRequest:
-        json_params = self.to_primitive()
-        return http.JsonRequest(
-            url="/models", params=None, method="POST", json=json_params, data=None
-        )
-
-
-@dataclass(frozen=True)
-class JobRequest(Request):
-    pass
 
 
 @dataclass(frozen=True)
@@ -200,8 +131,6 @@ def build(request: Request) -> http.Request:
         return http.JsonRequest(
             url=f"/jobs/{request.id}", params=None, method="GET", json=None, data=None
         )
-    elif isinstance(request, TrainRequest):
-        return request.to_http_request()
     elif isinstance(request, CreateRequest):
         return http.PlainRequest(
             url=add_path("/storage/", request.path),

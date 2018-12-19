@@ -1,15 +1,17 @@
-from unittest.mock import MagicMock
-
 import pytest
 
-from neuromation import JobItem
 from neuromation.cli.formatter import (
     BaseFormatter,
     JobListFormatter,
     JobStatusFormatter,
     OutputFormatter,
 )
-from neuromation.client.jobs import JobDescription, JobStatus, JobStatusHistory
+from neuromation.client.jobs import (
+    JobDescription,
+    JobStatus,
+    JobStatusHistory,
+    Resources,
+)
 
 
 TEST_JOB_STATUS = "pending"
@@ -17,15 +19,29 @@ TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 
 
 @pytest.fixture
-def job_item():
-    return JobItem(status=TEST_JOB_STATUS, id=TEST_JOB_ID, client=MagicMock())
+def job_descr():
+    return JobDescription(
+        status=TEST_JOB_STATUS,
+        id=TEST_JOB_ID,
+        image="ubuntu:latest",
+        owner="owner",
+        history=JobStatusHistory(
+            status=JobStatus.PENDING,
+            reason="ErrorReason",
+            description="ErrorDesc",
+            created_at="2018-09-25T12:28:21.298672+00:00",
+            started_at="2018-09-25T12:28:59.759433+00:00",
+            finished_at="2018-09-25T12:28:59.759433+00:00",
+        ),
+        resources=Resources.create(0.1, 0, None, None),
+    )
 
 
 class TestOutputFormatter:
-    def test_quiet(self, job_item):
-        assert OutputFormatter.format_job(job_item, quiet=True) == TEST_JOB_ID
+    def test_quiet(self, job_descr):
+        assert OutputFormatter.format_job(job_descr, quiet=True) == TEST_JOB_ID
 
-    def test_non_quiet(self, job_item) -> None:
+    def test_non_quiet(self, job_descr) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {TEST_JOB_STATUS}\n"
             + f"Shortcuts:\n"
@@ -33,7 +49,7 @@ class TestOutputFormatter:
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
-        assert OutputFormatter.format_job(job_item, quiet=False) == expected
+        assert OutputFormatter.format_job(job_descr, quiet=False) == expected
 
 
 class TestJobOutputFormatter:

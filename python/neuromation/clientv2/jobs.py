@@ -11,10 +11,47 @@ from neuromation.client.jobs import (
     Resources,
     network_to_api,
 )
-from neuromation.client.requests import ContainerPayload, ResourcesPayload
 from neuromation.strings import parse
 
 from .api import API
+
+
+@dataclass(frozen=True)
+class ResourcesPayload:
+    memory_mb: str
+    cpu: float
+    gpu: Optional[int]
+    gpu_model: Optional[str]
+    shm: Optional[bool]
+
+    def to_primitive(self) -> Dict[str, Any]:
+        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
+        if self.gpu:
+            value["gpu"] = self.gpu
+            value["gpu_model"] = self.gpu_model
+        return value
+
+
+@dataclass(frozen=True)
+class ContainerPayload:
+    image: str
+    command: Optional[str]
+    http: Optional[Dict[str, int]]
+    ssh: Optional[Dict[str, int]]
+    resources: ResourcesPayload
+    env: Optional[Dict[str, str]] = None
+
+    def to_primitive(self) -> Dict[str, Any]:
+        primitive = {"image": self.image, "resources": self.resources.to_primitive()}
+        if self.command:
+            primitive["command"] = self.command
+        if self.http:
+            primitive["http"] = self.http
+        if self.ssh:
+            primitive["ssh"] = self.ssh
+        if self.env:
+            primitive["env"] = self.env
+        return primitive
 
 
 @dataclass(frozen=True)

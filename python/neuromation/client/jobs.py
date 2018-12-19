@@ -4,16 +4,8 @@ from dataclasses import dataclass
 from typing import Dict, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
-from neuromation.strings import parse
-
 from .client import ApiClient
-from .requests import (
-    ContainerPayload,
-    JobStatusRequest,
-    ResourcesPayload,
-    ShareResourceRequest,
-    TrainRequest,
-)
+from .requests import JobStatusRequest, ShareResourceRequest
 
 
 def network_to_api(
@@ -79,51 +71,6 @@ class JobStatusHistory:
     finished_at: str
 
 
-@dataclass(frozen=True)
-class JobDescription:
-    status: str
-    id: str
-    client: ApiClient
-    image: Optional[str] = None
-    command: Optional[str] = None
-    url: str = ""
-    ssh: str = ""
-    env: Optional[Dict[str, str]] = None
-    owner: Optional[str] = None
-    history: Optional[JobStatusHistory] = None
-    resources: Optional[Resources] = None
-    description: Optional[str] = None
-
-    def jump_host(self) -> str:
-        ssh_hostname = urlparse(self.ssh).hostname
-        ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
-        return ssh_hostname
-
-
-@dataclass(frozen=True)
-class JobItem:
-    status: str
-    id: str
-    client: ApiClient
-    url: str = ""
-    history: Optional[JobStatusHistory] = None
-    description: Optional[str] = None
-
-    async def _call(self) -> "JobItem":
-        return JobItem(
-            client=self.client,
-            **await self.client._fetch(request=JobStatusRequest(id=self.id)),
-        )
-
-    def wait(self, timeout: Optional[float] = None) -> "JobItem":
-        try:
-            return self.client.loop.run_until_complete(
-                asyncio.wait_for(self._call(), timeout=timeout)
-            )
-        except asyncio.TimeoutError:
-            raise TimeoutError
-
-
 class JobStatus(str, enum.Enum):
     """An Enum subclass that represents job statuses.
     PENDING: a job is being created and scheduled. This includes finding (and
@@ -147,41 +94,3 @@ class ResourceSharing(ApiClient):
         permissions = [{"uri": path, "action": action}]
         self._fetch_sync(ShareResourceRequest(whom, permissions))
         return True
-
-
-class Model(ApiClient):
-    def train(
-        self,
-        *,
-        image: Image,
-        resources: Resources,
-        network: Optional[NetworkPortForwarding],
-        dataset: str,
-        results: str,
-        description: Optional[str],
-    ) -> JobItem:
-        http, ssh = network_to_api(network)
-        res = self._fetch_sync(
-            TrainRequest(
-                container=ContainerPayload(
-                    image=image.image,
-                    command=image.command,
-                    http=http,
-                    ssh=ssh,
-                    resources=ResourcesPayload(
-                        memory_mb=parse.to_megabytes_str(resources.memory),
-                        cpu=resources.cpu,
-                        gpu=resources.gpu,
-                        gpu_model=resources.gpu_model,
-                        shm=resources.shm,
-                    ),
-                ),
-                dataset_storage_uri=dataset,
-                result_storage_uri=results,
-                description=description,
-            )
-        )
-
-        return JobItem(
-            id=res["job_id"], status=res["status"], client=self, description=description
-        )

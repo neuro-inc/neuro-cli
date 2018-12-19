@@ -10,10 +10,10 @@ from neuromation.client.jobs import (
     Resources,
     network_to_api,
 )
-from neuromation.client.requests import ContainerPayload, ResourcesPayload
 from neuromation.strings import parse
 
 from .api import API
+from .jobs import ContainerPayload, ResourcesPayload
 
 
 @dataclass(frozen=True)
