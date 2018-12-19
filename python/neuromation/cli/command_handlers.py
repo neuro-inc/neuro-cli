@@ -396,6 +396,7 @@ class ModelHandlerOperations(PlatformStorageOperation):
         model,
         http,
         ssh,
+        is_preemptible: bool,
         description: str,
     ):
         try:
@@ -424,6 +425,7 @@ class ModelHandlerOperations(PlatformStorageOperation):
                 resources=Resources.create(cpu, gpu, gpu_model, memory, extshm),
                 dataset=f"storage:/{dataset_platform_path}",
                 results=f"storage:/{resultset_platform_path}",
+                is_preemptible=is_preemptible,
                 description=description,
             )
 

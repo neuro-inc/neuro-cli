@@ -91,6 +91,7 @@ class TrainRequest(Request):
     container: ContainerPayload
     dataset_storage_uri: str
     result_storage_uri: str
+    is_preemptible: bool
     description: Optional[str]
 
     def to_primitive(self) -> Dict[str, Any]:
@@ -98,6 +99,7 @@ class TrainRequest(Request):
             "container": self.container.to_primitive(),
             "dataset_storage_uri": self.dataset_storage_uri,
             "result_storage_uri": self.result_storage_uri,
+            "is_preemptible": self.is_preemptible,
         }
 
         if self.description:

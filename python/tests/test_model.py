@@ -18,6 +18,7 @@ JOB_ARGS = {
     "dataset": "storage://~/dataset",
     "results": "storage://~/results",
     "network": None,
+    "is_preemptible": True,
     "description": "test job description",
 }
 

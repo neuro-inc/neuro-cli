@@ -365,6 +365,8 @@ Commands:
             http,
             ssh,
             cmd,
+            preemptible,
+            non_preemptible,
             description,
             quiet,
         ):
@@ -392,9 +394,20 @@ Commands:
                 -x, --extshm              Request extended '/dev/shm' space
                 --http NUMBER             Enable HTTP port forwarding to container
                 --ssh NUMBER              Enable SSH port forwarding to container
+                --preemptible             Run job on a lower-cost preemptible instance
+                --non-preemptible         Force job to run on a non-preemptible instance
                 -d, --description DESC    Add optional description to the job
                 -q, --quiet               Run command in quiet mode (print only job id)
             """
+
+            def get_preemptible():  # pragma: no cover
+                if preemptible and non_preemptible:
+                    raise neuromation.client.IllegalArgumentError(
+                        "Incompatible options: --preemptible and --non-preemptible"
+                    )
+                return preemptible or not non_preemptible  # preemptible by default
+
+            is_preemptible = get_preemptible()
 
             config: Config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
@@ -412,6 +425,7 @@ Commands:
                 model,
                 http,
                 ssh,
+                is_preemptible,
                 description,
             )
 
