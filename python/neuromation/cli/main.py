@@ -396,15 +396,17 @@ Commands:
             pso = PlatformStorageOperation(username)
 
             try:
-                dataset_platform_path = URL(pso.render_uri_path_with_principal(dataset))
+                dataset_url = URL(
+                    "storage:/" + str(pso.render_uri_path_with_principal(dataset))
+                )
             except ValueError:
                 raise ValueError(
                     f"Dataset path should be on platform. " f"Current value {dataset}"
                 )
 
             try:
-                resultset_platform_path = URL(
-                    pso.render_uri_path_with_principal(results)
+                resultset_url = URL(
+                    "storage:/" + str(pso.render_uri_path_with_principal(results))
                 )
             except ValueError:
                 raise ValueError(
@@ -417,15 +419,18 @@ Commands:
             cmd = " ".join(cmd) if cmd is not None else None
             log.debug(f'cmd="{cmd}"')
 
+            image = Image(image=image, command=cmd)
+
             async with ClientV2(url, token) as client:
-                job = await client.model.train(
+                res = await client.models.train(
                     image=image,
                     resources=resources,
-                    dataset=dataset_platform_path,
-                    results=resultset_platform_path,
+                    dataset=dataset_url,
+                    results=resultset_url,
                     description=description,
                     network=network,
                 )
+                job = await client.jobs.status(res.id)
 
             return OutputFormatter.format_job(job, quiet)
 

@@ -1,9 +1,11 @@
-from typing import Optional
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 from yarl import URL
 
 from neuromation.client.jobs import (
     Image,
+    JobStatus,
     NetworkPortForwarding,
     Resources,
     network_to_api,
@@ -12,7 +14,25 @@ from neuromation.client.requests import ContainerPayload, ResourcesPayload
 from neuromation.strings import parse
 
 from .api import API
-from .jobs import JobDescription
+
+
+@dataclass(frozen=True)
+class TrainResult:
+    id: str
+    status: JobStatus
+    is_preemptible: bool
+    http_url: URL = URL()
+    internal_hostname: str = ""
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "TrainResult":
+        return TrainResult(
+            id=data["job_id"],
+            status=JobStatus(data["status"]),
+            is_preemptible=data["is_preemptible"],
+            http_url=URL(data.get("http_url", "")),
+            internal_hostname=data.get("internal_hostname", ""),
+        )
 
 
 class Models:
@@ -28,7 +48,7 @@ class Models:
         results: URL,
         description: Optional[str] = None,
         network: Optional[NetworkPortForwarding] = None,
-    ) -> JobDescription:
+    ) -> TrainResult:
         http, ssh = network_to_api(network)
 
         container = ContainerPayload(
@@ -55,4 +75,4 @@ class Models:
         url = URL(f"models")
         async with self._api.request("POST", url, json=payload) as resp:
             ret = await resp.json()
-            return JobDescription.from_api(ret)
+            return TrainResult.from_api(ret)
