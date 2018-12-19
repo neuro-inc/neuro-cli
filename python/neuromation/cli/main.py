@@ -459,10 +459,6 @@ Commands:
           ssh                 Start SSH terminal
         """
 
-        from neuromation.client.jobs import Job
-
-        jobs = partial(Job, url, token)
-
         @command
         async def submit(
             image,

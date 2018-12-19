@@ -7,7 +7,7 @@ from .client import (
     ResourceNotFound,
 )
 from .jobs import Image, Resources
-from .jobs import Job, JobItem, JobStatus, Model
+from .jobs import JobItem, JobStatus, Model
 from .storage import Storage, FileStatus
 
 __all__ = [
@@ -16,7 +16,6 @@ __all__ = [
     "JobItem",
     "JobStatus",
     "Model",
-    "Job",
     "Storage",
     "FileStatus",
     "ClientError",

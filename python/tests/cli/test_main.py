@@ -10,7 +10,7 @@ from neuromation.client import FileStatus
 
 
 @pytest.fixture
-def dispatch_mocked(mocked_jobs):
+def dispatch_mocked():
     config = rc.ConfigFactory.load()
     format_spec = DEFAULTS.copy()
     format_spec["username"] = "test-user"
