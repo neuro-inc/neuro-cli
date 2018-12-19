@@ -1,7 +1,7 @@
 import asyncio
 import enum
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, SupportsInt, Tuple
+from typing import Dict, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from neuromation.strings import parse

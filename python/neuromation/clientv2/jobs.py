@@ -182,17 +182,17 @@ class Jobs:
         )
 
         url = URL("jobs")
-        request_details: Dict[str, Any] = {"container": container.to_primitive()}
+        payload: Dict[str, Any] = {"container": container.to_primitive()}
         if volumes:
             prim_volumes = [v.to_primitive() for v in volumes]
         else:
             prim_volumes = []
-        request_details["container"]["volumes"] = prim_volumes
+        payload["container"]["volumes"] = prim_volumes
         if description:
-            request_details["description"] = description
+            payload["description"] = description
         if is_preemptible is not None:
-            request_details["is_preemptible"] = is_preemptible
-        async with self._api.request("POST", url, json=request_details) as resp:
+            payload["is_preemptible"] = is_preemptible
+        async with self._api.request("POST", url, json=payload) as resp:
             res = await resp.json()
             return JobDescription.from_api(res)
 

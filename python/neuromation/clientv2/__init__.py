@@ -14,6 +14,7 @@ from .jobs import (
     Resources,
     VolumeDescriptionPayload,
 )
+from .models import Models
 
 __all__ = (
     "Image",
@@ -41,6 +42,7 @@ class ClientV2:
             url = URL(url)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api)
+        self._models = Models(self._api)
 
     async def close(self) -> None:
         await self._api.close()
@@ -59,3 +61,7 @@ class ClientV2:
     @property
     def jobs(self) -> Jobs:
         return self._jobs
+
+    @property
+    def models(self) -> Models:
+        return self._models

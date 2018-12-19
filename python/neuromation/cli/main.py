@@ -11,12 +11,12 @@ import neuromation
 from neuromation.cli.command_handlers import (
     CopyOperation,
     DockerHandler,
-    ModelHandlerOperations,
     PlatformListDirOperation,
     PlatformMakeDirOperation,
     PlatformRemoveOperation,
     PlatformRenameOperation,
     PlatformSharingOperations,
+    PlatformStorageOperation,
 )
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
@@ -346,14 +346,8 @@ Commands:
           debug              Prepare debug tunnel for PyCharm
         """
 
-        from neuromation.client.jobs import Model
-        from neuromation.client.jobs import Job
-
-        jobs = partial(Job, url, token)
-        model = partial(Model, url, token)
-
         @command
-        def train(
+        async def train(
             image,
             dataset,
             results,
@@ -397,23 +391,38 @@ Commands:
             """
 
             config: Config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            model_operation = ModelHandlerOperations(platform_user_name)
-            job = model_operation.train(
-                image,
-                dataset,
-                results,
-                gpu,
-                gpu_model,
-                cpu,
-                memory,
-                extshm,
-                cmd,
-                model,
-                http,
-                ssh,
-                description,
-            )
+            username = config.get_platform_user_name()
+            pso = PlatformStorageOperation(username)
+
+            try:
+                dataset_platform_path = pso.render_uri_path_with_principal(dataset)
+            except ValueError:
+                raise ValueError(
+                    f"Dataset path should be on platform. " f"Current value {dataset}"
+                )
+
+            try:
+                resultset_platform_path = pso.render_uri_path_with_principal(results)
+            except ValueError:
+                raise ValueError(
+                    f"Results path should be on platform. " f"Current value {results}"
+                )
+
+            network = NetworkPortForwarding.from_cli(http, ssh)
+            resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+
+            cmd = " ".join(cmd) if cmd is not None else None
+            log.debug(f'cmd="{cmd}"')
+
+            async with ClientV2(url, token) as client:
+                job = await client.model.train(
+                    image=image,
+                    resources=resources,
+                    dataset=dataset_platform_path,
+                    results=resultset_platform_path,
+                    description=description,
+                    network=network,
+                )
 
             return OutputFormatter.format_job(job, quiet)
 
