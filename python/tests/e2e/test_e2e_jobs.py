@@ -11,14 +11,10 @@ import pytest
 
 from neuromation.cli.rc import ConfigFactory
 from tests.e2e.test_e2e_utils import (
-    STAT_FAILED,
-    STAT_NOT_ENOUGH,
-    STAT_PENDING,
-    STAT_RUNNING,
-    STAT_SUCCEEDED,
+    Status,
     assert_job_state,
-    wait_for_job_to_change_state_from,
-    wait_for_job_to_change_state_to,
+    wait_job_change_state_from,
+    wait_job_change_state_to,
 )
 
 
@@ -109,17 +105,14 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_third.startswith("job-")
 
     # wait jobs for becoming running
-    wait_for_job_to_change_state_from(run, job_id_first, STAT_PENDING, STAT_NOT_ENOUGH)
-    wait_for_job_to_change_state_from(run, job_id_second, STAT_PENDING, STAT_NOT_ENOUGH)
+    wait_job_change_state_from(run, job_id_first, Status.PENDING, Status.NOT_ENOUGH)
+    wait_job_change_state_from(run, job_id_second, Status.PENDING, Status.NOT_ENOUGH)
     with pytest.raises(Exception) as e:
-        wait_for_job_to_change_state_from(
-            run, job_id_third, STAT_PENDING, STAT_NOT_ENOUGH
-        )
-        assert STAT_NOT_ENOUGH in str(e)
+        wait_job_change_state_from(run, job_id_third, Status.PENDING, Status.NOT_ENOUGH)
+        assert Status.NOT_ENOUGH in str(e), str(e)
 
-    wait_for_job_to_change_state_to(run, job_id_first, STAT_RUNNING)
-    wait_for_job_to_change_state_to(run, job_id_second, STAT_RUNNING)
-    wait_for_job_to_change_state_to(run, job_id_third, STAT_PENDING)
+    wait_job_change_state_to(run, job_id_first, Status.RUNNING)
+    wait_job_change_state_to(run, job_id_second, Status.RUNNING)
 
     # check running via job list
     _, captured = run(["job", "list", "--status", "running"])
@@ -145,14 +138,14 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     # are fixed, we don't need to wait 'wait_for_job_to_change_state_from',
     # so leave here only 'wait_for_job_to_change_state_to'
 
-    wait_for_job_to_change_state_from(run, job_id_first, STAT_RUNNING, STAT_FAILED)
-    wait_for_job_to_change_state_from(run, job_id_second, STAT_RUNNING, STAT_FAILED)
-    wait_for_job_to_change_state_from(run, job_id_third, STAT_RUNNING, STAT_FAILED)
+    wait_job_change_state_from(run, job_id_first, Status.RUNNING, Status.FAILED)
+    wait_job_change_state_from(run, job_id_second, Status.RUNNING, Status.FAILED)
+    wait_job_change_state_from(run, job_id_third, Status.RUNNING, Status.FAILED)
 
     try:
-        wait_for_job_to_change_state_to(run, job_id_first, STAT_SUCCEEDED, STAT_FAILED)
-        wait_for_job_to_change_state_to(run, job_id_second, STAT_SUCCEEDED, STAT_FAILED)
-        wait_for_job_to_change_state_to(run, job_id_third, STAT_SUCCEEDED, STAT_FAILED)
+        wait_job_change_state_to(run, job_id_first, Status.SUCCEEDED, Status.FAILED)
+        wait_job_change_state_to(run, job_id_second, Status.SUCCEEDED, Status.FAILED)
+        wait_job_change_state_to(run, job_id_third, Status.SUCCEEDED, Status.FAILED)
 
         # check killed running,pending
         _, captured = run(["job", "list", "--status", "running,pending", "-q"])
@@ -232,7 +225,7 @@ def test_model_train_with_http(run, loop):
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_for_job_to_change_state_from(run, job_id, STAT_PENDING)
+    wait_job_change_state_from(run, job_id, Status.PENDING)
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
@@ -240,7 +233,7 @@ def test_model_train_with_http(run, loop):
     assert loop.run_until_complete(get_(parsed_url.netloc))
 
     _, captured = run(["job", "kill", job_id])
-    wait_for_job_to_change_state_from(run, job_id, STAT_RUNNING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING)
 
 
 @pytest.mark.e2e
@@ -290,7 +283,7 @@ def test_model_without_command(run, loop):
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_for_job_to_change_state_from(run, job_id, STAT_PENDING)
+    wait_job_change_state_from(run, job_id, Status.PENDING)
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
@@ -298,7 +291,7 @@ def test_model_without_command(run, loop):
     assert loop.run_until_complete(get_(parsed_url.netloc))
 
     _, captured = run(["job", "kill", job_id])
-    wait_for_job_to_change_state_from(run, job_id, STAT_RUNNING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING)
 
 
 @pytest.mark.e2e
@@ -323,8 +316,8 @@ def test_e2e_no_env(run):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_for_job_to_change_state_from(run, job_id, STAT_PENDING)
-    wait_for_job_to_change_state_from(run, job_id, STAT_RUNNING)
+    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     assert_job_state(run, job_id, "Status: succeeded")
 
@@ -353,8 +346,8 @@ def test_e2e_env(run):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_for_job_to_change_state_from(run, job_id, STAT_PENDING)
-    wait_for_job_to_change_state_from(run, job_id, STAT_RUNNING)
+    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     assert_job_state(run, job_id, "Status: succeeded")
 
@@ -384,8 +377,8 @@ def test_e2e_env_from_local(run):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_for_job_to_change_state_from(run, job_id, STAT_PENDING)
-    wait_for_job_to_change_state_from(run, job_id, STAT_RUNNING)
+    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     assert_job_state(run, job_id, "Status: succeeded")
 
@@ -416,8 +409,8 @@ def test_e2e_multiple_env(run):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_for_job_to_change_state_from(run, job_id, STAT_PENDING)
-    wait_for_job_to_change_state_from(run, job_id, STAT_RUNNING)
+    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     assert_job_state(run, job_id, "Status: succeeded")
 
@@ -454,7 +447,7 @@ def test_e2e_multiple_env_from_file(run):
         out = captured.out
         job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-        wait_for_job_to_change_state_from(run, job_id, STAT_PENDING)
-        wait_for_job_to_change_state_from(run, job_id, STAT_RUNNING)
+        wait_job_change_state_from(run, job_id, Status.PENDING)
+        wait_job_change_state_from(run, job_id, Status.RUNNING)
 
         assert_job_state(run, job_id, "Status: succeeded")

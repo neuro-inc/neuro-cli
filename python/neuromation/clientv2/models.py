@@ -48,6 +48,7 @@ class Models:
         results: URL,
         description: Optional[str] = None,
         network: Optional[NetworkPortForwarding] = None,
+        is_preemptible: bool = True,
     ) -> TrainResult:
         http, ssh = network_to_api(network)
 
@@ -68,6 +69,7 @@ class Models:
             "container": container.to_primitive(),
             "dataset_storage_uri": str(dataset),
             "result_storage_uri": str(results),
+            "is_preemptible": is_preemptible,
         }
         if description:
             payload["description"] = description
