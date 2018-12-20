@@ -1,8 +1,7 @@
-from typing import AbstractSet, Iterable, Optional, Union
+from typing import AbstractSet, Iterable, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.client.jobs import JobItem
 from neuromation.clientv2 import JobDescription, JobStatus
 
 
@@ -27,7 +26,7 @@ class BaseFormatter:
 
 class OutputFormatter(BaseFormatter):
     @classmethod
-    def format_job(cls, job: Union[JobItem, JobDescription], quiet: bool = True) -> str:
+    def format_job(cls, job: JobDescription, quiet: bool = True) -> str:
         if quiet:
             return job.id
         return (

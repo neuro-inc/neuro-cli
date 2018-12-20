@@ -9,10 +9,8 @@ from urllib.parse import ParseResult, urlparse
 import docker
 from docker.errors import APIError
 
-from neuromation import Resources
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.client import FileStatus, Image, ResourceNotFound
-from neuromation.client.jobs import NetworkPortForwarding
+from neuromation.client import FileStatus, ResourceNotFound
 
 
 log = logging.getLogger(__name__)
@@ -379,57 +377,6 @@ class RecursiveLocalToPlatform(NonRecursiveLocalToPlatform):
                     f"storage:/{target_dest}", storage
                 )
         return final_path
-
-
-class ModelHandlerOperations(PlatformStorageOperation):
-    def train(
-        self,
-        image,
-        dataset,
-        results,
-        gpu,
-        gpu_model,
-        cpu,
-        memory,
-        extshm,
-        cmd,
-        model,
-        http,
-        ssh,
-        is_preemptible: bool,
-        description: str,
-    ):
-        try:
-            dataset_platform_path = self.render_uri_path_with_principal(dataset)
-        except ValueError:
-            raise ValueError(
-                f"Dataset path should be on platform. " f"Current value {dataset}"
-            )
-
-        try:
-            resultset_platform_path = self.render_uri_path_with_principal(results)
-        except ValueError:
-            raise ValueError(
-                f"Results path should be on platform. " f"Current value {results}"
-            )
-
-        net = NetworkPortForwarding.from_cli(http, ssh)
-
-        cmd = " ".join(cmd) if cmd is not None else None
-        log.debug(f'cmd="{cmd}"')
-
-        with model() as m:
-            job = m.train(
-                image=Image(image=image, command=cmd),
-                network=net,
-                resources=Resources.create(cpu, gpu, gpu_model, memory, extshm),
-                dataset=f"storage:/{dataset_platform_path}",
-                results=f"storage:/{resultset_platform_path}",
-                is_preemptible=is_preemptible,
-                description=description,
-            )
-
-        return job
 
 
 class DockerHandler(PlatformOperation):

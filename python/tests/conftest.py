@@ -2,15 +2,8 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from neuromation import Job, Model, Storage
 from neuromation.client.jobs import ResourceSharing
-
-
-@pytest.fixture
-def model(loop):
-    model = Model(url="http://127.0.0.1", token="test-token-for-model", loop=loop)
-    yield model
-    loop.run_until_complete(model.close())
+from neuromation.client.storage import Storage
 
 
 @pytest.fixture(scope="function")
@@ -18,13 +11,6 @@ def storage(loop):
     storage = Storage(url="http://127.0.0.1", token="test-token-for-storage", loop=loop)
     yield storage
     loop.run_until_complete(storage.close())
-
-
-@pytest.fixture
-def jobs(loop):
-    job = Job(url="http://127.0.0.1", token="test-token-for-job", loop=loop)
-    yield job
-    loop.run_until_complete(job.close())
 
 
 @pytest.fixture
@@ -39,22 +25,6 @@ def resource_sharing(loop):
 @pytest.fixture(scope="function")
 def mocked_store(loop):
     my_mock = MagicMock(Storage("no-url", "no-token", loop=loop))
-    my_mock.__enter__ = Mock(return_value=my_mock)
-    my_mock.__exit__ = Mock(return_value=False)
-    return my_mock
-
-
-@pytest.fixture(scope="function")
-def mocked_model(loop):
-    my_mock = MagicMock(Model("no-url", "no-token", loop=loop))
-    my_mock.__enter__ = Mock(return_value=my_mock)
-    my_mock.__exit__ = Mock(return_value=False)
-    return my_mock
-
-
-@pytest.fixture(scope="function")
-def mocked_jobs(loop):
-    my_mock = MagicMock(Job("no-url", "no-token", loop=loop))
     my_mock.__enter__ = Mock(return_value=my_mock)
     my_mock.__exit__ = Mock(return_value=False)
     return my_mock
@@ -82,14 +52,6 @@ def partial_mocked_model(mocked_model):
         return mocked_model
 
     return partial_mocked_model_func
-
-
-@pytest.fixture(scope="function")
-def partial_mocked_job(mocked_jobs):
-    def partial_mocked_jobs_func():
-        return mocked_jobs
-
-    return partial_mocked_jobs_func
 
 
 @pytest.fixture(scope="function")

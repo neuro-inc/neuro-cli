@@ -6,17 +6,18 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import aiohttp
+from yarl import URL
 
 import neuromation
 from neuromation.cli.command_handlers import (
     CopyOperation,
     DockerHandler,
-    ModelHandlerOperations,
     PlatformListDirOperation,
     PlatformMakeDirOperation,
     PlatformRemoveOperation,
     PlatformRenameOperation,
     PlatformSharingOperations,
+    PlatformStorageOperation,
 )
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
@@ -346,14 +347,8 @@ Commands:
           debug              Prepare debug tunnel for PyCharm
         """
 
-        from neuromation.client.jobs import Model
-        from neuromation.client.jobs import Job
-
-        jobs = partial(Job, url, token)
-        model = partial(Model, url, token)
-
         @command
-        def train(
+        async def train(
             image,
             dataset,
             results,
@@ -410,24 +405,46 @@ Commands:
             is_preemptible = get_preemptible()
 
             config: Config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            model_operation = ModelHandlerOperations(platform_user_name)
-            job = model_operation.train(
-                image,
-                dataset,
-                results,
-                gpu,
-                gpu_model,
-                cpu,
-                memory,
-                extshm,
-                cmd,
-                model,
-                http,
-                ssh,
-                is_preemptible,
-                description,
-            )
+            username = config.get_platform_user_name()
+            pso = PlatformStorageOperation(username)
+
+            try:
+                dataset_url = URL(
+                    "storage:/" + str(pso.render_uri_path_with_principal(dataset))
+                )
+            except ValueError:
+                raise ValueError(
+                    f"Dataset path should be on platform. " f"Current value {dataset}"
+                )
+
+            try:
+                resultset_url = URL(
+                    "storage:/" + str(pso.render_uri_path_with_principal(results))
+                )
+            except ValueError:
+                raise ValueError(
+                    f"Results path should be on platform. " f"Current value {results}"
+                )
+
+            network = NetworkPortForwarding.from_cli(http, ssh)
+            resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+
+            cmd = " ".join(cmd) if cmd is not None else None
+            log.debug(f'cmd="{cmd}"')
+
+            image = Image(image=image, command=cmd)
+
+            async with ClientV2(url, token) as client:
+                res = await client.models.train(
+                    image=image,
+                    resources=resources,
+                    dataset=dataset_url,
+                    results=resultset_url,
+                    description=description,
+                    network=network,
+                    is_preemptible=is_preemptible,
+                )
+                job = await client.jobs.status(res.id)
 
             return OutputFormatter.format_job(job, quiet)
 
@@ -472,10 +489,6 @@ Commands:
           kill                Kill job
           ssh                 Start SSH terminal
         """
-
-        from neuromation.client.jobs import Job
-
-        jobs = partial(Job, url, token)
 
         @command
         async def submit(

@@ -82,7 +82,7 @@ async def test_kill_not_found_error(aiohttp_server):
             await client.jobs.kill("job-id")
 
 
-async def test_kill(aiohttp_server):
+async def test_kill_ok(aiohttp_server):
     async def handler(request):
         raise web.HTTPNoContent()
 
