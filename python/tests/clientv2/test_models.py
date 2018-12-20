@@ -1,6 +1,13 @@
 from aiohttp import web
-from neuromation.clientv2 import ClientV2, Image, NetworkPortForwarding, Resources, TrainResult
 from yarl import URL
+
+from neuromation.clientv2 import (
+    ClientV2,
+    Image,
+    NetworkPortForwarding,
+    Resources,
+    TrainResult,
+)
 
 
 async def test_model_train(aiohttp_server):
@@ -9,7 +16,7 @@ async def test_model_train(aiohttp_server):
         "status": "failed",
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
-        "internal_hostname": "internal.hostname"
+        "internal_hostname": "internal.hostname",
     }
 
     async def handler(request):
