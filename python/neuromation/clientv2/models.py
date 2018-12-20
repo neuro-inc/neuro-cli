@@ -3,8 +3,6 @@ from typing import Any, Dict, Optional
 
 from yarl import URL
 
-from neuromation.strings import parse
-
 from .api import API
 from .jobs import (
     ContainerPayload,
@@ -12,7 +10,6 @@ from .jobs import (
     JobStatus,
     NetworkPortForwarding,
     Resources,
-    ResourcesPayload,
     network_to_api,
 )
 
@@ -58,13 +55,7 @@ class Models:
             command=image.command,
             http=http,
             ssh=ssh,
-            resources=ResourcesPayload(
-                memory_mb=parse.to_megabytes_str(resources.memory),
-                cpu=resources.cpu,
-                gpu=resources.gpu,
-                gpu_model=resources.gpu_model,
-                shm=resources.shm,
-            ),
+            resources=resources,
         )
         payload = {
             "container": container.to_primitive(),

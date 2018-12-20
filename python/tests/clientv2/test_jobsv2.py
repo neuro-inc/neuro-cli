@@ -247,7 +247,7 @@ async def test_job_submit(aiohttp_server):
                 "http": {"port": 8181},
                 "ssh": {"port": 22},
                 "resources": {
-                    "memory_mb": "4096",
+                    "memory_mb": "4G",
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -341,7 +341,7 @@ async def test_job_submit_no_volumes(aiohttp_server):
                 "http": {"port": 8181},
                 "ssh": {"port": 22},
                 "resources": {
-                    "memory_mb": "4096",
+                    "memory_mb": "4G",
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -414,7 +414,7 @@ async def test_job_submit_preemptible(aiohttp_server):
                 "http": {"port": 8181},
                 "ssh": {"port": 22},
                 "resources": {
-                    "memory_mb": "4096",
+                    "memory_mb": "4G",
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,

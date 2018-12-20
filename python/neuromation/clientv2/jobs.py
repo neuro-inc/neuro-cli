@@ -5,8 +5,6 @@ from urllib.parse import urlparse
 
 from yarl import URL
 
-from neuromation.strings import parse
-
 from .api import API
 
 
@@ -25,7 +23,7 @@ def network_to_api(
 
 @dataclass(frozen=True)
 class Resources:
-    memory: str
+    memory_mb: str
     cpu: float
     gpu: Optional[int]
     shm: Optional[bool]
@@ -36,6 +34,23 @@ class Resources:
         cls, cpu: str, gpu: str, gpu_model: str, memory: str, extshm: str
     ) -> "Resources":
         return cls(memory, float(cpu), int(gpu), bool(extshm), gpu_model)
+
+    def to_api(self) -> Dict[str, Any]:
+        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
+        if self.gpu:
+            value["gpu"] = self.gpu
+            value["gpu_model"] = self.gpu_model
+        return value
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "Resources":
+        return Resources(
+            memory_mb=data["memory_mb"],
+            cpu=data["cpu"],
+            shm=data.get("shm", None),
+            gpu=data.get("gpu", None),
+            gpu_model=data.get("gpu_model", None),
+        )
 
 
 @dataclass
@@ -82,19 +97,25 @@ class JobStatus(str, enum.Enum):
 
 
 @dataclass(frozen=True)
-class ResourcesPayload:
-    memory_mb: str
-    cpu: float
-    gpu: Optional[int]
-    gpu_model: Optional[str]
-    shm: Optional[bool]
+class Container:
+    image: str
+    resources: Resources
+    command: Optional[str]
+    http: Optional[Dict[str, int]]
+    ssh: Optional[Dict[str, int]]
+    env: Optional[Dict[str, str]] = None
 
-    def to_primitive(self) -> Dict[str, Any]:
-        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
-        if self.gpu:
-            value["gpu"] = self.gpu
-            value["gpu_model"] = self.gpu_model
-        return value
+    def to_api(self) -> Dict[str, Any]:
+        primitive = {"image": self.image, "resources": self.resources.to_api()}
+        if self.command:
+            primitive["command"] = self.command
+        if self.http:
+            primitive["http"] = self.http
+        if self.ssh:
+            primitive["ssh"] = self.ssh
+        if self.env:
+            primitive["env"] = self.env
+        return primitive
 
 
 @dataclass(frozen=True)
@@ -103,11 +124,11 @@ class ContainerPayload:
     command: Optional[str]
     http: Optional[Dict[str, int]]
     ssh: Optional[Dict[str, int]]
-    resources: ResourcesPayload
+    resources: Resources
     env: Optional[Dict[str, str]] = None
 
     def to_primitive(self) -> Dict[str, Any]:
-        primitive = {"image": self.image, "resources": self.resources.to_primitive()}
+        primitive = {"image": self.image, "resources": self.resources.to_api()}
         if self.command:
             primitive["command"] = self.command
         if self.http:
@@ -212,18 +233,7 @@ class JobDescription:
         job_env = res["container"].get("env", None)
 
         job_owner = res["owner"]
-        container_resources = res["container"]["resources"]
-        shm = container_resources.get("shm", None)
-        gpu = container_resources.get("gpu", None)
-        gpu_model = container_resources.get("gpu_model", None)
-
-        job_resources = Resources(
-            cpu=container_resources["cpu"],
-            memory=container_resources["memory_mb"],
-            gpu=gpu,
-            shm=shm,
-            gpu_model=gpu_model,
-        )
+        resources = Resources.from_api(res["container"]["resources"])
         http_url = URL(res.get("http_url", ""))
         ssh_conn = URL(res.get("ssh_server", ""))
         description = res.get("description", None)
@@ -240,7 +250,7 @@ class JobDescription:
             status=JobStatus(res["status"]),
             image=job_container_image,
             command=job_command,
-            resources=job_resources,
+            resources=resources,
             history=job_history,
             url=http_url,
             ssh=ssh_conn,
@@ -267,19 +277,12 @@ class Jobs:
         env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
         http, ssh = network_to_api(network)
-        resources_payload: ResourcesPayload = ResourcesPayload(
-            memory_mb=parse.to_megabytes_str(resources.memory),
-            cpu=resources.cpu,
-            gpu=resources.gpu,
-            gpu_model=resources.gpu_model,
-            shm=resources.shm,
-        )
         container = ContainerPayload(
             image=image.image,
             command=image.command,
             http=http,
             ssh=ssh,
-            resources=resources_payload,
+            resources=resources,
             env=env,
         )
 

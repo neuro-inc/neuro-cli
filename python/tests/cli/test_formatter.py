@@ -84,7 +84,7 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -121,7 +121,7 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -154,7 +154,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -186,7 +186,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
