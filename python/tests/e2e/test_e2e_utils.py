@@ -27,7 +27,7 @@ def wait_job_change_state_from(run, job_id, str_wait, str_stop=None):
         _, captured = run(["job", "status", job_id])
         out = captured.out
         if str_stop and str_stop in out:
-            raise Exception(f"failed running job {job_id}: {str_stop}")
+            raise AssertionError(f"failed running job {job_id}: {str_stop}")
 
 
 def wait_job_change_state_to(run, job_id, str_target, str_stop=None):
@@ -39,6 +39,8 @@ def wait_job_change_state_to(run, job_id, str_target, str_stop=None):
         _, captured = run(["job", "status", job_id])
         out = captured.out
         if str_stop and str_stop in out:
-            raise Exception(f"failed running job {job_id}: '{str_stop}' in '{out}'")
+            raise AssertionError(
+                f"failed running job {job_id}: '{str_stop}' in '{out}'"
+            )
         if int(time() - start_time) > JOB_TIMEOUT:
-            raise Exception(f"timeout exceeded, last output: '{out}'")
+            raise AssertionError(f"timeout exceeded, last output: '{out}'")
