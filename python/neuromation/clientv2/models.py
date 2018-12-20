@@ -3,17 +3,18 @@ from typing import Any, Dict, Optional
 
 from yarl import URL
 
-from neuromation.client.jobs import (
+from neuromation.strings import parse
+
+from .api import API
+from .jobs import (
+    ContainerPayload,
     Image,
     JobStatus,
     NetworkPortForwarding,
     Resources,
+    ResourcesPayload,
     network_to_api,
 )
-from neuromation.strings import parse
-
-from .api import API
-from .jobs import ContainerPayload, ResourcesPayload
 
 
 @dataclass(frozen=True)
