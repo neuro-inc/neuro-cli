@@ -14,7 +14,7 @@ from .jobs import (
     Resources,
     VolumeDescriptionPayload,
 )
-from .models import Models
+from .models import Models, TrainResult
 
 __all__ = (
     "Image",
@@ -24,6 +24,7 @@ __all__ = (
     "NetworkPortForwarding",
     "Resources",
     "VolumeDescriptionPayload",
+    "TrainResult",
     "ClientV2",
 )
 
