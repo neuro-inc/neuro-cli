@@ -10,8 +10,7 @@ import docker
 from docker.errors import APIError
 
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.client import FileStatus, Image, ResourceNotFound, Resources
-from neuromation.client.jobs import NetworkPortForwarding
+from neuromation.client import FileStatus, ResourceNotFound
 
 
 log = logging.getLogger(__name__)

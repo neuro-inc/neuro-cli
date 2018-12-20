@@ -7,13 +7,12 @@ from .client import (
     ResourceNotFound,
 )
 from .jobs import Image, Resources
-from .jobs import JobItem, JobStatus
+from .jobs import JobStatus
 from .storage import Storage, FileStatus
 
 __all__ = [
     "Image",
     "Resources",
-    "JobItem",
     "JobStatus",
     "Storage",
     "FileStatus",

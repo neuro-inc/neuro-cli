@@ -6,7 +6,7 @@ from neuromation.cli.formatter import (
     JobStatusFormatter,
     OutputFormatter,
 )
-from neuromation.client.jobs import (
+from neuromation.clientv2.jobs import (
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -33,7 +33,8 @@ def job_descr():
             started_at="2018-09-25T12:28:59.759433+00:00",
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
-        resources=Resources.create(0.1, 0, None, None),
+        resources=Resources.create(0.1, 0, None, None, False),
+        is_preemptible=True,
     )
 
 
@@ -59,7 +60,6 @@ class TestJobOutputFormatter:
             owner="test-user",
             id="test-job",
             description="test job description",
-            client=None,
             image="test-image",
             command="test-command",
             url="http://local.host.test/",
@@ -72,6 +72,8 @@ class TestJobOutputFormatter:
                 started_at="2018-09-25T12:28:59.759433+00:00",
                 finished_at="2018-09-25T12:28:59.759433+00:00",
             ),
+            resources=Resources.create(0.1, 0, None, None, False),
+            is_preemptible=True,
         )
 
         status = JobStatusFormatter.format_job_status(description)
@@ -82,7 +84,7 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: None\n"
+            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -96,7 +98,6 @@ class TestJobOutputFormatter:
             status=JobStatus.PENDING,
             id="test-job",
             description="test job description",
-            client=None,
             image="test-image",
             command="test-command",
             history=JobStatusHistory(
@@ -107,17 +108,21 @@ class TestJobOutputFormatter:
                 started_at=None,
                 finished_at=None,
             ),
+            resources=Resources.create(0.1, 0, None, None, False),
+            is_preemptible=True,
+            owner="owner",
         )
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
             status == "Job: test-job\n"
-            "Owner: \n"
+            "Owner: owner\n"
             "Description: test job description\n"
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: None\n"
+            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -126,7 +131,6 @@ class TestJobOutputFormatter:
             status=JobStatus.PENDING,
             id="test-job",
             description="test job description",
-            client=None,
             image="test-image",
             command="test-command",
             history=JobStatusHistory(
@@ -137,17 +141,21 @@ class TestJobOutputFormatter:
                 started_at=None,
                 finished_at=None,
             ),
+            resources=Resources.create(0.1, 0, None, None, False),
+            is_preemptible=True,
+            owner="owner",
         )
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
             status == "Job: test-job\n"
-            "Owner: \n"
+            "Owner: owner\n"
             "Description: test job description\n"
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: None\n"
+            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -156,7 +164,6 @@ class TestJobOutputFormatter:
             status=JobStatus.PENDING,
             id="test-job",
             description=None,
-            client=None,
             image="test-image",
             command="test-command",
             history=JobStatusHistory(
@@ -167,16 +174,20 @@ class TestJobOutputFormatter:
                 started_at=None,
                 finished_at=None,
             ),
+            resources=Resources.create(0.1, 0, None, None, False),
+            is_preemptible=True,
+            owner="owner",
         )
 
         status = JobStatusFormatter.format_job_status(description)
         assert (
             status == "Job: test-job\n"
-            "Owner: \n"
+            "Owner: owner\n"
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: None\n"
+            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -228,7 +239,6 @@ class TestJobListFormatter:
                 status=JobStatus.RUNNING,
                 id=f"test-job-{index}",
                 description=f"test-description-{index}",
-                client=None,
                 image=f"test-image-{index}",
                 command=f"test-command-{index}",
                 history=JobStatusHistory(
@@ -239,6 +249,9 @@ class TestJobListFormatter:
                     started_at=None,
                     finished_at=None,
                 ),
+                resources=Resources.create(0.1, 0, None, None, False),
+                is_preemptible=True,
+                owner="owner",
             )
             for index in range(number_of_jobs)
         ]
@@ -258,7 +271,6 @@ class TestJobListFormatter:
                 status=JobStatus.RUNNING,
                 id=f"test-job-{index}",
                 description=f"test-description-{index}",
-                client=None,
                 image=f"test-image-{index}",
                 command=f"test-command-{index}",
                 history=JobStatusHistory(
@@ -269,6 +281,9 @@ class TestJobListFormatter:
                     started_at=None,
                     finished_at=None,
                 ),
+                resources=Resources.create(0.1, 0, None, None, False),
+                is_preemptible=True,
+                owner="owner",
             )
             for index in range(number_of_jobs)
         ]
@@ -296,7 +311,6 @@ class TestJobListFormatter:
                 status=JobStatus.RUNNING,
                 id=f"test-job-{index}",
                 description=f"test-description-{index}",
-                client=None,
                 image=f"test-image-{index}",
                 command=f"test-command-{index}",
                 history=JobStatusHistory(
@@ -307,6 +321,9 @@ class TestJobListFormatter:
                     started_at=None,
                     finished_at=None,
                 ),
+                resources=Resources.create(0.1, 0, None, None, False),
+                is_preemptible=True,
+                owner="owner",
             )
             for index in range(2)
         ]

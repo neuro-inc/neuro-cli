@@ -1,11 +1,9 @@
-import asyncio
 import enum
 from dataclasses import dataclass
 from typing import Dict, Optional, SupportsInt, Tuple
-from urllib.parse import urlparse
 
 from .client import ApiClient
-from .requests import JobStatusRequest, ShareResourceRequest
+from .requests import ShareResourceRequest
 
 
 def network_to_api(
