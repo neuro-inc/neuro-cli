@@ -432,7 +432,12 @@ Commands:
             cmd = " ".join(cmd) if cmd is not None else None
             log.debug(f'cmd="{cmd}"')
 
-            image = Image(image=image, command=cmd)
+            image_name = Image.parse_image_name(
+                image,
+                default_repo=config.docker_registry_url(),
+                default_user_name=config.get_platform_user_name(),
+            )
+            image = Image(image=image_name, command=cmd)
 
             async with ClientV2(url, token) as client:
                 res = await client.models.train(
@@ -590,7 +595,12 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             cmd = " ".join(cmd) if cmd is not None else None
             log.debug(f'cmd="{cmd}"')
 
-            image = Image(image=image, command=cmd)
+            image_name = Image.parse_image_name(
+                image,
+                default_repo=config.docker_registry_url(),
+                default_user_name=platform_user_name,
+            )
+            image = Image(image=image_name, command=cmd)
             network = NetworkPortForwarding.from_cli(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
             volumes = VolumeDescriptionPayload.from_cli_list(platform_user_name, volume)

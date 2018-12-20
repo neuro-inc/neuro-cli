@@ -1,6 +1,7 @@
 import enum
+import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, SupportsInt, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
@@ -61,6 +62,36 @@ class NetworkPortForwarding:
 class Image:
     image: str
     command: Optional[str]
+
+    _image_re: ClassVar[Any] = re.compile(
+        r"^((?P<home>~/)|(((?P<repo>[^/]+)/)?(?P<uname>[^/]+)/))?"
+        r"(?P<img>[^/:]+)(:(?P<tag>[^/:]+))?$"
+    )
+
+    @classmethod
+    def parse_image_name(
+        cls, image_name: str, default_repo: str, default_user_name: str
+    ):
+        match = cls._image_re.match(image_name)
+        if match is None:
+            raise ValueError(
+                f"Invalid image name '{image_name}': "
+                f"does not match pattern {cls._image_re}"
+            )
+        img = match.group("img")
+        assert img
+        tag = match.group("tag") or "latest"
+
+        repo, uname = match.group("repo"), match.group("uname")
+        if not repo:
+            home = match.group("home")
+            if home:
+                repo, uname = default_repo, default_user_name
+            else:
+                repo = "docker.io"
+                if not uname:
+                    uname = "library"
+        return f"{repo}/{uname}/{img}:{tag}"
 
 
 class JobStatus(str, enum.Enum):

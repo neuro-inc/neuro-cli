@@ -209,6 +209,36 @@ async def test_status_with_ssh_and_http(aiohttp_server):
     assert ret == JobDescription.from_api(JSON)
 
 
+@pytest.mark.parametrize("actual,expected", [
+    ("archlinux", "docker.io/library/archlinux:latest"),
+    ("archlinux:1.0.6", "docker.io/library/archlinux:1.0.6"),
+    ("base/archlinux", "docker.io/base/archlinux:latest"),
+    ("base/archlinux:pre-latest", "docker.io/base/archlinux:pre-latest"),
+    ("repository.com/base/archlinux", "repository.com/base/archlinux:latest"),
+    ("repository.com/base/archlinux:v1.2", "repository.com/base/archlinux:v1.2"),
+    ("~/archlinux", "registry.dev.neuromation.io/testuser/archlinux:latest"),
+    ("~/archlinux:v1.2", "registry.dev.neuromation.io/testuser/archlinux:v1.2"),
+])
+async def test_image_parse_image_name__ok(actual, expected):
+    actual = Image.parse_image_name(actual, default_repo="registry.dev.neuromation.io", default_user_name="testuser")
+    assert actual == expected
+
+
+@pytest.mark.parametrize("value", [
+    "archlinux:",
+    "/archlinux",
+    "/archlinux:",
+    "a/repo/user/archlinux",
+    "repo//archlinux",
+    "/user/archlinux",
+])
+async def test_image_parse_image_name__fail(value):
+    with pytest.raises(ValueError, match="Invalid image name"):
+        Image.parse_image_name(value,
+                               default_repo="registry.dev.neuromation.io",
+                               default_user_name="testuser")
+
+
 async def test_job_submit(aiohttp_server):
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
