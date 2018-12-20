@@ -141,7 +141,7 @@ class ContainerPayload:
 
 
 @dataclass(frozen=True)
-class VolumeDescriptionPayload:
+class Volume:
     storage_path: str
     container_path: str
     read_only: bool
@@ -158,7 +158,7 @@ class VolumeDescriptionPayload:
         return resp
 
     @classmethod
-    def from_cli(cls, username: str, volume: str) -> "VolumeDescriptionPayload":
+    def from_cli(cls, username: str, volume: str) -> "Volume":
         volume_desc_parts = volume.split(":")
         if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
             raise ValueError(f"Invalid volume specification '{volume}'")
@@ -181,14 +181,10 @@ class VolumeDescriptionPayload:
             f"storage:/{str(pso.render_uri_path_with_principal(storage_path))}"
         )
 
-        return VolumeDescriptionPayload(
-            storage_path_with_principal, container_path, read_only
-        )
+        return Volume(storage_path_with_principal, container_path, read_only)
 
     @classmethod
-    def from_cli_list(
-        cls, username: str, lst: List[str]
-    ) -> Optional[List["VolumeDescriptionPayload"]]:
+    def from_cli_list(cls, username: str, lst: List[str]) -> Optional[List["Volume"]]:
         if not lst:
             return None
         return [cls.from_cli(username, s) for s in lst]
@@ -271,7 +267,7 @@ class Jobs:
         image: Image,
         resources: Resources,
         network: NetworkPortForwarding,
-        volumes: Optional[List[VolumeDescriptionPayload]],
+        volumes: Optional[List[Volume]],
         description: Optional[str],
         is_preemptible: bool = False,
         env: Optional[Dict[str, str]] = None,

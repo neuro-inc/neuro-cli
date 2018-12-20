@@ -27,7 +27,7 @@ from neuromation.clientv2 import (
     Image,
     NetworkPortForwarding,
     Resources,
-    VolumeDescriptionPayload,
+    Volume,
 )
 from neuromation.logging import ConsoleWarningFormatter
 from neuromation.strings.parse import to_megabytes_str
@@ -596,7 +596,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             image = Image(image=image, command=cmd)
             network = NetworkPortForwarding.from_cli(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-            volumes = VolumeDescriptionPayload.from_cli_list(platform_user_name, volume)
+            volumes = Volume.from_cli_list(platform_user_name, volume)
 
             async with ClientV2(url, token) as client:
                 job = await client.jobs.submit(
