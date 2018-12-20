@@ -165,7 +165,7 @@ def test_e2e_shm_run_with(run, tmpdir):
 
 
 @pytest.mark.e2e
-def test_e2e(data, run, tmpdir):
+def test_e2e_storage(data, run, tmpdir):
     file, checksum = data[0]
 
     _dir = f"e2e-{uuid()}"
@@ -182,13 +182,15 @@ def test_e2e(data, run, tmpdir):
 
     # Download into local file and confirm checksum
     exc = None
+    delay = 5
     for i in range(5):
         try:
             check_file_on_storage_checksum(run, "foo", _path, checksum, tmpdir, "bar")
             break
         except AssertionError as e:
             exc = e
-            time.sleep(5)
+            time.sleep(delay)
+            delay *= 2
     else:
         raise exc
 
