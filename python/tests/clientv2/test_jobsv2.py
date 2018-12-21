@@ -226,7 +226,7 @@ async def test_image_parse_image_name__ok(actual, expected):
     actual = Image.parse_image_name(
         actual,
         neuromation_repo="registry.dev.neuromation.io",
-        default_user_name="testuser",
+        neuromation_user="testuser",
     )
     assert actual == expected
 
@@ -247,7 +247,7 @@ async def test_image_parse_image_name__fail(value):
         Image.parse_image_name(
             value,
             neuromation_repo="registry.dev.neuromation.io",
-            default_user_name="testuser",
+            neuromation_user="testuser",
         )
 
 

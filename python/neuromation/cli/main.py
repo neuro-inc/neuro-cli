@@ -434,7 +434,7 @@ Commands:
 
             image_name = Image.parse_image_name(
                 image,
-                neuromation_repo=config.docker_registry_url(),
+                neuromation_repo=config.registry_hostname,
                 neuromation_user=config.get_platform_user_name(),
             )
             image = Image(image=image_name, command=cmd)
@@ -597,7 +597,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             image_name = Image.parse_image_name(
                 image,
-                neuromation_repo=config.docker_registry_url(),
+                neuromation_repo=config.registry_hostname,
                 neuromation_user=platform_user_name,
             )
             image = Image(image=image_name, command=cmd)
