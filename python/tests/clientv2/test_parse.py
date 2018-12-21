@@ -4,7 +4,7 @@ from neuromation.strings.parse import DockerImageNameParser
 
 
 class TestDockerImageNameParser:
-    parse = DockerImageNameParser.parse_image_name
+    parse = DockerImageNameParser.parse
 
     async def test_no_repo_no_name_no_label(self):
         value = "archlinux"

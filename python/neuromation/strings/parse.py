@@ -60,7 +60,7 @@ class DockerImageNameParser:
     )
 
     @classmethod
-    def parse_image_name(
+    def parse(
         cls, image_name: str, neuromation_repo: str, neuromation_user: str
     ) -> str:
         match = cls.IMAGE_NAME_PATTERN.match(image_name)
