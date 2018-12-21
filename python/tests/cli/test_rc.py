@@ -3,7 +3,7 @@ from pathlib import Path, PosixPath
 import pytest
 
 from neuromation.cli import rc
-from neuromation.cli.rc import Config, ConfigFactory
+from neuromation.cli.rc import Config, ConfigFactory, save
 
 
 DEFAULTS = rc.Config(url="http://platform.dev.neuromation.io/api/v1")
@@ -123,17 +123,17 @@ class TestFactoryMethods:
         assert config3 == default_config
 
 
-def test_docker_url():
-    assert DEFAULTS.docker_registry_url() == "registry.dev.neuromation.io"
+def test_registry_hostname():
+    assert DEFAULTS.registry_hostname == "registry.dev.neuromation.io"
     custom_staging = rc.Config(
         url="http://platform.staging.neuromation.io/api/v1", auth=""
     )
-    url = custom_staging.docker_registry_url()
-    assert url == "registry.staging.neuromation.io"
+    registry_hostname = custom_staging.registry_hostname
+    assert registry_hostname == "registry.staging.neuromation.io"
 
     prod = rc.Config(url="http://platform.neuromation.io/api/v1", auth="")
-    url = prod.docker_registry_url()
-    assert url == "registry.neuromation.io"
+    registry_hostname = prod.registry_hostname
+    assert registry_hostname == "registry.neuromation.io"
 
 
 def test_jwt_user():
@@ -184,21 +184,21 @@ def test_load(nmrc):
 
 
 def test_merge_missing():
-    conf: Config = Config(url="a", auth="b")
+    conf: Config = Config(url="http://abc.com", auth="b")
     merged = ConfigFactory.merge(conf, {})
-    assert merged == Config(url="a", auth="b")
+    assert merged == Config(url="http://abc.com", auth="b")
 
 
 def test_merge_override_url():
-    conf: Config = Config(url="a", auth="b")
-    merged = ConfigFactory.merge(conf, {"url": "a1"})
-    assert merged == Config(url="a1", auth="b")
+    conf: Config = Config(url="http://abc.com", auth="b")
+    merged = ConfigFactory.merge(conf, {"url": "http://def.com"})
+    assert merged == Config(url="http://def.com", auth="b")
 
 
 def test_merge_override_token():
-    conf: Config = Config(url="a", auth="b")
+    conf: Config = Config(url="http://abc.com", auth="b")
     merged = ConfigFactory.merge(conf, {"auth": "b1"})
-    assert merged == Config(url="a", auth="b1")
+    assert merged == Config(url="http://abc.com", auth="b1")
 
 
 def test_load_missing(nmrc):
@@ -239,3 +239,19 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
 
     default_config: config = Config()
     assert config3 == default_config
+
+
+def test_save_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
+    def home():
+        return PosixPath(nmrc.dirpath())
+
+    monkeypatch.setattr(Path, "home", home)
+    config: Config = Config(
+        url=DEFAULTS.url, auth="test_token", github_rsa_path=DEFAULTS.github_rsa_path
+    )
+    save(nmrc, config)
+    assert (
+        nmrc.read() == f"auth: test_token\n"
+        f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"url: {DEFAULTS.url}\n"
+    )

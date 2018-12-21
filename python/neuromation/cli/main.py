@@ -735,7 +735,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
         def _get_image_platform_full_name(image_name):
             config = rc.ConfigFactory.load()
-            registry_url = config.docker_registry_url()
+            registry_url = config.registry_hostname
             user_name = config.get_platform_user_name()
             target_image_name = f"{registry_url}/{user_name}/{image_name}"
             return target_image_name
@@ -750,7 +750,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            registry_url = config.docker_registry_url()
+            registry_url = config.registry_hostname
             return DockerHandler(platform_user_name, config.auth).push(
                 registry_url, image_name
             )
@@ -765,7 +765,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            registry_url = config.docker_registry_url()
+            registry_url = config.registry_hostname
             return DockerHandler(platform_user_name, config.auth).pull(
                 registry_url, image_name
             )
