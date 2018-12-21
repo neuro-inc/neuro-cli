@@ -8,6 +8,7 @@ from textwrap import dedent
 from typing import Any, List
 
 import docopt
+
 from neuromation.cli.commands import commands, help_format, normalize_options, parse
 from neuromation.cli.main import DEFAULTS, neuro
 

@@ -1,9 +1,9 @@
 from typing import Any, AsyncIterator, Dict, Optional
 
 import aiohttp
+from async_generator import asynccontextmanager
 from yarl import URL
 
-from async_generator import asynccontextmanager
 from neuromation.client import (
     AuthenticationError,
     AuthorizationError,
