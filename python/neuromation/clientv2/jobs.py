@@ -70,8 +70,8 @@ class Image:
 
     @classmethod
     def parse_image_name(
-        cls, image_name: str, default_repo: str, default_user_name: str
-    ):
+        cls, image_name: str, neuromation_repo: str, neuromation_user: str
+    ) -> str:
         match = cls._image_re.match(image_name)
         if match is None:
             raise ValueError(
@@ -86,7 +86,7 @@ class Image:
         if not repo:
             home = match.group("home")
             if home:
-                repo, uname = default_repo, default_user_name
+                repo, uname = neuromation_repo, neuromation_user
             else:
                 repo = "docker.io"
                 if not uname:

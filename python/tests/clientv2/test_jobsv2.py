@@ -224,7 +224,7 @@ async def test_status_with_ssh_and_http(aiohttp_server):
 )
 async def test_image_parse_image_name__ok(actual, expected):
     actual = Image.parse_image_name(
-        actual, default_repo="registry.dev.neuromation.io", default_user_name="testuser"
+        actual, neuromation_repo="registry.dev.neuromation.io", default_user_name="testuser"
     )
     assert actual == expected
 
@@ -244,7 +244,7 @@ async def test_image_parse_image_name__fail(value):
     with pytest.raises(ValueError, match="Invalid image name"):
         Image.parse_image_name(
             value,
-            default_repo="registry.dev.neuromation.io",
+            neuromation_repo="registry.dev.neuromation.io",
             default_user_name="testuser",
         )
 

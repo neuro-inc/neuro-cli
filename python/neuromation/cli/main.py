@@ -434,8 +434,8 @@ Commands:
 
             image_name = Image.parse_image_name(
                 image,
-                default_repo=config.docker_registry_url(),
-                default_user_name=config.get_platform_user_name(),
+                neuromation_repo=config.docker_registry_url(),
+                neuromation_user=config.get_platform_user_name(),
             )
             image = Image(image=image_name, command=cmd)
 
@@ -597,8 +597,8 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             image_name = Image.parse_image_name(
                 image,
-                default_repo=config.docker_registry_url(),
-                default_user_name=platform_user_name,
+                neuromation_repo=config.docker_registry_url(),
+                neuromation_user=platform_user_name,
             )
             image = Image(image=image_name, command=cmd)
             network = NetworkPortForwarding.from_cli(http, ssh)

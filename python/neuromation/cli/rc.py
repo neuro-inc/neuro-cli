@@ -3,9 +3,10 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import keyring
+from yarl import URL
+
 import yaml
 from jose import JWTError, jwt
-from yarl import URL
 
 
 @dataclass
