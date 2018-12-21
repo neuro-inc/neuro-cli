@@ -12,6 +12,7 @@ from neuromation.clientv2 import (
     Resources,
     VolumeDescriptionPayload,
 )
+from neuromation.strings.parse import DockerImageNameParser
 
 
 async def test_jobs_monitor(aiohttp_server):
@@ -207,48 +208,6 @@ async def test_status_with_ssh_and_http(aiohttp_server):
         ret = await client.jobs.status("job-id")
 
     assert ret == JobDescription.from_api(JSON)
-
-
-@pytest.mark.parametrize(
-    "actual,expected",
-    [
-        ("archlinux", "docker.io/library/archlinux:latest"),
-        ("archlinux:1.0.6", "docker.io/library/archlinux:1.0.6"),
-        ("base/archlinux", "docker.io/base/archlinux:latest"),
-        ("base/archlinux:pre-latest", "docker.io/base/archlinux:pre-latest"),
-        ("repository.com/base/archlinux", "repository.com/base/archlinux:latest"),
-        ("repository.com/base/archlinux:v1.2", "repository.com/base/archlinux:v1.2"),
-        ("~/archlinux", "registry.dev.neuromation.io/testuser/archlinux:latest"),
-        ("~/archlinux:v1.2", "registry.dev.neuromation.io/testuser/archlinux:v1.2"),
-    ],
-)
-async def test_image_parse_image_name__ok(actual, expected):
-    actual = Image.parse_image_name(
-        actual,
-        neuromation_repo="registry.dev.neuromation.io",
-        neuromation_user="testuser",
-    )
-    assert actual == expected
-
-
-@pytest.mark.parametrize(
-    "value",
-    [
-        "archlinux:",
-        "/archlinux",
-        "/archlinux:",
-        "a/repo/user/archlinux",
-        "repo//archlinux",
-        "/user/archlinux",
-    ],
-)
-async def test_image_parse_image_name__fail(value):
-    with pytest.raises(ValueError, match="Invalid image name"):
-        Image.parse_image_name(
-            value,
-            neuromation_repo="registry.dev.neuromation.io",
-            neuromation_user="testuser",
-        )
 
 
 async def test_job_submit(aiohttp_server):

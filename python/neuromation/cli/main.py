@@ -30,6 +30,7 @@ from neuromation.clientv2 import (
     VolumeDescriptionPayload,
 )
 from neuromation.logging import ConsoleWarningFormatter
+from neuromation.strings.parse import DockerImageNameParser
 
 from . import rc
 from .commands import command, dispatch
@@ -432,7 +433,7 @@ Commands:
             cmd = " ".join(cmd) if cmd is not None else None
             log.debug(f'cmd="{cmd}"')
 
-            image_name = Image.parse_image_name(
+            image_name = DockerImageNameParser.parse_image_name(
                 image,
                 neuromation_repo=config.registry_hostname,
                 neuromation_user=config.get_platform_user_name(),
@@ -595,7 +596,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             cmd = " ".join(cmd) if cmd is not None else None
             log.debug(f'cmd="{cmd}"')
 
-            image_name = Image.parse_image_name(
+            image_name = DockerImageNameParser.parse_image_name(
                 image,
                 neuromation_repo=config.registry_hostname,
                 neuromation_user=platform_user_name,

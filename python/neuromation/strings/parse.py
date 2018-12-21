@@ -1,4 +1,5 @@
 import re
+from typing import Any, ClassVar
 
 
 def parse_memory(memory: str) -> int:
@@ -50,3 +51,35 @@ def to_megabytes(value: str) -> int:
 
 def to_megabytes_str(value: str) -> str:
     return str(to_megabytes(value))
+
+
+class DockerImageNameParser:
+    IMAGE_NAME_PATTERN: ClassVar[Any] = re.compile(
+        r"^((?P<home>~/)|(((?P<repo>[^/]+)/)?(?P<uname>[^/]+)/))?"
+        r"(?P<img>[^/:]+)(:(?P<tag>[^/:]+))?$"
+    )
+
+    @classmethod
+    def parse_image_name(
+        cls, image_name: str, neuromation_repo: str, neuromation_user: str
+    ) -> str:
+        match = cls.IMAGE_NAME_PATTERN.match(image_name)
+        if match is None:
+            raise ValueError(
+                f"Invalid image name '{image_name}': "
+                f"does not match pattern {cls.IMAGE_NAME_PATTERN}"
+            )
+        img = match.group("img")
+        assert img
+        tag = match.group("tag") or "latest"
+
+        repo, uname = match.group("repo"), match.group("uname")
+        if not repo:
+            home = match.group("home")
+            if home:
+                repo, uname = neuromation_repo, neuromation_user
+            else:
+                repo = "docker.io"
+                if not uname:
+                    uname = "library"
+        return f"{repo}/{uname}/{img}:{tag}"
