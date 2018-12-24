@@ -11,6 +11,7 @@ MYPY_DIRS := neuromation/client neuromation/logging neuromation/strings
 MYPY_REGEXP := ^python/neuromation/(client|logging|strings)/.+\\.py
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
+
 .PHONY: init
 init:
 	cp -n README.in.md README.md
