@@ -12,7 +12,6 @@ from neuromation.clientv2 import (
     Resources,
     VolumeDescriptionPayload,
 )
-from neuromation.strings.parse import DockerImageNameParser
 
 
 async def test_jobs_monitor(aiohttp_server):

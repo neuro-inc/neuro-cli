@@ -1,7 +1,6 @@
 import enum
-import re
 from dataclasses import dataclass
-from typing import Any, ClassVar, Dict, List, Optional, SupportsInt, Tuple
+from typing import Any, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
