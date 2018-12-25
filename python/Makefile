@@ -111,8 +111,8 @@ coverage:
 
 .PHONY: format
 format:
-	isort -rc neuromation tests build-tools
-	black neuromation tests build-tools
+	isort -rc $(ISORT_DIRS)
+	black $(BLACK_DIRS)
 
 # TODO (artyom, 07/16/2018): swap e2e and test once coverage output
 # of both is combined. Otherwise e2e will override unit tests with
