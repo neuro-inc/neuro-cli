@@ -1,0 +1,28 @@
+#!/bin/bash
+
+remote="$1"
+url="$2"
+
+z40=0000000000000000000000000000000000000000
+
+IFS=' '
+while read local_ref local_sha remote_ref remote_sha
+do
+	if [ "$local_sha" = $z40 ]
+	then
+		# Handle delete, just ignore
+		echo "Nothing"
+	else
+		if [ "$remote_sha" = $z40 ]
+		then
+			# New branch
+			branch_started=`git rev-list --simplify-by-decoration -2 HEAD | tail -1`
+            make -C python test-fast lint-diff FROM=$branch_started TO=$local_sha || exit 1
+
+		else
+			make -C python test-fast lint-diff FROM=$remote_sha TO=$local_sha || exit 1
+		fi
+	fi
+done
+
+exit 0
