@@ -345,7 +345,6 @@ async def test_job_submit_no_volumes(aiohttp_server):
                     "gpu": 1,
                     "gpu_model": "test-gpu-model",
                 },
-                "volumes": [],
             },
             "is_preemptible": False,
             "description": "job description",

@@ -5,7 +5,7 @@ from yarl import URL
 
 from .api import API
 from .jobs import (
-    ContainerPayload,
+    Container,
     Image,
     JobStatus,
     NetworkPortForwarding,
@@ -50,15 +50,16 @@ class Models:
     ) -> TrainResult:
         http, ssh = network_to_api(network)
 
-        container = ContainerPayload(
+        container = Container(
             image=image.image,
             command=image.command,
             http=http,
             ssh=ssh,
             resources=resources,
         )
+
         payload = {
-            "container": container.to_primitive(),
+            "container": container.to_api(),
             "dataset_storage_uri": str(dataset),
             "result_storage_uri": str(results),
             "is_preemptible": is_preemptible,

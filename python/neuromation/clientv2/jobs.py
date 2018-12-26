@@ -1,24 +1,11 @@
 import enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
 
 from .api import API
-
-
-def network_to_api(
-    network: Optional["NetworkPortForwarding"]
-) -> Tuple[Optional[Dict[str, int]], Optional[Dict[str, int]]]:
-    http = None
-    ssh = None
-    if network:
-        if "http" in network.ports:
-            http = {"port": network.ports["http"]}
-        if "ssh" in network.ports:
-            ssh = {"port": network.ports["ssh"]}
-    return http, ssh
 
 
 @dataclass(frozen=True)
@@ -97,65 +84,29 @@ class JobStatus(str, enum.Enum):
 
 
 @dataclass(frozen=True)
-class Container:
-    image: str
-    resources: Resources
-    command: Optional[str]
-    http: Optional[Dict[str, int]]
-    ssh: Optional[Dict[str, int]]
-    env: Optional[Dict[str, str]] = None
-
-    def to_api(self) -> Dict[str, Any]:
-        primitive = {"image": self.image, "resources": self.resources.to_api()}
-        if self.command:
-            primitive["command"] = self.command
-        if self.http:
-            primitive["http"] = self.http
-        if self.ssh:
-            primitive["ssh"] = self.ssh
-        if self.env:
-            primitive["env"] = self.env
-        return primitive
-
-
-@dataclass(frozen=True)
-class ContainerPayload:
-    image: str
-    command: Optional[str]
-    http: Optional[Dict[str, int]]
-    ssh: Optional[Dict[str, int]]
-    resources: Resources
-    env: Optional[Dict[str, str]] = None
-
-    def to_primitive(self) -> Dict[str, Any]:
-        primitive = {"image": self.image, "resources": self.resources.to_api()}
-        if self.command:
-            primitive["command"] = self.command
-        if self.http:
-            primitive["http"] = self.http
-        if self.ssh:
-            primitive["ssh"] = self.ssh
-        if self.env:
-            primitive["env"] = self.env
-        return primitive
-
-
-@dataclass(frozen=True)
 class Volume:
     storage_path: str
     container_path: str
     read_only: bool
 
-    def to_primitive(self) -> Dict[str, Any]:
+    def to_api(self) -> Dict[str, Any]:
         resp: Dict[str, Any] = {
             "src_storage_uri": self.storage_path,
             "dst_path": self.container_path,
         }
-        if self.read_only:
-            resp["read_only"] = bool(self.read_only)
-        else:
-            resp["read_only"] = False
+        resp["read_only"] = bool(self.read_only)
         return resp
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "Volume":
+        storage_path = data["src_storage_uri"]
+        container_path = data["dst_path"]
+        read_only = data.get("read_only", True)
+        return Volume(
+            storage_path=storage_path,
+            container_path=container_path,
+            read_only=read_only,
+        )
 
     @classmethod
     def from_cli(cls, username: str, volume: str) -> "Volume":
@@ -191,6 +142,111 @@ class Volume:
 
 
 @dataclass(frozen=True)
+class HTTPPort:
+    port: int
+    health_check_path: Optional[str] = None
+
+    def to_api(self) -> Dict[str, Any]:
+        ret: Dict[str, Any] = {"port": self.port}
+        if self.health_check_path is not None:
+            ret["health_check_path"] = self.health_check_path
+        return ret
+
+    @classmethod
+    def from_api(self, data: Dict[str, Any]) -> "HTTPPort":
+        return HTTPPort(**data)
+
+
+@dataclass(frozen=True)
+class SSHPort:
+    port: int
+
+    def to_api(self) -> Dict[str, Any]:
+        ret = {"port": self.port}
+        return ret
+
+    @classmethod
+    def from_api(self, data: Dict[str, Any]) -> "SSHPort":
+        return SSHPort(**data)
+
+
+def network_to_api(
+    network: Optional["NetworkPortForwarding"]
+) -> Tuple[Optional[HTTPPort], Optional[SSHPort]]:
+    http = None
+    ssh = None
+    if network:
+        if "http" in network.ports:
+            http = HTTPPort.from_api({"port": network.ports["http"]})
+        if "ssh" in network.ports:
+            ssh = SSHPort.from_api({"port": network.ports["ssh"]})
+    return http, ssh
+
+
+@dataclass(frozen=True)
+class Container:
+    image: str
+    resources: Resources
+    command: Optional[str] = None
+    http: Optional[HTTPPort] = None
+    ssh: Optional[SSHPort] = None
+    # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
+    env: Dict[str, str] = field(default_factory=dict)
+    volumes: List[Volume] = field(default_factory=list)
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "Container":
+        return Container(
+            image=data["image"],
+            resources=Resources.from_api(data["resources"]),
+            command=data.get("command", None),
+            http=HTTPPort.from_api(data["http"]) if "http" in data else None,
+            ssh=SSHPort.from_api(data["ssh"]) if "ssh" in data else None,
+            env=data.get("env", dict()),
+            volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
+        )
+
+    def to_api(self) -> Dict[str, Any]:
+        primitive: Dict[str, Any] = {
+            "image": self.image,
+            "resources": self.resources.to_api(),
+        }
+        if self.command:
+            primitive["command"] = self.command
+        if self.http:
+            primitive["http"] = self.http.to_api()
+        if self.ssh:
+            primitive["ssh"] = self.ssh.to_api()
+        if self.env:
+            primitive["env"] = self.env
+        if self.volumes:
+            primitive["volumes"] = [v.to_api() for v in self.volumes]
+        return primitive
+
+
+@dataclass(frozen=True)
+class ContainerPayload:
+    image: str
+    command: Optional[str]
+    http: Optional[Dict[str, int]]
+    ssh: Optional[Dict[str, int]]
+    resources: Resources
+    env: Optional[Dict[str, str]] = None
+
+    def to_primitive(self) -> Dict[str, Any]:
+        primitive = {"image": self.image, "resources": self.resources.to_api()}
+        if self.command:
+            primitive["command"] = self.command
+        if self.http:
+            primitive["http"] = self.http
+        if self.ssh:
+            primitive["ssh"] = self.ssh
+        if self.env:
+            primitive["env"] = self.env
+        return primitive
+
+
+@dataclass(frozen=True)
 class JobStatusHistory:
     status: JobStatus
     reason: str
@@ -202,21 +258,19 @@ class JobStatusHistory:
 
 @dataclass(frozen=True)
 class JobDescription:
-    status: JobStatus
     id: str
-    image: str
     owner: str
+    status: JobStatus
     history: JobStatusHistory
-    resources: Resources
+    container: Container
     is_preemptible: bool
     description: Optional[str] = None
-    command: Optional[str] = None
-    url: URL = URL()
-    ssh: URL = URL()
-    env: Optional[Dict[str, str]] = None
+    http_url: URL = URL()
+    ssh_server: URL = URL()
+    internal_hostname: Optional[str] = None
 
     def jump_host(self) -> Optional[str]:
-        ssh_hostname = self.ssh.host
+        ssh_hostname = self.ssh_server.host
         if ssh_hostname is None:
             return None
         ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
@@ -224,16 +278,10 @@ class JobDescription:
 
     @classmethod
     def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
-        job_container_image = res["container"]["image"]
-        job_command = res["container"].get("command", None)
-        job_env = res["container"].get("env", None)
-
-        job_owner = res["owner"]
-        resources = Resources.from_api(res["container"]["resources"])
-        http_url = URL(res.get("http_url", ""))
-        ssh_conn = URL(res.get("ssh_server", ""))
+        container = Container.from_api(res["container"])
+        owner = res["owner"]
         description = res.get("description", None)
-        job_history = JobStatusHistory(
+        history = JobStatusHistory(
             status=JobStatus(res["history"].get("status", "unknown")),
             reason=res["history"].get("reason", ""),
             description=res["history"].get("description", ""),
@@ -241,19 +289,20 @@ class JobDescription:
             started_at=res["history"].get("started_at", ""),
             finished_at=res["history"].get("finished_at", ""),
         )
+        http_url = URL(res["http_url"]) if "http_url" in res else URL()
+        ssh_server = URL(res["ssh_server"]) if "ssh_server" in res else URL()
+        internal_hostname = res.get("internal_hostname", None)
         return JobDescription(
-            id=res["id"],
             status=JobStatus(res["status"]),
-            image=job_container_image,
-            command=job_command,
-            resources=resources,
-            history=job_history,
-            url=http_url,
-            ssh=ssh_conn,
-            owner=job_owner,
-            description=description,
-            env=job_env,
+            id=res["id"],
+            owner=owner,
+            history=history,
+            container=container,
             is_preemptible=res["is_preemptible"],
+            description=description,
+            http_url=http_url,
+            ssh_server=ssh_server,
+            internal_hostname=internal_hostname,
         )
 
 
@@ -273,26 +322,31 @@ class Jobs:
         env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
         http, ssh = network_to_api(network)
-        container = ContainerPayload(
+        if env is None:
+            real_env: Dict[str, str] = {}
+        else:
+            real_env = env
+        if volumes is not None:
+            volumes = volumes
+        else:
+            volumes = []
+        container = Container(
             image=image.image,
             command=image.command,
             http=http,
             ssh=ssh,
             resources=resources,
-            env=env,
+            env=real_env,
+            volumes=volumes,
         )
 
         url = URL("jobs")
-        payload: Dict[str, Any] = {"container": container.to_primitive()}
-        if volumes:
-            prim_volumes = [v.to_primitive() for v in volumes]
-        else:
-            prim_volumes = []
-        payload["container"]["volumes"] = prim_volumes
+        payload: Dict[str, Any] = {
+            "container": container.to_api(),
+            "is_preemptible": is_preemptible,
+        }
         if description:
             payload["description"] = description
-        if is_preemptible is not None:
-            payload["is_preemptible"] = is_preemptible
         async with self._api.request("POST", url, json=payload) as resp:
             res = await resp.json()
             return JobDescription.from_api(res)
