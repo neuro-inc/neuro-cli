@@ -10,7 +10,7 @@ from yarl import URL
 
 @dataclass
 class Config:
-    url: str = "http://platform.dev.neuromation.io/api/v1"
+    url: str = "https://platform.dev.neuromation.io/api/v1"
     auth: str = None
     github_rsa_path: str = ""
 
