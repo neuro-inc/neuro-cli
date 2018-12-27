@@ -6,7 +6,7 @@ from neuromation.cli import rc
 from neuromation.cli.rc import Config, ConfigFactory
 
 
-DEFAULTS = rc.Config(url="http://platform.dev.neuromation.io/api/v1")
+DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")
 
 
 @pytest.fixture
