@@ -2,6 +2,7 @@ import asyncio
 import os
 import platform
 import sys
+import time
 from math import ceil
 from os.path import join
 from pathlib import Path
@@ -76,6 +77,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
             output = capsys.readouterr()
             if ret != 0:
                 if "Connection error" in output:
+                    time.sleep(5)
                     continue
             return ret, output
 
