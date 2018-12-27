@@ -85,17 +85,18 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                     continue
                 else:
                     raise
-            if ("-v" not in arguments and "--version" not in arguments) and (
-                arguments[0:2] in (["job", "submit"], ["model", "train"])
-            ):
-                match = re.search(job_id_pattern, output.out)
-                if match:
-                    executed_jobs_list.append(match.group(1))
+            if (
+                "-v" not in arguments and "--version" not in arguments
+            ):  # special case for version switch
+                if arguments[0:2] in (["job", "submit"], ["model", "train"]):
+                    match = re.search(job_id_pattern, output.out)
+                    if match:
+                        executed_jobs_list.append(match.group(1))
 
             return capsys.readouterr()
 
     yield _run
-    # try to kill all executed there jobs regardless of the status
+    # try to kill all executed jobs regardless of the status
     if executed_jobs_list:
         try:
             _run(["job", "kill"] + executed_jobs_list)
@@ -105,7 +106,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
 
 
 @pytest.fixture
-def remote_and_local(run):
+def remote_and_local(run, request):
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
 
@@ -113,7 +114,14 @@ def remote_and_local(run):
     assert not captured.err
     assert captured.out == f"storage://{_path}" + "\n"
 
-    return _path, _dir
+    yield _path, _dir
+    # Remove directory only if test succeeded
+    if not request.node._report_sections:  # TODO: find another way to check test status
+        try:
+            run(["store", "rm", f"storage://{_path}"])
+        except BaseException:
+            # Just ignore cleanup error here
+            pass
 
 
 @pytest.fixture(scope="session")

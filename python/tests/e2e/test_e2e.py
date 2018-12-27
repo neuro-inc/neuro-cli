@@ -91,13 +91,7 @@ def test_print_version(run, version_key):
 
 @pytest.mark.e2e
 def test_empty_directory_ls_output(run):
-    _dir = f"e2e-{uuid()}"
-    _path = f"/tmp/{_dir}"
-
-    # Create directory for the test
-    captured = run(["store", "mkdir", f"storage://{_path}"])
-    assert not captured.err
-    assert captured.out == f"storage://{_path}\n"
+    _path, _dir = remote_and_local
 
     # Ensure output of ls - empty directory shall print nothing.
     captured = run(["store", "ls", f"storage://{_path}"])
