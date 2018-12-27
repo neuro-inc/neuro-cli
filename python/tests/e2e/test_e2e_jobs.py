@@ -99,6 +99,7 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
             "-g",
             "0",
             "-q",
+            "--non-preemptible",
         ]
     )
     job_id_third = captured.out.strip()
