@@ -1,6 +1,6 @@
 import enum
 from dataclasses import dataclass
-from typing import Any, BinaryIO, Dict, Iterator, List
+from typing import Any, AsyncIterator, BinaryIO, Dict, List
 
 from yarl import URL
 
@@ -68,7 +68,7 @@ class Storage:
             res = await resp.json()
             return FileStatus.from_api(res["FileStatus"])
 
-    async def open(self, *, path: str) -> Iterator[bytes]:
+    async def open(self, *, path: str) -> AsyncIterator[bytes]:
         url = URL("storage") / path.strip("/")
         url = url.with_query(op="OPEN")
         async with self._api.request("GET", url) as resp:

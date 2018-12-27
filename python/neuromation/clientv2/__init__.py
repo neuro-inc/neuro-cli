@@ -62,7 +62,7 @@ class ClientV2:
         await self.close()
 
     @property
-    def username(self):
+    def username(self) -> str:
         return self._username
 
     @property
