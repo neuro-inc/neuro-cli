@@ -51,7 +51,7 @@ async def test_model_train(aiohttp_server):
     network = NetworkPortForwarding({"http": 8181, "ssh": 22})
     resources = Resources.create("7", "1", "test-gpu-model", "4G", "true")
 
-    async with ClientV2(srv.make_url("/"), "token") as client:
+    async with ClientV2(srv.make_url("/"), "user", "token") as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         ret = await client.models.train(

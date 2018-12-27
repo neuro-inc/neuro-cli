@@ -79,7 +79,6 @@ async def _connect_ssh(
 
 async def connect_ssh(
     client: ClientV2,
-    username: str,
     job_id: str,
     jump_host_key: str,
     container_user: str,
@@ -92,12 +91,12 @@ async def connect_ssh(
     except aiohttp.ClientError as e:
         raise ValueError(f"Job not found. Job Id = {job_id}") from e
     await _connect_ssh(
-        username, job_status, jump_host_key, container_user, container_key
+        client.username, job_status, jump_host_key, container_user, container_key
     )
 
 
 async def remote_debug(
-    client: ClientV2, username: str, job_id: str, jump_host_key: str, local_port: int
+    client: ClientV2, job_id: str, jump_host_key: str, local_port: int
 ) -> None:
     if not jump_host_key:
         raise ValueError(
@@ -111,5 +110,5 @@ async def remote_debug(
     if not ssh_hostname:
         raise RuntimeError("Job has no SSH server enabled")
     await _start_ssh_tunnel(
-        job_status, ssh_hostname, username, jump_host_key, local_port
+        job_status, ssh_hostname, client.username, jump_host_key, local_port
     )

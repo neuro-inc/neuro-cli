@@ -35,12 +35,14 @@ class ClientV2:
     def __init__(
         self,
         url: Union[URL, str],
+        username: str,
         token: str,
         *,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,  # type: ignore
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
+        self._username = username
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api)
         self._models = Models(self._api)
@@ -58,6 +60,10 @@ class ClientV2:
         exc_tb: Optional[TracebackType] = None,
     ) -> None:
         await self.close()
+
+    @property
+    def username(self):
+        return self._username
 
     @property
     def jobs(self) -> Jobs:

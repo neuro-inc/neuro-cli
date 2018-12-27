@@ -434,7 +434,7 @@ Commands:
 
             image = Image(image=image, command=cmd)
 
-            async with ClientV2(url, token) as client:
+            async with ClientV2(url, username, token) as client:
                 res = await client.models.train(
                     image=image,
                     resources=resources,
@@ -468,8 +468,8 @@ Commands:
             git_key = config.github_rsa_path
             username = config.get_platform_user_name()
 
-            async with ClientV2(url, token) as client:
-                await remote_debug(client, username, id, git_key, localport)
+            async with ClientV2(url, username, token) as client:
+                await remote_debug(client, id, git_key, localport)
 
         return locals()
 
@@ -570,7 +570,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             is_preemptible = get_preemptible()
 
             config: Config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
+            username = config.get_platform_user_name()
 
             # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
             # separate function.
@@ -593,9 +593,9 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             image = Image(image=image, command=cmd)
             network = NetworkPortForwarding.from_cli(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-            volumes = VolumeDescriptionPayload.from_cli_list(platform_user_name, volume)
+            volumes = VolumeDescriptionPayload.from_cli_list(username, volume)
 
-            async with ClientV2(url, token) as client:
+            async with ClientV2(url, username, token) as client:
                 job = await client.jobs.submit(
                     image=image,
                     resources=resources,
@@ -627,8 +627,8 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             git_key = config.github_rsa_path
             username = config.get_platform_user_name()
 
-            async with ClientV2(url, token) as client:
-                await connect_ssh(client, username, id, git_key, user, key)
+            async with ClientV2(url, username, token) as client:
+                await connect_ssh(client, id, git_key, user, key)
 
         @command
         async def monitor(id):
@@ -641,8 +641,9 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
+            username = config.get_platform_user_name()
 
-            async with ClientV2(url, token, timeout=timeout) as client:
+            async with ClientV2(url, username, token, timeout=timeout) as client:
                 async for chunk in client.jobs.monitor(id):
                     if not chunk:
                         break
@@ -670,6 +671,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             neuro job list --status=pending,running --quiet
             """
 
+            username = config.get_platform_user_name()
             status = status or "running,pending"
 
             # TODO: add validation of status values
@@ -677,7 +679,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             if "all" in statuses:
                 statuses = set()
 
-            async with ClientV2(url, token) as client:
+            async with ClientV2(url, username, token) as client:
                 jobs = await client.jobs.list()
 
             formatter = JobListFormatter(quiet=quiet)
@@ -691,7 +693,8 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             Display status of a job
             """
-            async with ClientV2(url, token) as client:
+            username = config.get_platform_user_name()
+            async with ClientV2(url, username, token) as client:
                 res = await client.jobs.status(id)
                 return JobStatusFormatter.format_job_status(res)
 
@@ -703,8 +706,9 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             Kill job(s)
             """
+            username = config.get_platform_user_name()
             errors = []
-            async with ClientV2(url, token) as client:
+            async with ClientV2(url, username, token) as client:
                 for job in job_ids:
                     try:
                         await client.jobs.kill(job)
