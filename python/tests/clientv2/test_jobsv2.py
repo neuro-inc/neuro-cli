@@ -10,7 +10,7 @@ from neuromation.clientv2 import (
     JobDescription,
     NetworkPortForwarding,
     Resources,
-    VolumeDescriptionPayload,
+    Volume,
 )
 
 
@@ -247,7 +247,7 @@ async def test_job_submit(aiohttp_server):
                 "http": {"port": 8181},
                 "ssh": {"port": 22},
                 "resources": {
-                    "memory_mb": "4096",
+                    "memory_mb": "4G",
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -281,11 +281,9 @@ async def test_job_submit(aiohttp_server):
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         resources = Resources.create("7", "1", "test-gpu-model", "4G", "true")
-        volumes: List[VolumeDescriptionPayload] = [
-            VolumeDescriptionPayload(
-                "storage://test-user/path_read_only", "/container/read_only", True
-            ),
-            VolumeDescriptionPayload(
+        volumes: List[Volume] = [
+            Volume("storage://test-user/path_read_only", "/container/read_only", True),
+            Volume(
                 "storage://test-user/path_read_write",
                 "/container/path_read_write",
                 False,
@@ -341,13 +339,12 @@ async def test_job_submit_no_volumes(aiohttp_server):
                 "http": {"port": 8181},
                 "ssh": {"port": 22},
                 "resources": {
-                    "memory_mb": "4096",
+                    "memory_mb": "4G",
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
                     "gpu_model": "test-gpu-model",
                 },
-                "volumes": [],
             },
             "is_preemptible": False,
             "description": "job description",
@@ -414,7 +411,7 @@ async def test_job_submit_preemptible(aiohttp_server):
                 "http": {"port": 8181},
                 "ssh": {"port": 22},
                 "resources": {
-                    "memory_mb": "4096",
+                    "memory_mb": "4G",
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -448,11 +445,9 @@ async def test_job_submit_preemptible(aiohttp_server):
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         resources = Resources.create("7", "1", "test-gpu-model", "4G", "true")
-        volumes: List[VolumeDescriptionPayload] = [
-            VolumeDescriptionPayload(
-                "storage://test-user/path_read_only", "/container/read_only", True
-            ),
-            VolumeDescriptionPayload(
+        volumes: List[Volume] = [
+            Volume("storage://test-user/path_read_only", "/container/read_only", True),
+            Volume(
                 "storage://test-user/path_read_write",
                 "/container/path_read_write",
                 False,
@@ -476,7 +471,7 @@ async def test_job_submit_preemptible(aiohttp_server):
 )
 def test_volume_from_str_fail(volume):
     with pytest.raises(ValueError):
-        VolumeDescriptionPayload.from_cli("testuser", volume)
+        Volume.from_cli("testuser", volume)
 
 
 async def test_list(aiohttp_server):

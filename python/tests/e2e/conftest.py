@@ -1,8 +1,11 @@
 import asyncio
 import os
 import platform
+import sys
+import time
 from math import ceil
 from os.path import join
+from pathlib import Path
 from uuid import uuid4 as uuid
 
 import pytest
@@ -55,9 +58,6 @@ def data(tmpdir_factory):
 
 @pytest.fixture
 def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
-    import sys
-    from pathlib import Path
-
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
     rc_text = RC_TEXT.format(token=e2e_test_token)
@@ -72,7 +72,14 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
 
         from neuromation.cli import main
 
-        return main(), capsys.readouterr()
+        for i in range(5):
+            ret = main()
+            output = capsys.readouterr()
+            if ret != 0:
+                if "Connection error" in output:
+                    time.sleep(5)
+                    continue
+            return ret, output
 
     return _run
 

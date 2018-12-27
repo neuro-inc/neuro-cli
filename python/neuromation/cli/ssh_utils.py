@@ -21,7 +21,7 @@ def _validate_args_for_ssh_session(
 
 def _validate_job_status_for_ssh_session(job_status: JobDescription) -> None:
     if job_status.status == "running":
-        if job_status.ssh:
+        if job_status.ssh_server:
             pass
         else:
             raise ValueError("Job should be started with SSH support.")

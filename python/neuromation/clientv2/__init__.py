@@ -12,7 +12,7 @@ from .jobs import (
     JobStatusHistory,
     NetworkPortForwarding,
     Resources,
-    VolumeDescriptionPayload,
+    Volume,
 )
 from .models import Models, TrainResult
 
@@ -23,7 +23,7 @@ __all__ = (
     "JobStatusHistory",
     "NetworkPortForwarding",
     "Resources",
-    "VolumeDescriptionPayload",
+    "Volume",
     "TrainResult",
     "ClientV2",
 )

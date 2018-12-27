@@ -1,6 +1,16 @@
 DEVPI_URL ?= "https://$(DEVPI_USER):$(DEVPI_PASS)@$(DEVPI_HOST)/$(DEVPI_USER)"
 
 SHELL := /bin/bash
+BRANCH := $(shell git branch | grep \* | cut -d ' ' -f2)
+
+ISORT_DIRS := neuromation tests build-tools
+ISORT_REGEXP := ^python/(neuromation|tests|build-tools)/.+\\.py
+BLACK_DIRS := $(ISORT_DIRS)
+BLACK_REGEXP := $(ISORT_REGEXP)
+MYPY_DIRS := neuromation/client neuromation/logging neuromation/strings neuromation/clientv2 neuromation/cli/ssh_utils.py neuromation/cli/formatter.py
+MYPY_REGEXP := ^(python/neuromation/(client|logging|strings|clientv2)/.+\\.py)|(^python/neuromation/cli/ssh_utils.py)|(^python/neuromation/cli/formatter.py)
+FLAKE8_DIRS := .
+FLAKE8_REGEXP := ^python/.+\\.py
 
 .PHONY: init
 init:
@@ -8,6 +18,7 @@ init:
 	pip install -r requirements.txt
 	pip install -e .
 	cp .hooks/* ../.git/hooks
+	rm -rf .mypy_cache
 .PHONY: e2e
 e2e:
 	pytest \
@@ -40,6 +51,14 @@ test:
 		--cov-report xml:coverage.xml \
 		tests
 
+.PHONY: test-fast
+test-fast:
+	pytest \
+			--quiet \
+			--testmon --tlf \
+			-m "not e2e" \
+			tests || test $$? -eq 5
+
 .PHONY: test-all
 test-all:
 	pytest \
@@ -51,10 +70,22 @@ test-all:
 
 .PHONY: lint
 lint: lint-docs
-	isort -c -rc neuromation tests build-tools
-	black --check neuromation tests build-tools
-	mypy neuromation/client neuromation/logging neuromation/strings neuromation/clientv2 neuromation/cli/ssh_utils.py neuromation/cli/formatter.py
-	flake8
+	isort -c -rc ${ISORT_DIRS}
+	black --check $(BLACK_DIRS)
+	mypy --cache-dir .mypy_cache/$(BRANCH) $(MYPY_DIRS)
+	flake8 $(FLAKE8_DIRS)
+
+.PHONY: lint-diff
+lint-diff: ISORT_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(ISORT_REGEXP)") print substr($$NF, 8)}')
+lint-diff: BLACK_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(BLACK_REGEXP)") print substr($$NF, 8)}')
+lint-diff: MYPY_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(MYPY_REGEXP)") print substr($$NF, 8)}')
+lint-diff: FLAKE8_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(FLAKE8_REGEXP)") print substr($$NF, 8)}')
+lint-diff:
+	@ [ -z "${ISORT_TARGETS}" ] || (echo "Lint isort:"; echo "   ${ISORT_TARGETS}" && isort -c -rc ${ISORT_TARGETS})
+	@ [ -z "${BLACK_TARGETS}" ] || (echo "Lint black:"; echo "   ${BLACK_TARGETS}" && black -q --check ${BLACK_TARGETS})
+	@ [ -z "${MYPY_TARGETS}" ] || (echo "Lint mypy:"; echo "   ${MYPY_TARGETS}" && mypy --cache-dir .mypy_cache/$(BRANCH) ${MYPY_TARGETS})
+	@ [ -z "${FLAKE8_TARGETS}" ] || (echo "Lint flake8:"; echo "   ${FLAKE8_TARGETS}" && flake8 ${FLAKE8_TARGETS})
+
 
 .PHONY: dist-clean
 dist-clean:
@@ -80,8 +111,8 @@ coverage:
 
 .PHONY: format
 format:
-	isort -rc neuromation tests build-tools
-	black neuromation tests build-tools
+	isort -rc $(ISORT_DIRS)
+	black $(BLACK_DIRS)
 
 # TODO (artyom, 07/16/2018): swap e2e and test once coverage output
 # of both is combined. Otherwise e2e will override unit tests with
@@ -94,6 +125,7 @@ clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
 	rm README.md
+	rm -rf .testmondata .tmontmp
 
 devpi_setup:
 	pip install devpi-client
