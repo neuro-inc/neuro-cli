@@ -2,7 +2,6 @@ import asyncio
 import os
 import platform
 import sys
-import time
 from math import ceil
 from os.path import join
 from pathlib import Path
