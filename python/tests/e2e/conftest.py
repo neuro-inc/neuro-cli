@@ -2,6 +2,8 @@ import asyncio
 import os
 import platform
 import sys
+import time
+import re
 from math import ceil
 from os.path import join
 from pathlib import Path
@@ -17,6 +19,7 @@ from tests.e2e.utils import (
     RC_TEXT,
 )
 
+job_id_pattern = r'Job ID:\s*(\S+)'
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
@@ -57,6 +60,7 @@ def data(tmpdir_factory):
 
 @pytest.fixture
 def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
+    executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
     rc_text = RC_TEXT.format(token=e2e_test_token)
@@ -79,10 +83,18 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                     continue
                 else:
                     raise
+            if ('-v' not in arguments and '--version' not in arguments) and (
+                    arguments[0:2] in (['job', 'submit'], ['model', 'train'])):
+                match = re.search(job_id_pattern, output.out)
+                if match:
+                    executed_jobs_list.append(match.group(1))
+
             return capsys.readouterr()
 
-    return _run
-
+    yield _run
+    # try to kill all executed there jobs regardless of the status
+    if executed_jobs_list:
+        _run(['job', 'kill'] + executed_jobs_list)
 
 @pytest.fixture
 def remote_and_local(run):
