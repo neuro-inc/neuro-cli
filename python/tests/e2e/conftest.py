@@ -78,7 +78,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                 if exc.code == os.EX_IOERR:
                     continue
                 else:
-                    pytest.fail(f"[{exc.code}] status code returned")
+                    raise
             return capsys.readouterr()
 
     return _run
