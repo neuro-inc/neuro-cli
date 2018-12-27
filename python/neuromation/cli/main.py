@@ -644,6 +644,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
+            config: Config = rc.ConfigFactory.load()
             username = config.get_platform_user_name()
 
             async with ClientV2(url, username, token, timeout=timeout) as client:
@@ -674,6 +675,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             neuro job list --status=pending,running --quiet
             """
 
+            config: Config = rc.ConfigFactory.load()
             username = config.get_platform_user_name()
             status = status or "running,pending"
 
@@ -696,6 +698,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             Display status of a job
             """
+            config: Config = rc.ConfigFactory.load()
             username = config.get_platform_user_name()
             async with ClientV2(url, username, token) as client:
                 res = await client.jobs.status(id)
@@ -709,6 +712,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             Kill job(s)
             """
+            config: Config = rc.ConfigFactory.load()
             username = config.get_platform_user_name()
             errors = []
             async with ClientV2(url, username, token) as client:
