@@ -31,7 +31,7 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     check_create_dir_on_storage(run, _path)
 
     # Upload local file
-    _, captured = run(["store", "cp", "-r", dir_path, "storage://" + _path + "/"])
+    captured = run(["store", "cp", "-r", dir_path, "storage://" + _path + "/"])
     assert not captured.err
     assert _path in captured.out
 
@@ -52,7 +52,7 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     def recursive_download_and_check_cheksum():
         tmpdir.mkdir("bar")
         _local = join(tmpdir, "bar")
-        _, captured = run(["store", "cp", "-r", f"storage://{_path}/", _local])
+        run(["store", "cp", "-r", f"storage://{_path}/", _local])
         assert (
             hash_hex(
                 f"{_local}/{_dir}/{dir_name}"

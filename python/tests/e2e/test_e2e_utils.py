@@ -15,7 +15,7 @@ class Status(str, enum.Enum):
 
 
 def assert_job_state(run, job_id, state):
-    _, captured = run(["job", "status", job_id])
+    captured = run(["job", "status", job_id])
     assert state in captured.out
 
 
@@ -24,7 +24,7 @@ def wait_job_change_state_from(run, job_id, str_wait, str_stop=None):
     start_time = time()
     while (str_wait in out) and (int(time() - start_time) < JOB_TIMEOUT):
         sleep(JOB_WAIT_SLEEP_SECONDS)
-        _, captured = run(["job", "status", job_id])
+        captured = run(["job", "status", job_id])
         out = captured.out
         if str_stop and str_stop in out:
             raise AssertionError(f"failed running job {job_id}: {str_stop}")
@@ -36,7 +36,7 @@ def wait_job_change_state_to(run, job_id, str_target, str_stop=None):
     start_time = time()
     while str_target not in out:
         sleep(JOB_WAIT_SLEEP_SECONDS)
-        _, captured = run(["job", "status", job_id])
+        captured = run(["job", "status", job_id])
         out = captured.out
         if str_stop and str_stop in out:
             raise AssertionError(

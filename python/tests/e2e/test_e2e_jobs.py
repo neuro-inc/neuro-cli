@@ -35,13 +35,13 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # remember original set or running jobs
-    _, captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running,pending"])
     store_out_list = captured.out.strip().split("\n")[1:]  # cut out the header line
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
     # Start the jobs
     command_first = 'bash -c "sleep 1m; false"'
-    _, captured = run(
+    captured = run(
         [
             "model",
             "train",
@@ -64,7 +64,7 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_first not in jobs_orig
 
     command_second = 'bash -c "sleep 2m; false"'
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -89,7 +89,7 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_second.startswith("job-")
     assert job_id_second not in jobs_orig
 
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -115,7 +115,7 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     wait_job_change_state_to(run, job_id_second, Status.RUNNING)
 
     # check running via job list
-    _, captured = run(["job", "list", "--status", "running"])
+    captured = run(["job", "list", "--status", "running"])
     store_out = captured.out.strip()
     assert command_first in store_out
     assert command_second in store_out
@@ -124,13 +124,13 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     assert job_id_second in jobs_before_killing
 
     # do the same with job list -q
-    _, captured = run(["job", "list", "--status", "running", "-q"])
+    captured = run(["job", "list", "--status", "running", "-q"])
     jobs_before_killing_q = [x.strip() for x in captured.out.strip().split("\n")]
     assert job_id_first in jobs_before_killing_q
     assert job_id_second in jobs_before_killing_q
 
     # kill multiple jobs
-    _, captured = run(["job", "kill", job_id_first, job_id_second, job_id_third])
+    captured = run(["job", "kill", job_id_first, job_id_second, job_id_third])
     kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
     assert kill_output_list == [job_id_first, job_id_second, job_id_third]
 
@@ -148,14 +148,14 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
         wait_job_change_state_to(run, job_id_third, Status.SUCCEEDED, Status.FAILED)
 
         # check killed running,pending
-        _, captured = run(["job", "list", "--status", "running,pending", "-q"])
+        captured = run(["job", "list", "--status", "running,pending", "-q"])
         jobs_after_kill_q = [x.strip() for x in captured.out.strip().split("\n")]
         assert job_id_first not in jobs_after_kill_q
         assert job_id_second not in jobs_after_kill_q
         assert job_id_third not in jobs_after_kill_q
 
         # try to kill already killed: same output
-        _, captured = run(["job", "kill", job_id_first])
+        captured = run(["job", "kill", job_id_first])
         kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
         assert kill_output_list == [job_id_first]
     except AssertionError:
@@ -171,7 +171,7 @@ def test_job_kill_non_existing(run, loop):
     # try to kill non existing job
     phantom_id = "NOT_A_JOB_ID"
     expected_out = f"Cannot kill job {phantom_id}: no such job {phantom_id}"
-    _, captured = run(["job", "kill", phantom_id])
+    captured = run(["job", "kill", phantom_id])
     killed_jobs = [x.strip() for x in captured.out.strip().split("\n")]
     assert killed_jobs == [expected_out]
 
@@ -204,7 +204,7 @@ def test_model_train_with_http(run, loop):
 
     # Start the job
     command = '/usr/sbin/nginx -g "daemon off;"'
-    _, captured = run(
+    captured = run(
         [
             "model",
             "train",
@@ -232,7 +232,7 @@ def test_model_train_with_http(run, loop):
 
     assert loop.run_until_complete(get_(parsed_url.netloc))
 
-    _, captured = run(["job", "kill", job_id])
+    run(["job", "kill", job_id])
     wait_job_change_state_from(run, job_id, Status.RUNNING)
 
 
@@ -263,7 +263,7 @@ def test_model_without_command(run, loop):
     run(["store", "mkdir", f"storage://{_path_dst}"])
 
     # Start the job
-    _, captured = run(
+    captured = run(
         [
             "model",
             "train",
@@ -290,7 +290,7 @@ def test_model_without_command(run, loop):
 
     assert loop.run_until_complete(get_(parsed_url.netloc))
 
-    _, captured = run(["job", "kill", job_id])
+    captured = run(["job", "kill", job_id])
     wait_job_change_state_from(run, job_id, Status.RUNNING)
 
 
@@ -298,7 +298,7 @@ def test_model_without_command(run, loop):
 def test_e2e_no_env(run):
     bash_script = 'echo "begin"$VAR"end"  | grep beginend'
     command = f"bash -c '{bash_script}'"
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -326,7 +326,7 @@ def test_e2e_no_env(run):
 def test_e2e_env(run):
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -357,7 +357,7 @@ def test_e2e_env_from_local(run):
     os.environ["VAR"] = "VAL"
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -387,7 +387,7 @@ def test_e2e_env_from_local(run):
 def test_e2e_multiple_env(run):
     bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
     command = f"bash -c '{bash_script}'"
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -423,7 +423,7 @@ def test_e2e_multiple_env_from_file(run):
         env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
         bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
         command = f"bash -c '{bash_script}'"
-        _, captured = run(
+        captured = run(
             [
                 "job",
                 "submit",
