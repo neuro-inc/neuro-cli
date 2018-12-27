@@ -31,7 +31,7 @@ FILE_COUNT = 1
 FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
+RC_TEXT = "url: https://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
 
 
 async def generate_test_data(root, count, size_mb):

@@ -186,7 +186,7 @@ def test_model_train_with_http(run, loop):
         start_time = time()
         while not succeeded and (int(time() - start_time) < service_wait_time):
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"http://{job_id}.jobs.{platform_url}") as resp:
+                async with session.get(f"https://{job_id}.jobs.{platform_url}") as resp:
                     succeeded = resp.status == 200
             if not succeeded:
                 sleep(loop_sleep)
@@ -246,7 +246,7 @@ def test_model_without_command(run, loop):
         start_time = time()
         while not succeeded and (int(time() - start_time) < service_wait_time):
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"http://{job_id}.jobs.{platform_url}") as resp:
+                async with session.get(f"https://{job_id}.jobs.{platform_url}") as resp:
                     succeeded = resp.status == 200
             if not succeeded:
                 sleep(loop_sleep)
