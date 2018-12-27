@@ -1,12 +1,11 @@
 import asyncio
 import os
 import platform
+import sys
 from math import ceil
 from os.path import join
-from uuid import uuid4 as uuid
-import sys
 from pathlib import Path
-
+from uuid import uuid4 as uuid
 
 import pytest
 
