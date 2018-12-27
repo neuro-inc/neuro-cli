@@ -19,7 +19,9 @@ from tests.e2e.utils import (
     RC_TEXT,
 )
 
-job_id_pattern = r'Job ID:\s*(\S+)'
+
+job_id_pattern = r"Job ID:\s*(\S+)"
+
 
 async def generate_test_data(root, count, size_mb):
     async def generate_file(name):
@@ -83,8 +85,9 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                     continue
                 else:
                     raise
-            if ('-v' not in arguments and '--version' not in arguments) and (
-                    arguments[0:2] in (['job', 'submit'], ['model', 'train'])):
+            if ("-v" not in arguments and "--version" not in arguments) and (
+                arguments[0:2] in (["job", "submit"], ["model", "train"])
+            ):
                 match = re.search(job_id_pattern, output.out)
                 if match:
                     executed_jobs_list.append(match.group(1))
@@ -94,7 +97,8 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
     yield _run
     # try to kill all executed there jobs regardless of the status
     if executed_jobs_list:
-        _run(['job', 'kill'] + executed_jobs_list)
+        _run(["job", "kill"] + executed_jobs_list)
+
 
 @pytest.fixture
 def remote_and_local(run):
