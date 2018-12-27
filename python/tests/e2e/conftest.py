@@ -97,7 +97,11 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
     yield _run
     # try to kill all executed there jobs regardless of the status
     if executed_jobs_list:
-        _run(["job", "kill"] + executed_jobs_list)
+        try:
+            _run(["job", "kill"] + executed_jobs_list)
+        except BaseException:
+            # Just ignore cleanup error here
+            pass
 
 
 @pytest.fixture
