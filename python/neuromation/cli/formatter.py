@@ -52,16 +52,16 @@ class JobStatusFormatter(BaseFormatter):
             and job_status.status in [JobStatus.FAILED, JobStatus.PENDING]
         ):
             result += f" ({job_status.history.reason})"
-        result += f"\nImage: {job_status.image}\n"
+        result += f"\nImage: {job_status.container.image}\n"
 
-        result += f"Command: {job_status.command}\n"
-        result += f"Resources: {job_status.resources}\n"
+        result += f"Command: {job_status.container.command}\n"
+        result += f"Resources: {job_status.container.resources}\n"
 
-        if job_status.url:
-            result = f"{result}Http URL: {job_status.url}\n"
-        if job_status.env:
+        if job_status.http_url:
+            result = f"{result}Http URL: {job_status.http_url}\n"
+        if job_status.container.env:
             result += f"Environment:\n"
-            for key, value in job_status.env.items():
+            for key, value in job_status.container.env.items():
                 result += f"{key}={value}\n"
 
         assert job_status.history
@@ -129,12 +129,12 @@ class JobListFormatter(BaseFormatter):
             return job.id.ljust(self.column_lengths["id"])
 
         description = truncate_then_wrap(job.description or "", "description")
-        command = truncate_then_wrap(job.command or "", "command")
+        command = truncate_then_wrap(job.container.command or "", "command")
         return self.tab.join(
             [
                 job.id.ljust(self.column_lengths["id"]),
                 job.status.ljust(self.column_lengths["status"]),
-                job.image.ljust(self.column_lengths["image"]),
+                job.container.image.ljust(self.column_lengths["image"]),
                 description.ljust(self.column_lengths["description"]),
                 command.ljust(self.column_lengths["command"]),
             ]

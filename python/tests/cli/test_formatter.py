@@ -1,4 +1,5 @@
 import pytest
+from yarl import URL
 
 from neuromation.cli.formatter import (
     BaseFormatter,
@@ -7,6 +8,7 @@ from neuromation.cli.formatter import (
     OutputFormatter,
 )
 from neuromation.clientv2.jobs import (
+    Container,
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -23,7 +25,6 @@ def job_descr():
     return JobDescription(
         status=TEST_JOB_STATUS,
         id=TEST_JOB_ID,
-        image="ubuntu:latest",
         owner="owner",
         history=JobStatusHistory(
             status=JobStatus.PENDING,
@@ -33,7 +34,9 @@ def job_descr():
             started_at="2018-09-25T12:28:59.759433+00:00",
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
-        resources=Resources.create(0.1, 0, None, None, False),
+        container=Container(
+            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, None, False)
+        ),
         is_preemptible=True,
     )
 
@@ -60,10 +63,8 @@ class TestJobOutputFormatter:
             owner="test-user",
             id="test-job",
             description="test job description",
-            image="test-image",
-            command="test-command",
-            url="http://local.host.test/",
-            ssh="ssh://local.host.test:22/",
+            http_url=URL("http://local.host.test/"),
+            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
@@ -72,7 +73,11 @@ class TestJobOutputFormatter:
                 started_at="2018-09-25T12:28:59.759433+00:00",
                 finished_at="2018-09-25T12:28:59.759433+00:00",
             ),
-            resources=Resources.create(0.1, 0, None, None, False),
+            container=Container(
+                command="test-command",
+                image="test-image",
+                resources=Resources.create(0.1, 0, None, None, False),
+            ),
             is_preemptible=True,
         )
 
@@ -84,7 +89,7 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -98,8 +103,6 @@ class TestJobOutputFormatter:
             status=JobStatus.PENDING,
             id="test-job",
             description="test job description",
-            image="test-image",
-            command="test-command",
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason=None,
@@ -108,7 +111,11 @@ class TestJobOutputFormatter:
                 started_at=None,
                 finished_at=None,
             ),
-            resources=Resources.create(0.1, 0, None, None, False),
+            container=Container(
+                command="test-command",
+                image="test-image",
+                resources=Resources.create(0.1, 0, None, None, False),
+            ),
             is_preemptible=True,
             owner="owner",
         )
@@ -121,7 +128,7 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -131,8 +138,6 @@ class TestJobOutputFormatter:
             status=JobStatus.PENDING,
             id="test-job",
             description="test job description",
-            image="test-image",
-            command="test-command",
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
@@ -141,7 +146,11 @@ class TestJobOutputFormatter:
                 started_at=None,
                 finished_at=None,
             ),
-            resources=Resources.create(0.1, 0, None, None, False),
+            container=Container(
+                image="test-image",
+                command="test-command",
+                resources=Resources.create(0.1, 0, None, None, False),
+            ),
             is_preemptible=True,
             owner="owner",
         )
@@ -154,7 +163,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -164,8 +173,6 @@ class TestJobOutputFormatter:
             status=JobStatus.PENDING,
             id="test-job",
             description=None,
-            image="test-image",
-            command="test-command",
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
@@ -174,7 +181,11 @@ class TestJobOutputFormatter:
                 started_at=None,
                 finished_at=None,
             ),
-            resources=Resources.create(0.1, 0, None, None, False),
+            container=Container(
+                image="test-image",
+                command="test-command",
+                resources=Resources.create(0.1, 0, None, None, False),
+            ),
             is_preemptible=True,
             owner="owner",
         )
@@ -186,7 +197,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
             "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -239,8 +250,6 @@ class TestJobListFormatter:
                 status=JobStatus.RUNNING,
                 id=f"test-job-{index}",
                 description=f"test-description-{index}",
-                image=f"test-image-{index}",
-                command=f"test-command-{index}",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
                     reason="ContainerCreating",
@@ -249,7 +258,11 @@ class TestJobListFormatter:
                     started_at=None,
                     finished_at=None,
                 ),
-                resources=Resources.create(0.1, 0, None, None, False),
+                container=Container(
+                    image=f"test-image-{index}",
+                    command=f"test-command-{index}",
+                    resources=Resources.create(0.1, 0, None, None, False),
+                ),
                 is_preemptible=True,
                 owner="owner",
             )
@@ -271,8 +284,6 @@ class TestJobListFormatter:
                 status=JobStatus.RUNNING,
                 id=f"test-job-{index}",
                 description=f"test-description-{index}",
-                image=f"test-image-{index}",
-                command=f"test-command-{index}",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
                     reason="ContainerCreating",
@@ -281,7 +292,11 @@ class TestJobListFormatter:
                     started_at=None,
                     finished_at=None,
                 ),
-                resources=Resources.create(0.1, 0, None, None, False),
+                container=Container(
+                    image=f"test-image-{index}",
+                    command=f"test-command-{index}",
+                    resources=Resources.create(0.1, 0, None, None, False),
+                ),
                 is_preemptible=True,
                 owner="owner",
             )
@@ -311,8 +326,6 @@ class TestJobListFormatter:
                 status=JobStatus.RUNNING,
                 id=f"test-job-{index}",
                 description=f"test-description-{index}",
-                image=f"test-image-{index}",
-                command=f"test-command-{index}",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
                     reason="ContainerCreating",
@@ -321,7 +334,11 @@ class TestJobListFormatter:
                     started_at=None,
                     finished_at=None,
                 ),
-                resources=Resources.create(0.1, 0, None, None, False),
+                container=Container(
+                    image=f"test-image-{index}",
+                    command=f"test-command-{index}",
+                    resources=Resources.create(0.1, 0, None, None, False),
+                ),
                 is_preemptible=True,
                 owner="owner",
             )

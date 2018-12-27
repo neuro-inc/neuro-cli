@@ -27,9 +27,10 @@ from neuromation.clientv2 import (
     Image,
     NetworkPortForwarding,
     Resources,
-    VolumeDescriptionPayload,
+    Volume,
 )
 from neuromation.logging import ConsoleWarningFormatter
+from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
 from .commands import command, dispatch
@@ -427,6 +428,7 @@ Commands:
                 )
 
             network = NetworkPortForwarding.from_cli(http, ssh)
+            memory = to_megabytes_str(memory)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
             cmd = " ".join(cmd) if cmd is not None else None
@@ -590,10 +592,11 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             cmd = " ".join(cmd) if cmd is not None else None
             log.debug(f'cmd="{cmd}"')
 
+            memory = to_megabytes_str(memory)
             image = Image(image=image, command=cmd)
             network = NetworkPortForwarding.from_cli(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-            volumes = VolumeDescriptionPayload.from_cli_list(platform_user_name, volume)
+            volumes = Volume.from_cli_list(platform_user_name, volume)
 
             async with ClientV2(url, token) as client:
                 job = await client.jobs.submit(
