@@ -9,7 +9,7 @@ BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\nauth: {token}"
+RC_TEXT = "url: https://platform.dev.neuromation.io/api/v1\nauth: {token}"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 format_list = "{type:<15}{size:<15,}{name:<}".format
 format_list_pattern = "(file|directory)\\s*\\d+\\s*{name}".format
@@ -63,7 +63,7 @@ def check_file_exists_on_storage(run, name: str, path: str, size: int):
     :param size: File size
     :return:
     """
-    _, captured = run(["store", "ls", f"storage://{path}"])
+    captured = run(["store", "ls", f"storage://{path}"])
     captured_output_list = captured.out.split("\n")
     expected_line = format_list(type="file", size=size, name=name)
     assert expected_line in captured_output_list
@@ -80,7 +80,7 @@ def check_dir_exists_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    _, captured = run(["store", "ls", f"storage://{path}"])
+    captured = run(["store", "ls", f"storage://{path}"])
     captured_output_list = captured.out.split("\n")
     assert f"directory      0              {name}" in captured_output_list
     assert not captured.err
@@ -96,7 +96,7 @@ def check_dir_absent_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    _, captured = run(["store", "ls", f"storage://{path}"])
+    captured = run(["store", "ls", f"storage://{path}"])
     split = captured.out.split("\n")
     assert format_list(name=name, size=0, type="directory") not in split
     assert not captured.err
@@ -111,7 +111,7 @@ def check_file_absent_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    _, captured = run(["store", "ls", f"storage://{path}"])
+    captured = run(["store", "ls", f"storage://{path}"])
     pattern = format_list_pattern(name=name)
     assert not re.search(pattern, captured.out)
     assert not captured.err
@@ -132,7 +132,7 @@ def check_file_on_storage_checksum(
     :return:
     """
     _local = join(tmpdir, tmpname)
-    _, captured = run(["store", "cp", f"storage://{path}/{name}", _local])
+    run(["store", "cp", f"storage://{path}/{name}", _local])
     assert hash_hex(_local) == checksum
 
 
@@ -143,7 +143,7 @@ def check_create_dir_on_storage(run, path: str):
     :param path: Path on storage
     :return:
     """
-    _, captured = run(["store", "mkdir", f"storage://{path}"])
+    captured = run(["store", "mkdir", f"storage://{path}"])
     assert not captured.err
     assert captured.out == f"storage://{path}\n"
 
@@ -155,7 +155,7 @@ def check_rmdir_on_storage(run, path: str):
     :param path: Path on storage
     :return:
     """
-    _, captured = run(["store", "rm", f"storage://{path}"])
+    captured = run(["store", "rm", f"storage://{path}"])
     assert not captured.err
 
 
@@ -167,7 +167,7 @@ def check_rm_file_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    _, captured = run(["store", "rm", f"storage://{path}/{name}"])
+    captured = run(["store", "rm", f"storage://{path}/{name}"])
     assert not captured.err
 
 
@@ -182,12 +182,12 @@ def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
     :return:
     """
     if name is None:
-        _, captured = run(["store", "cp", local_file, f"storage://{path}"])
+        captured = run(["store", "cp", local_file, f"storage://{path}"])
         assert not captured.err
         assert f"{path}" in captured.out
 
     else:
-        _, captured = run(["store", "cp", local_file, f"storage://{path}/{name}"])
+        captured = run(["store", "cp", local_file, f"storage://{path}/{name}"])
         assert not captured.err
         assert f"{path}/{name}" in captured.out
 
@@ -204,7 +204,7 @@ def check_rename_file_on_storage(
     :param path_to: Destination path
     :return:
     """
-    _, captured = run(
+    captured = run(
         [
             "store",
             "mv",
@@ -225,7 +225,7 @@ def check_rename_directory_on_storage(run, path_from: str, path_to: str):
     :param path_to:
     :return:
     """
-    _, captured = run(["store", "mv", f"storage://{path_from}", f"storage://{path_to}"])
+    captured = run(["store", "mv", f"storage://{path_from}", f"storage://{path_to}"])
     assert not captured.err
     assert path_from not in captured.out
     assert path_to in captured.out

@@ -57,7 +57,7 @@ neuro [options] COMMAND
 
 Name | Description|
 |----|------------|
-|_\-u, --url URL_|Override API URL \[default: http://platform.dev.neuromation.io/api/v1]|
+|_\-u, --url URL_|Override API URL \[default: https://platform.dev.neuromation.io/api/v1]|
 |_\-t, --token TOKEN_|API authentication token \(not implemented)|
 |_--verbose_|Enable verbose logging|
 |_\-v, --version_|Print version and exit|
@@ -518,7 +518,7 @@ neuro config url URL
 **Examples:**
 
 ```bash
-neuro config url http://platform.neuromation.io/api/v1
+neuro config url https://platform.neuromation.io/api/v1
 ```
 
 

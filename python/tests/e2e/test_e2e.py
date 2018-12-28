@@ -31,7 +31,7 @@ FILE_COUNT = 1
 FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
+RC_TEXT = "url: https://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
 
 
 async def generate_test_data(root, count, size_mb):
@@ -76,15 +76,15 @@ def data(tmpdir_factory):
 def test_print_version(run, version_key):
     expected_out = f"Neuromation Platform Client {neuromation.__version__}\n"
 
-    _, captured = run([version_key])
+    captured = run([version_key])
     assert not captured.err
     assert captured.out == expected_out
 
-    _, captured = run(["job", version_key])
+    captured = run(["job", version_key])
     assert not captured.err
     assert captured.out == expected_out
 
-    _, captured = run(["job", "submit", "ubuntu", version_key])
+    captured = run(["job", "submit", "ubuntu", version_key])
     assert not captured.err
     assert captured.out == expected_out
 
@@ -95,12 +95,12 @@ def test_empty_directory_ls_output(run):
     _path = f"/tmp/{_dir}"
 
     # Create directory for the test
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
+    captured = run(["store", "mkdir", f"storage://{_path}"])
     assert not captured.err
     assert captured.out == f"storage://{_path}\n"
 
     # Ensure output of ls - empty directory shall print nothing.
-    _, captured = run(["store", "ls", f"storage://{_path}"])
+    captured = run(["store", "ls", f"storage://{_path}"])
     assert not captured.err
     assert not captured.out
 
@@ -113,7 +113,7 @@ def test_e2e_shm_run_without(run, tmpdir):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -141,7 +141,7 @@ def test_e2e_shm_run_with(run, tmpdir):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    _, captured = run(
+    captured = run(
         [
             "job",
             "submit",
@@ -195,17 +195,18 @@ def test_e2e_storage(data, run, tmpdir):
         raise exc
 
     # Download into deeper local dir and confirm checksum
-    _local = join(tmpdir, "bardir")
+    localdir = f"bardir-{uuid()}"
+    _local = join(tmpdir, localdir)
     _local_file = join(_local, "foo")
-    tmpdir.mkdir("bardir")
-    _, captured = run(["store", "cp", f"storage://{_path}/foo", _local])
+    tmpdir.mkdir(localdir)
+    run(["store", "cp", f"storage://{_path}/foo", _local])
     assert hash_hex(_local_file) == checksum
 
     # Rename file on the storage
     check_rename_file_on_storage(run, "foo", _path, "bar", _path)
 
     # Confirm file has been renamed
-    _, captured = run(["store", "ls", f"storage://{_path}"])
+    captured = run(["store", "ls", f"storage://{_path}"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
     expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
