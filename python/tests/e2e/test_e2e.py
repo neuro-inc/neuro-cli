@@ -195,9 +195,10 @@ def test_e2e_storage(data, run, tmpdir):
         raise exc
 
     # Download into deeper local dir and confirm checksum
-    _local = join(tmpdir, "bardir")
+    localdir = f"bardir-{uuid()}"
+    _local = join(tmpdir, localdir)
     _local_file = join(_local, "foo")
-    tmpdir.mkdir("bardir")
+    tmpdir.mkdir(localdir)
     run(["store", "cp", f"storage://{_path}/foo", _local])
     assert hash_hex(_local_file) == checksum
 
