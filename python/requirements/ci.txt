@@ -1,3 +1,5 @@
+-r base.txt
+
 mypy==0.650
 pytest==3.5.1
 pytest-cov==2.5.1
