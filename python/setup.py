@@ -34,6 +34,7 @@ setup(
         'keyring~=13.0',
         'keyrings.cryptfile==1.2.1',
         'tqdm==4.28.1',
+        'yarl==1.3.0'
     ],
     include_package_data=True,
     description='Neuromation Platform API client',

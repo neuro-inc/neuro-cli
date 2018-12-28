@@ -129,7 +129,6 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
-            "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -164,7 +163,6 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
-            "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -198,7 +196,6 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
-            "Http URL: \n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 

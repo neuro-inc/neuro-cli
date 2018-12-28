@@ -133,7 +133,7 @@ Commands:
             Updates settings with provided platform URL.
 
             Examples:
-            neuro config url http://platform.neuromation.io/api/v1
+            neuro config url https://platform.neuromation.io/api/v1
             """
             rc.ConfigFactory.update_api_url(url)
 

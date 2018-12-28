@@ -2,7 +2,6 @@ import asyncio
 import os
 import platform
 import sys
-import time
 from math import ceil
 from os.path import join
 from pathlib import Path
@@ -73,13 +72,14 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
         from neuromation.cli import main
 
         for i in range(5):
-            ret = main()
-            output = capsys.readouterr()
-            if ret != 0:
-                if "Connection error" in output:
-                    time.sleep(5)
+            try:
+                main()
+            except SystemExit as exc:
+                if exc.code == os.EX_IOERR:
                     continue
-            return ret, output
+                else:
+                    raise
+            return capsys.readouterr()
 
     return _run
 
@@ -89,7 +89,7 @@ def remote_and_local(run):
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
 
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
+    captured = run(["store", "mkdir", f"storage://{_path}"])
     assert not captured.err
     assert captured.out == f"storage://{_path}" + "\n"
 
