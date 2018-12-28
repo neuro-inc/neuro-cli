@@ -50,8 +50,9 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
 
     # Download into local directory and confirm checksum
     def recursive_download_and_check_cheksum():
-        tmpdir.mkdir("bar")
-        _local = join(tmpdir, "bar")
+        target = f"bar-{uuid()}"
+        tmpdir.mkdir(target)
+        _local = join(tmpdir, target)
         run(["store", "cp", "-r", f"storage://{_path}/", _local])
         assert (
             hash_hex(
