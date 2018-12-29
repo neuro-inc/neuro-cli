@@ -6,6 +6,7 @@ from neuromation.cli.formatter import (
     JobListFormatter,
     JobStatusFormatter,
     OutputFormatter,
+    ResourcesFormatter
 )
 from neuromation.clientv2.jobs import (
     Container,
@@ -89,7 +90,7 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -128,7 +129,7 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -162,7 +163,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -195,7 +196,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -349,3 +350,31 @@ class TestJobListFormatter:
         assert (
             self.quiet.format_jobs(jobs, description="test-description-0") == expected
         ), expected
+
+
+class TestResourcesFormatter:
+    def test_tiny_container(self) -> None:
+        resources = Resources.create(cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=False)
+        assert (
+            ResourcesFormatter.format_resources(resources) == "Resources:\n"
+            "Memory: 16 MB\n"
+            "CPU: 0.1"
+        )
+
+    def test_gpu_container(self) -> None:
+        resources = Resources.create(cpu=2, gpu=1, gpu_model='nvidia-tesla-p4', memory=1024, extshm=False)
+        assert (
+            ResourcesFormatter.format_resources(resources) == "Resources:\n"
+            "Memory: 1024 MB\n"
+            "CPU: 2"
+            "GPU: 1 x nvidia-tesla-p4"
+        )
+
+    def test_shm_container(self) -> None:
+        resources = Resources.create(cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=True)
+        assert (
+            ResourcesFormatter.format_resources(resources) == "Resources:\n"
+            "Memory: 16 MB\n"
+            "CPU: 0.1\n"
+            "Additional: Extended SHM space"
+        )
