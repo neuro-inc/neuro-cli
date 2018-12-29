@@ -146,9 +146,9 @@ class ResourcesFormatter(BaseFormatter):
     def format_resources(cls, resources: Resources) -> str:
         lines = list()
         lines.append(f'Memory: {resources.memory_mb} MB')
-        lines.append(f'CPU: {resources.cpu}')
+        lines.append(f'CPU: {resources.cpu:0.1f}')
         if resources.gpu:
-            lines.append(f'GPU: {resources.gpu} x {resources.gpu_model}')
+            lines.append(f'GPU: {resources.gpu:0.1f} x {resources.gpu_model}')
 
         additionals = list()
         if resources.shm:
@@ -158,5 +158,5 @@ class ResourcesFormatter(BaseFormatter):
             lines.append(f'Additional: {",".join(additionals)}')
 
         indent = '  '
-        return f'Resources: \n' + indent + f'\n{indent}'.join(lines)
+        return f'Resources:\n' + indent + f'\n{indent}'.join(lines)
 

@@ -357,24 +357,24 @@ class TestResourcesFormatter:
         resources = Resources.create(cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=False)
         assert (
             ResourcesFormatter.format_resources(resources) == "Resources:\n"
-            "Memory: 16 MB\n"
-            "CPU: 0.1"
+            "  Memory: 16 MB\n"
+            "  CPU: 0.1"
         )
 
     def test_gpu_container(self) -> None:
         resources = Resources.create(cpu=2, gpu=1, gpu_model='nvidia-tesla-p4', memory=1024, extshm=False)
         assert (
             ResourcesFormatter.format_resources(resources) == "Resources:\n"
-            "Memory: 1024 MB\n"
-            "CPU: 2"
-            "GPU: 1 x nvidia-tesla-p4"
+            "  Memory: 1024 MB\n"
+            "  CPU: 2.0\n"
+            "  GPU: 1.0 x nvidia-tesla-p4"
         )
 
     def test_shm_container(self) -> None:
         resources = Resources.create(cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=True)
         assert (
             ResourcesFormatter.format_resources(resources) == "Resources:\n"
-            "Memory: 16 MB\n"
-            "CPU: 0.1\n"
-            "Additional: Extended SHM space"
+            "  Memory: 16 MB\n"
+            "  CPU: 0.1\n"
+            "  Additional: Extended SHM space"
         )
