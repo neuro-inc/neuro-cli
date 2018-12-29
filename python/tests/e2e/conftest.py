@@ -1,9 +1,8 @@
 import asyncio
 import os
 import platform
-import sys
-import time
 import re
+import sys
 from math import ceil
 from os.path import join
 from pathlib import Path
@@ -85,6 +84,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                     continue
                 else:
                     raise
+            output = capsys.readouterr()
             if (
                 "-v" not in arguments and "--version" not in arguments
             ):  # special case for version switch
@@ -93,7 +93,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                     if match:
                         executed_jobs_list.append(match.group(1))
 
-            return capsys.readouterr()
+            return output
 
     yield _run
     # try to kill all executed jobs regardless of the status

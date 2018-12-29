@@ -90,7 +90,7 @@ def test_print_version(run, version_key):
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(run):
+def test_empty_directory_ls_output(run, remote_and_local):
     _path, _dir = remote_and_local
 
     # Ensure output of ls - empty directory shall print nothing.
