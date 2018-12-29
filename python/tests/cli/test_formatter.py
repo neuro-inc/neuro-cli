@@ -6,7 +6,7 @@ from neuromation.cli.formatter import (
     JobListFormatter,
     JobStatusFormatter,
     OutputFormatter,
-    ResourcesFormatter
+    ResourcesFormatter,
 )
 from neuromation.clientv2.jobs import (
     Container,
@@ -354,7 +354,9 @@ class TestJobListFormatter:
 
 class TestResourcesFormatter:
     def test_tiny_container(self) -> None:
-        resources = Resources.create(cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=False)
+        resources = Resources.create(
+            cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=False
+        )
         assert (
             ResourcesFormatter.format_resources(resources) == "Resources:\n"
             "  Memory: 16 MB\n"
@@ -362,7 +364,9 @@ class TestResourcesFormatter:
         )
 
     def test_gpu_container(self) -> None:
-        resources = Resources.create(cpu=2, gpu=1, gpu_model='nvidia-tesla-p4', memory=1024, extshm=False)
+        resources = Resources.create(
+            cpu=2, gpu=1, gpu_model="nvidia-tesla-p4", memory=1024, extshm=False
+        )
         assert (
             ResourcesFormatter.format_resources(resources) == "Resources:\n"
             "  Memory: 1024 MB\n"
@@ -371,7 +375,9 @@ class TestResourcesFormatter:
         )
 
     def test_shm_container(self) -> None:
-        resources = Resources.create(cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=True)
+        resources = Resources.create(
+            cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=True
+        )
         assert (
             ResourcesFormatter.format_resources(resources) == "Resources:\n"
             "  Memory: 16 MB\n"
