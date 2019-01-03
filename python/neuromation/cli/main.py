@@ -13,7 +13,6 @@ from neuromation.cli.command_handlers import (
     CopyOperation,
     DockerHandler,
     PlatformMakeDirOperation,
-    PlatformRemoveOperation,
     PlatformRenameOperation,
     PlatformSharingOperations,
     PlatformStorageOperation,
@@ -211,7 +210,7 @@ Commands:
         storage = partial(Storage, url, token)
 
         @command
-        def rm(path):
+        async def rm(path):
             """
             Usage:
                 neuro store rm PATH
@@ -224,8 +223,11 @@ Commands:
             neuro store rm storage://{username}/foo/bar/
             """
             config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            PlatformRemoveOperation(platform_user_name).remove(path, storage)
+            username = config.get_platform_user_name()
+            uri = URL(path)
+
+            async with ClientV2(url, username, token) as client:
+                await client.storage.rm(uri)
 
         @command
         async def ls(path):

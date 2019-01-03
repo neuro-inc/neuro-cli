@@ -52,6 +52,16 @@ async def test_uri_to_path_root2():
         assert client.storage._uri_to_path(URL("storage:/")) == "user"
 
 
+async def test_uri_to_path_root3():
+    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+        assert client.storage._uri_to_path(URL("storage://")) == "user"
+
+
+async def test_uri_to_path_root4():
+    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+        assert client.storage._uri_to_path(URL("storage:///")) == "user"
+
+
 async def test_uri_to_path_relative():
     async with ClientV2(URL("https://example.com"), "user", "token") as client:
         assert client.storage._uri_to_path(URL("storage:path")) == "user/path"

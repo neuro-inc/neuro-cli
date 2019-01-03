@@ -55,8 +55,8 @@ class Storage:
             ret.extend(path.split("/"))
         return "/".join(ret)
 
-    async def ls(self, path: URL) -> List[FileStatus]:
-        url = URL("storage") / self._uri_to_path(path)
+    async def ls(self, uri: URL) -> List[FileStatus]:
+        url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
         async with self._api.request("GET", url) as resp:
@@ -95,8 +95,16 @@ class Storage:
             async for data in resp.content.iter_any():
                 yield data
 
-    async def rm(self, *, path: str) -> None:
-        url = URL("storage") / path.strip("/")
+    async def rm(self, uri: URL) -> None:
+        path = self._uri_to_path(uri)
+        # Minor protection against deleting everything from root
+        # or user volume root, however force operation here should
+        # allow user to delete everything
+        parts = path.split('/')
+        if final_path == root_data_path or final_path.parent == root_data_path:
+            raise ValueError("Invalid path value.")
+
+        url = URL("storage") / path
         url = url.with_query(op="DELETE")
 
         async with self._api.request("DELETE", url) as resp:

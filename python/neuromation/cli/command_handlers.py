@@ -86,13 +86,6 @@ class PlatformMakeDirOperation(PlatformStorageOperation):
             return s.mkdirs(path=str(final_path))
 
 
-class PlatformListDirOperation(PlatformStorageOperation):
-    def ls(self, path_str: str, storage: Callable) -> List[FileStatus]:
-        final_path = self.render_uri_path_with_principal(path_str)
-        with storage() as s:
-            return s.ls(path=str(final_path))
-
-
 class PlatformRemoveOperation(PlatformStorageOperation):
     def remove(self, path_str: str, storage: Callable):
         path = urlparse(path_str, scheme="file")
