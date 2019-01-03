@@ -1,7 +1,7 @@
 -r base.txt
 
 mypy==0.650
-pytest==3.5.1
+pytest==4.0.2
 pytest-cov==2.5.1
 flake8==3.6.0
 isort==4.3.4
