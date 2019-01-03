@@ -3,21 +3,4 @@ prev_head="$1"
 new_head="$2"
 branch_flag="$3"
 
-
-if [ "$branch_flag" = "1" ]
-then
-     branch=`git branch | grep \* | cut -d ' ' -f2`
-     if [ ! -d "python/.mypy_cache/$branch" ]
-     then
-        parent_branch=$(git show-branch -a 2>/dev/null \
-            | grep '\*' \
-            | grep -v `git rev-parse --abbrev-ref HEAD` \
-            | head -n1 \
-            | perl -ple 's/\[[A-Za-z]+-\d+\][^\]]+$//; s/^.*\[([^~^\]]+).*$/$1/')
-
-        if [ -d "python/.mypy_cache/$parent_branch" ]
-        then
-            cp -rp python/.mypy_cache/$parent_branch python/.mypy_cache/$branch
-        fi
-     fi
-fi
+make update-deps
