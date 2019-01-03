@@ -118,7 +118,6 @@ async def test_storage_ls(aiohttp_server):
 
 
 async def test_storage_rm(aiohttp_server):
-
     async def handler(request):
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "DELETE"}
@@ -134,11 +133,9 @@ async def test_storage_rm(aiohttp_server):
 
 
 async def test_storage_mv(aiohttp_server):
-
     async def handler(request):
         assert request.path == "/storage/user/folder"
-        assert request.query == {"op": "RENAME",
-                                 "destination": "/user/other"}
+        assert request.query == {"op": "RENAME", "destination": "/user/other"}
         return web.Response(status=204)
 
     app = web.Application()
@@ -147,5 +144,4 @@ async def test_storage_mv(aiohttp_server):
     srv = await aiohttp_server(app)
 
     async with ClientV2(srv.make_url("/"), "user", "token") as client:
-        await client.storage.mv(URL("storage://~/folder"),
-                                URL("storage://~/other"))
+        await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
