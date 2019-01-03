@@ -106,7 +106,9 @@ def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_loca
 
 
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsys, remote_and_local):
+def test_e2e_copy_non_existing_platform_to_non_existing_local(
+    run, tmpdir, capsys, remote_and_local
+):
     _path, _dir = remote_and_local
 
     # Try downloading non existing file
@@ -116,9 +118,10 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
     capsys.readouterr()
 
 
-
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsys, remote_and_local):
+def test_e2e_copy_non_existing_platform_to_____existing_local(
+    run, tmpdir, capsys, remote_and_local
+):
     _path, _dir = remote_and_local
 
     # Try downloading non existing file
@@ -126,4 +129,3 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsy
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         run(["store", "cp", "storage://" + _path + "/foo", _local])
     capsys.readouterr()
-
