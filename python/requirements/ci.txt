@@ -6,7 +6,7 @@ pytest-cov==2.5.1
 flake8==3.6.0
 isort==4.3.4
 pytest-aiohttp==0.3.0
-black==18.6b4
+black==18.9b0
 setuptools==40.6.2
 wheel==0.32.3
 cmarkgfm==0.4.2
