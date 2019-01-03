@@ -15,9 +15,9 @@ FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 
 .PHONY: init
-init: update-readme
-	pip install -r requirements/dev.txt
+init: update-readme update-deps
 	cp .hooks/* ../.git/hooks
+	chmod a+r ../.git/hooks/*
 	rm -rf .mypy_cache
 
 update-readme:
