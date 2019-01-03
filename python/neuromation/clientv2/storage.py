@@ -32,11 +32,28 @@ class FileStatus:
 
 
 class Storage:
-    def __init__(self, api: API) -> None:
+    def __init__(self, api: API, username: str) -> None:
         self._api = api
+        self._username = username
 
-    async def ls(self, *, path: str) -> List[FileStatus]:
-        url = URL("storage") / path.strip("/")
+    def _uri_to_path(self, uri: URL) -> str:
+        if uri.scheme != 'storage':
+            # TODO (asvetlov): change error text, mention storage:// prefix explicitly
+            raise ValueError("Path should be targeting platform storage.")
+
+        ret: List[str] = []
+        if uri.host == '~':
+            ret.append(self._username)
+        elif not uri.is_absolute():
+            # absolute paths are considered as relative to home dir
+            ret.append(self._username)
+        else:
+            ret.append(uri.host)
+        ret.extend(uri.path.strip('/').split('/'))
+        return '/'.join(ret)
+
+    async def ls(self, path: URL) -> List[FileStatus]:
+        url = URL("storage") / self._uri_to_path(path)
         url = url.with_query(op="LISTSTATUS")
 
         async with self._api.request("GET", url) as resp:

@@ -229,7 +229,7 @@ Commands:
             PlatformRemoveOperation(platform_user_name).remove(path, storage)
 
         @command
-        def ls(path):
+        async def ls(path):
             """
             Usage:
                 neuro store ls [PATH]
@@ -238,18 +238,23 @@ Commands:
             By default PATH is equal user`s home dir (storage:)
             """
             if path is None:
-                path = "storage:"
+                uri = URL("storage://~")
+            else:
+                uri = URL(path)
 
             format = "{type:<15}{size:<15,}{name:<}".format
 
             config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            ls_op = PlatformListDirOperation(platform_user_name)
-            storage_objects = ls_op.ls(path, storage)
+            username = config.get_platform_user_name()
+            # ls_op = PlatformListDirOperation(username)
+            # res = ls_op.ls(path, storage)
+
+            async with ClientV2(url, username, token) as client:
+                res = await client.storage.ls(uri)
 
             return "\n".join(
                 format(type=status.type.lower(), name=status.path, size=status.size)
-                for status in storage_objects
+                for status in res
             )
 
         @command

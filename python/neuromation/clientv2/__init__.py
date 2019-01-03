@@ -15,6 +15,7 @@ from .jobs import (
     Volume,
 )
 from .models import Models, TrainResult
+from .storage import Storage
 
 __all__ = (
     "Image",
@@ -46,6 +47,7 @@ class ClientV2:
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api)
         self._models = Models(self._api)
+        self._storage = Storage(self._api, self._username)
 
     async def close(self) -> None:
         await self._api.close()
@@ -72,3 +74,7 @@ class ClientV2:
     @property
     def models(self) -> Models:
         return self._models
+
+    @property
+    def storage(self) -> Storage:
+        return self._storage

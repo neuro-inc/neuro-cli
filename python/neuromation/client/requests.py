@@ -146,6 +146,7 @@ def build(request: Request) -> http.Request:
     elif isinstance(request, FileStatRequest):
         return request.to_http_request()
     elif isinstance(request, ListRequest):
+        import pdb;pdb.set_trace()
         return http.JsonRequest(
             url=add_path("/storage/", request.path),
             params=request.op,
