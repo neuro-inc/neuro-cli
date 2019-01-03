@@ -13,12 +13,14 @@ FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 
 .PHONY: init
-init:
-	cp -n README.in.md README.md
-	pip install -r requirements.txt
-	pip install -e .
+init: update-readme
+	pip install -r requirements/dev.txt
 	cp .hooks/* ../.git/hooks
 	rm -rf .mypy_cache
+
+update-readme:
+	cp -n README.in.md README.md
+
 .PHONY: e2e
 e2e:
 	pytest \

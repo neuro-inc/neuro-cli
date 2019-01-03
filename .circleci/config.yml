@@ -17,20 +17,20 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "python/requirements.txt" }}-{{ checksum "python/setup.py" }}
-
+          - v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
       - run:
           name: install dependencies
           command: |
             python3 -m venv .env
             . .env/bin/activate
-            make -C python init
+            cd python && pip3 install -r requirements/ci.txt
 
       - save_cache:
           paths:
             - ./.env
-          key: v1-dependencies-{{ checksum "python/requirements.txt" }}-{{ checksum "python/setup.py" }}
-
+          key: v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
       - run:
           name: run CI target
           command: |
@@ -63,7 +63,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "python/requirements.txt" }}
+          - v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
@@ -83,7 +83,7 @@ jobs:
       - save_cache:
           paths:
             - ./.env
-          key: v1-dependencies-{{ checksum "python/requirements.txt" }}
+          key: v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
 
 workflows:
   version: 2
@@ -113,4 +113,3 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
-                

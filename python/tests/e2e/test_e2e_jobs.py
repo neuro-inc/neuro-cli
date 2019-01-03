@@ -171,10 +171,11 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
 def test_job_kill_non_existing(run, loop):
     # try to kill non existing job
     phantom_id = "NOT_A_JOB_ID"
-    expected_out = f"Cannot kill job {phantom_id}: no such job {phantom_id}"
+    expected_out = f"Cannot kill job {phantom_id}"
     captured = run(["job", "kill", phantom_id])
     killed_jobs = [x.strip() for x in captured.out.strip().split("\n")]
-    assert killed_jobs == [expected_out]
+    assert len(killed_jobs) == 1
+    assert killed_jobs[0].startswith(expected_out)
 
 
 @pytest.mark.e2e

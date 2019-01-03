@@ -1,0 +1,3 @@
+-r ci.txt
+
+pdbpp==0.9.3
