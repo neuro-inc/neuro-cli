@@ -83,6 +83,7 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -90,7 +91,7 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -122,6 +123,7 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -129,7 +131,7 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -156,6 +158,7 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -163,7 +166,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -190,13 +193,14 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{ResourcesFormatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -357,8 +361,9 @@ class TestResourcesFormatter:
         resources = Resources.create(
             cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=False
         )
+        resource_formatter = ResourcesFormatter()
         assert (
-            ResourcesFormatter.format_resources(resources) == "Resources:\n"
+            resource_formatter.format_resources(resources) == "Resources:\n"
             "  Memory: 16 MB\n"
             "  CPU: 0.1"
         )
@@ -367,8 +372,9 @@ class TestResourcesFormatter:
         resources = Resources.create(
             cpu=2, gpu=1, gpu_model="nvidia-tesla-p4", memory=1024, extshm=False
         )
+        resource_formatter = ResourcesFormatter()
         assert (
-            ResourcesFormatter.format_resources(resources) == "Resources:\n"
+            resource_formatter.format_resources(resources) == "Resources:\n"
             "  Memory: 1024 MB\n"
             "  CPU: 2.0\n"
             "  GPU: 1.0 x nvidia-tesla-p4"
@@ -378,8 +384,9 @@ class TestResourcesFormatter:
         resources = Resources.create(
             cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=True
         )
+        resource_formatter = ResourcesFormatter()
         assert (
-            ResourcesFormatter.format_resources(resources) == "Resources:\n"
+            resource_formatter.format_resources(resources) == "Resources:\n"
             "  Memory: 16 MB\n"
             "  CPU: 0.1\n"
             "  Additional: Extended SHM space"

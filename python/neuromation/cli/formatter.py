@@ -55,8 +55,9 @@ class JobStatusFormatter(BaseFormatter):
         result += f"\nImage: {job_status.container.image}\n"
 
         result += f"Command: {job_status.container.command}\n"
+        resource_formatter = ResourcesFormatter()
         result += (
-            ResourcesFormatter.format_resources(job_status.container.resources) + "\n"
+            resource_formatter.format_resources(job_status.container.resources) + "\n"
         )
 
         if job_status.http_url:
@@ -144,20 +145,19 @@ class JobListFormatter(BaseFormatter):
 
 
 class ResourcesFormatter(BaseFormatter):
-    @classmethod
-    def format_resources(cls, resources: Resources) -> str:
+    def format_resources(self, resources: Resources) -> str:
         lines = list()
         lines.append(f"Memory: {resources.memory_mb} MB")
         lines.append(f"CPU: {resources.cpu:0.1f}")
         if resources.gpu:
             lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")
 
-        additionals = list()
+        additional = list()
         if resources.shm:
-            additionals.append("Extended SHM space")
+            additional.append("Extended SHM space")
 
-        if additionals:
-            lines.append(f'Additional: {",".join(additionals)}')
+        if additional:
+            lines.append(f'Additional: {",".join(additional)}')
 
         indent = "  "
         return f"Resources:\n" + indent + f"\n{indent}".join(lines)
