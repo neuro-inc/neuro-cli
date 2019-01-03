@@ -3,6 +3,8 @@ DEVPI_URL ?= "https://$(DEVPI_USER):$(DEVPI_PASS)@$(DEVPI_HOST)/$(DEVPI_USER)"
 SHELL := /bin/bash
 BRANCH := $(shell git branch | grep \* | cut -d ' ' -f2)
 
+MYPY_CACHE_DIR=.mypy_cache/$(shell md5sum setup.py | awk '{print $$1}')-$(shell find requirements -type f -exec md5sum {} \; | sort -k 2 | md5sum | awk '{print $$1}')
+
 ISORT_DIRS := neuromation tests build-tools
 ISORT_REGEXP := ^python/(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
@@ -13,9 +15,9 @@ FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 
 .PHONY: init
-init: update-readme
-	pip install -r requirements/dev.txt
+init: update-readme update-deps
 	cp .hooks/* ../.git/hooks
+	chmod a+x ../.git/hooks/*
 	rm -rf .mypy_cache
 
 update-readme:
@@ -74,7 +76,7 @@ test-all:
 lint: lint-docs
 	isort -c -rc ${ISORT_DIRS}
 	black --check $(BLACK_DIRS)
-	mypy --cache-dir .mypy_cache/$(BRANCH) $(MYPY_DIRS)
+	mypy --cache-dir $(MYPY_CACHE_DIR) $(MYPY_DIRS)
 	flake8 $(FLAKE8_DIRS)
 
 .PHONY: lint-diff
@@ -85,7 +87,7 @@ lint-diff: FLAKE8_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM
 lint-diff:
 	@ [ -z "${ISORT_TARGETS}" ] || (echo "Lint isort:"; echo "   ${ISORT_TARGETS}" && isort -c -rc ${ISORT_TARGETS})
 	@ [ -z "${BLACK_TARGETS}" ] || (echo "Lint black:"; echo "   ${BLACK_TARGETS}" && black -q --check ${BLACK_TARGETS})
-	@ [ -z "${MYPY_TARGETS}" ] || (echo "Lint mypy:"; echo "   ${MYPY_TARGETS}" && mypy --cache-dir .mypy_cache/$(BRANCH) ${MYPY_TARGETS})
+	@ [ -z "${MYPY_TARGETS}" ] || (echo "Lint mypy:"; echo "   ${MYPY_TARGETS}" && mypy --cache-dir $(MYPY_CACHE_DIR) ${MYPY_TARGETS})
 	@ [ -z "${FLAKE8_TARGETS}" ] || (echo "Lint flake8:"; echo "   ${FLAKE8_TARGETS}" && flake8 ${FLAKE8_TARGETS})
 
 
@@ -127,7 +129,7 @@ clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
 	rm README.md
-	rm -rf .testmondata .tmontmp
+	rm -rf .testmondata .tmontmp .mypy_cache .pytest_cache
 
 devpi_setup:
 	pip install devpi-client
@@ -152,3 +154,7 @@ lint-docs:
 	build-tools/cli-help-generator.py README.in.md ${TMP}
 	markdown-toc -t github -h 6 ${TMP}
 	diff -q ${TMP} README.md
+
+.PHONY: update-deps
+update-deps:
+	pip install --disable-pip-version-check -r requirements/dev.txt
