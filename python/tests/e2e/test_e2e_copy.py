@@ -79,7 +79,7 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
 
     # Ensure file is there
     check_file_exists_on_storage(run, "different_name.txt", _path, FILE_SIZE_B)
-    _, captured = run(["store", "ls", "storage://" + _path + "/"])
+    captured = run(["store", "ls", "storage://" + _path + "/"])
     split = captured.out.split("\n")
     assert (
         format_list(name="different_name.txt", size=FILE_SIZE_B, type="file") in split
@@ -104,7 +104,7 @@ def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_loca
 
     # Upload local file to non existing directory
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        _, captured = run(
+        captured = run(
             ["store", "cp", file, "storage://" + _path + "/non_existing_dir/"]
         )
         assert not captured.err
@@ -128,7 +128,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
     # Try downloading non existing file
     _local = join(tmpdir, "bar")
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        _, _ = run(["store", "cp", "storage://" + _path + "/foo", _local])
+        run(["store", "cp", "storage://" + _path + "/foo", _local])
     capsys.readouterr()
 
     # Remove test dir
@@ -149,7 +149,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsy
     # Try downloading non existing file
     _local = join(tmpdir)
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        _, captured = run(["store", "cp", "storage://" + _path + "/foo", _local])
+        run(["store", "cp", "storage://" + _path + "/foo", _local])
     capsys.readouterr()
 
     # Remove test dir

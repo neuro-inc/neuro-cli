@@ -33,6 +33,8 @@ setup(
         'python-dateutil>=2.7.0',
         'keyring>=13.0',
         'keyrings.cryptfile>=1.2.0',
+        'tqdm>=4.0.0',
+        'yarl>=1.3.0'
     ],
     include_package_data=True,
     description='Neuromation Platform API client',

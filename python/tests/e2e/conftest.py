@@ -1,8 +1,8 @@
 import asyncio
 import os
 import platform
+import re
 import sys
-import time
 from math import ceil
 from os.path import join
 from pathlib import Path
@@ -17,6 +17,9 @@ from tests.e2e.utils import (
     GENERATION_TIMEOUT_SEC,
     RC_TEXT,
 )
+
+
+job_id_pattern = r"Job ID:\s*(\S+)"
 
 
 async def generate_test_data(root, count, size_mb):
@@ -58,6 +61,7 @@ def data(tmpdir_factory):
 
 @pytest.fixture
 def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
+    executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
     rc_text = RC_TEXT.format(token=e2e_test_token)
@@ -73,27 +77,51 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
         from neuromation.cli import main
 
         for i in range(5):
-            ret = main()
-            output = capsys.readouterr()
-            if ret != 0:
-                if "Connection error" in output:
-                    time.sleep(5)
+            try:
+                main()
+            except SystemExit as exc:
+                if exc.code == os.EX_IOERR:
                     continue
-            return ret, output
+                else:
+                    raise
+            output = capsys.readouterr()
+            if (
+                "-v" not in arguments and "--version" not in arguments
+            ):  # special case for version switch
+                if arguments[0:2] in (["job", "submit"], ["model", "train"]):
+                    match = re.search(job_id_pattern, output.out)
+                    if match:
+                        executed_jobs_list.append(match.group(1))
 
-    return _run
+            return output
+
+    yield _run
+    # try to kill all executed jobs regardless of the status
+    if executed_jobs_list:
+        try:
+            _run(["job", "kill"] + executed_jobs_list)
+        except BaseException:
+            # Just ignore cleanup error here
+            pass
 
 
 @pytest.fixture
-def remote_and_local(run):
+def remote_and_local(run, request):
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
 
-    _, captured = run(["store", "mkdir", f"storage://{_path}"])
+    captured = run(["store", "mkdir", f"storage://{_path}"])
     assert not captured.err
     assert captured.out == f"storage://{_path}" + "\n"
 
-    return _path, _dir
+    yield _path, _dir
+    # Remove directory only if test succeeded
+    if not request.node._report_sections:  # TODO: find another way to check test status
+        try:
+            run(["store", "rm", f"storage://{_path}"])
+        except BaseException:
+            # Just ignore cleanup error here
+            pass
 
 
 @pytest.fixture(scope="session")
