@@ -6,6 +6,7 @@ from neuromation.cli.formatter import (
     JobListFormatter,
     JobStatusFormatter,
     OutputFormatter,
+    ResourcesFormatter,
     StorageLsFormatter,
 )
 from neuromation.clientv2 import (
@@ -84,6 +85,7 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -91,7 +93,7 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -123,6 +125,7 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -130,7 +133,7 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -157,6 +160,7 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -164,7 +168,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -191,13 +195,14 @@ class TestJobOutputFormatter:
         )
 
         status = JobStatusFormatter.format_job_status(description)
+        resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            "Resources: Resources(memory_mb=None, cpu=0.1, gpu=0, shm=False, gpu_model=None)\n"  # noqa
+            f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -353,23 +358,60 @@ class TestJobListFormatter:
         ), expected
 
 
-def test_neuro_store_ls__normal():
-    expected = (
-        "file           11             file1\n"
-        + "file           12             file2\n"
-        + "directory      0              dir1"
-    )
-    assert (
-        StorageLsFormatter().format_ls(
-            [
-                FileStatus("file1", 11, "FILE", 2018, "read"),
-                FileStatus("file2", 12, "FILE", 2018, "write"),
-                FileStatus("dir1", 0, "DIRECTORY", 2018, "manage"),
-            ]
+class TestLSFormatter:
+    def test_neuro_store_ls_normal(self):
+        expected = (
+            "file           11             file1\n"
+            + "file           12             file2\n"
+            + "directory      0              dir1"
         )
-        == expected
-    )
+        assert (
+            StorageLsFormatter().format_ls(
+                [
+                    FileStatus("file1", 11, "FILE", 2018, "read"),
+                    FileStatus("file2", 12, "FILE", 2018, "write"),
+                    FileStatus("dir1", 0, "DIRECTORY", 2018, "manage"),
+                ]
+            )
+            == expected
+        )
+
+    def test_neuro_store_ls_empty(self):
+        assert StorageLsFormatter().format_ls([]) == ""
 
 
-def test_neuro_store_ls__empty():
-    assert StorageLsFormatter().format_ls([]) == ""
+class TestResourcesFormatter:
+    def test_tiny_container(self) -> None:
+        resources = Resources.create(
+            cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=False
+        )
+        resource_formatter = ResourcesFormatter()
+        assert (
+            resource_formatter.format_resources(resources) == "Resources:\n"
+            "  Memory: 16 MB\n"
+            "  CPU: 0.1"
+        )
+
+    def test_gpu_container(self) -> None:
+        resources = Resources.create(
+            cpu=2, gpu=1, gpu_model="nvidia-tesla-p4", memory=1024, extshm=False
+        )
+        resource_formatter = ResourcesFormatter()
+        assert (
+            resource_formatter.format_resources(resources) == "Resources:\n"
+            "  Memory: 1024 MB\n"
+            "  CPU: 2.0\n"
+            "  GPU: 1.0 x nvidia-tesla-p4"
+        )
+
+    def test_shm_container(self) -> None:
+        resources = Resources.create(
+            cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=True
+        )
+        resource_formatter = ResourcesFormatter()
+        assert (
+            resource_formatter.format_resources(resources) == "Resources:\n"
+            "  Memory: 16 MB\n"
+            "  CPU: 0.1\n"
+            "  Additional: Extended SHM space"
+        )

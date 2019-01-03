@@ -98,9 +98,6 @@ def test_empty_directory_ls_output(run, remote_and_local):
     assert not captured.err
     assert not captured.out
 
-    # Remove test dir
-    check_rmdir_on_storage(run, _path)
-
 
 @pytest.mark.e2e
 def test_e2e_shm_run_without(run, tmpdir):

@@ -2,7 +2,7 @@ from typing import AbstractSet, Iterable, List, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.clientv2 import FileStatus, JobDescription, JobStatus
+from neuromation.clientv2 import FileStatus, JobDescription, JobStatus, Resources
 
 
 class BaseFormatter:
@@ -65,7 +65,10 @@ class JobStatusFormatter(BaseFormatter):
         result += f"\nImage: {job_status.container.image}\n"
 
         result += f"Command: {job_status.container.command}\n"
-        result += f"Resources: {job_status.container.resources}\n"
+        resource_formatter = ResourcesFormatter()
+        result += (
+            resource_formatter.format_resources(job_status.container.resources) + "\n"
+        )
 
         if job_status.http_url:
             result = f"{result}Http URL: {job_status.http_url}\n"
@@ -149,3 +152,22 @@ class JobListFormatter(BaseFormatter):
                 command.ljust(self.column_lengths["command"]),
             ]
         )
+
+
+class ResourcesFormatter(BaseFormatter):
+    def format_resources(self, resources: Resources) -> str:
+        lines = list()
+        lines.append(f"Memory: {resources.memory_mb} MB")
+        lines.append(f"CPU: {resources.cpu:0.1f}")
+        if resources.gpu:
+            lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")
+
+        additional = list()
+        if resources.shm:
+            additional.append("Extended SHM space")
+
+        if additional:
+            lines.append(f'Additional: {",".join(additional)}')
+
+        indent = "  "
+        return f"Resources:\n" + indent + f"\n{indent}".join(lines)

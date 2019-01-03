@@ -2,15 +2,15 @@
 
 mypy==0.650
 pytest==4.0.2
-pytest-cov==2.5.1
+pytest-cov==2.6.0
 flake8==3.6.0
 isort==4.3.4
 pytest-aiohttp==0.3.0
 black==18.9b0
-setuptools==40.6.2
+setuptools==40.6.3
 wheel==0.32.3
 cmarkgfm==0.4.2
 twine==1.12.1
-pytest-xdist==1.24.1
+pytest-xdist==1.25.0
 markdown-toc==1.2.4
 pytest-testmon==0.9.14
