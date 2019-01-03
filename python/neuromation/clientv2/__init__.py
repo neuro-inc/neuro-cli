@@ -13,6 +13,7 @@ from .jobs import (
     NetworkPortForwarding,
     Resources,
     Volume,
+    Container,
 )
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
@@ -29,6 +30,7 @@ __all__ = (
     "ClientV2",
     "FileStatusType",
     "FileStatus",
+    "Container",
 )
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)  # type: ignore

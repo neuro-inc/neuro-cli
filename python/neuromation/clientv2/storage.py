@@ -50,9 +50,9 @@ class Storage:
         else:
             assert uri.host
             ret.append(uri.host)
-        path = uri.path.strip('/')
+        path = uri.path.strip("/")
         if path:
-            ret.extend(path.split('/'))
+            ret.extend(path.split("/"))
         return "/".join(ret)
 
     async def ls(self, path: URL) -> List[FileStatus]:

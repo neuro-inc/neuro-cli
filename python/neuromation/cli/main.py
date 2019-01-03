@@ -34,7 +34,7 @@ from neuromation.strings.parse import to_megabytes_str
 from . import rc
 from .commands import command, dispatch
 from .defaults import DEFAULTS
-from .formatter import JobListFormatter
+from .formatter import JobListFormatter, StorageLsFormatter
 from .ssh_utils import connect_ssh, remote_debug
 
 
@@ -241,8 +241,6 @@ Commands:
             else:
                 uri = URL(path)
 
-            format = "{type:<15}{size:<15,}{name:<}".format
-
             config = rc.ConfigFactory.load()
             username = config.get_platform_user_name()
             # ls_op = PlatformListDirOperation(username)
@@ -251,10 +249,7 @@ Commands:
             async with ClientV2(url, username, token) as client:
                 res = await client.storage.ls(uri)
 
-            return "\n".join(
-                format(type=status.type.lower(), name=status.path, size=status.size)
-                for status in res
-            )
+            return StorageLsFormatter().format_ls(res)
 
         @command
         def cp(source, destination, recursive, progress):

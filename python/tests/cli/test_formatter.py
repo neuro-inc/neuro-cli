@@ -6,9 +6,11 @@ from neuromation.cli.formatter import (
     JobListFormatter,
     JobStatusFormatter,
     OutputFormatter,
+    StorageLsFormatter,
 )
-from neuromation.clientv2.jobs import (
+from neuromation.clientv2 import (
     Container,
+    FileStatus,
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -349,3 +351,25 @@ class TestJobListFormatter:
         assert (
             self.quiet.format_jobs(jobs, description="test-description-0") == expected
         ), expected
+
+
+def test_neuro_store_ls__normal():
+    expected = (
+        "file           11             file1\n"
+        + "file           12             file2\n"
+        + "directory      0              dir1"
+    )
+    assert (
+        StorageLsFormatter().format_ls(
+            [
+                FileStatus("file1", 11, "FILE", 2018, "read"),
+                FileStatus("file2", 12, "FILE", 2018, "write"),
+                FileStatus("dir1", 0, "DIRECTORY", 2018, "manage"),
+            ]
+        )
+        == expected
+    )
+
+
+def test_neuro_store_ls__empty():
+    assert StorageLsFormatter().format_ls([]) == ""
