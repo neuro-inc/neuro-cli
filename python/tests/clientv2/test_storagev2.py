@@ -68,7 +68,7 @@ async def test_uri_to_path_relative():
         assert client.storage._uri_to_path(URL("storage:path")) == "user/path"
 
 
-async def test_job_submit(aiohttp_server):
+async def test_storage_ls(aiohttp_server):
     JSON = {
         "FileStatuses": {
             "FileStatus": [

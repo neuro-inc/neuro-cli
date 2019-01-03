@@ -97,12 +97,16 @@ class Storage:
 
     async def rm(self, uri: URL) -> None:
         path = self._uri_to_path(uri)
-        # Minor protection against deleting everything from root
-        # or user volume root, however force operation here should
-        # allow user to delete everything
-        parts = path.split('/')
-        if final_path == root_data_path or final_path.parent == root_data_path:
-            raise ValueError("Invalid path value.")
+        # TODO (asvetlov): add a minor protection against deleting everything from root
+        # or user volume root, however force operation here should allow user to delete
+        # everything.
+        #
+        # Now it doesn't make sense because URL for root folder (storage:///) is not
+        # supported
+        #
+        # parts = path.split('/')
+        # if final_path == root_data_path or final_path.parent == root_data_path:
+        #     raise ValueError("Invalid path value.")
 
         url = URL("storage") / path
         url = url.with_query(op="DELETE")
