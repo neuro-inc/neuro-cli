@@ -3,4 +3,4 @@ prev_head="$1"
 new_head="$2"
 branch_flag="$3"
 
-make update-deps
+make -C python update-deps
