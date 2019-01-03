@@ -37,20 +37,23 @@ class Storage:
         self._username = username
 
     def _uri_to_path(self, uri: URL) -> str:
-        if uri.scheme != 'storage':
+        if uri.scheme != "storage":
             # TODO (asvetlov): change error text, mention storage:// prefix explicitly
             raise ValueError("Path should be targeting platform storage.")
 
         ret: List[str] = []
-        if uri.host == '~':
+        if uri.host == "~":
             ret.append(self._username)
         elif not uri.is_absolute():
             # absolute paths are considered as relative to home dir
             ret.append(self._username)
         else:
+            assert uri.host
             ret.append(uri.host)
-        ret.extend(uri.path.strip('/').split('/'))
-        return '/'.join(ret)
+        path = uri.path.strip('/')
+        if path:
+            ret.extend(path.split('/'))
+        return "/".join(ret)
 
     async def ls(self, path: URL) -> List[FileStatus]:
         url = URL("storage") / self._uri_to_path(path)

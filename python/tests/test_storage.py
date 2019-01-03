@@ -105,57 +105,6 @@ def test_invalid_arguments_error(storage):
     new=mocked_async_context_manager(
         JsonResponse(
             {
-                "FileStatuses": {
-                    "FileStatus": [
-                        {
-                            "path": "foo",
-                            "length": 1024,
-                            "type": "FILE",
-                            "modificationTime": 0,
-                            "permission": "read",
-                        },
-                        {
-                            "path": "bar",
-                            "length": 4 * 1024,
-                            "type": "DIR",
-                            "modificationTime": 0,
-                            "permission": "read",
-                        },
-                    ]
-                }
-            }
-        )
-    ),
-)
-def test_ls(storage):
-    assert storage.ls(path="/home/dir") == [
-        client.FileStatus(
-            path="foo", size=1024, type="FILE", modification_time=0, permission="read"
-        ),
-        client.FileStatus(
-            path="bar",
-            size=4 * 1024,
-            type="DIR",
-            modification_time=0,
-            permission="read",
-        ),
-    ]
-
-    aiohttp.ClientSession.request.assert_called_with(
-        method="GET",
-        url="http://127.0.0.1/storage/home/dir",
-        params="LISTSTATUS",
-        headers=None,
-        data=None,
-        json=None,
-    )
-
-
-@patch(
-    "aiohttp.ClientSession.request",
-    new=mocked_async_context_manager(
-        JsonResponse(
-            {
                 "FileStatus": {
                     "path": "/home/dir",
                     "length": 1024,

@@ -2,7 +2,7 @@ import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BufferedReader, BytesIO
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator
 
 from neuromation.http.fetch import FetchError
 
@@ -11,7 +11,6 @@ from .requests import (
     CreateRequest,
     DeleteRequest,
     FileStatRequest,
-    ListRequest,
     MkDirsRequest,
     OpenRequest,
     RenameRequest,
@@ -42,16 +41,6 @@ class FileStatus:
 
 
 class Storage(ApiClient):
-    def ls(self, *, path: str) -> List[FileStatus]:
-        def get_file_status_list(response: Dict[str, Any]) -> List[Dict[str, Any]]:
-            return response["FileStatuses"]["FileStatus"]
-
-        response_dict = self._fetch_sync(ListRequest(path=path))
-        return [
-            FileStatus.from_primitive(status)
-            for status in get_file_status_list(response_dict)
-        ]
-
     def mkdirs(self, *, path: str) -> str:
         self._fetch_sync(MkDirsRequest(path=path))
         return path

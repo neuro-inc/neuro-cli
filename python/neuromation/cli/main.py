@@ -12,7 +12,6 @@ import neuromation
 from neuromation.cli.command_handlers import (
     CopyOperation,
     DockerHandler,
-    PlatformListDirOperation,
     PlatformMakeDirOperation,
     PlatformRemoveOperation,
     PlatformRenameOperation,

@@ -15,7 +15,7 @@ from .jobs import (
     Volume,
 )
 from .models import Models, TrainResult
-from .storage import Storage
+from .storage import Storage, FileStatusType, FileStatus
 
 __all__ = (
     "Image",
@@ -27,6 +27,8 @@ __all__ = (
     "Volume",
     "TrainResult",
     "ClientV2",
+    "FileStatusType",
+    "FileStatus",
 )
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)  # type: ignore

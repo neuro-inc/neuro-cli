@@ -85,12 +85,6 @@ class RenameRequest(StorageRequest):
 
 
 @dataclass(frozen=True)
-class ListRequest(StorageRequest):
-    op: ClassVar[str] = "LISTSTATUS"
-    path: str
-
-
-@dataclass(frozen=True)
 class FileStatRequest(StorageRequest):
     op: ClassVar[str] = "GETFILESTATUS"
     path: str
@@ -145,15 +139,6 @@ def build(request: Request) -> http.Request:
         return request.to_http_request()
     elif isinstance(request, FileStatRequest):
         return request.to_http_request()
-    elif isinstance(request, ListRequest):
-        import pdb;pdb.set_trace()
-        return http.JsonRequest(
-            url=add_path("/storage/", request.path),
-            params=request.op,
-            method="GET",
-            json=None,
-            data=None,
-        )
     elif isinstance(request, OpenRequest):
         return http.StreamRequest(
             url=add_path("/storage/", request.path),
