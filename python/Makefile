@@ -129,7 +129,7 @@ clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
 	rm README.md
-	rm -rf .testmondata .tmontmp
+	rm -rf .testmondata .tmontmp .mypy_cache .pytest_cache
 
 devpi_setup:
 	pip install devpi-client
