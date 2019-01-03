@@ -28,7 +28,7 @@ setup(
         'docopt==0.6.2',
         'docker==3.5.1',
         'pyyaml==3.13',
-        'async_generator==1.9',
+        'async_generator==1.10',
         'python-jose==3.0.1',
         'python-dateutil==2.7.5',
         'keyring~=13.0',
