@@ -80,8 +80,8 @@ class Storage:
         async with self._api.request("PUT", url, data=data) as resp:
             resp  # resp.status == 201
 
-    async def stats(self, *, path: str) -> FileStatus:
-        url = URL("storage") / path.strip("/")
+    async def stats(self, uri: URL) -> FileStatus:
+        url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
         async with self._api.request("GET", url) as resp:
@@ -114,9 +114,9 @@ class Storage:
         async with self._api.request("DELETE", url) as resp:
             resp  # resp.status == 204
 
-    async def mv(self, *, src_path: str, dst_path: str) -> None:
-        url = URL("storage") / src_path.strip("/")
-        url = url.with_query(op="RENAME", destination=dst_path.strip("/"))
+    async def mv(self, src: URL, dst: URL) -> None:
+        url = URL("storage") / self._uri_to_path(src)
+        url = url.with_query(op="RENAME", destination=self._uri_to_path(dst))
 
         async with self._api.request("POST", url) as resp:
             resp  # resp.status == 204

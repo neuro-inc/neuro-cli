@@ -13,7 +13,6 @@ from neuromation.cli.command_handlers import (
     CopyOperation,
     DockerHandler,
     PlatformMakeDirOperation,
-    PlatformRenameOperation,
     PlatformSharingOperations,
     PlatformStorageOperation,
 )
@@ -245,8 +244,6 @@ Commands:
 
             config = rc.ConfigFactory.load()
             username = config.get_platform_user_name()
-            # ls_op = PlatformListDirOperation(username)
-            # res = ls_op.ls(path, storage)
 
             async with ClientV2(url, username, token) as client:
                 res = await client.storage.ls(uri)
@@ -309,7 +306,7 @@ Commands:
             return path
 
         @command
-        def mv(source, destination):
+        async def mv(source, destination):
             """
             Usage:
                 neuro store mv SOURCE DESTINATION
@@ -330,9 +327,13 @@ Commands:
             neuro store mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
             """
             config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            operation = PlatformRenameOperation(platform_user_name)
-            return operation.mv(source, destination, storage)
+            username = config.get_platform_user_name()
+
+            src = URL(source)
+            dst = URL(destination)
+
+            async with ClientV2(url, username, token) as client:
+                await client.storage.mv(src, dst)
 
         return locals()
 
