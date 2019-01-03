@@ -57,9 +57,10 @@ async def test_uri_to_path_root3():
         assert client.storage._uri_to_path(URL("storage://")) == "user"
 
 
+@pytest.mark.xfail
 async def test_uri_to_path_root4():
     async with ClientV2(URL("https://example.com"), "user", "token") as client:
-        assert client.storage._uri_to_path(URL("storage:///")) == "user"
+        assert client.storage._uri_to_path(URL("storage:///")) == "/"
 
 
 async def test_uri_to_path_relative():
