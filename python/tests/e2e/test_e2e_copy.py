@@ -1,17 +1,14 @@
 import os
 from os.path import join
 from pathlib import PurePath
-from uuid import uuid4 as uuid
 
 import pytest
 
 from tests.e2e.utils import (
-    check_create_dir_on_storage,
     check_dir_absent_on_storage,
     check_file_absent_on_storage,
     check_file_exists_on_storage,
     check_rm_file_on_storage,
-    check_rmdir_on_storage,
     check_upload_file_to_storage,
     format_list,
 )
@@ -40,9 +37,6 @@ def test_copy_local_to_platform_single_file_0(data, run, tmpdir, remote_and_loca
     # Ensure file is not there
     check_file_absent_on_storage(run, file_name, _path)
 
-    # Remove test dir
-    check_rmdir_on_storage(run, _path)
-
 
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_local):
@@ -62,9 +56,6 @@ def test_copy_local_to_platform_single_file_1(data, run, tmpdir, remote_and_loca
 
     # Ensure file is not there
     check_file_absent_on_storage(run, file_name, _path)
-
-    # Remove test dir
-    check_rmdir_on_storage(run, _path)
 
 
 @pytest.mark.e2e
@@ -92,9 +83,6 @@ def test_copy_local_to_platform_single_file_2(data, run, tmpdir, remote_and_loca
     # Ensure file is not there
     check_file_absent_on_storage(run, "different_name.txt", _path)
 
-    # Remove test dir
-    check_rmdir_on_storage(run, _path)
-
 
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_local):
@@ -113,17 +101,12 @@ def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_loca
     # Ensure dir is not created
     check_dir_absent_on_storage(run, "non_existing_dir", _path)
 
-    # Remove test dir
-    check_rmdir_on_storage(run, _path)
-
 
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsys):
-    _dir = f"e2e-{uuid()}"
-    _path = f"/tmp/{_dir}"
-
-    # Create directory for the test
-    check_create_dir_on_storage(run, _path)
+def test_e2e_copy_non_existing_platform_to_non_existing_local(
+    run, tmpdir, capsys, remote_and_local
+):
+    _path, _dir = remote_and_local
 
     # Try downloading non existing file
     _local = join(tmpdir, "bar")
@@ -131,29 +114,15 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(run, tmpdir, capsy
         run(["store", "cp", "storage://" + _path + "/foo", _local])
     capsys.readouterr()
 
-    # Remove test dir
-    check_rmdir_on_storage(run, _path)
-
-    # And confirm
-    check_dir_absent_on_storage(run, _path, "/tmp")
-
 
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_____existing_local(run, tmpdir, capsys):
-    _dir = f"e2e-{uuid()}"
-    _path = f"/tmp/{_dir}"
-
-    # Create directory for the test
-    check_create_dir_on_storage(run, _path)
+def test_e2e_copy_non_existing_platform_to_____existing_local(
+    run, tmpdir, capsys, remote_and_local
+):
+    _path, _dir = remote_and_local
 
     # Try downloading non existing file
     _local = join(tmpdir)
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         run(["store", "cp", "storage://" + _path + "/foo", _local])
     capsys.readouterr()
-
-    # Remove test dir
-    check_rmdir_on_storage(run, _path)
-
-    # And confirm
-    check_dir_absent_on_storage(run, _path, "/tmp")
