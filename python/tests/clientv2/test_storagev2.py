@@ -114,3 +114,18 @@ async def test_storage_ls(aiohttp_server):
             permission="read",
         ),
     ]
+
+
+async def test_storage_rm(aiohttp_server):
+
+    async def handler(request):
+        assert request.path == "/storage/user/folder"
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_delete("/storage/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "user", "token") as client:
+        await client.storage.rm(URL("storage://~/folder"))

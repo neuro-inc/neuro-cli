@@ -86,24 +86,6 @@ class PlatformMakeDirOperation(PlatformStorageOperation):
             return s.mkdirs(path=str(final_path))
 
 
-class PlatformRemoveOperation(PlatformStorageOperation):
-    def remove(self, path_str: str, storage: Callable):
-        path = urlparse(path_str, scheme="file")
-        self._is_storage_path_url(path)
-        final_path = self.render_uri_path_with_principal(path_str)
-
-        root_data_path = PosixPath("/")
-
-        # Minor protection against deleting everything from root
-        # or user volume root, however force operation here should
-        # allow user to delete everything
-        if final_path == root_data_path or final_path.parent == root_data_path:
-            raise ValueError("Invalid path value.")
-
-        with storage() as s:
-            return s.rm(path=str(final_path))
-
-
 class PlatformRenameOperation(PlatformStorageOperation):
     def mv(self, src_str: str, dst_str: str, storage: Callable):
         src_path_str = str(self.render_uri_path_with_principal(src_str))
