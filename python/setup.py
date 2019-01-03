@@ -23,7 +23,7 @@ setup(
     python_requires='>=3.6.0',
     # Make sure to pin versions of install_requires
     install_requires=[
-        'aiohttp==3.4.4',
+        'aiohttp==3.5.1',
         'dataclasses==0.5',
         'docopt==0.6.2',
         'docker==3.5.1',
