@@ -138,7 +138,7 @@ async def test_storage_mv(aiohttp_server):
     async def handler(request):
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "RENAME",
-                                 "destination": "user/other"}
+                                 "destination": "/user/other"}
         return web.Response(status=204)
 
     app = web.Application()

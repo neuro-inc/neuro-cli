@@ -116,7 +116,7 @@ class Storage:
 
     async def mv(self, src: URL, dst: URL) -> None:
         url = URL("storage") / self._uri_to_path(src)
-        url = url.with_query(op="RENAME", destination=self._uri_to_path(dst))
+        url = url.with_query(op="RENAME", destination='/'+self._uri_to_path(dst))
 
         async with self._api.request("POST", url) as resp:
             resp  # resp.status == 204
