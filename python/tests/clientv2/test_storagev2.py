@@ -145,3 +145,18 @@ async def test_storage_mv(aiohttp_server):
 
     async with ClientV2(srv.make_url("/"), "user", "token") as client:
         await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
+
+
+async def test_storage_mkdir(aiohttp_server):
+    async def handler(request):
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "MKDIRS"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_put("/storage/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), "user", "token") as client:
+        await client.storage.mkdirs(URL("storage://~/folder"))

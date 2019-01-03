@@ -78,14 +78,6 @@ class PlatformSharingOperations(PlatformStorageOperation):
             return rs.share(resource_uri, op_type, whom)
 
 
-class PlatformMakeDirOperation(PlatformStorageOperation):
-    def mkdir(self, path_str: str, storage: Callable):
-        final_path = self.render_uri_path_with_principal(path_str)
-        # TODO CHECK parent exists
-        with storage() as s:
-            return s.mkdirs(path=str(final_path))
-
-
 class CopyOperation(PlatformStorageOperation):
     def __init__(self, principal: str, progress: ProgressBase):
         super().__init__(principal)

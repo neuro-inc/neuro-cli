@@ -12,7 +12,6 @@ import neuromation
 from neuromation.cli.command_handlers import (
     CopyOperation,
     DockerHandler,
-    PlatformMakeDirOperation,
     PlatformSharingOperations,
     PlatformStorageOperation,
 )
@@ -293,7 +292,7 @@ Commands:
             return operation.copy(src, dst, storage)
 
         @command
-        def mkdir(path):
+        async def mkdir(path):
             """
             Usage:
                 neuro store mkdir PATH
@@ -301,9 +300,12 @@ Commands:
             Make directories
             """
             config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
-            return path
+
+            username = config.get_platform_user_name()
+            uri = URL(path)
+
+            async with ClientV2(url, username, token) as client:
+                await client.storage.mkdir(uri)
 
         @command
         async def mv(source, destination):

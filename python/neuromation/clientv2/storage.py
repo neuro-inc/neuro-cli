@@ -66,8 +66,8 @@ class Storage:
                 for status in res["FileStatuses"]["FileStatus"]
             ]
 
-    async def mkdirs(self, *, path: str) -> None:
-        url = URL("storage") / path.strip("/")
+    async def mkdirs(self, uri: URL) -> None:
+        url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
 
         async with self._api.request("PUT", url) as resp:
