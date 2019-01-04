@@ -5,6 +5,9 @@ from typing import Any, Dict
 from yarl import URL
 
 from .api import API
+from ..client import ClientError
+
+from aiohttp.web_exceptions import HTTPCreated
 
 
 @dataclass(frozen=True)
@@ -52,5 +55,8 @@ class Users:
         url = URL(f"users/{user.name}/permissions")
         payload = [permission.to_api()]
         async with self._api.request("POST", url, json=payload) as resp:
-            await resp.json()
+            #  TODO: server part contain TODO record for returning more then
+            #  HTTPCreated, this part must me refactored then
+            if resp.status != HTTPCreated.status_code:
+                raise ClientError("Server return unexpected result.")
         return None

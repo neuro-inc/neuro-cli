@@ -796,7 +796,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             action = Action[permission.upper()]
         except KeyError as error:
             raise ValueError(
-                'Resource not shared. " "Please specify one of read/write/manage.'
+                'Resource not shared. Please specify one of read/write/manage.'
             ) from error
         config = rc.ConfigFactory.load()
         platform_user_name = config.get_platform_user_name()
@@ -809,7 +809,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                 await client.users.share(user, permission)
             except neuromation.client.IllegalArgumentError as error:
                 raise ValueError(
-                    "Resource not shared." "Please verify resource-uri, user name."
+                    "Resource not shared. Please verify resource-uri, user name."
                 ) from error
         return "Resource shared."
 
