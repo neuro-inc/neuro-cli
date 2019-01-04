@@ -5,7 +5,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.client.client import IllegalArgumentError, ResourceNotFound
-from neuromation.clientv2 import Action, ClientV2, Permission, User, Users
+from neuromation.clientv2 import Action, ClientV2, Permission, User
 
 
 @pytest.fixture()
