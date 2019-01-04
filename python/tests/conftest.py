@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from neuromation.client.jobs import ResourceSharing
 from neuromation.client.storage import Storage
 
 
@@ -11,15 +10,6 @@ def storage(loop):
     storage = Storage(url="http://127.0.0.1", token="test-token-for-storage", loop=loop)
     yield storage
     loop.run_until_complete(storage.close())
-
-
-@pytest.fixture
-def resource_sharing(loop):
-    resource_sharing = ResourceSharing(
-        url="http://127.0.0.1", token="test-token-for-job", loop=loop
-    )
-    yield resource_sharing
-    loop.run_until_complete(resource_sharing.close())
 
 
 @pytest.fixture(scope="function")
