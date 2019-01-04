@@ -57,5 +57,5 @@ class Users:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPCreated, this part must me refactored then
             if resp.status != HTTPCreated.status_code:
-                raise ClientError("Server return unexpected result.")
+                raise ClientError("Server return unexpected result.")  # NOQA
         return None
