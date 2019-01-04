@@ -5,7 +5,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.client.client import IllegalArgumentError, ResourceNotFound
-from neuromation.clientv2 import Action, ClientV2, Permission, User
+from neuromation.clientv2 import Action, ClientV2, Permission
 
 
 @pytest.fixture()
@@ -42,7 +42,7 @@ class TestUsersShare:
     async def test_share_unknown_user(self, mocked_share_client):
         with pytest.raises(ResourceNotFound):
             await mocked_share_client.users.share(
-                user=User(name="not-exists"),
+                user="not-exists",
                 permission=Permission(URL("storage://bob/resource"), Action.READ),
             )
 
@@ -53,7 +53,7 @@ class TestUsersShare:
 
         with pytest.raises(IllegalArgumentError):
             await mocked_share_client.users.share(
-                user=User(name="bill"),
+                user="bill",
                 permission=Permission(
                     URL("storage://bob/resource"), FunnyAction("amuse")
                 ),
@@ -61,7 +61,7 @@ class TestUsersShare:
 
     async def test_correct_share(self, mocked_share_client):
         ret = await mocked_share_client.users.share(
-            user=User(name="bill"),
+            user="bill",
             permission=Permission(URL("storage://bob/resource"), Action.READ),
         )
         assert ret is None  # at this moment no result

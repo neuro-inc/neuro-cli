@@ -15,7 +15,7 @@ from .jobs import (
     Volume,
 )
 from .models import Models, TrainResult
-from .users import User, Action, Permission, Users
+from .users import Action, Permission, Users
 
 __all__ = (
     "Image",
@@ -26,7 +26,6 @@ __all__ = (
     "Resources",
     "Volume",
     "TrainResult",
-    "User",
     "Action",
     "Permission",
     "ClientV2",

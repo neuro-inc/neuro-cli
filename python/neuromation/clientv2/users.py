@@ -9,11 +9,6 @@ from ..client import ClientError
 from .api import API
 
 
-@dataclass(frozen=True)
-class User:
-    name: str
-
-
 class Action(str, Enum):
     READ = "read"
     WRITE = "write"
@@ -50,8 +45,8 @@ class Users:
     def __init__(self, api: API) -> None:
         self._api = api
 
-    async def share(self, user: User, permission: Permission) -> None:
-        url = URL(f"users/{user.name}/permissions")
+    async def share(self, user: str, permission: Permission) -> None:
+        url = URL(f"users/{user}/permissions")
         payload = [permission.to_api()]
         async with self._api.request("POST", url, json=payload) as resp:
             #  TODO: server part contain TODO record for returning more then

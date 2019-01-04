@@ -27,7 +27,6 @@ from neuromation.clientv2 import (
     NetworkPortForwarding,
     Permission,
     Resources,
-    User,
     Volume,
 )
 from neuromation.logging import ConsoleWarningFormatter
@@ -791,7 +790,6 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             neuro share job:///my_job_id alice write
         """
         uri = URL(uri)
-        user = User(name=user)
         try:
             action = Action[permission.upper()]
         except KeyError as error:
