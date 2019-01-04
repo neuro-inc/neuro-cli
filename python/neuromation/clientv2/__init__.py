@@ -15,6 +15,7 @@ from .jobs import (
     Volume,
 )
 from .models import Models, TrainResult
+from .users import User, Action, Permission, Users
 
 __all__ = (
     "Image",
@@ -25,6 +26,9 @@ __all__ = (
     "Resources",
     "Volume",
     "TrainResult",
+    "User",
+    "Action",
+    "Permission",
     "ClientV2",
 )
 
@@ -44,6 +48,7 @@ class ClientV2:
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api)
         self._models = Models(self._api)
+        self._users = Users(self._api)
 
     async def close(self) -> None:
         await self._api.close()
@@ -66,3 +71,7 @@ class ClientV2:
     @property
     def models(self) -> Models:
         return self._models
+
+    @property
+    def users(self) -> Users:
+        return self._users
