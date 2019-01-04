@@ -24,13 +24,16 @@ class Permission:
     action: Action
 
     @classmethod
-    def from_cli(cls, principal: str, uri: str, action: Action) -> "Permission":
-        url = URL(uri)
-        if url.scheme not in ["storage", "image", "job"]:
-            raise ValueError(f"Unsupported scheme: {url.scheme}")
-        if not url.host:
-            url = URL(f"{url.scheme}://{principal}/") / url.path.lstrip("/")
-        return Permission(uri=url, action=action)
+    def from_cli(cls, username: str, uri: URL, action: Action) -> "Permission":
+        if not uri.scheme:
+            raise ValueError("URI Scheme not specified. " 
+                             "Please specify one of storage, image, job.")
+        if uri.scheme not in ["storage", "image", "job"]:
+            raise ValueError(f"Unsupported URI scheme: {uri.scheme or 'Empty'}. "
+                             "Please specify one of storage, image, job.")
+        if not uri.host:
+            uri = URL(f"{uri.scheme}://{username}/") / uri.path.lstrip("/")
+        return Permission(uri=uri, action=action)
 
     def to_api(self) -> Dict[str, Any]:
         primitive: Dict[str, Any] = {"uri": str(self.uri), "action": self.action.value}
@@ -41,10 +44,9 @@ class Users:
     def __init__(self, api: API) -> None:
         self._api = api
 
-    async def share(self, whom: User, permission: Permission) -> None:
-        url = URL(f"users/{whom.name}/permissions")
-        payload = list()
-        payload.append(permission.to_api())
+    async def share(self, user: User, permission: Permission) -> None:
+        url = URL(f"users/{user.name}/permissions")
+        payload = [permission.to_api()]
         async with self._api.request("POST", url, json=payload) as resp:
             await resp.json()
         return None

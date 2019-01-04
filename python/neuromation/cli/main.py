@@ -777,20 +777,21 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
         return locals()
 
     @command
-    async def share(uri, whom, permission: str):
+    async def share(uri, user, permission: str):
         """
             Usage:
-                neuro share URI WHOM PERMISSION
+                neuro share URI USER PERMISSION
 
-            Shares resource specified by URI to a user specified by WHOM
-              with PERMISSION (read|write|manage)
+            Shares resource specified by URI to a USER with PERMISSION \
+(read|write|manage)
 
             Examples:
             neuro share storage:///sample_data/ alice manage
             neuro share image:///resnet50 bob read
             neuro share job:///my_job_id alice write
         """
-        user = User(name=whom)
+        uri = URL(uri)
+        user = User(name=user)
         try:
             action = Action[permission.upper()]
         except KeyError as error:
@@ -800,15 +801,15 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
         config = rc.ConfigFactory.load()
         platform_user_name = config.get_platform_user_name()
         permission = Permission.from_cli(
-            principal=platform_user_name, uri=uri, action=action
+            username=platform_user_name, uri=uri, action=action
         )
 
         async with ClientV2(url, token) as client:
             try:
-                await client.users.share(whom=user, permission=permission)
+                await client.users.share(user, permission)
             except neuromation.client.IllegalArgumentError as error:
                 raise ValueError(
-                    "Resource not shared. Please verify resource-uri, user name."
+                    "Resource not shared." "Please verify resource-uri, user name."
                 ) from error
         return "Resource shared."
 
