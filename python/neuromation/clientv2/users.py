@@ -2,12 +2,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict
 
+from aiohttp.web_exceptions import HTTPCreated
 from yarl import URL
 
-from .api import API
 from ..client import ClientError
-
-from aiohttp.web_exceptions import HTTPCreated
+from .api import API
 
 
 @dataclass(frozen=True)
