@@ -619,12 +619,12 @@ neuro completion patch
 
 ## neuro share
 
-Shares resource specified by URI to a user specified by WHOM<br/>with PERMISSION \(read|write|manage)
+Shares resource specified by URI to a USER with PERMISSION \(read|write|manage)
 
 **Usage:**
 
 ```bash
-neuro share URI WHOM PERMISSION
+neuro share URI USER PERMISSION
 ```
 
 **Examples:**
