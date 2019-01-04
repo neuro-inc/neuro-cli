@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict
 
-from aiohttp.web_exceptions import HTTPCreated
+from aiohttp.web import HTTPCreated
 from yarl import URL
 
 from ..client import ClientError
