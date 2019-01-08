@@ -17,6 +17,7 @@ from .jobs import (
 )
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
+from .users import Action, Permission, Users
 
 __all__ = (
     "Image",
@@ -27,6 +28,8 @@ __all__ = (
     "Resources",
     "Volume",
     "TrainResult",
+    "Action",
+    "Permission",
     "ClientV2",
     "FileStatusType",
     "FileStatus",
@@ -52,6 +55,7 @@ class ClientV2:
         self._jobs = Jobs(self._api)
         self._models = Models(self._api)
         self._storage = Storage(self._api, self._username)
+        self._users = Users(self._api)
 
     async def close(self) -> None:
         await self._api.close()
@@ -82,3 +86,6 @@ class ClientV2:
     @property
     def storage(self) -> Storage:
         return self._storage
+
+    def users(self) -> Users:
+        return self._users
