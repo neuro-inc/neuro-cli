@@ -69,8 +69,6 @@ class PlatformStorageOperation:
         return self._render_platform_path_with_principal(path_url)
 
 
-
-
 class CopyOperation(PlatformStorageOperation):
     def __init__(self, principal: str, progress: ProgressBase):
         super().__init__(principal)
