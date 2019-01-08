@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from io import BytesIO
-from typing import ClassVar, Dict, List
+from typing import ClassVar
 
 from neuromation import http
 
@@ -28,23 +28,6 @@ class Request:
 @dataclass(frozen=True)
 class JobStatusRequest(Request):
     id: str
-
-
-@dataclass(frozen=True)
-class ShareResourceRequest(Request):
-    whom: str
-    # List of { uri: '...', action: '...' }
-    permissions: List[Dict[str, str]]
-
-    def to_http_request(self) -> http.Request:
-        return http.PlainRequest(
-            url=f"/users/{self.whom}/permissions",
-            params=None,
-            headers=None,
-            method="POST",
-            json=self.permissions,
-            data=None,
-        )
 
 
 @dataclass(frozen=True)
@@ -169,7 +152,5 @@ def build(request: Request) -> http.Request:
             json=None,
             data=None,
         )
-    elif isinstance(request, ShareResourceRequest):
-        return request.to_http_request()
     else:
         raise TypeError(f"Unknown request type: {type(request)}")

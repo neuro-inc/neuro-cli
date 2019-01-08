@@ -16,16 +16,16 @@ from neuromation.cli.command_handlers import (
     PlatformMakeDirOperation,
     PlatformRemoveOperation,
     PlatformRenameOperation,
-    PlatformSharingOperations,
     PlatformStorageOperation,
 )
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
-from neuromation.client.jobs import ResourceSharing
 from neuromation.clientv2 import (
+    Action,
     ClientV2,
     Image,
     NetworkPortForwarding,
+    Permission,
     Resources,
     Volume,
 )
@@ -776,37 +776,40 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
         return locals()
 
     @command
-    def share(uri, whom, read, write, manage):
+    async def share(uri, user, permission: str):
         """
             Usage:
-                neuro share URI WHOM (read|write|manage)
+                neuro share URI USER PERMISSION
 
-            Shares resource specified by URI to a user specified by WHOM
-             allowing to read, write or manage it.
+            Shares resource specified by URI to a USER with PERMISSION \
+(read|write|manage)
 
             Examples:
             neuro share storage:///sample_data/ alice manage
             neuro share image:///resnet50 bob read
             neuro share job:///my_job_id alice write
         """
-
-        op_type = "manage" if manage else "write" if write else "read" if read else None
-        if not op_type:
-            print("Resource not shared. " "Please specify one of read/write/manage.")
-            return None
-
+        uri = URL(uri)
+        try:
+            action = Action[permission.upper()]
+        except KeyError as error:
+            raise ValueError(
+                "Resource not shared. Please specify one of read/write/manage."
+            ) from error
         config = rc.ConfigFactory.load()
         platform_user_name = config.get_platform_user_name()
+        permission = Permission.from_cli(
+            username=platform_user_name, uri=uri, action=action
+        )
 
-        try:
-            resource_sharing = partial(ResourceSharing, url, token)
-            share_command = PlatformSharingOperations(platform_user_name)
-            share_command.share(uri, op_type, whom, resource_sharing)
-        except neuromation.client.IllegalArgumentError:
-            print("Resource not shared. " "Please verify resource-uri, user name.")
-            return None
-        print("Resource shared.")
-        return None
+        async with ClientV2(url, token) as client:
+            try:
+                await client.users.share(user, permission)
+            except neuromation.client.IllegalArgumentError as error:
+                raise ValueError(
+                    "Resource not shared. Please verify resource-uri, user name."
+                ) from error
+        return "Resource shared."
 
     @command
     def completion():
