@@ -1,3 +1,4 @@
 -r ci.txt
 
 pdbpp==0.9.3
+towncrier==18.6.0
