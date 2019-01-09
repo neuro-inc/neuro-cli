@@ -21,6 +21,12 @@ class FileStatus:
     modification_time: int
     permission: str
 
+    def is_file(self):
+        return self.type == FileStatusType.FILE
+
+    def is_dir(self):
+        return self.type == FileStatusType.DIRECTORY
+
     @classmethod
     def from_api(cls, values: Dict[str, Any]) -> "FileStatus":
         return cls(
@@ -111,8 +117,8 @@ class Storage:
             res = await resp.json()
             return FileStatus.from_api(res["FileStatus"])
 
-    async def open(self, *, path: str) -> AsyncIterator[bytes]:
-        url = URL("storage") / path.strip("/")
+    async def open(self, *, uri: URL) -> AsyncIterator[bytes]:
+        url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         async with self._api.request("GET", url) as resp:
             async for data in resp.content.iter_any():
