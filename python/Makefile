@@ -158,3 +158,24 @@ lint-docs:
 .PHONY: update-deps
 update-deps:
 	pip install --disable-pip-version-check -r requirements/dev.txt
+
+.PHONY: generate-changelog
+generate-changelog:
+ifndef VERSION
+	@echo VERSION not defined
+	@echo use make generate-changelog VERSION=0.1
+	@exit 10
+endif
+	towncrier --version $(VERSION) --yes
+	git add CHANGELOG.md
+	git add changelog.d
+	git commit -m "Release $(VERSION)"
+
+.PHONY: release
+release: generate-changelog
+ifndef VERSION
+	@echo VERSION not defined
+	@echo use make release VERSION=0.1
+	@exit 10
+endif
+	git tag v$(VERSION)
