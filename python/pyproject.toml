@@ -3,18 +3,18 @@
     package_dir = "."
     directory = "changelog.d"
     filename = "CHANGELOG.md"
-    template = "changelog.d/towncrier_template.rst"
-
-    [[tool.towncrier.section]]
-        path = ""
-
-    [[tool.towncrier.section]]
-        path = "cli"
-        name = "Commandline client"
+    template = "changelog.d/towncrier_template.md"
+    issue_format = "[#{issue}](https://github.com/neuromation/platform-api-clients/issues/{issue})"
+    start_string = "[comment]: # (towncrier release notes start)\n"
 
     [[tool.towncrier.type]]
         directory = "release"
         name = "Release Notes"
+        showcontent = "full"
+
+    [[tool.towncrier.type]]
+        directory = "cli"
+        name = "Command-line client"
         showcontent = true
 
     [[tool.towncrier.type]]
@@ -38,7 +38,14 @@
         showcontent = true
 
     [[tool.towncrier.type]]
+        directory = "break"
+        name = "Breaking changes "
+        showcontent = true
+
+    [[tool.towncrier.type]]
         directory = "misc"
         name = "Misc"
         showcontent = false
+
+
 
