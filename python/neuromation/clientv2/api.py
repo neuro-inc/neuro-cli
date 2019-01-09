@@ -42,13 +42,14 @@ class API:
         method: str,
         rel_url: URL,
         *,
+        data: Any = None,
         json: Any = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         assert not rel_url.is_absolute()
         url = (self._url / "").join(rel_url)
         async with self._session.request(
-            method, url, json=json, headers=headers
+            method, url, headers=headers, json=json, data=data
         ) as resp:
             try:
                 resp.raise_for_status()

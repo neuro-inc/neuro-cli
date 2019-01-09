@@ -3,17 +3,12 @@ import os
 import sys
 from functools import partial
 from pathlib import Path
-from urllib.parse import urlparse
 
 import aiohttp
 from yarl import URL
 
 import neuromation
-from neuromation.cli.command_handlers import (
-    CopyOperation,
-    DockerHandler,
-    PlatformStorageOperation,
-)
+from neuromation.cli.command_handlers import DockerHandler, PlatformStorageOperation
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
 from neuromation.clientv2 import (
@@ -29,10 +24,12 @@ from neuromation.logging import ConsoleWarningFormatter
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
+from .command_progress_report import ProgressBase
 from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter, StorageLsFormatter
 from .ssh_utils import connect_ssh, remote_debug
+from .transfer_utils import copy
 
 
 # For stream copying from file to http or from http to file
@@ -250,7 +247,7 @@ Commands:
             return StorageLsFormatter().format_ls(res)
 
         @command
-        def cp(source, destination, recursive, progress):
+        async def cp(source, destination, recursive, progress):
             """
             Usage:
                 neuro store cp [options] SOURCE DESTINATION
@@ -276,20 +273,18 @@ Commands:
             timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
-            storage = partial(Storage, url, token, timeout)
-            src = urlparse(source, scheme="file")
-            dst = urlparse(destination, scheme="file")
+            src = URL(source)
+            dst = URL(destination)
 
             log.debug(f"src={src}")
             log.debug(f"dst={dst}")
 
             config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            operation = CopyOperation.create(
-                platform_user_name, src.scheme, dst.scheme, recursive, progress
-            )
+            username = config.get_platform_user_name()
+            progress = ProgressBase.create_progress(progress)
 
-            return operation.copy(src, dst, storage)
+            async with ClientV2(url, username, token, timeout=timeout) as client:
+                await copy(client, progress, recursive, src, dst)
 
         @command
         async def mkdir(path):

@@ -3,7 +3,7 @@ from types import TracebackType
 from typing import Union, Type, Optional
 from yarl import URL
 
-from .api import API
+from .api import API, ResourceNotFound
 from .jobs import (
     Jobs,
     Image,
@@ -34,6 +34,7 @@ __all__ = (
     "FileStatusType",
     "FileStatus",
     "Container",
+    "ResourceNotFound",
 )
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)  # type: ignore

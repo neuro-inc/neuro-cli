@@ -1,6 +1,7 @@
 import enum
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, BinaryIO, Dict, List
+from pathlib import Path
+from typing import Any, AsyncIterator, Dict, List
 
 from yarl import URL
 
@@ -60,19 +61,20 @@ class Storage:
             # TODO (asvetlov): change error text, mention storage:// prefix explicitly
             raise ValueError("Path should be targeting platform storage.")
 
-        ret: List[str] = []
         if uri.host == "~":
-            ret.append(self._username)
-        elif not uri.is_absolute():
-            # absolute paths are considered as relative to home dir
-            ret.append(self._username)
-        else:
-            assert uri.host
-            ret.append(uri.host)
-        path = uri.path.lstrip("/")
-        if path:
-            ret.extend(path.split("/"))
-        return URL('storage:' + "/".join(ret))
+            uri = uri.with_host(self._username)
+        return uri
+
+    def normalize_local(self, uri: URL) -> URL:
+        if uri.scheme != "file":
+            # TODO (asvetlov): change error text, mention storage:// prefix explicitly
+            raise ValueError("Path should be targeting local file system.")
+        if uri.host:
+            raise ValueError("Host part is not allowed")
+        path = Path(uri.path)
+        path = path.expanduser()
+        path = path.resolve()
+        return uri.with_path(str(path))
 
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = URL("storage") / self._uri_to_path(uri)
@@ -92,8 +94,10 @@ class Storage:
         async with self._api.request("PUT", url) as resp:
             resp  # resp.status == 201
 
-    async def create(self, *, path: str, data: BinaryIO) -> None:
-        url = URL("storage") / path.strip("/")
+    async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
+        path = self._uri_to_path(uri)
+        assert path, 'Creation in root is not allowed'
+        url = URL("storage") / path
         url = url.with_query(op="CREATE")
 
         async with self._api.request("PUT", url, data=data) as resp:

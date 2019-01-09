@@ -1,14 +1,16 @@
 import asyncio
+import logging
 import pathlib
-from http import HTTPStatus
 from typing import AsyncIterator
 
-import aiohttp
 from yarl import URL
 
-from neuromation.clientv2 import ClientV2, FileStatusType
+from neuromation.clientv2 import ClientV2, FileStatusType, ResourceNotFound
 
 from .command_progress_report import ProgressBase
+
+
+log = logging.getLogger(__name__)
 
 
 async def _iterate_file(
@@ -34,14 +36,17 @@ async def _iterate_file(
 async def upload_file(
     client: ClientV2, progress: ProgressBase, src: URL, dst: URL
 ) -> None:
-    src = client.storage.normalize(src)
+    src = client.storage.normalize_local(src)
     path = pathlib.Path(src.path).resolve(True)
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
+    if path.is_dir():
+        raise IsADirectoryError(f"{path} is a directory, use recursive copy")
     if not path.is_file():
-        raise IsADirectoryError(f"{path} should be a regular file")
+        raise OSError(f"{path} should be a regular file")
     dst = client.storage.normalize(dst)
     if not dst.name:
+        # file:src/file.txt -> storage:dst/ ==> sotrage:dst/file.txt
         dst = dst / src.name
     await client.storage.create(dst, _iterate_file(progress, path))
 
@@ -49,8 +54,11 @@ async def upload_file(
 async def upload_dir(
     client: ClientV2, progress: ProgressBase, src: URL, dst: URL
 ) -> None:
-    src = client.storage.normalize(src)
+    src = client.storage.normalize_local(src)
     dst = client.storage.normalize(dst)
+    if not dst.name:
+        # /dst/ ==> /dst for recursive copy
+        dst = dst.parent
     path = pathlib.Path(src.path).resolve(True)
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
@@ -60,10 +68,24 @@ async def upload_dir(
         stat = await client.storage.stats(dst)
         if not stat.type == FileStatusType.DIRECTORY:
             raise NotADirectoryError(f"{dst} should be a directory")
-    except aiohttp.ClientResponseError as ex:
-        if ex.status != HTTPStatus.NOT_FOUND:
-            raise
+    except ResourceNotFound:
         await client.storage.mkdirs(dst)
     for child in path.iterdir():
-        
-    await client.storage.create(dst, _iterate_file(progress, path))
+        if child.is_file():
+            await upload_file(client, progress, src / child.name, dst / child.name)
+        elif child.is_dir():
+            await upload_dir(client, progress, src / child.name, dst / child.name)
+        else:
+            log.warning("Cannot upload %s", child)
+
+
+async def copy(
+    client: ClientV2, progress: ProgressBase, recursive: bool, src: URL, dst: URL
+):
+    if src.scheme == "file" and dst.scheme == "storage":
+        if recursive:
+            await upload_dir(client, progress, src, dst)
+        else:
+            await upload_file(client, progress, src, dst)
+    else:
+        raise RuntimeError(f"Copy operation for {src} -> {dst} is not supported")
