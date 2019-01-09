@@ -55,6 +55,25 @@ class Storage:
             ret.extend(path.split("/"))
         return "/".join(ret)
 
+    def normalize(self, uri: URL) -> URL:
+        if uri.scheme != "storage":
+            # TODO (asvetlov): change error text, mention storage:// prefix explicitly
+            raise ValueError("Path should be targeting platform storage.")
+
+        ret: List[str] = []
+        if uri.host == "~":
+            ret.append(self._username)
+        elif not uri.is_absolute():
+            # absolute paths are considered as relative to home dir
+            ret.append(self._username)
+        else:
+            assert uri.host
+            ret.append(uri.host)
+        path = uri.path.lstrip("/")
+        if path:
+            ret.extend(path.split("/"))
+        return URL('storage:' + "/".join(ret))
+
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
