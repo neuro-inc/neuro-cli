@@ -145,7 +145,7 @@ def check_create_dir_on_storage(run, path: str):
     """
     captured = run(["store", "mkdir", f"storage://{path}"])
     assert not captured.err
-    assert captured.out == f"storage://{path}\n"
+    assert captured.out == ""
 
 
 def check_rmdir_on_storage(run, path: str):
