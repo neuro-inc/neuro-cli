@@ -12,11 +12,7 @@
 {% if definitions[category]['showcontent'] %}
 {% for text, values in sections[section][category].items() %}
 {{ definitions[category]['onlycontent'] }}
-{% if definitions[category]['showcontent'] == "full" %}
-{{ text }}
-{% else %}
 - {{ text }} ({{ values|join(', ') }})
-{% endif %}
 {% endfor %}
 
 {% else %}
