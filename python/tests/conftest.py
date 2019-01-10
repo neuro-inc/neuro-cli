@@ -1,14 +1,14 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from jose import jwt
 
 from neuromation.client.storage import Storage
-from jose import jwt
 
 
 @pytest.fixture
 def token():
-    return jwt.encode({'identity': 'user'}, 'secret', algorithm='HS256')
+    return jwt.encode({"identity": "user"}, "secret", algorithm="HS256")
 
 
 @pytest.fixture(scope="function")
