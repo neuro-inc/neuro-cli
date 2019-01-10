@@ -291,7 +291,7 @@ Commands:
             uri = URL(path)
 
             async with ClientV2(url, token) as client:
-                await client.storage.mkdir(uri)
+                await client.storage.mkdirs(uri)
 
         @command
         async def mv(source, destination):
