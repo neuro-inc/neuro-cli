@@ -23,6 +23,7 @@ help:
 	- init: initialize project for development \n\
 	- update-deps: install.update all development dependencies \n\
 	- release: Generate changelog and tag new version \n\
+	  example: make release VERSION=0.5 \n\
 	- dist-clean: remove files generated during publish \n\
 	- clean: remove generated files \n\
 \n\
@@ -30,6 +31,7 @@ help:
 	- format: format python code(isort + black) \n\
 	- docs: generate docs \n\
 	- changelog: generate and commit changelog \n\
+	  example: make changelog VERSION=0.5 \n\
 \n\
 	* Lint (static analysis) \n\
 	- lint: run linters(isort, black, flake8, mypy, lint-docs) \n\
@@ -202,12 +204,12 @@ update-deps:
 changelog:
 ifndef VERSION
 	@echo VERSION not defined
-	@echo use make generate-changelog VERSION=0.1
+	@echo use make changelog VERSION=0.1
 	@exit 10
 endif
 	towncrier --version $(VERSION) --yes
 	git add CHANGELOG.md
-	git add changelog.d
+	git add CHANGELOG.D
 	git commit -m "Release $(VERSION)"
 
 .PHONY: release
