@@ -112,7 +112,7 @@ def remote_and_local(run, request):
 
     captured = run(["store", "mkdir", f"storage://{_path}"])
     assert not captured.err
-    assert captured.out == "\n"
+    assert captured.out == ""
 
     yield _path, _dir
     # Remove directory only if test succeeded
