@@ -27,6 +27,10 @@ class FileStatus:
     def is_dir(self) -> bool:
         return self.type == FileStatusType.DIRECTORY
 
+    @property
+    def name(self):
+        return Path(self.path).name
+
     @classmethod
     def from_api(cls, values: Dict[str, Any]) -> "FileStatus":
         return cls(
@@ -117,7 +121,7 @@ class Storage:
             res = await resp.json()
             return FileStatus.from_api(res["FileStatus"])
 
-    async def open(self, *, uri: URL) -> AsyncIterator[bytes]:
+    async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         async with self._api.request("GET", url) as resp:

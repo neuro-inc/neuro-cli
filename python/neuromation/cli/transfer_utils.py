@@ -23,9 +23,9 @@ async def _iterate_file(
         pos = len(chunk)
         while chunk:
             progress.progress(str(src), pos)
+            yield chunk
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos += len(chunk)
-            yield chunk
         progress.complete(str(src))
 
 
@@ -84,8 +84,8 @@ async def download_file(
     path = pathlib.Path(dst.path).resolve(True)
     if path.exists():
         if path.is_dir():
-            raise IsADirectoryError(f"{path} is a directory, use recursive copy")
-        if not path.is_file():
+            path = path / src.name
+        elif not path.is_file():
             raise OSError(f"{path} should be a regular file")
     if not path.name:
         # storage:src/file.txt -> file:dst/ ==> file:dst/file.txt
@@ -94,7 +94,7 @@ async def download_file(
         size = 0  # TODO: display length hint for downloaded file
         progress.start(str(dst), size)
         pos = 0
-        for chunk in client.storage.open(src):
+        async for chunk in client.storage.open(src):
             pos += len(chunk)
             progress.progress(str(dst), pos)
             loop.run_in_executor(None, stream.write(chunk))
@@ -115,7 +115,7 @@ async def download_dir(
         if child.is_file():
             await download_file(client, progress, src / child.name, dst / child.name)
         elif child.is_dir():
-            await upload_dir(client, progress, src / child.name, dst / child.name)
+            await download_dir(client, progress, src / child.name, dst / child.name)
         else:
             log.warning("Cannot upload %s", child)
 
@@ -128,7 +128,7 @@ async def copy(
             await upload_dir(client, progress, src, dst)
         else:
             await upload_file(client, progress, src, dst)
-    if src.scheme == "storage" and dst.scheme == "file":
+    elif src.scheme == "storage" and dst.scheme == "file":
         if recursive:
             await download_dir(client, progress, src, dst)
         else:
