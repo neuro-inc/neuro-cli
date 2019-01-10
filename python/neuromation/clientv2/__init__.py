@@ -18,6 +18,7 @@ from .jobs import (
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
 from .users import Action, Permission, Users
+from jose import jwt
 
 __all__ = (
     "Image",
@@ -44,14 +45,14 @@ class ClientV2:
     def __init__(
         self,
         url: Union[URL, str],
-        username: str,
         token: str,
         *,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,  # type: ignore
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
-        self._username = username
+        jwt_data = jwt.get_unverified_claims(token)
+        self._username = jwt_data.get("identity", None)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api)
         self._models = Models(self._api)
@@ -88,5 +89,6 @@ class ClientV2:
     def storage(self) -> Storage:
         return self._storage
 
+    @property
     def users(self) -> Users:
         return self._users

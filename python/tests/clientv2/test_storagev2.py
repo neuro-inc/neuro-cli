@@ -5,70 +5,70 @@ from yarl import URL
 from neuromation.clientv2 import ClientV2, FileStatus
 
 
-async def test_uri_to_path_non_storage():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_non_storage(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         with pytest.raises(ValueError):
             client.storage._uri_to_path(URL("bad-schema://something"))
 
 
-async def test_uri_to_path_home():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_home(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage://~/path")) == "user/path"
 
 
-async def test_uri_to_path_no_user():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_no_user(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage:/data")) == "user/data"
 
 
-async def test_uri_to_path_explicit_user():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_explicit_user(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage://alice/data")) == "alice/data"
 
 
-async def test_uri_to_path_to_file():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_to_file(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert (
             client.storage._uri_to_path(URL("storage://alice/data/foo.txt"))
             == "alice/data/foo.txt"
         )
 
 
-async def test_uri_to_path_strip_slash():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_strip_slash(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert (
             client.storage._uri_to_path(URL("storage://alice/data/foo.txt/"))
             == "alice/data/foo.txt"
         )
 
 
-async def test_uri_to_path_root():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_root(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage:")) == "user"
 
 
-async def test_uri_to_path_root2():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_root2(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage:/")) == "user"
 
 
-async def test_uri_to_path_root3():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_root3(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage://")) == "user"
 
 
 @pytest.mark.xfail
-async def test_uri_to_path_root4():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_root4(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage:///")) == "/"
 
 
-async def test_uri_to_path_relative():
-    async with ClientV2(URL("https://example.com"), "user", "token") as client:
+async def test_uri_to_path_relative(token):
+    async with ClientV2(URL("https://example.com"), token) as client:
         assert client.storage._uri_to_path(URL("storage:path")) == "user/path"
 
 
-async def test_storage_ls(aiohttp_server):
+async def test_storage_ls(aiohttp_server, token):
     JSON = {
         "FileStatuses": {
             "FileStatus": [
@@ -100,7 +100,7 @@ async def test_storage_ls(aiohttp_server):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), "user", "token") as client:
+    async with ClientV2(srv.make_url("/"), token) as client:
         ret = await client.storage.ls(URL("storage://~/folder"))
 
     assert ret == [
@@ -117,7 +117,7 @@ async def test_storage_ls(aiohttp_server):
     ]
 
 
-async def test_storage_rm(aiohttp_server):
+async def test_storage_rm(aiohttp_server, token):
     async def handler(request):
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "DELETE"}
@@ -128,11 +128,11 @@ async def test_storage_rm(aiohttp_server):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), "user", "token") as client:
+    async with ClientV2(srv.make_url("/"), token) as client:
         await client.storage.rm(URL("storage://~/folder"))
 
 
-async def test_storage_mv(aiohttp_server):
+async def test_storage_mv(aiohttp_server, token):
     async def handler(request):
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "RENAME", "destination": "/user/other"}
@@ -143,11 +143,11 @@ async def test_storage_mv(aiohttp_server):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), "user", "token") as client:
+    async with ClientV2(srv.make_url("/"), token) as client:
         await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
 
 
-async def test_storage_mkdir(aiohttp_server):
+async def test_storage_mkdir(aiohttp_server, token):
     async def handler(request):
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "MKDIRS"}
@@ -158,5 +158,5 @@ async def test_storage_mkdir(aiohttp_server):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), "user", "token") as client:
+    async with ClientV2(srv.make_url("/"), token) as client:
         await client.storage.mkdirs(URL("storage://~/folder"))
