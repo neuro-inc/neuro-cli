@@ -21,10 +21,10 @@ class FileStatus:
     modification_time: int
     permission: str
 
-    def is_file(self):
+    def is_file(self) -> bool:
         return self.type == FileStatusType.FILE
 
-    def is_dir(self):
+    def is_dir(self) -> bool:
         return self.type == FileStatusType.DIRECTORY
 
     @classmethod
