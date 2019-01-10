@@ -189,7 +189,7 @@ def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
     else:
         captured = run(["store", "cp", local_file, f"storage://{path}/{name}"])
         assert not captured.err
-        assert f"{path}/{name}" in captured.out
+        assert captured.out == ""
 
 
 def check_rename_file_on_storage(
@@ -213,7 +213,7 @@ def check_rename_file_on_storage(
         ]
     )
     assert not captured.err
-    assert f"{path_to}/{name_to}" in captured.out
+    assert captured.out == ""
 
 
 def check_rename_directory_on_storage(run, path_from: str, path_to: str):
@@ -227,5 +227,4 @@ def check_rename_directory_on_storage(run, path_from: str, path_to: str):
     """
     captured = run(["store", "mv", f"storage://{path_from}", f"storage://{path_to}"])
     assert not captured.err
-    assert path_from not in captured.out
-    assert path_to in captured.out
+    assert captured.out == ""
