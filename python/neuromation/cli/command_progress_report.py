@@ -1,4 +1,7 @@
-class ProgressBase:  # pragma: no cover
+from neuromation.clientv2 import AbstractProgress
+
+
+class ProgressBase(AbstractProgress):
     def start(self, file: str, size: int):
         pass
 

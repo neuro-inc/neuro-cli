@@ -1,11 +1,17 @@
+import asyncio
 import enum
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List
 
 from yarl import URL
 
-from .api import API
+from .abc import AbstractProgress
+from .api import API, ResourceNotFound
+
+
+log = logging.getLogger(__name__)
 
 
 class FileStatusType(str, enum.Enum):
@@ -156,3 +162,103 @@ class Storage:
 
         async with self._api.request("POST", url) as resp:
             resp  # resp.status == 204
+
+    # high-level helpers
+
+    async def _iterate_file(
+        self, progress: AbstractProgress, src: Path
+    ) -> AsyncIterator[bytes]:
+        loop = asyncio.get_event_loop()
+        progress.start(str(src), src.stat().st_size)
+        with src.open("rb") as stream:
+            chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
+            pos = len(chunk)
+            while chunk:
+                progress.progress(str(src), pos)
+                yield chunk
+                chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
+                pos += len(chunk)
+            progress.complete(str(src))
+
+    async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
+        src = self.normalize_local(src)
+        path = Path(src.path).resolve(True)
+        if not path.exists():
+            raise FileNotFoundError(f"{path} does not exist")
+        if path.is_dir():
+            raise IsADirectoryError(f"{path} is a directory, use recursive copy")
+        if not path.is_file():
+            raise OSError(f"{path} should be a regular file")
+        dst = self.normalize(dst)
+        if not dst.name:
+            # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
+            dst = dst / src.name
+        await self.create(dst, self._iterate_file(progress, path))
+
+    async def upload_dir(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
+        src = self.normalize_local(src)
+        dst = self.normalize(dst)
+        if not dst.name:
+            # /dst/ ==> /dst for recursive copy
+            dst = dst.parent
+        path = Path(src.path).resolve(True)
+        if not path.exists():
+            raise FileNotFoundError(f"{path} does not exist")
+        if not path.is_dir():
+            raise NotADirectoryError(f"{path} should be a directory")
+        try:
+            stat = await self.stats(dst)
+            if not stat.is_dir():
+                raise NotADirectoryError(f"{dst} should be a directory")
+        except ResourceNotFound:
+            await self.mkdirs(dst)
+        for child in path.iterdir():
+            if child.is_file():
+                await self.upload_file(progress, src / child.name, dst / child.name)
+            elif child.is_dir():
+                await self.upload_dir(progress, src / child.name, dst / child.name)
+            else:
+                log.warning("Cannot upload %s", child)
+
+    async def download_file(
+        self, progress: AbstractProgress, src: URL, dst: URL
+    ) -> None:
+        loop = asyncio.get_event_loop()
+        src = self.normalize(src)
+        dst = self.normalize_local(dst)
+        path = Path(dst.path).resolve(True)
+        if path.exists():
+            if path.is_dir():
+                path = path / src.name
+            elif not path.is_file():
+                raise OSError(f"{path} should be a regular file")
+        if not path.name:
+            # storage:src/file.txt -> file:dst/ ==> file:dst/file.txt
+            path = path / src.name
+        with path.open("wb") as stream:
+            size = 0  # TODO: display length hint for downloaded file
+            progress.start(str(dst), size)
+            pos = 0
+            async for chunk in self.open(src):
+                pos += len(chunk)
+                progress.progress(str(dst), pos)
+                loop.run_in_executor(None, stream.write, chunk)
+            progress.complete(str(dst))
+
+    async def download_dir(
+        self, progress: AbstractProgress, src: URL, dst: URL
+    ) -> None:
+        src = self.normalize(src)
+        dst = self.normalize_local(dst)
+        if not dst.name:
+            # /dst/ ==> /dst for recursive copy
+            dst = dst.parent
+        path = Path(dst.path).resolve(True)
+        path.mkdir(parents=True, exist_ok=True)
+        for child in await self.ls(src):
+            if child.is_file():
+                await self.download_file(progress, src / child.name, dst / child.name)
+            elif child.is_dir():
+                await self.download_dir(progress, src / child.name, dst / child.name)
+            else:
+                log.warning("Cannot upload %s", child)

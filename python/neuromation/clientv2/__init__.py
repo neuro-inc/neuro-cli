@@ -1,8 +1,11 @@
-import aiohttp
 from types import TracebackType
 from typing import Union, Type, Optional
+
+import aiohttp
+from jose import jwt
 from yarl import URL
 
+from .abc import AbstractProgress
 from .api import API, ResourceNotFound
 from .jobs import (
     Jobs,
@@ -18,7 +21,6 @@ from .jobs import (
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
 from .users import Action, Permission, Users
-from jose import jwt
 
 __all__ = (
     "Image",
@@ -36,6 +38,7 @@ __all__ = (
     "FileStatus",
     "Container",
     "ResourceNotFound",
+    "AbstractProgress",
 )
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)  # type: ignore

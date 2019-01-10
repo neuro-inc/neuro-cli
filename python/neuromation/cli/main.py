@@ -29,7 +29,6 @@ from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter, StorageLsFormatter
 from .ssh_utils import connect_ssh, remote_debug
-from .transfer_utils import copy
 
 
 # For stream copying from file to http or from http to file
@@ -275,9 +274,25 @@ Commands:
             log.debug(f"dst={dst}")
 
             progress = ProgressBase.create_progress(progress)
-
+            if not src.scheme:
+                src = URL("file:" + src.path)
+            if not dst.scheme:
+                dst = URL("file:" + dst.path)
             async with ClientV2(url, token, timeout=timeout) as client:
-                await copy(client, progress, recursive, src, dst)
+                if src.scheme == "file" and dst.scheme == "storage":
+                    if recursive:
+                        await client.storage.upload_dir(progress, src, dst)
+                    else:
+                        await client.storage.upload_file(progress, src, dst)
+                elif src.scheme == "storage" and dst.scheme == "file":
+                    if recursive:
+                        await client.storage.download_dir(progress, src, dst)
+                    else:
+                        await client.storage.download_file(progress, src, dst)
+                else:
+                    raise RuntimeError(
+                        f"Copy operation for {src} -> {dst} is not supported"
+                    )
 
         @command
         async def mkdir(path):
