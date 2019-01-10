@@ -184,7 +184,7 @@ def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
     if name is None:
         captured = run(["store", "cp", local_file, f"storage://{path}"])
         assert not captured.err
-        assert f"{path}" in captured.out
+        assert captured.out == ""
 
     else:
         captured = run(["store", "cp", local_file, f"storage://{path}/{name}"])
