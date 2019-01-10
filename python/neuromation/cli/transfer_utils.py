@@ -124,9 +124,9 @@ async def copy(
     client: ClientV2, progress: ProgressBase, recursive: bool, src: URL, dst: URL
 ):
     if not src.scheme:
-        src = src.with_scheme("storage")
+        src = URL('file:' + src.path)
     if not dst.scheme:
-        dst = dst.with_scheme("storage")
+        dst = URL('file:' + dst.path)
     if src.scheme == "file" and dst.scheme == "storage":
         if recursive:
             await upload_dir(client, progress, src, dst)
