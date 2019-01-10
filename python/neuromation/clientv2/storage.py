@@ -122,6 +122,9 @@ class Storage:
             return FileStatus.from_api(res["FileStatus"])
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
+        stat = await self.stats(uri)
+        if not stat.is_file():
+            raise IsADirectoryError(uri)
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         async with self._api.request("GET", url) as resp:
