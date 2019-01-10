@@ -90,7 +90,7 @@ async def download_file(
     if not path.name:
         # storage:src/file.txt -> file:dst/ ==> file:dst/file.txt
         path = path / src.name
-    with path.open('wb') as stream:
+    with path.open("wb") as stream:
         size = 0  # TODO: display length hint for downloaded file
         progress.start(str(dst), size)
         pos = 0

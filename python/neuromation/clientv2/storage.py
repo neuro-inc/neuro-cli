@@ -102,7 +102,7 @@ class Storage:
 
     async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
         path = self._uri_to_path(uri)
-        assert path, 'Creation in root is not allowed'
+        assert path, "Creation in root is not allowed"
         url = URL("storage") / path
         url = url.with_query(op="CREATE")
 
