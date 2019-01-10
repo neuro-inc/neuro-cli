@@ -770,7 +770,6 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             ) as handler:
                 await handler.push(image_name)
 
-
         @command
         async def pull(image_name, local_image_name):
             """

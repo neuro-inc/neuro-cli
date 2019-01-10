@@ -34,7 +34,7 @@ class DockerHandler:
     def _split_tagged_image_name(cls, image_name: str):
         colon_count = image_name.count(":")
         if colon_count == 0:
-            return image_name, 'latest'
+            return image_name, "latest"
         if colon_count == 1:
             name, tag = image_name.split(":")
             if name:
@@ -67,13 +67,15 @@ class DockerHandler:
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
             cnt = (cnt + 1) % len(progress)
             print(f"\r{progress[cnt]}", end="")
-        print(f'\rImage {image_name} pushed to registry')
+        print(f"\rImage {image_name} pushed to registry")
 
     async def pull(self, image_name: str) -> str:
         image, tag = self._split_tagged_image_name(image_name)
         repo = f"{self._registry.host}/{self._username}/{image}"
-        print(f'Pulling {repo}')
-        stream = await self._client.pull(repo, auth=self._auth(), tag=tag, repo=image, stream=True)
+        print(f"Pulling {repo}")
+        stream = await self._client.pull(
+            repo, auth=self._auth(), tag=tag, repo=image, stream=True
+        )
         progress = "|\\-/"
         cnt = 0
         async for obj in stream:
@@ -82,7 +84,7 @@ class DockerHandler:
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
             cnt = (cnt + 1) % len(progress)
             print(f"\r{progress[cnt]}", end="")
-        print(f'Image {image_name} pulled')
+        print(f"Image {image_name} pulled")
 
     async def close(self):
         await self._client.close()
