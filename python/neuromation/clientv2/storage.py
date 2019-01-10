@@ -28,7 +28,7 @@ class FileStatus:
         return self.type == FileStatusType.DIRECTORY
 
     @property
-    def name(self):
+    def name(self) -> str:
         return Path(self.path).name
 
     @classmethod
