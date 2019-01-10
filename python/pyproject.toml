@@ -23,8 +23,8 @@
         showcontent = true
 
     [[tool.towncrier.type]]
-        directory = "break"
-        name = "Breaking changes"
+        directory = "removal"
+        name = "Deprecations and Removals"
         showcontent = true
 
     [[tool.towncrier.type]]
