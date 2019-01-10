@@ -96,7 +96,7 @@ def test_copy_local_to_platform_single_file_3(data, run, tmpdir, remote_and_loca
             ["store", "cp", file, "storage://" + _path + "/non_existing_dir/"]
         )
         assert not captured.err
-        assert _path in captured.out
+        assert captured.out == ""
 
     # Ensure dir is not created
     check_dir_absent_on_storage(run, "non_existing_dir", _path)
