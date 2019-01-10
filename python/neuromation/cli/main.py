@@ -217,7 +217,6 @@ Commands:
             neuro store rm storage:/foo/bar/
             neuro store rm storage://{username}/foo/bar/
             """
-            config = rc.ConfigFactory.load()
             uri = URL(path)
 
             async with ClientV2(url, token) as client:
@@ -236,8 +235,6 @@ Commands:
                 uri = URL("storage://~")
             else:
                 uri = URL(path)
-
-            config = rc.ConfigFactory.load()
 
             async with ClientV2(url, token) as client:
                 res = await client.storage.ls(uri)
@@ -277,7 +274,6 @@ Commands:
             log.debug(f"src={src}")
             log.debug(f"dst={dst}")
 
-            config = rc.ConfigFactory.load()
             progress = ProgressBase.create_progress(progress)
 
             async with ClientV2(url, token, timeout=timeout) as client:
@@ -291,7 +287,6 @@ Commands:
 
             Make directories
             """
-            config = rc.ConfigFactory.load()
 
             uri = URL(path)
 
@@ -319,7 +314,6 @@ Commands:
             neuro store mv storage://{username}/foo/ storage://{username}/bar/
             neuro store mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
             """
-            config = rc.ConfigFactory.load()
 
             src = URL(source)
             dst = URL(destination)
@@ -636,7 +630,6 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
-            config: Config = rc.ConfigFactory.load()
 
             async with ClientV2(url, token, timeout=timeout) as client:
                 async for chunk in client.jobs.monitor(id):
@@ -666,7 +659,6 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             neuro job list --status=pending,running --quiet
             """
 
-            config: Config = rc.ConfigFactory.load()
             status = status or "running,pending"
 
             # TODO: add validation of status values
@@ -688,7 +680,6 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             Display status of a job
             """
-            config: Config = rc.ConfigFactory.load()
             async with ClientV2(url, token) as client:
                 res = await client.jobs.status(id)
                 return JobStatusFormatter.format_job_status(res)
@@ -701,7 +692,6 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             Kill job(s)
             """
-            config: Config = rc.ConfigFactory.load()
             errors = []
             async with ClientV2(url, token) as client:
                 for job in job_ids:
