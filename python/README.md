@@ -459,7 +459,7 @@ neuro image COMMAND
 
 ### neuro image push
 
-Push an image to platform registry.<br/>Image names can contains tag.
+Push an image to platform registry.<br/>Image names can contains tag. If tags not specified 'latest' will be used as value
 
 **Usage:**
 
