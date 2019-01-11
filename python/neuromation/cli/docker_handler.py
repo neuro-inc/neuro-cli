@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict
 
 import aiodocker
 from aiodocker.exceptions import DockerError
@@ -122,7 +122,8 @@ class DockerHandler:
         except DockerError as error:
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
-                    f"Image {local_image_name} not found in your local docker images"
+                    f"Image {local_image.to_local_image_name()} was not found "
+                    "in your local docker images"
                 ) from error
             raise
         stream = await self._client.images.push(repo, auth=self._auth(), stream=True)
@@ -167,6 +168,7 @@ class DockerHandler:
         print(f"\rTagging pulled image ...", end="")
         await self._client.images.tag(repo, local_image.to_local_image_name())
         print(
-            f"\rImage {remote_image.to_url()} pulled as {local_image.to_local_image_name()}"
+            f"\rImage {remote_image.to_url()} pulled as "
+            f"{local_image.to_local_image_name()}"
         )
         return local_image.to_local_image_name()
