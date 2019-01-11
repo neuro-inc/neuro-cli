@@ -752,7 +752,8 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                 neuro image push IMAGE_NAME [REMOTE_IMAGE_NAME]
 
             Push an image to platform registry.
-            Image names can contains tag.
+            Image names can contains tag. If tags not specified 'latest' will \
+be used as value
 
             Examples:
                 neuro image push myimage
@@ -760,15 +761,13 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                 neuro image push alpine image://myfriend/alpine:shared
 
             """
-            # TODO supports image scheme
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            if not remote_image_name:
-                remote_image_name = image_name
+
             async with DockerHandler(
                 platform_user_name, config.auth, config.docker_registry_url()
             ) as handler:
-                await handler.push(image_name)
+                await handler.push(image_name, remote_image_name)
 
         @command
         async def pull(image_name, local_image_name):
@@ -791,7 +790,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             async with DockerHandler(
                 platform_user_name, config.auth, config.docker_registry_url()
             ) as handler:
-                await handler.pull(image_name)
+                await handler.pull(image_name, local_image_name)
 
         return locals()
 
@@ -956,7 +955,7 @@ def main():
         sys.exit(os.EX_IOERR)
 
     except DockerError as error:
-        log.error(f"Docker error ({error.message})")
+        log.error(f"Docker API error: {error.message}")
         sys.exit(os.EX_PROTOCOL)
 
     except NotImplementedError as error:
