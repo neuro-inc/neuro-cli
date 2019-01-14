@@ -8,6 +8,7 @@ from yarl import URL
 
 from ..client import AuthorizationError
 
+
 STATUS_FORBIDDEN = 403
 STATUS_NOT_FOUND = 404
 STATUS_CUSTOM_ERROR = 900
@@ -120,7 +121,7 @@ class DockerHandler:
                 ) from error
             # TODO check this part when registry fixed
             elif error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(f'Access denied {remote_image.url}') from error
+                raise AuthorizationError(f"Access denied {remote_image.url}") from error
             raise
         self._tickProgress()
 
@@ -156,7 +157,7 @@ class DockerHandler:
                 ) from error
             # TODO check this part when registry fixed
             elif error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(f'Access denied {remote_image.url}') from error
+                raise AuthorizationError(f"Access denied {remote_image.url}") from error
             raise
         self._tickProgress()
 
