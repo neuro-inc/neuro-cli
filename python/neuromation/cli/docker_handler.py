@@ -55,19 +55,6 @@ class Image:
     def to_repo(self, registry) -> str:
         return f"{registry}/{self.url.host}{self.url.path}"
 
-    def remote_tag(self) -> str:
-        parts = self.url.path.split(":")
-        return parts[1]
-
-    def local_tag(self) -> str:
-        parts = self.local.split(":")
-        return parts[1]
-
-    @staticmethod
-    def _without_tag(name: str) -> str:
-        parts = name.split(":")
-        return parts[0]
-
 
 class DockerHandler:
     """
@@ -131,6 +118,7 @@ class DockerHandler:
                 ) from error
             raise
         self._tickProgress()
+
         stream = await self._client.images.push(repo, auth=self._auth(), stream=True)
         async for obj in stream:
             self._tickProgress()
@@ -139,6 +127,7 @@ class DockerHandler:
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         self._endProgress()
+
         print(f"\rImage {local_image.local} pushed to registry as {remote_image.url}")
         return remote_image.url
 
@@ -162,6 +151,7 @@ class DockerHandler:
                 ) from error
             raise
         self._tickProgress()
+
         async for obj in stream:
             self._tickProgress()
             if "error" in obj.keys():
@@ -169,7 +159,9 @@ class DockerHandler:
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         self._tickProgress()
+
         await self._client.images.tag(repo, local_image.local)
         self._endProgress()
-        print(f"\rImage {remote_image.url} pulled as " f"{local_image.local}")
+
+        print(f"Image {remote_image.url} pulled as " f"{local_image.local}")
         return local_image.local
