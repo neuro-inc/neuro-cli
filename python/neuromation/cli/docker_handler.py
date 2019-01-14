@@ -6,7 +6,9 @@ import aiodocker
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
+from ..client import AuthorizationError
 
+STATUS_FORBIDDEN = 403
 STATUS_NOT_FOUND = 404
 STATUS_CUSTOM_ERROR = 900
 DEFAULT_TAG = "latest"
@@ -116,6 +118,9 @@ class DockerHandler:
                     f"Image {local_image.local} was not found "
                     "in your local docker images"
                 ) from error
+            # TODO check this part when registry fixed
+            elif error.status == STATUS_FORBIDDEN:
+                raise AuthorizationError(f'Access denied {remote_image.url}') from error
             raise
         self._tickProgress()
 
@@ -144,11 +149,14 @@ class DockerHandler:
             )
             self._temporary_images.append(repo)
         except DockerError as error:
+            self._endProgress()
             if error.status == STATUS_NOT_FOUND:
-                self._endProgress()
                 raise ValueError(
                     f"Image {remote_image.url} was not found " "in registry"
                 ) from error
+            # TODO check this part when registry fixed
+            elif error.status == STATUS_FORBIDDEN:
+                raise AuthorizationError(f'Access denied {remote_image.url}') from error
             raise
         self._tickProgress()
 
