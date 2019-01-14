@@ -128,7 +128,7 @@ class DockerHandler:
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         self._endProgress()
 
-        print(f"\rImage {local_image.local} pushed to registry as {remote_image.url}")
+        print(f"Image {local_image.local} pushed to registry as {remote_image.url}")
         return remote_image.url
 
     async def pull(self, image_name: str, local_image_name: str) -> str:
