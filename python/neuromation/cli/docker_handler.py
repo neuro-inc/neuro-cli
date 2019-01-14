@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass
 from typing import Dict
 
@@ -8,56 +9,64 @@ from yarl import URL
 
 STATUS_NOT_FOUND = 404
 STATUS_CUSTOM_ERROR = 900
+DEFAULT_TAG = "latest"
 
 
 @dataclass()
-class ImageInfo:
-    name: str
-    tag: str = "latest"
-    username: str = None
+class Image:
+    url: URL
+    local: str = None
 
     @classmethod
-    def from_local_image_name(cls, image_name: str) -> "ImageInfo":
-        colon_count = image_name.count(":")
-        if colon_count == 0:
-            return ImageInfo(name=image_name)
-        if colon_count == 1:
-            name, tag = image_name.split(":")
-            if name:
-                return ImageInfo(name=name, tag=tag)
-        raise ValueError(f"Invalid image name format: {image_name}")
-
-    @classmethod
-    def from_remote_image_name(cls, image_name: str) -> "ImageInfo":
-        if image_name.count("/"):
-            username, name = image_name.split("/", 2)
-            info = ImageInfo.from_local_image_name(image_name)
-            return ImageInfo(username=username, name=info.name, tag=info.tag)
-        else:
-            return ImageInfo.from_local_image_name(image_name)
-
-    @classmethod
-    def from_url(cls, url: URL) -> "ImageInfo":
+    def from_url(cls, url: URL, username: str) -> "Image":
+        if not URL:
+            raise ValueError(f"Image URL cannot be empty")
         if url.scheme != "image":
-            raise ValueError(f"Invalid scheme, for image name : {url}")
-        return cls.from_remote_image_name(url.path)
+            raise ValueError(f"Invalid scheme, for image URL: {url}")
+        if not url.path or url.query or url.fragment or url.user or url.port:
+            raise ValueError(f"Invalid image URL: {url}")
+        colon_count = url.path.count(":")
+        if colon_count > 1:
+            raise ValueError(f"Invalid image URL, only one colon allowed: {url}")
 
-    def to_local_image_name(self) -> str:
-        return f"{self.name}:{self.tag}"
+        if not colon_count:
+            url = url.with_path(f"{url.path}:{DEFAULT_TAG}")
+        if not url.host:
+            if url.path[0] == "/":
+                raise ValueError(f"Invalid image URL, slash is not allowed: {url}")
+            url = URL(f"image://{username}/{url.path}")
 
-    def to_remote_image_name(self) -> str:
-        if not self.username:
-            raise Exception("User is not specified")
-        return f"{self.username}/{self.name}:{self.tag}"
+        path = url.path.split("/")
+        local = path.pop()
 
-    def to_url(self) -> URL:
-        return URL(f"image://{self.to_remote_image_name()}")
+        return cls(url=url, local=local)
 
+    @classmethod
+    def from_local(cls, name: str, username: str) -> "Image":
+        colon_count = name.count(":")
+        if colon_count > 1:
+            raise ValueError(f"Invalid image name, only one colon allowed: {name}")
 
-@dataclass()
-class ImageMapping:
-    local: ImageInfo
-    remote: ImageInfo
+        if not colon_count:
+            name = f"{name}:{DEFAULT_TAG}"
+
+        return cls(url=URL(f"image://{username}/{name}"), local=name)
+
+    def to_repo(self, registry) -> str:
+        return f"{registry}/{self.url.host}{self.url.path}"
+
+    def remote_tag(self) -> str:
+        parts = self.url.path.split(":")
+        return parts[1]
+
+    def local_tag(self) -> str:
+        parts = self.local.split(":")
+        return parts[1]
+
+    @staticmethod
+    def _without_tag(name: str) -> str:
+        parts = name.split(":")
+        return parts[0]
 
 
 class DockerHandler:
@@ -65,6 +74,22 @@ class DockerHandler:
     Docker-related manipulation handler
     At this moment image/registry  manipulations available
     """
+
+    _PROGRESS = "|\\-/"
+    _progress_tick = 0
+
+    def _startProgress(self):
+        self._progress_tick = 0
+        self._tickProgress()
+
+    def _tickProgress(self):
+        self._progress_tick = (self._progress_tick + 1) % len(self._PROGRESS)
+        if sys.stdout.isatty():
+            print(f"\r{self._PROGRESS[self._progress_tick]}", end="")
+
+    def _endProgress(self):
+        if sys.stdout.isatty():
+            print(f"\r", end="")
 
     def __init__(self, username: str, token: str, registry: URL) -> None:
         self._username = username
@@ -88,87 +113,63 @@ class DockerHandler:
     def _auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._token}
 
-    @classmethod
-    def _split_tagged_image_name(cls, image_name: str):
-        colon_count = image_name.count(":")
-        if colon_count == 0:
-            return image_name, "latest"
-        if colon_count == 1:
-            name, tag = image_name.split(":")
-            if name:
-                return name, tag
-        raise ValueError(f"Invalid image name format: {image_name}")
-
     async def push(self, image_name: str, remote_image_name: str) -> URL:
-        local_image = ImageInfo.from_local_image_name(image_name)
+        local_image = remote_image = Image.from_local(image_name, self._username)
         if remote_image_name:
-            remote_image = ImageInfo.from_remote_image_name(remote_image_name)
-            if not remote_image.username:
-                remote_image = ImageInfo(
-                    username=self._username,
-                    name=remote_image.name,
-                    tag=remote_image.tag,
-                )
-        else:
-            remote_image = ImageInfo(
-                username=self._username, name=local_image.name, tag=local_image.tag
-            )
+            remote_image = Image.from_url(URL(remote_image_name), self._username)
 
-        repo = f"{self._registry.host}/{remote_image.to_remote_image_name()}"
-
+        repo = remote_image.to_repo(self._registry.host)
+        self._startProgress()
         try:
-            await self._client.images.tag(local_image.name, repo, tag=local_image.tag)
-            self._temporary_images.append(repo)
+            await self._client.images.tag(local_image.local, repo)
         except DockerError as error:
+            self._endProgress()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
-                    f"Image {local_image.to_local_image_name()} was not found "
+                    f"Image {local_image.local} was not found "
                     "in your local docker images"
                 ) from error
             raise
+        self._tickProgress()
         stream = await self._client.images.push(repo, auth=self._auth(), stream=True)
-        progress = "|\\-/"
-        cnt = 0
         async for obj in stream:
+            self._tickProgress()
             if "error" in obj.keys():
+                self._endProgress()
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
-            cnt = (cnt + 1) % len(progress)
-            print(f"\r{progress[cnt]}", end="")
-        print(f"\rImage {image_name} pushed to registry as {remote_image.to_url()}")
-        return remote_image.to_url()
+        self._endProgress()
+        print(f"\rImage {local_image.local} pushed to registry as {remote_image.url}")
+        return remote_image.url
 
     async def pull(self, image_name: str, local_image_name: str) -> str:
-        remote_image = ImageInfo.from_remote_image_name(image_name)
-        if not remote_image.username:
-            remote_image = ImageInfo(
-                username=self._username, name=remote_image.name, tag=remote_image.tag
-            )
+        remote_image = local_image = Image.from_url(URL(image_name), self._username)
         if local_image_name:
-            local_image = ImageInfo.from_local_image_name(local_image_name)
-        else:
-            local_image = ImageInfo(name=remote_image.name, tag=remote_image.tag)
+            local_image = Image.from_local(local_image_name, self._username)
 
-        repo = f"{self._registry.host}/{remote_image.to_remote_image_name()}"
-        stream = await self._client.pull(
-            repo, auth=self._auth(), repo=repo, stream=True
-        )
-        progress = "|\\-/"
-        cnt = 0
+        repo = remote_image.to_repo(self._registry.host)
+        self._startProgress()
+        try:
+            stream = await self._client.pull(
+                repo, auth=self._auth(), repo=repo, stream=True
+            )
+            self._temporary_images.append(repo)
+        except DockerError as error:
+            if error.status == STATUS_NOT_FOUND:
+                self._endProgress()
+                raise ValueError(
+                    f"Image {remote_image.url} was not found " "in registry"
+                ) from error
+            raise
+        self._tickProgress()
         async for obj in stream:
+            self._tickProgress()
             if "error" in obj.keys():
+                self._endProgress()
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
-            elif "progress" in obj.keys():
-                print(f"\r{obj['status']} {obj['progress']}", end="")
-            else:
-                cnt = (cnt + 1) % len(progress)
-                print(f"\r{progress[cnt]}", end="")
-        self._temporary_images.append(repo)
-        print(f"\rTagging pulled image ...", end="")
-        await self._client.images.tag(repo, local_image.to_local_image_name())
-        print(
-            f"\rImage {remote_image.to_url()} pulled as "
-            f"{local_image.to_local_image_name()}"
-        )
-        return local_image.to_local_image_name()
+        self._tickProgress()
+        await self._client.images.tag(repo, local_image.local)
+        self._endProgress()
+        print(f"\rImage {remote_image.url} pulled as " f"{local_image.local}")
+        return local_image.local
