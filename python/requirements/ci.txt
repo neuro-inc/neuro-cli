@@ -11,7 +11,7 @@ setuptools==40.6.3
 wheel==0.32.3
 cmarkgfm==0.4.2
 twine==1.12.1
-pytest-xdist==1.25.0
+pytest-xdist==1.26.0
 markdown-toc==1.2.4
 pytest-testmon==0.9.14
 towncrier==18.6.0
