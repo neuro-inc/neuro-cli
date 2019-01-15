@@ -26,8 +26,7 @@ class Image:
             raise ValueError(f"Image URL cannot be empty")
         if url.scheme != "image":
             raise ValueError(f"Invalid scheme, for image URL: {url}")
-        if url.path == '/' or url.query or url.fragment \
-                or url.user or url.port:
+        if url.path == "/" or url.query or url.fragment or url.user or url.port:
             raise ValueError(f"Invalid image URL: {url}")
         colon_count = url.path.count(":")
         if colon_count > 1:
@@ -39,7 +38,7 @@ class Image:
         if not url.host:
             url = URL(f"image://{username}/{url.path.lstrip('/')}")
 
-        return cls(url=url, local=url.path.lstrip('/'))
+        return cls(url=url, local=url.path.lstrip("/"))
 
     @classmethod
     def from_local(cls, name: str, username: str) -> "Image":
@@ -71,11 +70,11 @@ class DockerHandler:
 
     def _tickProgress(self):
         self._progress_tick = (self._progress_tick + 1) % len(self._PROGRESS)
-        if sys.stdout.isatty():
+        if sys.stdout.isatty():  # pragma: no cover
             print(f"\r{self._PROGRESS[self._progress_tick]}", end="")
 
     def _endProgress(self):
-        if sys.stdout.isatty():
+        if sys.stdout.isatty():  # pragma: no cover
             print(f"\r", end="")
 
     def __init__(self, username: str, token: str, registry: URL) -> None:
@@ -85,10 +84,10 @@ class DockerHandler:
         self._client = aiodocker.Docker()
         self._temporary_images = list()
 
-    async def __aenter__(self):
+    async def __aenter__(self):  # pragma: no cover
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):  # pragma: no cover
         try:
             for image in self._temporary_images:
                 await self._client.images.delete(image)
@@ -116,17 +115,18 @@ class DockerHandler:
                     f"Image {local_image.local} was not found "
                     "in your local docker images"
                 ) from error
-            # TODO check this part when registry fixed
-            raise
+            raise  # pragma: no cover
         self._tickProgress()
         try:
-            stream = await self._client.images.push(repo, auth=self._auth(), stream=True)
+            stream = await self._client.images.push(
+                repo, auth=self._auth(), stream=True
+            )
         except DockerError as error:
             self._endProgress()
             # TODO check this part when registry fixed
             if error.status == STATUS_FORBIDDEN:
                 raise AuthorizationError(f"Access denied {remote_image.url}") from error
-            raise
+            raise  # pragma: no cover
         async for obj in stream:
             self._tickProgress()
             if "error" in obj.keys():
