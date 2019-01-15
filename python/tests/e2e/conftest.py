@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import platform
 import re
@@ -7,7 +8,6 @@ from math import ceil
 from os.path import join
 from pathlib import Path
 from uuid import uuid4 as uuid
-import logging
 
 import pytest
 
