@@ -14,13 +14,54 @@ MYPY_REGEXP := ^(python/neuromation/(client|logging|strings|clientv2)/.+\\.py)|(
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 
+.PHONY: help
+.SILENT: help
+help:
+	echo -e "Available targets: \n\
+	* Common: \n\
+	- help: this help \n\
+	- init: initialize project for development \n\
+	- update-deps: install.update all development dependencies \n\
+	- release: Generate changelog and tag new version \n\
+	  example: make release VERSION=0.5 \n\
+	- dist-clean: remove files generated during publish \n\
+	- clean: remove generated files \n\
+\n\
+	* Modifications and generations: \n\
+	- format: format python code(isort + black) \n\
+	- docs: generate docs \n\
+	- changelog: generate and commit changelog \n\
+	  example: make changelog VERSION=0.5 \n\
+\n\
+	* Lint (static analysis) \n\
+	- lint: run linters(isort, black, flake8, mypy, lint-docs) \n\
+	- lint-docs: validate generated docs \n\
+	- lint-diff: lint only modified files, between two points \n\
+	- publish-lint: lint distribution \n\
+\n\
+	* Tests \n\
+	- test: run usual(not e2e) tests \n\
+	- e2e: run e2e tests \n\
+	- test-all: run all tests \n\
+	- test-fast: run usual test for modified from latest execution files \n\
+	  example: make lint diff FROM=e2d9e591f6d413588b4d4a0af0a3aa066a0ae8eb TO=a0a5b84e31c7d36d2c440d3707d25fc0ef567a61 \n\
+\n\
+	* Distribution \n\
+	- dist: generate python distribution(wheel) \n\
+	- publish: publish distribution to pypi index \n\
+\n\
+	* CI \n\
+	- coverage: upload coverage information to codecov.io \n\
+	- ci: run CI related targets \n\
+    "
+
 .PHONY: init
-init: update-readme update-deps
+init: _init-readme update-deps
 	cp .hooks/* ../.git/hooks
 	chmod a+x ../.git/hooks/*
 	rm -rf .mypy_cache
 
-update-readme:
+_init-readme:
 	cp -n README.in.md README.md
 
 .PHONY: e2e
@@ -158,3 +199,25 @@ lint-docs:
 .PHONY: update-deps
 update-deps:
 	pip install --disable-pip-version-check -r requirements/dev.txt
+
+.PHONY: changelog
+changelog:
+ifndef VERSION
+	@echo VERSION not defined
+	@echo use make changelog VERSION=0.1
+	@exit 10
+endif
+	towncrier --version $(VERSION) --yes
+	git add CHANGELOG.md
+	git add CHANGELOG.D
+	git commit -m "Release $(VERSION)"
+
+.PHONY: release
+release: changelog
+ifndef VERSION
+	@echo VERSION not defined
+	@echo use make release VERSION=0.1
+	@exit 10
+endif
+	git tag v$(VERSION)
+	@echo Tag v$(VERSION) added. Please push tags via git
