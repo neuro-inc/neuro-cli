@@ -41,7 +41,7 @@ __all__ = (
     "AbstractProgress",
 )
 
-DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)  # type: ignore
+DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
 class ClientV2:
@@ -50,7 +50,7 @@ class ClientV2:
         url: Union[URL, str],
         token: str,
         *,
-        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,  # type: ignore
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
