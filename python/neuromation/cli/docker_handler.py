@@ -22,11 +22,12 @@ class Image:
 
     @classmethod
     def from_url(cls, url: URL, username: str) -> "Image":
-        if not URL:
+        if not url:
             raise ValueError(f"Image URL cannot be empty")
         if url.scheme != "image":
             raise ValueError(f"Invalid scheme, for image URL: {url}")
-        if not url.path or url.query or url.fragment or url.user or url.port:
+        if url.path == '/' or url.query or url.fragment \
+                or url.user or url.port:
             raise ValueError(f"Invalid image URL: {url}")
         colon_count = url.path.count(":")
         if colon_count > 1:
@@ -34,15 +35,11 @@ class Image:
 
         if not colon_count:
             url = url.with_path(f"{url.path}:{DEFAULT_TAG}")
+
         if not url.host:
-            if url.path[0] == "/":
-                raise ValueError(f"Invalid image URL, slash is not allowed: {url}")
-            url = URL(f"image://{username}/{url.path}")
+            url = URL(f"image://{username}/{url.path.lstrip('/')}")
 
-        path = url.path.split("/")
-        local = path.pop()
-
-        return cls(url=url, local=local)
+        return cls(url=url, local=url.path.lstrip('/'))
 
     @classmethod
     def from_local(cls, name: str, username: str) -> "Image":
