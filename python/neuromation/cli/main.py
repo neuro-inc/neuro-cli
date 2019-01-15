@@ -738,13 +738,6 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
           pull                 Pull docker image from cloud registry to local machine.
         """
 
-        def _get_image_platform_full_name(image_name):
-            config = rc.ConfigFactory.load()
-            registry_url = config.docker_registry_url()
-            user_name = config.get_platform_user_name()
-            target_image_name = f"{registry_url}/{user_name}/{image_name}"
-            return target_image_name
-
         @command
         async def push(image_name, remote_image_name):
             """
@@ -784,7 +777,6 @@ be used as value
                 neuro image pull my-alpine:production alpine:from-registry
 
             """
-            # TODO supports image scheme
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
             async with DockerHandler(
