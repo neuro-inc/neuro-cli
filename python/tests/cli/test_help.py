@@ -3,15 +3,18 @@ from textwrap import dedent
 import pytest
 
 from neuromation.cli.main import neuro
-
-
+from neuromation.cli.defaults import DEFAULTS
+from neuromation.cli.commands import help_format
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"
 
 
 def test_help(run):
+    format_spec = DEFAULTS.copy()
+
     _, captured = run(["help"], RC_TEXT)
     assert not captured.err
-    assert captured.out == neuro.__doc__ + "\n"
+    assert captured.out == help_format(neuro.__doc__, format_spec) + "\n"
+
 
     commands = neuro(None, None, None, None, None)
 
@@ -21,7 +24,7 @@ def test_help(run):
 
         _, captured = run(["help", command], RC_TEXT)
         assert not captured.err
-        assert captured.out == dedent(func.__doc__) + "\n"
+        assert captured.out == help_format(func.__doc__, format_spec) + "\n"
 
     with pytest.raises(SystemExit) as captured:
         run(["help", "mississippi"], RC_TEXT)
