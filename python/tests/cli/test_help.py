@@ -13,7 +13,7 @@ def test_help(run):
     assert not captured.err
     assert captured.out == neuro.__doc__ + "\n"
 
-    commands = neuro(None, None, None, None)
+    commands = neuro(None, None, None, None, None)
 
     for command, func in commands.items():
         if not hasattr(func, "_command_name"):
