@@ -194,7 +194,8 @@ class Storage:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
         try:
-            if not self.stats(dst.parent).is_dir():
+            stats = await self.stats(dst.parent)
+            if not stats.is_dir():
                 raise NotADirectoryError(dst.parent)
         except ResourceNotFound:
             raise NotADirectoryError(dst.parent)
