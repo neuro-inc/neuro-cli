@@ -19,9 +19,7 @@ class API:
     Internal class.
     """
 
-    def __init__(
-        self, url: URL, token: str, timeout: aiohttp.ClientTimeout  # type: ignore
-    ) -> None:
+    def __init__(self, url: URL, token: str, timeout: aiohttp.ClientTimeout) -> None:
         self._url = url
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         self._session = aiohttp.ClientSession(timeout=timeout, headers=headers)
