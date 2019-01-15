@@ -7,6 +7,7 @@ from math import ceil
 from os.path import join
 from pathlib import Path
 from uuid import uuid4 as uuid
+import logging
 
 import pytest
 
@@ -18,6 +19,8 @@ from tests.e2e.utils import (
     RC_TEXT,
 )
 
+
+log = logging.getLogger(__name__)
 
 job_id_pattern = r"Job ID:\s*(\S+)"
 
@@ -71,6 +74,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
         return Path(tmpdir)
 
     def _run(arguments):
+        log.info("Run %s", arguments)
         monkeypatch.setattr(Path, "home", _home)
         monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
 
