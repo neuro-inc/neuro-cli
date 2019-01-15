@@ -45,9 +45,7 @@ class ResourceNotFound(ValueError):
 
 
 # AIO HTTP Default Timeout Settings
-DEFAULT_CLIENT_TIMEOUT_SETTINGS = aiohttp.ClientTimeout(  # type: ignore
-    None, None, 30, 30
-)
+DEFAULT_CLIENT_TIMEOUT_SETTINGS = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
 class ApiClient:
@@ -55,9 +53,7 @@ class ApiClient:
         self,
         url: str,
         token: str,
-        timeout: Optional[  # type: ignore
-            aiohttp.ClientTimeout
-        ] = DEFAULT_CLIENT_TIMEOUT_SETTINGS,
+        timeout: Optional[aiohttp.ClientTimeout] = DEFAULT_CLIENT_TIMEOUT_SETTINGS,
         *,
         loop: Optional[asyncio.events.AbstractEventLoop] = None,
     ) -> None:
