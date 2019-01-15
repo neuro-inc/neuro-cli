@@ -159,7 +159,7 @@ class DockerHandler:
             # TODO check this part when registry fixed
             elif error.status == STATUS_FORBIDDEN:
                 raise AuthorizationError(f"Access denied {remote_image.url}") from error
-            raise
+            raise  # pragma: no cover
         self._tickProgress()
 
         async for obj in stream:
