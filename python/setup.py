@@ -26,7 +26,6 @@ setup(
         'aiohttp>=3.0',
         'dataclasses>=0.5; python_version<"3.7"',
         'docopt>=0.6.0',
-        'docker>=3.5.0',
         'pyyaml>=3.0',
         'async_generator>=1.5; python_version<"3.7"',
         'python-jose>=3.0.0',
