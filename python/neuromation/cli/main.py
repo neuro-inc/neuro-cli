@@ -73,7 +73,7 @@ def setup_console_handler(handler, verbose, noansi=False):
 
 
 @command
-def neuro(url, token, verbose, version):
+def neuro(url, token, verbose, show_traceback, version):
     """    ◣
     ▇ ◣
     ▇ ◥ ◣
@@ -92,6 +92,7 @@ Options:
   -u, --url URL         Override API URL [default: {api_url}]
   -t, --token TOKEN     API authentication token (not implemented)
   --verbose             Enable verbose logging
+  --show-traceback      Show Python traceback on exception
   -v, --version         Print version and exit
 
 Commands:
@@ -883,6 +884,13 @@ def main():
     if is_verbose:
         sys.argv.remove("--verbose")
 
+    is_show_traceback = "--show-traceback" in sys.argv
+    if is_show_traceback:
+        sys.argv.remove("--show-traceback")
+        log_error = log.exception
+    else:
+        log_error = log.error
+
     setup_logging()
     setup_console_handler(console_handler, verbose=is_verbose)
 
@@ -906,51 +914,51 @@ def main():
             print(res)
 
     except neuromation.client.IllegalArgumentError as error:
-        log.error(f"Illegal argument(s) ({error})")
+        log_error(f"Illegal argument(s) ({error})")
         sys.exit(os.EX_DATAERR)
 
     except neuromation.client.ResourceNotFound as error:
-        log.error(f"{error}")
+        log_error(f"{error}")
         sys.exit(os.EX_OSFILE)
 
     except neuromation.client.AuthenticationError as error:
-        log.error(f"Cannot authenticate ({error})")
+        log_error(f"Cannot authenticate ({error})")
         sys.exit(os.EX_NOPERM)
     except neuromation.client.AuthorizationError as error:
-        log.error(f"You haven`t enough permission ({error})")
+        log_error(f"You haven`t enough permission ({error})")
         sys.exit(os.EX_NOPERM)
 
     except neuromation.client.ClientError as error:
-        log.error(f"Application error ({error})")
+        log_error(f"Application error ({error})")
         sys.exit(os.EX_SOFTWARE)
 
     except aiohttp.ClientError as error:
-        log.error(f"Connection error ({error})")
+        log_error(f"Connection error ({error})")
         sys.exit(os.EX_IOERR)
 
     except NotImplementedError as error:
-        log.error(f"{error}")
+        log_error(f"{error}")
         sys.exit(os.EX_SOFTWARE)
     except FileNotFoundError as error:
-        log.error(f"File not found ({error})")
+        log_error(f"File not found ({error})")
         sys.exit(os.EX_OSFILE)
     except NotADirectoryError as error:
-        log.error(f"{error}")
+        log_error(f"{error}")
         sys.exit(os.EX_OSFILE)
     except PermissionError as error:
-        log.error(f"Cannot access file ({error})")
+        log_error(f"Cannot access file ({error})")
         sys.exit(os.EX_NOPERM)
     except IOError as error:
-        log.error(f"I/O Error ({error})")
+        log_error(f"I/O Error ({error})")
         raise error
 
     except KeyboardInterrupt:
-        log.error("Aborting.")
+        log_error("Aborting.")
         sys.exit(130)
     except ValueError as e:
         print(e)
         sys.exit(127)
 
     except Exception as e:
-        log.error(f"{e}")
+        log_error(f"{e}")
         raise e

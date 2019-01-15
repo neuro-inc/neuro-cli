@@ -60,6 +60,7 @@ Name | Description|
 |_\-u, --url URL_|Override API URL \[default: https://platform.dev.neuromation.io/api/v1]|
 |_\-t, --token TOKEN_|API authentication token \(not implemented)|
 |_--verbose_|Enable verbose logging|
+|_\--show-traceback_|Show Python traceback on exception|
 |_\-v, --version_|Print version and exit|
 
 

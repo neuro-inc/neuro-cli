@@ -1,0 +1,1 @@
+Implement --show-traceback command line option to show python traceback in case of top-level error
