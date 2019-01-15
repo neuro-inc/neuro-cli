@@ -648,7 +648,8 @@ neuro share URI USER PERMISSION
 
 ```bash
 neuro share storage:///sample_data/ alice manage
-neuro share image:///resnet50 bob read
+neuro share image://username/resnet50 bob read
+neuro share image:resnet50 bob read
 neuro share job:///my_job_id alice write
 ```
 
