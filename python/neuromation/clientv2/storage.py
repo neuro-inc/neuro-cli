@@ -193,6 +193,11 @@ class Storage:
         if not dst.name:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
+        try:
+            if not self.stats(dst.parent).is_dir():
+                raise NotADirectoryError(dst.parent)
+        except ResourceNotFound:
+            raise NotADirectoryError(dst.parent)
         await self.create(dst, self._iterate_file(progress, path))
 
     async def upload_dir(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
