@@ -1,7 +1,10 @@
 import pytest
-from neuromation.cli.docker_handler import Image
+from neuromation.cli.docker_handler import Image, DockerHandler, \
+    STATUS_NOT_FOUND, STATUS_FORBIDDEN, STATUS_CUSTOM_ERROR
+from neuromation.client import AuthorizationError
 from yarl import URL
-
+from asynctest import mock
+from aiodocker.exceptions import DockerError
 
 class TestImage:
     @pytest.mark.parametrize("test_url,expected_url,expected_local", [
@@ -85,8 +88,48 @@ class TestImage:
 
     def test_repo(self):
         image = Image.from_url(URL('image:php:5'), 'bob')
-        assert image.to_repo('registry.neuromation.io') == 'registry.neuromation.io/bob/php:5'
+        assert image.to_repo(
+            'registry.neuromation.io') == 'registry.neuromation.io/bob/php:5'
 
 
 class TestDockerHandler:
-    pass
+    @mock.patch('aiodocker.images.DockerImages.tag')
+    async def test_push_non_existent_image(self, patched_tag):
+        patched_tag.side_effect=DockerError(STATUS_NOT_FOUND,{'message': 'Mocked error'})
+        handler = DockerHandler('bob', 'X-Token', URL('http://mock.registry.neuromation.io'))
+        with pytest.raises(ValueError, match=r'not found'):
+            await handler.push('php:7', '')
+
+    @mock.patch('aiodocker.images.DockerImages.tag')
+    @mock.patch('aiodocker.images.DockerImages.push')
+    async def test_push_image_to_foreign_repo(self, patched_push, patched_tag):
+        patched_tag.return_value = True
+        patched_push.side_effect = DockerError(STATUS_FORBIDDEN, {'message': 'Mocked error'})
+        handler = DockerHandler('bob', 'X-Token', URL('http://mock.registry.neuromation.io'))
+        with pytest.raises(AuthorizationError):
+            await handler.push('php:7', 'image://jane/java')
+
+    @mock.patch('aiodocker.images.DockerImages.tag')
+    @mock.patch('aiodocker.images.DockerImages.push')
+    async def test_push_image_with_docker_api_error(self, patched_push, patched_tag):
+        async def error_generator():
+            yield {'error': True, 'errorDetail': {'message': 'Mocked message'}}
+
+        patched_tag.return_value = True
+        patched_push.return_value = error_generator()
+        handler = DockerHandler('bob', 'X-Token', URL('http://mock.registry.neuromation.io'))
+        with pytest.raises(DockerError, ) as exc_info:
+            await handler.push('php:7', '')
+        assert exc_info.value.status == STATUS_CUSTOM_ERROR
+
+    @mock.patch('aiodocker.images.DockerImages.tag')
+    @mock.patch('aiodocker.images.DockerImages.push')
+    async def test_success_push_image(self, patched_push, patched_tag):
+        async def message_generator():
+            yield {}
+
+        patched_tag.return_value = True
+        patched_push.return_value = message_generator()
+        handler = DockerHandler('bob', 'X-Token', URL('http://mock.registry.neuromation.io'))
+        result = await handler.push('php:7', 'image://bob/php:7')
+        assert result == URL('image://bob/php:7')

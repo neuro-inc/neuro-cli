@@ -117,12 +117,16 @@ class DockerHandler:
                     "in your local docker images"
                 ) from error
             # TODO check this part when registry fixed
-            elif error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(f"Access denied {remote_image.url}") from error
             raise
         self._tickProgress()
-
-        stream = await self._client.images.push(repo, auth=self._auth(), stream=True)
+        try:
+            stream = await self._client.images.push(repo, auth=self._auth(), stream=True)
+        except DockerError as error:
+            self._endProgress()
+            # TODO check this part when registry fixed
+            if error.status == STATUS_FORBIDDEN:
+                raise AuthorizationError(f"Access denied {remote_image.url}") from error
+            raise
         async for obj in stream:
             self._tickProgress()
             if "error" in obj.keys():
