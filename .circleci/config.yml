@@ -31,7 +31,6 @@ jobs:
           paths:
             - ./.env
           key: v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
-
       - run:
           name: run CI target
           command: |
