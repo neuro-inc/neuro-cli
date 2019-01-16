@@ -75,7 +75,8 @@ def check_file_exists_on_storage(run, name: str, path: str, size: int):
         assert not captured.err
         assert expected_line in captured_output_list
         return
-    raise AssertionError(f"Cannot find {name} in {path}")
+    else:
+        raise AssertionError(f"Cannot find {name} in {path}")
 
 
 def check_dir_exists_on_storage(run, name: str, path: str):
@@ -163,8 +164,17 @@ def check_rmdir_on_storage(run, path: str):
     :param path: Path on storage
     :return:
     """
-    captured = run(["store", "rm", f"storage://{path}"])
-    assert not captured.err
+    delay = 5
+    for i in range(5):
+        try:
+            captured = run(["store", "rm", f"storage://{path}"])
+            assert not captured.err
+            return
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+    else:
+        raise AssertionError(f"Cannot rmdir {path}")
 
 
 def check_rm_file_on_storage(run, name: str, path: str):
@@ -175,8 +185,16 @@ def check_rm_file_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    captured = run(["store", "rm", f"storage://{path}/{name}"])
-    assert not captured.err
+    delay = 5
+    for i in range(5):
+        try:
+            captured = run(["store", "rm", f"storage://{path}/{name}"])
+            assert not captured.err
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+    else:
+        raise AssertionError(f"Cannot rm {name} on {path}")
 
 
 def check_upload_file_to_storage(run, name: str, path: str, local_file: str):
