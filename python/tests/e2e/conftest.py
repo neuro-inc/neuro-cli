@@ -7,6 +7,7 @@ import sys
 from math import ceil
 from os.path import join
 from pathlib import Path
+from time import sleep
 from uuid import uuid4 as uuid
 
 import pytest
@@ -97,6 +98,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                     if match:
                         executed_jobs_list.append(match.group(1))
 
+            sleep(1)
             return output
 
     yield _run
