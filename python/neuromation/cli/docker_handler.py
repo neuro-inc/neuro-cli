@@ -1,5 +1,5 @@
-import sys
 import re
+import sys
 from dataclasses import dataclass
 from typing import Dict
 
@@ -8,6 +8,7 @@ from aiodocker.exceptions import DockerError
 from yarl import URL
 
 from ..client import AuthorizationError
+
 
 STATUS_FORBIDDEN = 403
 STATUS_NOT_FOUND = 404
@@ -30,8 +31,7 @@ class Image:
             raise ValueError(f"Invalid image URL: {url}")
         colon_count = url.path.count(":")
         if colon_count > 1:
-            raise ValueError(
-                f"Invalid image URL, only one colon allowed: {url}")
+            raise ValueError(f"Invalid image URL, only one colon allowed: {url}")
 
         if not colon_count:
             url = url.with_path(f"{url.path}:{DEFAULT_TAG}")
@@ -45,8 +45,7 @@ class Image:
     def from_local(cls, name: str, username: str) -> "Image":
         colon_count = name.count(":")
         if colon_count > 1:
-            raise ValueError(
-                f"Invalid image name, only one colon allowed: {name}")
+            raise ValueError(f"Invalid image name, only one colon allowed: {name}")
 
         if not colon_count:
             name = f"{name}:{DEFAULT_TAG}"
@@ -86,11 +85,15 @@ class DockerHandler:
         try:
             self._client = aiodocker.Docker()
         except ValueError as error:
-            if re.match(r'', f'{error}'):
-                raise DockerError(STATUS_CUSTOM_ERROR, {
-                    'message': 'Docker engine is not available. '
-                               'Please specify DOCKER_HOST variable '
-                               'if you use remote docker engine'})
+            if re.match(r"", f"{error}"):
+                raise DockerError(
+                    STATUS_CUSTOM_ERROR,
+                    {
+                        "message": "Docker engine is not available. "
+                        "Please specify DOCKER_HOST variable "
+                        "if you use remote docker engine"
+                    },
+                )
         self._temporary_images = list()
 
     async def __aenter__(self):  # pragma: no cover
@@ -109,11 +112,9 @@ class DockerHandler:
         return {"username": "token", "password": self._token}
 
     async def push(self, image_name: str, remote_image_name: str) -> URL:
-        local_image = remote_image = Image.from_local(image_name,
-                                                      self._username)
+        local_image = remote_image = Image.from_local(image_name, self._username)
         if remote_image_name:
-            remote_image = Image.from_url(URL(remote_image_name),
-                                          self._username)
+            remote_image = Image.from_url(URL(remote_image_name), self._username)
 
         repo = remote_image.to_repo(self._registry.host)
         self._startProgress()
@@ -136,25 +137,21 @@ class DockerHandler:
             self._endProgress()
             # TODO check this part when registry fixed
             if error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(
-                    f"Access denied {remote_image.url}") from error
+                raise AuthorizationError(f"Access denied {remote_image.url}") from error
             raise  # pragma: no cover
         async for obj in stream:
             self._tickProgress()
             if "error" in obj.keys():
                 self._endProgress()
-                error_details = obj.get("errorDetail",
-                                        {"message": "Unknown error"})
+                error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         self._endProgress()
 
-        print(
-            f"Image {local_image.local} pushed to registry as {remote_image.url}")
+        print(f"Image {local_image.local} pushed to registry as {remote_image.url}")
         return remote_image.url
 
     async def pull(self, image_name: str, local_image_name: str) -> str:
-        remote_image = local_image = Image.from_url(URL(image_name),
-                                                    self._username)
+        remote_image = local_image = Image.from_url(URL(image_name), self._username)
         if local_image_name:
             local_image = Image.from_local(local_image_name, self._username)
 
@@ -173,8 +170,7 @@ class DockerHandler:
                 ) from error
             # TODO check this part when registry fixed
             elif error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(
-                    f"Access denied {remote_image.url}") from error
+                raise AuthorizationError(f"Access denied {remote_image.url}") from error
             raise  # pragma: no cover
         self._tickProgress()
 
@@ -182,8 +178,7 @@ class DockerHandler:
             self._tickProgress()
             if "error" in obj.keys():
                 self._endProgress()
-                error_details = obj.get("errorDetail",
-                                        {"message": "Unknown error"})
+                error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         self._tickProgress()
 
