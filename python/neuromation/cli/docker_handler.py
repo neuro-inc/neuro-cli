@@ -89,9 +89,9 @@ class DockerHandler:
                 raise DockerError(
                     STATUS_CUSTOM_ERROR,
                     {
-                        "message": "Docker engine is not available. "
+                        "message": "Docker engine is not available. "  
                         "Please specify DOCKER_HOST variable "
-                        "if you use remote docker engine"
+                        "if you are using remote docker engine"
                     },
                 )
         self._temporary_images = list()
