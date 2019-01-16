@@ -1,8 +1,10 @@
 import pytest
 
-from neuromation.cli.main import neuro
-from neuromation.cli.defaults import DEFAULTS
 from neuromation.cli.commands import help_format
+from neuromation.cli.defaults import DEFAULTS
+from neuromation.cli.main import neuro
+
+
 RC_TEXT = "url: http://platform.dev.neuromation.io/api/v1\n"
 
 
@@ -12,7 +14,6 @@ def test_help(run):
     _, captured = run(["help"], RC_TEXT)
     assert not captured.err
     assert captured.out == help_format(neuro.__doc__, format_spec) + "\n"
-
 
     commands = neuro(None, None, None, None, None)
 

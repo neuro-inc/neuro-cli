@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 from aiodocker.exceptions import DockerError
 from asynctest import mock
 from yarl import URL
@@ -13,9 +14,11 @@ from neuromation.cli.docker_handler import (
 )
 from neuromation.client import AuthorizationError
 
-@pytest.fixture(scope='class')
+
+@pytest.fixture(scope="class")
 def patch_docker_host():
-    os.environ.setdefault('DOCKER_HOST', 'http://localhost:45678')
+    os.environ.setdefault("DOCKER_HOST", "http://localhost:45678")
+
 
 class TestImage:
     @pytest.mark.parametrize(
@@ -116,7 +119,6 @@ class TestImage:
 
 
 class TestDockerHandler:
-
     @mock.patch("aiodocker.images.DockerImages.tag")
     async def test_push_non_existent_image(self, patched_tag, patch_docker_host):
         patched_tag.side_effect = DockerError(
@@ -130,7 +132,9 @@ class TestDockerHandler:
 
     @mock.patch("aiodocker.images.DockerImages.tag")
     @mock.patch("aiodocker.images.DockerImages.push")
-    async def test_push_image_to_foreign_repo(self, patched_push, patched_tag, patch_docker_host):
+    async def test_push_image_to_foreign_repo(
+        self, patched_push, patched_tag, patch_docker_host
+    ):
         patched_tag.return_value = True
         patched_push.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
@@ -143,7 +147,9 @@ class TestDockerHandler:
 
     @mock.patch("aiodocker.images.DockerImages.tag")
     @mock.patch("aiodocker.images.DockerImages.push")
-    async def test_push_image_with_docker_api_error(self, patched_push, patched_tag, patch_docker_host):
+    async def test_push_image_with_docker_api_error(
+        self, patched_push, patched_tag, patch_docker_host
+    ):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
@@ -159,7 +165,9 @@ class TestDockerHandler:
 
     @mock.patch("aiodocker.images.DockerImages.tag")
     @mock.patch("aiodocker.images.DockerImages.push")
-    async def test_success_push_image(self, patched_push, patched_tag, patch_docker_host):
+    async def test_success_push_image(
+        self, patched_push, patched_tag, patch_docker_host
+    ):
         async def message_generator():
             yield {}
 
@@ -194,7 +202,9 @@ class TestDockerHandler:
             await handler.pull("image://jane/java", "")
 
     @mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_pull_image_with_docker_api_error(self, patched_pull, patch_docker_host):
+    async def test_pull_image_with_docker_api_error(
+        self, patched_pull, patch_docker_host
+    ):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
@@ -209,7 +219,9 @@ class TestDockerHandler:
 
     @mock.patch("aiodocker.images.DockerImages.tag")
     @mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_success_pull_image(self, patched_pull, patched_tag, patch_docker_host):
+    async def test_success_pull_image(
+        self, patched_pull, patched_tag, patch_docker_host
+    ):
         async def message_generator():
             yield {}
 
@@ -220,4 +232,3 @@ class TestDockerHandler:
         )
         result = await handler.pull("image:php:7", "php:7")
         assert result == "php:7"
-
