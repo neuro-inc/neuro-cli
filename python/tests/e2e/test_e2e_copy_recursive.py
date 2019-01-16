@@ -33,7 +33,7 @@ def test_e2e_copy_recursive_to_platform(nested_data, run, tmpdir):
     # Upload local file
     captured = run(["store", "cp", "-r", dir_path, "storage://" + _path + "/"])
     assert not captured.err
-    assert _path in captured.out
+    assert not captured.out
 
     check_dir_exists_on_storage(run, dir_name, _path)
     check_dir_exists_on_storage(run, "nested", f"{_path}/{dir_name}")
