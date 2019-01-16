@@ -201,11 +201,19 @@ class Storage:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
         try:
-            stats = await self.stats(dst.parent)
-            if not stats.is_dir():
-                raise NotADirectoryError(dst.parent)
+            stats = await self.stats(dst)
+            if stats.is_dir():
+                # target exists and it is a folder
+                dst = dst / src.name
         except ResourceNotFound:
-            raise NotADirectoryError(dst.parent)
+            # target doesn't exist, lookup for parent dir
+            try:
+                stats = await self.stats(dst.parent)
+                if not stats.is_dir():
+                    # parent path should be a folder
+                    raise NotADirectoryError(dst.parent)
+            except ResourceNotFound:
+                raise NotADirectoryError(dst.parent)
         await self.create(dst, self._iterate_file(progress, path))
 
     async def upload_dir(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
