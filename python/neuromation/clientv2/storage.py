@@ -106,6 +106,7 @@ class Storage:
     async def mkdirs(self, uri: URL) -> None:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
+        log.debug("Fetch %s", url)
 
         async with self._api.request("PUT", url) as resp:
             resp  # resp.status == 201
@@ -115,6 +116,7 @@ class Storage:
         assert path, "Creation in root is not allowed"
         url = URL("storage") / path
         url = url.with_query(op="CREATE")
+        log.debug("Fetch %s", url)
 
         async with self._api.request("PUT", url, data=data) as resp:
             resp  # resp.status == 201
@@ -122,6 +124,7 @@ class Storage:
     async def stats(self, uri: URL) -> FileStatus:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
+        log.debug("Fetch %s", url)
 
         async with self._api.request("GET", url) as resp:
             res = await resp.json()
@@ -133,6 +136,8 @@ class Storage:
             raise IsADirectoryError(uri)
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
+        log.debug("Fetch %s", url)
+
         async with self._api.request("GET", url) as resp:
             async for data in resp.content.iter_any():
                 yield data
@@ -152,6 +157,7 @@ class Storage:
 
         url = URL("storage") / path
         url = url.with_query(op="DELETE")
+        log.debug("Fetch %s", url)
 
         async with self._api.request("DELETE", url) as resp:
             resp  # resp.status == 204
@@ -159,6 +165,7 @@ class Storage:
     async def mv(self, src: URL, dst: URL) -> None:
         url = URL("storage") / self._uri_to_path(src)
         url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
+        log.debug("Fetch %s", url)
 
         async with self._api.request("POST", url) as resp:
             resp  # resp.status == 204
