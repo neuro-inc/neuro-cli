@@ -63,11 +63,17 @@ def check_file_exists_on_storage(run, name: str, path: str, size: int):
     :param size: File size
     :return:
     """
-    captured = run(["store", "ls", f"storage://{path}"])
-    captured_output_list = captured.out.split("\n")
-    expected_line = format_list(type="file", size=size, name=name)
-    assert expected_line in captured_output_list
-    assert not captured.err
+    delay = 5
+    for i in range(5):
+        try:
+            captured = run(["store", "ls", f"storage://{path}"])
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+        captured_output_list = captured.out.split("\n")
+        expected_line = format_list(type="file", size=size, name=name)
+        assert not captured.err
+        assert expected_line in captured_output_list
 
 
 def check_dir_exists_on_storage(run, name: str, path: str):
