@@ -76,7 +76,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
     def _run(arguments):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
-        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
+        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments + ["--show-traceback"])
 
         from neuromation.cli import main
 
