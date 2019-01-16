@@ -247,7 +247,7 @@ class Storage:
         loop = asyncio.get_event_loop()
         src = self.normalize(src)
         dst = self.normalize_local(dst)
-        path = Path(dst.path).resolve(True)
+        path = Path(dst.path)
         if path.exists():
             if path.is_dir():
                 path = path / src.name
@@ -274,7 +274,7 @@ class Storage:
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
             dst = dst.parent
-        path = Path(dst.path).resolve(True)
+        path = Path(dst.path)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
             if child.is_file():
