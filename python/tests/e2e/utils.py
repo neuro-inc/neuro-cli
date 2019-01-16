@@ -74,6 +74,7 @@ def check_file_exists_on_storage(run, name: str, path: str, size: int):
         expected_line = format_list(type="file", size=size, name=name)
         assert not captured.err
         assert expected_line in captured_output_list
+    raise AssertionError(f"Cannot find {name} in {path}")
 
 
 def check_dir_exists_on_storage(run, name: str, path: str):
