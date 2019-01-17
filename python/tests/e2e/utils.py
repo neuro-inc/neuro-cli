@@ -1,8 +1,4 @@
-import re
-from os.path import join
 from time import sleep
-
-import pytest
 
 from _sha1 import sha1
 
