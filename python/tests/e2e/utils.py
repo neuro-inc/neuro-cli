@@ -6,6 +6,7 @@ from _sha1 import sha1
 BLOCK_SIZE_MB = 16
 FILE_COUNT = 1
 FILE_SIZE_MB = 16
+FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 GENERATION_TIMEOUT_SEC = 120
 RC_TEXT = "url: https://platform.dev.neuromation.io/api/v1\nauth: {token}"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"

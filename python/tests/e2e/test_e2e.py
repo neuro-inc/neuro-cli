@@ -1,62 +1,10 @@
-import asyncio
-import platform
 import re
-import time
-from math import ceil
-from os.path import join
-from uuid import uuid4 as uuid
 
 import pytest
 
 import neuromation
 from tests.e2e.test_e2e_utils import assert_job_state, wait_job_change_state_from
-from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list, hash_hex
-
-
-BLOCK_SIZE_MB = 16
-BLOCK_SIZE_B = BLOCK_SIZE_MB * 1024 * 1024
-FILE_COUNT = 1
-FILE_SIZE_MB = 16
-FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
-GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = "url: https://platform.dev.neuromation.io/api/v1\n" "auth: {token}"
-
-
-async def generate_test_data(root, count, size_mb):
-    async def generate_file(name):
-        exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"
-
-        process = await asyncio.create_subprocess_shell(
-            f"""(dd if=/dev/urandom \
-                    bs={BLOCK_SIZE_B} \
-                    count={ceil(size_mb / BLOCK_SIZE_MB)} \
-                    2>/dev/null) | \
-                    tee {name} | \
-                    {exec_sha_name}""",
-            stdout=asyncio.subprocess.PIPE,
-        )
-
-        stdout, _ = await asyncio.wait_for(
-            process.communicate(), timeout=GENERATION_TIMEOUT_SEC
-        )
-
-        # sha1sum appends file name to the output
-        return name, stdout.decode()[:40]
-
-    return await asyncio.gather(
-        *[
-            generate_file(join(root, name))
-            for name in (str(uuid()) for _ in range(count))
-        ]
-    )
-
-
-@pytest.fixture(scope="session")
-def data(tmpdir_factory):
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
-        generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
-    )
+from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list, hash_hex
 
 
 @pytest.mark.e2e
@@ -78,11 +26,9 @@ def test_print_version(run, version_key):
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(run, remote_and_local, tmpstorage):
-    _path, _dir = remote_and_local
-
+def test_empty_directory_ls_output(run, tmpstorage):
     # Ensure output of ls - empty directory shall print nothing.
-    captured = run(["store", "ls", f"{tmpstorage}{_path}"])
+    captured = run(["store", "ls", tmpstorage])
     assert not captured.err
     assert not captured.out
 
@@ -158,47 +104,31 @@ def test_e2e_storage(
     check_rmdir_on_storage,
     check_dir_absent_on_storage,
 ):
-    file, checksum = data[0]
-
-    _dir = f"e2e-{uuid()}"
-    _path = f"/tmp/{_dir}"
+    srcfile, checksum = data[0]
 
     # Create directory for the test
-    check_create_dir_on_storage(_path)
+    check_create_dir_on_storage("folder")
 
     # Upload local file
-    check_upload_file_to_storage("foo", _path, file)
+    check_upload_file_to_storage("foo", "folder", str(srcfile))
 
     # Confirm file has been uploaded
-    check_file_exists_on_storage("foo", _path, FILE_SIZE_B)
+    check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
 
     # Download into local file and confirm checksum
-    exc = None
-    delay = 5
-    for i in range(5):
-        try:
-            check_file_on_storage_checksum("foo", _path, checksum, tmpdir, "bar")
-            break
-        except AssertionError as e:
-            exc = e
-            time.sleep(delay)
-            delay *= 2
-    else:
-        raise exc
+    check_file_on_storage_checksum("foo", "folder", checksum, str(tmpdir), "bar")
 
     # Download into deeper local dir and confirm checksum
-    localdir = f"bardir-{uuid()}"
-    _local = join(tmpdir, localdir)
-    _local_file = join(_local, "foo")
-    tmpdir.mkdir(localdir)
-    run(["store", "cp", f"{tmpstorage}{_path}/foo", _local])
-    assert hash_hex(_local_file) == checksum
+    localdir = tmpdir.mkdir("baz")
+    local_file = localdir / "foo"
+    run(["store", "cp", f"{tmpstorage}folder/foo", str(localdir)])
+    assert hash_hex(local_file) == checksum
 
     # Rename file on the storage
-    check_rename_file_on_storage("foo", _path, "bar", _path)
+    check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Confirm file has been renamed
-    captured = run(["store", "ls", f"{tmpstorage}{_path}"])
+    captured = run(["store", "ls", f"{tmpstorage}folder"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
     expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
@@ -206,12 +136,10 @@ def test_e2e_storage(
     assert "foo" not in captured_output_list
 
     # Rename directory on the storage
-    _dir2 = f"e2e-{uuid()}"
-    _path2 = f"/tmp/{_dir2}"
-    check_rename_directory_on_storage(_path, _path2)
+    check_rename_directory_on_storage("folder", "folder2")
 
     # Remove test dir
-    check_rmdir_on_storage(_path2)
+    check_rmdir_on_storage("folder2")
 
     # And confirm
-    check_dir_absent_on_storage(_dir, "/tmp")
+    check_dir_absent_on_storage("folder2", "")

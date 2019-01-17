@@ -3,11 +3,7 @@ from pathlib import PurePath
 
 import pytest
 
-from tests.e2e.utils import format_list
-
-
-FILE_SIZE_MB = 16
-FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
+from tests.e2e.utils import FILE_SIZE_B, format_list
 
 
 @pytest.mark.e2e
