@@ -24,8 +24,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 @pytest.mark.e2e
 def test_job_complete_lifecycle(run, loop, tmpdir, tmpstorage):
-    _dir_src = f"e2e-{uuid()}"
-    _path_src = f"/tmp/{_dir_src}"
+    _path_src = f"tmp"
 
     _dir_dst = f"e2e-{uuid()}"
     _path_dst = f"/tmp/{_dir_dst}"
@@ -194,8 +193,7 @@ def test_model_train_with_http(run, loop, tmpstorage):
                 sleep(loop_sleep)
         return succeeded
 
-    _dir_src = f"e2e-{uuid()}"
-    _path_src = f"/tmp/{_dir_src}"
+    _path_src = f"tmp"
 
     _dir_dst = f"e2e-{uuid()}"
     _path_dst = f"/tmp/{_dir_dst}"
@@ -254,8 +252,7 @@ def test_model_without_command(run, loop, tmpstorage):
                 sleep(loop_sleep)
         return succeeded
 
-    _dir_src = f"e2e-{uuid()}"
-    _path_src = f"/tmp/{_dir_src}"
+    _path_src = f"tmp"
 
     _dir_dst = f"e2e-{uuid()}"
     _path_dst = f"/tmp/{_dir_dst}"
