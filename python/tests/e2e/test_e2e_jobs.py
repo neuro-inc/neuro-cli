@@ -1,10 +1,7 @@
 import os
 import re
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from time import sleep, time
 from urllib.parse import urlparse
-from uuid import uuid4 as uuid
 
 import aiohttp
 import pytest
@@ -23,15 +20,12 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 
 @pytest.mark.e2e
-def test_job_complete_lifecycle(run, loop, tmpdir, tmpstorage):
-    _path_src = f"tmp"
-
-    _dir_dst = f"e2e-{uuid()}"
-    _path_dst = f"/tmp/{_dir_dst}"
-
+def test_job_complete_lifecycle(
+    run, loop, tmpdir, tmpstorage, check_create_dir_on_storage
+):
     # Create directory for the test, going to be model and result output
-    run(["store", "mkdir", f"{tmpstorage}{_path_src}"])
-    run(["store", "mkdir", f"{tmpstorage}{_path_dst}"])
+    check_create_dir_on_storage("model")
+    check_create_dir_on_storage("result")
 
     # remember original set or running jobs
     captured = run(["job", "list", "--status", "running,pending"])
@@ -53,8 +47,8 @@ def test_job_complete_lifecycle(run, loop, tmpdir, tmpstorage):
             "--http",
             "80",
             UBUNTU_IMAGE_NAME,
-            tmpstorage + _path_src,
-            tmpstorage + _path_dst,
+            tmpstorage + "model",
+            tmpstorage + "result",
             command_first,
         ]
     )
@@ -78,9 +72,9 @@ def test_job_complete_lifecycle(run, loop, tmpdir, tmpstorage):
             "--quiet",
             UBUNTU_IMAGE_NAME,
             "--volume",
-            f"{tmpstorage}{_path_src}:{_path_src}:ro",
+            f"{tmpstorage}model:/model:ro",
             "--volume",
-            f"{tmpstorage}{_path_dst}:{_path_dst}:rw",
+            f"{tmpstorage}result:/result:rw",
             command_second,
         ]
     )
@@ -178,7 +172,7 @@ def test_job_kill_non_existing(run, loop):
 
 
 @pytest.mark.e2e
-def test_model_train_with_http(run, loop, tmpstorage):
+def test_model_train_with_http(run, loop, tmpstorage, check_create_dir_on_storage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -193,14 +187,9 @@ def test_model_train_with_http(run, loop, tmpstorage):
                 sleep(loop_sleep)
         return succeeded
 
-    _path_src = f"tmp"
-
-    _dir_dst = f"e2e-{uuid()}"
-    _path_dst = f"/tmp/{_dir_dst}"
-
     # Create directory for the test, going to be model and result output
-    run(["store", "mkdir", f"{tmpstorage}{_path_src}"])
-    run(["store", "mkdir", f"{tmpstorage}{_path_dst}"])
+    check_create_dir_on_storage("model")
+    check_create_dir_on_storage("result")
 
     # Start the job
     command = '/usr/sbin/nginx -g "daemon off;"'
@@ -217,8 +206,8 @@ def test_model_train_with_http(run, loop, tmpstorage):
             "--http",
             "80",
             NGINX_IMAGE_NAME,
-            tmpstorage + _path_src,
-            tmpstorage + _path_dst,
+            f"{tmpstorage}/model",
+            f"{tmpstorage}/result",
             command,
             "-d",
             "simple test job",
@@ -237,7 +226,7 @@ def test_model_train_with_http(run, loop, tmpstorage):
 
 
 @pytest.mark.e2e
-def test_model_without_command(run, loop, tmpstorage):
+def test_model_without_command(run, loop, tmpstorage, check_create_dir_on_storage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -252,12 +241,9 @@ def test_model_without_command(run, loop, tmpstorage):
                 sleep(loop_sleep)
         return succeeded
 
-    _path_src = f"src"
-    _path_dst = f"dst"
-
     # Create directory for the test, going to be model and result output
-    run(["store", "mkdir", f"{tmpstorage}{_path_src}"])
-    run(["store", "mkdir", f"{tmpstorage}{_path_dst}"])
+    check_create_dir_on_storage("model")
+    check_create_dir_on_storage("result")
 
     # Start the job
     captured = run(
@@ -273,8 +259,8 @@ def test_model_without_command(run, loop, tmpstorage):
             "--http",
             "80",
             NGINX_IMAGE_NAME,
-            "tmpstorage" + _path_src,
-            "tmpstorage" + _path_dst,
+            f"{tmpstorage}/model",
+            f"{tmpstorage}/result",
             "-d",
             "simple test job",
         ]
@@ -413,38 +399,36 @@ def test_e2e_multiple_env(run):
 
 
 @pytest.mark.e2e
-def test_e2e_multiple_env_from_file(run):
-    with TemporaryDirectory() as tmpdir:
-        tmpdir = Path(tmpdir)
-        env_file = tmpdir / "env_file"
-        env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
-        bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
-        command = f"bash -c '{bash_script}'"
-        captured = run(
-            [
-                "job",
-                "submit",
-                "-m",
-                "20M",
-                "-c",
-                "0.1",
-                "-g",
-                "0",
-                "-e",
-                "VAR=VAL",
-                "-e",
-                "VAR2=VAL2",
-                "--env-file",
-                str(env_file),
-                UBUNTU_IMAGE_NAME,
-                command,
-            ]
-        )
+def test_e2e_multiple_env_from_file(run, tmp_path):
+    env_file = tmp_path / "env_file"
+    env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
+    bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
+    command = f"bash -c '{bash_script}'"
+    captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "-e",
+            "VAR=VAL",
+            "-e",
+            "VAR2=VAL2",
+            "--env-file",
+            str(env_file),
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
 
-        out = captured.out
-        job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-        wait_job_change_state_from(run, job_id, Status.PENDING)
-        wait_job_change_state_from(run, job_id, Status.RUNNING)
+    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING)
 
-        assert_job_state(run, job_id, "Status: succeeded")
+    assert_job_state(run, job_id, "Status: succeeded")
