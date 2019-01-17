@@ -100,6 +100,9 @@ def save(path, config: Config) -> Config:
         else:
             try:
                 keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
+                # check if password saved
+                if keyring.get_password(CREDENTIAL_SERVICE_NAME, field) != value:
+                    raise RuntimeError("Keyring set_password failed")
             except Exception:
                 if value is not None:
                     dict_config[field] = value
