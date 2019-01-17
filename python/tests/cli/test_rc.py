@@ -37,6 +37,34 @@ def setup_null_keyring():
 
     keyring.set_keyring(stored_keyring)
 
+@pytest.fixture
+def setup_memory_keyring():
+    import keyring.backend
+    import keyring.backends.null
+
+
+    class Memory(keyring.backend.KeyringBackend):
+        storage = dict()
+        @classmethod
+        def _key(cls, service, username):
+            return f'{service}--{username}'
+
+        def get_password(self, service, username):
+            return self.storage.get(self._key(service, username), None)
+
+        def set_password(self, service, username, password):
+            self.storage[self._key(service, username)]= password
+
+        def delete_password(self, service, username):
+            self.storage.pop(self._key(service, username), None)
+
+    stored_keyring = keyring.get_keyring()
+    keyring.set_keyring(Memory())
+    yield
+
+    keyring.set_keyring(stored_keyring)
+
+
 
 def test_create(nmrc):
     conf = rc.create(nmrc, Config())
@@ -217,6 +245,38 @@ def test_load_missing(nmrc):
     assert nmrc.exists()
     assert config == DEFAULTS
 
+def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
+    def home():
+        return PosixPath(nmrc.dirpath())
+
+    monkeypatch.setattr(Path, "home", home)
+    jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
+    jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
+    jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
+    test_token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
+    config: Config = Config(
+        url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
+    )
+    rc.ConfigFactory.update_auth_token(test_token)
+    assert (
+        nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"url: {DEFAULTS.url}\n"
+    )
+
+    config2: Config = rc.ConfigFactory.load()
+    assert config == config2
+
+    rc.ConfigFactory.forget_auth_token()
+    config3: Config = rc.ConfigFactory.load()
+
+    assert (
+        nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"url: {DEFAULTS.url}\n"
+    )
+
+    default_config: config = Config()
+    assert config3 == default_config
+
 
 def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     def home():
@@ -252,7 +312,7 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     assert config3 == default_config
 
 
-def test_keyring_fallbacks_to_alt(monkeypatch, nmrc, setup_null_keyring):
+def test_keyring_fallbacks_to_nmrc_alt(monkeypatch, nmrc, setup_null_keyring):
     def home():
         return PosixPath(nmrc.dirpath())
 

@@ -104,8 +104,7 @@ def save(path, config: Config) -> Config:
                 if keyring.get_password(CREDENTIAL_SERVICE_NAME, field) != value:
                     raise RuntimeError("Keyring set_password failed")
             except Exception:
-                if value is not None:
-                    dict_config[field] = value
+                dict_config[field] = value
 
     with open(path, "w") as file:
         yaml.dump(dict_config, file, default_flow_style=False)
