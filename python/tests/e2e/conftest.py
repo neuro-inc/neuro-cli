@@ -122,6 +122,8 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
 
         for i in range(5):
             pre_out, pre_err = capsys.readouterr()
+            pre_out_size = len(pre_out)
+            pre_err_size = len(pre_err)
             try:
                 main()
             except SystemExit as exc:
@@ -130,8 +132,8 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                 else:
                     raise
             post_out, post_err = capsys.readouterr()
-            out = post_out[len(pre_out) :]
-            err = post_err[len(pre_err) :]
+            out = post_out[pre_out_size:]
+            err = post_err[pre_err_size:]
             if (
                 "-v" not in arguments and "--version" not in arguments
             ):  # special case for version switch
