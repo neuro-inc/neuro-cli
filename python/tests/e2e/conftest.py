@@ -74,7 +74,7 @@ async def generate_test_data(root, count, size_mb):
     return await asyncio.gather(
         *[
             generate_file(join(root, name))
-            for name in (str(uuid()) for _ in range(count))
+            for name in ("{:04d}.bin".format(i) for i in range(count))
         ]
     )
 
