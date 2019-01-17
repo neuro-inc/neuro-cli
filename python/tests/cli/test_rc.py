@@ -252,6 +252,7 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     default_config: config = Config()
     assert config3 == default_config
 
+
 def test_keyring_fallbacks_to_alt(monkeypatch, nmrc, setup_null_keyring):
     def home():
         return PosixPath(nmrc.dirpath())
