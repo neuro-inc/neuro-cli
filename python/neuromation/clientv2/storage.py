@@ -263,7 +263,7 @@ class Storage:
             async for chunk in self.open(src):
                 pos += len(chunk)
                 progress.progress(str(dst), pos)
-                loop.run_in_executor(None, stream.write, chunk)
+                await loop.run_in_executor(None, stream.write, chunk)
             progress.complete(str(dst))
 
     async def download_dir(

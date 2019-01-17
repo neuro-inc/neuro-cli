@@ -4,6 +4,7 @@ import os
 import platform
 import re
 import sys
+from collections import namedtuple
 from math import ceil
 from os.path import join
 from pathlib import Path
@@ -29,9 +30,24 @@ log = logging.getLogger(__name__)
 job_id_pattern = r"Job ID:\s*(\S+)"
 
 
+SysCap = namedtuple("SysCap", "out err")
+
+
 @pytest.fixture
-def tmpstorage():
-    return "storage://" + str(uuid()) + "/"
+def tmpstorage(run, request):
+    url = "storage:" + str(uuid()) + "/"
+    captured = run(["store", "mkdir", url])
+    assert not captured.err
+    assert captured.out == ""
+
+    yield url
+    # Remove directory only if test succeeded
+    if not request.node._report_sections:  # TODO: find another way to check test status
+        try:
+            run(["store", "rm", url])
+        except BaseException:
+            # Just ignore cleanup error here
+            pass
 
 
 async def generate_test_data(root, count, size_mb):
@@ -64,11 +80,26 @@ async def generate_test_data(root, count, size_mb):
 
 
 @pytest.fixture(scope="session")
-def data(tmpdir_factory):
+def static_path(tmpdir_factory):
+    return tmpdir_factory.mktemp("data")
+
+
+@pytest.fixture(scope="session")
+def data(static_path):
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
-        generate_test_data(tmpdir_factory.mktemp("data"), FILE_COUNT, FILE_SIZE_MB)
+    folder = static_path.mkdir("data")
+    return loop.run_until_complete(generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB))
+
+
+@pytest.fixture(scope="session")
+def nested_data(static_path):
+    loop = asyncio.get_event_loop()
+    root_dir = static_path.mkdir("neested_data").mkdir("nested")
+    nested_dir = root_dir.mkdir("directory").mkdir("for").mkdir("test")
+    data = loop.run_until_complete(
+        generate_test_data(nested_dir, FILE_COUNT, FILE_SIZE_MB)
     )
+    return data[0][0], data[0][1], root_dir.strpath
 
 
 @pytest.fixture
@@ -90,6 +121,7 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
         from neuromation.cli import main
 
         for i in range(5):
+            pre_out, pre_err = capsys.readouterr()
             try:
                 main()
             except SystemExit as exc:
@@ -97,16 +129,18 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
                     continue
                 else:
                     raise
-            output = capsys.readouterr()
+            post_out, post_err = capsys.readouterr()
+            out = post_out[len(pre_out) :]
+            err = post_err[len(pre_err) :]
             if (
                 "-v" not in arguments and "--version" not in arguments
             ):  # special case for version switch
                 if arguments[0:2] in (["job", "submit"], ["model", "train"]):
-                    match = re.search(job_id_pattern, output.out)
+                    match = re.search(job_id_pattern, out)
                     if match:
                         executed_jobs_list.append(match.group(1))
 
-            return output
+            return SysCap(out, err)
 
     yield _run
     # try to kill all executed jobs regardless of the status
@@ -116,36 +150,6 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
         except BaseException:
             # Just ignore cleanup error here
             pass
-
-
-@pytest.fixture
-def remote_and_local(run, request, tmpstorage):
-    _dir = f"e2e-{uuid()}"
-    _path = f"/tmp/{_dir}"
-
-    captured = run(["store", "mkdir", f"{tmpstorage}{_path}"])
-    assert not captured.err
-    assert captured.out == ""
-
-    yield _path, _dir
-    # Remove directory only if test succeeded
-    if not request.node._report_sections:  # TODO: find another way to check test status
-        try:
-            run(["store", "rm", f"{tmpstorage}{_path}"])
-        except BaseException:
-            # Just ignore cleanup error here
-            pass
-
-
-@pytest.fixture(scope="session")
-def nested_data(tmpdir_factory):
-    loop = asyncio.get_event_loop()
-    root_tmp_dir = tmpdir_factory.mktemp("data")
-    tmp_dir = root_tmp_dir.mkdir("nested").mkdir("directory").mkdir("for").mkdir("test")
-    data = loop.run_until_complete(
-        generate_test_data(tmp_dir, FILE_COUNT, FILE_SIZE_MB)
-    )
-    return data[0][0], data[0][1], root_tmp_dir.strpath
 
 
 @pytest.fixture
@@ -162,10 +166,11 @@ def check_file_exists_on_storage(run, tmpstorage):
     """
 
     def go(name: str, path: str, size: int):
+        path = tmpstorage + path
         delay = 5
         for i in range(5):
             try:
-                captured = run(["store", "ls", f"{tmpstorage}{path}"])
+                captured = run(["store", "ls", path])
             except SystemExit:
                 sleep(delay)
                 delay *= 2
@@ -193,10 +198,11 @@ def check_dir_exists_on_storage(run, tmpstorage):
     """
 
     def go(name: str, path: str):
+        path = tmpstorage + path
         delay = 5
         for i in range(5):
             try:
-                captured = run(["store", "ls", f"{tmpstorage}{path}"])
+                captured = run(["store", "ls", path])
                 captured_output_list = captured.out.split("\n")
                 assert f"directory      0              {name}" in captured_output_list
                 assert not captured.err
@@ -222,10 +228,11 @@ def check_dir_absent_on_storage(run, tmpstorage):
     """
 
     def go(name: str, path: str):
+        path = tmpstorage + path
         delay = 5
         for i in range(5):
             try:
-                captured = run(["store", "ls", f"{tmpstorage}{path}"])
+                captured = run(["store", "ls", path])
                 split = captured.out.split("\n")
                 assert format_list(name=name, size=0, type="directory") not in split
                 assert not captured.err
@@ -251,10 +258,11 @@ def check_file_absent_on_storage(run, tmpstorage):
     """
 
     def go(name: str, path: str):
+        path = tmpstorage + path
         delay = 5
         for i in range(5):
             try:
-                captured = run(["store", "ls", f"{tmpstorage}{path}"])
+                captured = run(["store", "ls", path])
                 pattern = format_list_pattern(name=name)
                 assert not re.search(pattern, captured.out)
                 assert not captured.err
@@ -283,11 +291,12 @@ def check_file_on_storage_checksum(run, tmpstorage):
     """
 
     def go(name: str, path: str, checksum: str, tmpdir: str, tmpname: str):
+        path = tmpstorage + path
         _local = join(tmpdir, tmpname)
         delay = 5
         for i in range(5):
             try:
-                run(["store", "cp", f"{tmpstorage}{path}/{name}", _local])
+                run(["store", "cp", f"{path}/{name}", _local])
                 assert hash_hex(_local) == checksum
                 return
             except SystemExit:
@@ -309,10 +318,11 @@ def check_create_dir_on_storage(run, tmpstorage):
     """
 
     def go(path: str):
+        path = tmpstorage + path
         delay = 5
         for i in range(5):
             try:
-                captured = run(["store", "mkdir", f"{tmpstorage}{path}"])
+                captured = run(["store", "mkdir", path])
                 assert not captured.err
                 assert captured.out == ""
                 return
@@ -320,7 +330,7 @@ def check_create_dir_on_storage(run, tmpstorage):
                 sleep(delay)
                 delay *= 2
         else:
-            raise AssertionError(f"Cannot create dir{path}")
+            raise AssertionError(f"Cannot create dir {path}")
 
     return go
 
@@ -335,10 +345,11 @@ def check_rmdir_on_storage(run, tmpstorage):
     """
 
     def go(path: str):
+        path = tmpstorage + path
         delay = 5
         for i in range(5):
             try:
-                captured = run(["store", "rm", f"{tmpstorage}{path}"])
+                captured = run(["store", "rm", path])
                 assert not captured.err
                 return
             except SystemExit:
@@ -361,10 +372,11 @@ def check_rm_file_on_storage(run, tmpstorage):
     """
 
     def go(name: str, path: str):
+        path = tmpstorage + path
         delay = 5
         for i in range(5):
             try:
-                captured = run(["store", "rm", f"{tmpstorage}{path}/{name}"])
+                captured = run(["store", "rm", f"{path}/{name}"])
                 assert not captured.err
                 return
             except SystemExit:
@@ -389,8 +401,9 @@ def check_upload_file_to_storage(run, tmpstorage):
     """
 
     def go(name: str, path: str, local_file: str):
+        path = tmpstorage + path
         if name is None:
-            captured = run(["store", "cp", local_file, f"{tmpstorage}{path}"])
+            captured = run(["store", "cp", local_file, f"{path}"])
             assert not captured.err
             assert captured.out == ""
         else:

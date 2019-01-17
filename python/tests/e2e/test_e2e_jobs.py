@@ -252,10 +252,8 @@ def test_model_without_command(run, loop, tmpstorage):
                 sleep(loop_sleep)
         return succeeded
 
-    _path_src = f"tmp"
-
-    _dir_dst = f"e2e-{uuid()}"
-    _path_dst = f"/tmp/{_dir_dst}"
+    _path_src = f"src"
+    _path_dst = f"dst"
 
     # Create directory for the test, going to be model and result output
     run(["store", "mkdir", f"{tmpstorage}{_path_src}"])
