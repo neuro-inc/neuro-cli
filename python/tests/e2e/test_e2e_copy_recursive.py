@@ -44,7 +44,7 @@ def test_e2e_copy_recursive_to_platform(
     assert hash_hex(targetfile) == checksum
 
     # Remove test dir
-    check_rmdir_on_storage("folder")
+    check_rmdir_on_storage("nested")
 
     # And confirm
-    check_dir_absent_on_storage("folder", "")
+    check_dir_absent_on_storage("nested", "")
