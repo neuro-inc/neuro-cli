@@ -19,7 +19,8 @@ jobs:
           keys:
           - v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          # fallback removed due cache rebuilding
+          # - v1-dependencies-
       - run:
           name: install dependencies
           command: |
