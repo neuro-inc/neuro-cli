@@ -1,5 +1,4 @@
 import os
-from os.path import join
 from pathlib import PurePath
 
 import pytest
