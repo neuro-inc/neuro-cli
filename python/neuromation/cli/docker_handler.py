@@ -1,7 +1,7 @@
 import re
 import sys
 from dataclasses import dataclass
-from typing import Dict
+from typing import Any, Dict, List
 
 import aiodocker
 from aiodocker.exceptions import DockerError
@@ -19,7 +19,7 @@ DEFAULT_TAG = "latest"
 @dataclass(frozen=True)
 class Image:
     url: URL
-    local: str = None
+    local: str
 
     @classmethod
     def from_url(cls, url: URL, username: str) -> "Image":
@@ -52,7 +52,7 @@ class Image:
 
         return cls(url=URL(f"image://{username}/{name}"), local=name)
 
-    def to_repo(self, registry) -> str:
+    def to_repo(self, registry: str) -> str:
         return f"{registry}/{self.url.host}{self.url.path}"
 
 
@@ -65,16 +65,16 @@ class DockerHandler:
     _PROGRESS = "|\\-/"
     _progress_tick = 0
 
-    def _startProgress(self):
+    def _startProgress(self) -> None:
         self._progress_tick = 0
         self._tickProgress()
 
-    def _tickProgress(self):
+    def _tickProgress(self) -> None:
         self._progress_tick = (self._progress_tick + 1) % len(self._PROGRESS)
         if sys.stdout.isatty():  # pragma: no cover
             print(f"\r{self._PROGRESS[self._progress_tick]}", end="")
 
-    def _endProgress(self):
+    def _endProgress(self) -> None:
         if sys.stdout.isatty():  # pragma: no cover
             print(f"\r", end="")
 
@@ -94,12 +94,14 @@ class DockerHandler:
                         "if you are using remote docker engine"
                     },
                 )
-        self._temporary_images = list()
+        self._temporary_images: List[str] = list()
 
-    async def __aenter__(self):  # pragma: no cover
+    async def __aenter__(self) -> "DockerHandler":  # pragma: no cover
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):  # pragma: no cover
+    async def __aexit__(
+        self, exc_type: Any, exc_val: Any, exc_tb: Any
+    ) -> None:  # pragma: no cover
         try:
             for image in self._temporary_images:
                 await self._client.images.delete(image)
@@ -116,7 +118,7 @@ class DockerHandler:
         if remote_image_name:
             remote_image = Image.from_url(URL(remote_image_name), self._username)
 
-        repo = remote_image.to_repo(self._registry.host)
+        repo = remote_image.to_repo(f"{self._registry.host}")
         self._startProgress()
         try:
             await self._client.images.tag(local_image.local, repo)
@@ -155,7 +157,7 @@ class DockerHandler:
         if local_image_name:
             local_image = Image.from_local(local_image_name, self._username)
 
-        repo = remote_image.to_repo(self._registry.host)
+        repo = remote_image.to_repo(f"{self._registry.host}")
         self._startProgress()
         try:
             stream = await self._client.pull(
