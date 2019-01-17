@@ -29,9 +29,9 @@ log = logging.getLogger(__name__)
 job_id_pattern = r"Job ID:\s*(\S+)"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def tmpstorage():
-    return "storage://" + uuid() + "/"
+    return "storage://" + str(uuid()) + "/"
 
 
 async def generate_test_data(root, count, size_mb):
