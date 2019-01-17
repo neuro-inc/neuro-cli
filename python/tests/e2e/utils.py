@@ -89,10 +89,18 @@ def check_dir_exists_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    captured = run(["store", "ls", f"storage://{path}"])
-    captured_output_list = captured.out.split("\n")
-    assert f"directory      0              {name}" in captured_output_list
-    assert not captured.err
+    delay = 5
+    for i in range(5):
+        try:
+            captured = run(["store", "ls", f"storage://{path}"])
+            captured_output_list = captured.out.split("\n")
+            assert f"directory      0              {name}" in captured_output_list
+            assert not captured.err
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+    else:
+        raise AssertionError(f"Cannot check dir exist {name} on {path}")
 
 
 def check_dir_absent_on_storage(run, name: str, path: str):
@@ -105,10 +113,19 @@ def check_dir_absent_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    captured = run(["store", "ls", f"storage://{path}"])
-    split = captured.out.split("\n")
-    assert format_list(name=name, size=0, type="directory") not in split
-    assert not captured.err
+    delay = 5
+    for i in range(5):
+        try:
+            captured = run(["store", "ls", f"storage://{path}"])
+            split = captured.out.split("\n")
+            assert format_list(name=name, size=0, type="directory") not in split
+            assert not captured.err
+            return
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+    else:
+        raise AssertionError(f"Cannot check absence dir {name} on {path}")
 
 
 def check_file_absent_on_storage(run, name: str, path: str):
@@ -120,10 +137,19 @@ def check_file_absent_on_storage(run, name: str, path: str):
     :param path: Path on storage
     :return:
     """
-    captured = run(["store", "ls", f"storage://{path}"])
-    pattern = format_list_pattern(name=name)
-    assert not re.search(pattern, captured.out)
-    assert not captured.err
+    delay = 5
+    for i in range(5):
+        try:
+            captured = run(["store", "ls", f"storage://{path}"])
+            pattern = format_list_pattern(name=name)
+            assert not re.search(pattern, captured.out)
+            assert not captured.err
+            return
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+    else:
+        raise AssertionError(f"Cannot check absence file {name} on {path}")
 
 
 def check_file_on_storage_checksum(
@@ -141,8 +167,17 @@ def check_file_on_storage_checksum(
     :return:
     """
     _local = join(tmpdir, tmpname)
-    run(["store", "cp", f"storage://{path}/{name}", _local])
-    assert hash_hex(_local) == checksum
+    delay = 5
+    for i in range(5):
+        try:
+            run(["store", "cp", f"storage://{path}/{name}", _local])
+            assert hash_hex(_local) == checksum
+            return
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+    else:
+        raise AssertionError(f"Cannot check sum {name} on {path}")
 
 
 def check_create_dir_on_storage(run, path: str):
@@ -190,6 +225,7 @@ def check_rm_file_on_storage(run, name: str, path: str):
         try:
             captured = run(["store", "rm", f"storage://{path}/{name}"])
             assert not captured.err
+            return
         except SystemExit:
             sleep(delay)
             delay *= 2
