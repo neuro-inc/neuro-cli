@@ -85,7 +85,9 @@ class DockerHandler:
         try:
             self._client = aiodocker.Docker()
         except ValueError as error:
-            if re.match(r"", f"{error}"):
+            if re.match(
+                r".+Either DOCKER_HOST or local sockets are not available", f"{error}"
+            ):
                 raise DockerError(
                     STATUS_CUSTOM_ERROR,
                     {
