@@ -11,7 +11,7 @@ DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")
 
 
 @pytest.fixture
-def nmrc(tmp_path, setup_local_keyring):
+def nmrc(tmp_path, setup_null_keyring):
     return tmp_path / ".nmrc"
 
 
@@ -29,7 +29,6 @@ def setup_failed_keyring():
 
 @pytest.fixture
 def setup_null_keyring():
-    import keyring.backends
     import keyring.backends.null
 
     stored_keyring = keyring.get_keyring()
