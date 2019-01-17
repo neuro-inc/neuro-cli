@@ -173,14 +173,14 @@ def check_file_exists_on_storage(run, tmpstorage):
         for i in range(5):
             try:
                 captured = run(["store", "ls", path])
+                captured_output_list = captured.out.split("\n")
+                expected_line = format_list(type="file", size=size, name=name)
+                assert not captured.err
+                assert expected_line in captured_output_list
+                return
             except SystemExit:
                 sleep(delay)
                 delay *= 2
-            captured_output_list = captured.out.split("\n")
-            expected_line = format_list(type="file", size=size, name=name)
-            assert not captured.err
-            assert expected_line in captured_output_list
-            return
         else:
             raise AssertionError(f"Cannot find {name} in {path}")
 
@@ -409,7 +409,7 @@ def check_upload_file_to_storage(run, tmpstorage):
             assert not captured.err
             assert captured.out == ""
         else:
-            captured = run(["store", "cp", local_file, f"{tmpstorage}{path}/{name}"])
+            captured = run(["store", "cp", local_file, f"{path}/{name}"])
             assert not captured.err
             assert captured.out == ""
 

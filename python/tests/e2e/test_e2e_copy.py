@@ -14,79 +14,80 @@ FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_0(
     data,
-    remote_and_local,
+    check_create_dir_on_storage,
     check_upload_file_to_storage,
     check_file_exists_on_storage,
     check_rm_file_on_storage,
     check_file_absent_on_storage,
 ):
-    # case when copy happens with the trailing '/'
-    _path, _dir = remote_and_local
-    file, checksum = data[0]
-    file_name = str(PurePath(file).name)
+    srcfile, checksum = data[0]
+    file_name = str(PurePath(srcfile).name)
 
+    check_create_dir_on_storage("folder")
     # Upload local file to existing directory
-    check_upload_file_to_storage(None, f"{_path}/", file)
+    # case when copy happens with the trailing '/'
+    check_upload_file_to_storage(None, "folder/", srcfile)  # tmpstorage/
 
     # Ensure file is there
-    check_file_exists_on_storage(file_name, _path, FILE_SIZE_B)
+    check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
 
     # Remove the file from platform
-    check_rm_file_on_storage(file_name, _path)
+    check_rm_file_on_storage(file_name, "folder")
 
     # Ensure file is not there
-    check_file_absent_on_storage(file_name, _path)
+    check_file_absent_on_storage(file_name, "folder")
 
 
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_1(
     data,
-    remote_and_local,
+    check_create_dir_on_storage,
     check_upload_file_to_storage,
     check_file_exists_on_storage,
     check_rm_file_on_storage,
     check_file_absent_on_storage,
 ):
     # case when copy happens without the trailing '/'
-    _path, _dir = remote_and_local
-    file, checksum = data[0]
-    file_name = str(PurePath(file).name)
+    srcfile, checksum = data[0]
+    file_name = str(PurePath(srcfile).name)
+
+    check_create_dir_on_storage("folder")
 
     # Upload local file to existing directory
-    check_upload_file_to_storage(None, _path, file)
+    check_upload_file_to_storage(None, "folder", srcfile)
 
     # Ensure file is there
-    check_file_exists_on_storage(file_name, _path, FILE_SIZE_B)
+    check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
 
     # Remove the file from platform
-    check_rm_file_on_storage(file_name, _path)
+    check_rm_file_on_storage(file_name, "folder")
 
     # Ensure file is not there
-    check_file_absent_on_storage(file_name, _path)
+    check_file_absent_on_storage(file_name, "folder")
 
 
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_2(
     data,
     run,
-    remote_and_local,
     tmpstorage,
+    check_create_dir_on_storage,
     check_upload_file_to_storage,
     check_file_exists_on_storage,
     check_rm_file_on_storage,
     check_file_absent_on_storage,
 ):
     # case when copy happens with rename to 'different_name.txt'
-    _path, _dir = remote_and_local
-    file, checksum = data[0]
-    file_name = str(PurePath(file).name)
+    srcfile, checksum = data[0]
+    file_name = str(PurePath(srcfile).name)
 
+    check_create_dir_on_storage("folder")
     # Upload local file to existing directory
-    check_upload_file_to_storage("different_name.txt", _path, file)
+    check_upload_file_to_storage("different_name.txt", "folder", srcfile)
 
     # Ensure file is there
-    check_file_exists_on_storage("different_name.txt", _path, FILE_SIZE_B)
-    captured = run(["store", "ls", tmpstorage + _path + "/"])
+    check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
+    captured = run(["store", "ls", tmpstorage + "folder/"])
     split = captured.out.split("\n")
     assert (
         format_list(name="different_name.txt", size=FILE_SIZE_B, type="file") in split
@@ -94,15 +95,15 @@ def test_copy_local_to_platform_single_file_2(
     assert format_list(name=file_name, size=FILE_SIZE_B, type="file") not in split
 
     # Remove the file from platform
-    check_rm_file_on_storage("different_name.txt", _path)
+    check_rm_file_on_storage("different_name.txt", "folder")
 
     # Ensure file is not there
-    check_file_absent_on_storage("different_name.txt", _path)
+    check_file_absent_on_storage("different_name.txt", "folder")
 
 
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_3(
-    data, run, remote_and_local, tmpstorage, check_dir_absent_on_storage
+    data, run, tmpstorage, check_dir_absent_on_storage
 ):
     # case when copy happens with rename to 'different_name.txt'
     _path, _dir = remote_and_local
@@ -120,7 +121,7 @@ def test_copy_local_to_platform_single_file_3(
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_non_existing_local(
-    run, tmpdir, capsys, remote_and_local, tmpstorage
+    run, tmpdir, capsys, tmpstorage
 ):
     _path, _dir = remote_and_local
 
@@ -133,7 +134,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_____existing_local(
-    run, tmpdir, capsys, remote_and_local, tmpstorage
+    run, tmpdir, capsys, tmpstorage
 ):
     _path, _dir = remote_and_local
 
