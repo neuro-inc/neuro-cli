@@ -37,23 +37,24 @@ def setup_null_keyring():
 
     keyring.set_keyring(stored_keyring)
 
+
 @pytest.fixture
 def setup_memory_keyring():
     import keyring.backend
     import keyring.backends.null
 
-
     class Memory(keyring.backend.KeyringBackend):
         storage = dict()
+
         @classmethod
         def _key(cls, service, username):
-            return f'{service}--{username}'
+            return f"{service}--{username}"
 
         def get_password(self, service, username):
             return self.storage.get(self._key(service, username), None)
 
         def set_password(self, service, username, password):
-            self.storage[self._key(service, username)]= password
+            self.storage[self._key(service, username)] = password
 
         def delete_password(self, service, username):
             self.storage.pop(self._key(service, username), None)
@@ -63,7 +64,6 @@ def setup_memory_keyring():
     yield
 
     keyring.set_keyring(stored_keyring)
-
 
 
 def test_create(nmrc):
@@ -244,6 +244,7 @@ def test_load_missing(nmrc):
     config = rc.load(nmrc)
     assert nmrc.exists()
     assert config == DEFAULTS
+
 
 def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
     def home():
