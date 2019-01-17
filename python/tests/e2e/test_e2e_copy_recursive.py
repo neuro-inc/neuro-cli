@@ -1,7 +1,3 @@
-from os.path import join
-from pathlib import PurePath
-from uuid import uuid4 as uuid
-
 import pytest
 
 from tests.e2e.utils import FILE_SIZE_MB, hash_hex
