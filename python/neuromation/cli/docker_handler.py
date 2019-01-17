@@ -16,7 +16,7 @@ STATUS_CUSTOM_ERROR = 900
 DEFAULT_TAG = "latest"
 
 
-@dataclass()
+@dataclass(frozen=True)
 class Image:
     url: URL
     local: str = None
