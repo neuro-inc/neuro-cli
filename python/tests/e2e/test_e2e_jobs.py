@@ -20,9 +20,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 
 @pytest.mark.e2e
-def test_job_complete_lifecycle(
-    run, loop, tmpstorage, check_create_dir_on_storage
-):
+def test_job_complete_lifecycle(run, loop, tmpstorage, check_create_dir_on_storage):
     # Create directory for the test, going to be model and result output
     check_create_dir_on_storage("model")
     check_create_dir_on_storage("result")
