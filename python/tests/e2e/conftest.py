@@ -270,12 +270,17 @@ def check_file_on_storage_checksum(run, tmpstorage):
 
     def go(name: str, path: str, checksum: str, tmpdir: str, tmpname: str):
         path = tmpstorage + path
-        _local = join(tmpdir, tmpname)
+        if tmpname:
+            target = join(tmpdir, tmpname)
+            target_file = target
+        else:
+            target = tmpdir
+            target_file = join(tmpdir, name)
         delay = 5
         for i in range(5):
             try:
-                run(["store", "cp", f"{path}/{name}", _local])
-                assert hash_hex(_local) == checksum
+                run(["store", "cp", f"{path}/{name}", target])
+                assert hash_hex(target_file) == checksum
                 return
             except SystemExit:
                 sleep(delay)

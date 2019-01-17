@@ -121,9 +121,7 @@ def test_e2e_storage(
     # Download into deeper local dir and confirm checksum
     localdir = tmp_path / "baz"
     localdir.mkdir()
-    local_file = localdir / "foo"
-    run(["store", "cp", f"{tmpstorage}folder/foo", str(localdir)])
-    assert hash_hex(local_file) == checksum
+    check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
 
     # Rename file on the storage
     check_rename_file_on_storage("foo", "folder", "bar", "folder")
