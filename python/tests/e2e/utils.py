@@ -187,9 +187,18 @@ def check_create_dir_on_storage(run, path: str):
     :param path: Path on storage
     :return:
     """
-    captured = run(["store", "mkdir", f"storage://{path}"])
-    assert not captured.err
-    assert captured.out == ""
+    delay = 5
+    for i in range(5):
+        try:
+            captured = run(["store", "mkdir", f"storage://{path}"])
+            assert not captured.err
+            assert captured.out == ""
+            return
+        except SystemExit:
+            sleep(delay)
+            delay *= 2
+    else:
+        raise AssertionError(f"Cannot create dir{path}")
 
 
 def check_rmdir_on_storage(run, path: str):
