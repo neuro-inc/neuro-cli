@@ -10,19 +10,7 @@ import pytest
 
 import neuromation
 from tests.e2e.test_e2e_utils import assert_job_state, wait_job_change_state_from
-from tests.e2e.utils import (
-    UBUNTU_IMAGE_NAME,
-    check_create_dir_on_storage,
-    check_dir_absent_on_storage,
-    check_file_exists_on_storage,
-    check_file_on_storage_checksum,
-    check_rename_directory_on_storage,
-    check_rename_file_on_storage,
-    check_rmdir_on_storage,
-    check_upload_file_to_storage,
-    format_list,
-    hash_hex,
-)
+from tests.e2e.utils import UBUNTU_IMAGE_NAME, format_list, hash_hex
 
 
 BLOCK_SIZE_MB = 16
@@ -90,11 +78,11 @@ def test_print_version(run, version_key):
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(run, remote_and_local):
+def test_empty_directory_ls_output(run, remote_and_local, tmpstorage):
     _path, _dir = remote_and_local
 
     # Ensure output of ls - empty directory shall print nothing.
-    captured = run(["store", "ls", f"storage://{_path}"])
+    captured = run(["store", "ls", f"{tmpstorage}{_path}"])
     assert not captured.err
     assert not captured.out
 
@@ -156,27 +144,40 @@ def test_e2e_shm_run_with(run, tmpdir):
 
 
 @pytest.mark.e2e
-def test_e2e_storage(data, run, tmpdir):
+def test_e2e_storage(
+    data,
+    run,
+    tmpdir,
+    tmpstorage,
+    check_create_dir_on_storage,
+    check_upload_file_to_storage,
+    check_file_exists_on_storage,
+    check_file_on_storage_checksum,
+    check_rename_file_on_storage,
+    check_rename_directory_on_storage,
+    check_rmdir_on_storage,
+    check_dir_absent_on_storage,
+):
     file, checksum = data[0]
 
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
 
     # Create directory for the test
-    check_create_dir_on_storage(run, _path)
+    check_create_dir_on_storage(_path)
 
     # Upload local file
-    check_upload_file_to_storage(run, "foo", _path, file)
+    check_upload_file_to_storage("foo", _path, file)
 
     # Confirm file has been uploaded
-    check_file_exists_on_storage(run, "foo", _path, FILE_SIZE_B)
+    check_file_exists_on_storage("foo", _path, FILE_SIZE_B)
 
     # Download into local file and confirm checksum
     exc = None
     delay = 5
     for i in range(5):
         try:
-            check_file_on_storage_checksum(run, "foo", _path, checksum, tmpdir, "bar")
+            check_file_on_storage_checksum("foo", _path, checksum, tmpdir, "bar")
             break
         except AssertionError as e:
             exc = e
@@ -190,14 +191,14 @@ def test_e2e_storage(data, run, tmpdir):
     _local = join(tmpdir, localdir)
     _local_file = join(_local, "foo")
     tmpdir.mkdir(localdir)
-    run(["store", "cp", f"storage://{_path}/foo", _local])
+    run(["store", "cp", f"{tmpstorage}{_path}/foo", _local])
     assert hash_hex(_local_file) == checksum
 
     # Rename file on the storage
-    check_rename_file_on_storage(run, "foo", _path, "bar", _path)
+    check_rename_file_on_storage("foo", _path, "bar", _path)
 
     # Confirm file has been renamed
-    captured = run(["store", "ls", f"storage://{_path}"])
+    captured = run(["store", "ls", f"{tmpstorage}{_path}"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
     expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
@@ -207,10 +208,10 @@ def test_e2e_storage(data, run, tmpdir):
     # Rename directory on the storage
     _dir2 = f"e2e-{uuid()}"
     _path2 = f"/tmp/{_dir2}"
-    check_rename_directory_on_storage(run, _path, _path2)
+    check_rename_directory_on_storage(_path, _path2)
 
     # Remove test dir
-    check_rmdir_on_storage(run, _path2)
+    check_rmdir_on_storage(_path2)
 
     # And confirm
-    check_dir_absent_on_storage(run, _dir, "/tmp")
+    check_dir_absent_on_storage(_dir, "/tmp")

@@ -23,7 +23,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 
 @pytest.mark.e2e
-def test_job_complete_lifecycle(run, loop, tmpdir):
+def test_job_complete_lifecycle(run, loop, tmpdir, tmpstorage):
     _dir_src = f"e2e-{uuid()}"
     _path_src = f"/tmp/{_dir_src}"
 
@@ -31,8 +31,8 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     _path_dst = f"/tmp/{_dir_dst}"
 
     # Create directory for the test, going to be model and result output
-    run(["store", "mkdir", f"storage://{_path_src}"])
-    run(["store", "mkdir", f"storage://{_path_dst}"])
+    run(["store", "mkdir", f"{tmpstorage}{_path_src}"])
+    run(["store", "mkdir", f"{tmpstorage}{_path_dst}"])
 
     # remember original set or running jobs
     captured = run(["job", "list", "--status", "running,pending"])
@@ -54,8 +54,8 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
             "--http",
             "80",
             UBUNTU_IMAGE_NAME,
-            "storage://" + _path_src,
-            "storage://" + _path_dst,
+            tmpstorage + _path_src,
+            tmpstorage + _path_dst,
             command_first,
         ]
     )
@@ -79,9 +79,9 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
             "--quiet",
             UBUNTU_IMAGE_NAME,
             "--volume",
-            f"storage://{_path_src}:{_path_src}:ro",
+            f"{tmpstorage}{_path_src}:{_path_src}:ro",
             "--volume",
-            f"storage://{_path_dst}:{_path_dst}:rw",
+            f"{tmpstorage}{_path_dst}:{_path_dst}:rw",
             command_second,
         ]
     )
@@ -179,7 +179,7 @@ def test_job_kill_non_existing(run, loop):
 
 
 @pytest.mark.e2e
-def test_model_train_with_http(run, loop):
+def test_model_train_with_http(run, loop, tmpstorage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -201,8 +201,8 @@ def test_model_train_with_http(run, loop):
     _path_dst = f"/tmp/{_dir_dst}"
 
     # Create directory for the test, going to be model and result output
-    run(["store", "mkdir", f"storage://{_path_src}"])
-    run(["store", "mkdir", f"storage://{_path_dst}"])
+    run(["store", "mkdir", f"{tmpstorage}{_path_src}"])
+    run(["store", "mkdir", f"{tmpstorage}{_path_dst}"])
 
     # Start the job
     command = '/usr/sbin/nginx -g "daemon off;"'
@@ -219,8 +219,8 @@ def test_model_train_with_http(run, loop):
             "--http",
             "80",
             NGINX_IMAGE_NAME,
-            "storage://" + _path_src,
-            "storage://" + _path_dst,
+            tmpstorage + _path_src,
+            tmpstorage + _path_dst,
             command,
             "-d",
             "simple test job",
@@ -239,7 +239,7 @@ def test_model_train_with_http(run, loop):
 
 
 @pytest.mark.e2e
-def test_model_without_command(run, loop):
+def test_model_without_command(run, loop, tmpstorage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -261,8 +261,8 @@ def test_model_without_command(run, loop):
     _path_dst = f"/tmp/{_dir_dst}"
 
     # Create directory for the test, going to be model and result output
-    run(["store", "mkdir", f"storage://{_path_src}"])
-    run(["store", "mkdir", f"storage://{_path_dst}"])
+    run(["store", "mkdir", f"{tmpstorage}{_path_src}"])
+    run(["store", "mkdir", f"{tmpstorage}{_path_dst}"])
 
     # Start the job
     captured = run(
@@ -278,8 +278,8 @@ def test_model_without_command(run, loop):
             "--http",
             "80",
             NGINX_IMAGE_NAME,
-            "storage://" + _path_src,
-            "storage://" + _path_dst,
+            "tmpstorage" + _path_src,
+            "tmpstorage" + _path_dst,
             "-d",
             "simple test job",
         ]

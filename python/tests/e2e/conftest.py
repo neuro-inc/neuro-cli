@@ -20,9 +20,17 @@ from tests.e2e.utils import (
 )
 
 
+pytest_plugins = "tests.e2e.utils"
+
+
 log = logging.getLogger(__name__)
 
 job_id_pattern = r"Job ID:\s*(\S+)"
+
+
+@pytest.fixture(scope="session")
+def tmpstorage():
+    return "storage://" + uuid() + "/"
 
 
 async def generate_test_data(root, count, size_mb):
@@ -110,11 +118,11 @@ def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
 
 
 @pytest.fixture
-def remote_and_local(run, request):
+def remote_and_local(run, request, tmpstorage):
     _dir = f"e2e-{uuid()}"
     _path = f"/tmp/{_dir}"
 
-    captured = run(["store", "mkdir", f"storage://{_path}"])
+    captured = run(["store", "mkdir", f"{tmpstorage}{_path}"])
     assert not captured.err
     assert captured.out == ""
 
@@ -122,7 +130,7 @@ def remote_and_local(run, request):
     # Remove directory only if test succeeded
     if not request.node._report_sections:  # TODO: find another way to check test status
         try:
-            run(["store", "rm", f"storage://{_path}"])
+            run(["store", "rm", f"{tmpstorage}{_path}"])
         except BaseException:
             # Just ignore cleanup error here
             pass
