@@ -34,7 +34,7 @@ def test_empty_directory_ls_output(run, tmpstorage):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_without(run, tmpdir):
+def test_e2e_shm_run_without(run):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
@@ -62,7 +62,7 @@ def test_e2e_shm_run_without(run, tmpdir):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_with(run, tmpdir):
+def test_e2e_shm_run_with(run):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
@@ -93,7 +93,7 @@ def test_e2e_shm_run_with(run, tmpdir):
 def test_e2e_storage(
     data,
     run,
-    tmpdir,
+    tmp_path,
     tmpstorage,
     check_create_dir_on_storage,
     check_upload_file_to_storage,
@@ -116,10 +116,11 @@ def test_e2e_storage(
     check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
 
     # Download into local file and confirm checksum
-    check_file_on_storage_checksum("foo", "folder", checksum, str(tmpdir), "bar")
+    check_file_on_storage_checksum("foo", "folder", checksum, str(tmp_path), "bar")
 
     # Download into deeper local dir and confirm checksum
-    localdir = tmpdir.mkdir("baz")
+    localdir = tmp_path / "baz"
+    localdir.mkdir()
     local_file = localdir / "foo"
     run(["store", "cp", f"{tmpstorage}folder/foo", str(localdir)])
     assert hash_hex(local_file) == checksum

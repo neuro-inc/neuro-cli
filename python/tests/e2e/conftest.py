@@ -73,45 +73,48 @@ async def generate_test_data(root, count, size_mb):
 
     return await asyncio.gather(
         *[
-            generate_file(join(root, name))
+            generate_file(str(root / name))
             for name in ("{:04d}.bin".format(i) for i in range(count))
         ]
     )
 
 
 @pytest.fixture(scope="session")
-def static_path(tmpdir_factory):
-    return tmpdir_factory.mktemp("data")
+def static_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("data")
 
 
 @pytest.fixture(scope="session")
 def data(static_path):
     loop = asyncio.get_event_loop()
-    folder = static_path.mkdir("data")
+    folder = static_path / "data"
+    folder.mkdir()
     return loop.run_until_complete(generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB))
 
 
 @pytest.fixture(scope="session")
 def nested_data(static_path):
     loop = asyncio.get_event_loop()
-    root_dir = static_path.mkdir("neested_data").mkdir("nested")
-    nested_dir = root_dir.mkdir("directory").mkdir("for").mkdir("test")
+    root_dir = static_path / "neested_data" / "nested"
+    nested_dir = root_dir / "directory" / "for" / "test"
+    nested_dir.mkdir(parents=True, exist_ok=True)
     data = loop.run_until_complete(
         generate_test_data(nested_dir, FILE_COUNT, FILE_SIZE_MB)
     )
-    return data[0][0], data[0][1], root_dir.strpath
+    return data[0][0], data[0][1], str(root_dir)
 
 
 @pytest.fixture
-def run(monkeypatch, capsys, tmpdir, setup_local_keyring):
+def run(monkeypatch, capsys, tmp_path, setup_local_keyring):
     executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
     rc_text = RC_TEXT.format(token=e2e_test_token)
-    tmpdir.join(".nmrc").open("w").write(rc_text)
+    config_path = tmp_path / ".nmrc"
+    config_path.write_text(rc_text)
 
     def _home():
-        return Path(tmpdir)
+        return Path(tmp_path)
 
     def _run(arguments):
         log.info("Run 'neuro %s'", " ".join(arguments))
@@ -159,12 +162,6 @@ def check_file_exists_on_storage(run, tmpstorage):
     """
     Tests if file with given name and size exists in given path
     Assert if file absent or something went bad
-
-    :param run: Runtime environment
-    :param name: File name
-    :param path: Path on storage
-    :param size: File size
-    :return:
     """
 
     def go(name: str, path: str, size: int):
@@ -192,11 +189,6 @@ def check_dir_exists_on_storage(run, tmpstorage):
     """
     Tests if dir exists in given path
     Assert if dir absent or something went bad
-
-    :param run: Runtime environment
-    :param name: Directory name
-    :param path: Path on storage
-    :return:
     """
 
     def go(name: str, path: str):
@@ -222,11 +214,6 @@ def check_dir_absent_on_storage(run, tmpstorage):
     """
     Tests if dir with given name absent in given path.
     Assert if dir present or something went bad
-
-    :param run: Runtime environment
-    :param name: Dir name
-    :param path: Path on storage
-    :return:
     """
 
     def go(name: str, path: str):
@@ -253,10 +240,6 @@ def check_file_absent_on_storage(run, tmpstorage):
     """
     Tests if file with given name absent in given path.
     Assert if file present or something went bad
-    :param run: Runtime environment
-    :param name: File name
-    :param path: Path on storage
-    :return:
     """
 
     def go(name: str, path: str):
@@ -283,13 +266,6 @@ def check_file_on_storage_checksum(run, tmpstorage):
     """
     Tests if file on storage in given path has same checksum. File will be downloaded
     to temporary folder first. Assert if checksum mismatched
-    :param run: Runtime environment
-    :param name: File name
-    :param path: Path on storage
-    :param checksum: Checksum string
-    :param tmpdir: Temporary dir
-    :param tmpname:  Temporary name
-    :return:
     """
 
     def go(name: str, path: str, checksum: str, tmpdir: str, tmpname: str):
@@ -314,9 +290,6 @@ def check_file_on_storage_checksum(run, tmpstorage):
 def check_create_dir_on_storage(run, tmpstorage):
     """
     Create dir on storage and assert if something went bad
-    :param run: Runtime environment
-    :param path: Path on storage
-    :return:
     """
 
     def go(path: str):
@@ -341,9 +314,6 @@ def check_create_dir_on_storage(run, tmpstorage):
 def check_rmdir_on_storage(run, tmpstorage):
     """
     Remove dir on storage and assert if something went bad
-    :param run: Runtime environment
-    :param path: Path on storage
-    :return:
     """
 
     def go(path: str):
@@ -367,10 +337,6 @@ def check_rmdir_on_storage(run, tmpstorage):
 def check_rm_file_on_storage(run, tmpstorage):
     """
     Remove file in given path in storage and if something went bad
-    :param run: Runtime environment
-    :param name: File name
-    :param path: Path on storage
-    :return:
     """
 
     def go(name: str, path: str):
@@ -394,12 +360,6 @@ def check_rm_file_on_storage(run, tmpstorage):
 def check_upload_file_to_storage(run, tmpstorage):
     """
     Upload local file with given name to storage and assert if something went bad
-
-    :param run: Runtime environment
-    :param name: File name on storage, can be ommited
-    :param path: Path on storage
-    :param local_file: Local file name with path
-    :return:
     """
 
     def go(name: str, path: str, local_file: str):
@@ -420,12 +380,6 @@ def check_upload_file_to_storage(run, tmpstorage):
 def check_rename_file_on_storage(run, tmpstorage):
     """
     Rename file on storage and assert if something went bad
-    :param run: Runtime environment
-    :param name_from: Source file name
-    :param path_from: Source path
-    :param name_to: Destination file name
-    :param path_to: Destination path
-    :return:
     """
 
     def go(name_from: str, path_from: str, name_to: str, path_to: str):
@@ -447,11 +401,6 @@ def check_rename_file_on_storage(run, tmpstorage):
 def check_rename_directory_on_storage(run, tmpstorage):
     """
     Rename directory on storage and assert if something went bad
-
-    :param run:
-    :param path_from:
-    :param path_to:
-    :return:
     """
 
     def go(path_from: str, path_to: str):

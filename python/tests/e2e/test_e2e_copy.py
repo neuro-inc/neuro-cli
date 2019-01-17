@@ -115,7 +115,7 @@ def test_copy_local_to_platform_single_file_3(
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_non_existing_local(
-    run, tmpdir, capsys, tmpstorage
+    run, tmp_path, tmpstorage
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
@@ -124,15 +124,15 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
                 "store",
                 "cp",
                 tmpstorage + "/not-exist-foo",
-                str(tmpdir / "not-exist-bar"),
+                str(tmp_path / "not-exist-bar"),
             ]
         )
 
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_____existing_local(
-    run, tmpdir, capsys, tmpstorage
+    run, tmp_path, tmpstorage
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        run(["store", "cp", tmpstorage + "/foo", str(tmpdir)])
+        run(["store", "cp", tmpstorage + "/foo", str(tmp_path)])

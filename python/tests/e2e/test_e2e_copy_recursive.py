@@ -7,7 +7,7 @@ from tests.e2e.utils import FILE_SIZE_B, hash_hex
 def test_e2e_copy_recursive_to_platform(
     nested_data,
     run,
-    tmpdir,
+    tmp_path,
     tmpstorage,
     check_create_dir_on_storage,
     check_dir_exists_on_storage,
@@ -29,7 +29,8 @@ def test_e2e_copy_recursive_to_platform(
 
     # Download into local directory and confirm checksum
 
-    targetdir = tmpdir.mkdir("bar")
+    targetdir = tmp_path / "bar"
+    targetdir.mkdir()
     run(["store", "cp", "-r", f"{tmpstorage}", str(targetdir)])
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
