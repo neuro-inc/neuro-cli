@@ -4,7 +4,7 @@ import pytest
 
 import neuromation
 from tests.e2e.test_e2e_utils import assert_job_state, wait_job_change_state_from
-from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list, hash_hex
+from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list
 
 
 @pytest.mark.e2e
