@@ -116,7 +116,7 @@ def run(monkeypatch, capsys, tmp_path, setup_local_keyring):
     def _home():
         return Path(tmp_path)
 
-    def _run(arguments):
+    def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
         monkeypatch.setattr(sys, "argv", ["nmc"] + arguments + ["--show-traceback"])
@@ -139,7 +139,11 @@ def run(monkeypatch, capsys, tmp_path, setup_local_keyring):
                     sleep(delay)
                     delay *= 2
                     continue
-                elif exc.code == os.EX_OSFILE and arguments[0] == "store":
+                elif (
+                    exc.code == os.EX_OSFILE
+                    and arguments[0] == "store"
+                    and not storage_retry
+                ):
                     # NFS storage has a lag between pushing data on one storage API node
                     # and fetching it on other node
                     # retry is the only way to avoid it

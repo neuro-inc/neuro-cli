@@ -105,7 +105,10 @@ def test_copy_local_to_platform_single_file_3(
 
     # Upload local file to non existing directory
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        captured = run(["store", "cp", srcfile, tmpstorage + "/non_existing_dir/"])
+        captured = run(
+            ["store", "cp", srcfile, tmpstorage + "/non_existing_dir/"],
+            storage_retry=False,
+        )
         assert not captured.err
         assert captured.out == ""
 
@@ -125,7 +128,8 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
                 "cp",
                 tmpstorage + "/not-exist-foo",
                 str(tmp_path / "not-exist-bar"),
-            ]
+            ],
+            storage_retry=False,
         )
 
 
@@ -135,4 +139,4 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        run(["store", "cp", tmpstorage + "/foo", str(tmp_path)])
+        run(["store", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False)
