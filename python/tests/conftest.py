@@ -57,14 +57,14 @@ def http_backed_storage(http_storage):
 
 
 @pytest.fixture
-def setup_local_keyring(tmpdir, monkeypatch):
+def setup_local_keyring(tmp_path, monkeypatch):
 
     import keyring
     import keyrings.cryptfile.file
     import keyrings.cryptfile.file_base
 
     def file_path():
-        return str(tmpdir / "keystore")
+        return str(tmp_path / "keystore")
 
     stored_keyring = keyring.get_keyring()
     keyring.set_keyring(keyrings.cryptfile.file.PlaintextKeyring())
@@ -77,15 +77,15 @@ def setup_local_keyring(tmpdir, monkeypatch):
 
 
 @pytest.fixture
-def run(request, monkeypatch, capsys, tmpdir, setup_local_keyring):
+def run(request, monkeypatch, capsys, tmp_path, setup_local_keyring):
     import sys
     from pathlib import Path
 
     def _home():
-        return Path(tmpdir)
+        return Path(tmp_path)
 
     def _run(arguments, rc_text):
-        tmpdir.join(".nmrc").open("w").write(rc_text)
+        tmp_path.joinpath(".nmrc").write_text(rc_text)
 
         monkeypatch.setattr(Path, "home", _home)
         monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
