@@ -364,13 +364,14 @@ async def test_storage_normalize_bad_scheme(token):
             client.storage.normalize(URL("other:path/to/file.txt"))
 
 
+@pytest.mark.xfail
 async def test_storage_normalize_local(token):
     async with ClientV2("https://example.com", token) as client:
         url = client.storage.normalize_local(URL("file:///path/to/file.txt"))
         assert url.scheme == "file"
         assert url.host is None
         # fails on CI only :(
-        # assert url.path == "/path/to/file.txt"
+        assert url.path == "/path/to/file.txt"
 
 
 async def test_storage_normalize_local_bad_scheme(token):
@@ -381,6 +382,7 @@ async def test_storage_normalize_local_bad_scheme(token):
             client.storage.normalize_local(URL("other:path/to/file.txt"))
 
 
+@pytest.mark.xfail
 async def test_storage_normalize_local_expand_user(token, monkeypatch):
     monkeypatch.setenv("HOME", "/home/user")
     async with ClientV2("https://example.com", token) as client:
@@ -388,7 +390,7 @@ async def test_storage_normalize_local_expand_user(token, monkeypatch):
         assert url.scheme == "file"
         assert url.host is None
         # fails on CI only :(
-        # assert url.path == "/home/user/path/to/file.txt"
+        assert url.path == "/home/user/path/to/file.txt"
 
 
 async def test_storage_normalize_local_with_host(token):
