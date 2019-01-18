@@ -209,3 +209,11 @@ async def test_storage_normalize_local_expand_user(token, monkeypatch):
         assert url.scheme == "file"
         assert url.host is None
         assert url.path == "/home/user/path/to/file.txt"
+
+
+async def test_storage_normalize_local_with_host(token):
+    async with ClientV2("https://example.com", token) as client:
+        with pytest.raises(
+            ValueError, match="Host part is not allowed"
+        ):
+            client.storage.normalize_local(URL("file://host/path/to/file.txt"))
