@@ -1,3 +1,4 @@
+from filecmp import dircmp
 from pathlib import Path
 
 import pytest
@@ -56,6 +57,9 @@ async def storage_server(aiohttp_raw_server, tmp_path):
                     }
                 }
             )
+        elif op == "MKDIRS":
+            local_path.mkdir(parents=True)
+            return web.Response(status=201)
         else:
             raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
 
@@ -562,3 +566,15 @@ async def test_storage_upload_recursive_target_is_a_file(
             await client.storage.upload_dir(
                 DummyProgress(), URL(DATA_FOLDER.as_uri()), URL("storage:file.txt")
             )
+
+
+async def test_storage_upload_recursive_ok(storage_server, token, tmp_path):
+    TARGET_DIR = tmp_path / "folder"
+    TARGET_DIR.mkdir()
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        await client.storage.upload_dir(
+            DummyProgress(), URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
+        )
+    diff = dircmp(DATA_FOLDER / "nested", TARGET_DIR)
+    assert not diff.diff_files
