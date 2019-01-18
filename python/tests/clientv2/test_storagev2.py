@@ -228,7 +228,7 @@ async def test_storage_open(aiohttp_server, token):
             return web.json_response(
                 {
                     "FileStatus": {
-                        "path": "/user/folder",
+                        "path": "/user/file",
                         "type": "FILE",
                         "length": 5,
                         "modificationTime": 3456,
@@ -249,6 +249,35 @@ async def test_storage_open(aiohttp_server, token):
         async for chunk in client.storage.open(URL("storage://~/file")):
             buf.extend(chunk)
         assert buf == b"01234"
+
+
+async def test_storage_open_directory(aiohttp_server, token):
+    async def handler(request):
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/folder",
+                    "type": "DIRECTORY",
+                    "length": 5,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), token) as client:
+        buf = bytearray()
+        with pytest.raises(IsADirectoryError):
+            async for chunk in client.storage.open(URL("storage://~/folder")):
+                buf.extend(chunk)
+        assert not buf
 
 
 # test normalizers
