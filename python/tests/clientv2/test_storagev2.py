@@ -357,7 +357,7 @@ async def test_storage_normalize_local_with_host(token):
 # high level API
 
 
-async def test_stotage_upload_file_does_not_exists(token):
+async def test_storage_upload_file_does_not_exists(token):
     async with ClientV2("https://example.com", token) as client:
         with pytest.raises(FileNotFoundError):
             await client.storage.upload_file(
@@ -367,9 +367,19 @@ async def test_stotage_upload_file_does_not_exists(token):
             )
 
 
-async def test_stotage_upload_dir(token):
+async def test_storage_upload_dir(token):
     async with ClientV2("https://example.com", token) as client:
         with pytest.raises(IsADirectoryError):
             await client.storage.upload_file(
                 DummyProgress(), URL(FOLDER.as_uri()), URL("storage://host/path/to")
+            )
+
+
+async def test_storage_upload_not_a_file(token):
+    async with ClientV2("https://example.com", token) as client:
+        with pytest.raises(OSError):
+            await client.storage.upload_file(
+                DummyProgress(),
+                URL("file:///dev/random"),
+                URL("storage://host/path/to"),
             )

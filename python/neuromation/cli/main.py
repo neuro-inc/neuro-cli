@@ -965,7 +965,7 @@ def main():
     except PermissionError as error:
         log_error(f"Cannot access file ({error})")
         sys.exit(os.EX_NOPERM)
-    except IOError as error:
+    except OSError as error:
         log_error(f"I/O Error ({error})")
         raise error
 
