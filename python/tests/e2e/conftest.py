@@ -123,6 +123,7 @@ def run(monkeypatch, capsys, tmp_path, setup_local_keyring):
 
         from neuromation.cli import main
 
+        delay = 0.5
         for i in range(5):
             try:
                 pre_out, pre_err = capsys.readouterr()
@@ -135,11 +136,15 @@ def run(monkeypatch, capsys, tmp_path, setup_local_keyring):
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem
+                    sleep(delay)
+                    delay *= 2
                     continue
                 elif exc.code == os.EX_OSFILE and arguments[0] == "store":
                     # NFS storage has a lag between pushing data on one storage API node
                     # and fetching it on other node
                     # retry is the only way to avoid it
+                    sleep(delay)
+                    delay *= 2
                     continue
                 else:
                     raise
