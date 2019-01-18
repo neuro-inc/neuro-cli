@@ -124,19 +124,25 @@ def run(monkeypatch, capsys, tmp_path, setup_local_keyring):
         from neuromation.cli import main
 
         for i in range(5):
-            pre_out, pre_err = capsys.readouterr()
-            pre_out_size = len(pre_out)
-            pre_err_size = len(pre_err)
             try:
+                pre_out, pre_err = capsys.readouterr()
+                pre_out_size = len(pre_out)
+                pre_err_size = len(pre_err)
                 main()
+                post_out, post_err = capsys.readouterr()
+                out = post_out[pre_out_size:]
+                err = post_err[pre_err_size:]
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
+                    # network problem
+                    continue
+                elif exc.code == os.EX_OSFILE and arguments[0] == "store":
+                    # NFS storage has a lag between pushing data on one storage API node
+                    # and fetching it on other node
+                    # retry is the only way to avoid it
                     continue
                 else:
                     raise
-            post_out, post_err = capsys.readouterr()
-            out = post_out[pre_out_size:]
-            err = post_err[pre_err_size:]
             if (
                 "-v" not in arguments and "--version" not in arguments
             ):  # special case for version switch
@@ -166,20 +172,11 @@ def check_file_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str, size: int):
         path = tmpstorage + path
-        delay = 5
-        for i in range(5):
-            try:
-                captured = run(["store", "ls", path])
-                captured_output_list = captured.out.split("\n")
-                expected_line = format_list(type="file", size=size, name=name)
-                assert not captured.err
-                assert expected_line in captured_output_list
-                return
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot find {name} in {path}")
+        captured = run(["store", "ls", path])
+        captured_output_list = captured.out.split("\n")
+        expected_line = format_list(type="file", size=size, name=name)
+        assert not captured.err
+        assert expected_line in captured_output_list
 
     return go
 
@@ -193,18 +190,10 @@ def check_dir_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        delay = 5
-        for i in range(5):
-            try:
-                captured = run(["store", "ls", path])
-                captured_output_list = captured.out.split("\n")
-                assert f"directory      0              {name}" in captured_output_list
-                assert not captured.err
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot check dir exist {name} on {path}")
+        captured = run(["store", "ls", path])
+        captured_output_list = captured.out.split("\n")
+        assert f"directory      0              {name}" in captured_output_list
+        assert not captured.err
 
     return go
 
@@ -218,19 +207,10 @@ def check_dir_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        delay = 5
-        for i in range(5):
-            try:
-                captured = run(["store", "ls", path])
-                split = captured.out.split("\n")
-                assert format_list(name=name, size=0, type="directory") not in split
-                assert not captured.err
-                return
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot check absence dir {name} on {path}")
+        captured = run(["store", "ls", path])
+        split = captured.out.split("\n")
+        assert format_list(name=name, size=0, type="directory") not in split
+        assert not captured.err
 
     return go
 
@@ -244,19 +224,10 @@ def check_file_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        delay = 5
-        for i in range(5):
-            try:
-                captured = run(["store", "ls", path])
-                pattern = format_list_pattern(name=name)
-                assert not re.search(pattern, captured.out)
-                assert not captured.err
-                return
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot check absence file {name} on {path}")
+        captured = run(["store", "ls", path])
+        pattern = format_list_pattern(name=name)
+        assert not re.search(pattern, captured.out)
+        assert not captured.err
 
     return go
 
@@ -276,17 +247,8 @@ def check_file_on_storage_checksum(run, tmpstorage):
         else:
             target = tmpdir
             target_file = join(tmpdir, name)
-        delay = 5
-        for i in range(5):
-            try:
-                run(["store", "cp", f"{path}/{name}", target])
-                assert hash_hex(target_file) == checksum
-                return
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot check sum {name} on {path}")
+        run(["store", "cp", f"{path}/{name}", target])
+        assert hash_hex(target_file) == checksum
 
     return go
 
@@ -299,18 +261,9 @@ def check_create_dir_on_storage(run, tmpstorage):
 
     def go(path: str):
         path = tmpstorage + path
-        delay = 5
-        for i in range(5):
-            try:
-                captured = run(["store", "mkdir", path])
-                assert not captured.err
-                assert captured.out == ""
-                return
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot create dir {path}")
+        captured = run(["store", "mkdir", path])
+        assert not captured.err
+        assert captured.out == ""
 
     return go
 
@@ -323,17 +276,8 @@ def check_rmdir_on_storage(run, tmpstorage):
 
     def go(path: str):
         path = tmpstorage + path
-        delay = 5
-        for i in range(5):
-            try:
-                captured = run(["store", "rm", path])
-                assert not captured.err
-                return
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot rmdir {path}")
+        captured = run(["store", "rm", path])
+        assert not captured.err
 
     return go
 
@@ -346,17 +290,8 @@ def check_rm_file_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        delay = 5
-        for i in range(5):
-            try:
-                captured = run(["store", "rm", f"{path}/{name}"])
-                assert not captured.err
-                return
-            except SystemExit:
-                sleep(delay)
-                delay *= 2
-        else:
-            raise AssertionError(f"Cannot rm {name} on {path}")
+        captured = run(["store", "rm", f"{path}/{name}"])
+        assert not captured.err
 
     return go
 
