@@ -167,7 +167,7 @@ async def test_storage_create(aiohttp_server, token):
         assert request.path == "/storage/user/file"
         assert request.query == {"op": "CREATE"}
         content = await request.read()
-        assert content == b'01234'
+        assert content == b"01234"
         return web.Response(status=201)
 
     app = web.Application()
@@ -177,7 +177,7 @@ async def test_storage_create(aiohttp_server, token):
 
     async def gen():
         for i in range(5):
-            yield str(i).encode('ascii')
+            yield str(i).encode("ascii")
 
     async with ClientV2(srv.make_url("/"), token) as client:
         await client.storage.create(URL("storage://~/file"), gen())
