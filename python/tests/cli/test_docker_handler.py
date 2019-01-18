@@ -131,18 +131,14 @@ class TestDockerHandler:
     )
     async def test_unavailable_docker(self, patched_init):
         with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
-            DockerHandler(
-                "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-            )
+            DockerHandler("bob", "X-Token", URL("http://mock.registry.neuromation.io"))
 
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
     )
     async def test_unknown_docker_error(self, patched_init):
         with pytest.raises(ValueError, match=r"something went wrong"):
-            DockerHandler(
-                "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-            )
+            DockerHandler("bob", "X-Token", URL("http://mock.registry.neuromation.io"))
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     async def test_push_non_existent_image(self, patched_tag):
