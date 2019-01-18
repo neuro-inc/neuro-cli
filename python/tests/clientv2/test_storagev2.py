@@ -446,7 +446,7 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     assert uploaded == expected
 
 
-async def test_storage_upload_regular_file_to_existing_dir_target(
+async def test_storage_upload_regular_file_to_existing_dir(
     storage_server, token, tmp_path
 ):
     FILE_PATH = DATA_FOLDER / "file.txt"
@@ -464,7 +464,26 @@ async def test_storage_upload_regular_file_to_existing_dir_target(
     assert uploaded == expected
 
 
-async def test_storage_upload_regular_file_to_existing_dir_target_with_trailing_slash(
+async def test_storage_upload_regular_file_to_existing_file(
+    storage_server, token, tmp_path
+):
+    FILE_PATH = DATA_FOLDER / "file.txt"
+    DIR = tmp_path / "folder"
+    DIR.mkdir()
+    TARGET_PATH = DIR / "file.txt"
+    TARGET_PATH.write_bytes(b"existing file")
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        await client.storage.upload_file(
+            DummyProgress(), URL(FILE_PATH.as_uri()), URL("storage:folder/file.txt")
+        )
+
+    expected = FILE_PATH.read_bytes()
+    uploaded = TARGET_PATH.read_bytes()
+    assert uploaded == expected
+
+
+async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
     storage_server, token, tmp_path
 ):
     FILE_PATH = DATA_FOLDER / "file.txt"
