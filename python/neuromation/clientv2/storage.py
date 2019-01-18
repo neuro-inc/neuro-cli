@@ -83,7 +83,7 @@ class Storage:
 
     def normalize_local(self, uri: URL) -> URL:
         if uri.scheme != "file":
-            # TODO (asvetlov): change error text, mention storage:// prefix explicitly
+            # TODO (asvetlov): change error text, mention file:// prefix explicitly
             raise ValueError("Path should be targeting local file system.")
         if uri.host:
             raise ValueError("Host part is not allowed")
