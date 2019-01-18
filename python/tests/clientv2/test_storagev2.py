@@ -539,3 +539,13 @@ async def test_storage_upload_recursive_src_doesnt_exist(token):
                 URL("file:does_not_exist"),
                 URL("storage://host/path/to"),
             )
+
+
+async def test_storage_upload_recursive_src_is_a_file(token):
+    FILE_PATH = DATA_FOLDER / "file.txt"
+
+    async with ClientV2("https://example.com", token) as client:
+        with pytest.raises(NotADirectoryError):
+            await client.storage.upload_dir(
+                DummyProgress(), URL(FILE_PATH.as_uri()), URL("storage://host/path/to")
+            )
