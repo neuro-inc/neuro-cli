@@ -182,7 +182,7 @@ class Storage:
 
     async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
         src = self.normalize_local(src)
-        path = Path(src.path).resolve(True)
+        path = Path(src.path)
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist")
         if path.is_dir():

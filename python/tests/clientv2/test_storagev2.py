@@ -2,7 +2,18 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.clientv2 import ClientV2, FileStatus, FileStatusType
+from neuromation.clientv2 import AbstractProgress, ClientV2, FileStatus, FileStatusType
+
+
+class DummyProgress(AbstractProgress):
+    def start(self, file: str, size: int) -> None:
+        pass
+
+    def complete(self, file: str) -> None:
+        pass
+
+    def progress(self, file: str, current: int) -> None:
+        pass
 
 
 async def test_uri_to_path_non_storage(token):
@@ -336,3 +347,16 @@ async def test_storage_normalize_local_with_host(token):
     async with ClientV2("https://example.com", token) as client:
         with pytest.raises(ValueError, match="Host part is not allowed"):
             client.storage.normalize_local(URL("file://host/path/to/file.txt"))
+
+
+# high level API
+
+
+async def test_stotage_upload_file_does_not_exists(token):
+    async with ClientV2("https://example.com", token) as client:
+        with pytest.raises(FileNotFoundError):
+            await client.storage.upload_file(
+                DummyProgress(),
+                URL("file:///not-exists-file"),
+                URL("storage://host/path/to/file.txt"),
+            )
