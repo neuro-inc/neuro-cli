@@ -1,8 +1,13 @@
+from pathlib import Path
+
 import pytest
 from aiohttp import web
 from yarl import URL
 
 from neuromation.clientv2 import AbstractProgress, ClientV2, FileStatus, FileStatusType
+
+
+FOLDER = Path(__file__).parent
 
 
 class DummyProgress(AbstractProgress):
@@ -359,4 +364,12 @@ async def test_stotage_upload_file_does_not_exists(token):
                 DummyProgress(),
                 URL("file:///not-exists-file"),
                 URL("storage://host/path/to/file.txt"),
+            )
+
+
+async def test_stotage_upload_dir(token):
+    async with ClientV2("https://example.com", token) as client:
+        with pytest.raises(IsADirectoryError):
+            await client.storage.upload_file(
+                DummyProgress(), URL(FOLDER.as_uri()), URL("storage://host/path/to")
             )
