@@ -162,6 +162,27 @@ async def test_storage_mkdir(aiohttp_server, token):
         await client.storage.mkdirs(URL("storage://~/folder"))
 
 
+async def test_storage_create(aiohttp_server, token):
+    async def handler(request):
+        assert request.path == "/storage/user/file"
+        assert request.query == {"op": "CREATE"}
+        content = await request.read()
+        assert content == b'01234'
+        return web.Response(status=201)
+
+    app = web.Application()
+    app.router.add_put("/storage/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async def gen():
+        for i in range(5):
+            yield str(i).encode('ascii')
+
+    async with ClientV2(srv.make_url("/"), token) as client:
+        await client.storage.create(URL("storage://~/file"), gen())
+
+
 async def test_storage_normalize(token):
     async with ClientV2("https://example.com", token) as client:
         url = client.storage.normalize(URL("storage:path/to/file.txt"))
