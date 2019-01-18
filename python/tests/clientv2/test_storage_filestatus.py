@@ -4,14 +4,14 @@ from neuromation.clientv2 import FileStatus, FileStatusType
 def test_from_api():
     stat = FileStatus.from_api(
         {
-            "path": "path/to",
+            "path": "name",
             "type": "FILE",
             "length": 1234,
             "modificationTime": 3456,
             "permission": "read",
         }
     )
-    assert stat.path == "path/to"
+    assert stat.path == "name"
     assert stat.type == FileStatusType.FILE
     assert stat.size == 1234
     assert stat.modification_time == 3456
@@ -21,7 +21,7 @@ def test_from_api():
 def test_file():
     stat = FileStatus.from_api(
         {
-            "path": "path/to",
+            "path": "name",
             "type": "FILE",
             "length": 1234,
             "modificationTime": 3456,
@@ -36,7 +36,7 @@ def test_file():
 def test_is_dir():
     stat = FileStatus.from_api(
         {
-            "path": "path/to",
+            "path": "name",
             "type": "DIRECTORY",
             "length": 1234,
             "modificationTime": 3456,
@@ -51,11 +51,11 @@ def test_is_dir():
 def test_name():
     stat = FileStatus.from_api(
         {
-            "path": "path/to",
+            "path": "name",
             "type": "FILE",
             "length": 1234,
             "modificationTime": 3456,
             "permission": "read",
         }
     )
-    assert stat.name == "to"
+    assert stat.name == "name"

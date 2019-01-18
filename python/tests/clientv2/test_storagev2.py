@@ -22,6 +22,46 @@ class DummyProgress(AbstractProgress):
         pass
 
 
+@pytest.fixture
+async def storage_server(aiohttp_raw_server, tmp_path):
+    PREFIX = "/storage/user"
+    PREFIX_LEN = len(PREFIX)
+
+    async def handler(request):
+        op = request.query["op"]
+        path = request.path
+        assert path.startswith(PREFIX)
+        path = path[PREFIX_LEN:]
+        if path.startswith("/"):
+            path = path[1:]
+        local_path = tmp_path / path
+        if op == "CREATE":
+            content = await request.read()
+            local_path.write_bytes(content)
+            return web.Response(status=201)
+        elif op == "OPEN":
+            return web.Response(body=local_path.read_bytes())
+        elif op == "GETFILESTATUS":
+            if not local_path.exists():
+                raise web.HTTPNotFound()
+            stat = local_path.stat()
+            return web.json_response(
+                {
+                    "FileStatus": {
+                        "path": local_path.name,
+                        "type": "FILE" if local_path.is_file() else "DIRECTORY",
+                        "length": stat.st_size,
+                        "modificationTime": stat.st_mtime,
+                        "permission": "write",
+                    }
+                }
+            )
+        else:
+            raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
+
+    return await aiohttp_raw_server(handler)
+
+
 async def test_uri_to_path_non_storage(token):
     async with ClientV2(URL("https://example.com"), token) as client:
         with pytest.raises(ValueError):
@@ -386,51 +426,15 @@ async def test_storage_upload_not_a_file(token):
             )
 
 
-async def test_storage_upload_regular_file(aiohttp_server, token):
+async def test_storage_upload_regular_file(storage_server, token, tmp_path):
     FILE_PATH = DATA_FOLDER / "file.txt"
+    TARGET_PATH = tmp_path / "file.txt"
 
-    uploaded_data = None
-
-    async def handler(request):
-        nonlocal uploaded_data
-        if request.query["op"] == "CREATE":
-            assert request.path == "/storage/user/file"
-            uploaded_data = await request.read()
-            return web.Response(status=201)
-        elif request.query["op"] == "GETFILESTATUS":
-            if request.path == "/storage/user/file":
-                raise web.HTTPNotFound()
-            elif request.path == "/storage/user":
-                return web.json_response(
-                    {
-                        "FileStatus": {
-                            "path": "/user/file",
-                            "type": "DIRECTORY",
-                            "length": DATA_FOLDER.stat().st_size,
-                            "modificationTime": DATA_FOLDER.stat().st_mtime,
-                            "permission": "read",
-                        }
-                    }
-                )
-            else:
-                raise AssertionError(
-                    f"Unsupported path {request.path} for GETFILESTATUS"
-                )
-        else:
-            raise AssertionError(f"Unknown operation {request.query['op']}")
-        return web.Response(status=201)
-
-    app = web.Application()
-    app.router.add_put("/storage/user/file", handler)
-    app.router.add_get("/storage/user/file", handler)
-    app.router.add_get("/storage/user", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with ClientV2(storage_server.make_url("/"), token) as client:
         await client.storage.upload_file(
-            DummyProgress(), URL(FILE_PATH.as_uri()), URL("storage:file")
+            DummyProgress(), URL(FILE_PATH.as_uri()), URL("storage:file.txt")
         )
 
     expected = FILE_PATH.read_bytes()
-    assert uploaded_data == expected
+    uploaded = TARGET_PATH.read_bytes()
+    assert uploaded == expected
