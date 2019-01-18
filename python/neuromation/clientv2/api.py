@@ -1,3 +1,4 @@
+import logging
 from typing import Any, AsyncIterator, Dict, Optional
 
 import aiohttp
@@ -11,6 +12,9 @@ from neuromation.client import (
     IllegalArgumentError,
     ResourceNotFound,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 class API:
@@ -46,6 +50,7 @@ class API:
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         assert not rel_url.is_absolute()
         url = (self._url / "").join(rel_url)
+        log.debug("Fetch [%s] %s", method, url)
         async with self._session.request(
             method, url, headers=headers, json=json, data=data
         ) as resp:
