@@ -6,12 +6,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import aiohttp
+from aiodocker.exceptions import DockerError
 from yarl import URL
 
 import neuromation
 from neuromation.cli.command_handlers import (
     CopyOperation,
-    DockerHandler,
     PlatformListDirOperation,
     PlatformMakeDirOperation,
     PlatformRemoveOperation,
@@ -35,6 +35,7 @@ from neuromation.strings.parse import to_megabytes_str
 from . import rc
 from .commands import command, dispatch
 from .defaults import DEFAULTS
+from .docker_handler import DockerHandler
 from .formatter import JobListFormatter
 from .ssh_utils import connect_ssh, remote_debug
 
@@ -737,42 +738,51 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
           pull                 Pull docker image from cloud registry to local machine.
         """
 
-        def _get_image_platform_full_name(image_name):
-            config = rc.ConfigFactory.load()
-            registry_url = config.docker_registry_url()
-            user_name = config.get_platform_user_name()
-            target_image_name = f"{registry_url}/{user_name}/{image_name}"
-            return target_image_name
-
         @command
-        def push(image_name):
+        async def push(image_name, remote_image_name):
             """
             Usage:
-                neuro image push IMAGE_NAME
+                neuro image push IMAGE_NAME [REMOTE_IMAGE_NAME]
 
-            Push an image to platform registry
+            Push an image to platform registry.
+            Image names can contains tag. If tags not specified 'latest' will \
+be used as value
+
+            Examples:
+                neuro image push myimage
+                neuro image push alpine:latest my-alpine:production
+                neuro image push alpine image://myfriend/alpine:shared
+
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            registry_url = config.docker_registry_url()
-            return DockerHandler(platform_user_name, config.auth).push(
-                registry_url, image_name
-            )
+
+            async with DockerHandler(
+                platform_user_name, config.auth, config.docker_registry_url()
+            ) as handler:
+                await handler.push(image_name, remote_image_name)
 
         @command
-        def pull(image_name):
+        async def pull(image_name, local_image_name):
             """
             Usage:
-                neuro image pull IMAGE_NAME
+                neuro image pull IMAGE_NAME [LOCAL_IMAGE_NAME]
 
-            Pull an image from platform registry
+            Pull an image from platform registry.
+            Image names can contain tag.
+
+            Examples:
+                neuro image pull myimage
+                neuro image pull image://myfriend/alpine:shared
+                neuro image pull my-alpine:production alpine:from-registry
+
             """
             config = rc.ConfigFactory.load()
             platform_user_name = config.get_platform_user_name()
-            registry_url = config.docker_registry_url()
-            return DockerHandler(platform_user_name, config.auth).pull(
-                registry_url, image_name
-            )
+            async with DockerHandler(
+                platform_user_name, config.auth, config.docker_registry_url()
+            ) as handler:
+                await handler.pull(image_name, local_image_name)
 
         return locals()
 
@@ -787,7 +797,8 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
             Examples:
             neuro share storage:///sample_data/ alice manage
-            neuro share image:///resnet50 bob read
+            neuro share image://{username}/resnet50 bob read
+            neuro share image:resnet50 bob read
             neuro share job:///my_job_id alice write
         """
         uri = URL(uri)
@@ -935,6 +946,10 @@ def main():
     except aiohttp.ClientError as error:
         log_error(f"Connection error ({error})")
         sys.exit(os.EX_IOERR)
+
+    except DockerError as error:
+        log.error(f"Docker API error: {error.message}")
+        sys.exit(os.EX_PROTOCOL)
 
     except NotImplementedError as error:
         log_error(f"{error}")

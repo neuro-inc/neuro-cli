@@ -459,24 +459,40 @@ neuro image COMMAND
 
 ### neuro image push
 
-Push an image to platform registry
+Push an image to platform registry.<br/>Image names can contains tag. If tags not specified 'latest' will be used as value
 
 **Usage:**
 
 ```bash
-neuro image push IMAGE_NAME
+neuro image push IMAGE_NAME [REMOTE_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+neuro image push myimage
+neuro image push alpine:latest my-alpine:production
+neuro image push alpine image://myfriend/alpine:shared
 ```
 
 
 
 ### neuro image pull
 
-Pull an image from platform registry
+Pull an image from platform registry.<br/>Image names can contain tag.
 
 **Usage:**
 
 ```bash
-neuro image pull IMAGE_NAME
+neuro image pull IMAGE_NAME [LOCAL_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+neuro image pull myimage
+neuro image pull image://myfriend/alpine:shared
+neuro image pull my-alpine:production alpine:from-registry
 ```
 
 
@@ -632,7 +648,8 @@ neuro share URI USER PERMISSION
 
 ```bash
 neuro share storage:///sample_data/ alice manage
-neuro share image:///resnet50 bob read
+neuro share image://username/resnet50 bob read
+neuro share image:resnet50 bob read
 neuro share job:///my_job_id alice write
 ```
 
