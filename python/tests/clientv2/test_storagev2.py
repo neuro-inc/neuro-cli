@@ -8,6 +8,7 @@ from neuromation.clientv2 import AbstractProgress, ClientV2, FileStatus, FileSta
 
 
 FOLDER = Path(__file__).parent
+DATA_FOLDER = FOLDER / "data"
 
 
 class DummyProgress(AbstractProgress):
@@ -383,3 +384,53 @@ async def test_storage_upload_not_a_file(token):
                 URL("file:///dev/random"),
                 URL("storage://host/path/to"),
             )
+
+
+async def test_storage_upload_regular_file(aiohttp_server, token):
+    FILE_PATH = DATA_FOLDER / "file.txt"
+
+    uploaded_data = None
+
+    async def handler(request):
+        nonlocal uploaded_data
+        if request.query["op"] == "CREATE":
+            assert request.path == "/storage/user/file"
+            uploaded_data = await request.read()
+            return web.Response(status=201)
+        elif request.query["op"] == "GETFILESTATUS":
+            if request.path == "/storage/user/file":
+                raise web.HTTPNotFound()
+            elif request.path == "/storage/user":
+                return web.json_response(
+                    {
+                        "FileStatus": {
+                            "path": "/user/file",
+                            "type": "DIRECTORY",
+                            "length": DATA_FOLDER.stat().st_size,
+                            "modificationTime": DATA_FOLDER.stat().st_mtime,
+                            "permission": "read",
+                        }
+                    }
+                )
+            else:
+                raise AssertionError(
+                    f"Unsupported path {request.path} for GETFILESTATUS"
+                )
+        else:
+            raise AssertionError(f"Unknown operation {request.query['op']}")
+        return web.Response(status=201)
+
+    app = web.Application()
+    app.router.add_put("/storage/user/file", handler)
+    app.router.add_get("/storage/user/file", handler)
+    app.router.add_get("/storage/user", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), token) as client:
+        await client.storage.upload_file(
+            DummyProgress(), URL(FILE_PATH.as_uri()), URL("storage:file")
+        )
+
+    expected = FILE_PATH.read_bytes()
+    assert uploaded_data == expected
