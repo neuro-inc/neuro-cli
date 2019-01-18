@@ -257,7 +257,7 @@ def check_file_on_storage_checksum(run, tmpstorage):
         else:
             target = tmpdir
             target_file = join(tmpdir, name)
-        delay = 0.5
+        delay = 5  # need a relative big initial delay to synchronize 16MB file
         for i in range(5):
             run(["store", "cp", f"{path}/{name}", target])
             try:
@@ -268,7 +268,7 @@ def check_file_on_storage_checksum(run, tmpstorage):
                 # need to try again
                 sleep(delay)
                 delay *= 2
-        raise
+        raise AssertionError("checksum test failed for {path}")
 
     return go
 
