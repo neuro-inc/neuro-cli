@@ -216,7 +216,7 @@ class Storage:
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
             dst = dst / src.name
-        path = Path(src.path).resolve(True)
+        path = Path(src.path).resolve()
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist")
         if not path.is_dir():

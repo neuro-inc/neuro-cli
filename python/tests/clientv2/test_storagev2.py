@@ -412,7 +412,7 @@ async def test_storage_upload_file_does_not_exists(token):
             )
 
 
-async def test_storage_upload_dir(token):
+async def test_storage_upload_dir_doesnt_exist(token):
     async with ClientV2("https://example.com", token) as client:
         with pytest.raises(IsADirectoryError):
             await client.storage.upload_file(
@@ -528,4 +528,14 @@ async def test_storage_upload_regular_file_to_not_existing(
                 DummyProgress(),
                 URL(FILE_PATH.as_uri()),
                 URL("storage:absent-dir/absent-file.txt"),
+            )
+
+
+async def test_storage_upload_recursive_src_doesnt_exist(token):
+    async with ClientV2("https://example.com", token) as client:
+        with pytest.raises(FileNotFoundError):
+            await client.storage.upload_dir(
+                DummyProgress(),
+                URL("file:does_not_exist"),
+                URL("storage://host/path/to"),
             )
