@@ -131,7 +131,7 @@ class TestDockerHandler:
     )
     async def test_unavailable_docker(self, patched_init):
         with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
-            handler = DockerHandler(
+            DockerHandler(
                 "bob", "X-Token", URL("http://mock.registry.neuromation.io")
             )
 
@@ -140,7 +140,7 @@ class TestDockerHandler:
     )
     async def test_unknown_docker_error(self, patched_init):
         with pytest.raises(ValueError, match=r"something went wrong"):
-            handler = DockerHandler(
+            DockerHandler(
                 "bob", "X-Token", URL("http://mock.registry.neuromation.io")
             )
 
