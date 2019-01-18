@@ -549,3 +549,16 @@ async def test_storage_upload_recursive_src_is_a_file(token):
             await client.storage.upload_dir(
                 DummyProgress(), URL(FILE_PATH.as_uri()), URL("storage://host/path/to")
             )
+
+
+async def test_storage_upload_recursive_target_is_a_file(
+    storage_server, token, tmp_path
+):
+    TARGET_FILE = tmp_path / "file.txt"
+    TARGET_FILE.write_bytes(b"dummy")
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        with pytest.raises(NotADirectoryError):
+            await client.storage.upload_dir(
+                DummyProgress(), URL(DATA_FOLDER.as_uri()), URL("storage:file.txt")
+            )
