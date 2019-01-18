@@ -1,9 +1,12 @@
-import aiohttp
 from types import TracebackType
 from typing import Union, Type, Optional
+
+import aiohttp
+from jose import jwt
 from yarl import URL
 
-from .api import API
+from .abc import AbstractProgress
+from .api import API, ResourceNotFound
 from .jobs import (
     Jobs,
     Image,
@@ -13,8 +16,10 @@ from .jobs import (
     NetworkPortForwarding,
     Resources,
     Volume,
+    Container,
 )
 from .models import Models, TrainResult
+from .storage import Storage, FileStatusType, FileStatus
 from .users import Action, Permission, Users
 
 __all__ = (
@@ -29,6 +34,11 @@ __all__ = (
     "Action",
     "Permission",
     "ClientV2",
+    "FileStatusType",
+    "FileStatus",
+    "Container",
+    "ResourceNotFound",
+    "AbstractProgress",
 )
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
@@ -44,9 +54,12 @@ class ClientV2:
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
+        jwt_data = jwt.get_unverified_claims(token)
+        self._username = jwt_data.get("identity", None)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api)
         self._models = Models(self._api)
+        self._storage = Storage(self._api, self._username)
         self._users = Users(self._api)
 
     async def close(self) -> None:
@@ -64,12 +77,20 @@ class ClientV2:
         await self.close()
 
     @property
+    def username(self) -> str:
+        return self._username
+
+    @property
     def jobs(self) -> Jobs:
         return self._jobs
 
     @property
     def models(self) -> Models:
         return self._models
+
+    @property
+    def storage(self) -> Storage:
+        return self._storage
 
     @property
     def users(self) -> Users:

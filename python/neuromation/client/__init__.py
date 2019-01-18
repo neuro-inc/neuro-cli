@@ -6,11 +6,8 @@ from .client import (
     AuthorizationError,
     ResourceNotFound,
 )
-from .storage import Storage, FileStatus
 
 __all__ = [
-    "Storage",
-    "FileStatus",
     "ClientError",
     "IllegalArgumentError",
     "AuthError",

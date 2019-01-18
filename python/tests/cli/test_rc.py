@@ -1,4 +1,4 @@
-from pathlib import Path, PosixPath
+from pathlib import Path
 
 import pytest
 from yarl import URL
@@ -11,8 +11,8 @@ DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")
 
 
 @pytest.fixture
-def nmrc(tmpdir, setup_local_keyring):
-    return tmpdir.join(".nmrc")
+def nmrc(tmp_path, setup_local_keyring):
+    return tmp_path / ".nmrc"
 
 
 @pytest.fixture
@@ -31,15 +31,15 @@ def setup_failed_keyring():
 def test_create(nmrc):
     conf = rc.create(nmrc, Config())
     assert conf == DEFAULTS
-    assert nmrc.check()
-    assert nmrc.read() == f"github_rsa_path: ''\n" f"url: {DEFAULTS.url}\n"
+    assert nmrc.exists()
+    assert nmrc.read_text() == f"github_rsa_path: ''\n" f"url: {DEFAULTS.url}\n"
 
 
 class TestFactoryMethods:
     @pytest.fixture
     def patch_home_for_test(self, monkeypatch, nmrc):
         def home():
-            return PosixPath(nmrc.dirpath())
+            return nmrc.parent
 
         monkeypatch.setattr(Path, "home", home)
 
@@ -105,7 +105,7 @@ class TestFactoryMethods:
 
     def test_factory_forget_token(self, monkeypatch, nmrc):
         def home():
-            return PosixPath(nmrc.dirpath())
+            return nmrc.parent
 
         monkeypatch.setattr(Path, "home", home)
         jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
@@ -165,20 +165,20 @@ def test_create_existing(nmrc):
     document = """
         url: 'http://a.b/c'
     """
-    nmrc.write(document)
+    nmrc.write_text(document)
 
     with pytest.raises(FileExistsError):
         rc.create(nmrc, Config())
 
-    assert nmrc.check()
-    assert nmrc.read() == document
+    assert nmrc.exists()
+    assert nmrc.read_text() == document
 
 
 def test_load(nmrc):
     document = """
         url: 'http://a.b/c'
     """
-    nmrc.write(document)
+    nmrc.write_text(document)
 
     config = rc.load(nmrc)
     assert config == rc.Config(url="http://a.b/c")
@@ -204,13 +204,13 @@ def test_merge_override_token():
 
 def test_load_missing(nmrc):
     config = rc.load(nmrc)
-    assert nmrc.check()
+    assert nmrc.exists()
     assert config == DEFAULTS
 
 
 def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     def home():
-        return PosixPath(nmrc.dirpath())
+        return nmrc.parent
 
     monkeypatch.setattr(Path, "home", home)
     jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
@@ -222,7 +222,7 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     )
     rc.ConfigFactory.update_auth_token(test_token)
     assert (
-        nmrc.read() == f"auth: {test_token}\n"
+        nmrc.read_text() == f"auth: {test_token}\n"
         f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
         f"url: {DEFAULTS.url}\n"
     )
@@ -234,7 +234,7 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     config3: Config = rc.ConfigFactory.load()
 
     assert (
-        nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        nmrc.read_text() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
         f"url: {DEFAULTS.url}\n"
     )
 

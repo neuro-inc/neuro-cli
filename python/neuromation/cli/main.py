@@ -1,23 +1,14 @@
 import logging
 import os
 import sys
-from functools import partial
 from pathlib import Path
-from urllib.parse import urlparse
 
 import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
 import neuromation
-from neuromation.cli.command_handlers import (
-    CopyOperation,
-    PlatformListDirOperation,
-    PlatformMakeDirOperation,
-    PlatformRemoveOperation,
-    PlatformRenameOperation,
-    PlatformStorageOperation,
-)
+from neuromation.cli.command_handlers import PlatformStorageOperation
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config
 from neuromation.clientv2 import (
@@ -33,10 +24,11 @@ from neuromation.logging import ConsoleWarningFormatter
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
+from .command_progress_report import ProgressBase
 from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .docker_handler import DockerHandler
-from .formatter import JobListFormatter
+from .formatter import JobListFormatter, StorageLsFormatter
 from .ssh_utils import connect_ssh, remote_debug
 
 
@@ -106,8 +98,6 @@ Commands:
   share                 Resource sharing management
   help                  Get help on a command
 """
-
-    from neuromation.client import Storage
 
     @command
     def config():
@@ -211,10 +201,8 @@ Commands:
           mkdir              Make directories
         """
 
-        storage = partial(Storage, url, token)
-
         @command
-        def rm(path):
+        async def rm(path):
             """
             Usage:
                 neuro store rm PATH
@@ -226,12 +214,13 @@ Commands:
             neuro store rm storage:/foo/bar/
             neuro store rm storage://{username}/foo/bar/
             """
-            config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            PlatformRemoveOperation(platform_user_name).remove(path, storage)
+            uri = URL(path)
+
+            async with ClientV2(url, token) as client:
+                await client.storage.rm(uri)
 
         @command
-        def ls(path):
+        async def ls(path):
             """
             Usage:
                 neuro store ls [PATH]
@@ -240,22 +229,17 @@ Commands:
             By default PATH is equal user`s home dir (storage:)
             """
             if path is None:
-                path = "storage:"
+                uri = URL("storage://~")
+            else:
+                uri = URL(path)
 
-            format = "{type:<15}{size:<15,}{name:<}".format
+            async with ClientV2(url, token) as client:
+                res = await client.storage.ls(uri)
 
-            config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            ls_op = PlatformListDirOperation(platform_user_name)
-            storage_objects = ls_op.ls(path, storage)
-
-            return "\n".join(
-                format(type=status.type.lower(), name=status.path, size=status.size)
-                for status in storage_objects
-            )
+            return StorageLsFormatter().format_ls(res)
 
         @command
-        def cp(source, destination, recursive, progress):
+        async def cp(source, destination, recursive, progress):
             """
             Usage:
                 neuro store cp [options] SOURCE DESTINATION
@@ -281,36 +265,49 @@ Commands:
             timeout = aiohttp.ClientTimeout(
                 total=None, connect=None, sock_read=None, sock_connect=30
             )
-            storage = partial(Storage, url, token, timeout)
-            src = urlparse(source, scheme="file")
-            dst = urlparse(destination, scheme="file")
+            src = URL(source)
+            dst = URL(destination)
 
             log.debug(f"src={src}")
             log.debug(f"dst={dst}")
 
-            config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            operation = CopyOperation.create(
-                platform_user_name, src.scheme, dst.scheme, recursive, progress
-            )
-
-            return operation.copy(src, dst, storage)
+            progress = ProgressBase.create_progress(progress)
+            if not src.scheme:
+                src = URL("file:" + src.path)
+            if not dst.scheme:
+                dst = URL("file:" + dst.path)
+            async with ClientV2(url, token, timeout=timeout) as client:
+                if src.scheme == "file" and dst.scheme == "storage":
+                    if recursive:
+                        await client.storage.upload_dir(progress, src, dst)
+                    else:
+                        await client.storage.upload_file(progress, src, dst)
+                elif src.scheme == "storage" and dst.scheme == "file":
+                    if recursive:
+                        await client.storage.download_dir(progress, src, dst)
+                    else:
+                        await client.storage.download_file(progress, src, dst)
+                else:
+                    raise RuntimeError(
+                        f"Copy operation for {src} -> {dst} is not supported"
+                    )
 
         @command
-        def mkdir(path):
+        async def mkdir(path):
             """
             Usage:
                 neuro store mkdir PATH
 
             Make directories
             """
-            config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            PlatformMakeDirOperation(platform_user_name).mkdir(path, storage)
-            return path
+
+            uri = URL(path)
+
+            async with ClientV2(url, token) as client:
+                await client.storage.mkdirs(uri)
 
         @command
-        def mv(source, destination):
+        async def mv(source, destination):
             """
             Usage:
                 neuro store mv SOURCE DESTINATION
@@ -330,10 +327,12 @@ Commands:
             neuro store mv storage://{username}/foo/ storage://{username}/bar/
             neuro store mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
             """
-            config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
-            operation = PlatformRenameOperation(platform_user_name)
-            return operation.mv(source, destination, storage)
+
+            src = URL(source)
+            dst = URL(destination)
+
+            async with ClientV2(url, token) as client:
+                await client.storage.mv(src, dst)
 
         return locals()
 
@@ -470,10 +469,9 @@ Commands:
             """
             config: Config = rc.ConfigFactory.load()
             git_key = config.github_rsa_path
-            username = config.get_platform_user_name()
 
             async with ClientV2(url, token) as client:
-                await remote_debug(client, username, id, git_key, localport)
+                await remote_debug(client, id, git_key, localport)
 
         return locals()
 
@@ -574,7 +572,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             is_preemptible = get_preemptible()
 
             config: Config = rc.ConfigFactory.load()
-            platform_user_name = config.get_platform_user_name()
+            username = config.get_platform_user_name()
 
             # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
             # separate function.
@@ -598,7 +596,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             image = Image(image=image, command=cmd)
             network = NetworkPortForwarding.from_cli(http, ssh)
             resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-            volumes = Volume.from_cli_list(platform_user_name, volume)
+            volumes = Volume.from_cli_list(username, volume)
 
             async with ClientV2(url, token) as client:
                 job = await client.jobs.submit(
@@ -630,10 +628,9 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             """
             config: Config = rc.ConfigFactory.load()
             git_key = config.github_rsa_path
-            username = config.get_platform_user_name()
 
             async with ClientV2(url, token) as client:
-                await connect_ssh(client, username, id, git_key, user, key)
+                await connect_ssh(client, id, git_key, user, key)
 
         @command
         async def monitor(id):
@@ -963,7 +960,7 @@ def main():
     except PermissionError as error:
         log_error(f"Cannot access file ({error})")
         sys.exit(os.EX_NOPERM)
-    except IOError as error:
+    except OSError as error:
         log_error(f"I/O Error ({error})")
         raise error
 
