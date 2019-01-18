@@ -5,10 +5,10 @@ from functools import partial
 from pathlib import Path
 
 import aiohttp
+from aiodocker.exceptions import DockerError
 from yarl import URL
 
 import neuromation
-from aiodocker.exceptions import DockerError
 from neuromation.cli.command_handlers import PlatformStorageOperation
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config

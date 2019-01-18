@@ -1,10 +1,10 @@
 import os
 
+import asynctest
 import pytest
+from aiodocker.exceptions import DockerError
 from yarl import URL
 
-import asynctest
-from aiodocker.exceptions import DockerError
 from neuromation.cli.docker_handler import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,

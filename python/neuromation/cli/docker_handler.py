@@ -3,10 +3,9 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from yarl import URL
-
 import aiodocker
 from aiodocker.exceptions import DockerError
+from yarl import URL
 
 from ..client import AuthorizationError
 
