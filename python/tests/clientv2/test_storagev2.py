@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 from aiohttp import web
 from yarl import URL
