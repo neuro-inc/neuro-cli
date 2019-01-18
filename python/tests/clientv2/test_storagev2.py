@@ -1,7 +1,8 @@
+from pathlib import Path
+
 import pytest
 from aiohttp import web
 from yarl import URL
-from pathlib import Path
 
 from neuromation.clientv2 import ClientV2, FileStatus
 
@@ -178,7 +179,10 @@ async def test_storage_normalize_home_dir(token):
         assert url.host == "user"
         assert url.path == "/file.txt"
 
+
 async def test_storage_normalize_bad_scheme(token):
     async with ClientV2("https://example.com", token) as client:
-        with pytest.raises(ValueError, match="Path should be targeting platform storage."):
+        with pytest.raises(
+            ValueError, match="Path should be targeting platform storage."
+        ):
             client.storage.normalize(URL("file:path/to/file.txt"))
