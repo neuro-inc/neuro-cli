@@ -88,7 +88,9 @@ class Storage:
         if uri.host:
             raise ValueError("Host part is not allowed")
         path = Path(uri.path)
-        path = path.expanduser().resolve()
+        if path.startswith('~'):
+            path = path.expanduser()
+        path = path.resolve()
         return uri.with_path(str(path))
 
     async def ls(self, uri: URL) -> List[FileStatus]:
