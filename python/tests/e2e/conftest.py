@@ -141,8 +141,9 @@ def run(monkeypatch, capsys, tmp_path, setup_local_keyring):
                     continue
                 elif (
                     exc.code == os.EX_OSFILE
+                    and arguments
                     and arguments[0] == "store"
-                    and not storage_retry
+                    and storage_retry
                 ):
                     # NFS storage has a lag between pushing data on one storage API node
                     # and fetching it on other node
