@@ -46,3 +46,16 @@ def test_is_dir():
     assert stat.type == FileStatusType.DIRECTORY
     assert not stat.is_file()
     assert stat.is_dir()
+
+
+def test_name():
+    stat = FileStatus.from_api(
+        {
+            "path": "path/to",
+            "type": "FILE",
+            "length": 1234,
+            "modificationTime": 3456,
+            "permission": "read",
+        }
+    )
+    assert stat.name == "to"
