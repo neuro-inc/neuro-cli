@@ -462,3 +462,51 @@ async def test_storage_upload_regular_file_to_existing_dir_target(
     expected = FILE_PATH.read_bytes()
     uploaded = TARGET_PATH.read_bytes()
     assert uploaded == expected
+
+
+async def test_storage_upload_regular_file_to_existing_dir_target_with_trailing_slash(
+    storage_server, token, tmp_path
+):
+    FILE_PATH = DATA_FOLDER / "file.txt"
+    DIR = tmp_path / "folder"
+    DIR.mkdir()
+    TARGET_PATH = DIR / "file.txt"
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        await client.storage.upload_file(
+            DummyProgress(), URL(FILE_PATH.as_uri()), URL("storage:folder/")
+        )
+
+    expected = FILE_PATH.read_bytes()
+    uploaded = TARGET_PATH.read_bytes()
+    assert uploaded == expected
+
+
+async def test_storage_upload_regular_file_to_existing_non_dir(
+    storage_server, token, tmp_path
+):
+    FILE_PATH = DATA_FOLDER / "file.txt"
+    path = tmp_path / "file"
+    path.write_bytes(b"dummy")
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        with pytest.raises(NotADirectoryError):
+            await client.storage.upload_file(
+                DummyProgress(),
+                URL(FILE_PATH.as_uri()),
+                URL("storage:file/subfile.txt"),
+            )
+
+
+async def test_storage_upload_regular_file_to_not_existing(
+    storage_server, token, tmp_path
+):
+    FILE_PATH = DATA_FOLDER / "file.txt"
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        with pytest.raises(NotADirectoryError):
+            await client.storage.upload_file(
+                DummyProgress(),
+                URL(FILE_PATH.as_uri()),
+                URL("storage:absent-dir/absent-file.txt"),
+            )
