@@ -5,16 +5,32 @@ import aiohttp
 from async_generator import asynccontextmanager
 from yarl import URL
 
-from neuromation.client import (
-    AuthenticationError,
-    AuthorizationError,
-    ClientError,
-    IllegalArgumentError,
-    ResourceNotFound,
-)
-
 
 log = logging.getLogger(__name__)
+
+
+class ClientError(Exception):
+    pass
+
+
+class IllegalArgumentError(ValueError):
+    pass
+
+
+class AuthError(ClientError):
+    pass
+
+
+class AuthenticationError(AuthError):
+    pass
+
+
+class AuthorizationError(AuthError):
+    pass
+
+
+class ResourceNotFound(ValueError):
+    pass
 
 
 class API:

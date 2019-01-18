@@ -5,7 +5,7 @@ from typing import Any, Dict
 from aiohttp.web import HTTPCreated
 from yarl import URL
 
-from ..client import ClientError
+from . import ClientError
 from .api import API
 
 

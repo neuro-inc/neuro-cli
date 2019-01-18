@@ -7,7 +7,7 @@ import aiodocker
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from ..client import AuthorizationError
+from neuromation.clientv2 import AuthorizationError
 
 
 STATUS_FORBIDDEN = 403
