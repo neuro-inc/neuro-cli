@@ -14,10 +14,10 @@ class Config:
     auth: str = None
     github_rsa_path: str = ""
 
-    def docker_registry_url(self) -> str:
+    def docker_registry_url(self) -> URL:
         platform_url = URL(self.url)
-        docker_registry_url = platform_url.host.replace("platform.", "registry.")
-        return docker_registry_url
+        registry_host = platform_url.host.replace("platform.", "registry.")
+        return URL(f"{platform_url.scheme}://{registry_host}")
 
     def get_platform_user_name(self) -> Optional[str]:
         if self.auth != "" and self.auth is not None:

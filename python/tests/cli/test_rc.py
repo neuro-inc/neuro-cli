@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from yarl import URL
 
 from neuromation.cli import rc
 from neuromation.cli.rc import Config, ConfigFactory
@@ -124,16 +125,16 @@ class TestFactoryMethods:
 
 
 def test_docker_url():
-    assert DEFAULTS.docker_registry_url() == "registry.dev.neuromation.io"
+    assert DEFAULTS.docker_registry_url() == URL("https://registry.dev.neuromation.io")
     custom_staging = rc.Config(
-        url="http://platform.staging.neuromation.io/api/v1", auth=""
+        url="https://platform.staging.neuromation.io/api/v1", auth=""
     )
     url = custom_staging.docker_registry_url()
-    assert url == "registry.staging.neuromation.io"
+    assert url == URL("https://registry.staging.neuromation.io")
 
-    prod = rc.Config(url="http://platform.neuromation.io/api/v1", auth="")
+    prod = rc.Config(url="https://platform.neuromation.io/api/v1", auth="")
     url = prod.docker_registry_url()
-    assert url == "registry.neuromation.io"
+    assert url == URL("https://registry.neuromation.io")
 
 
 def test_jwt_user():
