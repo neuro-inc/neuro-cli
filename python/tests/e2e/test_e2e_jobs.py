@@ -143,28 +143,21 @@ def test_job_complete_lifecycle(run, loop, tmpdir):
     wait_job_change_state_from(run, job_id_second, Status.RUNNING, Status.FAILED)
     wait_job_change_state_from(run, job_id_third, Status.RUNNING, Status.FAILED)
 
-    try:
-        wait_job_change_state_to(run, job_id_first, Status.SUCCEEDED, Status.FAILED)
-        wait_job_change_state_to(run, job_id_second, Status.SUCCEEDED, Status.FAILED)
-        wait_job_change_state_to(run, job_id_third, Status.SUCCEEDED, Status.FAILED)
+    wait_job_change_state_to(run, job_id_first, Status.SUCCEEDED, Status.FAILED)
+    wait_job_change_state_to(run, job_id_second, Status.SUCCEEDED, Status.FAILED)
+    wait_job_change_state_to(run, job_id_third, Status.SUCCEEDED, Status.FAILED)
 
-        # check killed running,pending
-        captured = run(["job", "list", "--status", "running,pending", "-q"])
-        jobs_after_kill_q = [x.strip() for x in captured.out.strip().split("\n")]
-        assert job_id_first not in jobs_after_kill_q
-        assert job_id_second not in jobs_after_kill_q
-        assert job_id_third not in jobs_after_kill_q
+    # check killed running,pending
+    captured = run(["job", "list", "--status", "running,pending", "-q"])
+    jobs_after_kill_q = [x.strip() for x in captured.out.strip().split("\n")]
+    assert job_id_first not in jobs_after_kill_q
+    assert job_id_second not in jobs_after_kill_q
+    assert job_id_third not in jobs_after_kill_q
 
-        # try to kill already killed: same output
-        captured = run(["job", "kill", job_id_first])
-        kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
-        assert kill_output_list == [job_id_first]
-    except AssertionError:
-        # NOTE (A Yushkovskiy, 6.12.2018) I think the reason of these flakes is
-        # that in methods 'wait_for_job_to_change_state_{to,from}' we actually
-        # do not wait (via 'time.sleep') -- perhaps, this sleep is performed
-        # asynchronously. To be fixed.
-        pytest.xfail("failing flaky tests (see issues 250, 239)")
+    # try to kill already killed: same output
+    captured = run(["job", "kill", job_id_first])
+    kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
+    assert kill_output_list == [job_id_first]
 
 
 @pytest.mark.e2e
