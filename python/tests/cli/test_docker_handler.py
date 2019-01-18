@@ -1,11 +1,10 @@
 import os
-from unittest.mock import patch as syncpatch
 
 import pytest
 from aiodocker.exceptions import DockerError
-from asynctest import mock
-from asynctest.mock import patch
+import asynctest 
 from yarl import URL
+
 
 from neuromation.cli.docker_handler import (
     STATUS_CUSTOM_ERROR,
@@ -16,11 +15,11 @@ from neuromation.cli.docker_handler import (
 )
 from neuromation.client import AuthorizationError
 
-
-@pytest.fixture
+@pytest.fixture()
 def patch_docker_host():
-    patch.dict("os.environ", values={"DOCKER_HOST": "http://localhost:45678"})
-
+    with asynctest.mock.patch.dict(os.environ, values={
+        "DOCKER_HOST": "http://localhost:45678"}):
+        yield
 
 class TestImage:
     @pytest.mark.parametrize(
@@ -120,10 +119,24 @@ class TestImage:
         )
 
 
-# There is problem with async version of patch.dict()
-@syncpatch.dict(os.environ, values={"DOCKER_HOST": "http://localhost:45678"})
+@pytest.mark.usefixtures('patch_docker_host')
 class TestDockerHandler:
-    @mock.patch("aiodocker.images.DockerImages.tag")
+
+    @asynctest.mock.patch('aiodocker.Docker.__init__', side_effect=ValueError('text Either DOCKER_HOST or local sockets are not available text'))
+    async def test_unavailable_docker(self, patched_init):
+        with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
+            handler = DockerHandler(
+                "bob", "X-Token", URL("http://mock.registry.neuromation.io")
+            )
+
+    @asynctest.mock.patch('aiodocker.Docker.__init__', side_effect=ValueError('something went wrong'))
+    async def test_unknown_docker_error(self, patched_init):
+        with pytest.raises(ValueError, match=r"something went wrong"):
+            handler = DockerHandler(
+                "bob", "X-Token", URL("http://mock.registry.neuromation.io")
+            )
+
+    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     async def test_push_non_existent_image(self, patched_tag):
         patched_tag.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
@@ -134,8 +147,8 @@ class TestDockerHandler:
         with pytest.raises(ValueError, match=r"not found"):
             await handler.push("php:7", "")
 
-    @mock.patch("aiodocker.images.DockerImages.tag")
-    @mock.patch("aiodocker.images.DockerImages.push")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_to_foreign_repo(self, patched_push, patched_tag):
         patched_tag.return_value = True
         patched_push.side_effect = DockerError(
@@ -147,8 +160,8 @@ class TestDockerHandler:
         with pytest.raises(AuthorizationError):
             await handler.push("php:7", "image://jane/java")
 
-    @mock.patch("aiodocker.images.DockerImages.tag")
-    @mock.patch("aiodocker.images.DockerImages.push")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_with_docker_api_error(self, patched_push, patched_tag):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
@@ -163,8 +176,8 @@ class TestDockerHandler:
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
         assert exc_info.value.message == "Mocked message"
 
-    @mock.patch("aiodocker.images.DockerImages.tag")
-    @mock.patch("aiodocker.images.DockerImages.push")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_success_push_image(self, patched_push, patched_tag):
         async def message_generator():
             yield {}
@@ -177,7 +190,7 @@ class TestDockerHandler:
         result = await handler.push("php:7", "image://bob/php:7")
         assert result == URL("image://bob/php:7")
 
-    @mock.patch("aiodocker.images.DockerImages.pull")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_non_existent_image(self, patched_pull):
         patched_pull.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
@@ -188,7 +201,7 @@ class TestDockerHandler:
         with pytest.raises(ValueError, match=r"not found"):
             await handler.pull("image:php:7", "")
 
-    @mock.patch("aiodocker.images.DockerImages.pull")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_image_from_foreign_repo(self, patched_pull):
         patched_pull.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
@@ -199,7 +212,7 @@ class TestDockerHandler:
         with pytest.raises(AuthorizationError):
             await handler.pull("image://jane/java", "")
 
-    @mock.patch("aiodocker.images.DockerImages.pull")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_image_with_docker_api_error(self, patched_pull):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
@@ -213,8 +226,8 @@ class TestDockerHandler:
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
         assert exc_info.value.message == "Mocked message"
 
-    @mock.patch("aiodocker.images.DockerImages.tag")
-    @mock.patch("aiodocker.images.DockerImages.pull")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_success_pull_image(self, patched_pull, patched_tag):
         async def message_generator():
             yield {}

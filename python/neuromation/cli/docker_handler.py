@@ -86,7 +86,7 @@ class DockerHandler:
             self._client = aiodocker.Docker()
         except ValueError as error:
             if re.match(
-                r".+Either DOCKER_HOST or local sockets are not available", f"{error}"
+                r".*Either DOCKER_HOST or local sockets are not available.*", f"{error}"
             ):
                 raise DockerError(
                     STATUS_CUSTOM_ERROR,
@@ -96,6 +96,7 @@ class DockerHandler:
                         "if you are using remote docker engine"
                     },
                 )
+            raise
         self._temporary_images: List[str] = list()
 
     async def __aenter__(self) -> "DockerHandler":  # pragma: no cover
