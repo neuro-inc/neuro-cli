@@ -1,10 +1,9 @@
 import os
 
+import asynctest
 import pytest
 from aiodocker.exceptions import DockerError
-import asynctest 
 from yarl import URL
-
 
 from neuromation.cli.docker_handler import (
     STATUS_CUSTOM_ERROR,
@@ -15,11 +14,14 @@ from neuromation.cli.docker_handler import (
 )
 from neuromation.client import AuthorizationError
 
+
 @pytest.fixture()
 def patch_docker_host():
-    with asynctest.mock.patch.dict(os.environ, values={
-        "DOCKER_HOST": "http://localhost:45678"}):
+    with asynctest.mock.patch.dict(
+        os.environ, values={"DOCKER_HOST": "http://localhost:45678"}
+    ):
         yield
+
 
 class TestImage:
     @pytest.mark.parametrize(
@@ -119,17 +121,23 @@ class TestImage:
         )
 
 
-@pytest.mark.usefixtures('patch_docker_host')
+@pytest.mark.usefixtures("patch_docker_host")
 class TestDockerHandler:
-
-    @asynctest.mock.patch('aiodocker.Docker.__init__', side_effect=ValueError('text Either DOCKER_HOST or local sockets are not available text'))
+    @asynctest.mock.patch(
+        "aiodocker.Docker.__init__",
+        side_effect=ValueError(
+            "text Either DOCKER_HOST or local sockets are not available text"
+        ),
+    )
     async def test_unavailable_docker(self, patched_init):
         with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
             handler = DockerHandler(
                 "bob", "X-Token", URL("http://mock.registry.neuromation.io")
             )
 
-    @asynctest.mock.patch('aiodocker.Docker.__init__', side_effect=ValueError('something went wrong'))
+    @asynctest.mock.patch(
+        "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
+    )
     async def test_unknown_docker_error(self, patched_init):
         with pytest.raises(ValueError, match=r"something went wrong"):
             handler = DockerHandler(
