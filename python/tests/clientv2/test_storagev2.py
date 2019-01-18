@@ -2,7 +2,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.clientv2 import ClientV2, FileStatus
+from neuromation.clientv2 import ClientV2, FileStatus, FileStatusType
 
 
 async def test_uri_to_path_non_storage(token):
@@ -181,6 +181,38 @@ async def test_storage_create(aiohttp_server, token):
 
     async with ClientV2(srv.make_url("/"), token) as client:
         await client.storage.create(URL("storage://~/file"), gen())
+
+
+async def test_storage_stats(aiohttp_server, token):
+    async def handler(request):
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/folder",
+                    "type": "DIRECTORY",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), token) as client:
+        stats = await client.storage.stats(URL("storage://~/folder"))
+        assert stats == FileStatus(
+            path="/user/folder",
+            type=FileStatusType.DIRECTORY,
+            size=1234,
+            modification_time=3456,
+            permission="read",
+        )
 
 
 async def test_storage_normalize(token):
