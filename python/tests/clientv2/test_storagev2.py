@@ -215,6 +215,45 @@ async def test_storage_stats(aiohttp_server, token):
         )
 
 
+async def test_storage_open(aiohttp_server, token):
+    async def handler(request):
+        assert request.path == "/storage/user/file"
+        if request.query["op"] == "OPEN":
+            resp = web.StreamResponse()
+            await resp.prepare(request)
+            for i in range(5):
+                await resp.write(str(i).encode("ascii"))
+            return resp
+        elif request.query["op"] == "GETFILESTATUS":
+            return web.json_response(
+                {
+                    "FileStatus": {
+                        "path": "/user/folder",
+                        "type": "FILE",
+                        "length": 5,
+                        "modificationTime": 3456,
+                        "permission": "read",
+                    }
+                }
+            )
+        else:
+            raise AssertionError(f"Unknown operation {request.query['op']}")
+
+    app = web.Application()
+    app.router.add_get("/storage/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with ClientV2(srv.make_url("/"), token) as client:
+        buf = bytearray()
+        async for chunk in client.storage.open(URL("storage://~/file")):
+            buf.extend(chunk)
+        assert buf == b"01234"
+
+
+# test normalizers
+
+
 async def test_storage_normalize(token):
     async with ClientV2("https://example.com", token) as client:
         url = client.storage.normalize(URL("storage:path/to/file.txt"))
