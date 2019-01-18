@@ -183,4 +183,29 @@ async def test_storage_normalize_bad_scheme(token):
         with pytest.raises(
             ValueError, match="Path should be targeting platform storage."
         ):
-            client.storage.normalize(URL("file:path/to/file.txt"))
+            client.storage.normalize(URL("other:path/to/file.txt"))
+
+
+async def test_storage_normalize_local(token):
+    async with ClientV2("https://example.com", token) as client:
+        url = client.storage.normalize_local(URL("file:///path/to/file.txt"))
+        assert url.scheme == "file"
+        assert url.host is None
+        assert url.path == "/path/to/file.txt"
+
+
+async def test_storage_normalize_local_bad_scheme(token):
+    async with ClientV2("https://example.com", token) as client:
+        with pytest.raises(
+            ValueError, match="Path should be targeting local file system."
+        ):
+            client.storage.normalize_local(URL("other:path/to/file.txt"))
+
+
+async def test_storage_normalize_local_expand_user(token, monkeypatch):
+    monkeypatch.setenv("HOME", "/home/user")
+    async with ClientV2("https://example.com", token) as client:
+        url = client.storage.normalize_local(URL("file:~/path/to/file.txt"))
+        assert url.scheme == "file"
+        assert url.host is None
+        assert url.path == "/home/user/path/to/file.txt"
