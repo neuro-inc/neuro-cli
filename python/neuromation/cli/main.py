@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-from functools import partial
 from pathlib import Path
 
 import aiohttp
@@ -99,8 +98,6 @@ Commands:
   share                 Resource sharing management
   help                  Get help on a command
 """
-
-    from neuromation.client import Storage
 
     @command
     def config():
@@ -203,8 +200,6 @@ Commands:
           mv                 Move or rename files and directories
           mkdir              Make directories
         """
-
-        storage = partial(Storage, url, token)
 
         @command
         async def rm(path):
