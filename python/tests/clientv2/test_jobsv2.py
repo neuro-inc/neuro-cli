@@ -3,12 +3,12 @@ from typing import List
 import pytest
 from aiohttp import web
 
-from neuromation.clientv2 import ResourceNotFound
 from neuromation.clientv2 import (
     ClientV2,
     Image,
     JobDescription,
     NetworkPortForwarding,
+    ResourceNotFound,
     Resources,
     Volume,
 )
