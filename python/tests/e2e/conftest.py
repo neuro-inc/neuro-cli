@@ -257,8 +257,18 @@ def check_file_on_storage_checksum(run, tmpstorage):
         else:
             target = tmpdir
             target_file = join(tmpdir, name)
-        run(["store", "cp", f"{path}/{name}", target])
-        assert hash_hex(target_file) == checksum
+        delay = 0.5
+        for i in range(5):
+            run(["store", "cp", f"{path}/{name}", target])
+            try:
+                assert hash_hex(target_file) == checksum
+                return
+            except AssertionError:
+                # the file was not synchronized between platform storage nodes
+                # need to try again
+                sleep(delay)
+                delay *= 2
+        raise
 
     return go
 
