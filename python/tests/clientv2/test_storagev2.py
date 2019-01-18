@@ -23,6 +23,19 @@ class DummyProgress(AbstractProgress):
         pass
 
 
+def calc_diff(dcmp, *, pre=""):
+    ret = []
+    for name in dcmp.diff_files:
+        ret.append((pre + name, pre + name))
+    for name in dcmp.left_only:
+        ret.append((pre + name, ""))
+    for name in dcmp.right_only:
+        ret.append(("", pre + name))
+    for name, sub_dcmp in dcmp.subdirs.items():
+        ret.extend(calc_diff(sub_dcmp, pre=name + "/"))
+    return ret
+
+
 @pytest.fixture
 async def storage_server(aiohttp_raw_server, tmp_path):
     PREFIX = "/storage/user"
@@ -577,4 +590,18 @@ async def test_storage_upload_recursive_ok(storage_server, token, tmp_path):
             DummyProgress(), URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
         )
     diff = dircmp(DATA_FOLDER / "nested", TARGET_DIR)
-    assert not diff.diff_files
+    assert not calc_diff(diff)
+
+
+async def test_storage_upload_recursive_slash_ending(storage_server, token, tmp_path):
+    TARGET_DIR = tmp_path / "folder"
+    TARGET_DIR.mkdir()
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        await client.storage.upload_dir(
+            DummyProgress(),
+            URL(DATA_FOLDER.as_uri()) / "nested",
+            URL("storage:folder/"),
+        )
+    diff = dircmp(DATA_FOLDER / "nested", TARGET_DIR / "nested")
+    assert not calc_diff(diff)

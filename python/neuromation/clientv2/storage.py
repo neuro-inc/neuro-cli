@@ -233,7 +233,10 @@ class Storage:
             elif child.is_dir():
                 await self.upload_dir(progress, src / child.name, dst / child.name)
             else:
-                log.warning("Cannot upload %s", child)
+                # This case is for uploading non-regular file,
+                # e.g. blocking device or unix socket
+                # Coverage temporary skipped, the line is waiting for a champion
+                log.warning("Cannot upload %s", child)  # pragma: no cover
 
     async def download_file(
         self, progress: AbstractProgress, src: URL, dst: URL
