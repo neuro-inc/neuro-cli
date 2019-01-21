@@ -7,7 +7,8 @@ def token():
     return jwt.encode({"identity": "user"}, "secret", algorithm="HS256")
 
 
-def setup_null_keyring(tmpdir, monkeypatch):
+@pytest.fixture
+def setup_null_keyring():
     import keyring.backends.null
 
     stored_keyring = keyring.get_keyring()

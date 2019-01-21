@@ -28,17 +28,6 @@ def setup_failed_keyring():
 
 
 @pytest.fixture
-def setup_null_keyring():
-    import keyring.backends.null
-
-    stored_keyring = keyring.get_keyring()
-    keyring.set_keyring(keyring.backends.null.Keyring())
-    yield
-
-    keyring.set_keyring(stored_keyring)
-
-
-@pytest.fixture
 def setup_memory_keyring():
     import keyring.backend
     import keyring.backends.null
@@ -69,7 +58,7 @@ def setup_memory_keyring():
 @pytest.fixture
 def patch_home_for_test(monkeypatch, nmrc):
     def home():
-        return PosixPath(nmrc.dirpath())
+        return nmrc.parent
 
     monkeypatch.setattr(Path, "home", home)
 
@@ -78,11 +67,11 @@ def test_create(nmrc):
     conf = rc.create(nmrc, Config())
     assert conf == DEFAULTS
     assert nmrc.exists()
-    assert nmrc.read_text() == f"github_rsa_path: ''\n" f"url: {DEFAULTS.url}\n"
-    assert nmrc.read_text() == f"github_rsa_path: ''\n"\
-        f"insecure: {str(DEFAULTS.insecure).lower()}\n"\
+    assert (
+        nmrc.read_text() == f"github_rsa_path: ''\n"
+        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
         f"url: {DEFAULTS.url}\n"
-
+    )
 
 
 @pytest.mark.usefixtures("patch_home_for_test", "setup_memory_keyring")
@@ -252,11 +241,8 @@ def test_load_missing(nmrc):
     assert config == DEFAULTS
 
 
-def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
-    def home():
-        return PosixPath(nmrc.dirpath())
-
-    monkeypatch.setattr(Path, "home", home)
+@pytest.mark.usefixtures("patch_home_for_test", "setup_memory_keyring")
+def test_keyring(nmrc):
     jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
     jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
     jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
@@ -269,7 +255,7 @@ def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
     )
     rc.ConfigFactory.update_auth_token(test_token)
     assert (
-        nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        nmrc.read_text() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
         f"insecure: {str(DEFAULTS.insecure).lower()}\n"
         f"url: {DEFAULTS.url}\n"
     )
@@ -281,7 +267,7 @@ def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
     config3: Config = rc.ConfigFactory.load()
 
     assert (
-        nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        nmrc.read_text() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
         f"insecure: {str(DEFAULTS.insecure).lower()}\n"
         f"url: {DEFAULTS.url}\n"
     )
@@ -337,7 +323,7 @@ def test_keyring_broken_keyring(nmrc):
         rc.save(nmrc, config)
     rc.ConfigFactory.update_auth_token(test_token, True)
     assert (
-        nmrc.read() == f"auth: {test_token}\n"
+        nmrc.read_text() == f"auth: {test_token}\n"
         f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
         f"insecure: true\n"
         f"url: {DEFAULTS.url}\n"
