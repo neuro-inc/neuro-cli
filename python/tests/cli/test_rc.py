@@ -4,14 +4,14 @@ import pytest
 from yarl import URL
 
 from neuromation.cli import rc
-from neuromation.cli.rc import Config, ConfigFactory
+from neuromation.cli.rc import Config, ConfigFactory, RCException
 
 
 DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")
 
 
 @pytest.fixture
-def nmrc(tmp_path, setup_null_keyring):
+def nmrc(tmp_path, setup_memory_keyring):
     return tmp_path / ".nmrc"
 
 
@@ -66,62 +66,68 @@ def setup_memory_keyring():
     keyring.set_keyring(stored_keyring)
 
 
+@pytest.fixture
+def patch_home_for_test(monkeypatch, nmrc):
+    def home():
+        return PosixPath(nmrc.dirpath())
+
+    monkeypatch.setattr(Path, "home", home)
+
+
 def test_create(nmrc):
     conf = rc.create(nmrc, Config())
     assert conf == DEFAULTS
     assert nmrc.exists()
     assert nmrc.read_text() == f"github_rsa_path: ''\n" f"url: {DEFAULTS.url}\n"
+    assert nmrc.read_text() == f"github_rsa_path: ''\n"\
+        f"insecure: {str(DEFAULTS.insecure).lower()}\n"\
+        f"url: {DEFAULTS.url}\n"
 
 
+
+@pytest.mark.usefixtures("patch_home_for_test", "setup_memory_keyring")
 class TestFactoryMethods:
-    @pytest.fixture
-    def patch_home_for_test(self, monkeypatch, nmrc):
-        def home():
-            return nmrc.parent
-
-        monkeypatch.setattr(Path, "home", home)
-
-    def test_factory(self, patch_home_for_test):
+    def test_factory(self):
         config: Config = Config(url="http://abc.def", auth="token1")
         rc.ConfigFactory._update_config(url="http://abc.def", auth="token1")
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_url(self, patch_home_for_test):
+    def test_factory_update_url(self):
         config: Config = Config(url="http://abc.def", auth="token1")
         rc.ConfigFactory.update_api_url(url="http://abc.def")
         config2: Config = rc.ConfigFactory.load()
         assert config.url == config2.url
 
-    def test_factory_update_url_malformed(self, patch_home_for_test):
+    def test_factory_update_url_malformed(self):
         config: Config = Config(url="http://abc.def", auth="token1")
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="ftp://abc.def")
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
-    def test_factory_update_url_malformed_trailing_slash(self, patch_home_for_test):
+    def test_factory_update_url_malformed_trailing_slash(self):
         config: Config = Config(url="http://abc.def", auth="token1")
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="http://abc.def/")
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
-    def test_factory_update_url_malformed_with_fragment(self, patch_home_for_test):
+    def test_factory_update_url_malformed_with_fragment(self):
         config: Config = Config(url="http://abc.def", auth="token1")
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="http://abc.def?blabla")
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
-    def test_factory_update_url_malformed_with_anchor(self, patch_home_for_test):
+    def test_factory_update_url_malformed_with_anchor(self):
         config: Config = Config(url="http://abc.def", auth="token1")
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="http://abc.def#ping")
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
-    def test_factory_update_id_rsa(self, patch_home_for_test):
+    def test_factory_update_id_rsa(self):
         config: Config = Config(
             url=DEFAULTS.url, auth=DEFAULTS.auth, github_rsa_path="~/.ssh/id_rsa"
         )
@@ -129,11 +135,11 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_token_invalid(self, patch_home_for_test):
+    def test_factory_update_token_invalid(self):
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token="not-a-token")
 
-    def test_factory_update_token_no_identity(self, patch_home_for_test):
+    def test_factory_update_token_no_identity(self):
         jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
         jwt_claims = """eyJub3QtaWRlbnRpdHkiOiJub3QtaWRlbnRpdHkifQ"""
         jwt_sig = """ag9NbxxOvp2ufMCUXk2pU3MMf2zYftXHQdOZDJajlvE"""
@@ -256,11 +262,15 @@ def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
     jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
     test_token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
     config: Config = Config(
-        url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
+        url=DEFAULTS.url,
+        auth=test_token,
+        github_rsa_path=DEFAULTS.github_rsa_path,
+        insecure=DEFAULTS.insecure,
     )
     rc.ConfigFactory.update_auth_token(test_token)
     assert (
         nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
         f"url: {DEFAULTS.url}\n"
     )
 
@@ -272,6 +282,7 @@ def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
 
     assert (
         nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
         f"url: {DEFAULTS.url}\n"
     )
 
@@ -279,11 +290,8 @@ def test_keyring(monkeypatch, nmrc, setup_memory_keyring):
     assert config3 == default_config
 
 
-def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
-    def home():
-        return nmrc.parent
-
-    monkeypatch.setattr(Path, "home", home)
+@pytest.mark.usefixtures("patch_home_for_test", "setup_failed_keyring")
+def test_keyring_insecure(nmrc):
     jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
     jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
     jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
@@ -291,14 +299,16 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     config: Config = Config(
         url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
     )
-    rc.ConfigFactory.update_auth_token(test_token)
+    rc.ConfigFactory.update_auth_token(test_token, True)
     assert (
         nmrc.read_text() == f"auth: {test_token}\n"
         f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"insecure: true\n"
         f"url: {DEFAULTS.url}\n"
     )
 
     config2: Config = rc.ConfigFactory.load()
+    config.insecure = True
     assert config == config2
 
     rc.ConfigFactory.forget_auth_token()
@@ -306,6 +316,7 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
 
     assert (
         nmrc.read_text() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
         f"url: {DEFAULTS.url}\n"
     )
 
@@ -313,11 +324,8 @@ def test_keyring_fallbacks_to_nmrc(monkeypatch, nmrc, setup_failed_keyring):
     assert config3 == default_config
 
 
-def test_keyring_fallbacks_to_nmrc_alt(monkeypatch, nmrc, setup_null_keyring):
-    def home():
-        return PosixPath(nmrc.dirpath())
-
-    monkeypatch.setattr(Path, "home", home)
+@pytest.mark.usefixtures("patch_home_for_test", "setup_null_keyring")
+def test_keyring_broken_keyring(nmrc):
     jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
     jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
     jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
@@ -325,23 +333,12 @@ def test_keyring_fallbacks_to_nmrc_alt(monkeypatch, nmrc, setup_null_keyring):
     config: Config = Config(
         url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
     )
-    rc.ConfigFactory.update_auth_token(test_token)
+    with pytest.raises(RCException):
+        rc.save(nmrc, config)
+    rc.ConfigFactory.update_auth_token(test_token, True)
     assert (
         nmrc.read() == f"auth: {test_token}\n"
         f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
+        f"insecure: true\n"
         f"url: {DEFAULTS.url}\n"
     )
-
-    config2: Config = rc.ConfigFactory.load()
-    assert config == config2
-
-    rc.ConfigFactory.forget_auth_token()
-    config3: Config = rc.ConfigFactory.load()
-
-    assert (
-        nmrc.read() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
-        f"url: {DEFAULTS.url}\n"
-    )
-
-    default_config: config = Config()
-    assert config3 == default_config

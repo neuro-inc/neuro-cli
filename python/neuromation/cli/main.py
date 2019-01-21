@@ -10,7 +10,7 @@ from yarl import URL
 import neuromation
 from neuromation.cli.command_handlers import PlatformStorageOperation
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
-from neuromation.cli.rc import Config
+from neuromation.cli.rc import Config, RCException
 from neuromation.clientv2 import (
     Action,
     ClientV2,
@@ -159,27 +159,31 @@ Commands:
             print(config)
 
         @command
-        def auth(token):
+        def auth(token, insecure):
             """
             Usage:
-                neuro config auth TOKEN
+                neuro config auth [options] TOKEN
 
-            Updates authorization token
+            Updates authorization token.
+
+            Options:
+                --insecure      Store token in plain file instead system secured keyring
             """
             # TODO (R Zubairov, 09/13/2018): check token correct
             # connectivity, check with Alex
             # Do not overwrite token in case new one does not work
             # TODO (R Zubairov, 09/13/2018): on server side we shall implement
             # protection against brute-force
-            rc.ConfigFactory.update_auth_token(token=token)
+            rc.ConfigFactory.update_auth_token(token=token, insecure=insecure)
 
         @command
         def forget():
             """
             Usage:
-                neuro config forget
+                neuro config forget [options]
 
             Forget authorization token
+
             """
             rc.ConfigFactory.forget_auth_token()
 
@@ -938,6 +942,10 @@ def main():
 
     except neuromation.client.ClientError as error:
         log_error(f"Application error ({error})")
+        sys.exit(os.EX_SOFTWARE)
+
+    except RCException as error:
+        log_error(f"{error}")
         sys.exit(os.EX_SOFTWARE)
 
     except aiohttp.ClientError as error:

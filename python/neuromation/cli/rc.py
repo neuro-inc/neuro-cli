@@ -8,11 +8,16 @@ from jose import JWTError, jwt
 from yarl import URL
 
 
+class RCException(Exception):
+    pass
+
+
 @dataclass
 class Config:
     url: str = "https://platform.dev.neuromation.io/api/v1"
     auth: str = None
     github_rsa_path: str = ""
+    insecure: bool = False
 
     def docker_registry_url(self) -> URL:
         platform_url = URL(self.url)
@@ -33,7 +38,7 @@ class ConfigFactory:
         return load(nmrc_config_path)
 
     @classmethod
-    def update_auth_token(cls, token: str) -> Config:
+    def update_auth_token(cls, token: str, insecure: bool = False) -> Config:
         try:
             jwt_header = jwt.get_unverified_claims(token)
             if "identity" not in jwt_header:
@@ -43,11 +48,11 @@ class ConfigFactory:
                 f"Passed string does not contain valid JWT structure."
             ) from e
 
-        return cls._update_config(auth=token)
+        return cls._update_config(auth=token, insecure=insecure)
 
     @classmethod
     def forget_auth_token(cls) -> Config:
-        return cls._update_config(auth=None)
+        return cls._update_config(auth=None, insecure=False)
 
     @classmethod
     def update_api_url(cls, url: str) -> Config:
@@ -90,6 +95,7 @@ CREDENTIAL_SERVICE_NAME = "neuro"
 
 def save(path, config: Config) -> Config:
     dict_config = asdict(config)
+    insecure = config.insecure
     for field in CREDENTIAL_FIELDS:
         value = dict_config.pop(field, None)
         if value is None:
@@ -98,13 +104,20 @@ def save(path, config: Config) -> Config:
             except Exception:
                 pass
         else:
-            try:
-                keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
-                # check if password saved
-                if keyring.get_password(CREDENTIAL_SERVICE_NAME, field) != value:
-                    raise RuntimeError("Keyring set_password failed")
-            except Exception:
+            if insecure:
                 dict_config[field] = value
+            else:
+                try:
+                    keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
+                    # check if password saved
+                    if keyring.get_password(CREDENTIAL_SERVICE_NAME, field) != value:
+                        raise RuntimeError("Keyring set_password failed")
+                except Exception:
+                    raise RCException(
+                        f"Secure storage is not available, "
+                        f"use --insecure flag to enforce saving a token "
+                        f"in config file {path} as a plain text"
+                    )
 
     with open(path, "w") as file:
         yaml.dump(dict_config, file, default_flow_style=False)
