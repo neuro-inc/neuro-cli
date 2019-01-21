@@ -542,13 +542,20 @@ neuro config url https://platform.neuromation.io/api/v1
 
 ### neuro config auth
 
-Updates authorization token
+Updates authorization token.
 
 **Usage:**
 
 ```bash
-neuro config auth TOKEN
+neuro config auth [options] TOKEN
 ```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--insecure_|Store token in plain file instead system secured keyring|
+
 
 
 
@@ -559,7 +566,7 @@ Forget authorization token
 **Usage:**
 
 ```bash
-neuro config forget
+neuro config forget [options]
 ```
 
 
