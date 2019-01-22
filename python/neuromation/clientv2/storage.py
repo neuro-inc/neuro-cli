@@ -265,9 +265,6 @@ class Storage:
     ) -> None:
         src = self.normalize(src)
         dst = self.normalize_local(dst)
-        if not dst.name:
-            # /dst/ ==> /dst for recursive copy
-            dst = dst.parent
         path = Path(dst.path)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
@@ -276,4 +273,4 @@ class Storage:
             elif child.is_dir():
                 await self.download_dir(progress, src / child.name, dst / child.name)
             else:
-                log.warning("Cannot upload %s", child)
+                log.warning("Cannot download %s", child)  # pragma: no cover

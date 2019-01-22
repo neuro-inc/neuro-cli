@@ -1,5 +1,6 @@
 from filecmp import dircmp
 from pathlib import Path
+from shutil import copytree
 
 import pytest
 from aiohttp import web
@@ -80,6 +81,20 @@ async def storage_server(aiohttp_raw_server, storage_path):
         elif op == "MKDIRS":
             local_path.mkdir(parents=True)
             return web.Response(status=201)
+        elif op == "LISTSTATUS":
+            ret = []
+            for child in local_path.iterdir():
+                stat = child.stat()
+                ret.append(
+                    {
+                        "path": child.name,
+                        "type": "FILE" if child.is_file() else "DIRECTORY",
+                        "length": stat.st_size,
+                        "modificationTime": stat.st_mtime,
+                        "permission": "write",
+                    }
+                )
+            return web.json_response({"FileStatuses": {"FileStatus": ret}})
         else:
             raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
 
@@ -707,3 +722,36 @@ async def test_storage_download_regular_file_to_non_file(
             await client.storage.download_file(
                 DummyProgress(), URL("storage:file.txt"), URL("file:///dev/null")
             )
+
+
+async def test_storage_download_dir(storage_server, token, tmp_path, storage_path):
+    STORAGE_DIR = storage_path / "folder"
+    copytree(DATA_FOLDER / "nested", STORAGE_DIR)
+    LOCAL_DIR = tmp_path / "local"
+    LOCAL_DIR.mkdir()
+    TARGET_DIR = LOCAL_DIR / "nested"
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        await client.storage.download_dir(
+            DummyProgress(), URL("storage:folder"), URL(TARGET_DIR.as_uri())
+        )
+
+    diff = dircmp(DATA_FOLDER / "nested", TARGET_DIR)
+    assert not calc_diff(diff)
+
+
+async def test_storage_download_dir_slash_ending(
+    storage_server, token, tmp_path, storage_path
+):
+    STORAGE_DIR = storage_path / "folder"
+    copytree(DATA_FOLDER / "nested", STORAGE_DIR / "nested")
+    LOCAL_DIR = tmp_path / "local"
+    LOCAL_DIR.mkdir()
+
+    async with ClientV2(storage_server.make_url("/"), token) as client:
+        await client.storage.download_dir(
+            DummyProgress(), URL("storage:folder"), URL(LOCAL_DIR.as_uri() + '/')
+        )
+
+    diff = dircmp(DATA_FOLDER / "nested", LOCAL_DIR / "nested")
+    assert not calc_diff(diff)
