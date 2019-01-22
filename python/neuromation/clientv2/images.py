@@ -54,9 +54,6 @@ class Image:
 
         return cls(url=URL(f"image://{username}/{name}"), local=name)
 
-    def to_repo(self, registry: str) -> str:
-        return f"{registry}/{self.url.host}{self.url.path}"
-
 
 class Images:
     def __init__(self, api: API, url: URL, token: str) -> None:

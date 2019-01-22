@@ -1,15 +1,15 @@
-import os
-
 import asynctest
 import pytest
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from neuromation.cli.docker_handler import (
+from neuromation.cli.command_spinner import SpinnerBase
+from neuromation.client import AuthorizationError
+from neuromation.clientv2 import ClientV2
+from neuromation.clientv2.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
     STATUS_NOT_FOUND,
-    DockerHandler,
     Image,
 )
 from neuromation.clientv2 import AuthorizationError
@@ -113,133 +113,147 @@ class TestImage:
         with pytest.raises(ValueError, match=r"only one colon allowed"):
             Image.from_local("image:tag1:tag2", "bob")
 
-    def test_repo(self):
-        image = Image.from_url(URL("image:php:5"), "bob")
-        assert (
-            image.to_repo("registry.neuromation.io")
-            == "registry.neuromation.io/bob/php:5"
-        )
 
+class TestImages:
+    @pytest.fixture()
+    def spinner(self) -> SpinnerBase:
+        return SpinnerBase.create_spinner(False)
 
-@pytest.mark.usefixtures("patch_docker_host")
-class TestDockerHandler:
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__",
         side_effect=ValueError(
             "text Either DOCKER_HOST or local sockets are not available text"
         ),
     )
-    async def test_unavailable_docker(self, patched_init):
-        with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
-            DockerHandler("bob", "X-Token", URL("http://mock.registry.neuromation.io"))
+    async def test_unavailable_docker(self, patched_init, token, spinner):
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
+                image = Image.from_url(
+                    URL("image://bob/image:bananas"), client.username
+                )
+                await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
     )
-    async def test_unknown_docker_error(self, patched_init):
-        with pytest.raises(ValueError, match=r"something went wrong"):
-            DockerHandler("bob", "X-Token", URL("http://mock.registry.neuromation.io"))
+    async def test_unknown_docker_error(self, patched_init, token, spinner):
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(ValueError, match=r"something went wrong"):
+                image = Image.from_url(
+                    URL("image://bob/image:bananas"), client.username
+                )
+                await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    async def test_push_non_existent_image(self, patched_tag):
+    async def test_push_non_existent_image(self, patched_tag, token, spinner):
         patched_tag.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        with pytest.raises(ValueError, match=r"not found"):
-            await handler.push("php:7", "")
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(ValueError, match=r"not found"):
+                image = Image.from_url(
+                    URL("image://bob/image:bananas-no-more"), client.username
+                )
+                await client.images.push(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
-    async def test_push_image_to_foreign_repo(self, patched_push, patched_tag):
+    async def test_push_image_to_foreign_repo(
+        self, patched_push, patched_tag, token, spinner
+    ):
         patched_tag.return_value = True
         patched_push.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        with pytest.raises(AuthorizationError):
-            await handler.push("php:7", "image://jane/java")
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(AuthorizationError):
+                image = Image.from_url(
+                    URL("image://bob/image:bananas-not-for-you"), client.username
+                )
+                await client.images.push(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
-    async def test_push_image_with_docker_api_error(self, patched_push, patched_tag):
+    async def test_push_image_with_docker_api_error(
+        self, patched_push, patched_tag, token, spinner
+    ):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_tag.return_value = True
         patched_push.return_value = error_generator()
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        with pytest.raises(DockerError) as exc_info:
-            await handler.push("php:7", "")
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(DockerError) as exc_info:
+                image = Image.from_url(
+                    URL("image://bob/image:bananas-wrong-food"), client.username
+                )
+                await client.images.push(image, image, spinner)
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
         assert exc_info.value.message == "Mocked message"
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
-    async def test_success_push_image(self, patched_push, patched_tag):
+    async def test_success_push_image(self, patched_push, patched_tag, token, spinner):
         async def message_generator():
             yield {}
 
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        result = await handler.push("php:7", "image://bob/php:7")
-        assert result == URL("image://bob/php:7")
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            image = Image.from_url(
+                URL("image://bob/image:banana-is-here"), client.username
+            )
+            result = await client.images.push(image, image, spinner)
+        assert result == image
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_pull_non_existent_image(self, patched_pull):
+    async def test_pull_non_existent_image(self, patched_pull, token, spinner):
         patched_pull.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        with pytest.raises(ValueError, match=r"not found"):
-            await handler.pull("image:php:7", "")
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(ValueError, match=r"not found"):
+                image = Image.from_url(
+                    URL("image://bob/image:no-bananas-here"), client.username
+                )
+                await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_pull_image_from_foreign_repo(self, patched_pull):
+    async def test_pull_image_from_foreign_repo(self, patched_pull, token, spinner):
         patched_pull.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        with pytest.raises(AuthorizationError):
-            await handler.pull("image://jane/java", "")
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(AuthorizationError):
+                image = Image.from_url(
+                    URL("image://bob/image:not-your-bananas"), client.username
+                )
+                await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_pull_image_with_docker_api_error(self, patched_pull):
+    async def test_pull_image_with_docker_api_error(self, patched_pull, token, spinner):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_pull.return_value = error_generator()
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        with pytest.raises(DockerError) as exc_info:
-            await handler.pull("image://jane/java", "")
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            with pytest.raises(DockerError) as exc_info:
+                image = Image.from_url(
+                    URL("image://bob/image:nuts-here"), client.username
+                )
+                await client.images.pull(image, image, spinner)
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
         assert exc_info.value.message == "Mocked message"
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_success_pull_image(self, patched_pull, patched_tag):
+    async def test_success_pull_image(self, patched_pull, patched_tag, token, spinner):
         async def message_generator():
             yield {}
 
         patched_tag.return_value = True
         patched_pull.return_value = message_generator()
-        handler = DockerHandler(
-            "bob", "X-Token", URL("http://mock.registry.neuromation.io")
-        )
-        result = await handler.pull("image:php:7", "php:7")
-        assert result == "php:7"
+        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+            image = Image.from_url(URL("image://bob/image:bananas"), client.username)
+            result = await client.images.pull(image, image, spinner)
+        assert result == image
