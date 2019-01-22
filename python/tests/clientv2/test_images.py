@@ -1,3 +1,5 @@
+import os
+
 import asynctest
 import pytest
 from aiodocker.exceptions import DockerError
@@ -13,6 +15,14 @@ from neuromation.clientv2.images import (
     Image,
 )
 from neuromation.clientv2 import AuthorizationError
+
+
+@pytest.fixture()
+def patch_docker_host():
+    with asynctest.mock.patch.dict(
+        os.environ, values={"DOCKER_HOST": "http://localhost:45678"}
+    ):
+        yield
 
 
 @pytest.fixture()
@@ -113,7 +123,7 @@ class TestImage:
         with pytest.raises(ValueError, match=r"only one colon allowed"):
             Image.from_local("image:tag1:tag2", "bob")
 
-
+@pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
     @pytest.fixture()
     def spinner(self) -> SpinnerBase:
