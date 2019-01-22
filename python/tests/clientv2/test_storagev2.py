@@ -750,7 +750,7 @@ async def test_storage_download_dir_slash_ending(
 
     async with ClientV2(storage_server.make_url("/"), token) as client:
         await client.storage.download_dir(
-            DummyProgress(), URL("storage:folder"), URL(local_dir.as_uri() + '/')
+            DummyProgress(), URL("storage:folder"), URL(local_dir.as_uri() + "/")
         )
 
     diff = dircmp(DATA_FOLDER / "nested", local_dir / "nested")
