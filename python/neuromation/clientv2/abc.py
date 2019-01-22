@@ -13,3 +13,16 @@ class AbstractProgress(abc.ABC):
     @abc.abstractmethod
     def progress(self, file: str, current: int) -> None:  # pragma: no cover
         pass
+
+class AbstractSpinner(abc.ABC):
+    @abc.abstractmethod
+    def start(self, message: str = None):
+        pass
+
+    @abc.abstractmethod
+    def complete(self, message: str = None):
+        pass
+
+    @abc.abstractmethod
+    def tick(self):
+        pass

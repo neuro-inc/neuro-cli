@@ -5,7 +5,7 @@ import aiohttp
 from jose import jwt
 from yarl import URL
 
-from .abc import AbstractProgress
+from .abc import AbstractProgress, AbstractSpinner
 from .api import (
     API,
     ResourceNotFound,
@@ -25,6 +25,7 @@ from .jobs import (
     Resources,
     Volume,
     Container,
+)ontainer,
 )
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
@@ -52,6 +53,7 @@ __all__ = (
     "AuthenticationError",
     "AuthorizationError",
     "AbstractProgress",
+    "AbstractSpinner"
 )
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)

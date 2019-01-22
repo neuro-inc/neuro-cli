@@ -2,7 +2,7 @@ import re
 import sys
 from dataclasses import dataclass
 from typing import Any, Dict, List
-
+from .command_spinner import SpinnerBase
 import aiodocker
 from aiodocker.exceptions import DockerError
 from yarl import URL
@@ -62,22 +62,6 @@ class DockerHandler:
     At this moment image/registry  manipulations available
     """
 
-    _PROGRESS = "|\\-/"
-    _progress_tick = 0
-
-    def _start_progress(self) -> None:
-        self._progress_tick = 0
-        self._tick_progress()
-
-    def _tick_progress(self) -> None:
-        self._progress_tick = (self._progress_tick + 1) % len(self._PROGRESS)
-        if sys.stdout.isatty():  # pragma: no cover
-            print(f"\r{self._PROGRESS[self._progress_tick]}", end="")
-
-    def _end_progress(self) -> None:
-        if sys.stdout.isatty():  # pragma: no cover
-            print(f"\r", end="")
-
     def __init__(self, username: str, token: str, registry: URL) -> None:
         self._username = username
         self._token = token
@@ -122,35 +106,36 @@ class DockerHandler:
             remote_image = Image.from_url(URL(remote_image_name), self._username)
 
         repo = remote_image.to_repo(f"{self._registry.host}")
-        self._start_progress()
+        spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), 'Pushing image {}  ')
+        spinner.start('Pushing image ...')
         try:
             await self._client.images.tag(local_image.local, repo)
         except DockerError as error:
-            self._end_progress()
+            spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
                     f"Image {local_image.local} was not found "
                     "in your local docker images"
                 ) from error
-            raise  # pragma: no cover
-        self._tick_progress()
+        spinner.tick()
         try:
             stream = await self._client.images.push(
                 repo, auth=self._auth(), stream=True
             )
+            spinner.tick()
         except DockerError as error:
-            self._end_progress()
+            spinner.complete()
             # TODO check this part when registry fixed
             if error.status == STATUS_FORBIDDEN:
                 raise AuthorizationError(f"Access denied {remote_image.url}") from error
             raise  # pragma: no cover
         async for obj in stream:
-            self._tick_progress()
+            spinner.tick()
             if "error" in obj.keys():
-                self._end_progress()
+                spinner.complete()
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
-        self._end_progress()
+        spinner.complete()
 
         print(f"Image {local_image.local} pushed to registry as {remote_image.url}")
         return remote_image.url
@@ -161,14 +146,15 @@ class DockerHandler:
             local_image = Image.from_local(local_image_name, self._username)
 
         repo = remote_image.to_repo(f"{self._registry.host}")
-        self._start_progress()
+        spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), 'Pulling image {}  ')
+        spinner.start('Pulling image ...')
         try:
             stream = await self._client.pull(
                 repo, auth=self._auth(), repo=repo, stream=True
             )
             self._temporary_images.append(repo)
         except DockerError as error:
-            self._end_progress()
+            spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
                     f"Image {remote_image.url} was not found " "in registry"
@@ -177,18 +163,18 @@ class DockerHandler:
             elif error.status == STATUS_FORBIDDEN:
                 raise AuthorizationError(f"Access denied {remote_image.url}") from error
             raise  # pragma: no cover
-        self._tick_progress()
+        spinner.tick()
 
         async for obj in stream:
-            self._tick_progress()
+            spinner.tick()
             if "error" in obj.keys():
-                self._end_progress()
+                spinner.complete()
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
-        self._tick_progress()
+        spinner.tick()
 
         await self._client.images.tag(repo, local_image.local)
-        self._end_progress()
+        spinner.complete()
 
         print(f"Image {remote_image.url} pulled as " f"{local_image.local}")
         return local_image.local
