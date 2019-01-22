@@ -7,6 +7,7 @@ import aiohttp
 import pytest
 
 from neuromation.cli.rc import ConfigFactory
+from neuromation.utils import run as run_async
 from tests.e2e.test_e2e_utils import (
     Status,
     assert_job_state,
@@ -152,7 +153,7 @@ def test_job_complete_lifecycle(run, loop, tmpstorage, check_create_dir_on_stora
 
 
 @pytest.mark.e2e
-def test_job_kill_non_existing(run, loop):
+def test_job_kill_non_existing(run):
     # try to kill non existing job
     phantom_id = "NOT_A_JOB_ID"
     expected_out = f"Cannot kill job {phantom_id}"
@@ -163,7 +164,7 @@ def test_job_kill_non_existing(run, loop):
 
 
 @pytest.mark.e2e
-def test_model_train_with_http(run, loop, tmpstorage, check_create_dir_on_storage):
+def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -210,14 +211,14 @@ def test_model_train_with_http(run, loop, tmpstorage, check_create_dir_on_storag
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
 
-    assert loop.run_until_complete(get_(parsed_url.netloc))
+    assert run_async(get_(parsed_url.netloc))
 
     run(["job", "kill", job_id])
     wait_job_change_state_from(run, job_id, Status.RUNNING)
 
 
 @pytest.mark.e2e
-def test_model_without_command(run, loop, tmpstorage, check_create_dir_on_storage):
+def test_model_without_command(run, tmpstorage, check_create_dir_on_storage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -262,7 +263,7 @@ def test_model_without_command(run, loop, tmpstorage, check_create_dir_on_storag
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
 
-    assert loop.run_until_complete(get_(parsed_url.netloc))
+    assert run_async(get_(parsed_url.netloc))
 
     captured = run(["job", "kill", job_id])
     wait_job_change_state_from(run, job_id, Status.RUNNING)
