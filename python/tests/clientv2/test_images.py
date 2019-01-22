@@ -123,6 +123,7 @@ class TestImage:
         with pytest.raises(ValueError, match=r"only one colon allowed"):
             Image.from_local("image:tag1:tag2", "bob")
 
+
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
     @pytest.fixture()
