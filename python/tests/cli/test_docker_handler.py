@@ -12,7 +12,7 @@ from neuromation.cli.docker_handler import (
     DockerHandler,
     Image,
 )
-from neuromation.client import AuthorizationError
+from neuromation.clientv2 import AuthorizationError
 
 
 @pytest.fixture()

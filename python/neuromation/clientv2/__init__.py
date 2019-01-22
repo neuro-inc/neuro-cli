@@ -6,7 +6,15 @@ from jose import jwt
 from yarl import URL
 
 from .abc import AbstractProgress
-from .api import API, ResourceNotFound
+from .api import (
+    API,
+    ResourceNotFound,
+    ClientError,
+    IllegalArgumentError,
+    AuthError,
+    AuthenticationError,
+    AuthorizationError,
+)
 from .jobs import (
     Jobs,
     Image,
@@ -38,6 +46,11 @@ __all__ = (
     "FileStatus",
     "Container",
     "ResourceNotFound",
+    "ClientError",
+    "IllegalArgumentError",
+    "AuthError",
+    "AuthenticationError",
+    "AuthorizationError",
     "AbstractProgress",
 )
 

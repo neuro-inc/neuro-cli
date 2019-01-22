@@ -233,7 +233,10 @@ class Storage:
             elif child.is_dir():
                 await self.upload_dir(progress, src / child.name, dst / child.name)
             else:
-                log.warning("Cannot upload %s", child)
+                # This case is for uploading non-regular file,
+                # e.g. blocking device or unix socket
+                # Coverage temporary skipped, the line is waiting for a champion
+                log.warning("Cannot upload %s", child)  # pragma: no cover
 
     async def download_file(
         self, progress: AbstractProgress, src: URL, dst: URL
@@ -247,9 +250,6 @@ class Storage:
                 path = path / src.name
             elif not path.is_file():
                 raise OSError(f"{path} should be a regular file")
-        if not path.name:
-            # storage:src/file.txt -> file:dst/ ==> file:dst/file.txt
-            path = path / src.name
         with path.open("wb") as stream:
             size = 0  # TODO: display length hint for downloaded file
             progress.start(str(dst), size)
@@ -265,9 +265,6 @@ class Storage:
     ) -> None:
         src = self.normalize(src)
         dst = self.normalize_local(dst)
-        if not dst.name:
-            # /dst/ ==> /dst for recursive copy
-            dst = dst.parent
         path = Path(dst.path)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
@@ -276,4 +273,4 @@ class Storage:
             elif child.is_dir():
                 await self.download_dir(progress, src / child.name, dst / child.name)
             else:
-                log.warning("Cannot upload %s", child)
+                log.warning("Cannot download %s", child)  # pragma: no cover

@@ -925,22 +925,22 @@ def main():
         if res:
             print(res)
 
-    except neuromation.client.IllegalArgumentError as error:
+    except neuromation.clientv2.IllegalArgumentError as error:
         log_error(f"Illegal argument(s) ({error})")
         sys.exit(os.EX_DATAERR)
 
-    except neuromation.client.ResourceNotFound as error:
+    except neuromation.clientv2.ResourceNotFound as error:
         log_error(f"{error}")
         sys.exit(os.EX_OSFILE)
 
-    except neuromation.client.AuthenticationError as error:
+    except neuromation.clientv2.AuthenticationError as error:
         log_error(f"Cannot authenticate ({error})")
         sys.exit(os.EX_NOPERM)
-    except neuromation.client.AuthorizationError as error:
+    except neuromation.clientv2.AuthorizationError as error:
         log_error(f"You haven`t enough permission ({error})")
         sys.exit(os.EX_NOPERM)
 
-    except neuromation.client.ClientError as error:
+    except neuromation.clientv2.ClientError as error:
         log_error(f"Application error ({error})")
         sys.exit(os.EX_SOFTWARE)
 
