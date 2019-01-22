@@ -22,7 +22,7 @@ class TestSpinnerStandard:
         spinner.start()
         captured = capsys.readouterr()
         spinner.complete()
-        assert not (captured.out)
+        assert not captured.out
 
         spinner = SpinnerBase.create_spinner(True)
         spinner.start("Bananas!")
