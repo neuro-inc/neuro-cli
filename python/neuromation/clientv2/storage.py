@@ -250,9 +250,6 @@ class Storage:
                 path = path / src.name
             elif not path.is_file():
                 raise OSError(f"{path} should be a regular file")
-        if not path.name:
-            # storage:src/file.txt -> file:dst/ ==> file:dst/file.txt
-            path = path / src.name
         with path.open("wb") as stream:
             size = 0  # TODO: display length hint for downloaded file
             progress.start(str(dst), size)
