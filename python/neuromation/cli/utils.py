@@ -3,13 +3,13 @@ from functools import wraps
 from typing import Optional
 
 import aiohttp
+import click
 from yarl import URL
 
 from neuromation.clientv2 import ClientV2
 from neuromation.utils import run
 
 from . import rc
-import click
 
 
 @dataclass(frozen=True)
@@ -41,7 +41,7 @@ def load_url():
 
 class DeprecatedGroup(click.MultiCommand):
     def __init__(self, origin, name=None, **attrs):
-        attrs.setdefault('help', f"Alias for {origin.name}")
+        attrs.setdefault("help", f"Alias for {origin.name}")
         attrs.setdefault("deprecated", True)
         super().__init__(name, **attrs)
         self.origin = origin

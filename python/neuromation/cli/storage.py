@@ -13,9 +13,9 @@ log = logging.getLogger(__name__)
 
 
 @click.group()
-def storage():
+def storage() -> None:
     """
-    Storage operations
+    Storage operations.
     """
 
 
@@ -44,7 +44,7 @@ async def rm(ctx: Context, path: str) -> None:
 @click.argument("path")
 @click.pass_obj
 @run_async
-async def ls(ctx: Context, path: str):
+async def ls(ctx: Context, path: str) -> None:
     """
     List directory contents.
 
@@ -70,7 +70,7 @@ async def ls(ctx: Context, path: str):
 @run_async
 async def cp(
     ctx: Context, source: str, destination: str, recursive: bool, progress: bool
-):
+) -> None:
     """
     Copy files and directories.
 
@@ -122,7 +122,7 @@ async def cp(
 @click.argument("path")
 @click.pass_obj
 @run_async
-async def mkdir(ctx: Context, path: str):
+async def mkdir(ctx: Context, path: str) -> None:
     """
     Make directories.
     """
@@ -138,7 +138,7 @@ async def mkdir(ctx: Context, path: str):
 @click.argument("destination")
 @click.pass_obj
 @run_async
-async def mv(ctx: Context, source: str, destination: str):
+async def mv(ctx: Context, source: str, destination: str) -> None:
     """
     Move or rename files and directories.
 

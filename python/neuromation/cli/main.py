@@ -33,7 +33,7 @@ from .defaults import DEFAULTS
 from .formatter import JobListFormatter
 from .ssh_utils import connect_ssh, remote_debug
 from .storage import storage
-from .utils import Context, load_token, DeprecatedGroup
+from .utils import Context, DeprecatedGroup, load_token
 
 
 # For stream copying from file to http or from http to file
@@ -102,146 +102,6 @@ Commands:
   share                 Resource sharing management
   help                  Get help on a command
 """
-
-    @command
-    @command
-    def model():
-        """
-        Usage:
-            neuro model COMMAND
-
-        Model operations
-
-        Commands:
-          train              Start model training
-          debug              Prepare debug tunnel for PyCharm
-        """
-
-        @command
-        async def train(
-            image,
-            dataset,
-            results,
-            gpu,
-            gpu_model,
-            cpu,
-            memory,
-            extshm,
-            http,
-            ssh,
-            cmd,
-            preemptible,
-            non_preemptible,
-            description,
-            quiet,
-        ):
-            """
-            Usage:
-                neuro model train [options] IMAGE DATASET RESULTS [CMD...]
-
-            Start training job using model from IMAGE, dataset from DATASET and
-            store output weights in RESULTS.
-
-            COMMANDS list will be passed as commands to model container.
-
-            Options:
-                -g, --gpu NUMBER          Number of GPUs to request \
-[default: {model_train_gpu_number}]
-                --gpu-model MODEL         GPU to use [default: {model_train_gpu_model}]
-                                          Other options available are
-                                              nvidia-tesla-k80
-                                              nvidia-tesla-p4
-                                              nvidia-tesla-v100
-                -c, --cpu NUMBER          Number of CPUs to request \
-[default: {model_train_cpu_number}]
-                -m, --memory AMOUNT       Memory amount to request \
-[default: {model_train_memory_amount}]
-                -x, --extshm              Request extended '/dev/shm' space
-                --http NUMBER             Enable HTTP port forwarding to container
-                --ssh NUMBER              Enable SSH port forwarding to container
-                --preemptible             Run job on a lower-cost preemptible instance
-                --non-preemptible         Force job to run on a non-preemptible instance
-                -d, --description DESC    Add optional description to the job
-                -q, --quiet               Run command in quiet mode (print only job id)
-            """
-
-            def get_preemptible():  # pragma: no cover
-                if preemptible and non_preemptible:
-                    raise neuromation.client.IllegalArgumentError(
-                        "Incompatible options: --preemptible and --non-preemptible"
-                    )
-                return preemptible or not non_preemptible  # preemptible by default
-
-            is_preemptible = get_preemptible()
-
-            config: Config = rc.ConfigFactory.load()
-            username = config.get_platform_user_name()
-            pso = PlatformStorageOperation(username)
-
-            try:
-                dataset_url = URL(
-                    "storage:/" + str(pso.render_uri_path_with_principal(dataset))
-                )
-            except ValueError:
-                raise ValueError(
-                    f"Dataset path should be on platform. " f"Current value {dataset}"
-                )
-
-            try:
-                resultset_url = URL(
-                    "storage:/" + str(pso.render_uri_path_with_principal(results))
-                )
-            except ValueError:
-                raise ValueError(
-                    f"Results path should be on platform. " f"Current value {results}"
-                )
-
-            network = NetworkPortForwarding.from_cli(http, ssh)
-            memory = to_megabytes_str(memory)
-            resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-
-            cmd = " ".join(cmd) if cmd is not None else None
-            log.debug(f'cmd="{cmd}"')
-
-            image = Image(image=image, command=cmd)
-
-            async with ClientV2(url, token) as client:
-                res = await client.models.train(
-                    image=image,
-                    resources=resources,
-                    dataset=dataset_url,
-                    results=resultset_url,
-                    description=description,
-                    network=network,
-                    is_preemptible=is_preemptible,
-                )
-                job = await client.jobs.status(res.id)
-
-            return OutputFormatter.format_job(job, quiet)
-
-        @command
-        async def debug(id, localport):
-            """
-            Usage:
-                neuro model debug [options] ID
-
-            Starts ssh terminal connected to running job.
-            Job should be started with SSH support enabled.
-
-            Options:
-                --localport NUMBER    Local port number for debug \
-[default: {model_debug_local_port}]
-
-            Examples:
-            neuro model debug --localport 12789 job-abc-def-ghk
-            """
-            config: Config = rc.ConfigFactory.load()
-            git_key = config.github_rsa_path
-
-            async with ClientV2(url, token) as client:
-                await remote_debug(client, id, git_key, localport)
-
-        return locals()
 
     @command
     def job():
@@ -685,7 +545,7 @@ alpine:from-registry
 LOG_ERROR = log.error
 
 
-@click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.option("-v", "--verbose", count=True, type=int)
 @click.option("--show-traceback", is_flag=True)
 @click.option("-u", "--url", default=DEFAULTS["api_url"])

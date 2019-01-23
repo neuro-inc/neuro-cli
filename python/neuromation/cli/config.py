@@ -5,7 +5,7 @@ from . import rc
 
 @click.group()
 def config():
-    """Client configuration settings commands"""
+    """Client configuration settings commands."""
 
 
 @config.command()
