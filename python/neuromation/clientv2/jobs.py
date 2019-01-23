@@ -397,7 +397,7 @@ class Jobs:
             command += ["-tt"]
         else:
             command += ["-T"]
-        if no_key_check:
+        if no_key_check:  # pragma: no branch
             command += [
                 "-o",
                 "StrictHostKeyChecking=no",
