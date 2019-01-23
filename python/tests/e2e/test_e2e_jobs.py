@@ -512,7 +512,7 @@ def test_e2e_ssh_exec_nojob(run):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_dead_jov(run):
-    command = 'true'
+    command = "true"
     captured = run(
         ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
     )

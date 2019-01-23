@@ -334,7 +334,7 @@ neuro job exec [options] ID CMD...
 
 Name | Description|
 |----|------------|
-|_\-t, --tty_|Allocate virtual tty. Useful for inceractive jobs.|
+|_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 
 
