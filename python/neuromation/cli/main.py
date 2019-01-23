@@ -826,7 +826,8 @@ alpine:from-registry
 
             async with ClientV2(url, token) as client:
                 images = await client.images.ls()
-                print(images)
+                for image in images:
+                    print(f'{image}')
 
         return locals()
 
