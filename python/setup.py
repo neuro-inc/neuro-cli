@@ -5,7 +5,7 @@
 from setuptools import find_packages, setup
 
 
-with open('README.md') as f:
+with open("README.md") as f:
     readme = f.read()
 
 # TODO: Add license
@@ -14,40 +14,34 @@ license = None
 #     license = f.read()
 
 setup(
-    name='neuromation',
-
+    name="neuromation",
     # TODO: decide where take/store versions
-    use_scm_version={'root': '..', 'relative_to': __file__},
-    setup_requires=['setuptools_scm'],
-
-    python_requires='>=3.6.0',
+    use_scm_version={"root": "..", "relative_to": __file__},
+    setup_requires=["setuptools_scm"],
+    python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
-        'aiohttp>=3.0',
+        "aiohttp>=3.0",
         'dataclasses>=0.5; python_version<"3.7"',
-        'pyyaml>=3.0',
+        "pyyaml>=3.0",
         'async_generator>=1.5; python_version<"3.7"',
-        'python-jose>=3.0.0',
-        'python-dateutil>=2.7.0',
-        'keyring>=13.0',
-        'yarl>=1.3.0',
-        'aiodocker>=0.14.0',
-        'click>=4.0',
+        "python-jose>=3.0.0",
+        "python-dateutil>=2.7.0",
+        "keyring>=13.0",
+        "yarl>=1.3.0",
+        "aiodocker>=0.14.0",
+        "click>=4.0",
     ],
     include_package_data=True,
-    description='Neuromation Platform API client',
+    description="Neuromation Platform API client",
     long_description=readme,
-    long_description_content_type='text/markdown',
-    author='Neuromation Team',
-    author_email='pypi@neuromation.io',  # TODO: change this email
+    long_description_content_type="text/markdown",
+    author="Neuromation Team",
+    author_email="pypi@neuromation.io",  # TODO: change this email
     license=license,
-    url='https://neuromation.io/',
-    packages=find_packages(include=('neuromation', 'neuromation.*')),
-    entry_points={
-        'console_scripts': [
-            'neuro=neuromation.cli:main'
-        ],
-    },
+    url="https://neuromation.io/",
+    packages=find_packages(include=("neuromation", "neuromation.*")),
+    entry_points={"console_scripts": ["neuro=neuromation.cli:main"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Other/Proprietary License",
@@ -60,6 +54,6 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Software Development",
         "Topic :: Utilities",
-        "License :: Other/Proprietary License"
+        "License :: Other/Proprietary License",
     ],
 )
