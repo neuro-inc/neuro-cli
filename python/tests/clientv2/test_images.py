@@ -275,4 +275,4 @@ class TestRegistry:
 
         async with ClientV2(srv.make_url("/"), token) as client:
             ret = await client.images.ls()
-        assert ret == [URL(JSON["repositories"][0]), URL(JSON["repositories"][1])]
+        assert ret == [URL(image) for image in JSON['repositories']]
