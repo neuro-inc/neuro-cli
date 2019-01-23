@@ -523,5 +523,5 @@ def test_e2e_ssh_exec_dead_jov(run):
     wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     with pytest.raises(SystemExit) as cm:
-        run(["job", "exec", "--no-key-check", "job_id", "true"])
+        run(["job", "exec", "--no-key-check", job_id, "true"])
     assert cm.value.code == 127
