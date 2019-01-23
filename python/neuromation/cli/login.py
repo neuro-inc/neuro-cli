@@ -89,6 +89,95 @@ class AuthCode:
         return self.value
 
 
+class AuthCodeCallbackClient(abc.ABC):
+    def __init__(self, url: URL, client_id: str, audience: str) -> None:
+        self._url = url
+        self._client_id = client_id
+        self._audience = audience
+
+    async def request(self, code: AuthCode) -> AuthCode:
+        url = self._url.with_query(
+            response_type="code",
+            code_challenge=code.challenge,
+            code_challenge_method=code.challenge_method,
+            client_id=self._client_id,
+            redirect_uri=str(code.callback_url),
+            scope="offline_access",
+            audience=self._audience,
+        )
+        await self._request(url)
+        await code.wait()
+        return code
+
+    @abc.abstractmethod
+    async def _request(self, url: URL) -> None:
+        pass
+
+
+class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
+    async def _request(self, url: URL) -> None:
+        # TODO: should we run this in an executor?
+        webbrowser.open_new(str(url))
+
+
+class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
+    async def _request(self, url: URL) -> None:
+        async with ClientSession() as client:
+            await client.get(url, allow_redirects=True)
+
+
+class AuthCodeCallbackHandler:
+    def __init__(self, code: AuthCode) -> None:
+        self._code = code
+
+    async def handle(self, request: Request) -> Response:
+        code = request.query.get("code")
+
+        if not code:
+            self._code.cancel()
+            raise HTTPBadRequest(text="The 'code' query parameter is missing.")
+
+        self._code.value = code
+        return Response(text="OK")
+
+
+def create_auth_code_app(code: AuthCode) -> Application:
+    app = Application()
+    handler = AuthCodeCallbackHandler(code)
+    app.router.add_get("/", handler.handle)
+    return app
+
+
+@asynccontextmanager
+async def create_app_server_once(
+    app: Application, *, host: str = "localhost", port: int = 8080
+) -> AsyncIterator[URL]:
+    try:
+        runner = AppRunner(app)
+        await runner.setup()
+        site = TCPSite(runner, host, port)
+        await site.start()
+        yield URL(site.name)
+    finally:
+        await runner.cleanup()
+
+
+@asynccontextmanager
+async def create_app_server(
+    app: Application, *, host: str = "localhost", ports: Sequence[int] = (8080,)
+) -> AsyncIterator[URL]:
+    for port in ports:
+        try:
+            async with create_app_server_once(app, host=host, port=port) as url:
+                yield url
+            return
+        except OSError as err:
+            if err.errno != errno.EADDRINUSE:
+                raise
+    else:
+        raise RuntimeError("No free ports.")
+
+
 @dataclass(frozen=True)
 class AuthToken:
     token: str
@@ -176,58 +265,6 @@ class AuthTokenClient:
             )
 
 
-class AuthCodeCallbackHandler:
-    def __init__(self, code: AuthCode) -> None:
-        self._code = code
-
-    async def handle(self, request: Request) -> Response:
-        code = request.query.get("code")
-
-        if not code:
-            self._code.cancel()
-            raise HTTPBadRequest(text="The 'code' query parameter is missing.")
-
-        self._code.value = code
-        return Response(text="OK")
-
-
-def create_auth_code_app(code: AuthCode) -> Application:
-    app = Application()
-    handler = AuthCodeCallbackHandler(code)
-    app.router.add_get("/", handler.handle)
-    return app
-
-
-@asynccontextmanager
-async def create_app_server_once(
-    app: Application, *, host: str = "localhost", port: int = 8080
-) -> AsyncIterator[URL]:
-    try:
-        runner = AppRunner(app)
-        await runner.setup()
-        site = TCPSite(runner, host, port)
-        await site.start()
-        yield URL(site.name)
-    finally:
-        await runner.cleanup()
-
-
-@asynccontextmanager
-async def create_app_server(
-    app: Application, *, host: str = "localhost", ports: Sequence[int] = (8080,)
-) -> AsyncIterator[URL]:
-    for port in ports:
-        try:
-            async with create_app_server_once(app, host=host, port=port) as url:
-                yield url
-            return
-        except OSError as err:
-            if err.errno != errno.EADDRINUSE:
-                raise
-    else:
-        raise RuntimeError("No free ports.")
-
-
 @dataclass(frozen=True)
 class AuthConfig:
     auth_url: URL
@@ -260,43 +297,6 @@ class AuthConfig:
         )
 
 
-class AuthCodeCallbackClient(abc.ABC):
-    def __init__(self, url: URL, client_id: str, audience: str) -> None:
-        self._url = url
-        self._client_id = client_id
-        self._audience = audience
-
-    async def request(self, code: AuthCode) -> AuthCode:
-        url = self._url.with_query(
-            response_type="code",
-            code_challenge=code.challenge,
-            code_challenge_method=code.challenge_method,
-            client_id=self._client_id,
-            redirect_uri=str(code.callback_url),
-            scope="offline_access",
-            audience=self._audience,
-        )
-        await self._request(url)
-        await code.wait()
-        return code
-
-    @abc.abstractmethod
-    async def _request(self, url: URL) -> None:
-        pass
-
-
-class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
-    async def _request(self, url: URL) -> None:
-        # TODO: should we run this in an executor?
-        webbrowser.open_new(str(url))
-
-
-class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
-    async def _request(self, url: URL) -> None:
-        async with ClientSession() as client:
-            await client.get(url, allow_redirects=True)
-
-
 class AuthNegotiator:
     def __init__(
         self,
@@ -306,9 +306,7 @@ class AuthNegotiator:
         ] = WebBrowserAuthCodeCallbackClient,
     ) -> None:
         self._config = config
-        self._code_callback_client = code_callback_client_factory(
-            url=config.auth_url, client_id=config.client_id, audience=config.audience
-        )
+        self._code_callback_client_factory = code_callback_client_factory
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
@@ -318,7 +316,12 @@ class AuthNegotiator:
             app, host=self._config.callback_host, ports=self._config.callback_ports
         ) as url:
             code.callback_url = url
-            return await self._code_callback_client.request(code)
+            code_callback_client = self._code_callback_client_factory(
+                url=self._config.auth_url,
+                client_id=self._config.client_id,
+                audience=self._config.audience,
+            )
+            return await code_callback_client.request(code)
 
     async def refresh_token(self, token: Optional[AuthToken] = None) -> AuthToken:
         async with AuthTokenClient(
