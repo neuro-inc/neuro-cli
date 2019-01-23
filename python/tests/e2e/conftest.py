@@ -105,7 +105,7 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def run(monkeypatch, capsys, tmp_path, setup_null_keyring):
+def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
     executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
@@ -125,14 +125,11 @@ def run(monkeypatch, capsys, tmp_path, setup_null_keyring):
 
         delay = 0.5
         for i in range(5):
+            pre_out, pre_err = capfd.readouterr()
+            pre_out_size = len(pre_out)
+            pre_err_size = len(pre_err)
             try:
-                pre_out, pre_err = capsys.readouterr()
-                pre_out_size = len(pre_out)
-                pre_err_size = len(pre_err)
                 main()
-                post_out, post_err = capsys.readouterr()
-                out = post_out[pre_out_size:]
-                err = post_err[pre_err_size:]
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem
@@ -151,8 +148,11 @@ def run(monkeypatch, capsys, tmp_path, setup_null_keyring):
                     sleep(delay)
                     delay *= 2
                     continue
-                else:
+                elif exc.code != os.EX_OK:
                     raise
+            post_out, post_err = capfd.readouterr()
+            out = post_out[pre_out_size:]
+            err = post_err[pre_err_size:]
             if (
                 "-v" not in arguments and "--version" not in arguments
             ):  # special case for version switch
