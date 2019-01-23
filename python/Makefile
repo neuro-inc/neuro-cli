@@ -62,7 +62,7 @@ init: _init-readme update-deps
 	rm -rf .mypy_cache
 
 _init-readme:
-	cp README.in.md README.md
+	cp -n README.in.md README.md
 
 .PHONY: e2e
 e2e:
@@ -198,7 +198,7 @@ lint-docs:
 
 .PHONY: update-deps
 update-deps:
-	pip install --disable-pip-version-check -U -r requirements/dev.txt
+	pip install --disable-pip-version-check -r requirements/dev.txt
 
 .PHONY: changelog
 changelog:
