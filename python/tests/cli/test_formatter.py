@@ -40,7 +40,7 @@ def job_descr():
         container=Container(
             image="ubuntu:latest", resources=Resources.create(0.1, 0, None, None, False)
         ),
-        ssh_auth_server="ssh-auth",        
+        ssh_auth_server="ssh-auth",
         is_preemptible=True,
     )
 
@@ -82,7 +82,7 @@ class TestJobOutputFormatter:
                 image="test-image",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
-            ssh_auth_server="ssh-auth",            
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
         )
 
@@ -122,7 +122,7 @@ class TestJobOutputFormatter:
                 image="test-image",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
-            ssh_auth_server="ssh-auth",            
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
             owner="owner",
         )
@@ -158,7 +158,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
-            ssh_auth_server="ssh-auth",            
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
             owner="owner",
         )
@@ -194,7 +194,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
-            ssh_auth_server="ssh-auth",            
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
             owner="owner",
         )
@@ -350,7 +350,7 @@ class TestJobListFormatter:
                     command=f"test-command-{index}",
                     resources=Resources.create(0.1, 0, None, None, False),
                 ),
-                ssh_auth_server="ssh-auth",                
+                ssh_auth_server="ssh-auth",
                 is_preemptible=True,
                 owner="owner",
             )
