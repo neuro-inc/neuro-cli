@@ -1,7 +1,7 @@
 import asyncio
 
 import pytest
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientSession
 from aiohttp.web import (
     Application,
     HTTPBadRequest,
@@ -15,6 +15,7 @@ from yarl import URL
 
 from neuromation.cli.login import (
     AuthCode,
+    AuthException,
     AuthToken,
     AuthTokenClient,
     create_app_server,
@@ -26,13 +27,13 @@ from neuromation.cli.login import (
 class TestAuthCode:
     async def test_wait_timed_out(self) -> None:
         code = AuthCode()
-        with pytest.raises(asyncio.TimeoutError):
+        with pytest.raises(AuthException, match="failed to get an authorization code"):
             await code.wait(timeout_s=0.0)
 
     async def test_wait_cancelled(self) -> None:
         code = AuthCode()
         code.cancel()
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(AuthException, match="failed to get an authorization code"):
             await code.wait()
 
     async def test_wait(self) -> None:
@@ -40,6 +41,32 @@ class TestAuthCode:
         code.value = "testcode"
         value = await code.wait()
         assert value == "testcode"
+
+
+class TestAuthToken:
+    def test_is_not_expired(self):
+        token = AuthToken.create(
+            token="test_token",
+            expires_in=100,
+            refresh_token="test_refresh_token",
+            time_factory=lambda: 2000.0,
+        )
+        assert token.token == "test_token"
+        assert token.expiration_time == 2075
+        assert not token.is_expired
+        assert token.refresh_token == "test_refresh_token"
+
+    def test_is_not_expired(self):
+        token = AuthToken.create(
+            token="test_token",
+            expires_in=0,
+            refresh_token="test_refresh_token",
+            time_factory=lambda: 2000.0,
+        )
+        assert token.token == "test_token"
+        assert token.expiration_time == 2000
+        assert token.is_expired
+        assert token.refresh_token == "test_refresh_token"
 
 
 class TestAuthCodeApp:
@@ -196,10 +223,10 @@ class TestTokenClient:
         url = server.make_url("/oauth/token")
 
         async with AuthTokenClient(url, client_id=client_id) as client:
-            with pytest.raises(ClientResponseError):
+            with pytest.raises(AuthException, match="failed to get an access token."):
                 await client.request(code)
 
-            with pytest.raises(ClientResponseError):
+            with pytest.raises(AuthException, match="failed to get an access token."):
                 token = AuthToken.create(
                     token="test_token",
                     expires_in=1234,

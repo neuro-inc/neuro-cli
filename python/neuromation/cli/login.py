@@ -6,9 +6,9 @@ import secrets
 import time
 import webbrowser
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Callable, ClassVar, List, Optional, Sequence
+from typing import Any, AsyncIterator, Callable, List, Optional, Sequence
 
-from aiohttp import ClientSession
+from aiohttp import ClientResponseError, ClientSession
 from aiohttp.web import (
     Application,
     AppRunner,
@@ -25,9 +25,8 @@ def urlsafe_unpadded_b64encode(payload: bytes) -> str:
     return base64.urlsafe_b64encode(payload).decode().rstrip("=")
 
 
-# TODO: cover AuthCode with tests
-# TODO: cover challenge verification with tests
-# TODO: create AuthException class and raise
+class AuthException(Exception):
+    pass
 
 
 class AuthCode:
@@ -77,8 +76,10 @@ class AuthCode:
         self._future.cancel()
 
     async def wait(self, timeout_s: float = 60.0) -> str:
-        # TODO: handle exceptions and raise AuthException
-        await asyncio.wait_for(self._future, timeout_s)
+        try:
+            await asyncio.wait_for(self._future, timeout_s)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            raise AuthException("failed to get an authorization code")
         return self.value
 
 
@@ -139,8 +140,10 @@ class AuthTokenClient:
             redirect_uri=str(code.callback_url),
         )
         async with self._client.post(self._url, json=payload) as resp:
-            # TODO: handle
-            resp.raise_for_status()
+            try:
+                resp.raise_for_status()
+            except ClientResponseError as exc:
+                raise AuthException("failed to get an access token.") from exc
             resp_payload = await resp.json()
             return AuthToken.create(
                 token=resp_payload["access_token"],
@@ -155,8 +158,10 @@ class AuthTokenClient:
             client_id=self._client_id,
         )
         async with self._client.post(self._url, json=payload) as resp:
-            # TODO: handle
-            resp.raise_for_status()
+            try:
+                resp.raise_for_status()
+            except ClientResponseError as exc:
+                raise AuthException("failed to get an access token.") from exc
             resp_payload = await resp.json()
             return AuthToken.create(
                 token=resp_payload["access_token"],
