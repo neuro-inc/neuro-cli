@@ -435,7 +435,69 @@ def test_e2e_ssh_exec_true(run):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
 
     captured = run(["job", "exec", "--no-key-check", job_id, "true"])
+    assert captured.out == ""
+
+
+@pytest.mark.e2e
+def test_e2e_ssh_exec_false(run):
+    command = 'bash -c "sleep 1m; false"'
+    captured = run(
+        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+    )
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    with pytest.raises(SystemExit) as cm:
+        run(["job", "exec", "--no-key-check", job_id, "false"])
+    assert cm.value.code == 1
+
+
+@pytest.mark.e2e
+def test_e2e_ssh_exec_echo(run):
+    command = 'bash -c "sleep 1m; false"'
+    captured = run(
+        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+    )
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    captured = run(["job", "exec", "--no-key-check", job_id, "echo 1"])
+    assert captured.out == "1\n"
+
+
+@pytest.mark.e2e
+def test_e2e_ssh_exec_no_tty(run):
+    command = 'bash -c "sleep 1m; false"'
+    captured = run(
+        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+    )
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    with pytest.raises(SystemExit) as cm:
+        run(["job", "exec", "--no-key-check", job_id, "[ -t 1 ]"])
+    assert cm.value.code == 1
+
+
+@pytest.mark.e2e
+def test_e2e_ssh_exec_tty(run):
+    command = 'bash -c "sleep 1m; false"'
+    captured = run(
+        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+    )
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    captured = run(["job", "exec", "-t", "--no-key-check", job_id, "[ -t 1 ]"])
     assert captured.out == ""

@@ -630,7 +630,8 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             """
             cmd = shlex.split(" ".join(cmd))
             async with ClientV2(url, token) as client:
-                await client.jobs.exec(id, tty, no_key_check, cmd)
+                retcode = await client.jobs.exec(id, tty, no_key_check, cmd)
+            sys.exit(retcode)
 
         @command
         async def ssh(id, user, key):
@@ -1023,7 +1024,8 @@ def main():
     except ValueError as e:
         print(e)
         sys.exit(127)
-
+    except SystemExit:
+        raise
     except Exception as e:
         log_error(f"{e}")
         raise e
