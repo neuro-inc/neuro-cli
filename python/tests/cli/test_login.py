@@ -1,4 +1,6 @@
 import asyncio
+from typing import AsyncIterator
+from unittest import mock
 
 import pytest
 from aiohttp import ClientSession
@@ -6,6 +8,7 @@ from aiohttp.web import (
     Application,
     HTTPBadRequest,
     HTTPForbidden,
+    HTTPFound,
     HTTPOk,
     Request,
     Response,
@@ -15,7 +18,10 @@ from yarl import URL
 
 from neuromation.cli.login import (
     AuthCode,
+    AuthCodeCallbackClient,
+    AuthConfig,
     AuthException,
+    AuthNegotiator,
     AuthToken,
     AuthTokenClient,
     create_app_server,
@@ -44,7 +50,7 @@ class TestAuthCode:
 
 
 class TestAuthToken:
-    def test_is_not_expired(self):
+    def test_is_not_expired(self) -> None:
         token = AuthToken.create(
             token="test_token",
             expires_in=100,
@@ -137,6 +143,49 @@ class TestAuthCodeApp:
             async with create_app_server(app, ports=[54540, 54541]) as url:
                 assert url == URL("http://localhost:54541")
                 await self.assert_code_callback_success(code, client, url)
+
+
+class _TestAuthHandler:
+    def __init__(self, client_id: str) -> None:
+        self._client_id = client_id
+
+        self._code = "test_code"
+        self._token = "test_access_token"
+        self._token_refreshed = "test_access_token_refreshed"
+        self._refresh_token = "test_refresh_token"
+        self._token_expires_in = 1234
+
+    async def handle_authorize(self, request: Request) -> Response:
+        # TODO: assert query
+        url = URL(request.query["redirect_uri"]).with_query(code=self._code)
+        raise HTTPFound(url)
+
+    async def handle_token(self, request: Request) -> Response:
+        payload = await request.json()
+        grant_type = payload["grant_type"]
+        if grant_type == "authorization_code":
+            assert payload == dict(
+                grant_type="authorization_code",
+                code_verifier=mock.ANY,
+                code=self._code,
+                client_id=self._client_id,
+                redirect_uri=mock.ANY,
+            )
+            resp_payload = dict(
+                access_token=self._token,
+                expires_in=self._token_expires_in,
+                refresh_token=self._refresh_token,
+            )
+        else:
+            assert payload == dict(
+                grant_type="refresh_token",
+                refresh_token=self._refresh_token,
+                client_id=self._client_id,
+            )
+            resp_payload = dict(
+                access_token=self._token_refreshed, expires_in=self._token_expires_in
+            )
+        return json_response(resp_payload)
 
 
 class TestTokenClient:
@@ -233,3 +282,82 @@ class TestTokenClient:
                     refresh_token="test_refresh_token",
                 )
                 await client.refresh(token)
+
+
+class _TestAuthCodeCallbackClient(AuthCodeCallbackClient):
+    async def request(self) -> None:
+        async with ClientSession() as client:
+            await client.get(self._url, allow_redirects=True)
+
+
+@pytest.fixture
+def auth_client_id() -> str:
+    return "test_client_id"
+
+
+@pytest.fixture
+async def auth_server(auth_client_id, aiohttp_server) -> AsyncIterator[URL]:
+    handler = _TestAuthHandler(client_id=auth_client_id)
+    app = Application()
+    app.router.add_get("/authorize", handler.handle_authorize)
+    app.router.add_post("/oauth/token", handler.handle_token)
+    server = await aiohttp_server(app)
+    yield server.make_url("/")
+
+
+@pytest.fixture
+async def auth_config(
+    auth_client_id: str, auth_server: URL
+) -> AsyncIterator[AuthConfig]:
+    yield AuthConfig.create(
+        base_url=auth_server,
+        client_id=auth_client_id,
+        audience="https://platform.dev.neuromation.io",
+    )
+
+
+class TestAuthNegotiator:
+    async def test_get_code(self, auth_config: AuthConfig) -> None:
+        negotiator = AuthNegotiator(
+            config=auth_config, code_callback_client_factory=_TestAuthCodeCallbackClient
+        )
+        code = await negotiator.get_code()
+        assert code.value == "test_code"
+        assert code.callback_url == URL("http://localhost:54540")
+
+    async def test_get_token(self, auth_config: AuthConfig) -> None:
+        negotiator = AuthNegotiator(
+            config=auth_config, code_callback_client_factory=_TestAuthCodeCallbackClient
+        )
+        token = await negotiator.refresh_token(token=None)
+        assert token.token == "test_access_token"
+        assert token.refresh_token == "test_refresh_token"
+
+    async def test_refresh_token_noop(self, auth_config: AuthConfig) -> None:
+        negotiator = AuthNegotiator(
+            config=auth_config, code_callback_client_factory=_TestAuthCodeCallbackClient
+        )
+        token = await negotiator.refresh_token(token=None)
+        assert token.token == "test_access_token"
+        assert token.refresh_token == "test_refresh_token"
+        assert not token.is_expired
+
+        token = await negotiator.refresh_token(token=token)
+        assert token.token == "test_access_token"
+        assert token.refresh_token == "test_refresh_token"
+
+    async def test_refresh_token(self, auth_config: AuthConfig) -> None:
+        negotiator = AuthNegotiator(
+            config=auth_config, code_callback_client_factory=_TestAuthCodeCallbackClient
+        )
+        token = await negotiator.refresh_token(token=None)
+        assert token.token == "test_access_token"
+        assert token.refresh_token == "test_refresh_token"
+        assert not token.is_expired
+
+        token = AuthToken.create(
+            token=token.token, expires_in=0.0, refresh_token=token.refresh_token
+        )
+        token = await negotiator.refresh_token(token=token)
+        assert token.token == "test_access_token_refreshed"
+        assert token.refresh_token == "test_refresh_token"

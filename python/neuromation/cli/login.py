@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import base64
 import errno
@@ -265,11 +266,32 @@ class AuthConfig:
         )
 
 
-class AuthCodeClient:
-    def __init__(self, config: AuthConfig) -> None:
-        self._config = config
+class AuthCodeCallbackClient(abc.ABC):
+    def __init__(self, url: URL) -> None:
+        self._url = url
 
-    async def request(self) -> AuthCode:
+    @abc.abstractmethod
+    async def request(self) -> None:
+        pass
+
+
+class AuthCodeCallbackWebBrowser(AuthCodeCallbackClient):
+    async def request(self) -> None:
+        webbrowser.open_new(str(self._url))
+
+
+class AuthNegotiator:
+    def __init__(
+        self,
+        config: AuthConfig,
+        code_callback_client_factory: Callable[
+            [URL], AuthCodeCallbackClient
+        ] = AuthCodeCallbackWebBrowser,
+    ) -> None:
+        self._config = config
+        self._code_callback_client_factory = code_callback_client_factory
+
+    async def get_code(self) -> AuthCode:
         code = AuthCode()
         app = create_auth_code_app(code)
 
@@ -279,23 +301,17 @@ class AuthCodeClient:
             code.callback_url = url
 
             auth_url = self._config.combine_auth_url(code=code)
-            webbrowser.open_new(str(auth_url))
+            await self._code_callback_client_factory(auth_url).request()
 
             await code.wait()
         return code
 
-
-class AuthTokenNegotiator:
-    def __init__(self, config: AuthConfig) -> None:
-        self._config = config
-
-    async def refresh(self, token: Optional[AuthToken] = None) -> AuthToken:
+    async def refresh_token(self, token: Optional[AuthToken] = None) -> AuthToken:
         async with AuthTokenClient(
             url=self._config.token_url, client_id=self._config.client_id
         ) as token_client:
             if not token:
-                code_client = AuthCodeClient(config=self._config)
-                code = await code_client.request()
+                code = await self.get_code()
                 return await token_client.request(code)
 
             if token.is_expired:
@@ -305,8 +321,8 @@ class AuthTokenNegotiator:
 
 
 async def run(config: AuthConfig) -> None:
-    token_negotiator = AuthTokenNegotiator(config=config)
-    token = await token_negotiator.refresh()
+    negotiator = AuthNegotiator(config=config)
+    token = await negotiator.refresh_token()
     print(token)
 
 
