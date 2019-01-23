@@ -6,23 +6,13 @@ from aiodocker.exceptions import DockerError
 from yarl import URL
 
 from neuromation.cli.command_spinner import SpinnerBase
-from neuromation.client import AuthorizationError
-from neuromation.clientv2 import ClientV2
+from neuromation.clientv2 import AuthorizationError, ClientV2
 from neuromation.clientv2.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
     STATUS_NOT_FOUND,
     Image,
 )
-from neuromation.clientv2 import AuthorizationError
-
-
-@pytest.fixture()
-def patch_docker_host():
-    with asynctest.mock.patch.dict(
-        os.environ, values={"DOCKER_HOST": "http://localhost:45678"}
-    ):
-        yield
 
 
 @pytest.fixture()
