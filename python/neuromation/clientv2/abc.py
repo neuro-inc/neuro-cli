@@ -17,7 +17,7 @@ class AbstractProgress(abc.ABC):
 
 class AbstractSpinner(abc.ABC):
     @abc.abstractmethod
-    def start(self, message: str = None) -> None:
+    def start(self, message: str = None) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
