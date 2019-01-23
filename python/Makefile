@@ -67,7 +67,7 @@ _init-readme:
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n auto \
+	    -n auto --forked \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -77,7 +77,7 @@ e2e:
 .PHONY: _e2e
 _e2e:
 	pytest \
-	    -n auto \
+	    -n auto --forked \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -107,7 +107,6 @@ test-fast:
 .PHONY: test-all
 test-all:
 	pytest \
-	    -n 4 \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
