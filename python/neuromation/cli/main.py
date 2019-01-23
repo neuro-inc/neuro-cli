@@ -737,6 +737,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
         Commands:
           push                 Push docker image from local machine to cloud registry.
           pull                 Pull docker image from cloud registry to local machine.
+          ls                   List available user's images.
         """
 
         @command
@@ -811,6 +812,21 @@ alpine:from-registry
                     local_image, remote_image, spinner
                 )
                 print(result_remote_image.url)
+
+        @command
+        async def ls():
+            """
+            Usage:
+                neuro image ls
+
+            List user's images which are available for jobs.
+            You will see here own and shared with you images
+            """
+            from neuromation.clientv2.images import Image
+
+            async with ClientV2(url, token) as client:
+                images = await client.images.ls()
+                print(images)
 
         return locals()
 

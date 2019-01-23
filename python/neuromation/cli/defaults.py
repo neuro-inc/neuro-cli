@@ -15,4 +15,5 @@ DEFAULTS = {
     "job_submit_cpu_number": 0.1,
     "job_submit_memory_amount": "1G",
     "job_ssh_user": "root",
+    "image_ls_count": 100,
 }

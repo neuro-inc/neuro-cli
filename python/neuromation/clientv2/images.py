@@ -1,6 +1,7 @@
 import re
+import aiohttp
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import aiodocker
 from aiodocker.exceptions import DockerError
@@ -16,6 +17,8 @@ STATUS_FORBIDDEN = 403
 STATUS_NOT_FOUND = 404
 STATUS_CUSTOM_ERROR = 900
 DEFAULT_TAG = "latest"
+
+REGISTRY_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
 @dataclass(frozen=True)
@@ -61,7 +64,8 @@ class Images:
         self._url = url
         self._token = token
         self._temporary_images: List[str] = list()
-        self._docker_client = None
+        self._docker_client: aiodocker.Docker = None
+        self._registry_transport: API = None
 
     async def close(self) -> None:  # pragma: no cover
         try:
@@ -73,6 +77,9 @@ class Images:
         except BaseException:
             # Just ignore any error
             pass
+
+        if self._registry_transport:
+            await self._registry_transport.close()
 
     def _docker(self) -> aiodocker.Docker:
         if not self._docker_client:
@@ -96,6 +103,12 @@ class Images:
 
     def _auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._token}
+
+    def _registry(self) -> API:
+        if not self._registry_transport:
+            registry_url = self._url.with_host(str(self._url.host).replace("platform.", "registry.")).with_path('/v2/')
+            self._registry_transport = API(registry_url, self._token, REGISTRY_TIMEOUT)
+        return self._registry_transport
 
     def _repo(self, image: Image) -> str:
         registry_hostname = str(self._url.host).replace("platform.", "registry.")
@@ -168,3 +181,9 @@ class Images:
         spinner.complete()
 
         return local_image
+
+    async def ls(self) -> List[Image]:
+        registry = self._registry()
+        async with registry.request('GET', URL('_catalog')) as resp:
+            ret = await resp.json()
+            return [Image.from_url(URL(f'image://{image.name}')) for image in ret]
