@@ -33,7 +33,7 @@ from .defaults import DEFAULTS
 from .formatter import JobListFormatter
 from .ssh_utils import connect_ssh, remote_debug
 from .storage import storage
-from .utils import Context, load_token
+from .utils import Context, load_token, DeprecatedGroup
 
 
 # For stream copying from file to http or from http to file
@@ -685,7 +685,7 @@ alpine:from-registry
 LOG_ERROR = log.error
 
 
-@click.group()
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option("-v", "--verbose", count=True, type=int)
 @click.option("--show-traceback", is_flag=True)
 @click.option("-u", "--url", default=DEFAULTS["api_url"])
@@ -725,6 +725,7 @@ def help():
 
 cli.add_command(config)
 cli.add_command(storage)
+cli.add_command(DeprecatedGroup(storage, name="store"))
 
 
 def main():
