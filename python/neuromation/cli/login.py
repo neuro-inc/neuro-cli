@@ -7,7 +7,7 @@ import secrets
 import time
 import webbrowser
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Callable, List, Optional, Sequence, cast
+from typing import Any, AsyncIterator, Callable, List, Optional, Sequence, Type, cast
 
 from aiohttp import ClientResponseError, ClientSession
 from aiohttp.web import (
@@ -36,6 +36,7 @@ class AuthCode:
 
         self._verifier = self.generate_verifier()
         self._challenge = self.generate_challenge(self._verifier)
+        self._challenge_method = "S256"
 
         self._callback_url = callback_url
 
@@ -55,6 +56,10 @@ class AuthCode:
     @property
     def challenge(self) -> str:
         return self._challenge
+
+    @property
+    def challenge_method(self) -> str:
+        return self._challenge_method
 
     @property
     def value(self) -> str:
@@ -254,42 +259,56 @@ class AuthConfig:
             audience=audience,
         )
 
-    def combine_auth_url(self, code: AuthCode) -> URL:
-        return self.auth_url.with_query(
-            response_type="code",
-            code_challenge=code.challenge,
-            code_challenge_method="S256",
-            client_id=self.client_id,
-            redirect_uri=str(code.callback_url),
-            scope="offline_access",
-            audience=self.audience,
-        )
-
 
 class AuthCodeCallbackClient(abc.ABC):
-    def __init__(self, url: URL) -> None:
+    def __init__(self, url: URL, client_id: str, audience: str) -> None:
         self._url = url
+        self._client_id = client_id
+        self._audience = audience
+
+    async def request(self, code: AuthCode) -> AuthCode:
+        url = self._url.with_query(
+            response_type="code",
+            code_challenge=code.challenge,
+            code_challenge_method=code.challenge_method,
+            client_id=self._client_id,
+            redirect_uri=str(code.callback_url),
+            scope="offline_access",
+            audience=self._audience,
+        )
+        await self._request(url)
+        await code.wait()
+        return code
 
     @abc.abstractmethod
-    async def request(self) -> None:
+    async def _request(self, url: URL) -> None:
         pass
 
 
-class AuthCodeCallbackWebBrowser(AuthCodeCallbackClient):
-    async def request(self) -> None:
-        webbrowser.open_new(str(self._url))
+class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
+    async def _request(self, url: URL) -> None:
+        # TODO: should we run this in an executor?
+        webbrowser.open_new(str(url))
+
+
+class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
+    async def _request(self, url: URL) -> None:
+        async with ClientSession() as client:
+            await client.get(url, allow_redirects=True)
 
 
 class AuthNegotiator:
     def __init__(
         self,
         config: AuthConfig,
-        code_callback_client_factory: Callable[
-            [URL], AuthCodeCallbackClient
-        ] = AuthCodeCallbackWebBrowser,
+        code_callback_client_factory: Type[
+            AuthCodeCallbackClient
+        ] = WebBrowserAuthCodeCallbackClient,
     ) -> None:
         self._config = config
-        self._code_callback_client_factory = code_callback_client_factory
+        self._code_callback_client = code_callback_client_factory(
+            url=config.auth_url, client_id=config.client_id, audience=config.audience
+        )
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
@@ -299,12 +318,7 @@ class AuthNegotiator:
             app, host=self._config.callback_host, ports=self._config.callback_ports
         ) as url:
             code.callback_url = url
-
-            auth_url = self._config.combine_auth_url(code=code)
-            await self._code_callback_client_factory(auth_url).request()
-
-            await code.wait()
-        return code
+            return await self._code_callback_client.request(code)
 
     async def refresh_token(self, token: Optional[AuthToken] = None) -> AuthToken:
         async with AuthTokenClient(
