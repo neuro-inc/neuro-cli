@@ -162,7 +162,7 @@ async def create_app_server_once(
     try:
         runner = AppRunner(app)
         await runner.setup()
-        site = TCPSite(runner, host, port)
+        site = TCPSite(runner, host, port, reuse_address=True)
         await site.start()
         yield URL(site.name)
     finally:
