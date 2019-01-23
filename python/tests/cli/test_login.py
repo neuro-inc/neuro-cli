@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncIterator
+from typing import AsyncIterator, Awaitable, Callable
 from unittest import mock
 
 import pytest
@@ -197,7 +197,9 @@ def auth_client_id() -> str:
 
 
 @pytest.fixture
-async def auth_server(auth_client_id, aiohttp_server) -> AsyncIterator[URL]:
+async def auth_server(
+    auth_client_id: str, aiohttp_server: Callable[[Application], Awaitable[_TestServer]]
+) -> AsyncIterator[URL]:
     handler = _TestAuthHandler(client_id=auth_client_id)
     app = Application()
     app.router.add_get("/authorize", handler.handle_authorize)
@@ -246,7 +248,9 @@ class TestTokenClient:
             assert new_token.refresh_token == "test_refresh_token"
             assert not token.is_expired
 
-    async def test_forbidden(self, aiohttp_server: _TestServer) -> None:
+    async def test_forbidden(
+        self, aiohttp_server: Callable[[Application], Awaitable[_TestServer]]
+    ) -> None:
         code = AuthCode()
         code.callback_url = "http://localhost:54540"
         code.value = "testcode"

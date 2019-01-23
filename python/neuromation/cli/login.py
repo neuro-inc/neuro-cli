@@ -7,7 +7,7 @@ import secrets
 import time
 import webbrowser
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Callable, List, Optional, Sequence
+from typing import Any, AsyncIterator, Callable, List, Optional, Sequence, cast
 
 from aiohttp import ClientResponseError, ClientSession
 from aiohttp.web import (
@@ -126,7 +126,7 @@ class AuthTokenClient:
     async def close(self) -> None:
         await self._client.close()
 
-    async def __aenter__(self) -> "TokenClient":
+    async def __aenter__(self) -> "AuthTokenClient":
         return self
 
     async def __aexit__(self, *_: Sequence[Any]) -> None:
@@ -239,11 +239,11 @@ class AuthConfig:
 
     @property
     def callback_host(self) -> str:
-        return self.callback_urls[0].host
+        return cast(str, self.callback_urls[0].host)
 
     @property
     def callback_ports(self) -> List[int]:
-        return [url.port for url in self.callback_urls]
+        return [cast(int, url.port) for url in self.callback_urls]
 
     @classmethod
     def create(cls, base_url: URL, client_id: str, audience: str) -> "AuthConfig":
