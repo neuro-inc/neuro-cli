@@ -5,10 +5,9 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
-import aiohttp
 from yarl import URL
 
-from .api import API
+from .api import API, IllegalArgumentError
 
 
 @dataclass(frozen=True)
@@ -388,7 +387,7 @@ class Jobs:
     async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
         try:
             job_status = await self.status(id)
-        except aiohttp.ClientError as e:
+        except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
             raise ValueError(f"Job is not running. Job Id = {id}")

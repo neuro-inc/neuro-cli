@@ -625,7 +625,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             Executes command in a running job.
 
             Options:
-                -t, --tty         Allocate virtual tty. Useful for inceractive jobs.
+                -t, --tty         Allocate virtual tty. Useful for interactive jobs.
                 --no-key-check    Disable host key checks. Should be used with caution.
             """
             cmd = shlex.split(" ".join(cmd))
