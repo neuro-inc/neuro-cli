@@ -406,7 +406,7 @@ async def test_job_submit_preemptible(aiohttp_server, token):
         "is_preemptible": True,
         "http_url": "http://my_host:8889",
         "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",        
+        "ssh_auth_server": "ssh://my_host.ssh:22",
     }
 
     async def handler(request):
