@@ -385,7 +385,7 @@ class Jobs:
             ret = await resp.json()
             return JobDescription.from_api(ret)
 
-    async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]):
+    async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
         try:
             job_status = await self.status(id)
         except aiohttp.ClientError as e:
