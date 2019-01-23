@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncIterator, Awaitable, Callable
+from typing import AsyncIterator, Awaitable, Callable, Optional
 from unittest import mock
 
 import pytest
@@ -85,12 +85,22 @@ class TestAuthCodeApp:
             yield client
 
     async def assert_code_callback_success(
-        self, code: AuthCode, client: ClientSession, url: URL
+        self,
+        code: AuthCode,
+        client: ClientSession,
+        url: URL,
+        redirect_url: Optional[URL] = None,
     ) -> None:
-        async with client.get(url, params={"code": "testcode"}) as resp:
-            assert resp.status == HTTPOk.status_code
-            text = await resp.text()
-            assert text == "OK"
+        async with client.get(
+            url, params={"code": "testcode"}, allow_redirects=False
+        ) as resp:
+            if redirect_url:
+                assert resp.status == HTTPFound.status_code
+                assert resp.headers["Location"] == str(redirect_url)
+            else:
+                assert resp.status == HTTPOk.status_code
+                text = await resp.text()
+                assert text == "OK"
 
         assert code.value == "testcode"
 
@@ -112,6 +122,17 @@ class TestAuthCodeApp:
         async with create_app_server_once(app, host="localhost", port=54540) as url:
             assert url == URL("http://localhost:54540")
             await self.assert_code_callback_success(code, client, url)
+
+    async def test_create_app_server_redirect(self, client: ClientSession) -> None:
+        code = AuthCode()
+        redirect_url = URL("http://redirect.url")
+        app = create_auth_code_app(code, redirect_url=redirect_url)
+
+        async with create_app_server_once(app, host="localhost", port=54540) as url:
+            assert url == URL("http://localhost:54540")
+            await self.assert_code_callback_success(
+                code, client, url, redirect_url=redirect_url
+            )
 
     async def test_create_app_server_once_failure(self, client: ClientSession) -> None:
         code = AuthCode()

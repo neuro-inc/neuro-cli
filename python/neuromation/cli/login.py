@@ -14,6 +14,7 @@ from aiohttp.web import (
     Application,
     AppRunner,
     HTTPBadRequest,
+    HTTPFound,
     Request,
     Response,
     TCPSite,
@@ -127,8 +128,9 @@ class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
 
 
 class AuthCodeCallbackHandler:
-    def __init__(self, code: AuthCode) -> None:
+    def __init__(self, code: AuthCode, redirect_url: Optional[URL] = None) -> None:
         self._code = code
+        self._redirect_url = redirect_url
 
     async def handle(self, request: Request) -> Response:
         code = request.query.get("code")
@@ -138,12 +140,17 @@ class AuthCodeCallbackHandler:
             raise HTTPBadRequest(text="The 'code' query parameter is missing.")
 
         self._code.value = code
+
+        if self._redirect_url:
+            raise HTTPFound(self._redirect_url)
         return Response(text="OK")
 
 
-def create_auth_code_app(code: AuthCode) -> Application:
+def create_auth_code_app(
+    code: AuthCode, redirect_url: Optional[URL] = None
+) -> Application:
     app = Application()
-    handler = AuthCodeCallbackHandler(code)
+    handler = AuthCodeCallbackHandler(code, redirect_url=redirect_url)
     app.router.add_get("/", handler.handle)
     return app
 
@@ -279,6 +286,8 @@ class AuthConfig:
         URL("http://localhost:54542"),
     )
 
+    success_redirect_url: Optional[URL] = None
+
     @property
     def callback_host(self) -> str:
         return cast(str, self.callback_urls[0].host)
@@ -288,12 +297,19 @@ class AuthConfig:
         return [cast(int, url.port) for url in self.callback_urls]
 
     @classmethod
-    def create(cls, base_url: URL, client_id: str, audience: str) -> "AuthConfig":
+    def create(
+        cls,
+        base_url: URL,
+        client_id: str,
+        audience: str,
+        success_redirect_url: Optional[URL] = None,
+    ) -> "AuthConfig":
         return cls(
             auth_url=base_url.with_path("/authorize"),
             token_url=base_url.with_path("/oauth/token"),
             client_id=client_id,
             audience=audience,
+            success_redirect_url=success_redirect_url,
         )
 
 
@@ -310,7 +326,7 @@ class AuthNegotiator:
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
-        app = create_auth_code_app(code)
+        app = create_auth_code_app(code, redirect_url=self._config.success_redirect_url)
 
         async with create_app_server(
             app, host=self._config.callback_host, ports=self._config.callback_ports
@@ -348,6 +364,7 @@ def main() -> None:
         base_url=URL("https://dev-neuromation.auth0.com"),
         client_id="V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR",
         audience="https://platform.dev.neuromation.io",
+        success_redirect_url=URL("https://platform.neuromation.io"),
     )
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run(config))
