@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 from aiohttp import ClientSession
+from aiohttp.test_utils import TestServer as _TestServer
 from aiohttp.web import (
     Application,
     HTTPBadRequest,
@@ -62,7 +63,7 @@ class TestAuthToken:
         assert not token.is_expired
         assert token.refresh_token == "test_refresh_token"
 
-    def test_is_not_expired(self):
+    def test_is_expired(self) -> None:
         token = AuthToken.create(
             token="test_token",
             expires_in=0,
@@ -77,7 +78,9 @@ class TestAuthToken:
 
 class TestAuthCodeApp:
     @pytest.fixture
-    async def client(self, loop) -> ClientSession:
+    async def client(
+        self, loop: asyncio.AbstractEventLoop
+    ) -> AsyncIterator[ClientSession]:
         async with ClientSession() as client:
             yield client
 
@@ -188,74 +191,62 @@ class _TestAuthHandler:
         return json_response(resp_payload)
 
 
+@pytest.fixture
+def auth_client_id() -> str:
+    return "test_client_id"
+
+
+@pytest.fixture
+async def auth_server(auth_client_id, aiohttp_server) -> AsyncIterator[URL]:
+    handler = _TestAuthHandler(client_id=auth_client_id)
+    app = Application()
+    app.router.add_get("/authorize", handler.handle_authorize)
+    app.router.add_post("/oauth/token", handler.handle_token)
+    server = await aiohttp_server(app)
+    yield server.make_url("/")
+
+
+@pytest.fixture
+async def auth_config(
+    auth_client_id: str, auth_server: URL
+) -> AsyncIterator[AuthConfig]:
+    yield AuthConfig.create(
+        base_url=auth_server,
+        client_id=auth_client_id,
+        audience="https://platform.dev.neuromation.io",
+    )
+
+
 class TestTokenClient:
-    async def test_request(self, aiohttp_server) -> None:
+    async def test_request(self, auth_client_id: str, auth_config: AuthConfig) -> None:
         code = AuthCode()
-        code.callback_url = "http://localhost:54540"
-        code.value = "testcode"
+        code.value = "test_code"
+        code.callback_url = URL("http://localhost:54540")
 
-        client_id = "test_client_id"
-
-        async def handle_token(request: Request) -> Response:
-            payload = await request.json()
-            assert payload == dict(
-                grant_type="authorization_code",
-                code_verifier=code.verifier,
-                code=code.value,
-                client_id=client_id,
-                redirect_uri=str(code.callback_url),
-            )
-            return json_response(
-                dict(
-                    access_token="test_access_token",
-                    expires_in=1234,
-                    refresh_token="test_refresh_token",
-                )
-            )
-
-        app = Application()
-        app.router.add_post("/oauth/token", handle_token)
-
-        server = await aiohttp_server(app)
-        url = server.make_url("/oauth/token")
-
-        async with AuthTokenClient(url, client_id=client_id) as client:
+        async with AuthTokenClient(
+            auth_config.token_url, client_id=auth_client_id
+        ) as client:
             token = await client.request(code)
             assert token.token == "test_access_token"
             assert token.refresh_token == "test_refresh_token"
             assert not token.is_expired
 
-    async def test_refresh(self, aiohttp_server) -> None:
+    async def test_refresh(self, auth_client_id: str, auth_config: AuthConfig) -> None:
         token = AuthToken.create(
-            token="test_token", expires_in=1234, refresh_token="test_refresh_token"
+            token="test_access_token",
+            expires_in=1234,
+            refresh_token="test_refresh_token",
         )
 
-        client_id = "test_client_id"
-
-        async def handle_token(request: Request) -> Response:
-            payload = await request.json()
-            assert payload == dict(
-                grant_type="refresh_token",
-                refresh_token=token.refresh_token,
-                client_id=client_id,
-            )
-            return json_response(
-                dict(access_token="test_access_token", expires_in=1234)
-            )
-
-        app = Application()
-        app.router.add_post("/oauth/token", handle_token)
-
-        server = await aiohttp_server(app)
-        url = server.make_url("/oauth/token")
-
-        async with AuthTokenClient(url, client_id=client_id) as client:
+        async with AuthTokenClient(
+            auth_config.token_url, client_id=auth_client_id
+        ) as client:
             new_token = await client.refresh(token)
-            assert new_token.token == "test_access_token"
+            assert new_token.token == "test_access_token_refreshed"
             assert new_token.refresh_token == "test_refresh_token"
             assert not token.is_expired
 
-    async def test_forbidden(self, aiohttp_server) -> None:
+    async def test_forbidden(self, aiohttp_server: _TestServer) -> None:
         code = AuthCode()
         code.callback_url = "http://localhost:54540"
         code.value = "testcode"
@@ -288,32 +279,6 @@ class _TestAuthCodeCallbackClient(AuthCodeCallbackClient):
     async def request(self) -> None:
         async with ClientSession() as client:
             await client.get(self._url, allow_redirects=True)
-
-
-@pytest.fixture
-def auth_client_id() -> str:
-    return "test_client_id"
-
-
-@pytest.fixture
-async def auth_server(auth_client_id, aiohttp_server) -> AsyncIterator[URL]:
-    handler = _TestAuthHandler(client_id=auth_client_id)
-    app = Application()
-    app.router.add_get("/authorize", handler.handle_authorize)
-    app.router.add_post("/oauth/token", handler.handle_token)
-    server = await aiohttp_server(app)
-    yield server.make_url("/")
-
-
-@pytest.fixture
-async def auth_config(
-    auth_client_id: str, auth_server: URL
-) -> AsyncIterator[AuthConfig]:
-    yield AuthConfig.create(
-        base_url=auth_server,
-        client_id=auth_client_id,
-        audience="https://platform.dev.neuromation.io",
-    )
 
 
 class TestAuthNegotiator:
@@ -356,7 +321,7 @@ class TestAuthNegotiator:
         assert not token.is_expired
 
         token = AuthToken.create(
-            token=token.token, expires_in=0.0, refresh_token=token.refresh_token
+            token=token.token, expires_in=0, refresh_token=token.refresh_token
         )
         token = await negotiator.refresh_token(token=token)
         assert token.token == "test_access_token_refreshed"
