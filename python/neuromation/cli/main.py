@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+import click
 
 import aiohttp
 from aiodocker.exceptions import DockerError
@@ -30,6 +31,7 @@ from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter, StorageLsFormatter
 from .ssh_utils import connect_ssh, remote_debug
+from .config import config
 
 
 # For stream copying from file to http or from http to file
@@ -98,96 +100,6 @@ Commands:
   share                 Resource sharing management
   help                  Get help on a command
 """
-
-    @command
-    def config():
-        """
-        Usage:
-            neuro config COMMAND
-
-        Client configuration settings commands
-
-        Commands:
-            url             Updates API URL
-            auth            Updates API Token
-            forget          Forget stored API Token
-            id_rsa          Updates path to Github RSA token,
-                            in use for SSH/Remote debug
-            show            Print current settings
-        """
-
-        @command
-        def url(url):
-            """
-            Usage:
-                neuro config url URL
-
-            Updates settings with provided platform URL.
-
-            Examples:
-            neuro config url https://platform.neuromation.io/api/v1
-            """
-            rc.ConfigFactory.update_api_url(url)
-
-        @command
-        def id_rsa(file):
-            """
-            Usage:
-                neuro config id_rsa FILE
-
-            Updates path to id_rsa file with private key.
-            File is being used for accessing remote shell, remote debug.
-
-            Note: this is temporal and going to be
-            replaced in future by JWT token.
-            """
-            if not os.path.exists(file) or not os.path.isfile(file):
-                print(f"File does not exist id_rsa={file}.")
-                return
-
-            rc.ConfigFactory.update_github_rsa_path(file)
-
-        @command
-        def show():
-            """
-            Usage:
-                neuro config show
-
-            Prints current settings.
-            """
-            config = rc.ConfigFactory.load()
-            print(config)
-
-        @command
-        def auth(token, insecure):
-            """
-            Usage:
-                neuro config auth [options] TOKEN
-
-            Updates authorization token.
-
-            Options:
-                --insecure      Store token in plain file instead system secured keyring
-            """
-            # TODO (R Zubairov, 09/13/2018): check token correct
-            # connectivity, check with Alex
-            # Do not overwrite token in case new one does not work
-            # TODO (R Zubairov, 09/13/2018): on server side we shall implement
-            # protection against brute-force
-            rc.ConfigFactory.update_auth_token(token=token, insecure=insecure)
-
-        @command
-        def forget():
-            """
-            Usage:
-                neuro config forget [options]
-
-            Forget authorization token
-
-            """
-            rc.ConfigFactory.forget_auth_token()
-
-        return locals()
 
     @command
     def store():
@@ -918,7 +830,111 @@ alpine:from-registry
     return locals()
 
 
+LOG_ERROR = log.error
+
+
+@click.group()
+@click.option('-v', '--verbose', count=True, type=int)
+@click.option('--show-traceback', is_flag=True)
+def cli(verbose: int, show_traceback: bool) -> None:
+    """
+    \b
+       ▇ ◣
+       ▇ ◥ ◣
+     ◣ ◥   ▇
+     ▇ ◣   ▇
+     ▇ ◥ ◣ ▇
+     ▇   ◥ ▇    Neuromation Platform
+     ▇   ◣ ◥
+     ◥ ◣ ▇      Deep network training,
+       ◥ ▇      inference and datasets
+         ◥
+    """
+    global LOG_ERROR
+    if show_traceback:
+        LOG_ERROR = log.exception
+    setup_logging()
+    setup_console_handler(console_handler, verbose=verbose)
+
+
+@cli.command()
+def help():
+    """Get help on a command"""
+
+
+cli.add_command(config)
+
+
 def main():
+    try:
+        cli.main(standalone_mode=False)
+    except click.Abort:
+        LOG_ERROR("Aborting.")
+        sys.exit(130)
+    except click.ClickException as e:
+        e.show()
+        sys.exit(e.exit_code)
+    except click.Exit as e:
+        sys.exit(e.exit_code)
+    except neuromation.clientv2.IllegalArgumentError as error:
+        LOG_ERROR(f"Illegal argument(s) ({error})")
+        sys.exit(os.EX_DATAERR)
+
+    except neuromation.clientv2.ResourceNotFound as error:
+        LOG_ERROR(f"{error}")
+        sys.exit(os.EX_OSFILE)
+
+    except neuromation.clientv2.AuthenticationError as error:
+        LOG_ERROR(f"Cannot authenticate ({error})")
+        sys.exit(os.EX_NOPERM)
+    except neuromation.clientv2.AuthorizationError as error:
+        LOG_ERROR(f"You haven`t enough permission ({error})")
+        sys.exit(os.EX_NOPERM)
+
+    except neuromation.clientv2.ClientError as error:
+        LOG_ERROR(f"Application error ({error})")
+        sys.exit(os.EX_SOFTWARE)
+
+    except RCException as error:
+        LOG_ERROR(f"{error}")
+        sys.exit(os.EX_SOFTWARE)
+
+    except aiohttp.ClientError as error:
+        LOG_ERROR(f"Connection error ({error})")
+        sys.exit(os.EX_IOERR)
+
+    except DockerError as error:
+        LOG_ERROR(f"Docker API error: {error.message}")
+        sys.exit(os.EX_PROTOCOL)
+
+    except NotImplementedError as error:
+        LOG_ERROR(f"{error}")
+        sys.exit(os.EX_SOFTWARE)
+    except FileNotFoundError as error:
+        LOG_ERROR(f"File not found ({error})")
+        sys.exit(os.EX_OSFILE)
+    except NotADirectoryError as error:
+        LOG_ERROR(f"{error}")
+        sys.exit(os.EX_OSFILE)
+    except PermissionError as error:
+        LOG_ERROR(f"Cannot access file ({error})")
+        sys.exit(os.EX_NOPERM)
+    except OSError as error:
+        LOG_ERROR(f"I/O Error ({error})")
+        sys.exit(os.EX_IOERR)
+
+    except KeyboardInterrupt:
+        LOG_ERROR("Aborting.")
+        sys.exit(130)
+    except ValueError as e:
+        print(e)
+        sys.exit(127)
+
+    except Exception as e:
+        LOG_ERROR(f"{e}")
+        raise e
+
+def xmain():
     is_verbose = "--verbose" in sys.argv
     if is_verbose:
         sys.argv.remove("--verbose")
