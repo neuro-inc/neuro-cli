@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
+import aiohttp
 from yarl import URL
 
 from .api import API
@@ -307,8 +308,9 @@ class JobDescription:
 
 
 class Jobs:
-    def __init__(self, api: API) -> None:
+    def __init__(self, api: API, token: str) -> None:
         self._api = api
+        self._token = token
 
     async def submit(
         self,
@@ -378,3 +380,13 @@ class Jobs:
         async with self._api.request("GET", url) as resp:
             ret = await resp.json()
             return JobDescription.from_api(ret)
+
+    async def exec(self, id: str, tty: bool, cmd: List[str]):
+        try:
+            job_status = await self.status(id)
+        except aiohttp.ClientError as e:
+            raise ValueError(f"Job not found. Job Id = {id}") from e
+        if job_status.status != "running":
+            raise ValueError(f"Job is not running. Job Id = {id}")
+        payload = {"token": self._token, "job_id": id, "command": cmd}
+        print(payload)

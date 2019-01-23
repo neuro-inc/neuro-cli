@@ -1,5 +1,6 @@
 import logging
 import os
+import shlex
 import sys
 from pathlib import Path
 
@@ -494,6 +495,7 @@ Commands:
           status              Display status of a job
           kill                Kill job
           ssh                 Start SSH terminal
+          exec                Execute command in a running job
         """
 
         @command
@@ -613,6 +615,21 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                     env=env_dict,
                 )
                 return OutputFormatter.format_job(job, quiet)
+
+        @command
+        async def exec(id, tty, cmd):
+            """
+            Usage:
+                neuro job exec [options] ID CMD...
+
+            Executes command in a running job.
+
+            Options:
+                --tty                 Allocate virtual tty. Useful for inceractive jobs
+            """
+            cmd = shlex.split(" ".join(cmd))
+            async with ClientV2(url, token) as client:
+                await client.jobs.exec(id, tty, cmd)
 
         @command
         async def ssh(id, user, key):

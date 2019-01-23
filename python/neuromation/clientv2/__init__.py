@@ -57,7 +57,7 @@ class ClientV2:
         jwt_data = jwt.get_unverified_claims(token)
         self._username = jwt_data.get("identity", None)
         self._api = API(url, token, timeout)
-        self._jobs = Jobs(self._api)
+        self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)
         self._storage = Storage(self._api, self._username)
         self._users = Users(self._api)
