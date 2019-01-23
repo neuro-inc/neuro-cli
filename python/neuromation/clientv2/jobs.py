@@ -306,7 +306,7 @@ class JobDescription:
             description=description,
             http_url=http_url,
             ssh_server=ssh_server,
-            ssh_auth_server=res["ssh_auth_server"],
+            ssh_auth_server=URL(res["ssh_auth_server"]),
             internal_hostname=internal_hostname,
         )
 
@@ -405,6 +405,8 @@ class Jobs:
                 "-o",
                 "UserKnownHostsFile=/dev/null",
             ]
-        command += [str(job_status.ssh_auth_server), payload]
+        server_url = job_status.ssh_auth_server
+        port = server_url.port if server_url.port else 22
+        command += ["-p", str(port), f'{server_url.user}@{server_url.host}', payload]
         proc = await asyncio.create_subprocess_exec(*command)
         return await proc.wait()
