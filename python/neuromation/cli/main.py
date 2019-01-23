@@ -2,10 +2,11 @@ import logging
 import os
 import sys
 from pathlib import Path
-import click
 
 import aiohttp
+import click
 from aiodocker.exceptions import DockerError
+from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 from yarl import URL
 
 import neuromation
@@ -25,13 +26,14 @@ from neuromation.logging import ConsoleWarningFormatter
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
-from .command_progress_report import ProgressBase
 from .command_spinner import SpinnerBase
 from .commands import command, dispatch
-from .defaults import DEFAULTS
-from .formatter import JobListFormatter, StorageLsFormatter
-from .ssh_utils import connect_ssh, remote_debug
 from .config import config
+from .defaults import DEFAULTS
+from .formatter import JobListFormatter
+from .ssh_utils import connect_ssh, remote_debug
+from .storage import storage
+from .utils import Context, load_token
 
 
 # For stream copying from file to http or from http to file
@@ -102,156 +104,6 @@ Commands:
 """
 
     @command
-    def store():
-        """
-        Usage:
-            neuro store COMMAND
-
-        Storage operations
-
-        Commands:
-          rm                 Remove files or directories
-          ls                 List directory contents
-          cp                 Copy files and directories
-          mv                 Move or rename files and directories
-          mkdir              Make directories
-        """
-
-        @command
-        async def rm(path):
-            """
-            Usage:
-                neuro store rm PATH
-
-            Remove files or directories.
-
-            Examples:
-            neuro store rm storage:///foo/bar/
-            neuro store rm storage:/foo/bar/
-            neuro store rm storage://{username}/foo/bar/
-            """
-            uri = URL(path)
-
-            async with ClientV2(url, token) as client:
-                await client.storage.rm(uri)
-
-        @command
-        async def ls(path):
-            """
-            Usage:
-                neuro store ls [PATH]
-
-            List directory contents
-            By default PATH is equal user`s home dir (storage:)
-            """
-            if path is None:
-                uri = URL("storage://~")
-            else:
-                uri = URL(path)
-
-            async with ClientV2(url, token) as client:
-                res = await client.storage.ls(uri)
-
-            return StorageLsFormatter().format_ls(res)
-
-        @command
-        async def cp(source, destination, recursive, progress):
-            """
-            Usage:
-                neuro store cp [options] SOURCE DESTINATION
-
-            Copy files and directories
-            Either SOURCE or DESTINATION should have storage:// scheme.
-            If scheme is omitted, file:// scheme is assumed.
-
-            Options:
-              -r, --recursive             Recursive copy
-              -p, --progress              Show progress
-
-            Examples:
-
-            # copy local file ./foo into remote storage root
-            neuro store cp ./foo storage:///
-            neuro store cp ./foo storage:/
-
-            # download remote file foo into local file foo with
-            # explicit file:// scheme set
-            neuro store cp storage:///foo file:///foo
-            """
-            timeout = aiohttp.ClientTimeout(
-                total=None, connect=None, sock_read=None, sock_connect=30
-            )
-            src = URL(source)
-            dst = URL(destination)
-
-            log.debug(f"src={src}")
-            log.debug(f"dst={dst}")
-
-            progress = ProgressBase.create_progress(progress)
-            if not src.scheme:
-                src = URL("file:" + src.path)
-            if not dst.scheme:
-                dst = URL("file:" + dst.path)
-            async with ClientV2(url, token, timeout=timeout) as client:
-                if src.scheme == "file" and dst.scheme == "storage":
-                    if recursive:
-                        await client.storage.upload_dir(progress, src, dst)
-                    else:
-                        await client.storage.upload_file(progress, src, dst)
-                elif src.scheme == "storage" and dst.scheme == "file":
-                    if recursive:
-                        await client.storage.download_dir(progress, src, dst)
-                    else:
-                        await client.storage.download_file(progress, src, dst)
-                else:
-                    raise RuntimeError(
-                        f"Copy operation for {src} -> {dst} is not supported"
-                    )
-
-        @command
-        async def mkdir(path):
-            """
-            Usage:
-                neuro store mkdir PATH
-
-            Make directories
-            """
-
-            uri = URL(path)
-
-            async with ClientV2(url, token) as client:
-                await client.storage.mkdirs(uri)
-
-        @command
-        async def mv(source, destination):
-            """
-            Usage:
-                neuro store mv SOURCE DESTINATION
-
-            Move or rename files and directories. SOURCE must contain path to the
-            file or directory existing on the storage, and DESTINATION must contain
-            the full path to the target file or directory.
-
-
-            Examples:
-
-            # move or rename remote file
-            neuro store mv storage://{username}/foo.txt storage://{username}/bar.txt
-            neuro store mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
-
-            # move or rename remote directory
-            neuro store mv storage://{username}/foo/ storage://{username}/bar/
-            neuro store mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
-            """
-
-            src = URL(source)
-            dst = URL(destination)
-
-            async with ClientV2(url, token) as client:
-                await client.storage.mv(src, dst)
-
-        return locals()
-
     @command
     def model():
         """
@@ -834,9 +686,17 @@ LOG_ERROR = log.error
 
 
 @click.group()
-@click.option('-v', '--verbose', count=True, type=int)
-@click.option('--show-traceback', is_flag=True)
-def cli(verbose: int, show_traceback: bool) -> None:
+@click.option("-v", "--verbose", count=True, type=int)
+@click.option("--show-traceback", is_flag=True)
+@click.option("-u", "--url", default=DEFAULTS["api_url"])
+@click.option("-t", "--token", default=load_token)
+@click.version_option(
+    version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
+)
+@click.pass_context
+def cli(
+    ctx: click.Context, verbose: int, show_traceback: bool, token: str, url: str
+) -> None:
     """
     \b
        ▇ ◣
@@ -855,6 +715,7 @@ def cli(verbose: int, show_traceback: bool) -> None:
         LOG_ERROR = log.exception
     setup_logging()
     setup_console_handler(console_handler, verbose=verbose)
+    ctx.obj = Context(token=token, url=URL(url))
 
 
 @cli.command()
@@ -863,18 +724,19 @@ def help():
 
 
 cli.add_command(config)
+cli.add_command(storage)
 
 
 def main():
     try:
         cli.main(standalone_mode=False)
-    except click.Abort:
+    except ClickAbort:
         LOG_ERROR("Aborting.")
         sys.exit(130)
     except click.ClickException as e:
         e.show()
         sys.exit(e.exit_code)
-    except click.Exit as e:
+    except ClickExit as e:
         sys.exit(e.exit_code)
     except neuromation.clientv2.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
@@ -932,7 +794,8 @@ def main():
 
     except Exception as e:
         LOG_ERROR(f"{e}")
-        raise e
+        sys.exit(1)
+
 
 def xmain():
     is_verbose = "--verbose" in sys.argv
