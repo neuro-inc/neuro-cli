@@ -395,7 +395,7 @@ class Jobs:
         payload = json.dumps({"token": self._token, "job": id, "command": cmd})
         command = ["ssh"]
         if tty:
-            command += ["-t"]
+            command += ["-tt"]
         else:
             command += ["-T"]
         if no_key_check:
