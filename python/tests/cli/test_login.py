@@ -119,8 +119,8 @@ class TestAuthCodeApp:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server_once(app, host="localhost", port=54540) as url:
-            assert url == URL("http://localhost:54540")
+        async with create_app_server_once(app, host="0.0.0.0", port=54540) as url:
+            assert url == URL("http://0.0.0.0:54540")
             await self.assert_code_callback_success(code, client, url)
 
     async def test_create_app_server_redirect(self, client: ClientSession) -> None:
@@ -128,8 +128,8 @@ class TestAuthCodeApp:
         redirect_url = URL("http://redirect.url")
         app = create_auth_code_app(code, redirect_url=redirect_url)
 
-        async with create_app_server_once(app, host="localhost", port=54540) as url:
-            assert url == URL("http://localhost:54540")
+        async with create_app_server_once(app, host="0.0.0.0", port=54540) as url:
+            assert url == URL("http://0.0.0.0:54540")
             await self.assert_code_callback_success(
                 code, client, url, redirect_url=redirect_url
             )
@@ -138,23 +138,23 @@ class TestAuthCodeApp:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server_once(app, host="localhost", port=54540) as url:
-            assert url == URL("http://localhost:54540")
+        async with create_app_server_once(app, host="0.0.0.0", port=54540) as url:
+            assert url == URL("http://0.0.0.0:54540")
             await self.assert_code_callback_failure(code, client, url)
 
     async def test_create_app_server(self, client: ClientSession) -> None:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server(app, host="localhost", ports=[54540]) as url:
-            assert url == URL("http://localhost:54540")
+        async with create_app_server(app, host="0.0.0.0", ports=[54540]) as url:
+            assert url == URL("http://0.0.0.0:54540")
             await self.assert_code_callback_success(code, client, url)
 
     async def test_create_app_server_no_ports(self) -> None:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server_once(app, host="localhost", port=54540):
+        async with create_app_server_once(app, host="0.0.0.0", port=54540):
             with pytest.raises(RuntimeError, match="No free ports."):
                 async with create_app_server(app, ports=[54540]):
                     pass
@@ -163,9 +163,9 @@ class TestAuthCodeApp:
         code = AuthCode()
         app = create_auth_code_app(code)
         async with create_app_server(app, ports=[54540, 54541]) as url:
-            assert url == URL("http://localhost:54540")
+            assert url == URL("http://0.0.0.0:54540")
             async with create_app_server(app, ports=[54540, 54541]) as url:
-                assert url == URL("http://localhost:54541")
+                assert url == URL("http://0.0.0.0:54541")
                 await self.assert_code_callback_success(code, client, url)
 
 
@@ -244,7 +244,7 @@ class TestTokenClient:
     async def test_request(self, auth_client_id: str, auth_config: AuthConfig) -> None:
         code = AuthCode()
         code.value = "test_code"
-        code.callback_url = URL("http://localhost:54540")
+        code.callback_url = URL("http://0.0.0.0:54540")
 
         async with AuthTokenClient(
             auth_config.token_url, client_id=auth_client_id
@@ -273,7 +273,7 @@ class TestTokenClient:
         self, aiohttp_server: Callable[[Application], Awaitable[_TestServer]]
     ) -> None:
         code = AuthCode()
-        code.callback_url = URL("http://localhost:54540")
+        code.callback_url = URL("http://0.0.0.0:54540")
         code.value = "testcode"
 
         client_id = "test_client_id"
@@ -307,7 +307,7 @@ class TestAuthNegotiator:
         )
         code = await negotiator.get_code()
         assert code.value == "test_code"
-        assert code.callback_url == URL("http://localhost:54540")
+        assert code.callback_url == URL("http://0.0.0.0:54540")
 
     async def test_get_token(self, auth_config: AuthConfig) -> None:
         negotiator = AuthNegotiator(
