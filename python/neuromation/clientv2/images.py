@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Union
 
 import aiodocker
 from aiodocker.exceptions import DockerError
@@ -12,10 +12,12 @@ from .abc import AbstractSpinner
 from .api import API
 from .registry import Registry
 
+
 STATUS_FORBIDDEN = 403
 STATUS_NOT_FOUND = 404
 STATUS_CUSTOM_ERROR = 900
 DEFAULT_TAG = "latest"
+
 
 @dataclass(frozen=True)
 class Image:
@@ -60,8 +62,8 @@ class Images:
         self._url = url
         self._token = token
         self._temporary_images: List[str] = list()
-        self._docker_client: aiodocker.Docker = None
-        self._registry_transport: API = None
+        self._docker_client: Union[aiodocker.Docker, None] = None
+        self._registry_transport: Union[Registry, None] = None
 
     async def close(self) -> None:  # pragma: no cover
         try:
@@ -101,7 +103,9 @@ class Images:
 
     def _registry(self) -> API:
         if not self._registry_transport:
-            registry_url = self._url.with_host(str(self._url.host).replace("platform.", "registry.")).with_path('/v2/')
+            registry_url = self._url.with_host(
+                str(self._url.host).replace("platform.", "registry.")
+            ).with_path("/v2/")
             self._registry_transport = Registry(registry_url, self._token)
         return self._registry_transport
 
@@ -179,6 +183,6 @@ class Images:
 
     async def ls(self) -> List[URL]:
         registry = self._registry()
-        async with registry.request('GET', URL('_catalog')) as resp:
+        async with registry.request("GET", URL("_catalog")) as resp:
             ret = await resp.json()
-            return [URL(name) for name in ret['repositories']]
+            return [URL(name) for name in ret["repositories"]]

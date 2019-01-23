@@ -822,12 +822,11 @@ alpine:from-registry
             List user's images which are available for jobs.
             You will see here own and shared with you images
             """
-            from neuromation.clientv2.images import Image
 
             async with ClientV2(url, token) as client:
                 images = await client.images.ls()
                 for image in images:
-                    print(f'{image}')
+                    print(f"{image}")
 
         return locals()
 
