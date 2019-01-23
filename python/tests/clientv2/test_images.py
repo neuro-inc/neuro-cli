@@ -3,6 +3,7 @@ import os
 import asynctest
 import pytest
 from aiodocker.exceptions import DockerError
+from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.command_spinner import SpinnerBase
@@ -258,3 +259,25 @@ class TestImages:
             image = Image.from_url(URL("image://bob/image:bananas"), client.username)
             result = await client.images.pull(image, image, spinner)
         assert result == image
+
+
+class TestRegistry:
+    async def test_ls(self, aiohttp_server, token):
+        JSON = {
+            "repositories": [
+                "image://bob/alpine",
+                "image://jill/bananas"
+            ]
+        }
+
+        async def handler(request):
+            return web.json_response(JSON)
+
+        app = web.Application()
+        app.router.add_get("/v2/_catalog", handler)
+
+        srv = await aiohttp_server(app)
+
+        async with ClientV2(srv.make_url("/"), token) as client:
+            ret = await client.images.ls()
+        assert ret == [URL(JSON['repositories'][0]), URL(JSON['repositories'][1])]
