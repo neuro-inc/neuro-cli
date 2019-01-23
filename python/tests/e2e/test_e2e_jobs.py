@@ -430,27 +430,12 @@ def test_e2e_multiple_env_from_file(run, tmp_path):
 def test_e2e_ssh_exec_true(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
-        [
-            "job",
-            "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
     wait_job_change_state_from(run, job_id, Status.PENDING)
 
-    captured = run(
-        [
-            "job",
-            "exec",
-            job_id,
-            "true"
-        ]
+    captured = run(["job", "exec", "--no-key-check", job_id, "true"])
     assert captured.out == ""
