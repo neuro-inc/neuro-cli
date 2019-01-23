@@ -1,5 +1,4 @@
 import asyncio
-import sys
 
 
 def run(main, *, debug=False):
@@ -79,8 +78,3 @@ def _cancel_all_tasks(loop, main_task):
                     "task": task,
                 }
             )
-
-
-# if sys.version_info >= (3, 7):
-#     # Use system asyncio.run()
-#     run = asyncio.run  # noqa
