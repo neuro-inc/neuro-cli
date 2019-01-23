@@ -263,12 +263,7 @@ class TestImages:
 
 class TestRegistry:
     async def test_ls(self, aiohttp_server, token):
-        JSON = {
-            "repositories": [
-                "image://bob/alpine",
-                "image://jill/bananas"
-            ]
-        }
+        JSON = {"repositories": ["image://bob/alpine", "image://jill/bananas"]}
 
         async def handler(request):
             return web.json_response(JSON)
@@ -280,4 +275,4 @@ class TestRegistry:
 
         async with ClientV2(srv.make_url("/"), token) as client:
             ret = await client.images.ls()
-        assert ret == [URL(JSON['repositories'][0]), URL(JSON['repositories'][1])]
+        assert ret == [URL(JSON["repositories"][0]), URL(JSON["repositories"][1])]
