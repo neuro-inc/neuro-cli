@@ -25,5 +25,5 @@ class AbstractSpinner(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def tick(self) -> None:
+    def tick(self) -> None:  # pragma: no cover
         pass
