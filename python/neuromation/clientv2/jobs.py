@@ -407,6 +407,6 @@ class Jobs:
             ]
         server_url = job_status.ssh_auth_server
         port = server_url.port if server_url.port else 22
-        command += ["-p", str(port), f'{server_url.user}@{server_url.host}', payload]
+        command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
         proc = await asyncio.create_subprocess_exec(*command)
         return await proc.wait()
