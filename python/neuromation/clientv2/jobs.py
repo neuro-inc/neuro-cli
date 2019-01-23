@@ -1,4 +1,6 @@
+import asyncio
 import enum
+import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
@@ -265,6 +267,7 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
+    ssh_auth_server: URL
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
@@ -303,6 +306,7 @@ class JobDescription:
             description=description,
             http_url=http_url,
             ssh_server=ssh_server,
+            ssh_auth_server=res["ssh_auth_server"],
             internal_hostname=internal_hostname,
         )
 
@@ -381,12 +385,28 @@ class Jobs:
             ret = await resp.json()
             return JobDescription.from_api(ret)
 
-    async def exec(self, id: str, tty: bool, cmd: List[str]):
+    async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]):
         try:
             job_status = await self.status(id)
         except aiohttp.ClientError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
             raise ValueError(f"Job is not running. Job Id = {id}")
-        payload = {"token": self._token, "job_id": id, "command": cmd}
-        print(payload)
+        payload = json.dumps({"token": self._token,
+                             "job": id,
+                             "command": cmd})
+        command = ["ssh"]
+        if tty:
+            command += ["-t"]
+        else:
+            command += ["-T"]
+        if no_key_check:
+            command += [
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+            ]
+        command += [str(job_status.ssh_auth_server), payload]
+        proc = await asyncio.create_subprocess_exec(*command)
+        return await proc.wait()

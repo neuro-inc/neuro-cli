@@ -617,7 +617,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                 return OutputFormatter.format_job(job, quiet)
 
         @command
-        async def exec(id, tty, cmd):
+        async def exec(id, tty, no_key_check, cmd):
             """
             Usage:
                 neuro job exec [options] ID CMD...
@@ -625,11 +625,12 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             Executes command in a running job.
 
             Options:
-                --tty                 Allocate virtual tty. Useful for inceractive jobs
+                -t, --tty         Allocate virtual tty. Useful for inceractive jobs.
+                --no-key-check    Disable host key checks. Should be used with caution.
             """
             cmd = shlex.split(" ".join(cmd))
             async with ClientV2(url, token) as client:
-                await client.jobs.exec(id, tty, cmd)
+                await client.jobs.exec(id, tty, no_key_check, cmd)
 
         @command
         async def ssh(id, user, key):
