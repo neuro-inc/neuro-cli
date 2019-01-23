@@ -21,7 +21,7 @@ class AbstractSpinner(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def complete(self, message: str = None) -> None:
+    def complete(self, message: str = None) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
