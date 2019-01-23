@@ -9,8 +9,8 @@ ISORT_DIRS := neuromation tests build-tools
 ISORT_REGEXP := ^python/(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
-MYPY_DIRS := neuromation/client neuromation/logging neuromation/strings neuromation/clientv2 neuromation/cli/ssh_utils.py neuromation/cli/formatter.py neuromation/cli/docker_handler.py
-MYPY_REGEXP := ^(python/neuromation/(client|logging|strings|clientv2)/.+\\.py)|(^python/neuromation/cli/ssh_utils.py)|(^python/neuromation/cli/formatter.py)(^python/neuromation/cli/docker_handler.py)
+MYPY_DIRS :=  neuromation/logging neuromation/strings neuromation/clientv2 neuromation/cli/ssh_utils.py neuromation/cli/formatter.py neuromation/cli/command_spinner.py
+MYPY_REGEXP := ^(python/neuromation/(logging|strings|clientv2)/.+\\.py)|(^python/neuromation/cli/ssh_utils.py)|(^python/neuromation/cli/formatter.py)(^python/neuromation/cli/command_spinner.py)
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 
@@ -67,7 +67,7 @@ _init-readme:
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n auto \
+	    -n auto --forked \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -77,7 +77,7 @@ e2e:
 .PHONY: _e2e
 _e2e:
 	pytest \
-	    -n auto \
+	    -n auto --forked \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -107,7 +107,6 @@ test-fast:
 .PHONY: test-all
 test-all:
 	pytest \
-	    -n 4 \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \

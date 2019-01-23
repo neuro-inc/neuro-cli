@@ -5,8 +5,16 @@ import aiohttp
 from jose import jwt
 from yarl import URL
 
-from .abc import AbstractProgress
-from .api import API, ResourceNotFound
+from .abc import AbstractProgress, AbstractSpinner
+from .api import (
+    API,
+    ResourceNotFound,
+    ClientError,
+    IllegalArgumentError,
+    AuthError,
+    AuthenticationError,
+    AuthorizationError,
+)
 from .jobs import (
     Jobs,
     Image,
@@ -21,6 +29,7 @@ from .jobs import (
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
 from .users import Action, Permission, Users
+from .images import Images
 
 __all__ = (
     "Image",
@@ -38,7 +47,13 @@ __all__ = (
     "FileStatus",
     "Container",
     "ResourceNotFound",
+    "ClientError",
+    "IllegalArgumentError",
+    "AuthError",
+    "AuthenticationError",
+    "AuthorizationError",
     "AbstractProgress",
+    "AbstractSpinner",
 )
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
@@ -61,9 +76,11 @@ class ClientV2:
         self._models = Models(self._api)
         self._storage = Storage(self._api, self._username)
         self._users = Users(self._api)
+        self._images = Images(self._api, url, token)
 
     async def close(self) -> None:
         await self._api.close()
+        await self._images.close()
 
     async def __aenter__(self) -> "ClientV2":
         return self
@@ -95,3 +112,7 @@ class ClientV2:
     @property
     def users(self) -> Users:
         return self._users
+
+    @property
+    def images(self) -> Images:
+        return self._images
