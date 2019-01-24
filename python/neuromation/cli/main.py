@@ -12,7 +12,6 @@ import neuromation
 from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
-from .commands import command
 from .completion import completion
 from .config import config
 from .defaults import DEFAULTS
@@ -55,58 +54,6 @@ def setup_console_handler(handler, verbose, noansi=False):
         loglevel = logging.INFO
 
     handler.setLevel(loglevel)
-
-
-@command
-def neuro(url, token, verbose, show_traceback, version):
-    """    ◣
-    ▇ ◣
-    ▇ ◥ ◣
-  ◣ ◥   ▇
-  ▇ ◣   ▇
-  ▇ ◥ ◣ ▇
-  ▇   ◥ ▇    Neuromation Platform
-  ▇   ◣ ◥
-  ◥ ◣ ▇      Deep network training,
-    ◥ ▇      inference and datasets
-      ◥
-Usage:
-  neuro [options] COMMAND
-
-Options:
-  -u, --url URL         Override API URL [default: {api_url}]
-  -t, --token TOKEN     API authentication token (not implemented)
-  --verbose             Enable verbose logging
-  --show-traceback      Show Python traceback on exception
-  -v, --version         Print version and exit
-
-Commands:
-  model                 Model training, testing and inference
-  job                   Manage existing jobs
-  store                 Storage operations
-  image                 Docker container image operations
-  config                Configure API connection settings
-  completion            Generate code to enable completion
-  share                 Resource sharing management
-  help                  Get help on a command
-"""
-
-    @command
-    def help():
-        """
-            Usage:
-                neuro help COMMAND [SUBCOMMAND[...]]
-
-            Display help for given COMMAND
-
-            Examples:
-                neuro help store
-                neuro help store ls
-
-        """
-        pass
-
-    return locals()
 
 
 LOG_ERROR = log.error
