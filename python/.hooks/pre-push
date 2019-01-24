@@ -17,10 +17,10 @@ do
 		then
 			# New branch
 			branch_started=`git rev-list --simplify-by-decoration -2 HEAD | tail -1`
-            make -C python test-fast lint-diff FROM=$branch_started TO=$local_sha || exit 1
+            make -s -C python test-fast lint-diff FROM=$branch_started TO=$local_sha || exit 1
 
 		else
-			make -C python test-fast lint-diff FROM=$remote_sha TO=$local_sha || exit 1
+			make -s -C python test-fast lint-diff FROM=$remote_sha TO=$local_sha || exit 1
 		fi
 	fi
 done
