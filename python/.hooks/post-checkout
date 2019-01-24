@@ -3,4 +3,4 @@ prev_head="$1"
 new_head="$2"
 branch_flag="$3"
 
-make -C python update-deps
+make -C python -s update-deps-fast FROM=$prev_head TO=$new_head
