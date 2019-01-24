@@ -30,7 +30,7 @@ class CommandInfo:
 
 
 def parse_doc(ctx, command, stack) -> CommandInfo:
-    name = ' '.join(stack)
+    name = " ".join(stack)
     formatter = ctx.make_formatter()
     command.format_usage(ctx, formatter)
     usage = formatter.getvalue()
