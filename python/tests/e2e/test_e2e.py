@@ -53,6 +53,7 @@ def test_e2e_shm_run_without(run):
             "0.1",
             "-g",
             "0",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -82,6 +83,7 @@ def test_e2e_shm_run_with(run):
             "0.1",
             "-g",
             "0",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -184,6 +186,7 @@ def test_job_storage_interaction(
             f"{tmpstorage}data:/data:ro",
             "--volume",
             f"{tmpstorage}result:/res:rw",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]

@@ -41,6 +41,7 @@ def test_job_lifecycle(run):
             "0",
             "--http",
             "80",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -108,6 +109,7 @@ def test_job_description(run):
             "80",
             "--description",
             description,
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -125,7 +127,7 @@ def test_job_description(run):
     assert job_id in jobs_updated
 
     # Wait until the job is running
-    wait_job_change_state_to(run, job_id, Status.RUNNING)
+    wait_job_change_state_to(run, job_id, Status.RUNNING, Status.FAILED)
 
     # Check that it is in a running job list
     captured = run(["job", "list", "--status", "running"])
@@ -146,7 +148,7 @@ def test_job_description(run):
     captured = run(["job", "kill", job_id])
 
     # Check that the job we killed ends up as succeeded
-    wait_job_change_state_to(run, job_id, Status.SUCCEEDED)
+    wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
 
     # Check that it is not in a running job list anymore
     captured = run(["job", "list", "--status", "running"])
@@ -175,6 +177,7 @@ def test_unschedulable_job_lifecycle(run):
             "0",
             "--http",
             "80",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -195,7 +198,7 @@ def test_unschedulable_job_lifecycle(run):
     captured = run(["job", "kill", job_id])
 
     # Check that the job we killed ends up as succeeded
-    wait_job_change_state_to(run, job_id, Status.SUCCEEDED)
+    wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
 
     # Check that it is not in a running job list anymore
     captured = run(["job", "list", "--status", "running"])
@@ -224,6 +227,7 @@ def test_two_jobs_at_once(run):
             "0",
             "--http",
             "80",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -240,6 +244,7 @@ def test_two_jobs_at_once(run):
             "0.1",
             "-g",
             "0",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -260,8 +265,8 @@ def test_two_jobs_at_once(run):
     assert second_job_id in jobs_updated
 
     # Wait until the job is running
-    wait_job_change_state_to(run, first_job_id, Status.RUNNING)
-    wait_job_change_state_to(run, second_job_id, Status.RUNNING)
+    wait_job_change_state_to(run, first_job_id, Status.RUNNING, Status.FAILED)
+    wait_job_change_state_to(run, second_job_id, Status.RUNNING, Status.FAILED)
 
     # Check that it is in a running job list
     captured = run(["job", "list", "--status", "running"])
@@ -282,8 +287,8 @@ def test_two_jobs_at_once(run):
     captured = run(["job", "kill", first_job_id, second_job_id])
 
     # Check that the job we killed ends up as succeeded
-    wait_job_change_state_to(run, first_job_id, Status.SUCCEEDED)
-    wait_job_change_state_to(run, second_job_id, Status.SUCCEEDED)
+    wait_job_change_state_to(run, first_job_id, Status.SUCCEEDED, Status.FAILED)
+    wait_job_change_state_to(run, second_job_id, Status.SUCCEEDED, Status.FAILED)
 
     # Check that it is not in a running job list anymore
     captured = run(["job", "list", "--status", "running"])
@@ -337,6 +342,7 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
             "0",
             "--http",
             "80",
+            "--non-preemptible",
             NGINX_IMAGE_NAME,
             f"{tmpstorage}/model",
             f"{tmpstorage}/result",
@@ -344,7 +350,7 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_from(run, job_id, Status.PENDING, Status.FAILED)
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
@@ -352,7 +358,7 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
     assert run_async(get_(parsed_url.netloc))
 
     run(["job", "kill", job_id])
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING, Status.FAILED)
 
 
 @pytest.mark.e2e
@@ -388,6 +394,7 @@ def test_model_without_command(run, tmpstorage, check_create_dir_on_storage):
             "0",
             "--http",
             "80",
+            "--non-preemptible",
             NGINX_IMAGE_NAME,
             f"{tmpstorage}/model",
             f"{tmpstorage}/result",
@@ -396,7 +403,7 @@ def test_model_without_command(run, tmpstorage, check_create_dir_on_storage):
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_job_change_state_from(run, job_id, Status.PENDING)
+    wait_job_change_state_from(run, job_id, Status.PENDING, Status.FAILED)
 
     config = ConfigFactory.load()
     parsed_url = urlparse(config.url)
@@ -404,7 +411,7 @@ def test_model_without_command(run, tmpstorage, check_create_dir_on_storage):
     assert run_async(get_(parsed_url.netloc))
 
     captured = run(["job", "kill", job_id])
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+    wait_job_change_state_from(run, job_id, Status.RUNNING, Status.FAILED)
 
 
 @pytest.mark.e2e
@@ -421,6 +428,7 @@ def test_e2e_no_env(run):
             "0.1",
             "-g",
             "0",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -451,6 +459,7 @@ def test_e2e_env(run):
             "0",
             "-e",
             "VAR=VAL",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -482,6 +491,7 @@ def test_e2e_env_from_local(run):
             "0",
             "-e",
             "VAR",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -514,6 +524,7 @@ def test_e2e_multiple_env(run):
             "VAR=VAL",
             "-e",
             "VAR2=VAL2",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -550,6 +561,7 @@ def test_e2e_multiple_env_from_file(run, tmp_path):
             "VAR2=VAL2",
             "--env-file",
             str(env_file),
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -568,7 +580,17 @@ def test_e2e_multiple_env_from_file(run, tmp_path):
 def test_e2e_ssh_exec_true(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
-        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
@@ -583,7 +605,17 @@ def test_e2e_ssh_exec_true(run):
 def test_e2e_ssh_exec_false(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
-        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
@@ -599,7 +631,17 @@ def test_e2e_ssh_exec_false(run):
 def test_e2e_ssh_exec_echo(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
-        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
@@ -614,7 +656,17 @@ def test_e2e_ssh_exec_echo(run):
 def test_e2e_ssh_exec_no_tty(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
-        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
@@ -630,7 +682,17 @@ def test_e2e_ssh_exec_no_tty(run):
 def test_e2e_ssh_exec_tty(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
-        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
@@ -652,7 +714,17 @@ def test_e2e_ssh_exec_no_job(run):
 def test_e2e_ssh_exec_dead_job(run):
     command = "true"
     captured = run(
-        ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
