@@ -1,11 +1,13 @@
+import asyncio
 import enum
+import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
 
-from .api import API
+from .api import API, IllegalArgumentError
 
 
 @dataclass(frozen=True)
@@ -264,6 +266,7 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
+    ssh_auth_server: URL
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
@@ -302,13 +305,15 @@ class JobDescription:
             description=description,
             http_url=http_url,
             ssh_server=ssh_server,
+            ssh_auth_server=URL(res["ssh_auth_server"]),
             internal_hostname=internal_hostname,
         )
 
 
 class Jobs:
-    def __init__(self, api: API) -> None:
+    def __init__(self, api: API, token: str) -> None:
         self._api = api
+        self._token = token
 
     async def submit(
         self,
@@ -378,3 +383,29 @@ class Jobs:
         async with self._api.request("GET", url) as resp:
             ret = await resp.json()
             return JobDescription.from_api(ret)
+
+    async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
+        try:
+            job_status = await self.status(id)
+        except IllegalArgumentError as e:
+            raise ValueError(f"Job not found. Job Id = {id}") from e
+        if job_status.status != "running":
+            raise ValueError(f"Job is not running. Job Id = {id}")
+        payload = json.dumps({"token": self._token, "job": id, "command": cmd})
+        command = ["ssh"]
+        if tty:
+            command += ["-tt"]
+        else:
+            command += ["-T"]
+        if no_key_check:  # pragma: no branch
+            command += [
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+            ]
+        server_url = job_status.ssh_auth_server
+        port = server_url.port if server_url.port else 22
+        command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
+        proc = await asyncio.create_subprocess_exec(*command)
+        return await proc.wait()

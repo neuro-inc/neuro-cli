@@ -13,6 +13,7 @@
 		* [neuro job status](#neuro-job-status)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job ssh](#neuro-job-ssh)
+		* [neuro job exec](#neuro-job-exec)
 	* [neuro store](#neuro-store)
 		* [neuro store rm](#neuro-store-rm)
 		* [neuro store ls](#neuro-store-ls)
@@ -180,6 +181,8 @@ neuro job COMMAND
 
 * _[ssh](#neuro-job-ssh)_: Start SSH terminal
 
+* _[exec](#neuro-job-exec)_: Execute command in a running job
+
 
 
 ### neuro job submit
@@ -314,6 +317,26 @@ Name | Description|
 ```bash
 neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
 ```
+
+
+
+### neuro job exec
+
+Executes command in a running job.
+
+**Usage:**
+
+```bash
+neuro job exec [options] ID CMD...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+
 
 
 
