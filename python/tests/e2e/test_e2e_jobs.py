@@ -341,8 +341,6 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
             f"{tmpstorage}/model",
             f"{tmpstorage}/result",
             command,
-            "-d",
-            "simple test job",
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
