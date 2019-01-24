@@ -1,9 +1,14 @@
 import re
+from time import sleep
 
 import pytest
 
 import neuromation
-from tests.e2e.test_e2e_utils import assert_job_state, wait_job_change_state_from
+from tests.e2e.test_e2e_utils import (
+    Status,
+    assert_job_state,
+    wait_job_change_state_from,
+)
 from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list
 
 
@@ -48,6 +53,7 @@ def test_e2e_shm_run_without(run):
             "0.1",
             "-g",
             "0",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -77,6 +83,7 @@ def test_e2e_shm_run_with(run):
             "0.1",
             "-g",
             "0",
+            "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -142,3 +149,68 @@ def test_e2e_storage(
 
     # And confirm
     check_dir_absent_on_storage("folder2", "")
+
+
+@pytest.mark.e2e
+def test_job_storage_interaction(
+    run,
+    data,
+    tmpstorage,
+    tmp_path,
+    check_create_dir_on_storage,
+    check_upload_file_to_storage,
+    check_file_on_storage_checksum,
+):
+    srcfile, checksum = data[0]
+    # Create directory for the test
+    check_create_dir_on_storage("data")
+
+    # Upload local file
+    check_upload_file_to_storage("foo", "data", str(srcfile))
+
+    delay = 0.5
+    for i in range(5):
+        # Run a job to copy file
+        command = "cp /data/foo /res/foo"
+        captured = run(
+            [
+                "job",
+                "submit",
+                "-m",
+                "20M",
+                "-c",
+                "0.1",
+                "-g",
+                "0",
+                "--http",
+                "80",
+                "--volume",
+                f"{tmpstorage}data:/data:ro",
+                "--volume",
+                f"{tmpstorage}result:/res:rw",
+                "--non-preemptible",
+                UBUNTU_IMAGE_NAME,
+                command,
+            ]
+        )
+        job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+
+        # Wait for job to finish
+        wait_job_change_state_from(run, job_id, Status.PENDING)
+        wait_job_change_state_from(run, job_id, Status.RUNNING)
+        try:
+            assert_job_state(run, job_id, Status.SUCCEEDED)
+            # Confirm file has been copied
+            captured = run(["store", "ls", f"{tmpstorage}result"])
+            captured_output_list = captured.out.split("\n")
+            assert not captured.err
+            expected_line = format_list(type="file", size=FILE_SIZE_B, name="foo")
+            assert expected_line in captured_output_list
+
+            # Download into local dir and confirm checksum
+            check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")
+
+            break
+        except AssertionError:
+            sleep(delay)
+            delay *= 2
