@@ -112,8 +112,8 @@ class AuthCodeCallbackClient(abc.ABC):
 
 class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
     async def _request(self, url: URL) -> None:
-        # TODO: should we run this in an executor?
-        webbrowser.open_new(str(url))
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, webbrowser.open_new, str(url))
 
 
 class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
