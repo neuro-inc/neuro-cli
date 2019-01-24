@@ -28,6 +28,7 @@ help:
 	  example: make release VERSION=0.5 \n\
 	- dist-clean: remove files generated during publish \n\
 	- clean: remove generated files \n\
+	- update-deps-fast: update deps only if requirements changed betwwen two points(hook)
 \n\
 	* Modifications and generations: \n\
 	- format: format python code(isort + black) \n\
@@ -38,7 +39,7 @@ help:
 	* Lint (static analysis) \n\
 	- lint: run linters(isort, black, flake8, mypy, lint-docs) \n\
 	- lint-docs: validate generated docs \n\
-	- lint-diff: lint only modified files, between two points \n\
+	- lint-diff: lint only modified files, between two points(hook) \n\
 	- publish-lint: lint distribution \n\
 \n\
 	* Tests \n\
