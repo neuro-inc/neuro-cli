@@ -243,9 +243,6 @@ async def ssh(ctx: Context, id: str, user: str, key: str) -> None:
 @run_async
 async def monitor(ctx: Context, id: str) -> None:
     """
-    Usage:
-        neuro job monitor ID
-
     Monitor job output stream
     """
     timeout = aiohttp.ClientTimeout(
