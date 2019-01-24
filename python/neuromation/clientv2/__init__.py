@@ -70,6 +70,7 @@ class ClientV2:
         if isinstance(url, str):
             url = URL(url)
         self._url = url
+        assert token
         jwt_data = jwt.get_unverified_claims(token)
         self._token = token
         self._username = jwt_data.get("identity", None)
