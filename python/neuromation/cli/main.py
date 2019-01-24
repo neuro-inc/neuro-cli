@@ -26,7 +26,7 @@ from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
 from .command_spinner import SpinnerBase
-from .commands import command, dispatch
+from .commands import command
 from .config import config
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter
