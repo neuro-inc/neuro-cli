@@ -10,7 +10,7 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 from yarl import URL
 
 import neuromation
-from neuromation.cli.rc import Config, RCException
+from neuromation.cli.rc import RCException
 from neuromation.clientv2 import (
     Action,
     ClientV2,
@@ -19,7 +19,6 @@ from neuromation.clientv2 import (
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import rc
-from .command_spinner import SpinnerBase
 from .commands import command
 from .config import config
 from .defaults import DEFAULTS
@@ -27,6 +26,7 @@ from .model import model
 from .storage import storage
 from .job import job
 from .utils import Context, DeprecatedGroup, load_token
+from .image import image
 
 
 # For stream copying from file to http or from http to file
@@ -95,110 +95,6 @@ Commands:
   share                 Resource sharing management
   help                  Get help on a command
 """
-
-    @command
-    def image():
-        """
-        Usage:
-            neuro image COMMAND
-
-        Docker image operations
-
-        Commands:
-          push                 Push docker image from local machine to cloud registry.
-          pull                 Pull docker image from cloud registry to local machine.
-          ls                   List available user's images.
-        """
-
-        @command
-        async def push(image_name, remote_image_name):
-            """
-            Usage:
-                neuro image push IMAGE_NAME [REMOTE_IMAGE_NAME]
-
-            Push an image to platform registry.
-            Remote image must be URL with image:// scheme.
-            Image names can contains tag. If tags not specified 'latest' will \
-be used as value.
-
-            Examples:
-                neuro image push myimage
-                neuro image push alpine:latest image:my-alpine:production
-                neuro image push alpine image://myfriend/alpine:shared
-
-            """
-            from neuromation.clientv2.images import Image
-
-            config: Config = rc.ConfigFactory.load()
-            username = config.get_platform_user_name()
-
-            local_image = remote_image = Image.from_local(image_name, username)
-            if remote_image_name:
-                remote_image = Image.from_url(URL(remote_image_name), username)
-
-            spinner = SpinnerBase.create_spinner(
-                sys.stdout.isatty(), "Pushing image {}  "
-            )
-
-            async with ClientV2(url, token) as client:
-                result_remote_image = await client.images.push(
-                    local_image, remote_image, spinner
-                )
-                print(result_remote_image.url)
-
-        @command
-        async def pull(image_name, local_image_name):
-            """
-            Usage:
-                neuro image pull IMAGE_NAME [LOCAL_IMAGE_NAME]
-
-            Pull an image from platform registry.
-            Remote image name must be URL with image:// scheme.
-            Image names can contain tag.
-
-            Examples:
-                neuro image pull image:myimage
-                neuro image pull image://myfriend/alpine:shared
-                neuro image pull image://{username}/my-alpine:production \
-alpine:from-registry
-
-            """
-
-            from neuromation.clientv2.images import Image
-
-            config: Config = rc.ConfigFactory.load()
-            username = config.get_platform_user_name()
-
-            remote_image = local_image = Image.from_url(URL(image_name), username)
-            if local_image_name:
-                local_image = Image.from_local(local_image_name, username)
-
-            spinner = SpinnerBase.create_spinner(
-                sys.stdout.isatty(), "Pulling image {}  "
-            )
-
-            async with ClientV2(url, token) as client:
-                result_local_image = await client.images.pull(
-                    remote_image, local_image, spinner
-                )
-                print(result_local_image.local)
-
-        @command
-        async def ls():
-            """
-            Usage:
-                neuro image ls
-
-            List user's images which are available for jobs.
-            You will see here own and shared with you images
-            """
-
-            async with ClientV2(url, token) as client:
-                images = await client.images.ls()
-                for image in images:
-                    print(f"{image}")
-
-        return locals()
 
     @command
     async def share(uri, user, permission: str):
@@ -350,6 +246,7 @@ cli.add_command(storage)
 cli.add_command(DeprecatedGroup(storage, name="store"))
 cli.add_command(model)
 cli.add_command(job)
+cli.add_command(image)
 
 
 def main():
