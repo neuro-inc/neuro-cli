@@ -197,6 +197,9 @@ def test_unschedulable_job_lifecycle(run):
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
+    wait_job_change_state_to(
+        run, job_id, "(Cluster doesn't have resources to fulfill request.)"
+    )
 
     # Kill the job
     captured = run(["job", "kill", job_id])
