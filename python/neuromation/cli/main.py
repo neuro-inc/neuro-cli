@@ -11,22 +11,17 @@ from yarl import URL
 
 import neuromation
 from neuromation.cli.rc import RCException
-from neuromation.clientv2 import (
-    Action,
-    ClientV2,
-    Permission,
-)
 from neuromation.logging import ConsoleWarningFormatter
 
-from . import rc
 from .commands import command
 from .config import config
 from .defaults import DEFAULTS
+from .image import image
+from .job import job
 from .model import model
 from .storage import storage
-from .job import job
 from .utils import Context, DeprecatedGroup, load_token
-from .image import image
+from .share import share
 
 
 # For stream copying from file to http or from http to file
@@ -95,43 +90,6 @@ Commands:
   share                 Resource sharing management
   help                  Get help on a command
 """
-
-    @command
-    async def share(uri, user, permission: str):
-        """
-            Usage:
-                neuro share URI USER PERMISSION
-
-            Shares resource specified by URI to a USER with PERMISSION \
-(read|write|manage)
-
-            Examples:
-            neuro share storage:///sample_data/ alice manage
-            neuro share image://{username}/resnet50 bob read
-            neuro share image:resnet50 bob read
-            neuro share job:///my_job_id alice write
-        """
-        uri = URL(uri)
-        try:
-            action = Action[permission.upper()]
-        except KeyError as error:
-            raise ValueError(
-                "Resource not shared. Please specify one of read/write/manage."
-            ) from error
-        config = rc.ConfigFactory.load()
-        platform_user_name = config.get_platform_user_name()
-        permission = Permission.from_cli(
-            username=platform_user_name, uri=uri, action=action
-        )
-
-        async with ClientV2(url, token) as client:
-            try:
-                await client.users.share(user, permission)
-            except neuromation.client.IllegalArgumentError as error:
-                raise ValueError(
-                    "Resource not shared. Please verify resource-uri, user name."
-                ) from error
-        return "Resource shared."
 
     @command
     def completion():
@@ -247,7 +205,7 @@ cli.add_command(DeprecatedGroup(storage, name="store"))
 cli.add_command(model)
 cli.add_command(job)
 cli.add_command(image)
-
+cli.add_command(share)
 
 def main():
     try:

@@ -12,7 +12,7 @@ from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
 from .defaults import DEFAULTS, GPU_MODELS
-from .formatter import JobListFormatter, OutputFormatter, JobStatusFormatter
+from .formatter import JobListFormatter, JobStatusFormatter, OutputFormatter
 from .ssh_utils import connect_ssh
 from .utils import Context, run_async
 
@@ -265,7 +265,7 @@ async def monitor(ctx: Context, id: str) -> None:
     "--status",
     multiple=True,
     type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
-    help="Filter out job by status(es)",
+    help="Filter out job by status (multiple option)",
 )
 @click.option(
     "-d",
@@ -285,7 +285,7 @@ async def list(ctx: Context, status: List[str], description: str, quiet: bool) -
     \b
     neuro job list --description="my favourite job"
     neuro job list --status=all
-    neuro job list --status=pending,running --quiet
+    neuro job list -s pending -s running -q
     """
 
     status = status or ["running", "pending"]
@@ -303,7 +303,7 @@ async def list(ctx: Context, status: List[str], description: str, quiet: bool) -
 
 
 @job.command()
-@click.argument('id')
+@click.argument("id")
 @click.pass_obj
 @run_async
 async def status(ctx: Context, id: str) -> None:

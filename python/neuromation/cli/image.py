@@ -1,11 +1,13 @@
+import sys
+
 import click
-from .utils import run_async, Context
+from yarl import URL
 
 from neuromation.clientv2 import Image
-from yarl import URL
+
 from . import rc
 from .command_spinner import SpinnerBase
-import sys
+from .utils import Context, run_async
 
 
 @click.group()
@@ -16,8 +18,8 @@ def image():
 
 
 @image.command()
-@click.argument('image_name')
-@click.argument('remote_image_name', required=False)
+@click.argument("image_name")
+@click.argument("remote_image_name", required=False)
 @click.pass_obj
 @run_async
 async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
@@ -44,9 +46,7 @@ async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
     if remote_image_name:
         remote_image = Image.from_url(URL(remote_image_name), username)
 
-    spinner = SpinnerBase.create_spinner(
-        sys.stdout.isatty(), "Pushing image {}  "
-    )
+    spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pushing image {}  ")
 
     async with ctx.make_client() as client:
         result_remote_image = await client.images.push(
@@ -56,8 +56,8 @@ async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
 
 
 @image.command()
-@click.argument('image_name')
-@click.argument('local_image_name', required=False)
+@click.argument("image_name")
+@click.argument("local_image_name", required=False)
 @click.pass_obj
 @run_async
 async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
@@ -72,7 +72,7 @@ async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
     \b
         neuro image pull image:myimage
         neuro image pull image://myfriend/alpine:shared
-        neuro image pull image://{username}/my-alpine:production alpine:from-registry
+        neuro image pull image://username/my-alpine:production alpine:from-registry
 
     """
 
@@ -83,9 +83,7 @@ async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
     if local_image_name:
         local_image = Image.from_local(local_image_name, username)
 
-    spinner = SpinnerBase.create_spinner(
-        sys.stdout.isatty(), "Pulling image {}  "
-    )
+    spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pulling image {}  ")
 
     async with ctx.make_client() as client:
         result_local_image = await client.images.pull(
