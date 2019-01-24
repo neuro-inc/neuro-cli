@@ -30,7 +30,12 @@ async def generate_image(docker: aiodocker.Docker, secret: str) -> str:
     image_archive = Path(__file__).parent / "assets/echo-secret.tar"
     # TODO use random image name here
     tag = f"{TEST_IMAGE_NAME}:{secret}"
-    await docker.images.build(fileobj=image_archive.open(mode='r+b'), tag=tag, buildargs={"SECRET": secret}, encoding='identity')
+    await docker.images.build(
+        fileobj=image_archive.open(mode="r+b"),
+        tag=tag,
+        buildargs={"SECRET": secret},
+        encoding="identity",
+    )
 
     return tag
 
