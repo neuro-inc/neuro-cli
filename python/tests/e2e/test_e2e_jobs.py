@@ -504,14 +504,14 @@ def test_e2e_ssh_exec_tty(run):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_nojob(run):
+def test_e2e_ssh_exec_no_job(run):
     with pytest.raises(SystemExit) as cm:
         run(["job", "exec", "--no-key-check", "job_id", "true"])
     assert cm.value.code == 127
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_dead_jov(run):
+def test_e2e_ssh_exec_dead_job(run):
     command = "true"
     captured = run(
         ["job", "submit", "-m", "20M", "-c", "0.1", UBUNTU_IMAGE_NAME, command]
