@@ -3,10 +3,15 @@ from enum import Enum
 from typing import Any, Dict
 
 from aiohttp.web import HTTPCreated
+from jose import jwt
 from yarl import URL
 
 from . import ClientError
 from .api import API
+
+
+JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
+JWT_IDENTITY_CLAIM_OPTIONS = ("identity", JWT_IDENTITY_CLAIM)
 
 
 class Action(str, Enum):
@@ -54,3 +59,11 @@ class Users:
             if resp.status != HTTPCreated.status_code:
                 raise ClientError("Server return unexpected result.")  # NOQA
         return None
+
+
+def get_token_username(token: str) -> str:
+    claims = jwt.get_unverified_claims(token)
+    for identity_claim in JWT_IDENTITY_CLAIM_OPTIONS:
+        if identity_claim in claims:
+            return claims[identity_claim]
+    raise ValueError("Missing identity claim.")
