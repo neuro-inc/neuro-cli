@@ -21,22 +21,18 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 
 @pytest.mark.e2e
-def test_job_complete_lifecycle(run, loop, tmpstorage, check_create_dir_on_storage):
-    # Create directory for the test, going to be model and result output
-    check_create_dir_on_storage("model")
-    check_create_dir_on_storage("result")
-
-    # remember original set or running jobs
+def test_job_lifecycle(run):
+    # Remember original running jobs
     captured = run(["job", "list", "--status", "running,pending"])
-    store_out_list = captured.out.strip().split("\n")[1:]  # cut out the header line
+    store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
-    # Start the jobs
-    command_first = 'bash -c "sleep 1m; false"'
+    # Run a new job
+    command = 'bash -c "sleep 10m; false"'
     captured = run(
         [
-            "model",
-            "train",
+            "job",
+            "submit",
             "-m",
             "20M",
             "-c",
@@ -46,110 +42,185 @@ def test_job_complete_lifecycle(run, loop, tmpstorage, check_create_dir_on_stora
             "--http",
             "80",
             UBUNTU_IMAGE_NAME,
-            tmpstorage + "model",
-            tmpstorage + "result",
-            command_first,
+            command,
         ]
     )
-    job_id_first = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    assert job_id_first.startswith("job-")
-    assert job_id_first not in jobs_orig
+    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
 
-    command_second = 'bash -c "sleep 2m; false"'
+    # Check it was not running before
+    assert job_id.startswith("job-")
+    assert job_id not in jobs_orig
+
+    # Check it is in a running,pending job list now
+    captured = run(["job", "list", "--status", "running,pending"])
+    store_out_list = captured.out.strip().split("\n")[1:]
+    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    assert job_id in jobs_updated
+
+    # Wait until the job is running
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    # Check that it is in a running job list
+    captured = run(["job", "list", "--status", "running"])
+    store_out = captured.out.strip()
+    assert job_id in store_out
+    # Check that the command is in the list
+    assert command in store_out
+
+    # Check that no command is in the list if quite
+    captured = run(["job", "list", "--status", "running", "-q"])
+    store_out = captured.out.strip()
+    assert job_id in store_out
+    assert command not in store_out
+
+    # Kill the job
+    captured = run(["job", "kill", job_id])
+
+    # Check that the job we killed ends up as succeeded
+    wait_job_change_state_to(run, job_id, Status.SUCCEEDED)
+
+    # Check that it is not in a running job list anymore
+    captured = run(["job", "list", "--status", "running"])
+    store_out = captured.out.strip()
+    assert job_id not in store_out
+
+
+@pytest.mark.e2e
+def test_unschedulable_job_lifecycle(run):
+    # Remember original running jobs
+    captured = run(["job", "list", "--status", "running,pending"])
+    store_out_list = captured.out.strip().split("\n")[1:]
+    jobs_orig = [x.split("\t")[0] for x in store_out_list]
+
+    # Run a new job
+    command = 'bash -c "sleep 10m; false"'
     captured = run(
         [
             "job",
             "submit",
-            "--cpu",
+            "-m",
+            "20000000M",
+            "-c",
             "0.1",
-            "--memory",
-            "20M",
-            "--gpu",
+            "-g",
             "0",
             "--http",
             "80",
-            "--quiet",
             UBUNTU_IMAGE_NAME,
-            "--volume",
-            f"{tmpstorage}model:/model:ro",
-            "--volume",
-            f"{tmpstorage}result:/result:rw",
-            command_second,
+            command,
         ]
     )
-    job_id_second = captured.out.strip()
-    assert job_id_second.startswith("job-")
-    assert job_id_second not in jobs_orig
+    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+
+    # Check it was not running before
+    assert job_id.startswith("job-")
+    assert job_id not in jobs_orig
+
+    # Check it is in a running,pending job list now
+    captured = run(["job", "list", "--status", "running,pending"])
+    store_out_list = captured.out.strip().split("\n")[1:]
+    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    assert job_id in jobs_updated
+
+    # Kill the job
+    captured = run(["job", "kill", job_id])
+
+    # Check that the job we killed ends up as succeeded
+    wait_job_change_state_to(run, job_id, Status.SUCCEEDED)
+
+    # Check that it is not in a running job list anymore
+    captured = run(["job", "list", "--status", "running"])
+    store_out = captured.out.strip()
+    assert job_id not in store_out
+
+
+@pytest.mark.e2e
+def test_two_jobs_at_once(run):
+    # Remember original running jobs
+    captured = run(["job", "list", "--status", "running,pending"])
+    store_out_list = captured.out.strip().split("\n")[1:]
+    jobs_orig = [x.split("\t")[0] for x in store_out_list]
+
+    # Run a new job
+    command = 'bash -c "sleep 10m; false"'
+    captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "--http",
+            "80",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    first_job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
 
     captured = run(
         [
             "job",
             "submit",
-            UBUNTU_IMAGE_NAME,
-            "--memory",
-            "2000000000000M",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
             "-g",
             "0",
-            "-q",
-            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
         ]
     )
-    job_id_third = captured.out.strip()
-    assert job_id_third.startswith("job-")
+    second_job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
 
-    # wait jobs for becoming running
-    wait_job_change_state_from(run, job_id_first, Status.PENDING, Status.NOT_ENOUGH)
-    wait_job_change_state_from(run, job_id_second, Status.PENDING, Status.NOT_ENOUGH)
-    with pytest.raises(Exception) as e:
-        wait_job_change_state_from(run, job_id_third, Status.PENDING, Status.NOT_ENOUGH)
-        assert Status.NOT_ENOUGH in str(e), str(e)
+    # Check it was not running before
+    assert first_job_id.startswith("job-")
+    assert first_job_id not in jobs_orig
+    assert second_job_id.startswith("job-")
+    assert second_job_id not in jobs_orig
 
-    wait_job_change_state_to(run, job_id_first, Status.RUNNING)
-    wait_job_change_state_to(run, job_id_second, Status.RUNNING)
+    # Check it is in a running,pending job list now
+    captured = run(["job", "list", "--status", "running,pending"])
+    store_out_list = captured.out.strip().split("\n")[1:]
+    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    assert first_job_id in jobs_updated
+    assert second_job_id in jobs_updated
 
-    # check running via job list
+    # Wait until the job is running
+    wait_job_change_state_to(run, first_job_id, Status.RUNNING)
+    wait_job_change_state_to(run, second_job_id, Status.RUNNING)
+
+    # Check that it is in a running job list
     captured = run(["job", "list", "--status", "running"])
     store_out = captured.out.strip()
-    assert command_first in store_out
-    assert command_second in store_out
-    jobs_before_killing = [x.split("\t")[0] for x in store_out.split("\n")]
-    assert job_id_first in jobs_before_killing
-    assert job_id_second in jobs_before_killing
+    assert first_job_id in store_out
+    assert second_job_id in store_out
+    # Check that the command is in the list
+    assert command in store_out
 
-    # do the same with job list -q
+    # Check that no command is in the list if quite
     captured = run(["job", "list", "--status", "running", "-q"])
-    jobs_before_killing_q = [x.strip() for x in captured.out.strip().split("\n")]
-    assert job_id_first in jobs_before_killing_q
-    assert job_id_second in jobs_before_killing_q
+    store_out = captured.out.strip()
+    assert first_job_id in store_out
+    assert second_job_id in store_out
+    assert command not in store_out
 
-    # kill multiple jobs
-    captured = run(["job", "kill", job_id_first, job_id_second, job_id_third])
-    kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
-    assert kill_output_list == [job_id_first, job_id_second, job_id_third]
+    # Kill the job
+    captured = run(["job", "kill", first_job_id, second_job_id])
 
-    # TODO (A Yushkovskiy, 6.12.2018): when the flaky tests in try-catch block below
-    # are fixed, we don't need to wait 'wait_for_job_to_change_state_from',
-    # so leave here only 'wait_for_job_to_change_state_to'
+    # Check that the job we killed ends up as succeeded
+    wait_job_change_state_to(run, first_job_id, Status.SUCCEEDED)
+    wait_job_change_state_to(run, second_job_id, Status.SUCCEEDED)
 
-    wait_job_change_state_from(run, job_id_first, Status.RUNNING, Status.FAILED)
-    wait_job_change_state_from(run, job_id_second, Status.RUNNING, Status.FAILED)
-    wait_job_change_state_from(run, job_id_third, Status.RUNNING, Status.FAILED)
-
-    wait_job_change_state_to(run, job_id_first, Status.SUCCEEDED, Status.FAILED)
-    wait_job_change_state_to(run, job_id_second, Status.SUCCEEDED, Status.FAILED)
-    wait_job_change_state_to(run, job_id_third, Status.SUCCEEDED, Status.FAILED)
-
-    # check killed running,pending
-    captured = run(["job", "list", "--status", "running,pending", "-q"])
-    jobs_after_kill_q = [x.strip() for x in captured.out.strip().split("\n")]
-    assert job_id_first not in jobs_after_kill_q
-    assert job_id_second not in jobs_after_kill_q
-    assert job_id_third not in jobs_after_kill_q
-
-    # try to kill already killed: same output
-    captured = run(["job", "kill", job_id_first])
-    kill_output_list = [x.strip() for x in captured.out.strip().split("\n")]
-    assert kill_output_list == [job_id_first]
+    # Check that it is not in a running job list anymore
+    captured = run(["job", "list", "--status", "running"])
+    store_out = captured.out.strip()
+    assert first_job_id not in store_out
+    assert first_job_id not in store_out
 
 
 @pytest.mark.e2e
