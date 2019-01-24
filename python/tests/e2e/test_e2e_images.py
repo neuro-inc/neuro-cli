@@ -26,23 +26,18 @@ def secret():
     return str(uuid())
 
 
-async def generate_image(docker: aiodocker.Docker, secret: str, aiohttp_server) -> str:
-    assets_path = Path(__file__).parent / "assets"
-    app = web.Application()
-    app.router.add_static("/", assets_path)
-    srv = await aiohttp_server(app)
-    url = srv.make_url("/SimpleEcho.Dockerfile")
-
+async def generate_image(docker: aiodocker.Docker, secret: str) -> str:
+    image_archive = Path(__file__).parent / "assets/echo-secret.tar"
     # TODO use random image name here
     tag = f"{TEST_IMAGE_NAME}:{secret}"
-    await docker.images.build(remote=url, tag=tag, buildargs={"SECRET": secret})
+    await docker.images.build(fileobj=image_archive.open(mode='r+b'), tag=tag, buildargs={"SECRET": secret}, encoding='identity')
 
     return tag
 
 
 @pytest.fixture()
-def image(loop, docker, secret, aiohttp_server):
-    image = loop.run_until_complete(generate_image(docker, secret, aiohttp_server))
+def image(loop, docker, secret):
+    image = loop.run_until_complete(generate_image(docker, secret))
     yield image
     loop.run_until_complete(docker.images.delete(image, force=True))
 
