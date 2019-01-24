@@ -68,7 +68,7 @@ class Images:
 
     async def close(self) -> None:  # pragma: no cover
         try:
-            if self._docker_client:
+            if self._docker_client:  # pragma: no branch
                 docker = self._docker_client
                 for image in self._temporary_images:
                     await docker.images.delete(image)
@@ -80,7 +80,7 @@ class Images:
             await self._registry_transport.close()
 
     def _docker(self) -> aiodocker.Docker:
-        if not self._docker_client:
+        if not self._docker_client:  # pragma: no branch
             try:
                 self._docker_client = aiodocker.Docker()
             except ValueError as error:
