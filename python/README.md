@@ -23,6 +23,7 @@
 	* [neuro image](#neuro-image)
 		* [neuro image push](#neuro-image-push)
 		* [neuro image pull](#neuro-image-pull)
+		* [neuro image ls](#neuro-image-ls)
 	* [neuro config](#neuro-config)
 		* [neuro config url](#neuro-config-url)
 		* [neuro config auth](#neuro-config-auth)
@@ -478,6 +479,8 @@ neuro image COMMAND
 
 * _[pull](#neuro-image-pull)_: Pull docker image from cloud registry to local machine.
 
+* _[ls](#neuro-image-ls)_: List available user's images.
+
 
 
 ### neuro image push
@@ -516,6 +519,18 @@ neuro image pull IMAGE_NAME [LOCAL_IMAGE_NAME]
 neuro image pull image:myimage
 neuro image pull image://myfriend/alpine:shared
 neuro image pull image://username/my-alpine:production alpine:from-registry
+```
+
+
+
+### neuro image ls
+
+List user's images which are available for jobs.<br/>You will see here own and shared with you images
+
+**Usage:**
+
+```bash
+neuro image ls
 ```
 
 

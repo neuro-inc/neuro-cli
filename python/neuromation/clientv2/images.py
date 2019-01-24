@@ -1,8 +1,10 @@
 import re
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import Dict, List
 
 import aiodocker
+import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
@@ -10,6 +12,7 @@ from neuromation.clientv2 import AuthorizationError
 
 from .abc import AbstractSpinner
 from .api import API
+from .registry import Registry
 
 
 STATUS_FORBIDDEN = 403
@@ -56,43 +59,38 @@ class Image:
 
 
 class Images:
-    def __init__(self, api: API, url: URL, token: str) -> None:
+    def __init__(self, api: API, url: URL, token: str, username: str) -> None:
         self._api = api
         self._url = url
         self._token = token
+        self._username = username
         self._temporary_images: List[str] = list()
-        self._docker_client = None
-
-    async def close(self) -> None:  # pragma: no cover
         try:
-            if self._docker_client:
-                docker = self._docker_client
-                for image in self._temporary_images:
-                    await docker.images.delete(image)
-                await docker.close()
-        except BaseException:
-            # Just ignore any error
-            pass
+            self._docker = aiodocker.Docker()
+        except ValueError as error:
+            if re.match(
+                r".*Either DOCKER_HOST or local sockets are not available.*", f"{error}"
+            ):
+                raise DockerError(
+                    STATUS_CUSTOM_ERROR,
+                    {
+                        "message": "Docker engine is not available. "
+                        "Please specify DOCKER_HOST variable "
+                        "if you are using remote docker engine"
+                    },
+                )
+            raise
+        registry_url = self._url.with_host(
+            str(self._url.host).replace("platform.", "registry.")
+        ).with_path("/v2/")
+        self._registry = Registry(registry_url, self._token, self._username)
 
-    def _docker(self) -> aiodocker.Docker:
-        if not self._docker_client:
-            try:
-                self._docker_client = aiodocker.Docker()
-            except ValueError as error:
-                if re.match(
-                    r".*Either DOCKER_HOST or local sockets are not available.*",
-                    f"{error}",
-                ):
-                    raise DockerError(
-                        STATUS_CUSTOM_ERROR,
-                        {
-                            "message": "Docker engine is not available. "
-                            "Please specify DOCKER_HOST variable "
-                            "if you are using remote docker engine"
-                        },
-                    )
-                raise
-        return self._docker_client
+    async def close(self) -> None:
+        for image in self._temporary_images:
+            with suppress(DockerError, aiohttp.ClientError):
+                await self._docker.images.delete(image)
+        await self._docker.close()
+        await self._registry.close()
 
     def _auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._token}
@@ -105,10 +103,9 @@ class Images:
         self, local_image: Image, remote_image: Image, spinner: AbstractSpinner
     ) -> Image:
         repo = self._repo(local_image)
-        docker = self._docker()
         spinner.start("Pushing image ...")
         try:
-            await docker.images.tag(local_image.local, repo)
+            await self._docker.images.tag(local_image.local, repo)
         except DockerError as error:
             spinner.complete()
             if error.status == STATUS_NOT_FOUND:
@@ -118,7 +115,9 @@ class Images:
                 ) from error
         spinner.tick()
         try:
-            stream = await docker.images.push(repo, auth=self._auth(), stream=True)
+            stream = await self._docker.images.push(
+                repo, auth=self._auth(), stream=True
+            )
             spinner.tick()
         except DockerError as error:
             spinner.complete()
@@ -138,11 +137,12 @@ class Images:
     async def pull(
         self, remote_image: Image, local_image: Image, spinner: AbstractSpinner
     ) -> Image:
-        repo = self._repo(local_image)
-        docker = self._docker()
+        repo = self._repo(remote_image)
         spinner.start("Pulling image ...")
         try:
-            stream = await docker.pull(repo, auth=self._auth(), repo=repo, stream=True)
+            stream = await self._docker.pull(
+                repo, auth=self._auth(), repo=repo, stream=True
+            )
             self._temporary_images.append(repo)
         except DockerError as error:
             spinner.complete()
@@ -164,7 +164,12 @@ class Images:
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         spinner.tick()
 
-        await docker.images.tag(repo, local_image.local)
+        await self._docker.images.tag(repo, local_image.local)
         spinner.complete()
 
         return local_image
+
+    async def ls(self) -> List[URL]:
+        async with self._registry.request("GET", URL("_catalog")) as resp:
+            ret = await resp.json()
+            return [URL(name) for name in ret["repositories"]]

@@ -69,18 +69,22 @@ class ClientV2:
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
+        self._url = url
+        assert token
         jwt_data = jwt.get_unverified_claims(token)
+        self._token = token
         self._username = jwt_data.get("identity", None)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)
         self._storage = Storage(self._api, self._username)
         self._users = Users(self._api)
-        self._images = Images(self._api, url, token)
+        self._images: Optional[Images] = None
 
     async def close(self) -> None:
         await self._api.close()
-        await self._images.close()
+        if self._images is not None:
+            await self._images.close()
 
     async def __aenter__(self) -> "ClientV2":
         return self
@@ -115,4 +119,6 @@ class ClientV2:
 
     @property
     def images(self) -> Images:
+        if self._images is None:
+            self._images = Images(self._api, self._url, self._token, self._username)
         return self._images

@@ -41,8 +41,10 @@ class API:
 
     def __init__(self, url: URL, token: str, timeout: aiohttp.ClientTimeout) -> None:
         self._url = url
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
-        self._session = aiohttp.ClientSession(timeout=timeout, headers=headers)
+        self._token = token
+        self._session = aiohttp.ClientSession(
+            timeout=timeout, headers=self._auth_headers()
+        )
         self._exception_map = {
             403: AuthorizationError,
             401: AuthenticationError,
@@ -53,6 +55,10 @@ class API:
 
     async def close(self) -> None:
         await self._session.close()
+
+    def _auth_headers(self) -> Dict[str, str]:
+        headers = {"Authorization": f"Bearer {self._token}"} if self._token else {}
+        return headers
 
     @asynccontextmanager
     async def request(
