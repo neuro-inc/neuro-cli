@@ -97,7 +97,7 @@ async def train(
     preemptible: bool,
     description: str,
     quiet: bool,
-)->None:
+) -> None:
     """
     Start training job using model.
 
@@ -164,7 +164,7 @@ async def train(
     show_default=True,
 )
 @run_async
-async def debug(ctx: Context, id: str, localport: int)->None:
+async def debug(ctx: Context, id: str, localport: int) -> None:
     """
     Starts ssh terminal connected to running job.
 

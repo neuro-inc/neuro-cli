@@ -1,6 +1,5 @@
 import logging
 import os
-import shlex
 import sys
 from pathlib import Path
 
@@ -11,29 +10,22 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 from yarl import URL
 
 import neuromation
-from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config, RCException
 from neuromation.clientv2 import (
     Action,
     ClientV2,
-    Image,
-    NetworkPortForwarding,
     Permission,
-    Resources,
-    Volume,
 )
 from neuromation.logging import ConsoleWarningFormatter
-from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
 from .command_spinner import SpinnerBase
 from .commands import command
 from .config import config
 from .defaults import DEFAULTS
-from .formatter import JobListFormatter
 from .model import model
-from .ssh_utils import connect_ssh
 from .storage import storage
+from .job import job
 from .utils import Context, DeprecatedGroup, load_token
 
 
@@ -357,6 +349,7 @@ cli.add_command(config)
 cli.add_command(storage)
 cli.add_command(DeprecatedGroup(storage, name="store"))
 cli.add_command(model)
+cli.add_command(job)
 
 
 def main():

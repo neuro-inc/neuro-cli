@@ -1,19 +1,23 @@
-import shlex
 import logging
 import os
+import shlex
+import sys
 from typing import List
 
+import aiohttp
 import click
+
 from neuromation.clientv2 import Image, NetworkPortForwarding, Resources, Volume
+from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
-from .default import DEFAULTS, GPU_MODELS
-from .utils import Context
-from neuromation.strings.parse import to_megabytes_str
-from .formatter import OutputFormatter
+from .defaults import DEFAULTS, GPU_MODELS
+from .formatter import JobListFormatter, OutputFormatter, JobStatusFormatter
+from .ssh_utils import connect_ssh
+from .utils import Context, run_async
+
 
 log = logging.getLogger(__name__)
-import sys
 
 
 @click.group()
@@ -178,16 +182,26 @@ async def submit(
 
 
 @job.command()
-async def exec(id: str, tty: bool, no_key_check: bool, cmd: List[str])-> None:
+@click.argument("image")
+@click.argument("cmd", nargs=-1)
+@click.option(
+    "-t",
+    "--tty",
+    is_flag=True,
+    help="Allocate virtual tty. Useful for interactive jobs.",
+)
+@click.option(
+    "--no-key-check",
+    is_flag=True,
+    help="Disable host key checks. Should be used with caution.",
+)
+@click.pass_obj
+@run_async
+async def exec(
+    ctx: Context, id: str, tty: bool, no_key_check: bool, cmd: List[str]
+) -> None:
     """
-    Usage:
-        neuro job exec [options] ID CMD...
-
     Executes command in a running job.
-
-    Options:
-        -t, --tty         Allocate virtual tty. Useful for interactive jobs.
-        --no-key-check    Disable host key checks. Should be used with caution.
     """
     cmd = shlex.split(" ".join(cmd))
     async with ctx.make_client() as client:
@@ -195,31 +209,39 @@ async def exec(id: str, tty: bool, no_key_check: bool, cmd: List[str])-> None:
     sys.exit(retcode)
 
 
-@command
-async def ssh(id, user, key):
+@job.command()
+@click.argument("id")
+@click.option(
+    "--user",
+    help="Container user name",
+    default=DEFAULTS["job_ssh_user"],
+    show_default=True,
+)
+@click.option("--key", help="Path to container private key.")
+@click.pass_obj
+@run_async
+async def ssh(ctx: Context, id: str, user: str, key: str) -> None:
     """
-    Usage:
-        neuro job ssh [options] ID
-
     Starts ssh terminal connected to running job.
     Job should be started with SSH support enabled.
 
-    Options:
-        --user STRING         Container user name [default: {job_ssh_user}]
-        --key STRING          Path to container private key.
-
     Examples:
+
+    \b
     neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
     """
-    config: Config = rc.ConfigFactory.load()
+    config = rc.ConfigFactory.load()
     git_key = config.github_rsa_path
 
-    async with ClientV2(url, token) as client:
+    async with ctx.make_client() as client:
         await connect_ssh(client, id, git_key, user, key)
 
 
-@command
-async def monitor(id):
+@job.command()
+@click.argument("id")
+@click.pass_obj
+@run_async
+async def monitor(ctx: Context, id: str) -> None:
     """
     Usage:
         neuro job monitor ID
@@ -230,73 +252,80 @@ async def monitor(id):
         total=None, connect=None, sock_read=None, sock_connect=30
     )
 
-    async with ClientV2(url, token, timeout=timeout) as client:
+    async with ctx.make_client(timeout=timeout) as client:
         async for chunk in client.jobs.monitor(id):
             if not chunk:
                 break
-            sys.stdout.write(chunk.decode(errors="ignore"))
+            click.echo(chunk.decode(errors="ignore"), nl=False)
 
 
-@command
-async def list(status, description, quiet):
+@job.command()
+@click.option(
+    "-s",
+    "--status",
+    multiple=True,
+    type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
+    help="Filter out job by status(es)",
+)
+@click.option(
+    "-d",
+    "--description",
+    metavar="DESCRIPTION",
+    help="Filter out job by job description (exact match)",
+)
+@click.option("-q", "--quiet", is_flag=True)
+@click.pass_obj
+@run_async
+async def list(ctx: Context, status: List[str], description: str, quiet: bool) -> None:
     """
-    Usage:
-        neuro job list [options]
-
-    Options:
-      -s, --status (pending|running|succeeded|failed|all)
-          Filter out job by status(es) (comma delimited if multiple)
-      -d, --description DESCRIPTION
-          Filter out job by job description (exact match)
-      -q, --quiet
-          Run command in quiet mode (print only job ids)
-
-    List all jobs
+    List all jobs.
 
     Examples:
+
+    \b
     neuro job list --description="my favourite job"
     neuro job list --status=all
     neuro job list --status=pending,running --quiet
     """
 
-    status = status or "running,pending"
+    status = status or ["running", "pending"]
 
     # TODO: add validation of status values
-    statuses = set(status.split(","))
+    statuses = set(status)
     if "all" in statuses:
         statuses = set()
 
-    async with ClientV2(url, token) as client:
+    async with ctx.make_client() as client:
         jobs = await client.jobs.list()
 
     formatter = JobListFormatter(quiet=quiet)
-    return formatter.format_jobs(jobs, statuses, description)
+    click.echo(formatter.format_jobs(jobs, statuses, description))
 
 
-@command
-async def status(id):
+@job.command()
+@click.argument('id')
+@click.pass_obj
+@run_async
+async def status(ctx: Context, id: str) -> None:
     """
-    Usage:
-        neuro job status ID
-
     Display status of a job
     """
-    async with ClientV2(url, token) as client:
+    async with ctx.make_client() as client:
         res = await client.jobs.status(id)
-        return JobStatusFormatter.format_job_status(res)
+        click.echo(JobStatusFormatter.format_job_status(res))
 
 
-@command
-async def kill(job_ids):
+@job.command()
+@click.argument("id", nargs=-1, required=True)
+@click.pass_obj
+@run_async
+async def kill(ctx: Context, id: List[str]):
     """
-    Usage:
-        neuro job kill JOB_IDS...
-
     Kill job(s)
     """
     errors = []
-    async with ClientV2(url, token) as client:
-        for job in job_ids:
+    async with ctx.make_client() as client:
+        for job in id:
             try:
                 await client.jobs.kill(job)
                 print(job)
@@ -307,4 +336,4 @@ async def kill(job_ids):
         return f"Cannot kill job {job}: {reason}"
 
     for job, error in errors:
-        print(format_fail(job, error))
+        click.echo(format_fail(job, error))
