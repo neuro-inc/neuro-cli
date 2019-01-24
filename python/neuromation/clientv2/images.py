@@ -3,8 +3,8 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import Dict, List
 
-import aiohttp
 import aiodocker
+import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
