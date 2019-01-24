@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List
 
 import click
 from yarl import URL
@@ -9,7 +9,7 @@ from neuromation.clientv2 import Image, NetworkPortForwarding, Resources
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
-from .defaults import DEFAULTS
+from .defaults import DEFAULTS, GPU_MODELS
 from .formatter import OutputFormatter
 from .ssh_utils import remote_debug
 from .utils import Context, run_async
@@ -42,7 +42,7 @@ def model() -> None:
 @click.option(
     "--gpu-model",
     metavar="MODEL",
-    type=click.Choice(["nvidia-tesla-k80", "nvidia-tesla-p4", "nvidia-tesla-v100"]),
+    type=click.Choice(GPU_MODELS),
     help="GPU to use",
     default=DEFAULTS["model_train_gpu_model"],
     show_default=True,
@@ -93,11 +93,11 @@ async def train(
     extshm: bool,
     http: int,
     ssh: int,
-    cmd: Optional[List[str]],
+    cmd: List[str],
     preemptible: bool,
     description: str,
     quiet: bool,
-):
+)->None:
     """
     Start training job using model.
 
@@ -150,7 +150,7 @@ async def train(
         )
         job = await client.jobs.status(res.id)
 
-    return OutputFormatter.format_job(job, quiet)
+    click.echo(OutputFormatter.format_job(job, quiet))
 
 
 @model.command()
@@ -164,7 +164,7 @@ async def train(
     show_default=True,
 )
 @run_async
-async def debug(ctx: Context, id: str, localport: int):
+async def debug(ctx: Context, id: str, localport: int)->None:
     """
     Starts ssh terminal connected to running job.
 

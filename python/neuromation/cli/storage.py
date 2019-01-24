@@ -58,7 +58,7 @@ async def ls(ctx: Context, path: str) -> None:
     async with ctx.make_client() as client:
         res = await client.storage.ls(uri)
 
-    return StorageLsFormatter().format_ls(res)
+    click.echo(StorageLsFormatter().format_ls(res))
 
 
 @storage.command()
