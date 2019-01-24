@@ -10,7 +10,6 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 from yarl import URL
 
 import neuromation
-from neuromation.cli.command_handlers import PlatformStorageOperation
 from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
 from neuromation.cli.rc import Config, RCException
 from neuromation.clientv2 import (
@@ -31,7 +30,8 @@ from .commands import command, dispatch
 from .config import config
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter
-from .ssh_utils import connect_ssh, remote_debug
+from .model import model
+from .ssh_utils import connect_ssh
 from .storage import storage
 from .utils import Context, DeprecatedGroup, load_token
 
@@ -586,6 +586,7 @@ def help():
 cli.add_command(config)
 cli.add_command(storage)
 cli.add_command(DeprecatedGroup(storage, name="store"))
+cli.add_command(model)
 
 
 def main():
@@ -656,96 +657,3 @@ def main():
     except Exception as e:
         LOG_ERROR(f"{e}")
         sys.exit(1)
-
-
-def xmain():
-    is_verbose = "--verbose" in sys.argv
-    if is_verbose:
-        sys.argv.remove("--verbose")
-
-    is_show_traceback = "--show-traceback" in sys.argv
-    if is_show_traceback:
-        sys.argv.remove("--show-traceback")
-        log_error = log.exception
-    else:
-        log_error = log.error
-
-    setup_logging()
-    setup_console_handler(console_handler, verbose=is_verbose)
-
-    if any(version_key in sys.argv for version_key in ["-v", "--version"]):
-        print(f"Neuromation Platform Client {neuromation.__version__}")
-        return
-
-    config = rc.ConfigFactory.load()
-    format_spec = DEFAULTS.copy()
-    platform_username = config.get_platform_user_name()
-    if platform_username:
-        format_spec["username"] = platform_username
-    if config.url:
-        format_spec["api_url"] = config.url
-
-    try:
-        res = dispatch(
-            target=neuro, tail=sys.argv[1:], format_spec=format_spec, token=config.auth
-        )
-        if res:
-            print(res)
-
-    except neuromation.clientv2.IllegalArgumentError as error:
-        log_error(f"Illegal argument(s) ({error})")
-        sys.exit(os.EX_DATAERR)
-
-    except neuromation.clientv2.ResourceNotFound as error:
-        log_error(f"{error}")
-        sys.exit(os.EX_OSFILE)
-
-    except neuromation.clientv2.AuthenticationError as error:
-        log_error(f"Cannot authenticate ({error})")
-        sys.exit(os.EX_NOPERM)
-    except neuromation.clientv2.AuthorizationError as error:
-        log_error(f"You haven`t enough permission ({error})")
-        sys.exit(os.EX_NOPERM)
-
-    except neuromation.clientv2.ClientError as error:
-        log_error(f"Application error ({error})")
-        sys.exit(os.EX_SOFTWARE)
-
-    except RCException as error:
-        log_error(f"{error}")
-        sys.exit(os.EX_SOFTWARE)
-
-    except aiohttp.ClientError as error:
-        log_error(f"Connection error ({error})")
-        sys.exit(os.EX_IOERR)
-
-    except DockerError as error:
-        log.error(f"Docker API error: {error.message}")
-        sys.exit(os.EX_PROTOCOL)
-
-    except NotImplementedError as error:
-        log_error(f"{error}")
-        sys.exit(os.EX_SOFTWARE)
-    except FileNotFoundError as error:
-        log_error(f"File not found ({error})")
-        sys.exit(os.EX_OSFILE)
-    except NotADirectoryError as error:
-        log_error(f"{error}")
-        sys.exit(os.EX_OSFILE)
-    except PermissionError as error:
-        log_error(f"Cannot access file ({error})")
-        sys.exit(os.EX_NOPERM)
-    except OSError as error:
-        log_error(f"I/O Error ({error})")
-        raise error
-
-    except KeyboardInterrupt:
-        log_error("Aborting.")
-        sys.exit(130)
-    except ValueError as e:
-        print(e)
-        sys.exit(127)
-
-    except Exception as e:
-        log_error(f"{e}")
-        raise e
