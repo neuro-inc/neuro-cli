@@ -21,10 +21,8 @@ class Registry(API):
         super().__init__(url, token, TIMEOUT)
 
     def _auth_headers(self) -> Dict[str, str]:
-        if self._token:  # pragma: no branch
-            assert self._username
-            basic = base64.b64encode(
-                f"{self._username}:{self._token}".encode("ascii")
-            ).decode("ascii")
-            return {"Authorization": f"Basic {basic}"}
-        return {}  # pragma: no cover
+        assert self._username
+        basic = base64.b64encode(
+            f"{self._username}:{self._token}".encode("ascii")
+        ).decode("ascii")
+        return {"Authorization": f"Basic {basic}"}
