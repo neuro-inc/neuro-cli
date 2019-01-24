@@ -21,18 +21,18 @@ def docker(loop):
 
 
 @pytest.fixture()
-def secret():
+def tag():
     return str(uuid())
 
 
-async def generate_image(docker: aiodocker.Docker, secret: str) -> str:
-    image_archive = Path(__file__).parent / "assets/echo-secret.tar"
+async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
+    image_archive = Path(__file__).parent / "assets/echo-tag.tar"
     # TODO use random image name here
-    tag = f"{TEST_IMAGE_NAME}:{secret}"
+    tag = f"{TEST_IMAGE_NAME}:{tag}"
     await docker.images.build(
         fileobj=image_archive.open(mode="r+b"),
         tag=tag,
-        buildargs={"SECRET": secret},
+        buildargs={"TAG": tag},
         encoding="identity",
     )
 
@@ -40,14 +40,14 @@ async def generate_image(docker: aiodocker.Docker, secret: str) -> str:
 
 
 @pytest.fixture()
-def image(loop, docker, secret):
-    image = loop.run_until_complete(generate_image(docker, secret))
+def image(loop, docker, tag):
+    image = loop.run_until_complete(generate_image(docker, tag))
     yield image
     loop.run_until_complete(docker.images.delete(image, force=True))
 
 
 @pytest.mark.e2e
-def test_images_complete_lifecycle(run, image, secret, loop, docker):
+def test_images_complete_lifecycle(run, image, tag, loop, docker):
     # Let`s push image
     captured = run(["image", "push", image])
 
@@ -64,7 +64,7 @@ def test_images_complete_lifecycle(run, image, secret, loop, docker):
     for url in image_urls:
         assert url.scheme == "image"
     image_url_without_tag = image_url.with_path(
-        image_url.path.replace(f":{secret}", "")
+        image_url.path.replace(f":{tag}", "")
     )
     assert image_url_without_tag in image_urls
 
@@ -100,4 +100,4 @@ def test_images_complete_lifecycle(run, image, secret, loop, docker):
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
     captured = run(["job", "monitor", job_id])
     assert not captured.err
-    assert captured.out.strip() == secret
+    assert captured.out.strip() == tag
