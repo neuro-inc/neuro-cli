@@ -45,7 +45,7 @@ class TestAuthCode:
 
     async def test_wait(self) -> None:
         code = AuthCode()
-        code.value = "testcode"
+        code.set_value("testcode")
         value = await code.wait()
         assert value == "testcode"
 
@@ -102,7 +102,7 @@ class TestAuthCodeApp:
                 text = await resp.text()
                 assert text == "OK"
 
-        assert code.value == "testcode"
+        assert await code.wait() == "testcode"
 
     async def assert_code_callback_failure(
         self, code: AuthCode, client: ClientSession, url: URL
@@ -112,8 +112,8 @@ class TestAuthCodeApp:
             text = await resp.text()
             assert text == "The 'code' query parameter is missing."
 
-        with pytest.raises(asyncio.CancelledError):
-            code.value
+        with pytest.raises(AuthException, match="failed to get an authorization code"):
+            await code.wait()
 
     async def test_create_app_server_once(self, client: ClientSession) -> None:
         code = AuthCode()
@@ -252,7 +252,7 @@ async def auth_config(
 class TestTokenClient:
     async def test_request(self, auth_client_id: str, auth_config: AuthConfig) -> None:
         code = AuthCode()
-        code.value = "test_code"
+        code.set_value("test_code")
         code.callback_url = auth_config.callback_urls[0]
 
         async with AuthTokenClient(
@@ -285,7 +285,7 @@ class TestTokenClient:
     ) -> None:
         code = AuthCode()
         code.callback_url = auth_config.callback_urls[0]
-        code.value = "testcode"
+        code.set_value("testcode")
 
         client_id = "test_client_id"
 
@@ -317,7 +317,7 @@ class TestAuthNegotiator:
             config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
         )
         code = await negotiator.get_code()
-        assert code.value == "test_code"
+        assert await code.wait() == "test_code"
         assert code.callback_url == auth_config.callback_urls[0]
 
     async def test_get_token(self, auth_config: AuthConfig) -> None:

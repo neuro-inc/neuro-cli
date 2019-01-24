@@ -62,12 +62,7 @@ class AuthCode:
     def challenge_method(self) -> str:
         return self._challenge_method
 
-    @property
-    def value(self) -> str:
-        return self._future.result()
-
-    @value.setter
-    def value(self, value: str) -> None:
+    def set_value(self, value: str) -> None:
         self._future.set_result(value)
 
     @property
@@ -87,7 +82,7 @@ class AuthCode:
             await asyncio.wait_for(self._future, timeout_s)
         except (asyncio.TimeoutError, asyncio.CancelledError):
             raise AuthException("failed to get an authorization code")
-        return self.value
+        return self._future.result()
 
 
 class AuthCodeCallbackClient(abc.ABC):
@@ -139,7 +134,7 @@ class AuthCodeCallbackHandler:
             self._code.cancel()
             raise HTTPBadRequest(text="The 'code' query parameter is missing.")
 
-        self._code.value = code
+        self._code.set_value(code)
 
         if self._redirect_url:
             raise HTTPFound(self._redirect_url)
@@ -191,7 +186,7 @@ class AuthToken:
     expiration_time: int
     refresh_token: str
 
-    time_factory: Callable[..., float] = time.time
+    time_factory: Callable[[], float] = time.time
 
     @property
     def is_expired(self) -> bool:
@@ -205,7 +200,7 @@ class AuthToken:
         expires_in: int,
         refresh_token: str,
         expiration_ratio: float = 0.75,
-        time_factory: Optional[Callable[..., float]] = None,
+        time_factory: Optional[Callable[[], float]] = None,
     ) -> "AuthToken":
         time_factory = time_factory or cls.time_factory
         expiration_time = int(time_factory()) + int(expires_in * expiration_ratio)
@@ -237,7 +232,7 @@ class AuthTokenClient:
         payload = dict(
             grant_type="authorization_code",
             code_verifier=code.verifier,
-            code=code.value,
+            code=await code.wait(),
             client_id=self._client_id,
             redirect_uri=str(code.callback_url),
         )
