@@ -28,7 +28,7 @@ help:
 	  example: make release VERSION=0.5 \n\
 	- dist-clean: remove files generated during publish \n\
 	- clean: remove generated files \n\
-	- update-deps-fast: update deps only if requirements changed betwwen two points(hook)
+	- update-deps-fast: update deps only if requirements changed betwwen two points(hook)\
 \n\
 	* Modifications and generations: \n\
 	- format: format python code(isort + black) \n\
@@ -192,7 +192,7 @@ docs:
 
 
 .PHONY: lint-docs
-lint-docs: TMP:=$(shell mktemp -t README.XXXXXXXX.md)
+lint-docs: TMP:=$(shell mktemp $${TMPDIR:-/tmp}/README.XXXXXXXX.md)
 lint-docs:
 	build-tools/cli-help-generator.py README.in.md ${TMP}
 	markdown-toc -t github -h 6 ${TMP}
