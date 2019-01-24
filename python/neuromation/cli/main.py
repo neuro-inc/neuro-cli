@@ -808,10 +808,10 @@ alpine:from-registry
             )
 
             async with ClientV2(url, token) as client:
-                result_remote_image = await client.images.pull(
-                    local_image, remote_image, spinner
+                result_local_image = await client.images.pull(
+                    remote_image, local_image, spinner
                 )
-                print(result_remote_image.url)
+                print(result_local_image.local)
 
         @command
         async def ls():

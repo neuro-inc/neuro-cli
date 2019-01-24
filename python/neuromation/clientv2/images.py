@@ -150,7 +150,7 @@ class Images:
     async def pull(
         self, remote_image: Image, local_image: Image, spinner: AbstractSpinner
     ) -> Image:
-        repo = self._repo(local_image)
+        repo = self._repo(remote_image)
         docker = self._docker()
         spinner.start("Pulling image ...")
         try:
