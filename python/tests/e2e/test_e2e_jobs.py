@@ -86,6 +86,75 @@ def test_job_lifecycle(run):
 
 
 @pytest.mark.e2e
+def test_job_description(run):
+    # Remember original running jobs
+    captured = run(["job", "list", "--status", "running,pending"])
+    store_out_list = captured.out.strip().split("\n")[1:]
+    jobs_orig = [x.split("\t")[0] for x in store_out_list]
+    description = "Test description for a job"
+    # Run a new job
+    command = 'bash -c "sleep 10m; false"'
+    captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "--http",
+            "80",
+            "--description",
+            description,
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+
+    # Check it was not running before
+    assert job_id.startswith("job-")
+    assert job_id not in jobs_orig
+
+    # Check it is in a running,pending job list now
+    captured = run(["job", "list", "--status", "running,pending"])
+    store_out_list = captured.out.strip().split("\n")[1:]
+    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    assert job_id in jobs_updated
+
+    # Wait until the job is running
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    # Check that it is in a running job list
+    captured = run(["job", "list", "--status", "running"])
+    store_out = captured.out.strip()
+    assert job_id in store_out
+    # Check that description is in the list
+    assert description in store_out
+    assert command in store_out
+
+    # Check that no description is in the list if quite
+    captured = run(["job", "list", "--status", "running", "-q"])
+    store_out = captured.out.strip()
+    assert job_id in store_out
+    assert description not in store_out
+    assert command not in store_out
+
+    # Kill the job
+    captured = run(["job", "kill", job_id])
+
+    # Check that the job we killed ends up as succeeded
+    wait_job_change_state_to(run, job_id, Status.SUCCEEDED)
+
+    # Check that it is not in a running job list anymore
+    captured = run(["job", "list", "--status", "running"])
+    store_out = captured.out.strip()
+    assert job_id not in store_out
+
+
+@pytest.mark.e2e
 def test_unschedulable_job_lifecycle(run):
     # Remember original running jobs
     captured = run(["job", "list", "--status", "running,pending"])
