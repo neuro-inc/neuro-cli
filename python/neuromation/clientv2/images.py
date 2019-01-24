@@ -57,10 +57,11 @@ class Image:
 
 
 class Images:
-    def __init__(self, api: API, url: URL, token: str) -> None:
+    def __init__(self, api: API, url: URL, token: str, username: str) -> None:
         self._api = api
         self._url = url
         self._token = token
+        self._username = username
         self._temporary_images: List[str] = list()
         self._docker_client: Union[aiodocker.Docker, None] = None
         self._registry_transport: Union[Registry, None] = None
@@ -101,12 +102,14 @@ class Images:
     def _auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._token}
 
-    def _registry(self) -> API:
+    def _registry(self) -> Registry:
         if not self._registry_transport:
             registry_url = self._url.with_host(
                 str(self._url.host).replace("platform.", "registry.")
             ).with_path("/v2/")
-            self._registry_transport = Registry(registry_url, self._token)
+            self._registry_transport = Registry(
+                registry_url, self._token, self._username
+            )
         return self._registry_transport
 
     def _repo(self, image: Image) -> str:

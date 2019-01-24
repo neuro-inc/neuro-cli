@@ -76,7 +76,7 @@ class ClientV2:
         self._models = Models(self._api)
         self._storage = Storage(self._api, self._username)
         self._users = Users(self._api)
-        self._images = Images(self._api, url, token)
+        self._images = Images(self._api, url, token, self._username)
 
     async def close(self) -> None:
         await self._api.close()
