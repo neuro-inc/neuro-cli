@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 @click.group()
 def job() -> None:
     """
-    Model operations.
+    Job operations.
     """
 
 

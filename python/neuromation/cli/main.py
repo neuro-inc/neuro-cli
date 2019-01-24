@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-from pathlib import Path
 
 import aiohttp
 import click
@@ -14,14 +13,15 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from .commands import command
+from .completion import completion
 from .config import config
 from .defaults import DEFAULTS
 from .image import image
 from .job import job
 from .model import model
+from .share import share
 from .storage import storage
 from .utils import Context, DeprecatedGroup, load_token
-from .share import share
 
 
 # For stream copying from file to http or from http to file
@@ -92,55 +92,6 @@ Commands:
 """
 
     @command
-    def completion():
-        """
-            Usage:
-                neuro completion COMMAND
-
-            Generates code to enable bash-completion.
-
-            Commands:
-                generate     Generate code enabling bash-completion.
-                             eval $(neuro completion generate) enables completion
-                             for the current session.
-                             Adding eval $(neuro completion generate) to
-                             .bashrc_profile enables completion permanently.
-                patch        Automatically patch .bash_profile to enable completion
-        """
-        neuromation_dir = Path(__file__).parent.parent
-        completion_file = neuromation_dir / "completion" / "completion.bash"
-        activate_completion = "source '{}'".format(str(completion_file))
-
-        @command
-        def generate():
-            """
-               Usage:
-                   neuro completion generate
-
-               Generate code enabling bash-completion.
-               eval $(neuro completion generate) enables completion for the current
-               session.
-               Adding eval $(neuro completion generate) to .bashrc_profile enables
-               completion permanently.
-            """
-            print(activate_completion)
-
-        @command
-        def patch():
-            """
-               Usage:
-                   neuro completion patch
-
-               Automatically patch .bash_profile to enable completion
-            """
-            bash_profile_file = Path.home() / ".bash_profile"
-            with bash_profile_file.open("a+") as bash_profile:
-                bash_profile.write(activate_completion)
-                bash_profile.write("\n")
-
-        return locals()
-
-    @command
     def help():
         """
             Usage:
@@ -206,6 +157,8 @@ cli.add_command(model)
 cli.add_command(job)
 cli.add_command(image)
 cli.add_command(share)
+cli.add_command(completion)
+
 
 def main():
     try:

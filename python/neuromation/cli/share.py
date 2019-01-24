@@ -8,9 +8,9 @@ from .utils import Context, run_async
 
 
 @click.command()
-@click.argument('uri')
-@click.argument('user')
-@click.argument('permission', type=click.Choice(['read', 'write', 'manage']))
+@click.argument("uri")
+@click.argument("user")
+@click.argument("permission", type=click.Choice(["read", "write", "manage"]))
 @click.pass_obj
 @run_async
 async def share(ctx: Context, uri: str, user: str, permission: str) -> None:
