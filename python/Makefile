@@ -14,6 +14,8 @@ MYPY_REGEXP := ^(python/neuromation/(logging|strings|clientv2)/.+\\.py)|(^python
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 
+DEPS_REGEXP := ^python/(requirements/.+|setup.py+)
+
 .PHONY: help
 .SILENT: help
 help:
@@ -220,3 +222,8 @@ ifndef VERSION
 endif
 	git tag v$(VERSION)
 	@echo Tag v$(VERSION) added. Please push tags via git
+
+.PHONY: update-deps-fast
+update-deps-fast: REQUIREMENTS_CHANGED:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(DEPS_REGEXP)") print substr($$NF, 8)}')
+update-deps-fast:
+	@ [ -z "${REQUIREMENTS_CHANGED}" ] || (make update-deps)
