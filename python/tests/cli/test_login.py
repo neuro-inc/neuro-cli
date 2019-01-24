@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 from aiohttp import ClientSession
-from aiohttp.test_utils import TestServer as _TestServer
+from aiohttp.test_utils import TestServer as _TestServer, unused_port
 from aiohttp.web import (
     Application,
     HTTPBadRequest,
@@ -119,8 +119,9 @@ class TestAuthCodeApp:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server_once(app, host="0.0.0.0", port=54540) as url:
-            assert url == URL("http://0.0.0.0:54540")
+        port = unused_port()
+        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
+            assert url == URL(f"http://0.0.0.0:{port}")
             await self.assert_code_callback_success(code, client, url)
 
     async def test_create_app_server_redirect(self, client: ClientSession) -> None:
@@ -128,8 +129,9 @@ class TestAuthCodeApp:
         redirect_url = URL("http://redirect.url")
         app = create_auth_code_app(code, redirect_url=redirect_url)
 
-        async with create_app_server_once(app, host="0.0.0.0", port=54540) as url:
-            assert url == URL("http://0.0.0.0:54540")
+        port = unused_port()
+        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
+            assert url == URL(f"http://0.0.0.0:{port}")
             await self.assert_code_callback_success(
                 code, client, url, redirect_url=redirect_url
             )
@@ -138,34 +140,39 @@ class TestAuthCodeApp:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server_once(app, host="0.0.0.0", port=54540) as url:
-            assert url == URL("http://0.0.0.0:54540")
+        port = unused_port()
+        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
+            assert url == URL(f"http://0.0.0.0:{port}")
             await self.assert_code_callback_failure(code, client, url)
 
     async def test_create_app_server(self, client: ClientSession) -> None:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server(app, host="0.0.0.0", ports=[54540]) as url:
-            assert url == URL("http://0.0.0.0:54540")
+        port = unused_port()
+        async with create_app_server(app, host="0.0.0.0", ports=[port]) as url:
+            assert url == URL(f"http://0.0.0.0:{port}")
             await self.assert_code_callback_success(code, client, url)
 
     async def test_create_app_server_no_ports(self) -> None:
         code = AuthCode()
         app = create_auth_code_app(code)
 
-        async with create_app_server_once(app, host="0.0.0.0", port=54540):
+        port = unused_port()
+        async with create_app_server_once(app, host="0.0.0.0", port=port):
             with pytest.raises(RuntimeError, match="No free ports."):
-                async with create_app_server(app, ports=[54540]):
+                async with create_app_server(app, ports=[port]):
                     pass
 
     async def test_create_app_server_port_conflict(self, client: ClientSession) -> None:
         code = AuthCode()
         app = create_auth_code_app(code)
-        async with create_app_server(app, ports=[54540, 54541]) as url:
-            assert url == URL("http://0.0.0.0:54540")
-            async with create_app_server(app, ports=[54540, 54541]) as url:
-                assert url == URL("http://0.0.0.0:54541")
+        outer_port = unused_port()
+        inner_port = unused_port()
+        async with create_app_server(app, ports=[outer_port, inner_port]) as url:
+            assert url == URL(f"http://0.0.0.0:{outer_port}")
+            async with create_app_server(app, ports=[outer_port, inner_port]) as url:
+                assert url == URL(f"http://0.0.0.0:{inner_port}")
                 await self.assert_code_callback_success(code, client, url)
 
 
@@ -233,10 +240,12 @@ async def auth_server(
 async def auth_config(
     auth_client_id: str, auth_server: URL
 ) -> AsyncIterator[AuthConfig]:
+    port = unused_port()
     yield AuthConfig.create(
         base_url=auth_server,
         client_id=auth_client_id,
         audience="https://platform.dev.neuromation.io",
+        callback_urls=[URL(f"http://0.0.0.0:{port}")],
     )
 
 
@@ -244,7 +253,7 @@ class TestTokenClient:
     async def test_request(self, auth_client_id: str, auth_config: AuthConfig) -> None:
         code = AuthCode()
         code.value = "test_code"
-        code.callback_url = URL("http://0.0.0.0:54540")
+        code.callback_url = auth_config.callback_urls[0]
 
         async with AuthTokenClient(
             auth_config.token_url, client_id=auth_client_id
@@ -270,10 +279,12 @@ class TestTokenClient:
             assert not token.is_expired
 
     async def test_forbidden(
-        self, aiohttp_server: Callable[[Application], Awaitable[_TestServer]]
+        self,
+        aiohttp_server: Callable[[Application], Awaitable[_TestServer]],
+        auth_config: AuthConfig,
     ) -> None:
         code = AuthCode()
-        code.callback_url = URL("http://0.0.0.0:54540")
+        code.callback_url = auth_config.callback_urls[0]
         code.value = "testcode"
 
         client_id = "test_client_id"
@@ -307,7 +318,7 @@ class TestAuthNegotiator:
         )
         code = await negotiator.get_code()
         assert code.value == "test_code"
-        assert code.callback_url == URL("http://0.0.0.0:54540")
+        assert code.callback_url == auth_config.callback_urls[0]
 
     async def test_get_token(self, auth_config: AuthConfig) -> None:
         negotiator = AuthNegotiator(

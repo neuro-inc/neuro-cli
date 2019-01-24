@@ -303,6 +303,7 @@ class AuthConfig:
         client_id: str,
         audience: str,
         success_redirect_url: Optional[URL] = None,
+        callback_urls: Optional[Sequence[URL]] = None,
     ) -> "AuthConfig":
         return cls(
             auth_url=base_url.with_path("/authorize"),
@@ -310,6 +311,7 @@ class AuthConfig:
             client_id=client_id,
             audience=audience,
             success_redirect_url=success_redirect_url,
+            callback_urls=callback_urls or cls.callback_urls,
         )
 
 
