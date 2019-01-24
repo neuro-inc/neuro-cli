@@ -28,15 +28,15 @@ def tag():
 async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
     image_archive = Path(__file__).parent / "assets/echo-tag.tar"
     # TODO use random image name here
-    tag = f"{TEST_IMAGE_NAME}:{tag}"
+    image_name = f"{TEST_IMAGE_NAME}:{tag}"
     await docker.images.build(
         fileobj=image_archive.open(mode="r+b"),
-        tag=tag,
+        tag=image_name,
         buildargs={"TAG": tag},
         encoding="identity",
     )
 
-    return tag
+    return image_name
 
 
 @pytest.fixture()
