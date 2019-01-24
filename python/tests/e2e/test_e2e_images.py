@@ -3,7 +3,6 @@ from uuid import uuid4 as uuid
 
 import aiodocker
 import pytest
-from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.rc import ConfigFactory
