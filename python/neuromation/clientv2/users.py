@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, Dict
 
 from aiohttp.web import HTTPCreated
-from jose import jwt
+from jose import JWTError, jwt
 from yarl import URL
 
 from . import ClientError
@@ -62,8 +62,11 @@ class Users:
 
 
 def get_token_username(token: str) -> str:
-    claims = jwt.get_unverified_claims(token)
+    try:
+        claims = jwt.get_unverified_claims(token)
+    except JWTError as e:
+        raise ValueError(f"Passed string does not contain valid JWT structure.") from e
     for identity_claim in JWT_IDENTITY_CLAIM_OPTIONS:
         if identity_claim in claims:
             return claims[identity_claim]
-    raise ValueError("Missing identity claim.")
+    raise ValueError("JWT Claims structure is not correct.")
