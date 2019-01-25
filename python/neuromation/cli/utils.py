@@ -18,7 +18,10 @@ class Context:
     url: URL
 
     def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None):
-        return ClientV2(self.url, self.token, timeout=timeout)
+        kwargs = {}
+        if timeout is not None:
+            kwargs['timeout'] = timeout
+        return ClientV2(self.url, self.token, **kwargs)
 
 
 def run_async(callback):

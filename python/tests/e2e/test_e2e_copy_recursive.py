@@ -19,7 +19,7 @@ def test_e2e_copy_recursive_to_platform(
     target_file_name = srcfile.split("/")[-1]
 
     # Upload local file
-    captured = run(["store", "cp", "-r", dir_path, tmpstorage])
+    captured = run(["storage", "cp", "-r", dir_path, tmpstorage])
     assert not captured.err
     assert not captured.out
 
@@ -31,7 +31,7 @@ def test_e2e_copy_recursive_to_platform(
 
     targetdir = tmp_path / "bar"
     targetdir.mkdir()
-    run(["store", "cp", "-r", f"{tmpstorage}", str(targetdir)])
+    run(["storage", "cp", "-r", f"{tmpstorage}", str(targetdir)])
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
     print("target file", targetfile)

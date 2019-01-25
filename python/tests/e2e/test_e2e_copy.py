@@ -82,7 +82,7 @@ def test_copy_local_to_platform_single_file_2(
 
     # Ensure file is there
     check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
-    captured = run(["store", "ls", tmpstorage + "folder/"])
+    captured = run(["storage", "ls", tmpstorage + "folder/"])
     split = captured.out.split("\n")
     assert (
         format_list(name="different_name.txt", size=FILE_SIZE_B, type="file") in split
@@ -106,7 +106,7 @@ def test_copy_local_to_platform_single_file_3(
     # Upload local file to non existing directory
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         captured = run(
-            ["store", "cp", srcfile, tmpstorage + "/non_existing_dir/"],
+            ["storage", "cp", srcfile, tmpstorage + "/non_existing_dir/"],
             storage_retry=False,
         )
         assert not captured.err
@@ -124,7 +124,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         run(
             [
-                "store",
+                "storage",
                 "cp",
                 tmpstorage + "/not-exist-foo",
                 str(tmp_path / "not-exist-bar"),
@@ -139,4 +139,4 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        run(["store", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False)
+        run(["storage", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False)
