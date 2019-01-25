@@ -13,6 +13,7 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+from neuromation.cli import main
 from tests.e2e.utils import (
     BLOCK_SIZE_MB,
     FILE_COUNT,
@@ -119,9 +120,6 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
     def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
-        monkeypatch.setattr(sys, "argv", ["neuro"] + ["--show-traceback"] + arguments)
-
-        from neuromation.cli import main
 
         delay = 0.5
         for i in range(5):
@@ -129,7 +127,7 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
-                main()
+                main(["neuro"] + ["--show-traceback"] + arguments)
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem

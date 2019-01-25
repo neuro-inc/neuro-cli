@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Sequence
+from typing import Optional, Sequence
 
 import aiohttp
 import click
@@ -135,9 +135,9 @@ cli.add_command(share)
 cli.add_command(completion)
 
 
-def main():
+def main(args: Optional[Sequence] = None):
     try:
-        cli.main(standalone_mode=False)
+        cli.main(args=args, standalone_mode=False)
     except ClickAbort:
         LOG_ERROR("Aborting.")
         sys.exit(130)

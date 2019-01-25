@@ -1,6 +1,8 @@
 import pytest
 from jose import jwt
 
+from neuromation.cli import main
+
 
 @pytest.fixture
 def token():
@@ -20,17 +22,11 @@ def setup_null_keyring():
 
 @pytest.fixture
 def run(request, monkeypatch, capsys, tmp_path, setup_null_keyring):
-    import sys
-
     monkeypatch.setenv("HOME", str(tmp_path))
 
     def _run(arguments, rc_text):
         tmp_path.joinpath(".nmrc").write_text(rc_text)
 
-        monkeypatch.setattr(sys, "argv", ["neuro"] + arguments)
-
-        from neuromation.cli import main
-
-        return main(), capsys.readouterr()
+        return main(["neuro"] + arguments), capsys.readouterr()
 
     return _run
