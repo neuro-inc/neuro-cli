@@ -2,7 +2,7 @@ import asyncio
 import enum
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, SupportsInt, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
@@ -20,9 +20,9 @@ class Resources:
 
     @classmethod
     def create(
-        cls, cpu: str, gpu: str, gpu_model: str, memory: str, extshm: str
+        cls, cpu: float, gpu: int, gpu_model: str, memory: str, extshm: bool
     ) -> "Resources":
-        return cls(memory, float(cpu), int(gpu), bool(extshm), gpu_model)
+        return cls(memory, cpu, gpu, extshm, gpu_model)
 
     def to_api(self) -> Dict[str, Any]:
         value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
@@ -42,9 +42,9 @@ class Resources:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class NetworkPortForwarding:
-    ports: Dict[str, int]
+    ports: Mapping[str, int]
 
     @classmethod
     def from_cli(
@@ -137,7 +137,9 @@ class Volume:
         return Volume(storage_path_with_principal, container_path, read_only)
 
     @classmethod
-    def from_cli_list(cls, username: str, lst: List[str]) -> Optional[List["Volume"]]:
+    def from_cli_list(
+        cls, username: str, lst: Sequence[str]
+    ) -> Optional[List["Volume"]]:
         if not lst:
             return None
         return [cls.from_cli(username, s) for s in lst]
@@ -194,7 +196,7 @@ class Container:
     ssh: Optional[SSHPort] = None
     # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
     env: Dict[str, str] = field(default_factory=dict)
-    volumes: List[Volume] = field(default_factory=list)
+    volumes: Sequence[Volume] = field(default_factory=list)
 
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "Container":
@@ -230,10 +232,10 @@ class Container:
 class ContainerPayload:
     image: str
     command: Optional[str]
-    http: Optional[Dict[str, int]]
-    ssh: Optional[Dict[str, int]]
+    http: Optional[Mapping[str, int]]
+    ssh: Optional[Mapping[str, int]]
     resources: Resources
-    env: Optional[Dict[str, str]] = None
+    env: Optional[Mapping[str, str]] = None
 
     def to_primitive(self) -> Dict[str, Any]:
         primitive = {"image": self.image, "resources": self.resources.to_api()}
@@ -320,7 +322,7 @@ class Jobs:
         *,
         image: Image,
         resources: Resources,
-        network: NetworkPortForwarding,
+        network: Optional[NetworkPortForwarding],
         volumes: Optional[List[Volume]],
         description: Optional[str],
         is_preemptible: bool = False,

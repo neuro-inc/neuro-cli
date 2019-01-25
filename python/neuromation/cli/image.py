@@ -6,13 +6,12 @@ from yarl import URL
 # TODO(asvetlov): rename the class to avoid the namig conflict
 from neuromation.clientv2.images import Image
 
-from . import rc
 from .command_spinner import SpinnerBase
 from .utils import Context, run_async
 
 
 @click.group()
-def image():
+def image() -> None:
     """
     Docker image operations
     """
@@ -40,8 +39,7 @@ async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
 
     """
 
-    config = rc.ConfigFactory.load()
-    username = config.get_platform_user_name()
+    username = ctx.username
 
     local_image = remote_image = Image.from_local(image_name, username)
     if remote_image_name:
@@ -77,8 +75,7 @@ async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
 
     """
 
-    config = rc.ConfigFactory.load()
-    username = config.get_platform_user_name()
+    username = ctx.username
 
     remote_image = local_image = Image.from_url(URL(image_name), username)
     if local_image_name:

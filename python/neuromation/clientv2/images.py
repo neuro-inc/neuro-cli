@@ -12,6 +12,7 @@ from neuromation.clientv2 import AuthorizationError
 
 from .abc import AbstractSpinner
 from .api import API
+from .config import Config
 from .registry import Registry
 
 
@@ -59,11 +60,9 @@ class Image:
 
 
 class Images:
-    def __init__(self, api: API, url: URL, token: str, username: str) -> None:
+    def __init__(self, api: API, config: Config) -> None:
         self._api = api
-        self._url = url
-        self._token = token
-        self._username = username
+        self._config = config
         self._temporary_images: List[str] = list()
         try:
             self._docker = aiodocker.Docker()
@@ -80,10 +79,12 @@ class Images:
                     },
                 )
             raise
-        registry_url = self._url.with_host(
-            str(self._url.host).replace("platform.", "registry.")
+        registry_url = self._config.url.with_host(
+            str(self._config.url.host).replace("platform.", "registry.")
         ).with_path("/v2/")
-        self._registry = Registry(registry_url, self._token, self._username)
+        self._registry = Registry(
+            registry_url, self._config.token, self._config.username
+        )
 
     async def close(self) -> None:
         for image in self._temporary_images:
@@ -93,10 +94,10 @@ class Images:
         await self._registry.close()
 
     def _auth(self) -> Dict[str, str]:
-        return {"username": "token", "password": self._token}
+        return {"username": "token", "password": self._config.token}
 
     def _repo(self, image: Image) -> str:
-        registry_hostname = str(self._url.host).replace("platform.", "registry.")
+        registry_hostname = str(self._config.url.host).replace("platform.", "registry.")
         return f"{registry_hostname}/{image.url.host}{image.url.path}"
 
     async def push(

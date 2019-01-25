@@ -1,7 +1,11 @@
 import asyncio
+from typing import Awaitable, TypeVar
 
 
-def run(main, *, debug=False):
+_T = TypeVar("_T")
+
+
+def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
     """Run a coroutine.
 
     This function runs the passed coroutine, taking care of
@@ -53,7 +57,9 @@ def run(main, *, debug=False):
             loop.close()
 
 
-def _cancel_all_tasks(loop, main_task):
+def _cancel_all_tasks(
+    loop: asyncio.AbstractEventLoop, main_task: "asyncio.Task[_T]"
+) -> None:
     to_cancel = asyncio.Task.all_tasks(loop)
     if not to_cancel:
         return

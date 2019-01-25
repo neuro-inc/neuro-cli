@@ -4,13 +4,13 @@ from . import rc
 
 
 @click.group()
-def config():
+def config() -> None:
     """Client configuration settings commands."""
 
 
 @config.command()
 @click.argument("url")
-def url(url: str):
+def url(url: str) -> None:
     """
     Updates settings with provided platform URL.
 
@@ -24,7 +24,7 @@ def url(url: str):
 
 @config.command(name="id_rsa")
 @click.argument("file", type=click.Path(exists=True, readable=True, dir_okay=False))
-def id_rsa(file):
+def id_rsa(file: str) -> None:
     """
     Updates path to id_rsa file with private key.
 
@@ -37,7 +37,7 @@ def id_rsa(file):
 
 
 @config.command()
-def show():
+def show() -> None:
     """
     Prints current settings.
     """
@@ -52,7 +52,7 @@ def show():
     help="Store token in plain file instead system secured keyring",
 )
 @click.argument("token")
-def auth(token, insecure):
+def auth(token: str, insecure: bool) -> None:
     """
     Updates authorization token.
     """
@@ -65,7 +65,7 @@ def auth(token, insecure):
 
 
 @config.command()
-def forget():
+def forget() -> None:
     """
     Forget authorization token.
 

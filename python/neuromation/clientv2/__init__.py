@@ -27,8 +27,9 @@ from .jobs import (
 )
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
-from .users import Action, Permission, Users, get_token_username
+from .users import Action, Permission, Users
 from .images import Images
+from .config import Config
 
 __all__ = (
     "Image",
@@ -70,12 +71,11 @@ class ClientV2:
             url = URL(url)
         self._url = url
         assert token
-        self._token = token
-        self._username = get_token_username(token)
+        self._config = Config(url, token)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)
-        self._storage = Storage(self._api, self._username)
+        self._storage = Storage(self._api, self._config)
         self._users = Users(self._api)
         self._images: Optional[Images] = None
 
@@ -97,7 +97,11 @@ class ClientV2:
 
     @property
     def username(self) -> str:
-        return self._username
+        return self._config.username
+
+    @property
+    def cfg(self) -> Config:
+        return self._config
 
     @property
     def jobs(self) -> Jobs:
@@ -118,5 +122,5 @@ class ClientV2:
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images(self._api, self._url, self._token, self._username)
+            self._images = Images(self._api, self._config)
         return self._images

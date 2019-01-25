@@ -10,7 +10,7 @@ ACTIVATION_TEMPLATE = 'eval "$(_NEURO_COMPLETE={shell} neuro)"'
 
 
 @click.group()
-def completion():
+def completion() -> None:
     """
     Generates code to enable shell-completion.
     """

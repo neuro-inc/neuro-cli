@@ -854,7 +854,7 @@ List directory contents.<br/><br/>By default PATH is equal user`s home dir \(sto
 **Usage:**
 
 ```bash
-neuro storage ls [OPTIONS] PATH
+neuro storage ls [OPTIONS] [PATH]
 ```
 
 **Options:**
@@ -1031,7 +1031,7 @@ List directory contents.<br/><br/>By default PATH is equal user`s home dir \(sto
 **Usage:**
 
 ```bash
-neuro store ls [OPTIONS] PATH
+neuro store ls [OPTIONS] [PATH]
 ```
 
 **Options:**
