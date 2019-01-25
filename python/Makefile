@@ -157,7 +157,7 @@ coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
 .PHONY: format
-format:
+format: docs
 	isort -rc $(ISORT_DIRS)
 	black $(BLACK_DIRS)
 

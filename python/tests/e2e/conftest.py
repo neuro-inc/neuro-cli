@@ -3,7 +3,6 @@ import logging
 import os
 import platform
 import re
-import sys
 from collections import namedtuple
 from math import ceil
 from os.path import join
@@ -13,6 +12,7 @@ from uuid import uuid4 as uuid
 
 import pytest
 
+from neuromation.cli import main
 from tests.e2e.utils import (
     BLOCK_SIZE_MB,
     FILE_COUNT,
@@ -36,7 +36,7 @@ SysCap = namedtuple("SysCap", "out err")
 @pytest.fixture
 def tmpstorage(run, request):
     url = "storage:" + str(uuid()) + "/"
-    captured = run(["store", "mkdir", url])
+    captured = run(["storage", "mkdir", url])
     assert not captured.err
     assert captured.out == ""
 
@@ -44,7 +44,7 @@ def tmpstorage(run, request):
     # Remove directory only if test succeeded
     if not request.node._report_sections:  # TODO: find another way to check test status
         try:
-            run(["store", "rm", url])
+            run(["storage", "rm", url])
         except BaseException:
             # Just ignore cleanup error here
             pass
@@ -119,9 +119,6 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
     def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
-        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments + ["--show-traceback"])
-
-        from neuromation.cli import main
 
         delay = 0.5
         for i in range(5):
@@ -129,7 +126,7 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
-                main()
+                main(["--show-traceback"] + arguments)
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem
@@ -139,7 +136,7 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
                 elif (
                     exc.code == os.EX_OSFILE
                     and arguments
-                    and arguments[0] == "store"
+                    and arguments[0] == "storage"
                     and storage_retry
                 ):
                     # NFS storage has a lag between pushing data on one storage API node
@@ -153,15 +150,12 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
             post_out, post_err = capfd.readouterr()
             out = post_out[pre_out_size:]
             err = post_err[pre_err_size:]
-            if (
-                "-v" not in arguments and "--version" not in arguments
-            ):  # special case for version switch
-                if arguments[0:2] in (["job", "submit"], ["model", "train"]):
-                    match = re.search(job_id_pattern, out)
-                    if match:
-                        executed_jobs_list.append(match.group(1))
+            if arguments[0:2] in (["job", "submit"], ["model", "train"]):
+                match = re.search(job_id_pattern, out)
+                if match:
+                    executed_jobs_list.append(match.group(1))
 
-            return SysCap(out, err)
+            return SysCap(out.strip(), err.strip())
 
     yield _run
     # try to kill all executed jobs regardless of the status
@@ -182,7 +176,7 @@ def check_file_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str, size: int):
         path = tmpstorage + path
-        captured = run(["store", "ls", path])
+        captured = run(["storage", "ls", path])
         captured_output_list = captured.out.split("\n")
         expected_line = format_list(type="file", size=size, name=name)
         assert not captured.err
@@ -200,7 +194,7 @@ def check_dir_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["store", "ls", path])
+        captured = run(["storage", "ls", path])
         captured_output_list = captured.out.split("\n")
         assert f"directory      0              {name}" in captured_output_list
         assert not captured.err
@@ -217,7 +211,7 @@ def check_dir_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["store", "ls", path])
+        captured = run(["storage", "ls", path])
         split = captured.out.split("\n")
         assert format_list(name=name, size=0, type="directory") not in split
         assert not captured.err
@@ -234,7 +228,7 @@ def check_file_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["store", "ls", path])
+        captured = run(["storage", "ls", path])
         pattern = format_list_pattern(name=name)
         assert not re.search(pattern, captured.out)
         assert not captured.err
@@ -259,7 +253,7 @@ def check_file_on_storage_checksum(run, tmpstorage):
             target_file = join(tmpdir, name)
         delay = 5  # need a relative big initial delay to synchronize 16MB file
         for i in range(5):
-            run(["store", "cp", f"{path}/{name}", target])
+            run(["storage", "cp", f"{path}/{name}", target])
             try:
                 assert hash_hex(target_file) == checksum
                 return
@@ -281,7 +275,7 @@ def check_create_dir_on_storage(run, tmpstorage):
 
     def go(path: str):
         path = tmpstorage + path
-        captured = run(["store", "mkdir", path])
+        captured = run(["storage", "mkdir", path])
         assert not captured.err
         assert captured.out == ""
 
@@ -296,7 +290,7 @@ def check_rmdir_on_storage(run, tmpstorage):
 
     def go(path: str):
         path = tmpstorage + path
-        captured = run(["store", "rm", path])
+        captured = run(["storage", "rm", path])
         assert not captured.err
 
     return go
@@ -310,7 +304,7 @@ def check_rm_file_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["store", "rm", f"{path}/{name}"])
+        captured = run(["storage", "rm", f"{path}/{name}"])
         assert not captured.err
 
     return go
@@ -325,11 +319,11 @@ def check_upload_file_to_storage(run, tmpstorage):
     def go(name: str, path: str, local_file: str):
         path = tmpstorage + path
         if name is None:
-            captured = run(["store", "cp", local_file, f"{path}"])
+            captured = run(["storage", "cp", local_file, f"{path}"])
             assert not captured.err
             assert captured.out == ""
         else:
-            captured = run(["store", "cp", local_file, f"{path}/{name}"])
+            captured = run(["storage", "cp", local_file, f"{path}/{name}"])
             assert not captured.err
             assert captured.out == ""
 
@@ -345,7 +339,7 @@ def check_rename_file_on_storage(run, tmpstorage):
     def go(name_from: str, path_from: str, name_to: str, path_to: str):
         captured = run(
             [
-                "store",
+                "storage",
                 "mv",
                 f"{tmpstorage}{path_from}/{name_from}",
                 f"{tmpstorage}{path_to}/{name_to}",
@@ -365,7 +359,7 @@ def check_rename_directory_on_storage(run, tmpstorage):
 
     def go(path_from: str, path_to: str):
         captured = run(
-            ["store", "mv", f"{tmpstorage}{path_from}", f"{tmpstorage}{path_to}"]
+            ["storage", "mv", f"{tmpstorage}{path_from}", f"{tmpstorage}{path_to}"]
         )
         assert not captured.err
         assert captured.out == ""

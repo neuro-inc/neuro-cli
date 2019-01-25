@@ -13,19 +13,10 @@ from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list
 
 
 @pytest.mark.e2e
-@pytest.mark.parametrize("version_key", ["-v", "--version"])
-def test_print_version(run, version_key):
-    expected_out = f"Neuromation Platform Client {neuromation.__version__}\n"
+def test_print_version(run):
+    expected_out = f"Neuromation Platform Client {neuromation.__version__}"
 
-    captured = run([version_key])
-    assert not captured.err
-    assert captured.out == expected_out
-
-    captured = run(["job", version_key])
-    assert not captured.err
-    assert captured.out == expected_out
-
-    captured = run(["job", "submit", "ubuntu", version_key])
+    captured = run(["--version"])
     assert not captured.err
     assert captured.out == expected_out
 
@@ -33,7 +24,7 @@ def test_print_version(run, version_key):
 @pytest.mark.e2e
 def test_empty_directory_ls_output(run, tmpstorage):
     # Ensure output of ls - empty directory shall print nothing.
-    captured = run(["store", "ls", tmpstorage])
+    captured = run(["storage", "ls", tmpstorage])
     assert not captured.err
     assert not captured.out
 
@@ -134,7 +125,7 @@ def test_e2e_storage(
     check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Confirm file has been renamed
-    captured = run(["store", "ls", f"{tmpstorage}folder"])
+    captured = run(["storage", "ls", f"{tmpstorage}folder"])
     captured_output_list = captured.out.split("\n")
     assert not captured.err
     expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
@@ -201,7 +192,7 @@ def test_job_storage_interaction(
         try:
             assert_job_state(run, job_id, Status.SUCCEEDED)
             # Confirm file has been copied
-            captured = run(["store", "ls", f"{tmpstorage}result"])
+            captured = run(["storage", "ls", f"{tmpstorage}result"])
             captured_output_list = captured.out.split("\n")
             assert not captured.err
             expected_line = format_list(type="file", size=FILE_SIZE_B, name="foo")
