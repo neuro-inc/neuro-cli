@@ -30,9 +30,9 @@ async def rm(ctx: Context, path: str) -> None:
     Examples:
 
     \b
-    neuro store rm storage:///foo/bar/
-    neuro store rm storage:/foo/bar/
-    neuro store rm storage://{username}/foo/bar/
+    neuro storage rm storage:///foo/bar/
+    neuro storage rm storage:/foo/bar/
+    neuro storage rm storage://{username}/foo/bar/
     """
     uri = URL(path)
 
@@ -81,13 +81,13 @@ async def cp(
 
     \b
     # copy local file ./foo into remote storage root
-    neuro store cp ./foo storage:///
-    neuro store cp ./foo storage:/
+    neuro storage cp ./foo storage:///
+    neuro storage cp ./foo storage:/
 
     \b
     # download remote file foo into local file foo with
     # explicit file:// scheme set
-    neuro store cp storage:///foo file:///foo
+    neuro storage cp storage:///foo file:///foo
     """
     timeout = aiohttp.ClientTimeout(
         total=None, connect=None, sock_read=None, sock_connect=30
@@ -151,13 +151,13 @@ async def mv(ctx: Context, source: str, destination: str) -> None:
 
     \b
     # move or rename remote file
-    neuro store mv storage://{username}/foo.txt storage://{username}/bar.txt
-    neuro store mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+    neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
+    neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
 
     \b
     # move or rename remote directory
-    neuro store mv storage://{username}/foo/ storage://{username}/bar/
-    neuro store mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+    neuro storage mv storage://{username}/foo/ storage://{username}/bar/
+    neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
     """
 
     src = URL(source)
