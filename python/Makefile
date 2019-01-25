@@ -9,10 +9,12 @@ ISORT_DIRS := neuromation tests build-tools
 ISORT_REGEXP := ^python/(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
-MYPY_DIRS := neuromation/client neuromation/logging neuromation/strings neuromation/clientv2 neuromation/cli/ssh_utils.py neuromation/cli/formatter.py
-MYPY_REGEXP := ^(python/neuromation/(client|logging|strings|clientv2)/.+\\.py)|(^python/neuromation/cli/ssh_utils.py)|(^python/neuromation/cli/formatter.py)
+MYPY_DIRS :=  neuromation
+MYPY_REGEXP := ^python/+.\\py
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
+
+DEPS_REGEXP := ^python/(requirements/.+|setup.py+)
 
 .PHONY: help
 .SILENT: help
@@ -26,6 +28,7 @@ help:
 	  example: make release VERSION=0.5 \n\
 	- dist-clean: remove files generated during publish \n\
 	- clean: remove generated files \n\
+	- update-deps-fast: update deps only if requirements changed betwwen two points(hook)\
 \n\
 	* Modifications and generations: \n\
 	- format: format python code(isort + black) \n\
@@ -36,7 +39,7 @@ help:
 	* Lint (static analysis) \n\
 	- lint: run linters(isort, black, flake8, mypy, lint-docs) \n\
 	- lint-docs: validate generated docs \n\
-	- lint-diff: lint only modified files, between two points \n\
+	- lint-diff: lint only modified files, between two points(hook) \n\
 	- publish-lint: lint distribution \n\
 \n\
 	* Tests \n\
@@ -67,7 +70,7 @@ _init-readme:
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n auto \
+	    -n auto --forked \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -77,7 +80,7 @@ e2e:
 .PHONY: _e2e
 _e2e:
 	pytest \
-	    -n auto \
+	    -n auto --forked \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -107,7 +110,6 @@ test-fast:
 .PHONY: test-all
 test-all:
 	pytest \
-	    -n 4 \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
@@ -155,7 +157,7 @@ coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
 .PHONY: format
-format:
+format: docs
 	isort -rc $(ISORT_DIRS)
 	black $(BLACK_DIRS)
 
@@ -190,7 +192,7 @@ docs:
 
 
 .PHONY: lint-docs
-lint-docs: TMP:=$(shell mktemp -t README.XXXXXXXX.md)
+lint-docs: TMP:=$(shell mktemp $${TMPDIR:-/tmp}/README.XXXXXXXX.md)
 lint-docs:
 	build-tools/cli-help-generator.py README.in.md ${TMP}
 	markdown-toc -t github -h 6 ${TMP}
@@ -221,3 +223,8 @@ ifndef VERSION
 endif
 	git tag v$(VERSION)
 	@echo Tag v$(VERSION) added. Please push tags via git
+
+.PHONY: update-deps-fast
+update-deps-fast: REQUIREMENTS_CHANGED:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(DEPS_REGEXP)") print substr($$NF, 8)}')
+update-deps-fast:
+	@ [ -z "${REQUIREMENTS_CHANGED}" ] || (make update-deps)

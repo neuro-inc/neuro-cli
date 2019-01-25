@@ -1,11 +1,13 @@
+import asyncio
 import enum
+import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, SupportsInt, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
 
-from .api import API
+from .api import API, IllegalArgumentError
 
 
 @dataclass(frozen=True)
@@ -18,9 +20,9 @@ class Resources:
 
     @classmethod
     def create(
-        cls, cpu: str, gpu: str, gpu_model: str, memory: str, extshm: str
+        cls, cpu: float, gpu: int, gpu_model: str, memory: str, extshm: bool
     ) -> "Resources":
-        return cls(memory, float(cpu), int(gpu), bool(extshm), gpu_model)
+        return cls(memory, cpu, gpu, extshm, gpu_model)
 
     def to_api(self) -> Dict[str, Any]:
         value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
@@ -40,9 +42,9 @@ class Resources:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class NetworkPortForwarding:
-    ports: Dict[str, int]
+    ports: Mapping[str, int]
 
     @classmethod
     def from_cli(
@@ -135,7 +137,9 @@ class Volume:
         return Volume(storage_path_with_principal, container_path, read_only)
 
     @classmethod
-    def from_cli_list(cls, username: str, lst: List[str]) -> Optional[List["Volume"]]:
+    def from_cli_list(
+        cls, username: str, lst: Sequence[str]
+    ) -> Optional[List["Volume"]]:
         if not lst:
             return None
         return [cls.from_cli(username, s) for s in lst]
@@ -192,7 +196,7 @@ class Container:
     ssh: Optional[SSHPort] = None
     # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
     env: Dict[str, str] = field(default_factory=dict)
-    volumes: List[Volume] = field(default_factory=list)
+    volumes: Sequence[Volume] = field(default_factory=list)
 
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "Container":
@@ -228,10 +232,10 @@ class Container:
 class ContainerPayload:
     image: str
     command: Optional[str]
-    http: Optional[Dict[str, int]]
-    ssh: Optional[Dict[str, int]]
+    http: Optional[Mapping[str, int]]
+    ssh: Optional[Mapping[str, int]]
     resources: Resources
-    env: Optional[Dict[str, str]] = None
+    env: Optional[Mapping[str, str]] = None
 
     def to_primitive(self) -> Dict[str, Any]:
         primitive = {"image": self.image, "resources": self.resources.to_api()}
@@ -264,6 +268,7 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
+    ssh_auth_server: URL
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
@@ -302,20 +307,22 @@ class JobDescription:
             description=description,
             http_url=http_url,
             ssh_server=ssh_server,
+            ssh_auth_server=URL(res["ssh_auth_server"]),
             internal_hostname=internal_hostname,
         )
 
 
 class Jobs:
-    def __init__(self, api: API) -> None:
+    def __init__(self, api: API, token: str) -> None:
         self._api = api
+        self._token = token
 
     async def submit(
         self,
         *,
         image: Image,
         resources: Resources,
-        network: NetworkPortForwarding,
+        network: Optional[NetworkPortForwarding],
         volumes: Optional[List[Volume]],
         description: Optional[str],
         is_preemptible: bool = False,
@@ -378,3 +385,29 @@ class Jobs:
         async with self._api.request("GET", url) as resp:
             ret = await resp.json()
             return JobDescription.from_api(ret)
+
+    async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
+        try:
+            job_status = await self.status(id)
+        except IllegalArgumentError as e:
+            raise ValueError(f"Job not found. Job Id = {id}") from e
+        if job_status.status != "running":
+            raise ValueError(f"Job is not running. Job Id = {id}")
+        payload = json.dumps({"token": self._token, "job": id, "command": cmd})
+        command = ["ssh"]
+        if tty:
+            command += ["-tt"]
+        else:
+            command += ["-T"]
+        if no_key_check:  # pragma: no branch
+            command += [
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+            ]
+        server_url = job_status.ssh_auth_server
+        port = server_url.port if server_url.port else 22
+        command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
+        proc = await asyncio.create_subprocess_exec(*command)
+        return await proc.wait()

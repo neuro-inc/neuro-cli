@@ -1,8 +1,8 @@
-from typing import AbstractSet, Iterable, Optional
+from typing import AbstractSet, Iterable, List, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.clientv2 import JobDescription, JobStatus, Resources
+from neuromation.clientv2 import FileStatus, JobDescription, JobStatus, Resources
 
 
 class BaseFormatter:
@@ -35,6 +35,16 @@ class OutputFormatter(BaseFormatter):
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
             + f"  neuro job kill {job.id}    # kill job"
+        )
+
+
+class StorageLsFormatter(BaseFormatter):
+    FORMAT = "{type:<15}{size:<15,}{name:<}".format
+
+    def format_ls(self, lst: List[FileStatus]) -> str:
+        return "\n".join(
+            self.FORMAT(type=status.type.lower(), name=status.path, size=status.size)
+            for status in lst
         )
 
 

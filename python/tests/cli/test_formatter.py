@@ -7,9 +7,11 @@ from neuromation.cli.formatter import (
     JobStatusFormatter,
     OutputFormatter,
     ResourcesFormatter,
+    StorageLsFormatter,
 )
-from neuromation.clientv2.jobs import (
+from neuromation.clientv2 import (
     Container,
+    FileStatus,
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -38,6 +40,7 @@ def job_descr():
         container=Container(
             image="ubuntu:latest", resources=Resources.create(0.1, 0, None, None, False)
         ),
+        ssh_auth_server="ssh-auth",
         is_preemptible=True,
     )
 
@@ -79,6 +82,7 @@ class TestJobOutputFormatter:
                 image="test-image",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
         )
 
@@ -118,6 +122,7 @@ class TestJobOutputFormatter:
                 image="test-image",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
             owner="owner",
         )
@@ -153,6 +158,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
             owner="owner",
         )
@@ -188,6 +194,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
+            ssh_auth_server="ssh-auth",
             is_preemptible=True,
             owner="owner",
         )
@@ -265,6 +272,7 @@ class TestJobListFormatter:
                     command=f"test-command-{index}",
                     resources=Resources.create(0.1, 0, None, None, False),
                 ),
+                ssh_auth_server="ssh-auth",
                 is_preemptible=True,
                 owner="owner",
             )
@@ -299,6 +307,7 @@ class TestJobListFormatter:
                     command=f"test-command-{index}",
                     resources=Resources.create(0.1, 0, None, None, False),
                 ),
+                ssh_auth_server="ssh-auth",
                 is_preemptible=True,
                 owner="owner",
             )
@@ -341,6 +350,7 @@ class TestJobListFormatter:
                     command=f"test-command-{index}",
                     resources=Resources.create(0.1, 0, None, None, False),
                 ),
+                ssh_auth_server="ssh-auth",
                 is_preemptible=True,
                 owner="owner",
             )
@@ -354,6 +364,28 @@ class TestJobListFormatter:
         assert (
             self.quiet.format_jobs(jobs, description="test-description-0") == expected
         ), expected
+
+
+class TestLSFormatter:
+    def test_neuro_store_ls_normal(self):
+        expected = (
+            "file           11             file1\n"
+            + "file           12             file2\n"
+            + "directory      0              dir1"
+        )
+        assert (
+            StorageLsFormatter().format_ls(
+                [
+                    FileStatus("file1", 11, "FILE", 2018, "read"),
+                    FileStatus("file2", 12, "FILE", 2018, "write"),
+                    FileStatus("dir1", 0, "DIRECTORY", 2018, "manage"),
+                ]
+            )
+            == expected
+        )
+
+    def test_neuro_store_ls_empty(self):
+        assert StorageLsFormatter().format_ls([]) == ""
 
 
 class TestResourcesFormatter:

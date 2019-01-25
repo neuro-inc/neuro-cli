@@ -1,8 +1,11 @@
 import asyncio
-import sys
+from typing import Awaitable, TypeVar
 
 
-def run(main, *, debug=False):
+_T = TypeVar("_T")
+
+
+def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
     """Run a coroutine.
 
     This function runs the passed coroutine, taking care of
@@ -26,10 +29,6 @@ def run(main, *, debug=False):
 
         asyncio.run(main())
     """
-    # Temporary don't close the loop to make e2e tests passing
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(main)
-
     try:
         current_loop = asyncio.get_event_loop()
         if current_loop.is_running():
@@ -47,17 +46,20 @@ def run(main, *, debug=False):
     try:
         asyncio.set_event_loop(loop)
         loop.set_debug(debug)
-        return loop.run_until_complete(main)
+        main_task = loop.create_task(main)
+        return loop.run_until_complete(main_task)
     finally:
         try:
-            _cancel_all_tasks(loop)
+            _cancel_all_tasks(loop, main_task)
             loop.run_until_complete(loop.shutdown_asyncgens())
         finally:
             asyncio.set_event_loop(None)
             loop.close()
 
 
-def _cancel_all_tasks(loop):
+def _cancel_all_tasks(
+    loop: asyncio.AbstractEventLoop, main_task: "asyncio.Task[_T]"
+) -> None:
     to_cancel = asyncio.Task.all_tasks(loop)
     if not to_cancel:
         return
@@ -73,6 +75,8 @@ def _cancel_all_tasks(loop):
         if task.cancelled():
             continue
         if task.exception() is not None:
+            if task is main_task:
+                continue
             loop.call_exception_handler(
                 {
                     "message": "unhandled exception during asyncio.run() shutdown",
@@ -80,8 +84,3 @@ def _cancel_all_tasks(loop):
                     "task": task,
                 }
             )
-
-
-if sys.version_info >= (3, 7):
-    # Use system asyncio.run()
-    run = asyncio.run  # noqa

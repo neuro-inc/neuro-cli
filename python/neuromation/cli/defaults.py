@@ -16,3 +16,6 @@ DEFAULTS = {
     "job_submit_memory_amount": "1G",
     "job_ssh_user": "root",
 }
+
+
+GPU_MODELS = ["nvidia-tesla-k80", "nvidia-tesla-p4", "nvidia-tesla-v100"]
