@@ -301,7 +301,7 @@ Get help on a command
 **Usage:**
 
 ```bash
-neuro help [OPTIONS]
+neuro help [OPTIONS] [COMMAND]...
 ```
 
 **Options:**

@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from typing import Sequence
 
 import aiohttp
 import click
@@ -11,7 +12,6 @@ from yarl import URL
 import neuromation
 from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
-from typing import Sequence
 
 from .completion import completion
 from .config import config
@@ -102,7 +102,7 @@ def help(ctx: click.Context, command: Sequence[str]):
     while top_ctx.parent is not None:
         top_ctx = top_ctx.parent
 
-    not_found = 'No such command neuro "{}"'.format(' '.join(command))
+    not_found = 'No such command neuro "{}"'.format(" ".join(command))
 
     ctx_stack = [top_ctx]
     for cmd_name in command:
