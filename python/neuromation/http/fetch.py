@@ -1,13 +1,12 @@
 import asyncio
 import logging
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, asynccontextmanager
 from dataclasses import dataclass
 from functools import singledispatch
 from io import BytesIO
 from typing import Any, Dict, Optional, Union
 
 import aiohttp
-from async_generator import asynccontextmanager
 
 
 log = logging.getLogger(__name__)
