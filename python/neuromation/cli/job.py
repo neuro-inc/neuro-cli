@@ -182,7 +182,7 @@ async def submit(
 
 
 @job.command()
-@click.argument("image")
+@click.argument("id")
 @click.argument("cmd", nargs=-1)
 @click.option(
     "-t",
