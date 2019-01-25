@@ -2,7 +2,7 @@ import logging
 import os
 import shlex
 import sys
-from typing import List
+from typing import Sequence
 
 import aiohttp
 import click
@@ -111,9 +111,9 @@ async def submit(
     extshm: bool,
     http: int,
     ssh: int,
-    cmd: List[str],
-    volume: List[str],
-    env: List[str],
+    cmd: Sequence[str],
+    volume: Sequence[str],
+    env: Sequence[str],
     env_file: str,
     preemptible: bool,
     description: str,
@@ -198,7 +198,7 @@ async def submit(
 @click.pass_obj
 @run_async
 async def exec(
-    ctx: Context, id: str, tty: bool, no_key_check: bool, cmd: List[str]
+    ctx: Context, id: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
     """
     Executes command in a running job.
@@ -273,7 +273,7 @@ async def monitor(ctx: Context, id: str) -> None:
 @click.option("-q", "--quiet", is_flag=True)
 @click.pass_obj
 @run_async
-async def list(ctx: Context, status: List[str], description: str, quiet: bool) -> None:
+async def list(ctx: Context, status: Sequence[str], description: str, quiet: bool) -> None:
     """
     List all jobs.
 
@@ -316,7 +316,7 @@ async def status(ctx: Context, id: str) -> None:
 @click.argument("id", nargs=-1, required=True)
 @click.pass_obj
 @run_async
-async def kill(ctx: Context, id: List[str]):
+async def kill(ctx: Context, id: Sequence[str]):
     """
     Kill job(s)
     """
