@@ -119,7 +119,7 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
     def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
-        monkeypatch.setattr(sys, "argv", ["nmc"] + ["--show-traceback"] + arguments)
+        monkeypatch.setattr(sys, "argv", ["neuro"] + ["--show-traceback"] + arguments)
 
         from neuromation.cli import main
 

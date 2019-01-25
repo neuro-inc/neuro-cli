@@ -27,7 +27,7 @@ def run(request, monkeypatch, capsys, tmp_path, setup_null_keyring):
     def _run(arguments, rc_text):
         tmp_path.joinpath(".nmrc").write_text(rc_text)
 
-        monkeypatch.setattr(sys, "argv", ["nmc"] + arguments)
+        monkeypatch.setattr(sys, "argv", ["neuro"] + arguments)
 
         from neuromation.cli import main
 
