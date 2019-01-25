@@ -4,7 +4,7 @@ from typing import List
 import click
 from yarl import URL
 
-from neuromation.clientv2 import Image, NetworkPortForwarding, Resources
+from neuromation.client import Image, NetworkPortForwarding, Resources
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc

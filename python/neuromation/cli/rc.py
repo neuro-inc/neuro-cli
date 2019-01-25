@@ -6,7 +6,7 @@ import keyring  # type: ignore
 import yaml
 from yarl import URL
 
-from neuromation.clientv2.users import get_token_username
+from neuromation.client.users import get_token_username
 
 
 class RCException(Exception):

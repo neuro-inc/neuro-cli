@@ -1,8 +1,8 @@
 from aiohttp import web
 from yarl import URL
 
-from neuromation.clientv2 import (
-    ClientV2,
+from neuromation.client import (
+    Client,
     Image,
     NetworkPortForwarding,
     Resources,
@@ -51,7 +51,7 @@ async def test_model_train(aiohttp_server, token):
     network = NetworkPortForwarding({"http": 8181, "ssh": 22})
     resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         ret = await client.models.train(

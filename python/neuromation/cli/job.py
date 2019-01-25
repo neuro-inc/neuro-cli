@@ -7,7 +7,7 @@ from typing import Sequence
 import aiohttp
 import click
 
-from neuromation.clientv2 import Image, NetworkPortForwarding, Resources, Volume
+from neuromation.client import Image, NetworkPortForwarding, Resources, Volume
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc

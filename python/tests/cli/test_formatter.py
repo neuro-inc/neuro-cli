@@ -9,7 +9,7 @@ from neuromation.cli.formatter import (
     ResourcesFormatter,
     StorageLsFormatter,
 )
-from neuromation.clientv2 import (
+from neuromation.client import (
     Container,
     FileStatus,
     JobDescription,

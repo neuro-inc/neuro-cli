@@ -2,7 +2,7 @@ from typing import AbstractSet, Iterable, List, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.clientv2 import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
 
 
 class BaseFormatter:

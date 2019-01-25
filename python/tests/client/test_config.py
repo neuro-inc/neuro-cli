@@ -1,16 +1,16 @@
 import pytest
 from yarl import URL
 
-from neuromation.clientv2 import ClientV2
+from neuromation.client import Client
 
 
 async def test_username(token):
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         assert client.cfg.username == "user"
 
 
 async def test_storage_normalize(token):
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         url = client.cfg.norm_storage(URL("storage:path/to/file.txt"))
         assert url.scheme == "storage"
         assert url.host == "user"
@@ -18,7 +18,7 @@ async def test_storage_normalize(token):
 
 
 async def test_storage_normalize_home_dir(token):
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         url = client.cfg.norm_storage(URL("storage://~/file.txt"))
         assert url.scheme == "storage"
         assert url.host == "user"
@@ -26,7 +26,7 @@ async def test_storage_normalize_home_dir(token):
 
 
 async def test_storage_normalize_bad_scheme(token):
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         with pytest.raises(
             ValueError, match="Path should be targeting platform storage."
         ):
@@ -35,7 +35,7 @@ async def test_storage_normalize_bad_scheme(token):
 
 @pytest.mark.xfail
 async def test_storage_normalize_local(token):
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         url = client.cfg.norma_file(URL("file:///path/to/file.txt"))
         assert url.scheme == "file"
         assert url.host is None
@@ -44,7 +44,7 @@ async def test_storage_normalize_local(token):
 
 
 async def test_storage_normalize_local_bad_scheme(token):
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         with pytest.raises(
             ValueError, match="Path should be targeting local file system."
         ):
@@ -54,7 +54,7 @@ async def test_storage_normalize_local_bad_scheme(token):
 @pytest.mark.xfail
 async def test_storage_normalize_local_expand_user(token, monkeypatch):
     monkeypatch.setenv("HOME", "/home/user")
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         url = client.cfg.norm_file(URL("file:~/path/to/file.txt"))
         assert url.scheme == "file"
         assert url.host is None
@@ -63,6 +63,6 @@ async def test_storage_normalize_local_expand_user(token, monkeypatch):
 
 
 async def test_storage_normalize_local_with_host(token):
-    async with ClientV2("https://example.com", token) as client:
+    async with Client("https://example.com", token) as client:
         with pytest.raises(ValueError, match="Host part is not allowed"):
             client.cfg.norm_file(URL("file://host/path/to/file.txt"))
