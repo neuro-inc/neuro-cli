@@ -4,7 +4,6 @@ from typing import List
 import click
 from yarl import URL
 
-from neuromation.cli.command_handlers import PlatformStorageOperation
 from neuromation.clientv2 import Image, NetworkPortForwarding, Resources
 from neuromation.strings.parse import to_megabytes_str
 
@@ -107,38 +106,30 @@ async def train(
     COMMANDS list will be passed as commands to model container.
     """
 
-    config = rc.ConfigFactory.load()
-    username = config.get_platform_user_name()
-    pso = PlatformStorageOperation(username)
-
-    try:
-        dataset_url = URL(
-            "storage:/" + str(pso.render_uri_path_with_principal(dataset))
-        )
-    except ValueError:
-        raise ValueError(
-            f"Dataset path should be on platform. " f"Current value {dataset}"
-        )
-
-    try:
-        resultset_url = URL(
-            "storage:/" + str(pso.render_uri_path_with_principal(results))
-        )
-    except ValueError:
-        raise ValueError(
-            f"Results path should be on platform. " f"Current value {results}"
-        )
-
-    network = NetworkPortForwarding.from_cli(http, ssh)
-    memory = to_megabytes_str(memory)
-    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-
-    cmdline = " ".join(cmd) if cmd is not None else None
-    log.debug(f'cmdline="{cmdline}"')
-
-    image_obj = Image(image=image, command=cmdline)
-
     async with ctx.make_client() as client:
+        try:
+            dataset_url = client.storage.normalize(URL("storage:" + dataset))
+        except ValueError:
+            raise ValueError(
+                f"Dataset path should be on platform. " f"Current value {dataset}"
+            )
+
+        try:
+            resultset_url = client.storage.normalize(URL("storage:" + results))
+        except ValueError:
+            raise ValueError(
+                f"Results path should be on platform. " f"Current value {results}"
+            )
+
+        network = NetworkPortForwarding.from_cli(http, ssh)
+        memory = to_megabytes_str(memory)
+        resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+
+        cmdline = " ".join(cmd) if cmd is not None else None
+        log.debug(f'cmdline="{cmdline}"')
+
+        image_obj = Image(image=image, command=cmdline)
+
         res = await client.models.train(
             image=image_obj,
             resources=resources,
@@ -149,8 +140,7 @@ async def train(
             is_preemptible=preemptible,
         )
         job = await client.jobs.status(res.id)
-
-    click.echo(OutputFormatter.format_job(job, quiet))
+        click.echo(OutputFormatter.format_job(job, quiet))
 
 
 @model.command()

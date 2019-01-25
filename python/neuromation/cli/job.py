@@ -141,8 +141,7 @@ async def submit(
     storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
     """
 
-    config = rc.ConfigFactory.load()
-    username = config.get_platform_user_name()
+    username = ctx.username
 
     # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
     # separate function.

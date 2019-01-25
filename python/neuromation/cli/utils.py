@@ -7,6 +7,7 @@ import click
 from yarl import URL
 
 from neuromation.clientv2 import ClientV2
+from neuromation.clientv2.users import get_token_username
 from neuromation.utils import run
 
 from . import rc
@@ -22,7 +23,10 @@ class Context:
 
     @property
     def username(self) -> str:
-        pass
+        # This property intentionally fails for unregistered sessions etc.
+        ret = get_token_username(self.token)
+        assert ret
+        return ret
 
     def make_client(
         self, *, timeout: Optional[aiohttp.ClientTimeout] = None

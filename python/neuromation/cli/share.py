@@ -3,7 +3,6 @@ from yarl import URL
 
 from neuromation.clientv2 import Action, IllegalArgumentError, Permission
 
-from . import rc
 from .utils import Context, run_async
 
 
@@ -29,10 +28,8 @@ async def share(ctx: Context, uri: str, user: str, permission: str) -> None:
         raise ValueError(
             "Resource not shared. Please specify one of read/write/manage."
         ) from error
-    config = rc.ConfigFactory.load()
-    platform_user_name = config.get_platform_user_name()
     permission_obj = Permission.from_cli(
-        username=platform_user_name, uri=uri_obj, action=action
+        username=ctx.username, uri=uri_obj, action=action
     )
 
     async with ctx.make_client() as client:
