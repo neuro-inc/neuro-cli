@@ -23,7 +23,7 @@ def url(url: str):
 
 
 @config.command(name="id_rsa")
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, readable=True, dir_okay=False))
 def id_rsa(file):
     """
     Updates path to id_rsa file with private key.
