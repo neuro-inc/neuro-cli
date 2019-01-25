@@ -383,7 +383,7 @@ async def test_storage_normalize(token):
     async with ClientV2("https://example.com", token) as client:
         url = client.storage.normalize(URL("storage:path/to/file.txt"))
         assert url.scheme == "storage"
-        assert url.host == 'user'
+        assert url.host == "user"
         assert url.path == "/path/to/file.txt"
 
 
