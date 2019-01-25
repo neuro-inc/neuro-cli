@@ -3,7 +3,6 @@ import logging
 import os
 import platform
 import re
-import sys
 from collections import namedtuple
 from math import ceil
 from os.path import join
