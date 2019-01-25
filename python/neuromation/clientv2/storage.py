@@ -9,6 +9,7 @@ from yarl import URL
 
 from .abc import AbstractProgress
 from .api import API, ResourceNotFound
+from .config import Config
 
 
 log = logging.getLogger(__name__)
@@ -49,9 +50,9 @@ class FileStatus:
 
 
 class Storage:
-    def __init__(self, api: API, username: str) -> None:
+    def __init__(self, api: API, config: Config) -> None:
         self._api = api
-        self._username = username
+        self._config = config
 
     def _uri_to_path(self, uri: URL) -> str:
         if uri.scheme != "storage":
@@ -60,10 +61,10 @@ class Storage:
 
         ret: List[str] = []
         if uri.host == "~":
-            ret.append(self._username)
+            ret.append(self._config.username)
         elif not uri.is_absolute():
             # absolute paths are considered as relative to home dir
-            ret.append(self._username)
+            ret.append(self._config.username)
         else:
             assert uri.host
             ret.append(uri.host)
@@ -71,28 +72,6 @@ class Storage:
         if path:
             ret.extend(path.split("/"))
         return "/".join(ret)
-
-    def normalize(self, uri: URL) -> URL:
-        if uri.scheme != "storage":
-            # TODO (asvetlov): change error text, mention storage:// prefix explicitly
-            raise ValueError("Path should be targeting platform storage.")
-
-        if uri.host == "~":
-            uri = uri.with_host(self._username)
-        elif not uri.host:
-            uri = URL("storage://" + self._username + "/" + uri.path)
-        return uri
-
-    def normalize_local(self, uri: URL) -> URL:
-        if uri.scheme != "file":
-            # TODO (asvetlov): change error text, mention file:// prefix explicitly
-            raise ValueError("Path should be targeting local file system.")
-        if uri.host:
-            raise ValueError("Host part is not allowed")
-        path = Path(uri.path)
-        path = path.expanduser()
-        path = path.resolve()
-        return uri.with_path(str(path))
 
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = URL("storage") / self._uri_to_path(uri)
@@ -184,7 +163,7 @@ class Storage:
             progress.complete(str(src))
 
     async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
-        src = self.normalize_local(src)
+        src = self._config.norm_file(src)
         path = Path(src.path)
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist")
@@ -192,7 +171,7 @@ class Storage:
             raise IsADirectoryError(f"{path} is a directory, use recursive copy")
         if not path.is_file():
             raise OSError(f"{path} should be a regular file")
-        dst = self.normalize(dst)
+        dst = self._config.norm_storage(dst)
         if not dst.name:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
@@ -213,8 +192,8 @@ class Storage:
         await self.create(dst, self._iterate_file(progress, path))
 
     async def upload_dir(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
-        src = self.normalize_local(src)
-        dst = self.normalize(dst)
+        src = self._config.norm_file(src)
+        dst = self._config.norm_storage(dst)
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
             dst = dst / src.name
@@ -244,8 +223,8 @@ class Storage:
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
         loop = asyncio.get_event_loop()
-        src = self.normalize(src)
-        dst = self.normalize_local(dst)
+        src = self._config.norm_storage(src)
+        dst = self._config.norm_file(dst)
         path = Path(dst.path)
         if path.exists():
             if path.is_dir():
@@ -265,8 +244,8 @@ class Storage:
     async def download_dir(
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
-        src = self.normalize(src)
-        dst = self.normalize_local(dst)
+        src = self._config.norm_storage(src)
+        dst = self._config.norm_file(dst)
         path = Path(dst.path)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
