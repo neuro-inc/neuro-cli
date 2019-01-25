@@ -41,7 +41,7 @@ async def rm(ctx: Context, path: str) -> None:
 
 
 @storage.command()
-@click.argument("path")
+@click.argument("path", default="storage://~")
 @click.pass_obj
 @run_async
 async def ls(ctx: Context, path: str) -> None:
@@ -50,10 +50,7 @@ async def ls(ctx: Context, path: str) -> None:
 
     By default PATH is equal user`s home dir (storage:)
     """
-    if path is None:
-        uri = URL("storage://~")
-    else:
-        uri = URL(path)
+    uri = URL(path)
 
     async with ctx.make_client() as client:
         res = await client.storage.ls(uri)
