@@ -273,7 +273,9 @@ async def monitor(ctx: Context, id: str) -> None:
 @click.option("-q", "--quiet", is_flag=True)
 @click.pass_obj
 @run_async
-async def list(ctx: Context, status: Sequence[str], description: str, quiet: bool) -> None:
+async def list(
+    ctx: Context, status: Sequence[str], description: str, quiet: bool
+) -> None:
     """
     List all jobs.
 
