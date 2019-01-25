@@ -108,14 +108,14 @@ async def train(
 
     async with ctx.make_client() as client:
         try:
-            dataset_url = client.storage.normalize(URL("storage:" + dataset))
+            dataset_url = client.storage.normalize(URL(dataset))
         except ValueError:
             raise ValueError(
                 f"Dataset path should be on platform. " f"Current value {dataset}"
             )
 
         try:
-            resultset_url = client.storage.normalize(URL("storage:" + results))
+            resultset_url = client.storage.normalize(URL(results))
         except ValueError:
             raise ValueError(
                 f"Results path should be on platform. " f"Current value {results}"
