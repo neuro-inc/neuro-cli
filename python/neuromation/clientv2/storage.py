@@ -79,6 +79,8 @@ class Storage:
 
         if uri.host == "~":
             uri = uri.with_host(self._username)
+        elif not uri.host:
+            uri = URL("storage://" + self._username + "/" + uri.path)
         return uri
 
     def normalize_local(self, uri: URL) -> URL:
