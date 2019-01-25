@@ -1,0 +1,1 @@
+Make the client work on Python 3.7 

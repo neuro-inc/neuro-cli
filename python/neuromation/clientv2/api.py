@@ -2,8 +2,9 @@ import logging
 from typing import Any, AsyncIterator, Dict, Optional
 
 import aiohttp
-from async_generator import asynccontextmanager
 from yarl import URL
+
+from .utils import asynccontextmanager
 
 
 log = logging.getLogger(__name__)
