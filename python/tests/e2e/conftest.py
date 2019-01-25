@@ -126,7 +126,7 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
-                main(["neuro"] + ["--show-traceback"] + arguments)
+                main(["--show-traceback"] + arguments)
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem
