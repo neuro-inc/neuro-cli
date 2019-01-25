@@ -1,10 +1,12 @@
 from pathlib import Path
 
 import pytest
+from jose import jwt
 from yarl import URL
 
 from neuromation.cli import rc
 from neuromation.cli.rc import Config, ConfigFactory, RCException
+from neuromation.clientv2.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
 DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")
@@ -170,16 +172,15 @@ def test_docker_url():
     assert url == URL("https://registry.neuromation.io")
 
 
-def test_jwt_user():
+@pytest.mark.parametrize("identity_claim", JWT_IDENTITY_CLAIM_OPTIONS)
+def test_jwt_user(identity_claim):
     assert DEFAULTS.get_platform_user_name() is None
     custom_staging = rc.Config(
         url="http://platform.staging.neuromation.io/api/v1",
-        auth="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-        "eyJpZGVudGl0eSI6InJhZmEifQ."
-        "7-5YOshNXd6lKhQbMyglIQfUgBi9xNFW9vciBY9RSFA",
+        auth=jwt.encode({identity_claim: "testuser"}, "secret", algorithm="HS256"),
     )
     user = custom_staging.get_platform_user_name()
-    assert user == "rafa"
+    assert user == "testuser"
 
 
 def test_jwt_user_missing():
@@ -190,8 +191,8 @@ def test_jwt_user_missing():
         "eyJzcyI6InJhZmEifQ."
         "9JsoI-AkyDRbLbp4V00_z-K5cpgfZABU2L0z-NZ77oc",
     )
-    user = custom_staging.get_platform_user_name()
-    assert user is None
+    with pytest.raises(ValueError, match="JWT Claims structure is not correct."):
+        custom_staging.get_platform_user_name()
 
 
 def test_create_existing(nmrc):
