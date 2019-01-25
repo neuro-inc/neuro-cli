@@ -11,6 +11,7 @@ from yarl import URL
 import neuromation
 from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
+from typing import Sequence
 
 from .completion import completion
 from .config import config
@@ -93,8 +94,35 @@ def cli(
 
 
 @cli.command()
-def help():
+@click.argument("command", nargs=-1)
+@click.pass_context
+def help(ctx: click.Context, command: Sequence[str]):
     """Get help on a command"""
+    top_ctx = ctx
+    while top_ctx.parent is not None:
+        top_ctx = top_ctx.parent
+
+    not_found = 'No such command neuro "{}"'.format(' '.join(command))
+
+    ctx_stack = [top_ctx]
+    for cmd_name in command:
+        current_cmd = ctx_stack[-1].command
+        if isinstance(current_cmd, click.MultiCommand):
+            sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
+            if sub_cmd is None:
+                click.echo(not_found)
+                break
+            sub_ctx = click.Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
+            ctx_stack.append(sub_ctx)
+        else:
+            click.echo(not_found)
+            break
+    else:
+        help = ctx_stack[-1].get_help()
+        click.echo(help)
+
+    for ctx in reversed(ctx_stack[1:]):
+        ctx.close()
 
 
 cli.add_command(config)
