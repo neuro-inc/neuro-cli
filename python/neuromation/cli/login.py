@@ -19,8 +19,9 @@ from aiohttp.web import (
     Response,
     TCPSite,
 )
-from async_generator import asynccontextmanager
 from yarl import URL
+
+from neuromation.clientv2.utils import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:
