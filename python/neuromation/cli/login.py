@@ -21,7 +21,7 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.clientv2.utils import asynccontextmanager
+from neuromation.client.utils import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:

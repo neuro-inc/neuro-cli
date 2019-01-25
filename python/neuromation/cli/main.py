@@ -148,22 +148,22 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(e.exit_code)
     except ClickExit as e:
         sys.exit(e.exit_code)
-    except neuromation.clientv2.IllegalArgumentError as error:
+    except neuromation.client.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
         sys.exit(os.EX_DATAERR)
 
-    except neuromation.clientv2.ResourceNotFound as error:
+    except neuromation.client.ResourceNotFound as error:
         LOG_ERROR(f"{error}")
         sys.exit(os.EX_OSFILE)
 
-    except neuromation.clientv2.AuthenticationError as error:
+    except neuromation.client.AuthenticationError as error:
         LOG_ERROR(f"Cannot authenticate ({error})")
         sys.exit(os.EX_NOPERM)
-    except neuromation.clientv2.AuthorizationError as error:
+    except neuromation.client.AuthorizationError as error:
         LOG_ERROR(f"You haven`t enough permission ({error})")
         sys.exit(os.EX_NOPERM)
 
-    except neuromation.clientv2.ClientError as error:
+    except neuromation.client.ClientError as error:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(os.EX_SOFTWARE)
 

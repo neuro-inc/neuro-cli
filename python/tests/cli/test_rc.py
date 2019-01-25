@@ -6,7 +6,7 @@ from yarl import URL
 
 from neuromation.cli import rc
 from neuromation.cli.rc import Config, ConfigFactory, RCException
-from neuromation.clientv2.users import JWT_IDENTITY_CLAIM_OPTIONS
+from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
 DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")

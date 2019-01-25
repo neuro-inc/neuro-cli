@@ -6,7 +6,7 @@ import pytest
 from yarl import URL
 
 from neuromation.cli.rc import ConfigFactory
-from neuromation.clientv2.jobs import JobStatus as Status
+from neuromation.client import JobStatus as Status
 from tests.e2e.test_e2e_utils import wait_job_change_state_to
 
 

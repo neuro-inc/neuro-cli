@@ -4,9 +4,9 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.clientv2 import (
+from neuromation.client import (
     Action,
-    ClientV2,
+    Client,
     IllegalArgumentError,
     Permission,
     ResourceNotFound,
@@ -23,7 +23,7 @@ async def mocked_share_client(aiohttp_server, token):
     app = web.Application()
     app.router.add_post("/users/bill/permissions", handler)
     srv = await aiohttp_server(app)
-    client = ClientV2(srv.make_url("/"), token)
+    client = Client(srv.make_url("/"), token)
     yield client
     await client.close()
 

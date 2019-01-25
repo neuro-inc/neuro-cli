@@ -1,7 +1,7 @@
 import click
 from yarl import URL
 
-from neuromation.clientv2 import Action, IllegalArgumentError, Permission
+from neuromation.client import Action, IllegalArgumentError, Permission
 
 from .utils import Context, run_async
 

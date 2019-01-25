@@ -4,7 +4,7 @@ import click
 from yarl import URL
 
 # TODO(asvetlov): rename the class to avoid the namig conflict
-from neuromation.clientv2.images import Image
+from neuromation.client.images import Image
 
 from .command_spinner import SpinnerBase
 from .utils import Context, run_async

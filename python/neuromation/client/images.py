@@ -8,10 +8,8 @@ import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from neuromation.clientv2 import AuthorizationError
-
 from .abc import AbstractSpinner
-from .api import API
+from .api import API, AuthorizationError
 from .config import Config
 from .registry import Registry
 

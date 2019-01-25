@@ -6,8 +6,8 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.clientv2 import ClientV2
-from neuromation.clientv2.users import get_token_username
+from neuromation.client import Client
+from neuromation.client.users import get_token_username
 from neuromation.utils import run
 
 from . import rc
@@ -28,13 +28,11 @@ class Context:
         assert ret
         return ret
 
-    def make_client(
-        self, *, timeout: Optional[aiohttp.ClientTimeout] = None
-    ) -> ClientV2:
+    def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None) -> Client:
         kwargs = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
-        return ClientV2(self.url, self.token, **kwargs)
+        return Client(self.url, self.token, **kwargs)
 
 
 def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
