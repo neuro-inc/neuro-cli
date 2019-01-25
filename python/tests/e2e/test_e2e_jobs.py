@@ -23,7 +23,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 @pytest.mark.e2e
 def test_job_lifecycle(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -53,7 +53,7 @@ def test_job_lifecycle(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -91,7 +91,7 @@ def test_job_lifecycle(run):
 @pytest.mark.e2e
 def test_job_description(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
     description = "Test description for a job"
@@ -123,7 +123,7 @@ def test_job_description(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -163,7 +163,7 @@ def test_job_description(run):
 @pytest.mark.e2e
 def test_unschedulable_job_lifecycle(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -193,7 +193,7 @@ def test_unschedulable_job_lifecycle(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -218,7 +218,7 @@ def test_unschedulable_job_lifecycle(run):
 @pytest.mark.e2e
 def test_two_jobs_at_once(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -267,7 +267,7 @@ def test_two_jobs_at_once(run):
     assert second_job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert first_job_id in jobs_updated
