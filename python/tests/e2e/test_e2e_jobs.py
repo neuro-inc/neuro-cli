@@ -556,6 +556,7 @@ def test_e2e_multiple_env(run):
     assert_job_state(run, job_id, "Status: succeeded")
 
 
+@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_multiple_env_from_file(run, tmp_path):
     env_file = tmp_path / "env_file"
