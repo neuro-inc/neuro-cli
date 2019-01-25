@@ -1,6 +1,5 @@
 import os
 import re
-import shlex
 from time import sleep, time
 from urllib.parse import urlparse
 
@@ -581,7 +580,7 @@ def test_e2e_multiple_env_from_file(run, tmp_path):
             str(env_file),
             "--non-preemptible",
             UBUNTU_IMAGE_NAME,
-            shlex.quote(command),
+            command,
         ]
     )
 
