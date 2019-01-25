@@ -2,7 +2,6 @@ from types import TracebackType
 from typing import Union, Type, Optional
 
 import aiohttp
-from jose import jwt
 from yarl import URL
 
 from .abc import AbstractProgress, AbstractSpinner
@@ -28,7 +27,7 @@ from .jobs import (
 )
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
-from .users import Action, Permission, Users
+from .users import Action, Permission, Users, get_token_username
 from .images import Images
 
 __all__ = (
@@ -71,9 +70,8 @@ class ClientV2:
             url = URL(url)
         self._url = url
         assert token
-        jwt_data = jwt.get_unverified_claims(token)
         self._token = token
-        self._username = jwt_data.get("identity", None)
+        self._username = get_token_username(token)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)

@@ -4,8 +4,9 @@ from typing import Any, Dict, Optional
 
 import keyring  # type: ignore
 import yaml
-from jose import JWTError, jwt
 from yarl import URL
+
+from neuromation.clientv2.users import get_token_username
 
 
 class RCException(Exception):
@@ -27,8 +28,7 @@ class Config:
 
     def get_platform_user_name(self) -> Optional[str]:
         if self.auth != "" and self.auth is not None:
-            jwt_header = jwt.get_unverified_claims(self.auth)
-            return jwt_header.get("identity", None)
+            return get_token_username(self.auth)
         return None
 
 
@@ -40,15 +40,7 @@ class ConfigFactory:
 
     @classmethod
     def update_auth_token(cls, token: str, insecure: bool = False) -> Config:
-        try:
-            jwt_header = jwt.get_unverified_claims(token)
-            if "identity" not in jwt_header:
-                raise ValueError("JWT Claims structure is not correct.")
-        except JWTError as e:
-            raise ValueError(
-                f"Passed string does not contain valid JWT structure."
-            ) from e
-
+        get_token_username(token)
         return cls._update_config(auth=token, insecure=insecure)
 
     @classmethod
