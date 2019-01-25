@@ -148,7 +148,7 @@ async def submit(
     # separate function.
     if env_file:
         with open(env_file, "r") as ef:
-            env = ef.read().splitlines() + env
+            env = ef.read().splitlines() + list(env)
 
     env_dict = {}
     for line in env:
