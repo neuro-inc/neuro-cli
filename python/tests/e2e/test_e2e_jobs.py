@@ -666,7 +666,7 @@ def test_e2e_ssh_exec_echo(run):
     wait_job_change_state_to(run, job_id, Status.RUNNING)
 
     captured = run(["job", "exec", "--no-key-check", job_id, "echo 1"])
-    assert captured.out == "1\n"
+    assert captured.out == "1"
 
 
 @pytest.mark.e2e
