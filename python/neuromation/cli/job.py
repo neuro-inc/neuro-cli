@@ -34,7 +34,7 @@ def job() -> None:
     "-g",
     "--gpu",
     metavar="NUMBER",
-    type=float,
+    type=int,
     help="Number of GPUs to request",
     default=DEFAULTS["model_train_gpu_number"],
     show_default=True,
@@ -106,7 +106,7 @@ async def submit(
     image: str,
     gpu: int,
     gpu_model: str,
-    cpu: int,
+    cpu: float,
     memory: str,
     extshm: bool,
     http: int,
@@ -118,7 +118,7 @@ async def submit(
     preemptible: bool,
     description: str,
     quiet: bool,
-):
+) -> None:
     """
     Start job using IMAGE.
 
@@ -163,14 +163,14 @@ async def submit(
     log.debug(f'cmd="{cmd}"')
 
     memory = to_megabytes_str(memory)
-    image = Image(image=image, command=cmd)
+    image_obj = Image(image=image, command=cmd)
     network = NetworkPortForwarding.from_cli(http, ssh)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
 
     async with ctx.make_client() as client:
         job = await client.jobs.submit(
-            image=image,
+            image=image_obj,
             resources=resources,
             network=network,
             volumes=volumes,
@@ -318,7 +318,7 @@ async def status(ctx: Context, id: str) -> None:
 @click.argument("id", nargs=-1, required=True)
 @click.pass_obj
 @run_async
-async def kill(ctx: Context, id: Sequence[str]):
+async def kill(ctx: Context, id: Sequence[str]) -> None:
     """
     Kill job(s)
     """

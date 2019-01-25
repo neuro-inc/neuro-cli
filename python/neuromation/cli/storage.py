@@ -98,7 +98,7 @@ async def cp(
     log.debug(f"src={src}")
     log.debug(f"dst={dst}")
 
-    progress = ProgressBase.create_progress(progress)
+    progress_obj = ProgressBase.create_progress(progress)
     if not src.scheme:
         src = URL("file:" + src.path)
     if not dst.scheme:
@@ -106,14 +106,14 @@ async def cp(
     async with ctx.make_client(timeout=timeout) as client:
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
-                await client.storage.upload_dir(progress, src, dst)
+                await client.storage.upload_dir(progress_obj, src, dst)
             else:
-                await client.storage.upload_file(progress, src, dst)
+                await client.storage.upload_file(progress_obj, src, dst)
         elif src.scheme == "storage" and dst.scheme == "file":
             if recursive:
-                await client.storage.download_dir(progress, src, dst)
+                await client.storage.download_dir(progress_obj, src, dst)
             else:
-                await client.storage.download_file(progress, src, dst)
+                await client.storage.download_file(progress_obj, src, dst)
         else:
             raise RuntimeError(f"Copy operation for {src} -> {dst} is not supported")
 

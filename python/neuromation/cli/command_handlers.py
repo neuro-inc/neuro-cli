@@ -22,7 +22,7 @@ class PlatformOperation:
 
 
 class PlatformStorageOperation:
-    def __init__(self, principal: str):
+    def __init__(self, principal: str) -> None:
         self.principal = principal
 
     def _get_principal(self, path_url: ParseResult) -> str:
@@ -33,7 +33,7 @@ class PlatformStorageOperation:
             path_principal = self.principal
         return path_principal
 
-    def _is_storage_path_url(self, path: ParseResult):
+    def _is_storage_path_url(self, path: ParseResult) -> None:
         if path.scheme != "storage":
             raise ValueError("Path should be targeting platform storage.")
 
@@ -43,13 +43,13 @@ class PlatformStorageOperation:
             target_path = target_path.relative_to(PosixPath("/"))
         return target_path
 
-    def _render_platform_path_with_principal(self, path: ParseResult) -> PosixPath:
+    def _render_platform_path_with_principal(self, path: ParseResult) -> PurePosixPath:
         target_path: PosixPath = self._render_platform_path(path.path)
         target_principal = self._get_principal(path)
         posix_path = PurePosixPath(PLATFORM_DELIMITER, target_principal, target_path)
         return posix_path
 
-    def render_uri_path_with_principal(self, path: str):
+    def render_uri_path_with_principal(self, path: str) -> PurePosixPath:
         # Special case that shall be handled here, when path is '//'
         if path == "storage://":
             return PosixPath(PLATFORM_DELIMITER)

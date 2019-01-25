@@ -12,7 +12,7 @@ from .utils import Context, run_async
 
 
 @click.group()
-def image():
+def image() -> None:
     """
     Docker image operations
     """

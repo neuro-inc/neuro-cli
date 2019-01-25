@@ -9,8 +9,8 @@ ISORT_DIRS := neuromation tests build-tools
 ISORT_REGEXP := ^python/(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
-MYPY_DIRS :=  neuromation/logging neuromation/strings neuromation/clientv2 neuromation/cli/ssh_utils.py neuromation/cli/formatter.py neuromation/cli/command_spinner.py
-MYPY_REGEXP := ^(python/neuromation/(logging|strings|clientv2)/.+\\.py)|(^python/neuromation/cli/ssh_utils.py)|(^python/neuromation/cli/formatter.py)(^python/neuromation/cli/command_spinner.py)
+MYPY_DIRS :=  neuromation
+MYPY_REGEXP := ^python/+.\\py
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 

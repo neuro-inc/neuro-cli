@@ -1,12 +1,12 @@
 import logging
 import os
 import sys
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence, Type
 
 import aiohttp
 import click
 from aiodocker.exceptions import DockerError
-from click.exceptions import Abort as ClickAbort, Exit as ClickExit
+from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ignore
 from yarl import URL
 
 import neuromation
@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stderr)
 
 
-def setup_logging():
+def setup_logging() -> None:
     root_logger = logging.getLogger()
     root_logger.addHandler(console_handler)
     root_logger.setLevel(logging.DEBUG)
@@ -41,9 +41,11 @@ def setup_logging():
     # logging.getLogger("aiohttp.client").setLevel(logging.DEBUG)
 
 
-def setup_console_handler(handler, verbose, noansi=False):
+def setup_console_handler(
+    handler: logging.StreamHandler, verbose: int, noansi: bool = False
+) -> None:
     if not handler.stream.closed and handler.stream.isatty() and noansi is False:
-        format_class = ConsoleWarningFormatter
+        format_class: Type[logging.Formatter] = ConsoleWarningFormatter
     else:
         format_class = logging.Formatter
 
@@ -96,7 +98,7 @@ def cli(
 @cli.command()
 @click.argument("command", nargs=-1)
 @click.pass_context
-def help(ctx: click.Context, command: Sequence[str]):
+def help(ctx: click.Context, command: Sequence[str]) -> None:
     """Get help on a command"""
     top_ctx = ctx
     while top_ctx.parent is not None:
@@ -135,7 +137,7 @@ cli.add_command(share)
 cli.add_command(completion)
 
 
-def main(args: Optional[Sequence] = None):
+def main(args: Optional[List[str]] = None) -> None:
     try:
         cli.main(args=args, standalone_mode=False)
     except ClickAbort:

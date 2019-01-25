@@ -34,7 +34,7 @@ def model() -> None:
     "-g",
     "--gpu",
     metavar="NUMBER",
-    type=float,
+    type=int,
     help="Number of GPUs to request",
     default=DEFAULTS["model_train_gpu_number"],
     show_default=True,
@@ -88,7 +88,7 @@ async def train(
     results: str,
     gpu: int,
     gpu_model: str,
-    cpu: int,
+    cpu: float,
     memory: str,
     extshm: bool,
     http: int,
@@ -133,14 +133,14 @@ async def train(
     memory = to_megabytes_str(memory)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
-    cmd = " ".join(cmd) if cmd is not None else None
-    log.debug(f'cmd="{cmd}"')
+    cmdline = " ".join(cmd) if cmd is not None else None
+    log.debug(f'cmdline="{cmdline}"')
 
-    image = Image(image=image, command=cmd)
+    image_obj = Image(image=image, command=cmdline)
 
     async with ctx.make_client() as client:
         res = await client.models.train(
-            image=image,
+            image=image_obj,
             resources=resources,
             dataset=dataset_url,
             results=resultset_url,

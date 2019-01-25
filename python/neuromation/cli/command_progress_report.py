@@ -1,14 +1,16 @@
+from typing import Optional
+
 from neuromation.clientv2 import AbstractProgress
 
 
 class ProgressBase(AbstractProgress):
-    def start(self, file: str, size: int):
+    def start(self, file: str, size: int) -> None:
         pass
 
-    def complete(self, file: str):
+    def complete(self, file: str) -> None:
         pass
 
-    def progress(self, file: str, current: int):
+    def progress(self, file: str, current: int) -> None:
         pass
 
     @classmethod
@@ -19,20 +21,23 @@ class ProgressBase(AbstractProgress):
 
 
 class StandardPrintPercentOnly(ProgressBase):
-    def __init__(self):
-        self._file = None
-        self._file_size = None
+    def __init__(self) -> None:
+        self._file: Optional[str] = None
+        self._file_size: Optional[int] = None
 
-    def start(self, file: str, size: int):
+    def start(self, file: str, size: int) -> None:
         self._file = file
         self._file_size = size
         print(f"Starting file {file}.")
 
-    def complete(self, file: str):
+    def complete(self, file: str) -> None:
         self._file = file
         print(f"\rFile {file} upload complete.")
 
-    def progress(self, file: str, current: int):
+    def progress(self, file: str, current: int) -> None:
         self._file = file
-        progress = (100 * current) / self._file_size
+        if self._file_size:
+            progress = (100 * current) / self._file_size
+        else:
+            progress = 0
         print(f"\r{self._file}: {progress:.2f}%.", end="")

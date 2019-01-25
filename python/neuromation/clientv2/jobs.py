@@ -2,7 +2,7 @@ import asyncio
 import enum
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, SupportsInt, Tuple
+from typing import Any, Dict, List, Optional, Sequence, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
@@ -20,9 +20,9 @@ class Resources:
 
     @classmethod
     def create(
-        cls, cpu: str, gpu: str, gpu_model: str, memory: str, extshm: str
+        cls, cpu: float, gpu: int, gpu_model: str, memory: str, extshm: bool
     ) -> "Resources":
-        return cls(memory, float(cpu), int(gpu), bool(extshm), gpu_model)
+        return cls(memory, cpu, gpu, extshm, gpu_model)
 
     def to_api(self) -> Dict[str, Any]:
         value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
@@ -137,7 +137,9 @@ class Volume:
         return Volume(storage_path_with_principal, container_path, read_only)
 
     @classmethod
-    def from_cli_list(cls, username: str, lst: List[str]) -> Optional[List["Volume"]]:
+    def from_cli_list(
+        cls, username: str, lst: Sequence[str]
+    ) -> Optional[List["Volume"]]:
         if not lst:
             return None
         return [cls.from_cli(username, s) for s in lst]
@@ -320,7 +322,7 @@ class Jobs:
         *,
         image: Image,
         resources: Resources,
-        network: NetworkPortForwarding,
+        network: Optional[NetworkPortForwarding],
         volumes: Optional[List[Volume]],
         description: Optional[str],
         is_preemptible: bool = False,
