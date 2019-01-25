@@ -2,7 +2,7 @@ import asyncio
 import enum
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence, SupportsInt, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
@@ -42,9 +42,9 @@ class Resources:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class NetworkPortForwarding:
-    ports: Dict[str, int]
+    ports: Mapping[str, int]
 
     @classmethod
     def from_cli(
@@ -196,7 +196,7 @@ class Container:
     ssh: Optional[SSHPort] = None
     # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
     env: Dict[str, str] = field(default_factory=dict)
-    volumes: List[Volume] = field(default_factory=list)
+    volumes: Sequence[Volume] = field(default_factory=list)
 
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "Container":
@@ -232,10 +232,10 @@ class Container:
 class ContainerPayload:
     image: str
     command: Optional[str]
-    http: Optional[Dict[str, int]]
-    ssh: Optional[Dict[str, int]]
+    http: Optional[Mapping[str, int]]
+    ssh: Optional[Mapping[str, int]]
     resources: Resources
-    env: Optional[Dict[str, str]] = None
+    env: Optional[Mapping[str, str]] = None
 
     def to_primitive(self) -> Dict[str, Any]:
         primitive = {"image": self.image, "resources": self.resources.to_api()}
