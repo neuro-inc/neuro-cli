@@ -16,7 +16,7 @@ from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list
 def test_print_version(run):
     expected_out = f"Neuromation Platform Client {neuromation.__version__}"
 
-    captured = run(['--version'])
+    captured = run(["--version"])
     assert not captured.err
     assert captured.out == expected_out
 

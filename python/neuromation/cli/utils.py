@@ -20,7 +20,7 @@ class Context:
     def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None):
         kwargs = {}
         if timeout is not None:
-            kwargs['timeout'] = timeout
+            kwargs["timeout"] = timeout
         return ClientV2(self.url, self.token, **kwargs)
 
 
