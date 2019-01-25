@@ -3,7 +3,8 @@ import sys
 import click
 from yarl import URL
 
-from neuromation.clientv2 import Image
+# TODO(asvetlov): rename the class to avoid the namig conflict
+from neuromation.clientv2.images import Image
 
 from . import rc
 from .command_spinner import SpinnerBase
