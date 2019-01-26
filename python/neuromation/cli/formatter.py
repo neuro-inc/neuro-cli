@@ -23,7 +23,6 @@ class BaseFormatter:
 
 
 class OutputFormatter(BaseFormatter):
-
     def format_job(self, job: JobDescription, quiet: bool = True) -> str:
         if quiet:
             return job.id
