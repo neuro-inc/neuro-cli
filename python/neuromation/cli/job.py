@@ -177,7 +177,7 @@ async def submit(
             description=description,
             env=env_dict,
         )
-        click.echo(OutputFormatter.format_job(job, quiet))
+        click.echo(OutputFormatter().format_job(job, quiet))
 
 
 @job.command()

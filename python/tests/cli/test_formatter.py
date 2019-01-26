@@ -47,7 +47,7 @@ def job_descr():
 
 class TestOutputFormatter:
     def test_quiet(self, job_descr):
-        assert OutputFormatter.format_job(job_descr, quiet=True) == TEST_JOB_ID
+        assert OutputFormatter().format_job(job_descr, quiet=True) == TEST_JOB_ID
 
     def test_non_quiet(self, job_descr) -> None:
         expected = (
@@ -57,7 +57,7 @@ class TestOutputFormatter:
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
-        assert OutputFormatter.format_job(job_descr, quiet=False) == expected
+        assert OutputFormatter().format_job(job_descr, quiet=False) == expected
 
 
 class TestJobOutputFormatter:
