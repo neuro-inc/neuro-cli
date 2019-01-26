@@ -38,7 +38,7 @@ class OutputFormatter(BaseFormatter):
 class StorageLsFormatter(BaseFormatter):
     FORMAT = "{type:<15}{size:<15,}{name:<}".format
 
-    def format_ls(self, lst: List[FileStatus]) -> str:
+    def fmt_long(self, lst: List[FileStatus]) -> str:
         return "\n".join(
             self.FORMAT(type=status.type.lower(), name=status.path, size=status.size)
             for status in lst

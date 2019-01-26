@@ -374,7 +374,7 @@ class TestLSFormatter:
             + "directory      0              dir1"
         )
         assert (
-            StorageLsFormatter().format_ls(
+            StorageLsFormatter().fmt_long(
                 [
                     FileStatus("file1", 11, "FILE", 2018, "read"),
                     FileStatus("file2", 12, "FILE", 2018, "write"),
@@ -385,7 +385,7 @@ class TestLSFormatter:
         )
 
     def test_neuro_store_ls_empty(self):
-        assert StorageLsFormatter().format_ls([]) == ""
+        assert StorageLsFormatter().fmt_long([]) == ""
 
 
 class TestResourcesFormatter:
