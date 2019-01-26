@@ -310,7 +310,7 @@ async def status(ctx: Context, id: str) -> None:
     """
     async with ctx.make_client() as client:
         res = await client.jobs.status(id)
-        click.echo(JobStatusFormatter.format_job_status(res))
+        click.echo(JobStatusFormatter().format_job_status(res))
 
 
 @job.command()

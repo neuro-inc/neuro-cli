@@ -46,8 +46,7 @@ class StorageLsFormatter(BaseFormatter):
 
 
 class JobStatusFormatter(BaseFormatter):
-    @classmethod
-    def format_job_status(cls, job_status: JobDescription) -> str:
+    def format_job_status(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         if job_status.description:

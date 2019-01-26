@@ -86,7 +86,7 @@ class TestJobOutputFormatter:
             is_preemptible=True,
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -127,7 +127,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -163,7 +163,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -199,7 +199,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
