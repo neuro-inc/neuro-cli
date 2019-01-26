@@ -471,7 +471,7 @@ Executes command in a running job.
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] ID [CMD]...
+neuro job exec [OPTIONS] ID CMD...
 ```
 
 **Options:**

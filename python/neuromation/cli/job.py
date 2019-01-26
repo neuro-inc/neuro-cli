@@ -182,7 +182,7 @@ async def submit(
 
 @job.command()
 @click.argument("id")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, required=True)
 @click.option(
     "-t",
     "--tty",
