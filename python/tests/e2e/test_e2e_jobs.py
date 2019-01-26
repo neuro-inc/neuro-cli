@@ -646,6 +646,32 @@ def test_e2e_ssh_exec_false(run):
 
 
 @pytest.mark.e2e
+def test_e2e_ssh_exec_no_cmd(run):
+    command = 'bash -c "sleep 1m; false"'
+    captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    with pytest.raises(SystemExit) as cm:
+        run(["job", "exec", "--no-key-check", job_id])
+    assert cm.value.code == 2
+
+
+@pytest.mark.e2e
 def test_e2e_ssh_exec_echo(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
