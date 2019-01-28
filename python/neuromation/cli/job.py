@@ -182,7 +182,7 @@ async def submit(
 
 @job.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("id")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
     "-t",
     "--tty",
