@@ -250,7 +250,7 @@ class TestJobTelemetryFormatter:
         )
 
     def test_format_header_line(self):
-        line = JobTelemetryFormatter().format_header_line()
+        line = JobTelemetryFormatter().format_header()
         assert line == self._format(
             job_id="ID",
             timestamp="TIMESTAMP",
@@ -265,7 +265,7 @@ class TestJobTelemetryFormatter:
             cpu=0.12345, memory=256.312, timestamp=1_548_676_006.206_464
         )
         job_id = "job-ID"
-        line = JobTelemetryFormatter().format_line(job_id, telemetry)
+        line = JobTelemetryFormatter().format(job_id, telemetry)
         assert line == self._format_telemetry(job_id, telemetry)
 
     def test_format_telemetry_line_with_gpu(self):
@@ -277,7 +277,7 @@ class TestJobTelemetryFormatter:
             gpu_memory=64.5,
         )
         job_id = "job-ID"
-        line = JobTelemetryFormatter().format_line(job_id, telemetry)
+        line = JobTelemetryFormatter().format(job_id, telemetry)
         assert line == self._format_telemetry(job_id, telemetry)
 
 

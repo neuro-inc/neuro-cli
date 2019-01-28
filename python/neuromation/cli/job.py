@@ -331,9 +331,9 @@ async def top(ctx: Context, id: str) -> None:
         print_header = True
         async for res in client.jobs.top(id):
             if print_header:
-                click.echo(formatter.format_header_line())
+                click.echo(formatter.format_header())
                 print_header = False
-            line = formatter.format_line(id, res)
+            line = formatter.format(id, res)
             click.echo(f"\r{line}", nl=False)
 
 

@@ -461,7 +461,7 @@ support enabled.
 
 COMMANDS list will be passed as commands to model container.
 
-* _[neuro job top](#neuro-job-top)_: Display status of a job
+* _[neuro job top](#neuro-job-top)_: Display real-time job telemetry
 
 
 
@@ -658,7 +658,7 @@ Name | Description|
 
 ### neuro job top
 
-Display status of a job
+Display real-time job telemetry
 
 **Usage:**
 

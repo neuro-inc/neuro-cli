@@ -98,7 +98,6 @@ class JobStatusFormatter(BaseFormatter):
 
 class JobTelemetryFormatter(BaseFormatter):
     def __init__(self) -> None:
-        self.tab = "\t"
         self.col_len = {
             "id": 40,
             "timestamp": 24,
@@ -111,8 +110,8 @@ class JobTelemetryFormatter(BaseFormatter):
     def _format_timestamp(self, timestamp: float) -> str:
         return str(time.ctime(timestamp))
 
-    def format_header_line(self) -> str:
-        return self.tab.join(
+    def format_header(self) -> str:
+        return "\t".join(
             [
                 "ID".ljust(self.col_len["id"]),
                 "TIMESTAMP".ljust(self.col_len["timestamp"]),
@@ -123,13 +122,13 @@ class JobTelemetryFormatter(BaseFormatter):
             ]
         )
 
-    def format_line(self, job_id: str, info: JobTelemetry) -> str:
+    def format(self, job_id: str, info: JobTelemetry) -> str:
         timestamp = self._format_timestamp(info.timestamp)
         cpu = str(info.cpu)
         mem = str(info.memory)
         gpu = str(info.gpu_duty_cycle or "N/A")
         gpu_mem = str(info.gpu_memory or "N/A")
-        return self.tab.join(
+        return "\t".join(
             [
                 job_id.ljust(self.col_len["id"]),
                 timestamp.ljust(self.col_len["timestamp"]),
