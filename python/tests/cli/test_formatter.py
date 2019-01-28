@@ -1,6 +1,3 @@
-import time
-from typing import Union
-
 import pytest
 from yarl import URL
 
