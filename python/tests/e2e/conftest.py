@@ -105,7 +105,7 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
+def run(monkeypatch, capfd, tmp_path, setup_null_keyring, loop):
     executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
