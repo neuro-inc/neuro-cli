@@ -219,40 +219,20 @@ class TestJobOutputFormatter:
 
 
 class TestJobTelemetryFormatter:
-    def _format(
-        self,
-        job_id: str,
-        timestamp: str,
-        cpu: Union[float, str],
-        mem: Union[float, str],
-        gpu: Union[float, str],
-        gpu_mem: Union[float, str],
-    ):
+    def _format(self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str):
         return "\t".join(
             [
-                f"{job_id:<40}",
                 f"{timestamp:<24}",
-                f"{str(cpu):<15}",
-                f"{str(mem):<15}",
-                f"{str(gpu):<15}",
-                f"{str(gpu_mem):<15}",
+                f"{cpu:<15}",
+                f"{mem:<15}",
+                f"{gpu:<15}",
+                f"{gpu_mem:<15}",
             ]
-        )
-
-    def _format_telemetry(self, job_id: str, telemetry: JobTelemetry) -> str:
-        return self._format(
-            job_id=job_id,
-            timestamp=str(time.ctime(telemetry.timestamp)),
-            cpu=telemetry.cpu,
-            mem=telemetry.memory,
-            gpu=telemetry.gpu_duty_cycle or "N/A",
-            gpu_mem=telemetry.gpu_memory or "N/A",
         )
 
     def test_format_header_line(self):
         line = JobTelemetryFormatter().format_header()
         assert line == self._format(
-            job_id="ID",
             timestamp="TIMESTAMP",
             cpu="CPU (%)",
             mem="MEMORY (MB)",
@@ -262,23 +242,33 @@ class TestJobTelemetryFormatter:
 
     def test_format_telemetry_line_no_gpu(self):
         telemetry = JobTelemetry(
-            cpu=0.12345, memory=256.312, timestamp=1_548_676_006.206_464
+            cpu=0.12345, memory=256.123, timestamp=1_234_567_890.123_456_789_0
         )
-        job_id = "job-ID"
-        line = JobTelemetryFormatter().format(job_id, telemetry)
-        assert line == self._format_telemetry(job_id, telemetry)
+        line = JobTelemetryFormatter().format(telemetry)
+        assert line == self._format(
+            timestamp="Sat Feb 14 02:31:30 2009",
+            cpu="0.123",
+            mem="256.123",
+            gpu="N/A",
+            gpu_mem="N/A",
+        )
 
     def test_format_telemetry_line_with_gpu(self):
         telemetry = JobTelemetry(
             cpu=0.12345,
-            memory=256.312,
-            timestamp=1_548_676_006.206_464,
+            memory=256.1234,
+            timestamp=1_234_567_890.123_456_789_0,
             gpu_duty_cycle=99,
             gpu_memory=64.5,
         )
-        job_id = "job-ID"
-        line = JobTelemetryFormatter().format(job_id, telemetry)
-        assert line == self._format_telemetry(job_id, telemetry)
+        line = JobTelemetryFormatter().format(telemetry)
+        assert line == self._format(
+            timestamp="Sat Feb 14 02:31:30 2009",
+            cpu="0.123",
+            mem="256.123",
+            gpu="99",
+            gpu_mem=f"64.500",
+        )
 
 
 class TestBaseFormatter:

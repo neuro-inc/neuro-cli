@@ -333,7 +333,7 @@ async def top(ctx: Context, id: str) -> None:
             if print_header:
                 click.echo(formatter.format_header())
                 print_header = False
-            line = formatter.format(id, res)
+            line = formatter.format(res)
             click.echo(f"\r{line}", nl=False)
 
 
