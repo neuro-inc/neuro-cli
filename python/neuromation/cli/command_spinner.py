@@ -50,3 +50,7 @@ class StandardSpinner(SpinnerBase):
         )
         print(f"\r{message}", end="")
         self.step = self.step + 1
+
+
+def print_update_line(line: str) -> None:
+    print(f"\r{line}", end="")

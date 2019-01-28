@@ -2,7 +2,7 @@ import asyncio
 import enum
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, SupportsInt, Tuple
+from typing import Any, AsyncIterator, Dict, List, Optional, SupportsInt, Tuple
 from urllib.parse import urlparse
 
 from yarl import URL
@@ -310,6 +310,25 @@ class JobDescription:
         )
 
 
+@dataclass(frozen=True)
+class JobTelemetry:
+    cpu: float
+    memory: float
+    timestamp: float
+    gpu_duty_cycle: Optional[int] = None
+    gpu_memory: Optional[float] = None
+
+    @classmethod
+    def from_api(cls, value: Dict[str, Any]) -> "JobTelemetry":
+        return cls(
+            cpu=value["cpu"],
+            memory=value["memory"],
+            timestamp=value["timestamp"],
+            gpu_duty_cycle=value.get("gpu_duty_cycle"),
+            gpu_memory=value.get("gpu_memory"),
+        )
+
+
 class Jobs:
     def __init__(self, api: API, token: str) -> None:
         self._api = api
@@ -383,6 +402,14 @@ class Jobs:
         async with self._api.request("GET", url) as resp:
             ret = await resp.json()
             return JobDescription.from_api(ret)
+
+    async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
+        url = URL(f"jobs/{id}/top")
+        async for resp in self._api.web_socket_request(url):
+            resp_dict: Dict[str, Any] = resp.json()
+            if not isinstance(resp_dict, dict):
+                raise ValueError(f"Invalid server response type: {type(resp_dict)}")
+            yield JobTelemetry.from_api(resp_dict)
 
     async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
         try:

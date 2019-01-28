@@ -10,7 +10,11 @@ from yarl import URL
 
 import neuromation
 from neuromation.cli.command_handlers import PlatformStorageOperation
-from neuromation.cli.formatter import JobStatusFormatter, OutputFormatter
+from neuromation.cli.formatter import (
+    JobStatusFormatter,
+    JobTelemetryFormatter,
+    OutputFormatter,
+)
 from neuromation.cli.rc import Config, RCException
 from neuromation.clientv2 import (
     Action,
@@ -26,7 +30,7 @@ from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
 from .command_progress_report import ProgressBase
-from .command_spinner import SpinnerBase
+from .command_spinner import SpinnerBase, print_update_line
 from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter, StorageLsFormatter
@@ -719,6 +723,24 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
             async with ClientV2(url, token) as client:
                 res = await client.jobs.status(id)
                 return JobStatusFormatter.format_job_status(res)
+
+        @command
+        async def top(id):
+            """
+            Usage:
+                neuro job top ID
+
+            Display the job telemetry
+            """
+            formatter = JobTelemetryFormatter()
+
+            async with ClientV2(url, token) as client:
+                print(formatter.format_header_line())
+                async for res in client.jobs.top(id):
+                    line = formatter.format_telemetry_line(id, res)
+                    print_update_line(line)
+                else:
+                    print(f"Job {id} is not running")
 
         @command
         async def kill(job_ids):

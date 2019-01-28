@@ -1,8 +1,10 @@
+import time
 from typing import AbstractSet, Iterable, List, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.clientv2 import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.clientv2.jobs import JobTelemetry
 
 
 class BaseFormatter:
@@ -91,6 +93,52 @@ class JobStatusFormatter(BaseFormatter):
             result += "\n===Description===\n"
             result += f"{job_status.history.description}\n================="
         return result
+
+
+class JobTelemetryFormatter(BaseFormatter):
+    def __init__(self) -> None:
+        self.tab = "\t"
+        self.col_len = {
+            "id": 40,
+            "timestamp": 24,
+            "cpu": 15,
+            "memory": 15,
+            "gpu": 15,
+            "gpu_memory": 15,
+        }
+
+    def format_header_line(self) -> str:
+        return self.tab.join(
+            [
+                "ID".ljust(self.col_len["id"]),
+                "TIMESTAMP".ljust(self.col_len["timestamp"]),
+                "CPU (%)".ljust(self.col_len["cpu"]),
+                "MEMORY (MB)".ljust(self.col_len["memory"]),
+                "GPU (%)".ljust(self.col_len["gpu"]),
+                "GPU_MEMORY (MB)".ljust(self.col_len["gpu_memory"]),
+            ]
+        )
+
+    def format_telemetry_line(self, job_id: str, info: JobTelemetry) -> str:
+        timestamp = self._format_timestamp(info.timestamp)
+        cpu = str(info.cpu)
+        mem = str(info.memory)
+        gpu = str(info.gpu_duty_cycle or "N/A")
+        gpu_mem = str(info.gpu_memory or "N/A")
+        return self.tab.join(
+            [
+                job_id.ljust(self.col_len["id"]),
+                timestamp.ljust(self.col_len["timestamp"]),
+                cpu.ljust(self.col_len["cpu"]),
+                mem.ljust(self.col_len["memory"]),
+                gpu.ljust(self.col_len["gpu"]),
+                gpu_mem.ljust(self.col_len["gpu_memory"]),
+            ]
+        )
+
+    @classmethod
+    def _format_timestamp(cls, timestamp: float) -> str:
+        return str(time.ctime(timestamp))
 
 
 class JobListFormatter(BaseFormatter):

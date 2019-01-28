@@ -2,6 +2,7 @@ import logging
 from typing import Any, AsyncIterator, Dict, Optional
 
 import aiohttp
+from aiohttp import WSMessage
 from async_generator import asynccontextmanager
 from yarl import URL
 
@@ -90,3 +91,18 @@ class API:
                 raise err_cls(message)
             else:
                 yield resp
+
+    async def web_socket_request(
+        self, rel_url: URL, *, headers: Optional[Dict[str, str]] = None
+    ) -> AsyncIterator[WSMessage]:
+        # TODO: timeout
+        assert not rel_url.is_absolute()
+        url = (self._url / "").join(rel_url)
+        log.debug("Fetch web socket: %s", url)
+
+        async with self._session.ws_connect(url, headers=headers) as ws:
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    yield msg
+                elif msg.type in {aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR}:
+                    break
