@@ -27,9 +27,9 @@ def job() -> None:
     """
 
 
-@job.command()
+@job.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
     "--gpu",
@@ -180,9 +180,11 @@ async def submit(
         click.echo(OutputFormatter().format_job(job, quiet))
 
 
-@job.command()
+@job.command(context_settings=dict(
+    ignore_unknown_options=True,
+))
 @click.argument("id")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-t",
     "--tty",

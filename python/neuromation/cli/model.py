@@ -24,11 +24,11 @@ def model() -> None:
     """
 
 
-@model.command()
+@model.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image")
 @click.argument("dataset")
 @click.argument("results")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
     "--gpu",
