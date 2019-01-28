@@ -1,1 +1,0 @@
-Job resource output formatting for command `neuro job status` changed
