@@ -1,11 +1,12 @@
 from pathlib import Path
+from textwrap import dedent
 
 import pytest
 from jose import jwt
 from yarl import URL
 
 from neuromation.cli import rc
-from neuromation.cli.rc import Config, ConfigFactory, RCException
+from neuromation.cli.rc import AuthToken, Config
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
@@ -13,48 +14,8 @@ DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")
 
 
 @pytest.fixture
-def nmrc(tmp_path, setup_memory_keyring):
+def nmrc(tmp_path):
     return tmp_path / ".nmrc"
-
-
-@pytest.fixture
-def setup_failed_keyring():
-    import keyring.backends
-    import keyring.backends.fail
-
-    stored_keyring = keyring.get_keyring()
-    keyring.set_keyring(keyring.backends.fail.Keyring())
-    yield
-
-    keyring.set_keyring(stored_keyring)
-
-
-@pytest.fixture
-def setup_memory_keyring():
-    import keyring.backend
-    import keyring.backends.null
-
-    class Memory(keyring.backend.KeyringBackend):
-        storage = dict()
-
-        @classmethod
-        def _key(cls, service, username):
-            return f"{service}--{username}"
-
-        def get_password(self, service, username):
-            return self.storage.get(self._key(service, username), None)
-
-        def set_password(self, service, username, password):
-            self.storage[self._key(service, username)] = password
-
-        def delete_password(self, service, username):
-            self.storage.pop(self._key(service, username), None)
-
-    stored_keyring = keyring.get_keyring()
-    keyring.set_keyring(Memory())
-    yield
-
-    keyring.set_keyring(stored_keyring)
 
 
 @pytest.fixture
@@ -69,50 +30,64 @@ def test_create(nmrc):
     conf = rc.create(nmrc, Config())
     assert conf == DEFAULTS
     assert nmrc.exists()
-    assert (
-        nmrc.read_text() == f"github_rsa_path: ''\n"
-        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
-        f"url: {DEFAULTS.url}\n"
+    expected_text = dedent(
+        """\
+    auth_config:
+      audience: https://platform.dev.neuromation.io
+      auth_url: https://dev-neuromation.auth0.com/authorize
+      client_id: V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR
+      success_redirect_url: https://platform.neuromation.io
+      token_url: https://dev-neuromation.auth0.com/oauth/token
+    github_rsa_path: ''
+    url: https://platform.dev.neuromation.io/api/v1
+    """
     )
+    assert nmrc.read_text() == expected_text
 
 
-@pytest.mark.usefixtures("patch_home_for_test", "setup_memory_keyring")
+@pytest.mark.usefixtures("patch_home_for_test")
 class TestFactoryMethods:
-    def test_factory(self):
-        config: Config = Config(url="http://abc.def", auth="token1")
-        rc.ConfigFactory._update_config(url="http://abc.def", auth="token1")
+    def test_factory(self, loop):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
+        rc.ConfigFactory._update_config(url="http://abc.def", auth_token=auth_token)
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_url(self):
-        config: Config = Config(url="http://abc.def", auth="token1")
+    def test_factory_update_url(self, loop):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
         rc.ConfigFactory.update_api_url(url="http://abc.def")
         config2: Config = rc.ConfigFactory.load()
         assert config.url == config2.url
 
     def test_factory_update_url_malformed(self):
-        config: Config = Config(url="http://abc.def", auth="token1")
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="ftp://abc.def")
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
     def test_factory_update_url_malformed_trailing_slash(self):
-        config: Config = Config(url="http://abc.def", auth="token1")
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="http://abc.def/")
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
     def test_factory_update_url_malformed_with_fragment(self):
-        config: Config = Config(url="http://abc.def", auth="token1")
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="http://abc.def?blabla")
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
     def test_factory_update_url_malformed_with_anchor(self):
-        config: Config = Config(url="http://abc.def", auth="token1")
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_api_url(url="http://abc.def#ping")
         config2: Config = rc.ConfigFactory.load()
@@ -120,7 +95,9 @@ class TestFactoryMethods:
 
     def test_factory_update_id_rsa(self):
         config: Config = Config(
-            url=DEFAULTS.url, auth=DEFAULTS.auth, github_rsa_path="~/.ssh/id_rsa"
+            url=DEFAULTS.url,
+            auth_token=DEFAULTS.auth_token,
+            github_rsa_path="~/.ssh/id_rsa",
         )
         rc.ConfigFactory.update_github_rsa_path("~/.ssh/id_rsa")
         config2: Config = rc.ConfigFactory.load()
@@ -138,7 +115,7 @@ class TestFactoryMethods:
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token=no_identity)
 
-    def test_factory_forget_token(self, monkeypatch, nmrc):
+    def test_factory_forget_token(self, monkeypatch, nmrc, loop):
         def home():
             return nmrc.parent
 
@@ -146,11 +123,13 @@ class TestFactoryMethods:
         jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
         jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
         jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
-        test_token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
+        test_token = AuthToken.create_non_expiring(f"{jwt_hdr}.{jwt_claims}.{jwt_sig}")
         config: Config = Config(
-            url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
+            url=DEFAULTS.url,
+            auth_token=test_token,
+            github_rsa_path=DEFAULTS.github_rsa_path,
         )
-        rc.ConfigFactory.update_auth_token(test_token)
+        rc.ConfigFactory.update_auth_token(test_token.token)
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
         rc.ConfigFactory.forget_auth_token()
@@ -161,13 +140,11 @@ class TestFactoryMethods:
 
 def test_docker_url():
     assert DEFAULTS.docker_registry_url() == URL("https://registry.dev.neuromation.io")
-    custom_staging = rc.Config(
-        url="https://platform.staging.neuromation.io/api/v1", auth=""
-    )
+    custom_staging = rc.Config(url="https://platform.staging.neuromation.io/api/v1")
     url = custom_staging.docker_registry_url()
     assert url == URL("https://registry.staging.neuromation.io")
 
-    prod = rc.Config(url="https://platform.neuromation.io/api/v1", auth="")
+    prod = rc.Config(url="https://platform.neuromation.io/api/v1")
     url = prod.docker_registry_url()
     assert url == URL("https://registry.neuromation.io")
 
@@ -177,7 +154,9 @@ def test_jwt_user(identity_claim):
     assert DEFAULTS.get_platform_user_name() is None
     custom_staging = rc.Config(
         url="http://platform.staging.neuromation.io/api/v1",
-        auth=jwt.encode({identity_claim: "testuser"}, "secret", algorithm="HS256"),
+        auth_token=AuthToken.create_non_expiring(
+            jwt.encode({identity_claim: "testuser"}, "secret", algorithm="HS256")
+        ),
     )
     user = custom_staging.get_platform_user_name()
     assert user == "testuser"
@@ -187,9 +166,11 @@ def test_jwt_user_missing():
     assert DEFAULTS.get_platform_user_name() is None
     custom_staging = rc.Config(
         url="http://platform.staging.neuromation.io/api/v1",
-        auth="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-        "eyJzcyI6InJhZmEifQ."
-        "9JsoI-AkyDRbLbp4V00_z-K5cpgfZABU2L0z-NZ77oc",
+        auth_token=AuthToken.create_non_expiring(
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+            "eyJzcyI6InJhZmEifQ."
+            "9JsoI-AkyDRbLbp4V00_z-K5cpgfZABU2L0z-NZ77oc"
+        ),
     )
     with pytest.raises(ValueError, match="JWT Claims structure is not correct."):
         custom_staging.get_platform_user_name()
@@ -218,114 +199,7 @@ def test_load(nmrc):
     assert config == rc.Config(url="http://a.b/c")
 
 
-def test_merge_missing():
-    conf: Config = Config(url="a", auth="b")
-    merged = ConfigFactory.merge(conf, {})
-    assert merged == Config(url="a", auth="b")
-
-
-def test_merge_override_url():
-    conf: Config = Config(url="a", auth="b")
-    merged = ConfigFactory.merge(conf, {"url": "a1"})
-    assert merged == Config(url="a1", auth="b")
-
-
-def test_merge_override_token():
-    conf: Config = Config(url="a", auth="b")
-    merged = ConfigFactory.merge(conf, {"auth": "b1"})
-    assert merged == Config(url="a", auth="b1")
-
-
 def test_load_missing(nmrc):
     config = rc.load(nmrc)
     assert nmrc.exists()
     assert config == DEFAULTS
-
-
-@pytest.mark.usefixtures("patch_home_for_test", "setup_memory_keyring")
-def test_keyring(nmrc):
-    jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
-    jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
-    jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
-    test_token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
-    config: Config = Config(
-        url=DEFAULTS.url,
-        auth=test_token,
-        github_rsa_path=DEFAULTS.github_rsa_path,
-        insecure=DEFAULTS.insecure,
-    )
-    rc.ConfigFactory.update_auth_token(test_token)
-    assert (
-        nmrc.read_text() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
-        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
-        f"url: {DEFAULTS.url}\n"
-    )
-
-    config2: Config = rc.ConfigFactory.load()
-    assert config == config2
-
-    rc.ConfigFactory.forget_auth_token()
-    config3: Config = rc.ConfigFactory.load()
-
-    assert (
-        nmrc.read_text() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
-        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
-        f"url: {DEFAULTS.url}\n"
-    )
-
-    default_config: config = Config()
-    assert config3 == default_config
-
-
-@pytest.mark.usefixtures("patch_home_for_test", "setup_failed_keyring")
-def test_keyring_insecure(nmrc):
-    jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
-    jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
-    jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
-    test_token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
-    config: Config = Config(
-        url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
-    )
-    rc.ConfigFactory.update_auth_token(test_token, True)
-    assert (
-        nmrc.read_text() == f"auth: {test_token}\n"
-        f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
-        f"insecure: true\n"
-        f"url: {DEFAULTS.url}\n"
-    )
-
-    config2: Config = rc.ConfigFactory.load()
-    config.insecure = True
-    assert config == config2
-
-    rc.ConfigFactory.forget_auth_token()
-    config3: Config = rc.ConfigFactory.load()
-
-    assert (
-        nmrc.read_text() == f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
-        f"insecure: {str(DEFAULTS.insecure).lower()}\n"
-        f"url: {DEFAULTS.url}\n"
-    )
-
-    default_config: config = Config()
-    assert config3 == default_config
-
-
-@pytest.mark.usefixtures("patch_home_for_test", "setup_null_keyring")
-def test_keyring_broken_keyring(nmrc):
-    jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
-    jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
-    jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
-    test_token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
-    config: Config = Config(
-        url=DEFAULTS.url, auth=test_token, github_rsa_path=DEFAULTS.github_rsa_path
-    )
-    with pytest.raises(RCException):
-        rc.save(nmrc, config)
-    rc.ConfigFactory.update_auth_token(test_token, True)
-    assert (
-        nmrc.read_text() == f"auth: {test_token}\n"
-        f"github_rsa_path: '{DEFAULTS.github_rsa_path}'\n"
-        f"insecure: true\n"
-        f"url: {DEFAULTS.url}\n"
-    )

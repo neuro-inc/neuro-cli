@@ -1,5 +1,5 @@
 import asyncio
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -16,9 +16,18 @@ class RCException(Exception):
     pass
 
 
+def _create_default_auth_config() -> AuthConfig:
+    return AuthConfig.create(
+        base_url=URL("https://dev-neuromation.auth0.com"),
+        client_id="V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR",
+        audience="https://platform.dev.neuromation.io",
+        success_redirect_url=URL("https://platform.neuromation.io"),
+    )
+
+
 @dataclass
 class Config:
-    auth_config: AuthConfig
+    auth_config: AuthConfig = field(default_factory=_create_default_auth_config)
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
@@ -149,8 +158,7 @@ def save(path: Path, config: Config) -> Config:
 
 def load(path: Path) -> Config:
     try:
-        auth_config = _create_auth_config({})
-        return create(path, Config(auth_config=auth_config))
+        return create(path, Config())
     except FileExistsError:
         return _load(path)
 
@@ -179,13 +187,7 @@ def _create_auth_config(payload: Dict[str, Any]) -> AuthConfig:
             audience=payload["auth_config"]["audience"],
             success_redirect_url=success_redirect_url,
         )
-
-    return AuthConfig.create(
-        base_url=URL("https://dev-neuromation.auth0.com"),
-        client_id="V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR",
-        audience="https://platform.dev.neuromation.io",
-        success_redirect_url=URL("https://platform.neuromation.io"),
-    )
+    return _create_default_auth_config()
 
 
 def _load(path: Path) -> Config:
