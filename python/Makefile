@@ -210,7 +210,7 @@ ifndef VERSION
 	@exit 10
 endif
 	towncrier --version $(VERSION) --yes
-	$EDITOR CHANGELOG.md
+	$(EDITOR) CHANGELOG.md
 	./build-tools/check-changelog.py CHANGELOG.md
 	git add CHANGELOG.md
 	git add CHANGELOG.D
