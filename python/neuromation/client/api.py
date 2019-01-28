@@ -105,5 +105,3 @@ class API:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg
-                elif msg.type in {aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR}:
-                    break
