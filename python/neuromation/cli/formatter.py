@@ -106,7 +106,8 @@ class JobTelemetryFormatter(BaseFormatter):
             "gpu_memory": 15,
         }
 
-    def _format_timestamp(self, timestamp: float) -> str:
+    def format_timestamp(self, timestamp: float) -> str:
+        # NOTE: ctime returns time wrt timezone
         return str(time.ctime(timestamp))
 
     def format_header(self) -> str:
@@ -121,7 +122,7 @@ class JobTelemetryFormatter(BaseFormatter):
         )
 
     def format(self, info: JobTelemetry) -> str:
-        timestamp = self._format_timestamp(info.timestamp)
+        timestamp = self.format_timestamp(info.timestamp)
         cpu = f"{info.cpu:.3f}"
         mem = f"{info.memory:.3f}"
         gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "N/A"

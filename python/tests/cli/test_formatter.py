@@ -238,12 +238,16 @@ class TestJobTelemetryFormatter:
         )
 
     def test_format_telemetry_line_no_gpu(self):
+        formatter = JobTelemetryFormatter()
+        # NOTE: the timestamp_str encodes the local timezone
+        timestamp = 1_517_248_466.238_723_6
+        timestamp_str = formatter.format_timestamp(timestamp)
         telemetry = JobTelemetry(
-            cpu=0.12345, memory=256.123, timestamp=1_517_248_466.238_723_6
+            cpu=0.12345, memory=256.123, timestamp=timestamp
         )
         line = JobTelemetryFormatter().format(telemetry)
         assert line == self._format(
-            timestamp="Mon Jan 29 17:54:26 2018",
+            timestamp=timestamp_str,
             cpu="0.123",
             mem="256.123",
             gpu="N/A",
@@ -251,16 +255,20 @@ class TestJobTelemetryFormatter:
         )
 
     def test_format_telemetry_line_with_gpu(self):
+        formatter = JobTelemetryFormatter()
+        # NOTE: the timestamp_str encodes the local timezone
+        timestamp = 1_517_248_466
+        timestamp_str = formatter.format_timestamp(timestamp)
         telemetry = JobTelemetry(
             cpu=0.12345,
             memory=256.1234,
-            timestamp=1_517_248_466,
+            timestamp=timestamp,
             gpu_duty_cycle=99,
             gpu_memory=64.5,
         )
-        line = JobTelemetryFormatter().format(telemetry)
+        line = formatter.format(telemetry)
         assert line == self._format(
-            timestamp="Mon Jan 29 17:54:26 2018",
+            timestamp=timestamp_str,
             cpu="0.123",
             mem="256.123",
             gpu="99",
