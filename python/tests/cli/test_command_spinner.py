@@ -1,8 +1,4 @@
-from neuromation.cli.command_spinner import (
-    SpinnerBase,
-    StandardSpinner,
-    print_update_line,
-)
+from neuromation.cli.command_spinner import SpinnerBase, StandardSpinner
 
 
 def test_spinner_factory_none(capsys):
@@ -63,11 +59,3 @@ class TestSpinnerStandard:
         captured = capsys.readouterr()
         assert captured.out.strip() == "\\"
         spinner.complete()
-
-
-def test_print_update_line(capsys):
-    print_update_line("one")
-    print_update_line("two")
-    print_update_line("three")
-    captured = capsys.readouterr()
-    assert captured.out == "\rone\rtwo\rthree"

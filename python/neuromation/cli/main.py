@@ -30,7 +30,7 @@ from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
 from .command_progress_report import ProgressBase
-from .command_spinner import SpinnerBase, print_update_line
+from .command_spinner import SpinnerBase
 from .commands import command, dispatch
 from .defaults import DEFAULTS
 from .formatter import JobListFormatter, StorageLsFormatter
@@ -738,7 +738,7 @@ storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
                 print(formatter.format_header_line())
                 async for res in client.jobs.top(id):
                     line = formatter.format_telemetry_line(id, res)
-                    print_update_line(line)
+                    print(line, end="\r")
                 else:
                     print(f"Job {id} is not running")
 
