@@ -2,7 +2,6 @@ from types import TracebackType
 from typing import Union, Type, Optional
 
 import aiohttp
-from jose import jwt
 from yarl import URL
 
 from .abc import AbstractProgress, AbstractSpinner
@@ -30,6 +29,7 @@ from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
 from .users import Action, Permission, Users
 from .images import Images
+from .config import Config
 
 __all__ = (
     "Image",
@@ -42,7 +42,7 @@ __all__ = (
     "TrainResult",
     "Action",
     "Permission",
-    "ClientV2",
+    "Client",
     "FileStatusType",
     "FileStatus",
     "Container",
@@ -59,7 +59,7 @@ __all__ = (
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
-class ClientV2:
+class Client:
     def __init__(
         self,
         url: Union[URL, str],
@@ -71,13 +71,11 @@ class ClientV2:
             url = URL(url)
         self._url = url
         assert token
-        jwt_data = jwt.get_unverified_claims(token)
-        self._token = token
-        self._username = jwt_data.get("identity", None)
+        self._config = Config(url, token)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)
-        self._storage = Storage(self._api, self._username)
+        self._storage = Storage(self._api, self._config)
         self._users = Users(self._api)
         self._images: Optional[Images] = None
 
@@ -86,7 +84,7 @@ class ClientV2:
         if self._images is not None:
             await self._images.close()
 
-    async def __aenter__(self) -> "ClientV2":
+    async def __aenter__(self) -> "Client":
         return self
 
     async def __aexit__(
@@ -99,7 +97,11 @@ class ClientV2:
 
     @property
     def username(self) -> str:
-        return self._username
+        return self._config.username
+
+    @property
+    def cfg(self) -> Config:
+        return self._config
 
     @property
     def jobs(self) -> Jobs:
@@ -120,5 +122,5 @@ class ClientV2:
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images(self._api, self._url, self._token, self._username)
+            self._images = Images(self._api, self._config)
         return self._images

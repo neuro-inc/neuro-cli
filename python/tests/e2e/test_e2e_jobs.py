@@ -23,7 +23,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 @pytest.mark.e2e
 def test_job_lifecycle(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -53,7 +53,7 @@ def test_job_lifecycle(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -91,7 +91,7 @@ def test_job_lifecycle(run):
 @pytest.mark.e2e
 def test_job_description(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
     description = "Test description for a job"
@@ -123,7 +123,7 @@ def test_job_description(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -163,7 +163,7 @@ def test_job_description(run):
 @pytest.mark.e2e
 def test_unschedulable_job_lifecycle(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -193,7 +193,7 @@ def test_unschedulable_job_lifecycle(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -218,7 +218,7 @@ def test_unschedulable_job_lifecycle(run):
 @pytest.mark.e2e
 def test_two_jobs_at_once(run):
     # Remember original running jobs
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -267,7 +267,7 @@ def test_two_jobs_at_once(run):
     assert second_job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "list", "--status", "running,pending"])
+    captured = run(["job", "list", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert first_job_id in jobs_updated
@@ -556,6 +556,7 @@ def test_e2e_multiple_env(run):
     assert_job_state(run, job_id, "Status: succeeded")
 
 
+@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_multiple_env_from_file(run, tmp_path):
     env_file = tmp_path / "env_file"
@@ -645,6 +646,32 @@ def test_e2e_ssh_exec_false(run):
 
 
 @pytest.mark.e2e
+def test_e2e_ssh_exec_no_cmd(run):
+    command = 'bash -c "sleep 1m; false"'
+    captured = run(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    out = captured.out
+    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+
+    wait_job_change_state_to(run, job_id, Status.RUNNING)
+
+    with pytest.raises(SystemExit) as cm:
+        run(["job", "exec", "--no-key-check", job_id])
+    assert cm.value.code == 2
+
+
+@pytest.mark.e2e
 def test_e2e_ssh_exec_echo(run):
     command = 'bash -c "sleep 1m; false"'
     captured = run(
@@ -666,7 +693,7 @@ def test_e2e_ssh_exec_echo(run):
     wait_job_change_state_to(run, job_id, Status.RUNNING)
 
     captured = run(["job", "exec", "--no-key-check", job_id, "echo 1"])
-    assert captured.out == "1\n"
+    assert captured.out == "1"
 
 
 @pytest.mark.e2e

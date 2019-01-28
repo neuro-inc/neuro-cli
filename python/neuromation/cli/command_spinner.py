@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from neuromation.clientv2 import AbstractSpinner
+from neuromation.client import AbstractSpinner
 
 
 class SpinnerBase(AbstractSpinner):

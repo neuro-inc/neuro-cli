@@ -2,7 +2,7 @@ import asyncio
 
 import aiohttp
 
-from neuromation.clientv2 import ClientV2, JobDescription
+from neuromation.client import Client, JobDescription
 
 
 def _validate_args_for_ssh_session(
@@ -78,7 +78,7 @@ async def _connect_ssh(
 
 
 async def connect_ssh(
-    client: ClientV2,
+    client: Client,
     job_id: str,
     jump_host_key: str,
     container_user: str,
@@ -96,7 +96,7 @@ async def connect_ssh(
 
 
 async def remote_debug(
-    client: ClientV2, job_id: str, jump_host_key: str, local_port: int
+    client: Client, job_id: str, jump_host_key: str, local_port: int
 ) -> None:
     if not jump_host_key:
         raise ValueError(

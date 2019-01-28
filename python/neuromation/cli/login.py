@@ -19,8 +19,9 @@ from aiohttp.web import (
     Response,
     TCPSite,
 )
-from async_generator import asynccontextmanager
 from yarl import URL
+
+from neuromation.client.utils import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:
@@ -190,7 +191,8 @@ class AuthToken:
 
     @property
     def is_expired(self) -> bool:
-        current_time = int(self.time_factory())
+        tf = self.time_factory  # type: ignore
+        current_time = int(tf())  # type: ignore
         return self.expiration_time <= current_time
 
     @classmethod

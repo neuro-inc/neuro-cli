@@ -3,8 +3,8 @@ from typing import AbstractSet, Iterable, List, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.clientv2 import FileStatus, JobDescription, JobStatus, Resources
-from neuromation.clientv2.jobs import JobTelemetry
+from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.client.jobs import JobTelemetry
 
 
 class BaseFormatter:

@@ -7,22 +7,9 @@ from dataclasses import dataclass, field
 from textwrap import dedent
 from typing import Any, List
 
-import docopt
+import click
 
-from neuromation.cli.commands import commands, help_format, normalize_options, parse
-from neuromation.cli.main import DEFAULTS, neuro
-
-
-@dataclass()
-class ArgumentValue:
-    name: str = None
-    description: str = None
-
-
-@dataclass()
-class Argument:
-    name: str = None
-    values: List[ArgumentValue] = field(default_factory=list)
+from neuromation.cli.main import cli
 
 
 @dataclass()
@@ -35,116 +22,64 @@ class Option:
 class CommandInfo:
     name: str = None
     usage: str = None
+    short: str = None
     description: str = None
     options: List[Option] = field(default_factory=list)
     examples: str = None
     children: List[Any] = field(default_factory=list)  # CommandInfo
-    arguments: List[Argument] = field(default_factory=list)
 
 
-def parse_doc(doc, name=None) -> CommandInfo:
-    usage = docopt.printable_usage(doc)
-    parts = re.split(r"usage\s*:", usage, maxsplit=2, flags=re.IGNORECASE)
-    usage = parts[1].strip()
-    if not name:
-        name = usage
-    info = CommandInfo(name=name, usage=parts[1].strip())
-    parts = doc.split(info.usage, 2)
-    remains = parts[1]
-    remains = dedent(remains)
-    lines = remains.splitlines(True)
-    mode = "description"
-    description = []
-    examples = []
-    argument = None
-    argument_value = None
-    argument_value_ident = None
-    option = None
-    for line in lines:
-        if not line.strip():
-            continue
-        # it`s like as option
-        if (mode == "options" or mode == "option") and re.match(r"^\s*-[-\w\d]+", line):
-            mode = "option"
-            parts = re.split(r"\s{2,}", line.strip(), maxsplit=2)
-            option = Option(pattern=parts[0])
-            if len(parts) == 2:
-                option.description = parts[1].strip()
-            else:
-                # Description will starts from next line
-                option.description = ""
-            info.options.append(option)
-        # just options block, special case
-        elif re.match(r"options:\s*", line, flags=re.IGNORECASE):
-            mode = "options"
-        # examples block
-        elif re.match(r"example(?:s){0,1}:\s*", line, flags=re.IGNORECASE):
-            mode = "examples"
-        # like as argument section
-        elif re.fullmatch(r"\w+:\s*", line):
-            match = re.match(r"(\w+):\s*", line)
-            argument = Argument(name=match.group(1))
-            info.arguments.append(argument)
-            mode = "arguments"
-            argument_value_ident = None
-        elif mode == "description":
-            description.append(line.strip())
-        elif mode == "examples":
-            examples.append(line.strip())
-        elif mode == "option":
-            option.description += "\n" + line.strip()
-        elif mode == "arguments":
-            ident = len(line) - len(line.lstrip())
-            match = re.match(r"\s*(\w+)\s*(.+)*", line)
-            if match and (
-                argument_value_ident == ident or argument_value_ident is None
-            ):
-                argument_value = ArgumentValue(
-                    name=match.group(1), description=match.group(2).strip()
-                )
-                argument.values.append(argument_value)
-                argument_value_ident = ident
-            elif argument_value:
-                argument_value.description += "\n" + line.strip()
-    if examples:
-        info.examples = "\n".join(examples)
-    if description:
-        info.description = "\n".join(description)
+def parse_doc(ctx, command, stack) -> CommandInfo:
+    name = " ".join(stack)
+    formatter = ctx.make_formatter()
+    command.format_usage(ctx, formatter)
+    usage = formatter.getvalue()
+    usage = re.split(r"usage\s*:", usage, maxsplit=2, flags=re.IGNORECASE)[1].strip()
+    short = command.get_short_help_str(80)
+    info = CommandInfo(name=name, usage=usage, short=short)
+
+    formatter = ctx.make_formatter()
+    command.format_help_text(ctx, formatter)
+    help = formatter.getvalue()
+    parts = re.split(r"examples:", help, flags=re.IGNORECASE)
+    info.description = dedent(parts[0])
+    if len(parts) > 1:
+        assert len(parts) == 2
+        info.examples = dedent(parts[1])
+
+    for param in command.get_params(ctx):
+        ret = param.get_help_record(ctx)
+        if ret:
+            info.options.append(Option(ret[0], ret[1]))
 
     return info
 
 
-def parse_command(command, format_spec, stack) -> CommandInfo:
+def parse_command(parent_ctx, command, stack) -> CommandInfo:
     """
     Walk given command and all subcommands and create corresponding CommandInfo
     """
 
-    name = " ".join(stack)
-    doc = command.__doc__
-    if not doc:
-        return CommandInfo(name=name, description="Not implemented")
+    with click.Context(
+        command,
+        info_name=stack[-1],
+        color=False,
+        terminal_width=80,
+        max_content_width=80,
+        parent=parent_ctx,
+    ) as ctx:
+        info = parse_doc(ctx, command, stack)
 
-    doc = help_format(doc, format_spec)
-    info = parse_doc(doc, name)
-    try:
-        options, _ = parse(doc, stack)
-        command_result = command(**{**normalize_options(options, ["COMMAND"])})
-    except docopt.DocoptExit:
-        # dead end
-        if not re.search(r"\sCOMMAND\s*$", doc, re.M):
-            return info
-        # Try execute command without options
-        command_result = command()
-
-    if command_result:
-        for command_name in commands(command_result):
-            info.children.append(
-                parse_command(
-                    command_result.get(command_name),
-                    format_spec,
-                    stack + [command_name],
+        if isinstance(command, click.MultiCommand):
+            for command_name in command.list_commands(ctx):
+                info.children.append(
+                    parse_command(
+                        ctx,
+                        command.get_command(ctx, command_name),
+                        stack + [command_name],
+                    )
                 )
-            )
+
     return info
 
 
@@ -185,6 +120,12 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += info.usage
         md += "\n```\n\n"
 
+    if info.examples:
+        md += f"**Examples:**\n\n"
+        md += "```bash\n"
+        md += info.examples
+        md += "\n```\n\n"
+
     if info.options:
         md += "**Options:**\n\n"
         md += "Name | Description|\n"
@@ -194,54 +135,26 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
 
         md += "\n\n"
 
-    for argument in info.arguments:
-        md += f"**{argument.name}:**\n\n"
-        for value in argument.values:
-            if argument.name == "Commands":
-                anchor = info.name + " " + value.name
-                anchor = "#" + anchor.replace(" ", "-")
-                md += f"* _[{value.name}]({anchor})_: {value.description}"
-            else:
-                md += f"* _{value.name}_: {value.description}"
-            md += "\n\n"
+    if info.children:
+        md += "**Commands:**\n\n"
 
-    if info.examples:
-        md += f"**Examples:**\n\n"
-        md += "```bash\n"
-        md += info.examples
-        md += "\n```\n\n"
+        for child in info.children:
+            anchor = child.name
+            anchor = "#" + anchor.replace(" ", "-")
+            md += f"* _[{child.name}]({anchor})_: {child.description}"
+
+        md += "\n\n"
+
     return md
 
 
 def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
     md = generate_markdown(info, header_prefix)
     if info.children:
-        # Lets find Commands argument for iterationg
-        command_args = [
-            argument
-            for argument in info.arguments
-            if argument.name.lower() == "commands"
-        ]
-        if command_args:
-            arg = command_args[0]
-            for value in arg.values:
-                sub_commands = [
-                    sub_command
-                    for sub_command in info.children
-                    if sub_command.name == info.name + " " + value.name
-                ]
-                if not sub_commands:
-                    raise Exception(
-                        f"Children command {value.name} not found in {info.name}"
-                    )
-                md += "\n\n"
-                md += generate_command_markdown(sub_commands[0], header_prefix + "#")
-        # Ok, we can iterate sub commands in random order too
-        else:
-            md += "\n\n" + "\n\n".join(
-                generate_command_markdown(sub_command, header_prefix + "#")
-                for sub_command in info.children
-            )
+        md += "\n\n" + "\n\n".join(
+            generate_command_markdown(sub_command, header_prefix + "#")
+            for sub_command in info.children
+        )
     return md
 
 
@@ -255,7 +168,7 @@ def main():
     with open(input_file, "r") as input:
         with open(output_file, "w") as output:
             template = input.read()
-            info = parse_command(neuro, DEFAULTS, ["neuro"])
+            info = parse_command(None, cli, ["neuro"])
             cli_doc = generate_command_markdown(info, "")
             generated_md = template.format(cli_doc=cli_doc)
             output.write(generated_md)

@@ -13,7 +13,7 @@ from neuromation.cli.formatter import (
     ResourcesFormatter,
     StorageLsFormatter,
 )
-from neuromation.clientv2 import (
+from neuromation.client import (
     Container,
     FileStatus,
     JobDescription,
@@ -21,7 +21,7 @@ from neuromation.clientv2 import (
     JobStatusHistory,
     Resources,
 )
-from neuromation.clientv2.jobs import JobTelemetry
+from neuromation.client.jobs import JobTelemetry
 
 
 TEST_JOB_STATUS = "pending"

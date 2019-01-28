@@ -1,11 +1,12 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
-import keyring
+import keyring  # type: ignore
 import yaml
-from jose import JWTError, jwt
 from yarl import URL
+
+from neuromation.client.users import get_token_username
 
 
 class RCException(Exception):
@@ -15,39 +16,31 @@ class RCException(Exception):
 @dataclass
 class Config:
     url: str = "https://platform.dev.neuromation.io/api/v1"
-    auth: str = None
+    auth: Optional[str] = None
     github_rsa_path: str = ""
     insecure: bool = False
 
     def docker_registry_url(self) -> URL:
         platform_url = URL(self.url)
+        assert platform_url.host
         registry_host = platform_url.host.replace("platform.", "registry.")
         return URL(f"{platform_url.scheme}://{registry_host}")
 
     def get_platform_user_name(self) -> Optional[str]:
         if self.auth != "" and self.auth is not None:
-            jwt_header = jwt.get_unverified_claims(self.auth)
-            return jwt_header.get("identity", None)
+            return get_token_username(self.auth)
         return None
 
 
 class ConfigFactory:
     @classmethod
-    def load(cls):
+    def load(cls) -> Config:
         nmrc_config_path = Path.home().joinpath(".nmrc")
         return load(nmrc_config_path)
 
     @classmethod
     def update_auth_token(cls, token: str, insecure: bool = False) -> Config:
-        try:
-            jwt_header = jwt.get_unverified_claims(token)
-            if "identity" not in jwt_header:
-                raise ValueError("JWT Claims structure is not correct.")
-        except JWTError as e:
-            raise ValueError(
-                f"Passed string does not contain valid JWT structure."
-            ) from e
-
+        get_token_username(token)
         return cls._update_config(auth=token, insecure=insecure)
 
     @classmethod
@@ -75,14 +68,14 @@ class ConfigFactory:
         return cls._update_config(github_rsa_path=github_rsa_path)
 
     @classmethod
-    def _update_config(cls, **updated_fields):
+    def _update_config(cls, **updated_fields: Any) -> Config:
         nmrc_config_path = Path.home().joinpath(".nmrc")
         config = load(nmrc_config_path)
         config = cls.merge(config, updated_fields)
         return save(nmrc_config_path, config)
 
     @classmethod
-    def merge(cls, config: Config, kwargs: Dict):
+    def merge(cls, config: Config, kwargs: Dict[str, Any]) -> Config:
         default = asdict(config)
         for kv in kwargs.items():
             default[kv[0]] = kv[1]
@@ -93,7 +86,7 @@ CREDENTIAL_FIELDS = ["auth"]
 CREDENTIAL_SERVICE_NAME = "neuro"
 
 
-def save(path, config: Config) -> Config:
+def save(path: Path, config: Config) -> Config:
     dict_config = asdict(config)
     insecure = config.insecure
     for field in CREDENTIAL_FIELDS:
@@ -125,7 +118,7 @@ def save(path, config: Config) -> Config:
     return config
 
 
-def load(path) -> Config:
+def load(path: Path) -> Config:
     try:
         return create(path, Config())
     except FileExistsError:
@@ -144,7 +137,7 @@ def load(path) -> Config:
             return Config(**dict_config)
 
 
-def create(path, config):
+def create(path: Path, config: Config) -> Config:
     if Path(path).exists():
         raise FileExistsError(path)
 
