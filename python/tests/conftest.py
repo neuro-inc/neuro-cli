@@ -10,7 +10,7 @@ def token():
 
 
 @pytest.fixture
-def run(request, monkeypatch, capsys, tmp_path, loop):
+def run(request, monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
 
     def _run(arguments, rc_text):
