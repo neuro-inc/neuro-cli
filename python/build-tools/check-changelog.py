@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import click
 import pathlib
+
+import click
 
 
 @click.command()
-@click.argument('file', type=click.Path(exists=True, file_okay=True, readable=True))
+@click.argument("file", type=click.Path(exists=True, file_okay=True, readable=True))
 @click.pass_context
 def main(ctx, file):
     path = pathlib.Path(file)
