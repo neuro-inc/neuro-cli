@@ -1,9 +1,7 @@
-from .rc import Config
-
-
+API_URL = "https://platform.dev.neuromation.io/api/v1"
 DEFAULTS = {
     "token": None,
-    "api_url": Config.url,
+    "api_url": API_URL,
     "username": "username",
     "model_train_gpu_number": 0,
     "model_train_gpu_model": "nvidia-tesla-k80",

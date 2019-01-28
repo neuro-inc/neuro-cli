@@ -1,6 +1,8 @@
 import click
+from yarl import URL
 
 from . import rc
+from .defaults import API_URL
 
 
 @click.group()
@@ -63,6 +65,24 @@ def auth(token: str) -> None:
 def forget() -> None:
     """
     Forget authorization token.
-
     """
     rc.ConfigFactory.forget_auth_token()
+
+
+@click.command()
+@click.argument("url", required=False, default=API_URL, type=URL)
+def login(url: URL) -> None:
+    """
+    Log into Neuromation Platform.
+    """
+    rc.ConfigFactory.refresh_auth_token(url)
+    click.echo(f"Logged into {url}")
+
+
+@click.command()
+def logout() -> None:
+    """
+    Log out.
+    """
+    rc.ConfigFactory.forget_auth_token()
+    click.echo("Logged out")
