@@ -5,6 +5,7 @@ from neuromation.cli.formatter import (
     BaseFormatter,
     JobListFormatter,
     JobStatusFormatter,
+    JobTelemetryFormatter,
     OutputFormatter,
     ResourcesFormatter,
     StorageLsFormatter,
@@ -17,6 +18,7 @@ from neuromation.client import (
     JobStatusHistory,
     Resources,
 )
+from neuromation.client.jobs import JobTelemetry
 
 
 TEST_JOB_STATUS = "pending"
@@ -55,6 +57,7 @@ class TestOutputFormatter:
             + f"Shortcuts:\n"
             + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
+            + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
         assert OutputFormatter().format_job(job_descr, quiet=False) == expected
@@ -213,6 +216,65 @@ class TestJobOutputFormatter:
             f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
+        )
+
+
+class TestJobTelemetryFormatter:
+    def _format(self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str):
+        return "\t".join(
+            [
+                f"{timestamp:<24}",
+                f"{cpu:<15}",
+                f"{mem:<15}",
+                f"{gpu:<15}",
+                f"{gpu_mem:<15}",
+            ]
+        )
+
+    def test_format_header_line(self):
+        line = JobTelemetryFormatter().format_header()
+        assert line == self._format(
+            timestamp="TIMESTAMP",
+            cpu="CPU (%)",
+            mem="MEMORY (MB)",
+            gpu="GPU (%)",
+            gpu_mem="GPU_MEMORY (MB)",
+        )
+
+    def test_format_telemetry_line_no_gpu(self):
+        formatter = JobTelemetryFormatter()
+        # NOTE: the timestamp_str encodes the local timezone
+        timestamp = 1_517_248_466.238_723_6
+        timestamp_str = formatter.format_timestamp(timestamp)
+        telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+        line = JobTelemetryFormatter().format(telemetry)
+        assert line == self._format(
+            timestamp=timestamp_str,
+            cpu="0.123",
+            mem="256.123",
+            gpu="N/A",
+            gpu_mem="N/A",
+        )
+
+    def test_format_telemetry_line_with_gpu(self):
+        formatter = JobTelemetryFormatter()
+        # NOTE: the timestamp_str encodes the local timezone
+        timestamp = 1_517_248_466
+        timestamp_str = formatter.format_timestamp(timestamp)
+        telemetry = JobTelemetry(
+            cpu=0.12345,
+            memory=256.1234,
+            timestamp=timestamp,
+            gpu_duty_cycle=99,
+            gpu_memory=64.5,
+        )
+        line = formatter.format(telemetry)
+        assert line == self._format(
+            timestamp=timestamp_str,
+            cpu="0.123",
+            mem="256.123",
+            gpu="99",
+            gpu_mem=f"64.500",
         )
 
 

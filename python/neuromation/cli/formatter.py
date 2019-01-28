@@ -1,8 +1,10 @@
+import time
 from typing import AbstractSet, Iterable, List, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.client.jobs import JobTelemetry
 
 
 class BaseFormatter:
@@ -31,6 +33,7 @@ class OutputFormatter(BaseFormatter):
             + f"Shortcuts:\n"
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
+            + f"  neuro job top {job.id}     # display real-time job telemetry\n"
             + f"  neuro job kill {job.id}    # kill job"
         )
 
@@ -88,6 +91,48 @@ class JobStatusFormatter(BaseFormatter):
             result += "\n===Description===\n"
             result += f"{job_status.history.description}\n================="
         return result
+
+
+class JobTelemetryFormatter(BaseFormatter):
+    def __init__(self) -> None:
+        self.col_len = {
+            "timestamp": 24,
+            "cpu": 15,
+            "memory": 15,
+            "gpu": 15,
+            "gpu_memory": 15,
+        }
+
+    def format_timestamp(self, timestamp: float) -> str:
+        # NOTE: ctime returns time wrt timezone
+        return str(time.ctime(timestamp))
+
+    def format_header(self) -> str:
+        return "\t".join(
+            [
+                "TIMESTAMP".ljust(self.col_len["timestamp"]),
+                "CPU (%)".ljust(self.col_len["cpu"]),
+                "MEMORY (MB)".ljust(self.col_len["memory"]),
+                "GPU (%)".ljust(self.col_len["gpu"]),
+                "GPU_MEMORY (MB)".ljust(self.col_len["gpu_memory"]),
+            ]
+        )
+
+    def format(self, info: JobTelemetry) -> str:
+        timestamp = self.format_timestamp(info.timestamp)
+        cpu = f"{info.cpu:.3f}"
+        mem = f"{info.memory:.3f}"
+        gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "N/A"
+        gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "N/A"
+        return "\t".join(
+            [
+                timestamp.ljust(self.col_len["timestamp"]),
+                cpu.ljust(self.col_len["cpu"]),
+                mem.ljust(self.col_len["memory"]),
+                gpu.ljust(self.col_len["gpu"]),
+                gpu_mem.ljust(self.col_len["gpu_memory"]),
+            ]
+        )
 
 
 class JobListFormatter(BaseFormatter):
