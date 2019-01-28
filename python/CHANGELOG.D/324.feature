@@ -1,1 +1,0 @@
-Deep refactor ``neuro store`` command and corresponding API client.

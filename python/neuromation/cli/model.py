@@ -4,7 +4,7 @@ from typing import List
 import click
 from yarl import URL
 
-from neuromation.clientv2 import Image, NetworkPortForwarding, Resources
+from neuromation.client import Image, NetworkPortForwarding, Resources
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
@@ -24,11 +24,11 @@ def model() -> None:
     """
 
 
-@model.command()
+@model.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image")
 @click.argument("dataset")
 @click.argument("results")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
     "--gpu",
@@ -140,7 +140,7 @@ async def train(
             is_preemptible=preemptible,
         )
         job = await client.jobs.status(res.id)
-        click.echo(OutputFormatter.format_job(job, quiet))
+        click.echo(OutputFormatter().format_job(job, quiet))
 
 
 @model.command()

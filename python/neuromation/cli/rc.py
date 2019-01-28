@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 import yaml
 from yarl import URL
 
-from neuromation.clientv2.users import get_token_username
+from neuromation.client.users import get_token_username
 
 from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken

@@ -25,6 +25,7 @@
 		* [neuro job ssh](#neuro-job-ssh)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job submit](#neuro-job-submit)
+		* [neuro job top](#neuro-job-top)
 	* [neuro model](#neuro-model)
 		* [neuro model debug](#neuro-model-debug)
 		* [neuro model train](#neuro-model-train)
@@ -460,6 +461,7 @@ support enabled.
 
 COMMANDS list will be passed as commands to model container.
 
+* _[neuro job top](#neuro-job-top)_: Display real-time job telemetry
 
 
 
@@ -471,7 +473,7 @@ Executes command in a running job.
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] ID [CMD]...
+neuro job exec [OPTIONS] ID CMD...
 ```
 
 **Options:**
@@ -649,6 +651,25 @@ Name | Description|
 |_--volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job top
+
+Display real-time job telemetry
+
+**Usage:**
+
+```bash
+neuro job top [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 

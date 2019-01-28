@@ -7,12 +7,17 @@ from typing import Sequence
 import aiohttp
 import click
 
-from neuromation.clientv2 import Image, NetworkPortForwarding, Resources, Volume
+from neuromation.client import Image, NetworkPortForwarding, Resources, Volume
 from neuromation.strings.parse import to_megabytes_str
 
 from . import rc
 from .defaults import DEFAULTS, GPU_MODELS
-from .formatter import JobListFormatter, JobStatusFormatter, OutputFormatter
+from .formatter import (
+    JobListFormatter,
+    JobStatusFormatter,
+    JobTelemetryFormatter,
+    OutputFormatter,
+)
 from .ssh_utils import connect_ssh
 from .utils import Context, run_async
 
@@ -27,9 +32,9 @@ def job() -> None:
     """
 
 
-@job.command()
+@job.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
     "--gpu",
@@ -177,12 +182,12 @@ async def submit(
             description=description,
             env=env_dict,
         )
-        click.echo(OutputFormatter.format_job(job, quiet))
+        click.echo(OutputFormatter().format_job(job, quiet))
 
 
-@job.command()
+@job.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("id")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
     "-t",
     "--tty",
@@ -310,7 +315,26 @@ async def status(ctx: Context, id: str) -> None:
     """
     async with ctx.make_client() as client:
         res = await client.jobs.status(id)
-        click.echo(JobStatusFormatter.format_job_status(res))
+        click.echo(JobStatusFormatter().format_job_status(res))
+
+
+@job.command()
+@click.argument("id")
+@click.pass_obj
+@run_async
+async def top(ctx: Context, id: str) -> None:
+    """
+    Display real-time job telemetry
+    """
+    formatter = JobTelemetryFormatter()
+    async with ctx.make_client() as client:
+        print_header = True
+        async for res in client.jobs.top(id):
+            if print_header:
+                click.echo(formatter.format_header())
+                print_header = False
+            line = formatter.format(res)
+            click.echo(f"\r{line}", nl=False)
 
 
 @job.command()
