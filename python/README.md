@@ -26,6 +26,8 @@
 		* [neuro job status](#neuro-job-status)
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job top](#neuro-job-top)
+	* [neuro login](#neuro-login)
+	* [neuro logout](#neuro-logout)
 	* [neuro model](#neuro-model)
 		* [neuro model debug](#neuro-model-debug)
 		* [neuro model train](#neuro-model-train)
@@ -83,6 +85,8 @@ Name | Description|
 * _[neuro help](#neuro-help)_: Get help on a command
 * _[neuro image](#neuro-image)_: Docker image operations
 * _[neuro job](#neuro-job)_: Job operations.
+* _[neuro login](#neuro-login)_: Log into Neuromation Platform.
+* _[neuro logout](#neuro-logout)_: Log out.
 * _[neuro model](#neuro-model)_: Model operations.
 * _[neuro share](#neuro-share)_: Shares resource specified by URI to a USER with PERMISSION
 
@@ -204,7 +208,6 @@ neuro config auth [OPTIONS] TOKEN
 
 Name | Description|
 |----|------------|
-|_--insecure_|Store token in plain file instead system secured keyring|
 |_--help_|Show this message and exit.|
 
 
@@ -664,6 +667,44 @@ Display real-time job telemetry
 
 ```bash
 neuro job top [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro login
+
+Log into Neuromation Platform.
+
+**Usage:**
+
+```bash
+neuro login [OPTIONS] [URL]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro logout
+
+Log out.
+
+**Usage:**
+
+```bash
+neuro logout [OPTIONS]
 ```
 
 **Options:**
