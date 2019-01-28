@@ -36,6 +36,7 @@ class OutputFormatter(BaseFormatter):
             + f"Shortcuts:\n"
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
+            + f"  neuro job top {job.id}     # display real-time job telemetry\n"
             + f"  neuro job kill {job.id}    # kill job"
         )
 
@@ -107,6 +108,9 @@ class JobTelemetryFormatter(BaseFormatter):
             "gpu_memory": 15,
         }
 
+    def _format_timestamp(self, timestamp: float) -> str:
+        return str(time.ctime(timestamp))
+
     def format_header_line(self) -> str:
         return self.tab.join(
             [
@@ -119,7 +123,7 @@ class JobTelemetryFormatter(BaseFormatter):
             ]
         )
 
-    def format_telemetry_line(self, job_id: str, info: JobTelemetry) -> str:
+    def format_line(self, job_id: str, info: JobTelemetry) -> str:
         timestamp = self._format_timestamp(info.timestamp)
         cpu = str(info.cpu)
         mem = str(info.memory)
@@ -135,10 +139,6 @@ class JobTelemetryFormatter(BaseFormatter):
                 gpu_mem.ljust(self.col_len["gpu_memory"]),
             ]
         )
-
-    @classmethod
-    def _format_timestamp(cls, timestamp: float) -> str:
-        return str(time.ctime(timestamp))
 
 
 class JobListFormatter(BaseFormatter):

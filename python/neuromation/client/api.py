@@ -93,7 +93,7 @@ class API:
             else:
                 yield resp
 
-    async def web_socket_request(
+    async def ws_connect(
         self, rel_url: URL, *, headers: Optional[Dict[str, str]] = None
     ) -> AsyncIterator[WSMessage]:
         # TODO: timeout

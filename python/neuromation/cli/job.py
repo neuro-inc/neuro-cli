@@ -324,7 +324,7 @@ async def status(ctx: Context, id: str) -> None:
 @run_async
 async def top(ctx: Context, id: str) -> None:
     """
-    Display status of a job
+    Display real-time job telemetry
     """
     formatter = JobTelemetryFormatter()
     async with ctx.make_client() as client:
@@ -333,7 +333,7 @@ async def top(ctx: Context, id: str) -> None:
             if print_header:
                 click.echo(formatter.format_header_line())
                 print_header = False
-            line = formatter.format_telemetry_line(id, res)
+            line = formatter.format_line(id, res)
             click.echo(f"\r{line}", nl=False)
 
 

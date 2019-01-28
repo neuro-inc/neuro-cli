@@ -60,6 +60,7 @@ class TestOutputFormatter:
             + f"Shortcuts:\n"
             + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
+            + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
         assert OutputFormatter.format_job(job_descr, quiet=False) == expected
@@ -264,7 +265,7 @@ class TestJobTelemetryFormatter:
             cpu=0.12345, memory=256.312, timestamp=1_548_676_006.206_464
         )
         job_id = "job-ID"
-        line = JobTelemetryFormatter().format_telemetry_line(job_id, telemetry)
+        line = JobTelemetryFormatter().format_line(job_id, telemetry)
         assert line == self._format_telemetry(job_id, telemetry)
 
     def test_format_telemetry_line_with_gpu(self):
@@ -276,7 +277,7 @@ class TestJobTelemetryFormatter:
             gpu_memory=64.5,
         )
         job_id = "job-ID"
-        line = JobTelemetryFormatter().format_telemetry_line(job_id, telemetry)
+        line = JobTelemetryFormatter().format_line(job_id, telemetry)
         assert line == self._format_telemetry(job_id, telemetry)
 
 

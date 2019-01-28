@@ -420,11 +420,8 @@ class Jobs:
         url = URL(f"jobs/{id}/top")
         try:
             received_any = False
-            async for resp in self._api.web_socket_request(url):
-                resp_dict = resp.json()
-                if not isinstance(resp_dict, dict):
-                    raise ValueError(f"Invalid server response type: {type(resp_dict)}")
-                yield JobTelemetry.from_api(resp_dict)
+            async for resp in self._api.ws_connect(url):
+                yield JobTelemetry.from_api(resp.json())  # type: ignore
                 received_any = True
             if not received_any:
                 raise ValueError(f"Job is not running. Job Id = {id}")
