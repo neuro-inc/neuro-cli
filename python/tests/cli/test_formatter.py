@@ -83,7 +83,7 @@ class TestJobOutputFormatter:
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
             ssh_auth_server="ssh-auth",
-            is_preemptible=True,
+            is_preemptible=False,
         )
 
         status = JobStatusFormatter.format_job_status(description)
@@ -96,6 +96,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: False\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -137,6 +138,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -173,6 +175,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -208,6 +211,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
