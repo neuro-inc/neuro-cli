@@ -46,13 +46,8 @@ def show() -> None:
 
 
 @config.command()
-@click.option(
-    "--insecure",
-    is_flag=True,
-    help="Store token in plain file instead system secured keyring",
-)
 @click.argument("token")
-def auth(token: str, insecure: bool) -> None:
+def auth(token: str) -> None:
     """
     Updates authorization token.
     """
@@ -61,7 +56,7 @@ def auth(token: str, insecure: bool) -> None:
     # Do not overwrite token in case new one does not work
     # TODO (R Zubairov, 09/13/2018): on server side we shall implement
     # protection against brute-force
-    rc.ConfigFactory.update_auth_token(token=token, insecure=insecure)
+    rc.ConfigFactory.update_auth_token(token=token)
 
 
 @config.command()

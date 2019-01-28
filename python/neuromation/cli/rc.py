@@ -2,7 +2,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import keyring  # type: ignore
 import yaml
 from yarl import URL
 
@@ -18,7 +17,6 @@ class Config:
     url: str = "https://platform.dev.neuromation.io/api/v1"
     auth: Optional[str] = None
     github_rsa_path: str = ""
-    insecure: bool = False
 
     def docker_registry_url(self) -> URL:
         platform_url = URL(self.url)
@@ -39,13 +37,13 @@ class ConfigFactory:
         return load(nmrc_config_path)
 
     @classmethod
-    def update_auth_token(cls, token: str, insecure: bool = False) -> Config:
+    def update_auth_token(cls, token: str) -> Config:
         get_token_username(token)
-        return cls._update_config(auth=token, insecure=insecure)
+        return cls._update_config(auth=token)
 
     @classmethod
     def forget_auth_token(cls) -> Config:
-        return cls._update_config(auth=None, insecure=False)
+        return cls._update_config(auth=None)
 
     @classmethod
     def update_api_url(cls, url: str) -> Config:
@@ -82,38 +80,11 @@ class ConfigFactory:
         return Config(**default)
 
 
-CREDENTIAL_FIELDS = ["auth"]
-CREDENTIAL_SERVICE_NAME = "neuro"
-
-
 def save(path: Path, config: Config) -> Config:
-    dict_config = asdict(config)
-    insecure = config.insecure
-    for field in CREDENTIAL_FIELDS:
-        value = dict_config.pop(field, None)
-        if value is None:
-            try:
-                keyring.delete_password(CREDENTIAL_SERVICE_NAME, field)
-            except Exception:
-                pass
-        else:
-            if insecure:
-                dict_config[field] = value
-            else:
-                try:
-                    keyring.set_password(CREDENTIAL_SERVICE_NAME, field, value)
-                    # check if password saved
-                    if keyring.get_password(CREDENTIAL_SERVICE_NAME, field) != value:
-                        raise RuntimeError("Keyring set_password failed")
-                except Exception:
-                    raise RCException(
-                        f"Secure storage is not available, "
-                        f"use --insecure flag to enforce saving a token "
-                        f"in config file {path} as a plain text"
-                    )
+    payload = asdict(config)
 
-    with open(path, "w") as file:
-        yaml.dump(dict_config, file, default_flow_style=False)
+    with open(path, "w") as f:
+        yaml.dump(payload, f, default_flow_style=False)
 
     return config
 
@@ -122,19 +93,18 @@ def load(path: Path) -> Config:
     try:
         return create(path, Config())
     except FileExistsError:
-        with open(path, "r") as file:
-            dict_config = yaml.load(file)
-            for field in CREDENTIAL_FIELDS:
-                # Legacy fields from plain file will be supported too,
-                # it`s usable for tests
-                value = dict_config.get(field, None)
-                if value is None:
-                    try:
-                        value = keyring.get_password(CREDENTIAL_SERVICE_NAME, field)
-                        dict_config[field] = value
-                    except Exception:  # pragma: no cover
-                        pass  # pragma: no cover
-            return Config(**dict_config)
+        return _load(path)
+
+
+def _load(path: Path) -> Config:
+    with open(path, "r") as f:
+        payload = yaml.load(f)
+
+    return Config(
+        url=payload["url"],
+        auth=payload.get("auth"),
+        github_rsa_path=payload.get("github_rsa_path", ""),
+    )
 
 
 def create(path: Path, config: Config) -> Config:
