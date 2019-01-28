@@ -47,7 +47,7 @@ def job_descr():
 
 class TestOutputFormatter:
     def test_quiet(self, job_descr):
-        assert OutputFormatter.format_job(job_descr, quiet=True) == TEST_JOB_ID
+        assert OutputFormatter().format_job(job_descr, quiet=True) == TEST_JOB_ID
 
     def test_non_quiet(self, job_descr) -> None:
         expected = (
@@ -57,7 +57,7 @@ class TestOutputFormatter:
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
-        assert OutputFormatter.format_job(job_descr, quiet=False) == expected
+        assert OutputFormatter().format_job(job_descr, quiet=False) == expected
 
 
 class TestJobOutputFormatter:
@@ -86,7 +86,7 @@ class TestJobOutputFormatter:
             is_preemptible=False,
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -128,7 +128,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -165,7 +165,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -202,7 +202,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -378,7 +378,7 @@ class TestLSFormatter:
             + "directory      0              dir1"
         )
         assert (
-            StorageLsFormatter().format_ls(
+            StorageLsFormatter().fmt_long(
                 [
                     FileStatus("file1", 11, "FILE", 2018, "read"),
                     FileStatus("file2", 12, "FILE", 2018, "write"),
@@ -389,7 +389,7 @@ class TestLSFormatter:
         )
 
     def test_neuro_store_ls_empty(self):
-        assert StorageLsFormatter().format_ls([]) == ""
+        assert StorageLsFormatter().fmt_long([]) == ""
 
 
 class TestResourcesFormatter:

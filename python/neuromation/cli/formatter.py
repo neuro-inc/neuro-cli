@@ -6,8 +6,7 @@ from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
 
 
 class BaseFormatter:
-    @classmethod
-    def _truncate_string(cls, input: Optional[str], max_length: int) -> str:
+    def _truncate_string(self, input: Optional[str], max_length: int) -> str:
         if input is None:
             return ""
         if len(input) <= max_length:
@@ -19,14 +18,12 @@ class BaseFormatter:
         index_stop = max_length - len(placeholder) - len(tail)
         return input[:index_stop] + placeholder + tail
 
-    @classmethod
-    def _wrap(cls, text: Optional[str]) -> str:
+    def _wrap(self, text: Optional[str]) -> str:
         return "'" + (text or "") + "'"
 
 
 class OutputFormatter(BaseFormatter):
-    @classmethod
-    def format_job(cls, job: JobDescription, quiet: bool = True) -> str:
+    def format_job(self, job: JobDescription, quiet: bool = True) -> str:
         if quiet:
             return job.id
         return (
@@ -41,7 +38,7 @@ class OutputFormatter(BaseFormatter):
 class StorageLsFormatter(BaseFormatter):
     FORMAT = "{type:<15}{size:<15,}{name:<}".format
 
-    def format_ls(self, lst: List[FileStatus]) -> str:
+    def fmt_long(self, lst: List[FileStatus]) -> str:
         return "\n".join(
             self.FORMAT(type=status.type.lower(), name=status.path, size=status.size)
             for status in lst
@@ -49,8 +46,7 @@ class StorageLsFormatter(BaseFormatter):
 
 
 class JobStatusFormatter(BaseFormatter):
-    @classmethod
-    def format_job_status(cls, job_status: JobDescription) -> str:
+    def format_job_status(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         if job_status.description:
