@@ -17,8 +17,9 @@ from neuromation.client import (
 async def mocked_share_client(aiohttp_server, token):
     async def handler(request):
         data = await request.json()
-        assert data[0]["action"] in [item.value for item in Action]
-        return web.HTTPCreated()
+        if not data[0]["action"] in [item.value for item in Action]:
+            raise web.HTTPInternalServerError()
+        return web.HTTPCreated(reason='Permission created')
 
     app = web.Application()
     app.router.add_post("/users/bill/permissions", handler)
@@ -65,6 +66,13 @@ class TestUsersShare:
             )
 
     async def test_correct_share(self, mocked_share_client):
+        ret = await mocked_share_client.users.share(
+            user="bill",
+            permission=Permission(URL("storage://bob/resource"), Action.READ),
+        )
+        assert ret is None  # at this moment no result
+
+    async def test_correct_share2(self, mocked_share_client):
         ret = await mocked_share_client.users.share(
             user="bill",
             permission=Permission(URL("storage://bob/resource"), Action.READ),
