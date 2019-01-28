@@ -10,18 +10,7 @@ def token():
 
 
 @pytest.fixture
-def setup_null_keyring():
-    import keyring.backends.null
-
-    stored_keyring = keyring.get_keyring()
-    keyring.set_keyring(keyring.backends.null.Keyring())
-    yield
-
-    keyring.set_keyring(stored_keyring)
-
-
-@pytest.fixture
-def run(request, monkeypatch, capsys, tmp_path, setup_null_keyring):
+def run(request, monkeypatch, capsys, tmp_path, loop):
     monkeypatch.setenv("HOME", str(tmp_path))
 
     def _run(arguments, rc_text):
