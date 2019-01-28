@@ -239,11 +239,11 @@ class TestJobTelemetryFormatter:
 
     def test_format_telemetry_line_no_gpu(self):
         telemetry = JobTelemetry(
-            cpu=0.12345, memory=256.123, timestamp=1_234_567_890.298_347_58
+            cpu=0.12345, memory=256.123, timestamp=1517248466.2387236
         )
         line = JobTelemetryFormatter().format(telemetry)
         assert line == self._format(
-            timestamp="Sat Feb 14 02:31:30 2009",
+            timestamp="Mon Jan 29 17:54:26 2018",
             cpu="0.123",
             mem="256.123",
             gpu="N/A",
@@ -254,13 +254,13 @@ class TestJobTelemetryFormatter:
         telemetry = JobTelemetry(
             cpu=0.12345,
             memory=256.1234,
-            timestamp=1_234_567_890.298_347_58,
+            timestamp=1517248466,
             gpu_duty_cycle=99,
             gpu_memory=64.5,
         )
         line = JobTelemetryFormatter().format(telemetry)
         assert line == self._format(
-            timestamp="Sat Feb 14 02:31:30 2009",
+            timestamp="Mon Jan 29 17:54:26 2018",
             cpu="0.123",
             mem="256.123",
             gpu="99",
