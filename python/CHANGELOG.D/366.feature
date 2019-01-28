@@ -1,1 +1,0 @@
-Added new option `--insecure` for storing auth in plain text file instead system keyring.

@@ -1,1 +1,0 @@
-`neuro image pull/push` command improved for support different names/tags for images, introduced 'image://' scheme for image referencing.
