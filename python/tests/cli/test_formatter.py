@@ -242,9 +242,7 @@ class TestJobTelemetryFormatter:
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466.238_723_6
         timestamp_str = formatter.format_timestamp(timestamp)
-        telemetry = JobTelemetry(
-            cpu=0.12345, memory=256.123, timestamp=timestamp
-        )
+        telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
         line = JobTelemetryFormatter().format(telemetry)
         assert line == self._format(
             timestamp=timestamp_str,
