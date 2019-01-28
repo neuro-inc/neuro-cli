@@ -1,3 +1,6 @@
+import time
+from typing import Union
+
 import pytest
 from yarl import URL
 
@@ -5,6 +8,7 @@ from neuromation.cli.formatter import (
     BaseFormatter,
     JobListFormatter,
     JobStatusFormatter,
+    JobTelemetryFormatter,
     OutputFormatter,
     ResourcesFormatter,
     StorageLsFormatter,
@@ -17,6 +21,7 @@ from neuromation.clientv2 import (
     JobStatusHistory,
     Resources,
 )
+from neuromation.clientv2.jobs import JobTelemetry
 
 
 TEST_JOB_STATUS = "pending"
@@ -210,6 +215,69 @@ class TestJobOutputFormatter:
             f"{resource_formatter.format_resources(description.container.resources)}\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
+
+
+class TestJobTelemetryFormatter:
+    def _format(
+        self,
+        job_id: str,
+        timestamp: str,
+        cpu: Union[float, str],
+        mem: Union[float, str],
+        gpu: Union[float, str],
+        gpu_mem: Union[float, str],
+    ):
+        return "\t".join(
+            [
+                f"{job_id:<40}",
+                f"{timestamp:<24}",
+                f"{str(cpu):<15}",
+                f"{str(mem):<15}",
+                f"{str(gpu):<15}",
+                f"{str(gpu_mem):<15}",
+            ]
+        )
+
+    def _format_telemetry(self, job_id: str, telemetry: JobTelemetry) -> str:
+        return self._format(
+            job_id=job_id,
+            timestamp=str(time.ctime(telemetry.timestamp)),
+            cpu=telemetry.cpu,
+            mem=telemetry.memory,
+            gpu=telemetry.gpu_duty_cycle or "N/A",
+            gpu_mem=telemetry.gpu_memory or "N/A",
+        )
+
+    def test_format_header_line(self):
+        line = JobTelemetryFormatter().format_header_line()
+        assert line == self._format(
+            job_id="ID",
+            timestamp="TIMESTAMP",
+            cpu="CPU (%)",
+            mem="MEMORY (MB)",
+            gpu="GPU (%)",
+            gpu_mem="GPU_MEMORY (MB)",
+        )
+
+    def test_format_telemetry_line_no_gpu(self):
+        telemetry = JobTelemetry(
+            cpu=0.12345, memory=256.312, timestamp=1_548_676_006.206_464
+        )
+        job_id = "job-ID"
+        line = JobTelemetryFormatter().format_telemetry_line(job_id, telemetry)
+        assert line == self._format_telemetry(job_id, telemetry)
+
+    def test_format_telemetry_line_with_gpu(self):
+        telemetry = JobTelemetry(
+            cpu=0.12345,
+            memory=256.312,
+            timestamp=1_548_676_006.206_464,
+            gpu_duty_cycle=99,
+            gpu_memory=64.5,
+        )
+        job_id = "job-ID"
+        line = JobTelemetryFormatter().format_telemetry_line(job_id, telemetry)
+        assert line == self._format_telemetry(job_id, telemetry)
 
 
 class TestBaseFormatter:

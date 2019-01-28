@@ -406,7 +406,7 @@ class Jobs:
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = URL(f"jobs/{id}/top")
         async for resp in self._api.web_socket_request(url):
-            resp_dict: Dict[str, Any] = resp.json()
+            resp_dict = resp.json()
             if not isinstance(resp_dict, dict):
                 raise ValueError(f"Invalid server response type: {type(resp_dict)}")
             yield JobTelemetry.from_api(resp_dict)
