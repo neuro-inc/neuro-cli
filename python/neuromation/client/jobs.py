@@ -393,7 +393,7 @@ class Jobs:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
             raise ValueError(f"Job is not running. Job Id = {id}")
-        payload = json.dumps({"token": self._token, "job": id, "command": cmd})
+        payload = json.dumps({"reason": "exec", "payload": {"token": self._token, "job": id, "command": cmd}})
         command = ["ssh"]
         if tty:
             command += ["-tt"]
