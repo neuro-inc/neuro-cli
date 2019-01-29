@@ -7,7 +7,14 @@ from yarl import URL
 from neuromation.client import Image, NetworkPortForwarding, Resources
 from neuromation.strings.parse import to_megabytes_str
 
-from .defaults import DEFAULTS, GPU_MODELS
+from .defaults import (
+    GPU_MODELS,
+    JOB_CPU_NUMBER,
+    JOB_DEBUG_LOCAL_PORT,
+    JOB_GPU_MODEL,
+    JOB_GPU_NUMBER,
+    JOB_MEMORY_AMOUNT,
+)
 from .formatter import OutputFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
@@ -35,7 +42,7 @@ def model() -> None:
     metavar="NUMBER",
     type=int,
     help="Number of GPUs to request",
-    default=DEFAULTS["model_train_gpu_number"],
+    default=JOB_GPU_NUMBER,
     show_default=True,
 )
 @click.option(
@@ -43,7 +50,7 @@ def model() -> None:
     metavar="MODEL",
     type=click.Choice(GPU_MODELS),
     help="GPU to use",
-    default=DEFAULTS["model_train_gpu_model"],
+    default=JOB_GPU_MODEL,
     show_default=True,
 )
 @click.option(
@@ -52,7 +59,7 @@ def model() -> None:
     metavar="NUMBER",
     type=float,
     help="Number of CPUs to request",
-    default=DEFAULTS["model_train_cpu_number"],
+    default=JOB_CPU_NUMBER,
     show_default=True,
 )
 @click.option(
@@ -61,7 +68,7 @@ def model() -> None:
     metavar="AMOUNT",
     type=str,
     help="Memory amount to request",
-    default=DEFAULTS["model_train_memory_amount"],
+    default=JOB_MEMORY_AMOUNT,
     show_default=True,
 )
 @click.option("-x", "--extshm", is_flag=True, help="Request extended '/dev/shm' space")
@@ -150,7 +157,7 @@ async def train(
     "--localport",
     type=int,
     help="Local port number for debug",
-    default=DEFAULTS["model_debug_local_port"],
+    default=JOB_DEBUG_LOCAL_PORT,
     show_default=True,
 )
 @run_async

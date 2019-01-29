@@ -10,7 +10,14 @@ import click
 from neuromation.client import Image, NetworkPortForwarding, Resources, Volume
 from neuromation.strings.parse import to_megabytes_str
 
-from .defaults import DEFAULTS, GPU_MODELS
+from .defaults import (
+    GPU_MODELS,
+    JOB_CPU_NUMBER,
+    JOB_GPU_MODEL,
+    JOB_GPU_NUMBER,
+    JOB_MEMORY_AMOUNT,
+    JOB_SSH_USER,
+)
 from .formatter import (
     JobListFormatter,
     JobStatusFormatter,
@@ -41,7 +48,7 @@ def job() -> None:
     metavar="NUMBER",
     type=int,
     help="Number of GPUs to request",
-    default=DEFAULTS["model_train_gpu_number"],
+    default=JOB_GPU_NUMBER,
     show_default=True,
 )
 @click.option(
@@ -49,7 +56,7 @@ def job() -> None:
     metavar="MODEL",
     type=click.Choice(GPU_MODELS),
     help="GPU to use",
-    default=DEFAULTS["model_train_gpu_model"],
+    default=JOB_GPU_MODEL,
     show_default=True,
 )
 @click.option(
@@ -58,7 +65,7 @@ def job() -> None:
     metavar="NUMBER",
     type=float,
     help="Number of CPUs to request",
-    default=DEFAULTS["model_train_cpu_number"],
+    default=JOB_CPU_NUMBER,
     show_default=True,
 )
 @click.option(
@@ -67,7 +74,7 @@ def job() -> None:
     metavar="AMOUNT",
     type=str,
     help="Memory amount to request",
-    default=DEFAULTS["model_train_memory_amount"],
+    default=JOB_MEMORY_AMOUNT,
     show_default=True,
 )
 @click.option("-x", "--extshm", is_flag=True, help="Request extended '/dev/shm' space")
@@ -216,10 +223,7 @@ async def exec(
 @job.command()
 @click.argument("id")
 @click.option(
-    "--user",
-    help="Container user name",
-    default=DEFAULTS["job_ssh_user"],
-    show_default=True,
+    "--user", help="Container user name", default=JOB_SSH_USER, show_default=True
 )
 @click.option("--key", help="Path to container private key.")
 @click.pass_obj
