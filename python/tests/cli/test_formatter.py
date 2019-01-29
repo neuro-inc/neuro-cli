@@ -6,10 +6,10 @@ from yarl import URL
 from neuromation.cli.formatter import (
     BaseFormatter,
     ConfigFormatter,
+    JobFormatter,
     JobListFormatter,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    JobFormatter,
     ResourcesFormatter,
     StorageLsFormatter,
 )

@@ -19,10 +19,10 @@ from .defaults import (
     JOB_SSH_USER,
 )
 from .formatter import (
+    JobFormatter,
     JobListFormatter,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    JobFormatter,
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
