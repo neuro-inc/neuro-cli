@@ -20,10 +20,23 @@ class RCException(Exception):
 
 
 def _create_default_auth_config() -> AuthConfig:
+    return _create_dev_auth_config()
+
+
+def _create_dev_auth_config() -> AuthConfig:
     return AuthConfig.create(
         base_url=URL("https://dev-neuromation.auth0.com"),
         client_id="V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR",
         audience="https://platform.dev.neuromation.io",
+        success_redirect_url=URL("https://platform.neuromation.io"),
+    )
+
+
+def _create_staging_auth_config() -> AuthConfig:
+    return AuthConfig.create(
+        base_url=URL("https://staging-neuromation.auth0.com"),
+        client_id="uJV0pm5JPdHkXsSd525rlhFDVcEuUnaV",
+        audience="https://platform.staging.neuromation.io",
         success_redirect_url=URL("https://platform.neuromation.io"),
     )
 
@@ -125,7 +138,8 @@ class ConfigFactory:
         nmrc_config_path = cls.get_path()
         config = load(nmrc_config_path)
         cls._validate_api_url(str(url))
-        config = replace(config, url=str(url), auth_token=None)
+        auth_config = _create_auth_config(url, {})
+        config = replace(config, auth_config=auth_config, url=str(url), auth_token=None)
         config = cls._refresh_auth_token(config, force=True)
         save(nmrc_config_path, config)
         return config
@@ -199,7 +213,7 @@ def _create_auth_token(payload: Dict[str, Any]) -> Optional[AuthToken]:
     return None
 
 
-def _create_auth_config(payload: Dict[str, Any]) -> AuthConfig:
+def _create_auth_config(api_url: URL, payload: Dict[str, Any]) -> AuthConfig:
     if "auth_config" in payload:
         success_redirect_url = payload["auth_config"].get("success_redirect_url")
         if success_redirect_url:
@@ -211,6 +225,10 @@ def _create_auth_config(payload: Dict[str, Any]) -> AuthConfig:
             audience=payload["auth_config"]["audience"],
             success_redirect_url=success_redirect_url,
         )
+
+    # TODO: temporary hardcoded until /api/v1/config is implemented
+    if api_url == URL("https://platform.staging.neuromation.io/api/v1"):
+        return _create_staging_auth_config()
     return _create_default_auth_config()
 
 
@@ -224,12 +242,13 @@ def _load(path: Path) -> Config:
     with path.open("r") as f:
         payload = yaml.load(f)
 
-    auth_config = _create_auth_config(payload)
+    api_url = URL(payload["url"])
+    auth_config = _create_auth_config(api_url, payload)
     auth_token = _create_auth_token(payload)
 
     return Config(
         auth_config=auth_config,
-        url=payload["url"],
+        url=str(api_url),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
     )
