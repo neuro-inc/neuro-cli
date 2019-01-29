@@ -47,14 +47,14 @@ def test_create(nmrc):
 
 @pytest.mark.usefixtures("patch_home_for_test")
 class TestFactoryMethods:
-    def test_factory(self, loop):
+    def test_factory(self):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         rc.ConfigFactory._update_config(url="http://abc.def", auth_token=auth_token)
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_url(self, loop):
+    def test_factory_update_url(self):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         rc.ConfigFactory.update_api_url(url="http://abc.def")
@@ -115,7 +115,7 @@ class TestFactoryMethods:
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token=no_identity)
 
-    def test_factory_forget_token(self, monkeypatch, nmrc, loop):
+    def test_factory_forget_token(self, monkeypatch, nmrc):
         def home():
             return nmrc.parent
 

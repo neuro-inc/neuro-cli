@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -7,6 +6,7 @@ import yaml
 from yarl import URL
 
 from neuromation.client.users import get_token_username
+from neuromation.utils import run
 
 from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
@@ -113,10 +113,7 @@ class ConfigFactory:
             return config
 
         auth_negotiator = AuthNegotiator(config=config.auth_config)
-        loop = asyncio.get_event_loop()
-        auth_token = loop.run_until_complete(
-            auth_negotiator.refresh_token(config.auth_token)
-        )
+        auth_token = run(auth_negotiator.refresh_token(config.auth_token))
         return replace(config, auth_token=auth_token)
 
     @classmethod
