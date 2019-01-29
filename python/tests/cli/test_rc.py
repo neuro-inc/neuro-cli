@@ -207,6 +207,16 @@ def test_load_missing(nmrc):
     assert config == DEFAULTS
 
 
+def test_load_bad_file_mode(nmrc):
+    document = """
+        url: 'http://a.b/c'
+    """
+    nmrc.write_text(document)  # 0o644 by defaul
+
+    with pytest.raises(rc.RCException):
+        rc.load(nmrc)
+
+
 def test_unregistered():
     config = rc.Config()
     with pytest.raises(rc.RCException):
