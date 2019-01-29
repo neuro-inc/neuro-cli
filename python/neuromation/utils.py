@@ -1,6 +1,6 @@
 import asyncio
 from typing import Awaitable, TypeVar
-
+import sys
 
 _T = TypeVar("_T")
 
@@ -60,7 +60,10 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
 def _cancel_all_tasks(
     loop: asyncio.AbstractEventLoop, main_task: "asyncio.Task[_T]"
 ) -> None:
-    to_cancel = asyncio.Task.all_tasks(loop)
+    if sys.version_info >= (3, 7):
+        to_cancel = asyncio.all_tasks(loop)
+    else:
+        to_cancel = asyncio.Task.all_tasks(loop)
     if not to_cancel:
         return
 
