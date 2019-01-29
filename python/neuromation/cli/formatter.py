@@ -26,7 +26,7 @@ class BaseFormatter:
         return "'" + (text or "") + "'"
 
 
-class OutputFormatter(BaseFormatter):
+class JobFormatter(BaseFormatter):
     def __call__(self, job: JobDescription, quiet: bool = True) -> str:
         if quiet:
             return job.id

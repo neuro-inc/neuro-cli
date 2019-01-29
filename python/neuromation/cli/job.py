@@ -22,7 +22,7 @@ from .formatter import (
     JobListFormatter,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    OutputFormatter,
+    JobFormatter,
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
@@ -189,7 +189,7 @@ async def submit(
             description=description,
             env=env_dict,
         )
-        click.echo(OutputFormatter()(job, quiet))
+        click.echo(JobFormatter()(job, quiet))
 
 
 @job.command(context_settings=dict(ignore_unknown_options=True))
