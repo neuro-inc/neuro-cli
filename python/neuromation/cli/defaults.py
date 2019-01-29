@@ -1,7 +1,9 @@
+from typing import Any, Dict
+
 from .rc import ConfigFactory
 
 
-def load_defaults():
+def load_defaults() -> Dict[str, Any]:
     return {
         "token": None,
         "api_url": ConfigFactory.load().url,
