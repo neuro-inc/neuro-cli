@@ -67,9 +67,7 @@ class JobStatusFormatter(BaseFormatter):
 
         result += f"Command: {job_status.container.command}\n"
         resource_formatter = ResourcesFormatter()
-        result += (
-            resource_formatter(job_status.container.resources) + "\n"
-        )
+        result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
 
         if job_status.http_url:

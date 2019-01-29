@@ -432,9 +432,7 @@ class TestJobListFormatter:
             return f"test-job-{index}".ljust(40)
 
         expected = "\n".join([format_expected_job_line(0)])
-        assert (
-            self.quiet(jobs, description="test-description-0") == expected
-        ), expected
+        assert self.quiet(jobs, description="test-description-0") == expected, expected
 
 
 class TestLSFormatter:
