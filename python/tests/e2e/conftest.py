@@ -43,6 +43,7 @@ def sesisonloop():
     yield loop
     loop.close()
 
+
 @pytest.fixture
 def tmpstorage(run, request):
     url = "storage:" + str(uuid()) + "/"
@@ -74,13 +75,12 @@ async def generate_test_data(root, count, size_mb, loop):
                     tee {name} | \
                     {exec_sha_name}""",
             stdout=asyncio.subprocess.PIPE,
-            loop=loop
+            loop=loop,
         )
         asyncio.set_event_loop(old_loop)
 
         stdout, _ = await asyncio.wait_for(
-            process.communicate(), timeout=GENERATION_TIMEOUT_SEC,
-            loop=loop
+            process.communicate(), timeout=GENERATION_TIMEOUT_SEC, loop=loop
         )
 
         # sha1sum appends file name to the output
@@ -91,7 +91,7 @@ async def generate_test_data(root, count, size_mb, loop):
             generate_file(str(root / name), loop)
             for name in ("{:04d}.bin".format(i) for i in range(count))
         ],
-        loop=loop
+        loop=loop,
     )
 
 
@@ -104,7 +104,9 @@ def static_path(tmp_path_factory):
 def data(static_path, sesisonloop):
     folder = static_path / "data"
     folder.mkdir()
-    return sesisonloop.run_until_complete(generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB, sesisonloop))
+    return sesisonloop.run_until_complete(
+        generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB, sesisonloop)
+    )
 
 
 @pytest.fixture(scope="session")
