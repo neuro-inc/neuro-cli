@@ -30,6 +30,10 @@ log = logging.getLogger(__name__)
 job_id_pattern = r"Job ID:\s*(\S+)"
 
 
+class TestRetriesExceeded(Exception):
+    pass
+
+
 SysCap = namedtuple("SysCap", "out err")
 
 
@@ -156,6 +160,10 @@ def run(monkeypatch, capfd, tmp_path):
                     executed_jobs_list.append(match.group(1))
 
             return SysCap(out.strip(), err.strip())
+        else:
+            raise TestRetriesExceeded(
+                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
+            )
 
     yield _run
     # try to kill all executed jobs regardless of the status
