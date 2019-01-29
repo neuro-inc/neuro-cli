@@ -205,3 +205,9 @@ def test_load_missing(nmrc):
     config = rc.load(nmrc)
     assert nmrc.exists()
     assert config == DEFAULTS
+
+
+def test_unregistered():
+    config = rc.Config()
+    with pytest.raises(rc.RCException):
+        config._check_registered()

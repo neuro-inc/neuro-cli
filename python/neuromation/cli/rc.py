@@ -57,8 +57,6 @@ class Config:
         if not auth:
             raise RCException("User is not registered, run 'neuro login'.")
         username = get_token_username(auth)
-        if not username:
-            raise RCException("User is not registered, run 'neuro login'.")
         return auth, username
 
     @property
