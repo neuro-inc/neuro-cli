@@ -181,7 +181,7 @@ Name | Description|
 **Commands:**
 
 * _[neuro config auth](#neuro-config-auth)_: Updates authorization token.
-* _[neuro config forget](#neuro-config-forget)_: Forget authorization token.
+* _[neuro config forget](#neuro-config-forget)_: Forget authorization token. (DEPRECATED)
 * _[neuro config id_rsa](#neuro-config-id_rsa)_: Updates path to id_rsa file with private key.
 
 FILE is being used for accessing remote shell, remote debug.
@@ -215,7 +215,7 @@ Name | Description|
 
 ### neuro config forget
 
-Forget authorization token.
+Forget authorization token. \(DEPRECATED)
 
 **Usage:**
 

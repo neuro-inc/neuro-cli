@@ -61,7 +61,7 @@ def auth(token: str) -> None:
     rc.ConfigFactory.update_auth_token(token=token)
 
 
-@config.command()
+@config.command(deprecated=True)
 def forget() -> None:
     """
     Forget authorization token.
