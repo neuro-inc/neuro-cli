@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
 import yaml
@@ -52,32 +52,26 @@ class Config:
             return get_token_username(self.auth)
         return None
 
-    def _check_registered(self) -> None:
+    def _check_registered(self) -> Tuple[str, str]:
         auth = self.auth
         if not auth:
             raise RCException("User is not registered, run 'neuro login'.")
         username = get_token_username(auth)
         if not username:
             raise RCException("User is not registered, run 'neuro login'.")
+        return auth, username
 
     @property
     def username(self) -> str:
         # This property intentionally fails for unregistered sessions etc.
-        self._check_registered()
-        token = self.auth
-        assert token  # to make mypy happy
-        ret = get_token_username(token)
-        assert ret  # to make mypy happy
-        return ret
+        token, username = self._check_registered()
+        return username
 
     def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None) -> Client:
-        self._check_registered()
+        token, username = self._check_registered()
         kwargs = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
-        token = self.auth
-        # to pass mypy, _check_registered ensures that user is registered already
-        assert token
         return Client(self.url, token, **kwargs)
 
 
