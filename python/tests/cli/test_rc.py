@@ -211,7 +211,7 @@ def test_load_bad_file_mode(nmrc):
     document = """
         url: 'http://a.b/c'
     """
-    nmrc.write_text(document)  # 0o644 by defaul
+    nmrc.write_text(document)  # 0o644 by default
 
     with pytest.raises(rc.RCException):
         rc.load(nmrc)
