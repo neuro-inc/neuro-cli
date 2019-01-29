@@ -7,7 +7,8 @@ from yarl import URL
 from neuromation.client.images import Image
 
 from .command_spinner import SpinnerBase
-from .utils import Context, run_async
+from .rc import Config
+from .utils import run_async
 
 
 @click.group()
@@ -22,7 +23,7 @@ def image() -> None:
 @click.argument("remote_image_name", required=False)
 @click.pass_obj
 @run_async
-async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
+async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
     """
     Push an image to platform registry.
 
@@ -39,7 +40,7 @@ async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
 
     """
 
-    username = ctx.username
+    username = cfg.username
 
     local_image = remote_image = Image.from_local(image_name, username)
     if remote_image_name:
@@ -47,7 +48,7 @@ async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
 
     spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pushing image {}  ")
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         result_remote_image = await client.images.push(
             local_image, remote_image, spinner
         )
@@ -59,7 +60,7 @@ async def push(ctx: Context, image_name: str, remote_image_name: str) -> None:
 @click.argument("local_image_name", required=False)
 @click.pass_obj
 @run_async
-async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
+async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
     """
     Pull an image from platform registry.
 
@@ -75,7 +76,7 @@ async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
 
     """
 
-    username = ctx.username
+    username = cfg.username
 
     remote_image = local_image = Image.from_url(URL(image_name), username)
     if local_image_name:
@@ -83,7 +84,7 @@ async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
 
     spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pulling image {}  ")
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         result_local_image = await client.images.pull(
             remote_image, local_image, spinner
         )
@@ -93,14 +94,14 @@ async def pull(ctx: Context, image_name: str, local_image_name: str) -> None:
 @image.command()
 @click.pass_obj
 @run_async
-async def ls(ctx: Context) -> None:
+async def ls(cfg: Config) -> None:
     """
     List user's images which are available for jobs.
 
     You will see here own and shared with you images
     """
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         images = await client.images.ls()
         for image in images:
             click.echo(image)

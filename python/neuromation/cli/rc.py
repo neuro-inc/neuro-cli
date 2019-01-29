@@ -1,10 +1,13 @@
+import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
+import aiohttp
 import yaml
 from yarl import URL
 
+from neuromation.client import Client
 from neuromation.client.users import get_token_username
 from neuromation.utils import run
 
@@ -48,6 +51,26 @@ class Config:
         if self.auth:
             return get_token_username(self.auth)
         return None
+
+    def _check_registered(self) -> Tuple[str, str]:
+        auth = self.auth
+        if not auth:
+            raise RCException("User is not registered, run 'neuro login'.")
+        username = get_token_username(auth)
+        return auth, username
+
+    @property
+    def username(self) -> str:
+        # This property intentionally fails for unregistered sessions etc.
+        token, username = self._check_registered()
+        return username
+
+    def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None) -> Client:
+        token, username = self._check_registered()
+        kwargs = {}
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        return Client(self.url, token, **kwargs)
 
 
 class ConfigFactory:
@@ -147,9 +170,13 @@ def save(path: Path, config: Config) -> Config:
             "refresh_token": config.auth_token.refresh_token,
         }
 
-    with open(path, "w") as f:
+    # forbid access to other users
+    if path.exists():
+        # drop a file if exists to reopen it in exclusive mode for writing
+        path.unlink()
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    with os.fdopen(os.open(path, flags, 0o600), "w") as f:
         yaml.dump(payload, f, default_flow_style=False)
-
     return config
 
 
@@ -188,7 +215,13 @@ def _create_auth_config(payload: Dict[str, Any]) -> AuthConfig:
 
 
 def _load(path: Path) -> Config:
-    with open(path, "r") as f:
+    stat = path.stat()
+    if stat.st_mode & 0o777 != 0o600:
+        raise RCException(
+            f"Config file {path} has compromised permission bits, "
+            f"run 'chmod 600 {path}' before usage"
+        )
+    with path.open("r") as f:
         payload = yaml.load(f)
 
     auth_config = _create_auth_config(payload)

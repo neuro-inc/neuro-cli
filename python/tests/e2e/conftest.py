@@ -116,6 +116,7 @@ def run(monkeypatch, capfd, tmp_path):
     rc_text = RC_TEXT.format(token=e2e_test_token)
     config_path = tmp_path / ".nmrc"
     config_path.write_text(rc_text)
+    config_path.chmod(0o600)
 
     def _home():
         return Path(tmp_path)
