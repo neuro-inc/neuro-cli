@@ -1,8 +1,11 @@
+import textwrap
+
 import pytest
 from yarl import URL
 
 from neuromation.cli.formatter import (
     BaseFormatter,
+    ConfigFormatter,
     JobListFormatter,
     JobStatusFormatter,
     JobTelemetryFormatter,
@@ -10,6 +13,8 @@ from neuromation.cli.formatter import (
     ResourcesFormatter,
     StorageLsFormatter,
 )
+from neuromation.cli.login import AuthToken
+from neuromation.cli.rc import Config
 from neuromation.client import (
     Container,
     FileStatus,
@@ -488,4 +493,23 @@ class TestResourcesFormatter:
             "  Memory: 16 MB\n"
             "  CPU: 0.1\n"
             "  Additional: Extended SHM space"
+        )
+
+
+class TestConfigFormatter:
+    def test_output(self, token) -> None:
+        config = Config(
+            auth_token=AuthToken(
+                token=token, refresh_token="refresh-token", expiration_time=123_456
+            ),
+            github_rsa_path="path",
+        )
+        out = ConfigFormatter()(config)
+        assert out == textwrap.dedent(
+            """\
+            Config:
+              User Name: user
+              API URL: https://platform.dev.neuromation.io/api/v1
+              Docker Registry URL: https://registry.dev.neuromation.io
+              Github RSA Path: path"""
         )
