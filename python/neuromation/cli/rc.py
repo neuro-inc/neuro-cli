@@ -183,7 +183,7 @@ def save(path: Path, config: Config) -> Config:
         # drop a file if exists to reopen it in exclusive mode for writing
         path.unlink()
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    with os.fdopen(os.open(path, flags, 0o600), 'w') as f:
+    with os.fdopen(os.open(path, flags, 0o600), "w") as f:
         yaml.dump(payload, f, default_flow_style=False)
     return config
 
