@@ -3,8 +3,8 @@ from typing import List
 import pytest
 from aiohttp import web
 
-from neuromation.clientv2 import (
-    ClientV2,
+from neuromation.client import (
+    Client,
     Image,
     JobDescription,
     NetworkPortForwarding,
@@ -12,6 +12,7 @@ from neuromation.clientv2 import (
     Resources,
     Volume,
 )
+from neuromation.client.jobs import JobTelemetry
 
 
 async def test_jobs_monitor(aiohttp_server, token):
@@ -31,7 +32,7 @@ async def test_jobs_monitor(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     lst = []
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         async for data in client.jobs.monitor("job-id"):
             lst.append(data)
 
@@ -61,9 +62,85 @@ async def test_monitor_notexistent_job(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     lst = []
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         with pytest.raises(ResourceNotFound):
             async for data in client.jobs.monitor("job-id"):
+                lst.append(data)
+    assert lst == []
+
+
+async def test_job_top(aiohttp_server, token):
+    def get_data_chunk(index):
+        return {
+            "cpu": 0.5,
+            "memory": 50,
+            "timestamp": index,
+            "gpu_duty_cycle": 50,
+            "gpu_memory": 55.6,
+        }
+
+    def get_job_telemetry(index):
+        return JobTelemetry(
+            cpu=0.5, memory=50, timestamp=index, gpu_duty_cycle=50, gpu_memory=55.6
+        )
+
+    async def top_stream(request):
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+
+        for i in range(10):
+            await ws.send_json(get_data_chunk(i))
+
+        await ws.close()
+        return ws
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id/top", top_stream)
+
+    srv = await aiohttp_server(app)
+
+    lst = []
+    async with Client(srv.make_url("/"), token) as client:
+        async for data in client.jobs.top("job-id"):
+            lst.append(data)
+
+    assert lst == [get_job_telemetry(i) for i in range(10)]
+
+
+async def test_top_finished_job(aiohttp_server, token):
+    async def handler(request):
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+
+        await ws.close()
+        return ws
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id/top", handler)
+
+    srv = await aiohttp_server(app)
+
+    lst = []
+    async with Client(srv.make_url("/"), token) as client:
+        with pytest.raises(ValueError, match="not running"):
+            async for data in client.jobs.top("job-id"):
+                lst.append(data)
+    assert lst == []
+
+
+async def test_top_nonexisting_job(aiohttp_server, token):
+    async def handler(request):
+        raise web.HTTPBadRequest()
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id/top", handler)
+
+    srv = await aiohttp_server(app)
+
+    lst = []
+    async with Client(srv.make_url("/"), token) as client:
+        with pytest.raises(ValueError, match="not found"):
+            async for data in client.jobs.top("job-id"):
                 lst.append(data)
     assert lst == []
 
@@ -77,7 +154,7 @@ async def test_kill_not_found_error(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         with pytest.raises(ResourceNotFound):
             await client.jobs.kill("job-id")
 
@@ -91,7 +168,7 @@ async def test_kill_ok(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         ret = await client.jobs.kill("job-id")
 
     assert ret is None
@@ -149,7 +226,7 @@ async def test_status_failed(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         ret = await client.jobs.status("job-id")
 
     assert ret == JobDescription.from_api(JSON)
@@ -207,7 +284,7 @@ async def test_status_with_ssh_and_http(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         ret = await client.jobs.status("job-id")
 
     assert ret == JobDescription.from_api(JSON)
@@ -282,7 +359,7 @@ async def test_job_submit(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
@@ -363,7 +440,7 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
@@ -448,7 +525,7 @@ async def test_job_submit_preemptible(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
@@ -521,7 +598,7 @@ async def test_list(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with ClientV2(srv.make_url("/"), token) as client:
+    async with Client(srv.make_url("/"), token) as client:
         ret = await client.jobs.list()
 
     assert ret == [JobDescription.from_api(j) for j in JSON["jobs"]]

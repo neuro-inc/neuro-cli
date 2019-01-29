@@ -25,6 +25,9 @@
 		* [neuro job ssh](#neuro-job-ssh)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job submit](#neuro-job-submit)
+		* [neuro job top](#neuro-job-top)
+	* [neuro login](#neuro-login)
+	* [neuro logout](#neuro-logout)
 	* [neuro model](#neuro-model)
 		* [neuro model debug](#neuro-model-debug)
 		* [neuro model train](#neuro-model-train)
@@ -69,8 +72,6 @@ Name | Description|
 |----|------------|
 |_\-v, --verbose_||
 |_\--show-traceback_||
-|_\-u, --url TEXT_||
-|_\-t, --token TEXT_||
 |_--version_|Show the version and exit.|
 |_--help_|Show this message and exit.|
 
@@ -82,6 +83,8 @@ Name | Description|
 * _[neuro help](#neuro-help)_: Get help on a command
 * _[neuro image](#neuro-image)_: Docker image operations
 * _[neuro job](#neuro-job)_: Job operations.
+* _[neuro login](#neuro-login)_: Log into Neuromation Platform.
+* _[neuro logout](#neuro-logout)_: Log out.
 * _[neuro model](#neuro-model)_: Model operations.
 * _[neuro share](#neuro-share)_: Shares resource specified by URI to a USER with PERMISSION
 
@@ -176,7 +179,7 @@ Name | Description|
 **Commands:**
 
 * _[neuro config auth](#neuro-config-auth)_: Updates authorization token.
-* _[neuro config forget](#neuro-config-forget)_: Forget authorization token.
+* _[neuro config forget](#neuro-config-forget)_: Forget authorization token. (DEPRECATED)
 * _[neuro config id_rsa](#neuro-config-id_rsa)_: Updates path to id_rsa file with private key.
 
 FILE is being used for accessing remote shell, remote debug.
@@ -203,7 +206,6 @@ neuro config auth [OPTIONS] TOKEN
 
 Name | Description|
 |----|------------|
-|_--insecure_|Store token in plain file instead system secured keyring|
 |_--help_|Show this message and exit.|
 
 
@@ -211,7 +213,7 @@ Name | Description|
 
 ### neuro config forget
 
-Forget authorization token.
+Forget authorization token. \(DEPRECATED)
 
 **Usage:**
 
@@ -460,6 +462,7 @@ support enabled.
 
 COMMANDS list will be passed as commands to model container.
 
+* _[neuro job top](#neuro-job-top)_: Display real-time job telemetry
 
 
 
@@ -471,7 +474,7 @@ Executes command in a running job.
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] ID [CMD]...
+neuro job exec [OPTIONS] ID CMD...
 ```
 
 **Options:**
@@ -649,6 +652,63 @@ Name | Description|
 |_--volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job top
+
+Display real-time job telemetry
+
+**Usage:**
+
+```bash
+neuro job top [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro login
+
+Log into Neuromation Platform.
+
+**Usage:**
+
+```bash
+neuro login [OPTIONS] [URL]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro logout
+
+Log out.
+
+**Usage:**
+
+```bash
+neuro logout [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 

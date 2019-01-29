@@ -7,21 +7,20 @@ import aiohttp
 import click
 from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ignore
-from yarl import URL
 
 import neuromation
 from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
+from . import rc
 from .completion import completion
-from .config import config
-from .defaults import DEFAULTS
+from .config import config, login, logout
 from .image import image
 from .job import job
 from .model import model
 from .share import share
 from .storage import storage
-from .utils import Context, DeprecatedGroup, load_token
+from .utils import DeprecatedGroup
 
 
 # For stream copying from file to http or from http to file
@@ -65,15 +64,11 @@ LOG_ERROR = log.error
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.option("-v", "--verbose", count=True, type=int)
 @click.option("--show-traceback", is_flag=True)
-@click.option("-u", "--url", default=DEFAULTS["api_url"])
-@click.option("-t", "--token", default=load_token)
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
 )
 @click.pass_context
-def cli(
-    ctx: click.Context, verbose: int, show_traceback: bool, token: str, url: str
-) -> None:
+def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
     """
     \b
        ▇ ◣
@@ -92,7 +87,8 @@ def cli(
         LOG_ERROR = log.exception
     setup_logging()
     setup_console_handler(console_handler, verbose=verbose)
-    ctx.obj = Context(token=token, url=URL(url))
+    config = rc.ConfigFactory.load()
+    ctx.obj = config
 
 
 @cli.command()
@@ -127,6 +123,8 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         ctx.close()
 
 
+cli.add_command(login)
+cli.add_command(logout)
 cli.add_command(config)
 cli.add_command(storage)
 cli.add_command(DeprecatedGroup(storage, name="store"))
@@ -148,22 +146,22 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(e.exit_code)
     except ClickExit as e:
         sys.exit(e.exit_code)
-    except neuromation.clientv2.IllegalArgumentError as error:
+    except neuromation.client.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
         sys.exit(os.EX_DATAERR)
 
-    except neuromation.clientv2.ResourceNotFound as error:
+    except neuromation.client.ResourceNotFound as error:
         LOG_ERROR(f"{error}")
         sys.exit(os.EX_OSFILE)
 
-    except neuromation.clientv2.AuthenticationError as error:
+    except neuromation.client.AuthenticationError as error:
         LOG_ERROR(f"Cannot authenticate ({error})")
         sys.exit(os.EX_NOPERM)
-    except neuromation.clientv2.AuthorizationError as error:
+    except neuromation.client.AuthorizationError as error:
         LOG_ERROR(f"You haven`t enough permission ({error})")
         sys.exit(os.EX_NOPERM)
 
-    except neuromation.clientv2.ClientError as error:
+    except neuromation.client.ClientError as error:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(os.EX_SOFTWARE)
 

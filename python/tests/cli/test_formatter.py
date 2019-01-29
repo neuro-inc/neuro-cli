@@ -5,11 +5,12 @@ from neuromation.cli.formatter import (
     BaseFormatter,
     JobListFormatter,
     JobStatusFormatter,
+    JobTelemetryFormatter,
     OutputFormatter,
     ResourcesFormatter,
     StorageLsFormatter,
 )
-from neuromation.clientv2 import (
+from neuromation.client import (
     Container,
     FileStatus,
     JobDescription,
@@ -17,6 +18,7 @@ from neuromation.clientv2 import (
     JobStatusHistory,
     Resources,
 )
+from neuromation.client.jobs import JobTelemetry
 
 
 TEST_JOB_STATUS = "pending"
@@ -47,7 +49,7 @@ def job_descr():
 
 class TestOutputFormatter:
     def test_quiet(self, job_descr):
-        assert OutputFormatter.format_job(job_descr, quiet=True) == TEST_JOB_ID
+        assert OutputFormatter().format_job(job_descr, quiet=True) == TEST_JOB_ID
 
     def test_non_quiet(self, job_descr) -> None:
         expected = (
@@ -55,9 +57,10 @@ class TestOutputFormatter:
             + f"Shortcuts:\n"
             + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
+            + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
-        assert OutputFormatter.format_job(job_descr, quiet=False) == expected
+        assert OutputFormatter().format_job(job_descr, quiet=False) == expected
 
 
 class TestJobOutputFormatter:
@@ -83,10 +86,10 @@ class TestJobOutputFormatter:
                 resources=Resources.create(0.1, 0, None, None, False),
             ),
             ssh_auth_server="ssh-auth",
-            is_preemptible=True,
+            is_preemptible=False,
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -96,6 +99,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: False\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
@@ -127,7 +131,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -137,6 +141,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -163,7 +168,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -173,6 +178,7 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -199,7 +205,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter.format_job_status(description)
+        status = JobStatusFormatter().format_job_status(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -208,7 +214,67 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Command: test-command\n"
             f"{resource_formatter.format_resources(description.container.resources)}\n"
+            "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
+        )
+
+
+class TestJobTelemetryFormatter:
+    def _format(self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str):
+        return "\t".join(
+            [
+                f"{timestamp:<24}",
+                f"{cpu:<15}",
+                f"{mem:<15}",
+                f"{gpu:<15}",
+                f"{gpu_mem:<15}",
+            ]
+        )
+
+    def test_format_header_line(self):
+        line = JobTelemetryFormatter().format_header()
+        assert line == self._format(
+            timestamp="TIMESTAMP",
+            cpu="CPU (%)",
+            mem="MEMORY (MB)",
+            gpu="GPU (%)",
+            gpu_mem="GPU_MEMORY (MB)",
+        )
+
+    def test_format_telemetry_line_no_gpu(self):
+        formatter = JobTelemetryFormatter()
+        # NOTE: the timestamp_str encodes the local timezone
+        timestamp = 1_517_248_466.238_723_6
+        timestamp_str = formatter.format_timestamp(timestamp)
+        telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+        line = JobTelemetryFormatter().format(telemetry)
+        assert line == self._format(
+            timestamp=timestamp_str,
+            cpu="0.123",
+            mem="256.123",
+            gpu="N/A",
+            gpu_mem="N/A",
+        )
+
+    def test_format_telemetry_line_with_gpu(self):
+        formatter = JobTelemetryFormatter()
+        # NOTE: the timestamp_str encodes the local timezone
+        timestamp = 1_517_248_466
+        timestamp_str = formatter.format_timestamp(timestamp)
+        telemetry = JobTelemetry(
+            cpu=0.12345,
+            memory=256.1234,
+            timestamp=timestamp,
+            gpu_duty_cycle=99,
+            gpu_memory=64.5,
+        )
+        line = formatter.format(telemetry)
+        assert line == self._format(
+            timestamp=timestamp_str,
+            cpu="0.123",
+            mem="256.123",
+            gpu="99",
+            gpu_mem=f"64.500",
         )
 
 
@@ -374,7 +440,7 @@ class TestLSFormatter:
             + "directory      0              dir1"
         )
         assert (
-            StorageLsFormatter().format_ls(
+            StorageLsFormatter().fmt_long(
                 [
                     FileStatus("file1", 11, "FILE", 2018, "read"),
                     FileStatus("file2", 12, "FILE", 2018, "write"),
@@ -385,7 +451,7 @@ class TestLSFormatter:
         )
 
     def test_neuro_store_ls_empty(self):
-        assert StorageLsFormatter().format_ls([]) == ""
+        assert StorageLsFormatter().fmt_long([]) == ""
 
 
 class TestResourcesFormatter:

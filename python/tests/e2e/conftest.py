@@ -30,6 +30,10 @@ log = logging.getLogger(__name__)
 job_id_pattern = r"Job ID:\s*(\S+)"
 
 
+class TestRetriesExceeded(Exception):
+    pass
+
+
 SysCap = namedtuple("SysCap", "out err")
 
 
@@ -105,13 +109,14 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
+def run(monkeypatch, capfd, tmp_path):
     executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
     rc_text = RC_TEXT.format(token=e2e_test_token)
     config_path = tmp_path / ".nmrc"
     config_path.write_text(rc_text)
+    config_path.chmod(0o600)
 
     def _home():
         return Path(tmp_path)
@@ -156,6 +161,10 @@ def run(monkeypatch, capfd, tmp_path, setup_null_keyring):
                     executed_jobs_list.append(match.group(1))
 
             return SysCap(out.strip(), err.strip())
+        else:
+            raise TestRetriesExceeded(
+                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
+            )
 
     yield _run
     # try to kill all executed jobs regardless of the status

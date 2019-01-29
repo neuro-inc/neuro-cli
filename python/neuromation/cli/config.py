@@ -1,6 +1,8 @@
 import click
+from yarl import URL
 
 from . import rc
+from .defaults import API_URL
 
 
 @click.group()
@@ -46,13 +48,8 @@ def show() -> None:
 
 
 @config.command()
-@click.option(
-    "--insecure",
-    is_flag=True,
-    help="Store token in plain file instead system secured keyring",
-)
 @click.argument("token")
-def auth(token: str, insecure: bool) -> None:
+def auth(token: str) -> None:
     """
     Updates authorization token.
     """
@@ -61,13 +58,31 @@ def auth(token: str, insecure: bool) -> None:
     # Do not overwrite token in case new one does not work
     # TODO (R Zubairov, 09/13/2018): on server side we shall implement
     # protection against brute-force
-    rc.ConfigFactory.update_auth_token(token=token, insecure=insecure)
+    rc.ConfigFactory.update_auth_token(token=token)
 
 
-@config.command()
+@config.command(deprecated=True)
 def forget() -> None:
     """
     Forget authorization token.
-
     """
     rc.ConfigFactory.forget_auth_token()
+
+
+@click.command()
+@click.argument("url", required=False, default=API_URL, type=URL)
+def login(url: URL) -> None:
+    """
+    Log into Neuromation Platform.
+    """
+    rc.ConfigFactory.refresh_auth_token(url)
+    click.echo(f"Logged into {url}")
+
+
+@click.command()
+def logout() -> None:
+    """
+    Log out.
+    """
+    rc.ConfigFactory.forget_auth_token()
+    click.echo("Logged out")

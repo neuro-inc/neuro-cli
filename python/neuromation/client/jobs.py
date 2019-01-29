@@ -2,9 +2,20 @@ import asyncio
 import enum
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, Sequence, SupportsInt, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    SupportsInt,
+    Tuple,
+)
 from urllib.parse import urlparse
 
+from aiohttp import WSServerHandshakeError
 from yarl import URL
 
 from .api import API, IllegalArgumentError
@@ -312,6 +323,25 @@ class JobDescription:
         )
 
 
+@dataclass(frozen=True)
+class JobTelemetry:
+    cpu: float
+    memory: float
+    timestamp: float
+    gpu_duty_cycle: Optional[int] = None
+    gpu_memory: Optional[float] = None
+
+    @classmethod
+    def from_api(cls, value: Dict[str, Any]) -> "JobTelemetry":
+        return cls(
+            cpu=value["cpu"],
+            memory=value["memory"],
+            timestamp=value["timestamp"],
+            gpu_duty_cycle=value.get("gpu_duty_cycle"),
+            gpu_memory=value.get("gpu_memory"),
+        )
+
+
 class Jobs:
     def __init__(self, api: API, token: str) -> None:
         self._api = api
@@ -386,6 +416,20 @@ class Jobs:
             ret = await resp.json()
             return JobDescription.from_api(ret)
 
+    async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
+        url = URL(f"jobs/{id}/top")
+        try:
+            received_any = False
+            async for resp in self._api.ws_connect(url):
+                yield JobTelemetry.from_api(resp.json())  # type: ignore
+                received_any = True
+            if not received_any:
+                raise ValueError(f"Job is not running. Job Id = {id}")
+        except WSServerHandshakeError as e:
+            if e.status == 400:
+                raise ValueError(f"Job not found. Job Id = {id}")
+            raise
+
     async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
         try:
             job_status = await self.status(id)
@@ -393,7 +437,13 @@ class Jobs:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
             raise ValueError(f"Job is not running. Job Id = {id}")
-        payload = json.dumps({"token": self._token, "job": id, "command": cmd})
+        payload = json.dumps(
+            {
+                "method": "job_exec",
+                "token": self._token,
+                "params": {"job": id, "command": cmd},
+            }
+        )
         command = ["ssh"]
         if tty:
             command += ["-tt"]

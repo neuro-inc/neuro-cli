@@ -42,7 +42,7 @@ __all__ = (
     "TrainResult",
     "Action",
     "Permission",
-    "ClientV2",
+    "Client",
     "FileStatusType",
     "FileStatus",
     "Container",
@@ -59,7 +59,7 @@ __all__ = (
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
-class ClientV2:
+class Client:
     def __init__(
         self,
         url: Union[URL, str],
@@ -84,7 +84,7 @@ class ClientV2:
         if self._images is not None:
             await self._images.close()
 
-    async def __aenter__(self) -> "ClientV2":
+    async def __aenter__(self) -> "Client":
         return self
 
     async def __aexit__(

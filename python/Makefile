@@ -157,9 +157,11 @@ coverage:
 	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
 
 .PHONY: format
-format: docs
+format:
 	isort -rc $(ISORT_DIRS)
 	black $(BLACK_DIRS)
+	# generate docs as the last stage to allow reformat code first
+	make docs
 
 # TODO (artyom, 07/16/2018): swap e2e and test once coverage output
 # of both is combined. Otherwise e2e will override unit tests with
@@ -210,6 +212,8 @@ ifndef VERSION
 	@exit 10
 endif
 	towncrier --version $(VERSION) --yes
+	$(EDITOR) CHANGELOG.md
+	./build-tools/check-changelog.py CHANGELOG.md
 	git add CHANGELOG.md
 	git add CHANGELOG.D
 	git commit -m "Release $(VERSION)"

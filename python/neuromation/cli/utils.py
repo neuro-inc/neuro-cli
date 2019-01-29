@@ -1,40 +1,12 @@
-from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Awaitable, Callable, Iterable, Optional, TypeVar
 
-import aiohttp
 import click
-from yarl import URL
 
-from neuromation.clientv2 import ClientV2
-from neuromation.clientv2.users import get_token_username
 from neuromation.utils import run
-
-from . import rc
 
 
 _T = TypeVar("_T")
-
-
-@dataclass(frozen=True)
-class Context:
-    token: str
-    url: URL
-
-    @property
-    def username(self) -> str:
-        # This property intentionally fails for unregistered sessions etc.
-        ret = get_token_username(self.token)
-        assert ret
-        return ret
-
-    def make_client(
-        self, *, timeout: Optional[aiohttp.ClientTimeout] = None
-    ) -> ClientV2:
-        kwargs = {}
-        if timeout is not None:
-            kwargs["timeout"] = timeout
-        return ClientV2(self.url, self.token, **kwargs)
 
 
 def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
@@ -43,11 +15,6 @@ def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
         return run(callback(*args, **kwargs))
 
     return wrapper
-
-
-def load_token() -> Optional[str]:
-    config = rc.ConfigFactory.load()
-    return config.auth
 
 
 class DeprecatedGroup(click.MultiCommand):

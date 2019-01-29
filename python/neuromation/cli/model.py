@@ -4,14 +4,21 @@ from typing import List
 import click
 from yarl import URL
 
-from neuromation.clientv2 import Image, NetworkPortForwarding, Resources
+from neuromation.client import Image, NetworkPortForwarding, Resources
 from neuromation.strings.parse import to_megabytes_str
 
-from . import rc
-from .defaults import DEFAULTS, GPU_MODELS
+from .defaults import (
+    GPU_MODELS,
+    JOB_CPU_NUMBER,
+    JOB_DEBUG_LOCAL_PORT,
+    JOB_GPU_MODEL,
+    JOB_GPU_NUMBER,
+    JOB_MEMORY_AMOUNT,
+)
 from .formatter import OutputFormatter
+from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import Context, run_async
+from .utils import run_async
 
 
 log = logging.getLogger(__name__)
@@ -24,18 +31,18 @@ def model() -> None:
     """
 
 
-@model.command()
+@model.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image")
 @click.argument("dataset")
 @click.argument("results")
-@click.argument("cmd", nargs=-1)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
     "--gpu",
     metavar="NUMBER",
     type=int,
     help="Number of GPUs to request",
-    default=DEFAULTS["model_train_gpu_number"],
+    default=JOB_GPU_NUMBER,
     show_default=True,
 )
 @click.option(
@@ -43,7 +50,7 @@ def model() -> None:
     metavar="MODEL",
     type=click.Choice(GPU_MODELS),
     help="GPU to use",
-    default=DEFAULTS["model_train_gpu_model"],
+    default=JOB_GPU_MODEL,
     show_default=True,
 )
 @click.option(
@@ -52,7 +59,7 @@ def model() -> None:
     metavar="NUMBER",
     type=float,
     help="Number of CPUs to request",
-    default=DEFAULTS["model_train_cpu_number"],
+    default=JOB_CPU_NUMBER,
     show_default=True,
 )
 @click.option(
@@ -61,7 +68,7 @@ def model() -> None:
     metavar="AMOUNT",
     type=str,
     help="Memory amount to request",
-    default=DEFAULTS["model_train_memory_amount"],
+    default=JOB_MEMORY_AMOUNT,
     show_default=True,
 )
 @click.option("-x", "--extshm", is_flag=True, help="Request extended '/dev/shm' space")
@@ -81,7 +88,7 @@ def model() -> None:
 @click.pass_obj
 @run_async
 async def train(
-    ctx: Context,
+    cfg: Config,
     image: str,
     dataset: str,
     results: str,
@@ -106,7 +113,7 @@ async def train(
     COMMANDS list will be passed as commands to model container.
     """
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         try:
             dataset_url = client.cfg.norm_storage(URL(dataset))
         except ValueError:
@@ -140,7 +147,7 @@ async def train(
             is_preemptible=preemptible,
         )
         job = await client.jobs.status(res.id)
-        click.echo(OutputFormatter.format_job(job, quiet))
+        click.echo(OutputFormatter().format_job(job, quiet))
 
 
 @model.command()
@@ -150,11 +157,11 @@ async def train(
     "--localport",
     type=int,
     help="Local port number for debug",
-    default=DEFAULTS["model_debug_local_port"],
+    default=JOB_DEBUG_LOCAL_PORT,
     show_default=True,
 )
 @run_async
-async def debug(ctx: Context, id: str, localport: int) -> None:
+async def debug(cfg: Config, id: str, localport: int) -> None:
     """
     Starts ssh terminal connected to running job.
 
@@ -165,8 +172,7 @@ async def debug(ctx: Context, id: str, localport: int) -> None:
     \b
     neuro model debug --localport 12789 job-abc-def-ghk
     """
-    config = rc.ConfigFactory.load()
-    git_key = config.github_rsa_path
+    git_key = cfg.github_rsa_path
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         await remote_debug(client, id, git_key, localport)

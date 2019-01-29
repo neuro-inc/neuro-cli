@@ -7,8 +7,8 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.command_spinner import SpinnerBase
-from neuromation.clientv2 import AuthorizationError, ClientV2
-from neuromation.clientv2.images import (
+from neuromation.client import AuthorizationError, Client
+from neuromation.client.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
     STATUS_NOT_FOUND,
@@ -128,7 +128,7 @@ class TestImages:
         ),
     )
     async def test_unavailable_docker(self, patched_init, token, spinner):
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
                 image = Image.from_url(
                     URL("image://bob/image:bananas"), client.username
@@ -139,7 +139,7 @@ class TestImages:
         "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
     )
     async def test_unknown_docker_error(self, patched_init, token, spinner):
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"something went wrong"):
                 image = Image.from_url(
                     URL("image://bob/image:bananas"), client.username
@@ -151,7 +151,7 @@ class TestImages:
         patched_tag.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"not found"):
                 image = Image.from_url(
                     URL("image://bob/image:bananas-no-more"), client.username
@@ -167,7 +167,7 @@ class TestImages:
         patched_push.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(AuthorizationError):
                 image = Image.from_url(
                     URL("image://bob/image:bananas-not-for-you"), client.username
@@ -184,7 +184,7 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_push.return_value = error_generator()
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError) as exc_info:
                 image = Image.from_url(
                     URL("image://bob/image:bananas-wrong-food"), client.username
@@ -201,7 +201,7 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             image = Image.from_url(
                 URL("image://bob/image:banana-is-here"), client.username
             )
@@ -213,7 +213,7 @@ class TestImages:
         patched_pull.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"not found"):
                 image = Image.from_url(
                     URL("image://bob/image:no-bananas-here"), client.username
@@ -225,7 +225,7 @@ class TestImages:
         patched_pull.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(AuthorizationError):
                 image = Image.from_url(
                     URL("image://bob/image:not-your-bananas"), client.username
@@ -238,7 +238,7 @@ class TestImages:
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_pull.return_value = error_generator()
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError) as exc_info:
                 image = Image.from_url(
                     URL("image://bob/image:nuts-here"), client.username
@@ -255,7 +255,7 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_pull.return_value = message_generator()
-        async with ClientV2(URL("https://api.localhost.localdomain"), token) as client:
+        async with Client(URL("https://api.localhost.localdomain"), token) as client:
             image = Image.from_url(URL("image://bob/image:bananas"), client.username)
             result = await client.images.pull(image, image, spinner)
         assert result == image
@@ -273,6 +273,6 @@ class TestRegistry:
 
         srv = await aiohttp_server(app)
 
-        async with ClientV2(srv.make_url("/"), token) as client:
+        async with Client(srv.make_url("/"), token) as client:
             ret = await client.images.ls()
         assert ret == [URL(image) for image in JSON["repositories"]]

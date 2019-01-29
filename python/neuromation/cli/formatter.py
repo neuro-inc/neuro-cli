@@ -1,13 +1,14 @@
+import time
 from typing import AbstractSet, Iterable, List, Optional
 
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.clientv2 import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.client.jobs import JobTelemetry
 
 
 class BaseFormatter:
-    @classmethod
-    def _truncate_string(cls, input: Optional[str], max_length: int) -> str:
+    def _truncate_string(self, input: Optional[str], max_length: int) -> str:
         if input is None:
             return ""
         if len(input) <= max_length:
@@ -19,14 +20,12 @@ class BaseFormatter:
         index_stop = max_length - len(placeholder) - len(tail)
         return input[:index_stop] + placeholder + tail
 
-    @classmethod
-    def _wrap(cls, text: Optional[str]) -> str:
+    def _wrap(self, text: Optional[str]) -> str:
         return "'" + (text or "") + "'"
 
 
 class OutputFormatter(BaseFormatter):
-    @classmethod
-    def format_job(cls, job: JobDescription, quiet: bool = True) -> str:
+    def format_job(self, job: JobDescription, quiet: bool = True) -> str:
         if quiet:
             return job.id
         return (
@@ -34,6 +33,7 @@ class OutputFormatter(BaseFormatter):
             + f"Shortcuts:\n"
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
+            + f"  neuro job top {job.id}     # display real-time job telemetry\n"
             + f"  neuro job kill {job.id}    # kill job"
         )
 
@@ -41,7 +41,7 @@ class OutputFormatter(BaseFormatter):
 class StorageLsFormatter(BaseFormatter):
     FORMAT = "{type:<15}{size:<15,}{name:<}".format
 
-    def format_ls(self, lst: List[FileStatus]) -> str:
+    def fmt_long(self, lst: List[FileStatus]) -> str:
         return "\n".join(
             self.FORMAT(type=status.type.lower(), name=status.path, size=status.size)
             for status in lst
@@ -49,8 +49,7 @@ class StorageLsFormatter(BaseFormatter):
 
 
 class JobStatusFormatter(BaseFormatter):
-    @classmethod
-    def format_job_status(cls, job_status: JobDescription) -> str:
+    def format_job_status(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         if job_status.description:
@@ -69,6 +68,7 @@ class JobStatusFormatter(BaseFormatter):
         result += (
             resource_formatter.format_resources(job_status.container.resources) + "\n"
         )
+        result += f"Preemptible: {job_status.is_preemptible}\n"
 
         if job_status.http_url:
             result = f"{result}Http URL: {job_status.http_url}\n"
@@ -91,6 +91,48 @@ class JobStatusFormatter(BaseFormatter):
             result += "\n===Description===\n"
             result += f"{job_status.history.description}\n================="
         return result
+
+
+class JobTelemetryFormatter(BaseFormatter):
+    def __init__(self) -> None:
+        self.col_len = {
+            "timestamp": 24,
+            "cpu": 15,
+            "memory": 15,
+            "gpu": 15,
+            "gpu_memory": 15,
+        }
+
+    def format_timestamp(self, timestamp: float) -> str:
+        # NOTE: ctime returns time wrt timezone
+        return str(time.ctime(timestamp))
+
+    def format_header(self) -> str:
+        return "\t".join(
+            [
+                "TIMESTAMP".ljust(self.col_len["timestamp"]),
+                "CPU (%)".ljust(self.col_len["cpu"]),
+                "MEMORY (MB)".ljust(self.col_len["memory"]),
+                "GPU (%)".ljust(self.col_len["gpu"]),
+                "GPU_MEMORY (MB)".ljust(self.col_len["gpu_memory"]),
+            ]
+        )
+
+    def format(self, info: JobTelemetry) -> str:
+        timestamp = self.format_timestamp(info.timestamp)
+        cpu = f"{info.cpu:.3f}"
+        mem = f"{info.memory:.3f}"
+        gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "N/A"
+        gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "N/A"
+        return "\t".join(
+            [
+                timestamp.ljust(self.col_len["timestamp"]),
+                cpu.ljust(self.col_len["cpu"]),
+                mem.ljust(self.col_len["memory"]),
+                gpu.ljust(self.col_len["gpu"]),
+                gpu_mem.ljust(self.col_len["gpu_memory"]),
+            ]
+        )
 
 
 class JobListFormatter(BaseFormatter):
