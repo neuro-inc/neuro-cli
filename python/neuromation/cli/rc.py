@@ -113,7 +113,8 @@ class ConfigFactory:
     @classmethod
     def update_api_url(cls, url: str) -> Config:
         cls._validate_api_url(url)
-        return cls._update_config(url=url)
+        auth_config = _create_auth_config(URL(url), {})
+        return cls._update_config(auth_config=auth_config, url=url)
 
     @classmethod
     def _validate_api_url(cls, url: str) -> None:
