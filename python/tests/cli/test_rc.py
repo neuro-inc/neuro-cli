@@ -181,6 +181,7 @@ def test_create_existing(nmrc):
         url: 'http://a.b/c'
     """
     nmrc.write_text(document)
+    nmrc.chmod(0o600)
 
     with pytest.raises(FileExistsError):
         rc.create(nmrc, Config())
@@ -194,6 +195,7 @@ def test_load(nmrc):
         url: 'http://a.b/c'
     """
     nmrc.write_text(document)
+    nmrc.chmod(0o600)
 
     config = rc.load(nmrc)
     assert config == rc.Config(url="http://a.b/c")
