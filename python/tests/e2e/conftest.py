@@ -37,6 +37,12 @@ class TestRetriesExceeded(Exception):
 SysCap = namedtuple("SysCap", "out err")
 
 
+@pytest.fixture(scope="session")
+def sesisonloop():
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
 @pytest.fixture
 def tmpstorage(run, request):
     url = "storage:" + str(uuid()) + "/"
@@ -54,10 +60,12 @@ def tmpstorage(run, request):
             pass
 
 
-async def generate_test_data(root, count, size_mb):
-    async def generate_file(name):
-        exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"
+async def generate_test_data(root, count, size_mb, loop):
+    async def generate_file(name, loop):
 
+        exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"
+        old_loop = asyncio.get_event_loop()
+        asyncio.set_event_loop(loop)
         process = await asyncio.create_subprocess_shell(
             f"""(dd if=/dev/urandom \
                     bs={BLOCK_SIZE_MB * 1024 * 1024} \
@@ -66,10 +74,13 @@ async def generate_test_data(root, count, size_mb):
                     tee {name} | \
                     {exec_sha_name}""",
             stdout=asyncio.subprocess.PIPE,
+            loop=loop
         )
+        asyncio.set_event_loop(old_loop)
 
         stdout, _ = await asyncio.wait_for(
-            process.communicate(), timeout=GENERATION_TIMEOUT_SEC
+            process.communicate(), timeout=GENERATION_TIMEOUT_SEC,
+            loop=loop
         )
 
         # sha1sum appends file name to the output
@@ -77,9 +88,10 @@ async def generate_test_data(root, count, size_mb):
 
     return await asyncio.gather(
         *[
-            generate_file(str(root / name))
+            generate_file(str(root / name), loop)
             for name in ("{:04d}.bin".format(i) for i in range(count))
-        ]
+        ],
+        loop=loop
     )
 
 
@@ -89,21 +101,19 @@ def static_path(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def data(static_path):
-    loop = asyncio.get_event_loop()
+def data(static_path, sesisonloop):
     folder = static_path / "data"
     folder.mkdir()
-    return loop.run_until_complete(generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB))
+    return sesisonloop.run_until_complete(generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB, sesisonloop))
 
 
 @pytest.fixture(scope="session")
-def nested_data(static_path):
-    loop = asyncio.get_event_loop()
+def nested_data(static_path, sesisonloop):
     root_dir = static_path / "neested_data" / "nested"
     nested_dir = root_dir / "directory" / "for" / "test"
     nested_dir.mkdir(parents=True, exist_ok=True)
-    data = loop.run_until_complete(
-        generate_test_data(nested_dir, FILE_COUNT, FILE_SIZE_MB)
+    data = sesisonloop.run_until_complete(
+        generate_test_data(nested_dir, FILE_COUNT, FILE_SIZE_MB, sesisonloop)
     )
     return data[0][0], data[0][1], str(root_dir)
 

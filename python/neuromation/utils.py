@@ -52,6 +52,7 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
     finally:
         try:
             _cancel_all_tasks(loop, main_task)
+            loop.run_until_complete(asyncio.sleep(1, loop=loop))
             loop.run_until_complete(loop.shutdown_asyncgens())
         finally:
             asyncio.set_event_loop(None)
