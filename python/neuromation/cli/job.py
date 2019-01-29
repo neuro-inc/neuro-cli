@@ -10,7 +10,6 @@ import click
 from neuromation.client import Image, NetworkPortForwarding, Resources, Volume
 from neuromation.strings.parse import to_megabytes_str
 
-from . import rc
 from .defaults import DEFAULTS, GPU_MODELS
 from .formatter import (
     JobListFormatter,
@@ -18,8 +17,9 @@ from .formatter import (
     JobTelemetryFormatter,
     OutputFormatter,
 )
+from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import Context, run_async
+from .utils import run_async
 
 
 log = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def job() -> None:
 @click.pass_obj
 @run_async
 async def submit(
-    ctx: Context,
+    cfg: Config,
     image: str,
     gpu: int,
     gpu_model: str,
@@ -146,7 +146,7 @@ async def submit(
     storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
     """
 
-    username = ctx.username
+    username = cfg.username
 
     # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
     # separate function.
@@ -172,7 +172,7 @@ async def submit(
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         job = await client.jobs.submit(
             image=image_obj,
             resources=resources,
@@ -202,13 +202,13 @@ async def submit(
 @click.pass_obj
 @run_async
 async def exec(
-    ctx: Context, id: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
+    cfg: Config, id: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
     """
     Executes command in a running job.
     """
     cmd = shlex.split(" ".join(cmd))
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         retcode = await client.jobs.exec(id, tty, no_key_check, cmd)
     sys.exit(retcode)
 
@@ -224,7 +224,7 @@ async def exec(
 @click.option("--key", help="Path to container private key.")
 @click.pass_obj
 @run_async
-async def ssh(ctx: Context, id: str, user: str, key: str) -> None:
+async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
     """
     Starts ssh terminal connected to running job.
     Job should be started with SSH support enabled.
@@ -234,10 +234,9 @@ async def ssh(ctx: Context, id: str, user: str, key: str) -> None:
     \b
     neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
     """
-    config = rc.ConfigFactory.load()
-    git_key = config.github_rsa_path
+    git_key = cfg.github_rsa_path
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         await connect_ssh(client, id, git_key, user, key)
 
 
@@ -245,7 +244,7 @@ async def ssh(ctx: Context, id: str, user: str, key: str) -> None:
 @click.argument("id")
 @click.pass_obj
 @run_async
-async def monitor(ctx: Context, id: str) -> None:
+async def monitor(cfg: Config, id: str) -> None:
     """
     Monitor job output stream
     """
@@ -253,7 +252,7 @@ async def monitor(ctx: Context, id: str) -> None:
         total=None, connect=None, sock_read=None, sock_connect=30
     )
 
-    async with ctx.make_client(timeout=timeout) as client:
+    async with cfg.make_client(timeout=timeout) as client:
         async for chunk in client.jobs.monitor(id):
             if not chunk:
                 break
@@ -278,7 +277,7 @@ async def monitor(ctx: Context, id: str) -> None:
 @click.pass_obj
 @run_async
 async def list(
-    ctx: Context, status: Sequence[str], description: str, quiet: bool
+    cfg: Config, status: Sequence[str], description: str, quiet: bool
 ) -> None:
     """
     List all jobs.
@@ -298,7 +297,7 @@ async def list(
     if "all" in statuses:
         statuses = set()
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         jobs = await client.jobs.list()
 
     formatter = JobListFormatter(quiet=quiet)
@@ -309,11 +308,11 @@ async def list(
 @click.argument("id")
 @click.pass_obj
 @run_async
-async def status(ctx: Context, id: str) -> None:
+async def status(cfg: Config, id: str) -> None:
     """
     Display status of a job
     """
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         res = await client.jobs.status(id)
         click.echo(JobStatusFormatter().format_job_status(res))
 
@@ -322,12 +321,12 @@ async def status(ctx: Context, id: str) -> None:
 @click.argument("id")
 @click.pass_obj
 @run_async
-async def top(ctx: Context, id: str) -> None:
+async def top(cfg: Config, id: str) -> None:
     """
     Display real-time job telemetry
     """
     formatter = JobTelemetryFormatter()
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         print_header = True
         async for res in client.jobs.top(id):
             if print_header:
@@ -341,12 +340,12 @@ async def top(ctx: Context, id: str) -> None:
 @click.argument("id", nargs=-1, required=True)
 @click.pass_obj
 @run_async
-async def kill(ctx: Context, id: Sequence[str]) -> None:
+async def kill(cfg: Config, id: Sequence[str]) -> None:
     """
     Kill job(s)
     """
     errors = []
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         for job in id:
             try:
                 await client.jobs.kill(job)

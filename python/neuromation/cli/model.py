@@ -7,11 +7,11 @@ from yarl import URL
 from neuromation.client import Image, NetworkPortForwarding, Resources
 from neuromation.strings.parse import to_megabytes_str
 
-from . import rc
 from .defaults import DEFAULTS, GPU_MODELS
 from .formatter import OutputFormatter
+from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import Context, run_async
+from .utils import run_async
 
 
 log = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def model() -> None:
 @click.pass_obj
 @run_async
 async def train(
-    ctx: Context,
+    cfg: Config,
     image: str,
     dataset: str,
     results: str,
@@ -106,7 +106,7 @@ async def train(
     COMMANDS list will be passed as commands to model container.
     """
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         try:
             dataset_url = client.cfg.norm_storage(URL(dataset))
         except ValueError:
@@ -154,7 +154,7 @@ async def train(
     show_default=True,
 )
 @run_async
-async def debug(ctx: Context, id: str, localport: int) -> None:
+async def debug(cfg: Config, id: str, localport: int) -> None:
     """
     Starts ssh terminal connected to running job.
 
@@ -165,8 +165,7 @@ async def debug(ctx: Context, id: str, localport: int) -> None:
     \b
     neuro model debug --localport 12789 job-abc-def-ghk
     """
-    config = rc.ConfigFactory.load()
-    git_key = config.github_rsa_path
+    git_key = cfg.github_rsa_path
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         await remote_debug(client, id, git_key, localport)

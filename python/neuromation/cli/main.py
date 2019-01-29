@@ -7,21 +7,20 @@ import aiohttp
 import click
 from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ignore
-from yarl import URL
 
 import neuromation
 from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
+from . import rc
 from .completion import completion
 from .config import config, login, logout
-from .defaults import DEFAULTS
 from .image import image
 from .job import job
 from .model import model
 from .share import share
 from .storage import storage
-from .utils import Context, DeprecatedGroup, load_token
+from .utils import DeprecatedGroup
 
 
 # For stream copying from file to http or from http to file
@@ -65,15 +64,11 @@ LOG_ERROR = log.error
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.option("-v", "--verbose", count=True, type=int)
 @click.option("--show-traceback", is_flag=True)
-@click.option("-u", "--url", default=DEFAULTS["api_url"])
-@click.option("-t", "--token", default=load_token)
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
 )
 @click.pass_context
-def cli(
-    ctx: click.Context, verbose: int, show_traceback: bool, token: str, url: str
-) -> None:
+def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
     """
     \b
        ▇ ◣
@@ -92,7 +87,8 @@ def cli(
         LOG_ERROR = log.exception
     setup_logging()
     setup_console_handler(console_handler, verbose=verbose)
-    ctx.obj = Context(token=token, url=URL(url))
+    config = rc.ConfigFactory.load()
+    ctx.obj = config
 
 
 @cli.command()

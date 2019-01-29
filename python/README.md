@@ -72,8 +72,6 @@ Name | Description|
 |----|------------|
 |_\-v, --verbose_||
 |_\--show-traceback_||
-|_\-u, --url TEXT_||
-|_\-t, --token TEXT_||
 |_--version_|Show the version and exit.|
 |_--help_|Show this message and exit.|
 

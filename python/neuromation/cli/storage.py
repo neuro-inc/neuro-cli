@@ -6,7 +6,8 @@ from yarl import URL
 
 from .command_progress_report import ProgressBase
 from .formatter import StorageLsFormatter
-from .utils import Context, run_async
+from .rc import Config
+from .utils import run_async
 
 
 log = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ def storage() -> None:
 @click.argument("path")
 @click.pass_obj
 @run_async
-async def rm(ctx: Context, path: str) -> None:
+async def rm(cfg: Config, path: str) -> None:
     """
     Remove files or directories.
 
@@ -36,7 +37,7 @@ async def rm(ctx: Context, path: str) -> None:
     """
     uri = URL(path)
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         await client.storage.rm(uri)
 
 
@@ -44,7 +45,7 @@ async def rm(ctx: Context, path: str) -> None:
 @click.argument("path", default="storage://~")
 @click.pass_obj
 @run_async
-async def ls(ctx: Context, path: str) -> None:
+async def ls(cfg: Config, path: str) -> None:
     """
     List directory contents.
 
@@ -52,7 +53,7 @@ async def ls(ctx: Context, path: str) -> None:
     """
     uri = URL(path)
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         res = await client.storage.ls(uri)
 
     click.echo(StorageLsFormatter().fmt_long(res))
@@ -66,7 +67,7 @@ async def ls(ctx: Context, path: str) -> None:
 @click.pass_obj
 @run_async
 async def cp(
-    ctx: Context, source: str, destination: str, recursive: bool, progress: bool
+    cfg: Config, source: str, destination: str, recursive: bool, progress: bool
 ) -> None:
     """
     Copy files and directories.
@@ -100,7 +101,7 @@ async def cp(
         src = URL("file:" + src.path)
     if not dst.scheme:
         dst = URL("file:" + dst.path)
-    async with ctx.make_client(timeout=timeout) as client:
+    async with cfg.make_client(timeout=timeout) as client:
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
                 await client.storage.upload_dir(progress_obj, src, dst)
@@ -119,14 +120,14 @@ async def cp(
 @click.argument("path")
 @click.pass_obj
 @run_async
-async def mkdir(ctx: Context, path: str) -> None:
+async def mkdir(cfg: Config, path: str) -> None:
     """
     Make directories.
     """
 
     uri = URL(path)
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         await client.storage.mkdirs(uri)
 
 
@@ -135,7 +136,7 @@ async def mkdir(ctx: Context, path: str) -> None:
 @click.argument("destination")
 @click.pass_obj
 @run_async
-async def mv(ctx: Context, source: str, destination: str) -> None:
+async def mv(cfg: Config, source: str, destination: str) -> None:
     """
     Move or rename files and directories.
 
@@ -160,5 +161,5 @@ async def mv(ctx: Context, source: str, destination: str) -> None:
     src = URL(source)
     dst = URL(destination)
 
-    async with ctx.make_client() as client:
+    async with cfg.make_client() as client:
         await client.storage.mv(src, dst)
