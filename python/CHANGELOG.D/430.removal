@@ -1,0 +1,1 @@
+Drop `--token` and `--url` parameters from the root command, use `neuro login` and `neuro config url` to setup config parameters.
