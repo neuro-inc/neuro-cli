@@ -93,6 +93,23 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
+    def test_factory_update_url_and_auth_config(self):
+        config = rc.ConfigFactory.load()
+        assert config.url == "https://platform.dev.neuromation.io/api/v1"
+        assert config.auth_config.auth_url == URL(
+            "https://dev-neuromation.auth0.com/authorize"
+        )
+
+        rc.ConfigFactory.update_api_url(
+            url="https://platform.staging.neuromation.io/api/v1"
+        )
+
+        config = rc.ConfigFactory.load()
+        assert config.url == "https://platform.staging.neuromation.io/api/v1"
+        assert config.auth_config.auth_url == URL(
+            "https://staging-neuromation.auth0.com/authorize"
+        )
+
     def test_factory_update_id_rsa(self):
         config: Config = Config(
             url=DEFAULTS.url,
