@@ -11,6 +11,7 @@
 		* [neuro config forget](#neuro-config-forget)
 		* [neuro config id_rsa](#neuro-config-id_rsa)
 		* [neuro config show](#neuro-config-show)
+		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config url](#neuro-config-url)
 	* [neuro help](#neuro-help)
 	* [neuro image](#neuro-image)
@@ -178,15 +179,16 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro config auth](#neuro-config-auth)_: Updates authorization token.
+* _[neuro config auth](#neuro-config-auth)_: Update authorization token.
 * _[neuro config forget](#neuro-config-forget)_: Forget authorization token. (DEPRECATED)
-* _[neuro config id_rsa](#neuro-config-id_rsa)_: Updates path to id_rsa file with private key.
+* _[neuro config id_rsa](#neuro-config-id_rsa)_: Update path to id_rsa file with private key.
 
 FILE is being used for accessing remote shell, remote debug.
 
 Note: this is temporal and going to be replaced in future by JWT token.
-* _[neuro config show](#neuro-config-show)_: Prints current settings.
-* _[neuro config url](#neuro-config-url)_: Updates settings with provided platform URL.
+* _[neuro config show](#neuro-config-show)_: Print current settings.
+* _[neuro config show-token](#neuro-config-show-token)_: Print current authorization token.
+* _[neuro config url](#neuro-config-url)_: Update settings with provided platform URL.
 
 
 
@@ -194,7 +196,7 @@ Note: this is temporal and going to be replaced in future by JWT token.
 
 ### neuro config auth
 
-Updates authorization token.
+Update authorization token.
 
 **Usage:**
 
@@ -232,7 +234,7 @@ Name | Description|
 
 ### neuro config id_rsa
 
-Updates path to id_rsa file with private key.<br/><br/>FILE is being used for accessing remote shell, remote debug.<br/><br/>Note: this is temporal and going to be replaced in future by JWT token.
+Update path to id_rsa file with private key.<br/><br/>FILE is being used for accessing remote shell, remote debug.<br/><br/>Note: this is temporal and going to be replaced in future by JWT token.
 
 **Usage:**
 
@@ -251,7 +253,7 @@ Name | Description|
 
 ### neuro config show
 
-Prints current settings.
+Print current settings.
 
 **Usage:**
 
@@ -268,9 +270,28 @@ Name | Description|
 
 
 
+### neuro config show-token
+
+Print current authorization token.
+
+**Usage:**
+
+```bash
+neuro config show-token [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro config url
 
-Updates settings with provided platform URL.<br/>
+Update settings with provided platform URL.<br/>
 
 **Usage:**
 

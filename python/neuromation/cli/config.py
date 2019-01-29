@@ -3,6 +3,8 @@ from yarl import URL
 
 from . import rc
 from .defaults import API_URL
+from .formatter import ConfigFormatter
+from .rc import Config
 
 
 @click.group()
@@ -14,7 +16,7 @@ def config() -> None:
 @click.argument("url")
 def url(url: str) -> None:
     """
-    Updates settings with provided platform URL.
+    Update settings with provided platform URL.
 
     Examples:
 
@@ -28,7 +30,7 @@ def url(url: str) -> None:
 @click.argument("file", type=click.Path(exists=True, readable=True, dir_okay=False))
 def id_rsa(file: str) -> None:
     """
-    Updates path to id_rsa file with private key.
+    Update path to id_rsa file with private key.
 
     FILE is being used for accessing remote shell, remote debug.
 
@@ -39,19 +41,29 @@ def id_rsa(file: str) -> None:
 
 
 @config.command()
-def show() -> None:
+@click.pass_obj
+def show(cfg: Config) -> None:
     """
-    Prints current settings.
+    Print current settings.
     """
-    config = rc.ConfigFactory.load()
-    click.echo(config)
+    fmt = ConfigFormatter()
+    click.echo(fmt(cfg))
+
+
+@config.command()
+@click.pass_obj
+def show_token(cfg: Config) -> None:
+    """
+    Print current authorization token.
+    """
+    click.echo(cfg.auth)
 
 
 @config.command()
 @click.argument("token")
 def auth(token: str) -> None:
     """
-    Updates authorization token.
+    Update authorization token.
     """
     # TODO (R Zubairov, 09/13/2018): check token correct
     # connectivity, check with Alex

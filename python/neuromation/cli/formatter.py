@@ -6,6 +6,8 @@ from dateutil.parser import isoparse  # type: ignore
 from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
 from neuromation.client.jobs import JobTelemetry
 
+from .rc import Config
+
 
 class BaseFormatter:
     def _truncate_string(self, input: Optional[str], max_length: int) -> str:
@@ -212,4 +214,15 @@ class ResourcesFormatter(BaseFormatter):
             lines.append(f'Additional: {",".join(additional)}')
 
         indent = "  "
-        return f"Resources:\n" + indent + f"\n{indent}".join(lines)
+        return "Resources:\n" + indent + f"\n{indent}".join(lines)
+
+
+class ConfigFormatter:
+    def __call__(self, config: Config) -> str:
+        lines = []
+        lines.append(f"User Name: {config.get_platform_user_name()}")
+        lines.append(f"API URL: {config.url}")
+        lines.append(f"Docker Registry URL: {config.docker_registry_url()}")
+        lines.append(f"Github RSA Path: {config.github_rsa_path}")
+        indent = "  "
+        return "Config:\n" + indent + f"\n{indent}".join(lines)
