@@ -15,7 +15,7 @@ from .defaults import (
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
 )
-from .formatter import OutputFormatter
+from .formatter import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
 from .utils import run_async
@@ -147,7 +147,7 @@ async def train(
             is_preemptible=preemptible,
         )
         job = await client.jobs.status(res.id)
-        click.echo(OutputFormatter().format_job(job, quiet))
+        click.echo(JobFormatter()(job, quiet))
 
 
 @model.command()

@@ -1,0 +1,1 @@
+Pretty format output for ``neuro config show`` command, print current authentication token by ``neuro config show-token``.

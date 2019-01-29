@@ -22,6 +22,20 @@ def test_print_version(run):
 
 
 @pytest.mark.e2e
+def test_print_config(run):
+    captured = run(["config", "show"])
+    assert not captured.err
+    assert "API URL: https://platform.dev.neuromation.io/api/v1" in captured.out
+
+
+@pytest.mark.e2e
+def test_print_config_token(run):
+    captured = run(["config", "show-token"])
+    assert not captured.err
+    assert captured.out  # some secure information was printed
+
+
+@pytest.mark.e2e
 def test_empty_directory_ls_output(run, tmpstorage):
     # Ensure output of ls - empty directory shall print nothing.
     captured = run(["storage", "ls", tmpstorage])
