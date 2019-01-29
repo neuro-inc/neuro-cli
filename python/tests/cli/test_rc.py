@@ -5,7 +5,8 @@ from jose import jwt
 from yarl import URL
 
 from neuromation.cli import rc
-from neuromation.cli.rc import Config, ConfigFactory, RCException
+from neuromation.cli.defaults import load_defaults
+from neuromation.cli.rc import Config, ConfigFactory, RCException, save
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
@@ -329,3 +330,15 @@ def test_keyring_broken_keyring(nmrc):
         f"insecure: true\n"
         f"url: {DEFAULTS.url}\n"
     )
+
+
+def test_defaults_url(nmrc, patch_home_for_test):
+
+    custom_url = "http://custom-url.com/"
+    custom_config = rc.Config(url=custom_url, auth="")
+
+    save(nmrc, custom_config)
+    assert ConfigFactory.load().url == custom_url
+
+    DEFAULTS = load_defaults()
+    assert DEFAULTS["api_url"] == custom_url
