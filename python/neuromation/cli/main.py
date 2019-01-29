@@ -36,7 +36,6 @@ def setup_logging() -> None:
     root_logger.addHandler(console_handler)
     root_logger.setLevel(logging.DEBUG)
 
-    logging.getLogger("aiohttp.access").propagate = False
     # Select modules logging, if necessary
     # logging.getLogger("aiohttp.internal").propagate = False
     # logging.getLogger("aiohttp.client").setLevel(logging.DEBUG)

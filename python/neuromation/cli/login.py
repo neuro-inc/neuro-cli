@@ -156,12 +156,13 @@ async def create_app_server_once(
     app: Application, *, host: str = "0.0.0.0", port: int = 8080
 ) -> AsyncIterator[URL]:
     try:
-        runner = AppRunner(app)
+        runner = AppRunner(app, access_log=None)
         await runner.setup()
         site = TCPSite(runner, host, port, shutdown_timeout=0.0)
         await site.start()
         yield URL(site.name)
     finally:
+        await runner.shutdown()
         await runner.cleanup()
 
 
