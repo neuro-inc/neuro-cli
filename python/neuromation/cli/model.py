@@ -147,7 +147,7 @@ async def train(
             is_preemptible=preemptible,
         )
         job = await client.jobs.status(res.id)
-        click.echo(OutputFormatter().format_job(job, quiet))
+        click.echo(OutputFormatter()(job, quiet))
 
 
 @model.command()

@@ -189,7 +189,7 @@ async def submit(
             description=description,
             env=env_dict,
         )
-        click.echo(OutputFormatter().format_job(job, quiet))
+        click.echo(OutputFormatter()(job, quiet))
 
 
 @job.command(context_settings=dict(ignore_unknown_options=True))
@@ -305,7 +305,7 @@ async def list(
         jobs = await client.jobs.list()
 
     formatter = JobListFormatter(quiet=quiet)
-    click.echo(formatter.format_jobs(jobs, statuses, description))
+    click.echo(formatter(jobs, statuses, description))
 
 
 @job.command()
@@ -318,7 +318,7 @@ async def status(cfg: Config, id: str) -> None:
     """
     async with cfg.make_client() as client:
         res = await client.jobs.status(id)
-        click.echo(JobStatusFormatter().format_job_status(res))
+        click.echo(JobStatusFormatter()(res))
 
 
 @job.command()
@@ -334,9 +334,9 @@ async def top(cfg: Config, id: str) -> None:
         print_header = True
         async for res in client.jobs.top(id):
             if print_header:
-                click.echo(formatter.format_header())
+                click.echo(formatter.header())
                 print_header = False
-            line = formatter.format(res)
+            line = formatter(res)
             click.echo(f"\r{line}", nl=False)
 
 

@@ -54,7 +54,7 @@ def job_descr():
 
 class TestOutputFormatter:
     def test_quiet(self, job_descr):
-        assert OutputFormatter().format_job(job_descr, quiet=True) == TEST_JOB_ID
+        assert OutputFormatter()(job_descr, quiet=True) == TEST_JOB_ID
 
     def test_non_quiet(self, job_descr) -> None:
         expected = (
@@ -65,7 +65,7 @@ class TestOutputFormatter:
             + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
-        assert OutputFormatter().format_job(job_descr, quiet=False) == expected
+        assert OutputFormatter()(job_descr, quiet=False) == expected
 
 
 class TestJobOutputFormatter:
@@ -94,7 +94,7 @@ class TestJobOutputFormatter:
             is_preemptible=False,
         )
 
-        status = JobStatusFormatter().format_job_status(description)
+        status = JobStatusFormatter()(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -103,7 +103,7 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: False\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -136,7 +136,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter().format_job_status(description)
+        status = JobStatusFormatter()(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -145,7 +145,7 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -173,7 +173,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter().format_job_status(description)
+        status = JobStatusFormatter()(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -182,7 +182,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -210,7 +210,7 @@ class TestJobOutputFormatter:
             owner="owner",
         )
 
-        status = JobStatusFormatter().format_job_status(description)
+        status = JobStatusFormatter()(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -218,7 +218,7 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter.format_resources(description.container.resources)}\n"
+            f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
@@ -237,7 +237,7 @@ class TestJobTelemetryFormatter:
         )
 
     def test_format_header_line(self):
-        line = JobTelemetryFormatter().format_header()
+        line = JobTelemetryFormatter().header()
         assert line == self._format(
             timestamp="TIMESTAMP",
             cpu="CPU (%)",
@@ -250,9 +250,9 @@ class TestJobTelemetryFormatter:
         formatter = JobTelemetryFormatter()
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466.238_723_6
-        timestamp_str = formatter.format_timestamp(timestamp)
+        timestamp_str = formatter._format_timestamp(timestamp)
         telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
-        line = JobTelemetryFormatter().format(telemetry)
+        line = JobTelemetryFormatter()(telemetry)
         assert line == self._format(
             timestamp=timestamp_str,
             cpu="0.123",
@@ -265,7 +265,7 @@ class TestJobTelemetryFormatter:
         formatter = JobTelemetryFormatter()
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466
-        timestamp_str = formatter.format_timestamp(timestamp)
+        timestamp_str = formatter._format_timestamp(timestamp)
         telemetry = JobTelemetry(
             cpu=0.12345,
             memory=256.1234,
@@ -273,7 +273,7 @@ class TestJobTelemetryFormatter:
             gpu_duty_cycle=99,
             gpu_memory=64.5,
         )
-        line = formatter.format(telemetry)
+        line = formatter(telemetry)
         assert line == self._format(
             timestamp=timestamp_str,
             cpu="0.123",
@@ -356,7 +356,7 @@ class TestJobListFormatter:
         expected = "\n".join(
             [format_expected_job_line(index) for index in range(number_of_jobs)]
         )
-        assert self.quiet.format_jobs(jobs) == expected, expected
+        assert self.quiet(jobs) == expected, expected
 
     @pytest.mark.parametrize("number_of_jobs", [0, 1, 2, 10, 100, 1000])
     def test_format_jobs_non_quiet(self, number_of_jobs):
@@ -400,7 +400,7 @@ class TestJobListFormatter:
             [self.loud._format_header_line()]
             + [format_expected_job_line(index) for index in range(number_of_jobs)]
         )
-        assert self.loud.format_jobs(jobs) == expected
+        assert self.loud(jobs) == expected
 
     def test_format_jobs_description_filter(self):
         jobs = [
@@ -433,7 +433,7 @@ class TestJobListFormatter:
 
         expected = "\n".join([format_expected_job_line(0)])
         assert (
-            self.quiet.format_jobs(jobs, description="test-description-0") == expected
+            self.quiet(jobs, description="test-description-0") == expected
         ), expected
 
 
@@ -445,7 +445,7 @@ class TestLSFormatter:
             + "directory      0              dir1"
         )
         assert (
-            StorageLsFormatter().fmt_long(
+            StorageLsFormatter()(
                 [
                     FileStatus("file1", 11, "FILE", 2018, "read"),
                     FileStatus("file2", 12, "FILE", 2018, "write"),
@@ -456,7 +456,7 @@ class TestLSFormatter:
         )
 
     def test_neuro_store_ls_empty(self):
-        assert StorageLsFormatter().fmt_long([]) == ""
+        assert StorageLsFormatter()([]) == ""
 
 
 class TestResourcesFormatter:
@@ -466,7 +466,7 @@ class TestResourcesFormatter:
         )
         resource_formatter = ResourcesFormatter()
         assert (
-            resource_formatter.format_resources(resources) == "Resources:\n"
+            resource_formatter(resources) == "Resources:\n"
             "  Memory: 16 MB\n"
             "  CPU: 0.1"
         )
@@ -477,7 +477,7 @@ class TestResourcesFormatter:
         )
         resource_formatter = ResourcesFormatter()
         assert (
-            resource_formatter.format_resources(resources) == "Resources:\n"
+            resource_formatter(resources) == "Resources:\n"
             "  Memory: 1024 MB\n"
             "  CPU: 2.0\n"
             "  GPU: 1.0 x nvidia-tesla-p4"
@@ -489,7 +489,7 @@ class TestResourcesFormatter:
         )
         resource_formatter = ResourcesFormatter()
         assert (
-            resource_formatter.format_resources(resources) == "Resources:\n"
+            resource_formatter(resources) == "Resources:\n"
             "  Memory: 16 MB\n"
             "  CPU: 0.1\n"
             "  Additional: Extended SHM space"

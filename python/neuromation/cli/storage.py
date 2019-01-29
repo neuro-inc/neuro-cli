@@ -56,7 +56,7 @@ async def ls(cfg: Config, path: str) -> None:
     async with cfg.make_client() as client:
         res = await client.storage.ls(uri)
 
-    click.echo(StorageLsFormatter().fmt_long(res))
+    click.echo(StorageLsFormatter()(res))
 
 
 @storage.command()
