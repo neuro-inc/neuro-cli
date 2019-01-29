@@ -1,6 +1,7 @@
 import asyncio
-from typing import Awaitable, TypeVar
 import sys
+from typing import Awaitable, TypeVar
+
 
 _T = TypeVar("_T")
 
