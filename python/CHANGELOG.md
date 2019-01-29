@@ -5,8 +5,8 @@
 
 [comment]: # (towncrier release notes start)
 
-Neuromation 0.2.0b0 (2019-01-28)
-================================
+Neuromation 0.2.0 (2019-01-28)
+==============================
 
 Features
 --------
@@ -31,6 +31,8 @@ Features
 - Display Preemptible in job status output ([#393](https://github.com/neuromation/platform-api-clients/issues/393))
 
 - Make the client work on Python 3.7 ([#402](https://github.com/neuromation/platform-api-clients/issues/402))
+
+- Implement ``neuro job top`` ([#412](https://github.com/neuromation/platform-api-clients/issues/412))
 
 
 Deprecations and Removals
