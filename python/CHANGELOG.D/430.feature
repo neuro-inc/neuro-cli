@@ -1,1 +1,0 @@
-Check `~/.nmrc` config file for strict `0o600` permissions.
