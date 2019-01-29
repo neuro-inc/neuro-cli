@@ -6,7 +6,7 @@ import hashlib
 import secrets
 import time
 import webbrowser
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Callable, List, Optional, Sequence, Type, cast
 
 from aiohttp import ClientResponseError, ClientSession
@@ -156,12 +156,13 @@ async def create_app_server_once(
     app: Application, *, host: str = "0.0.0.0", port: int = 8080
 ) -> AsyncIterator[URL]:
     try:
-        runner = AppRunner(app)
+        runner = AppRunner(app, access_log=None)
         await runner.setup()
         site = TCPSite(runner, host, port, shutdown_timeout=0.0)
         await site.start()
         yield URL(site.name)
     finally:
+        await runner.shutdown()
         await runner.cleanup()
 
 
@@ -185,9 +186,11 @@ async def create_app_server(
 class AuthToken:
     token: str
     expiration_time: int
-    refresh_token: str
+    refresh_token: str = field(repr=False)
 
-    time_factory: Callable[[], float] = time.time
+    time_factory: Callable[[], float] = field(
+        default=time.time, repr=False, compare=False
+    )
 
     @property
     def is_expired(self) -> bool:
@@ -212,6 +215,13 @@ class AuthToken:
             refresh_token=refresh_token,
             time_factory=time_factory,
         )
+
+    @classmethod
+    def create_non_expiring(cls, token: str) -> "AuthToken":
+        # NOTE: for backward compatibility we assume that manually set token
+        # expires in 3 years.
+        expires_in = 60 * 60 * 24 * 365 * 3  # 3 years
+        return cls.create(token, expires_in=expires_in, refresh_token="")
 
 
 class AuthTokenClient:
@@ -350,24 +360,3 @@ class AuthNegotiator:
                 return await token_client.refresh(token)
 
             return token
-
-
-async def run(config: AuthConfig) -> None:
-    negotiator = AuthNegotiator(config=config)
-    token = await negotiator.refresh_token()
-    print(token)
-
-
-def main() -> None:
-    config = AuthConfig.create(
-        base_url=URL("https://dev-neuromation.auth0.com"),
-        client_id="V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR",
-        audience="https://platform.dev.neuromation.io",
-        success_redirect_url=URL("https://platform.neuromation.io"),
-    )
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run(config))
-
-
-if __name__ == "__main__":
-    main()

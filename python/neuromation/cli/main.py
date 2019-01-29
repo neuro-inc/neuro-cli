@@ -14,7 +14,7 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from .completion import completion
-from .config import config
+from .config import config, login, logout
 from .defaults import DEFAULTS
 from .image import image
 from .job import job
@@ -127,6 +127,8 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         ctx.close()
 
 
+cli.add_command(login)
+cli.add_command(logout)
 cli.add_command(config)
 cli.add_command(storage)
 cli.add_command(DeprecatedGroup(storage, name="store"))

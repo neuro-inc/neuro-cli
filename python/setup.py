@@ -27,7 +27,6 @@ setup(
         'async_generator>=1.5; python_version<"3.7"',
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
-        "keyring>=13.0",
         "yarl>=1.3.0",
         "aiodocker>=0.14.0",
         "click>=4.0",

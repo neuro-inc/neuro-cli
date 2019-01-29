@@ -26,6 +26,8 @@
 		* [neuro job status](#neuro-job-status)
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job top](#neuro-job-top)
+	* [neuro login](#neuro-login)
+	* [neuro logout](#neuro-logout)
 	* [neuro model](#neuro-model)
 		* [neuro model debug](#neuro-model-debug)
 		* [neuro model train](#neuro-model-train)
@@ -83,6 +85,8 @@ Name | Description|
 * _[neuro help](#neuro-help)_: Get help on a command
 * _[neuro image](#neuro-image)_: Docker image operations
 * _[neuro job](#neuro-job)_: Job operations.
+* _[neuro login](#neuro-login)_: Log into Neuromation Platform.
+* _[neuro logout](#neuro-logout)_: Log out.
 * _[neuro model](#neuro-model)_: Model operations.
 * _[neuro share](#neuro-share)_: Shares resource specified by URI to a USER with PERMISSION
 
@@ -177,7 +181,7 @@ Name | Description|
 **Commands:**
 
 * _[neuro config auth](#neuro-config-auth)_: Updates authorization token.
-* _[neuro config forget](#neuro-config-forget)_: Forget authorization token.
+* _[neuro config forget](#neuro-config-forget)_: Forget authorization token. (DEPRECATED)
 * _[neuro config id_rsa](#neuro-config-id_rsa)_: Updates path to id_rsa file with private key.
 
 FILE is being used for accessing remote shell, remote debug.
@@ -204,7 +208,6 @@ neuro config auth [OPTIONS] TOKEN
 
 Name | Description|
 |----|------------|
-|_--insecure_|Store token in plain file instead system secured keyring|
 |_--help_|Show this message and exit.|
 
 
@@ -212,7 +215,7 @@ Name | Description|
 
 ### neuro config forget
 
-Forget authorization token.
+Forget authorization token. \(DEPRECATED)
 
 **Usage:**
 
@@ -664,6 +667,44 @@ Display real-time job telemetry
 
 ```bash
 neuro job top [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro login
+
+Log into Neuromation Platform.
+
+**Usage:**
+
+```bash
+neuro login [OPTIONS] [URL]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro logout
+
+Log out.
+
+**Usage:**
+
+```bash
+neuro logout [OPTIONS]
 ```
 
 **Options:**
