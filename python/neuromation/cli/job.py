@@ -249,7 +249,7 @@ async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
 @click.argument("id")
 @click.pass_obj
 @run_async
-async def monitor(cfg: Config, id: str) -> None:
+async def logs(cfg: Config, id: str) -> None:
     """
     Monitor job output stream.
     """
@@ -262,6 +262,9 @@ async def monitor(cfg: Config, id: str) -> None:
             if not chunk:
                 break
             click.echo(chunk.decode(errors="ignore"), nl=False)
+
+
+job.add_command(alias(logs, 'monitor'))
 
 
 @job.command()
