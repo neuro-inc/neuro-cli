@@ -71,6 +71,9 @@ def _cancel_all_tasks(
         asyncio.gather(*to_cancel, loop=loop, return_exceptions=True)
     )
 
+    # temporary shut up the logger until aiohttp will be fixed
+    # the message scares people :)
+    return
     for task in to_cancel:
         if task.cancelled():
             continue
