@@ -12,14 +12,7 @@ import neuromation
 from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
-from . import rc
-from .completion import completion
-from .config import config, login, logout
-from .image import image
-from .job import job
-from .model import model
-from .share import share
-from .storage import storage
+from . import completion, config, image, job, model, rc, share, storage
 from .utils import DeprecatedGroup
 
 
@@ -61,7 +54,45 @@ def setup_console_handler(
 LOG_ERROR = log.error
 
 
-@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
+class MainGroup(click.Group):
+    def format_commands(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        """Extra format methods for multi methods that adds all the commands
+        after the options.
+        """
+        commands = []
+        groups = []
+
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+            # What is this, the tool lied about a command.  Ignore it
+            if cmd is None:
+                continue
+            if cmd.hidden:
+                continue
+
+            if isinstance(cmd, click.MultiCommand):
+                groups.append((subcommand, cmd))
+            else:
+                commands.append((subcommand, cmd))
+
+        for title, grp in [("Command Groups", groups), ("Commands", commands)]:
+            # allow for 3 times the default spacing
+            if len(grp):
+                limit = formatter.width - 6 - max(len(cmd[0]) for cmd in grp)
+
+                rows = []
+                for subcommand, cmd in grp:
+                    help = cmd.get_short_help_str(limit)
+                    rows.append((subcommand, help))
+
+                if rows:
+                    with formatter.section(title):
+                        formatter.write_dl(rows)
+
+
+@click.group(cls=MainGroup)
 @click.option("-v", "--verbose", count=True, type=int)
 @click.option("--show-traceback", is_flag=True)
 @click.version_option(
@@ -70,18 +101,18 @@ LOG_ERROR = log.error
 @click.pass_context
 def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
     """
-    \b
-       ▇ ◣
-       ▇ ◥ ◣
-     ◣ ◥   ▇
-     ▇ ◣   ▇
-     ▇ ◥ ◣ ▇
-     ▇   ◥ ▇    Neuromation Platform
-     ▇   ◣ ◥
-     ◥ ◣ ▇      Deep network training,
-       ◥ ▇      inference and datasets
-         ◥
+    Neuromation console.
     """
+    #   ▇ ◣
+    #   ▇ ◥ ◣
+    # ◣ ◥   ▇
+    # ▇ ◣   ▇
+    # ▇ ◥ ◣ ▇
+    # ▇   ◥ ▇    Neuromation Platform
+    # ▇   ◣ ◥
+    # ◥ ◣ ▇      Deep network training,
+    #   ◥ ▇      inference and datasets
+    #     ◥
     global LOG_ERROR
     if show_traceback:
         LOG_ERROR = log.exception
@@ -95,7 +126,7 @@ def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
 @click.argument("command", nargs=-1)
 @click.pass_context
 def help(ctx: click.Context, command: Sequence[str]) -> None:
-    """Get help on a command"""
+    """Get help on a command."""
     top_ctx = ctx
     while top_ctx.parent is not None:
         top_ctx = top_ctx.parent
@@ -123,16 +154,31 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         ctx.close()
 
 
-cli.add_command(login)
-cli.add_command(logout)
-cli.add_command(config)
-cli.add_command(storage)
-cli.add_command(DeprecatedGroup(storage, name="store"))
-cli.add_command(model)
-cli.add_command(job)
-cli.add_command(image)
-cli.add_command(share)
-cli.add_command(completion)
+cli.add_command(config.config)
+cli.add_command(config.login)
+cli.add_command(config.logout)
+cli.add_command(storage.storage)
+cli.add_command(storage.rm)
+cli.add_command(storage.ls)
+cli.add_command(storage.cp)
+cli.add_command(storage.mkdir)
+cli.add_command(storage.mv)
+cli.add_command(DeprecatedGroup(storage.storage, name="store"))
+cli.add_command(model.model)
+cli.add_command(job.job)
+cli.add_command(job.submit)
+cli.add_command(job.exec)
+cli.add_command(job.monitor)
+cli.add_command(job.ps)
+cli.add_command(job.status)
+cli.add_command(job.top)
+cli.add_command(job.kill)
+cli.add_command(image.image)
+cli.add_command(image.push)
+cli.add_command(image.pull)
+cli.add_command(image.images)
+cli.add_command(share.share)
+cli.add_command(completion.completion)
 
 
 def main(args: Optional[List[str]] = None) -> None:

@@ -10,29 +10,46 @@
 		* [neuro config auth](#neuro-config-auth)
 		* [neuro config forget](#neuro-config-forget)
 		* [neuro config id_rsa](#neuro-config-id_rsa)
+		* [neuro config login](#neuro-config-login)
+		* [neuro config logout](#neuro-config-logout)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config url](#neuro-config-url)
+	* [neuro cp](#neuro-cp)
+	* [neuro exec](#neuro-exec)
 	* [neuro help](#neuro-help)
 	* [neuro image](#neuro-image)
+		* [neuro image images](#neuro-image-images)
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image pull](#neuro-image-pull)
 		* [neuro image push](#neuro-image-push)
+	* [neuro images](#neuro-images)
 	* [neuro job](#neuro-job)
 		* [neuro job exec](#neuro-job-exec)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job list](#neuro-job-list)
 		* [neuro job monitor](#neuro-job-monitor)
+		* [neuro job ps](#neuro-job-ps)
 		* [neuro job ssh](#neuro-job-ssh)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job top](#neuro-job-top)
+	* [neuro kill](#neuro-kill)
 	* [neuro login](#neuro-login)
 	* [neuro logout](#neuro-logout)
+	* [neuro ls](#neuro-ls)
+	* [neuro mkdir](#neuro-mkdir)
 	* [neuro model](#neuro-model)
 		* [neuro model debug](#neuro-model-debug)
 		* [neuro model train](#neuro-model-train)
+	* [neuro monitor](#neuro-monitor)
+	* [neuro mv](#neuro-mv)
+	* [neuro ps](#neuro-ps)
+	* [neuro pull](#neuro-pull)
+	* [neuro push](#neuro-push)
+	* [neuro rm](#neuro-rm)
 	* [neuro share](#neuro-share)
+	* [neuro status](#neuro-status)
 	* [neuro storage](#neuro-storage)
 		* [neuro storage cp](#neuro-storage-cp)
 		* [neuro storage ls](#neuro-storage-ls)
@@ -45,6 +62,8 @@
 		* [neuro store mkdir](#neuro-store-mkdir)
 		* [neuro store mv](#neuro-store-mv)
 		* [neuro store rm](#neuro-store-rm)
+	* [neuro submit](#neuro-submit)
+	* [neuro top](#neuro-top)
 * [Api](#Api)
 * [Contributing](#Contributing)
 
@@ -59,7 +78,7 @@ Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) 
 
 # neuro
 
-  ▇ ◣<br/>  ▇ ◥ ◣<br/>◣ ◥   ▇<br/>▇ ◣   ▇<br/>▇ ◥ ◣ ▇<br/>▇   ◥ ▇    Neuromation Platform<br/>▇   ◣ ◥<br/>◥ ◣ ▇      Deep network training,<br/>  ◥ ▇      inference and datasets<br/>    ◥
+Neuromation console.
 
 **Usage:**
 
@@ -81,16 +100,56 @@ Name | Description|
 
 * _[neuro completion](#neuro-completion)_: Generates code to enable shell-completion.
 * _[neuro config](#neuro-config)_: Client configuration settings commands.
-* _[neuro help](#neuro-help)_: Get help on a command
+* _[neuro cp](#neuro-cp)_: Copy files and directories.
+
+Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
+omitted, file:// scheme is assumed.
+
+* _[neuro exec](#neuro-exec)_: Executes command in a running job.
+* _[neuro help](#neuro-help)_: Get help on a command.
 * _[neuro image](#neuro-image)_: Docker image operations
+* _[neuro images](#neuro-images)_: List user's images which are available for jobs.
+
+You will see here own and shared with you images
 * _[neuro job](#neuro-job)_: Job operations.
+* _[neuro kill](#neuro-kill)_: Kill job(s).
 * _[neuro login](#neuro-login)_: Log into Neuromation Platform.
 * _[neuro logout](#neuro-logout)_: Log out.
-* _[neuro model](#neuro-model)_: Model operations.
+* _[neuro ls](#neuro-ls)_: List directory contents.
+
+By default PATH is equal user`s home dir (storage:)
+* _[neuro mkdir](#neuro-mkdir)_: Make directories.
+* _[neuro model](#neuro-model)_: Model operations. (DEPRECATED)
+* _[neuro monitor](#neuro-monitor)_: Monitor job output stream.
+* _[neuro mv](#neuro-mv)_: Move or rename files and directories.
+
+SOURCE must contain path to the file or directory existing on the storage,
+and DESTINATION must contain the full path to the target file or directory.
+
+* _[neuro ps](#neuro-ps)_: List all jobs.
+
+* _[neuro pull](#neuro-pull)_: Pull an image from platform registry.
+
+Remote image name must be URL with image:// scheme. Image names can contain
+tag.
+
+* _[neuro push](#neuro-push)_: Push an image to platform registry.
+
+Remote image must be URL with image:// scheme. Image names can contains tag.
+If tags not specified 'latest' will be used as value.
+
+* _[neuro rm](#neuro-rm)_: Remove files or directories.
+
 * _[neuro share](#neuro-share)_: Shares resource specified by URI to a USER with PERMISSION
 
+* _[neuro status](#neuro-status)_: Display status of a job.
 * _[neuro storage](#neuro-storage)_: Storage operations.
 * _[neuro store](#neuro-store)_: Alias for storage (DEPRECATED)
+* _[neuro submit](#neuro-submit)_: Start job using IMAGE.
+
+COMMANDS list will be passed as commands to model container.
+
+* _[neuro top](#neuro-top)_: Display real-time job telemetry.
 
 
 
@@ -186,6 +245,8 @@ Name | Description|
 FILE is being used for accessing remote shell, remote debug.
 
 Note: this is temporal and going to be replaced in future by JWT token.
+* _[neuro config login](#neuro-config-login)_: Log into Neuromation Platform.
+* _[neuro config logout](#neuro-config-logout)_: Log out.
 * _[neuro config show](#neuro-config-show)_: Print current settings.
 * _[neuro config show-token](#neuro-config-show-token)_: Print current authorization token.
 * _[neuro config url](#neuro-config-url)_: Update settings with provided platform URL.
@@ -240,6 +301,44 @@ Update path to id_rsa file with private key.<br/><br/>FILE is being used for acc
 
 ```bash
 neuro config id_rsa [OPTIONS] FILE
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config login
+
+Log into Neuromation Platform.
+
+**Usage:**
+
+```bash
+neuro config login [OPTIONS] [URL]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config logout
+
+Log out.
+
+**Usage:**
+
+```bash
+neuro config logout [OPTIONS]
 ```
 
 **Options:**
@@ -317,9 +416,66 @@ Name | Description|
 
 
 
+## neuro cp
+
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
+
+**Usage:**
+
+```bash
+neuro cp [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+
+# copy local file ./foo into remote storage root
+neuro storage cp ./foo storage:///
+neuro storage cp ./foo storage:/
+
+# download remote file foo into local file foo with
+# explicit file:// scheme set
+neuro storage cp storage:///foo file:///foo
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-r, --recursive_|Recursive copy, off by default|
+|_\-p, --progress_|Show progress, off by default|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro exec
+
+Executes command in a running job.
+
+**Usage:**
+
+```bash
+neuro exec [OPTIONS] ID CMD...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--help_|Show this message and exit.|
+
+
+
+
 ## neuro help
 
-Get help on a command
+Get help on a command.
 
 **Usage:**
 
@@ -355,9 +511,10 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro image ls](#neuro-image-ls)_: List user's images which are available for jobs.
+* _[neuro image images](#neuro-image-images)_: List user's images which are available for jobs.
 
 You will see here own and shared with you images
+* _[neuro image ls](#neuro-image-ls)_: Alias for images (DEPRECATED)
 * _[neuro image pull](#neuro-image-pull)_: Pull an image from platform registry.
 
 Remote image name must be URL with image:// scheme. Image names can contain
@@ -372,9 +529,28 @@ If tags not specified 'latest' will be used as value.
 
 
 
-### neuro image ls
+### neuro image images
 
 List user's images which are available for jobs.<br/><br/>You will see here own and shared with you images
+
+**Usage:**
+
+```bash
+neuro image images [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro image ls
+
+Alias for images \(DEPRECATED)
 
 **Usage:**
 
@@ -451,6 +627,25 @@ Name | Description|
 
 
 
+## neuro images
+
+List user's images which are available for jobs.<br/><br/>You will see here own and shared with you images
+
+**Usage:**
+
+```bash
+neuro images [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ## neuro job
 
 Job operations.
@@ -471,19 +666,21 @@ Name | Description|
 **Commands:**
 
 * _[neuro job exec](#neuro-job-exec)_: Executes command in a running job.
-* _[neuro job kill](#neuro-job-kill)_: Kill job(s)
-* _[neuro job list](#neuro-job-list)_: List all jobs.
+* _[neuro job kill](#neuro-job-kill)_: Kill job(s).
+* _[neuro job list](#neuro-job-list)_: Alias for ps (DEPRECATED)
+* _[neuro job monitor](#neuro-job-monitor)_: Monitor job output stream.
+* _[neuro job ps](#neuro-job-ps)_: List all jobs.
 
-* _[neuro job monitor](#neuro-job-monitor)_: Monitor job output stream
-* _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job. Job should be started with SSH
-support enabled.
+* _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job.
 
-* _[neuro job status](#neuro-job-status)_: Display status of a job
+Job should be started with SSH support enabled.
+
+* _[neuro job status](#neuro-job-status)_: Display status of a job.
 * _[neuro job submit](#neuro-job-submit)_: Start job using IMAGE.
 
 COMMANDS list will be passed as commands to model container.
 
-* _[neuro job top](#neuro-job-top)_: Display real-time job telemetry
+* _[neuro job top](#neuro-job-top)_: Display real-time job telemetry.
 
 
 
@@ -511,7 +708,7 @@ Name | Description|
 
 ### neuro job kill
 
-Kill job\(s)
+Kill job\(s).
 
 **Usage:**
 
@@ -530,12 +727,53 @@ Name | Description|
 
 ### neuro job list
 
-List all jobs.<br/>
+Alias for ps \(DEPRECATED)
 
 **Usage:**
 
 ```bash
 neuro job list [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-s, --status \[pending|running|succeeded|failed|all]_|Filter out job by status \(multiple option)|
+|_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
+|_\-q, --quiet_||
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job monitor
+
+Monitor job output stream.
+
+**Usage:**
+
+```bash
+neuro job monitor [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job ps
+
+List all jobs.<br/>
+
+**Usage:**
+
+```bash
+neuro job ps [OPTIONS]
 ```
 
 **Examples:**
@@ -561,28 +799,9 @@ Name | Description|
 
 
 
-### neuro job monitor
-
-Monitor job output stream
-
-**Usage:**
-
-```bash
-neuro job monitor [OPTIONS] ID
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
 ### neuro job ssh
 
-Starts ssh terminal connected to running job. Job should be started with SSH<br/>support enabled.<br/>
+Starts ssh terminal connected to running job.<br/><br/>Job should be started with SSH support enabled.<br/>
 
 **Usage:**
 
@@ -595,7 +814,7 @@ neuro job ssh [OPTIONS] ID
 ```bash
 
 
-neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
+neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk (DEPRECATED)
 
 ```
 
@@ -612,7 +831,7 @@ Name | Description|
 
 ### neuro job status
 
-Display status of a job
+Display status of a job.
 
 **Usage:**
 
@@ -680,12 +899,31 @@ Name | Description|
 
 ### neuro job top
 
-Display real-time job telemetry
+Display real-time job telemetry.
 
 **Usage:**
 
 ```bash
 neuro job top [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro kill
+
+Kill job\(s).
+
+**Usage:**
+
+```bash
+neuro kill [OPTIONS] ID...
 ```
 
 **Options:**
@@ -735,9 +973,47 @@ Name | Description|
 
 
 
+## neuro ls
+
+List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
+
+**Usage:**
+
+```bash
+neuro ls [OPTIONS] [PATH]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro mkdir
+
+Make directories.
+
+**Usage:**
+
+```bash
+neuro mkdir [OPTIONS] PATH
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ## neuro model
 
-Model operations.
+Model operations. \(DEPRECATED)
 
 **Usage:**
 
@@ -826,6 +1102,182 @@ Name | Description|
 
 
 
+## neuro monitor
+
+Monitor job output stream.
+
+**Usage:**
+
+```bash
+neuro monitor [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro mv
+
+Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
+
+**Usage:**
+
+```bash
+neuro mv [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+
+# move or rename remote file
+neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
+neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+
+# move or rename remote directory
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro ps
+
+List all jobs.<br/>
+
+**Usage:**
+
+```bash
+neuro ps [OPTIONS]
+```
+
+**Examples:**
+
+```bash
+
+
+neuro job list --description="my favourite job"
+neuro job list --status=all
+neuro job list -s pending -s running -q
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-s, --status \[pending|running|succeeded|failed|all]_|Filter out job by status \(multiple option)|
+|_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
+|_\-q, --quiet_||
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro pull
+
+Pull an image from platform registry.<br/><br/>Remote image name must be URL with image:// scheme. Image names can contain<br/>tag.<br/>
+
+**Usage:**
+
+```bash
+neuro pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+
+
+neuro image pull image:myimage
+neuro image pull image://myfriend/alpine:shared
+neuro image pull image://username/my-alpine:production alpine:from-registry
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro push
+
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contains tag.<br/>If tags not specified 'latest' will be used as value.<br/>
+
+**Usage:**
+
+```bash
+neuro push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+
+
+neuro image push myimage
+neuro image push alpine:latest image:my-alpine:production
+neuro image push alpine image://myfriend/alpine:shared
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro rm
+
+Remove files or directories.<br/>
+
+**Usage:**
+
+```bash
+neuro rm [OPTIONS] PATH
+```
+
+**Examples:**
+
+```bash
+
+
+neuro storage rm storage:///foo/bar/
+neuro storage rm storage:/foo/bar/
+neuro storage rm storage://{username}/foo/bar/
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ## neuro share
 
 Shares resource specified by URI to a USER with PERMISSION<br/>
@@ -842,6 +1294,25 @@ neuro share [OPTIONS] URI USER [read|write|manage]
 neuro share storage:///sample_data/ alice manage neuro share
  image:resnet50 bob read neuro share job:///my_job_id alice write
 
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro status
+
+Display status of a job.
+
+**Usage:**
+
+```bash
+neuro status [OPTIONS] ID
 ```
 
 **Options:**
@@ -1196,6 +1667,74 @@ neuro storage rm storage:///foo/bar/
 neuro storage rm storage:/foo/bar/
 neuro storage rm storage://{username}/foo/bar/
 
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro submit
+
+Start job using IMAGE.<br/><br/>COMMANDS list will be passed as commands to model container.<br/>
+
+**Usage:**
+
+```bash
+neuro submit [OPTIONS] IMAGE [CMD]...
+```
+
+**Examples:**
+
+```bash
+
+
+# Starts a container pytorch:latest with two paths mounted. Directory /q1/
+# is mounted in read only mode to /qm directory within container.
+# Directory /mod mounted to /mod directory in read-write mode.
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw     pytorch:latest
+
+# Starts a container pytorch:latest with connection enabled to port 22 and
+# sets PYTHONPATH environment value to /python.
+# Please note that SSH server should be provided by container.
+neuro job submit --env PYTHONPATH=/python --volume     storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
+|_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
+|_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
+|_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
+|_\-x, --extshm_|Request extended '/dev/shm' space|
+|_--http INTEGER_|Enable HTTP port forwarding to container|
+|_--ssh INTEGER_|Enable SSH port forwarding to container|
+|_\--preemptible / --non-preemptible_|Run job on a lower-cost preemptible instance|
+|_\-d, --description DESC_|Add optional description to the job|
+|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
+|_--volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
+|_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
+|_\--env-file PATH_|File with environment variables to pass|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro top
+
+Display real-time job telemetry.
+
+**Usage:**
+
+```bash
+neuro top [OPTIONS] ID
 ```
 
 **Options:**
