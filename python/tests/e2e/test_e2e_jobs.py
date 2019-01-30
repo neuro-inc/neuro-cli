@@ -23,7 +23,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 @pytest.mark.e2e
 def test_job_lifecycle(run):
     # Remember original running jobs
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -53,7 +53,7 @@ def test_job_lifecycle(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -62,14 +62,14 @@ def test_job_lifecycle(run):
     wait_job_change_state_to(run, job_id, Status.RUNNING)
 
     # Check that it is in a running job list
-    captured = run(["job", "ps", "--status", "running"])
+    captured = run(["job", "ls", "--status", "running"])
     store_out = captured.out.strip()
     assert job_id in store_out
     # Check that the command is in the list
     assert command in store_out
 
     # Check that no command is in the list if quite
-    captured = run(["job", "ps", "--status", "running", "-q"])
+    captured = run(["job", "ls", "--status", "running", "-q"])
     store_out = captured.out.strip()
     assert job_id in store_out
     assert command not in store_out
@@ -83,7 +83,7 @@ def test_job_lifecycle(run):
     wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     # Check that it is not in a running job list anymore
-    captured = run(["job", "ps", "--status", "running"])
+    captured = run(["job", "ls", "--status", "running"])
     store_out = captured.out.strip()
     assert job_id not in store_out
 
@@ -91,7 +91,7 @@ def test_job_lifecycle(run):
 @pytest.mark.e2e
 def test_job_description(run):
     # Remember original running jobs
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
     description = "Test description for a job"
@@ -123,7 +123,7 @@ def test_job_description(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -132,7 +132,7 @@ def test_job_description(run):
     wait_job_change_state_to(run, job_id, Status.RUNNING, Status.FAILED)
 
     # Check that it is in a running job list
-    captured = run(["job", "ps", "--status", "running"])
+    captured = run(["job", "ls", "--status", "running"])
     store_out = captured.out.strip()
     assert job_id in store_out
     # Check that description is in the list
@@ -140,7 +140,7 @@ def test_job_description(run):
     assert command in store_out
 
     # Check that no description is in the list if quite
-    captured = run(["job", "ps", "--status", "running", "-q"])
+    captured = run(["job", "ls", "--status", "running", "-q"])
     store_out = captured.out.strip()
     assert job_id in store_out
     assert description not in store_out
@@ -155,7 +155,7 @@ def test_job_description(run):
     wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     # Check that it is not in a running job list anymore
-    captured = run(["job", "ps", "--status", "running"])
+    captured = run(["job", "ls", "--status", "running"])
     store_out = captured.out.strip()
     assert job_id not in store_out
 
@@ -163,7 +163,7 @@ def test_job_description(run):
 @pytest.mark.e2e
 def test_unschedulable_job_lifecycle(run):
     # Remember original running jobs
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -193,7 +193,7 @@ def test_unschedulable_job_lifecycle(run):
     assert job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
@@ -210,7 +210,7 @@ def test_unschedulable_job_lifecycle(run):
     wait_job_change_state_from(run, job_id, Status.RUNNING)
 
     # Check that it is not in a running job list anymore
-    captured = run(["job", "ps", "--status", "running"])
+    captured = run(["job", "ls", "--status", "running"])
     store_out = captured.out.strip()
     assert job_id not in store_out
 
@@ -218,7 +218,7 @@ def test_unschedulable_job_lifecycle(run):
 @pytest.mark.e2e
 def test_two_jobs_at_once(run):
     # Remember original running jobs
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_orig = [x.split("\t")[0] for x in store_out_list]
 
@@ -267,7 +267,7 @@ def test_two_jobs_at_once(run):
     assert second_job_id not in jobs_orig
 
     # Check it is in a running,pending job list now
-    captured = run(["job", "ps", "--status", "running", "--status", "pending"])
+    captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert first_job_id in jobs_updated
@@ -278,7 +278,7 @@ def test_two_jobs_at_once(run):
     wait_job_change_state_to(run, second_job_id, Status.RUNNING, Status.FAILED)
 
     # Check that it is in a running job list
-    captured = run(["job", "ps", "--status", "running"])
+    captured = run(["job", "ls", "--status", "running"])
     store_out = captured.out.strip()
     assert first_job_id in store_out
     assert second_job_id in store_out
@@ -286,7 +286,7 @@ def test_two_jobs_at_once(run):
     assert command in store_out
 
     # Check that no command is in the list if quite
-    captured = run(["job", "ps", "--status", "running", "-q"])
+    captured = run(["job", "ls", "--status", "running", "-q"])
     store_out = captured.out.strip()
     assert first_job_id in store_out
     assert second_job_id in store_out
@@ -302,7 +302,7 @@ def test_two_jobs_at_once(run):
     wait_job_change_state_from(run, second_job_id, Status.RUNNING)
 
     # Check that it is not in a running job list anymore
-    captured = run(["job", "ps", "--status", "running"])
+    captured = run(["job", "ls", "--status", "running"])
     store_out = captured.out.strip()
     assert first_job_id not in store_out
     assert first_job_id not in store_out
