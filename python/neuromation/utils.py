@@ -42,11 +42,11 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
 
     if not asyncio.iscoroutine(main):
         raise ValueError("a coroutine was expected, got {!r}".format(main))
-    stored_loop = None
-    try:
-        stored_loop = asyncio.get_event_loop()
-    except RuntimeError:
-        pass
+    # stored_loop = None
+    # try:
+    #     stored_loop = asyncio.get_event_loop()
+    # except RuntimeError:
+    #     pass
     loop = asyncio.new_event_loop()
     try:
         asyncio.set_event_loop(loop)
@@ -57,10 +57,10 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
         try:
             _cancel_all_tasks(loop, main_task)
             loop.run_until_complete(loop.shutdown_asyncgens())
+        finally:
+            asyncio.set_event_loop(None)
             # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
             loop.run_until_complete(asyncio.sleep(0.250, loop=loop))
-        finally:
-            asyncio.set_event_loop(stored_loop)
             loop.close()
 
 
