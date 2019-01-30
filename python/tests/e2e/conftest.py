@@ -38,7 +38,7 @@ SysCap = namedtuple("SysCap", "out err")
 
 
 @pytest.fixture(scope="session")
-def sesisonloop():
+def session_loop():
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
@@ -101,21 +101,21 @@ def static_path(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def data(static_path, sesisonloop):
+def data(static_path, session_loop):
     folder = static_path / "data"
     folder.mkdir()
-    return sesisonloop.run_until_complete(
-        generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB, sesisonloop)
+    return session_loop.run_until_complete(
+        generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB, session_loop)
     )
 
 
 @pytest.fixture(scope="session")
-def nested_data(static_path, sesisonloop):
+def nested_data(static_path, session_loop):
     root_dir = static_path / "neested_data" / "nested"
     nested_dir = root_dir / "directory" / "for" / "test"
     nested_dir.mkdir(parents=True, exist_ok=True)
-    data = sesisonloop.run_until_complete(
-        generate_test_data(nested_dir, FILE_COUNT, FILE_SIZE_MB, sesisonloop)
+    data = session_loop.run_until_complete(
+        generate_test_data(nested_dir, FILE_COUNT, FILE_SIZE_MB, session_loop)
     )
     return data[0][0], data[0][1], str(root_dir)
 
