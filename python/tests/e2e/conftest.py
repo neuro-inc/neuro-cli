@@ -136,10 +136,7 @@ def run(monkeypatch, capfd, tmp_path):
     def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
+        loop = asyncio.get_event_loop()
         delay = 0.5
         for i in range(5):
             pre_out, pre_err = capfd.readouterr()
