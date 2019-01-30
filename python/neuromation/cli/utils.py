@@ -33,8 +33,8 @@ class DeprecatedGroup(click.MultiCommand):
         return self.origin.list_commands(ctx)
 
 
-def alias(origin: click.Command, name: str, deprecated=True) -> click.Command:
-    return click.Command(
+def alias(origin: click.Command, name: str, deprecated: bool = True) -> click.Command:
+    return click.Command(  # type: ignore
         name=name,
         context_settings=origin.context_settings,
         callback=origin.callback,
@@ -44,6 +44,6 @@ def alias(origin: click.Command, name: str, deprecated=True) -> click.Command:
         short_help=origin.short_help,
         options_metavar=origin.options_metavar,
         add_help_option=origin.add_help_option,
-        hidden=origin.hidden,
+        hidden=origin.hidden,  # type: ignore
         deprecated=deprecated,
     )
