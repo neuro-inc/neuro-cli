@@ -136,7 +136,10 @@ def run(monkeypatch, capfd, tmp_path):
     def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
-        loop = asyncio.get_event_loop()
+        try:
+            current_loop = asyncio.get_event_loop()
+        except RuntimeError:
+            current_loop = None
         delay = 0.5
         for i in range(5):
             pre_out, pre_err = capfd.readouterr()
@@ -166,7 +169,7 @@ def run(monkeypatch, capfd, tmp_path):
                     raise
             finally:
                 # Let's restore loop removed by neuromation.utils.run()
-                asyncio.set_event_loop(loop)
+                asyncio.set_event_loop(current_loop)
             post_out, post_err = capfd.readouterr()
             out = post_out[pre_out_size:]
             err = post_err[pre_err_size:]
