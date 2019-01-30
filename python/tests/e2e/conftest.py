@@ -67,6 +67,9 @@ async def generate_test_data(root, count, size_mb, loop):
         exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"
         old_loop = asyncio.get_event_loop()
         asyncio.set_event_loop(loop)
+        asyncio.events.get_child_watcher()
+        asyncio.set_event_loop(old_loop)
+
         process = await asyncio.create_subprocess_shell(
             f"""(dd if=/dev/urandom \
                     bs={BLOCK_SIZE_MB * 1024 * 1024} \
@@ -77,7 +80,6 @@ async def generate_test_data(root, count, size_mb, loop):
             stdout=asyncio.subprocess.PIPE,
             loop=loop,
         )
-        asyncio.set_event_loop(old_loop)
 
         stdout, _ = await asyncio.wait_for(
             process.communicate(), timeout=GENERATION_TIMEOUT_SEC, loop=loop
