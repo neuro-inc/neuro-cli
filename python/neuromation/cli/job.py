@@ -264,7 +264,7 @@ async def logs(cfg: Config, id: str) -> None:
             click.echo(chunk.decode(errors="ignore"), nl=False)
 
 
-job.add_command(alias(logs, 'monitor'))
+job.add_command(alias(logs, "monitor"))
 
 
 @job.command()

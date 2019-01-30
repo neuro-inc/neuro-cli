@@ -28,6 +28,7 @@
 		* [neuro job exec](#neuro-job-exec)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job list](#neuro-job-list)
+		* [neuro job logs](#neuro-job-logs)
 		* [neuro job monitor](#neuro-job-monitor)
 		* [neuro job ps](#neuro-job-ps)
 		* [neuro job ssh](#neuro-job-ssh)
@@ -37,12 +38,12 @@
 	* [neuro kill](#neuro-kill)
 	* [neuro login](#neuro-login)
 	* [neuro logout](#neuro-logout)
+	* [neuro logs](#neuro-logs)
 	* [neuro ls](#neuro-ls)
 	* [neuro mkdir](#neuro-mkdir)
 	* [neuro model](#neuro-model)
 		* [neuro model debug](#neuro-model-debug)
 		* [neuro model train](#neuro-model-train)
-	* [neuro monitor](#neuro-monitor)
 	* [neuro mv](#neuro-mv)
 	* [neuro ps](#neuro-ps)
 	* [neuro pull](#neuro-pull)
@@ -115,12 +116,12 @@ You will see here own and shared with you images
 * _[neuro kill](#neuro-kill)_: Kill job(s).
 * _[neuro login](#neuro-login)_: Log into Neuromation Platform.
 * _[neuro logout](#neuro-logout)_: Log out.
+* _[neuro logs](#neuro-logs)_: Monitor job output stream.
 * _[neuro ls](#neuro-ls)_: List directory contents.
 
 By default PATH is equal user`s home dir (storage:)
 * _[neuro mkdir](#neuro-mkdir)_: Make directories.
 * _[neuro model](#neuro-model)_: Model operations. (DEPRECATED)
-* _[neuro monitor](#neuro-monitor)_: Monitor job output stream.
 * _[neuro mv](#neuro-mv)_: Move or rename files and directories.
 
 SOURCE must contain path to the file or directory existing on the storage,
@@ -668,7 +669,8 @@ Name | Description|
 * _[neuro job exec](#neuro-job-exec)_: Executes command in a running job.
 * _[neuro job kill](#neuro-job-kill)_: Kill job(s).
 * _[neuro job list](#neuro-job-list)_: Alias for ps (DEPRECATED)
-* _[neuro job monitor](#neuro-job-monitor)_: Monitor job output stream.
+* _[neuro job logs](#neuro-job-logs)_: Monitor job output stream.
+* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs (DEPRECATED)
 * _[neuro job ps](#neuro-job-ps)_: List all jobs.
 
 * _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job.
@@ -747,9 +749,28 @@ Name | Description|
 
 
 
-### neuro job monitor
+### neuro job logs
 
 Monitor job output stream.
+
+**Usage:**
+
+```bash
+neuro job logs [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job monitor
+
+Alias for logs \(DEPRECATED)
 
 **Usage:**
 
@@ -973,6 +994,25 @@ Name | Description|
 
 
 
+## neuro logs
+
+Monitor job output stream.
+
+**Usage:**
+
+```bash
+neuro logs [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ## neuro ls
 
 List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
@@ -1097,25 +1137,6 @@ Name | Description|
 |_\--preemptible / --non-preemptible_|Run job on a lower-cost preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro monitor
-
-Monitor job output stream.
-
-**Usage:**
-
-```bash
-neuro monitor [OPTIONS] ID
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
 |_--help_|Show this message and exit.|
 
 
