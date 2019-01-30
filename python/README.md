@@ -19,7 +19,6 @@
 	* [neuro exec](#neuro-exec)
 	* [neuro help](#neuro-help)
 	* [neuro image](#neuro-image)
-		* [neuro image images](#neuro-image-images)
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image pull](#neuro-image-pull)
 		* [neuro image push](#neuro-image-push)
@@ -29,8 +28,8 @@
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job list](#neuro-job-list)
 		* [neuro job logs](#neuro-job-logs)
+		* [neuro job ls](#neuro-job-ls)
 		* [neuro job monitor](#neuro-job-monitor)
-		* [neuro job ps](#neuro-job-ps)
 		* [neuro job ssh](#neuro-job-ssh)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job submit](#neuro-job-submit)
@@ -108,7 +107,7 @@ omitted, file:// scheme is assumed.
 
 * _[neuro exec](#neuro-exec)_: Executes command in a running job.
 * _[neuro help](#neuro-help)_: Get help on a command.
-* _[neuro image](#neuro-image)_: Docker image operations
+* _[neuro image](#neuro-image)_: Docker image operations.
 * _[neuro images](#neuro-images)_: List user's images which are available for jobs.
 
 You will see here own and shared with you images
@@ -495,7 +494,7 @@ Name | Description|
 
 ## neuro image
 
-Docker image operations
+Docker image operations.
 
 **Usage:**
 
@@ -512,10 +511,9 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro image images](#neuro-image-images)_: List user's images which are available for jobs.
+* _[neuro image ls](#neuro-image-ls)_: List user's images which are available for jobs.
 
 You will see here own and shared with you images
-* _[neuro image ls](#neuro-image-ls)_: Alias for images (DEPRECATED)
 * _[neuro image pull](#neuro-image-pull)_: Pull an image from platform registry.
 
 Remote image name must be URL with image:// scheme. Image names can contain
@@ -530,28 +528,9 @@ If tags not specified 'latest' will be used as value.
 
 
 
-### neuro image images
-
-List user's images which are available for jobs.<br/><br/>You will see here own and shared with you images
-
-**Usage:**
-
-```bash
-neuro image images [OPTIONS]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
 ### neuro image ls
 
-Alias for images \(DEPRECATED)
+List user's images which are available for jobs.<br/><br/>You will see here own and shared with you images
 
 **Usage:**
 
@@ -668,11 +647,11 @@ Name | Description|
 
 * _[neuro job exec](#neuro-job-exec)_: Executes command in a running job.
 * _[neuro job kill](#neuro-job-kill)_: Kill job(s).
-* _[neuro job list](#neuro-job-list)_: Alias for ps (DEPRECATED)
+* _[neuro job list](#neuro-job-list)_: Alias for ls (DEPRECATED)
 * _[neuro job logs](#neuro-job-logs)_: Monitor job output stream.
-* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs (DEPRECATED)
-* _[neuro job ps](#neuro-job-ps)_: List all jobs.
+* _[neuro job ls](#neuro-job-ls)_: List all jobs.
 
+* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs (DEPRECATED)
 * _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job.
 
 Job should be started with SSH support enabled.
@@ -729,7 +708,7 @@ Name | Description|
 
 ### neuro job list
 
-Alias for ps \(DEPRECATED)
+Alias for ls \(DEPRECATED)
 
 **Usage:**
 
@@ -768,33 +747,14 @@ Name | Description|
 
 
 
-### neuro job monitor
-
-Alias for logs \(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro job monitor [OPTIONS] ID
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro job ps
+### neuro job ls
 
 List all jobs.<br/>
 
 **Usage:**
 
 ```bash
-neuro job ps [OPTIONS]
+neuro job ls [OPTIONS]
 ```
 
 **Examples:**
@@ -815,6 +775,25 @@ Name | Description|
 |_\-s, --status \[pending|running|succeeded|failed|all]_|Filter out job by status \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
 |_\-q, --quiet_||
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job monitor
+
+Alias for logs \(DEPRECATED)
+
+**Usage:**
+
+```bash
+neuro job monitor [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 

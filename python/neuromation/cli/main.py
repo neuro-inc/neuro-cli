@@ -13,7 +13,7 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
-from .utils import DeprecatedGroup
+from .utils import DeprecatedGroup, alias
 
 
 # For stream copying from file to http or from http to file
@@ -181,14 +181,14 @@ cli.add_command(job.job)
 cli.add_command(job.submit)
 cli.add_command(job.exec)
 cli.add_command(job.logs)
-cli.add_command(job.ps)
+cli.add_command(alias(job.ls, "ps", help=job.ls.help, deprecated=False))
 cli.add_command(job.status)
 cli.add_command(job.top)
 cli.add_command(job.kill)
 cli.add_command(image.image)
 cli.add_command(image.push)
 cli.add_command(image.pull)
-cli.add_command(image.images)
+cli.add_command(alias(image.ls, "images", help=image.ls.help, deprecated=False))
 cli.add_command(share.share)
 cli.add_command(completion.completion)
 

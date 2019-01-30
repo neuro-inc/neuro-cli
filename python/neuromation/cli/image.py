@@ -8,13 +8,13 @@ from neuromation.client.images import Image
 
 from .command_spinner import SpinnerBase
 from .rc import Config
-from .utils import alias, run_async
+from .utils import run_async
 
 
 @click.group()
 def image() -> None:
     """
-    Docker image operations
+    Docker image operations.
     """
 
 
@@ -94,7 +94,7 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 @image.command()
 @click.pass_obj
 @run_async
-async def images(cfg: Config) -> None:
+async def ls(cfg: Config) -> None:
     """
     List user's images which are available for jobs.
 
@@ -105,6 +105,3 @@ async def images(cfg: Config) -> None:
         images = await client.images.ls()
         for image in images:
             click.echo(image)
-
-
-image.add_command(alias(images, "ls"))

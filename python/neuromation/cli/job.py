@@ -284,7 +284,7 @@ job.add_command(alias(logs, "monitor"))
 @click.option("-q", "--quiet", is_flag=True)
 @click.pass_obj
 @run_async
-async def ps(cfg: Config, status: Sequence[str], description: str, quiet: bool) -> None:
+async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) -> None:
     """
     List all jobs.
 
@@ -310,7 +310,7 @@ async def ps(cfg: Config, status: Sequence[str], description: str, quiet: bool) 
     click.echo(formatter(jobs, statuses, description))
 
 
-job.add_command(alias(ps, "list"))
+job.add_command(alias(ls, "list"))
 
 
 @job.command()
