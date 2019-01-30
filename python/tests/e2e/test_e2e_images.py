@@ -31,10 +31,7 @@ async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
     image_name = f"{TEST_IMAGE_NAME}:{tag}"
     with image_archive.open(mode="r+b") as fileobj:
         await docker.images.build(
-            fileobj=fileobj,
-            tag=image_name,
-            buildargs={"TAG": tag},
-            encoding="identity",
+            fileobj=fileobj, tag=image_name, buildargs={"TAG": tag}, encoding="identity"
         )
 
     return image_name
