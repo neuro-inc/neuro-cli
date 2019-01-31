@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import shlex
@@ -7,7 +8,13 @@ from typing import Sequence
 import aiohttp
 import click
 
-from neuromation.client import Image, NetworkPortForwarding, Resources, Volume
+from neuromation.client import (
+    Image,
+    JobStatus,
+    NetworkPortForwarding,
+    Resources,
+    Volume,
+)
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
@@ -111,6 +118,9 @@ def job() -> None:
     type=click.Path(exists=True),
     help="File with environment variables to pass",
 )
+@click.option(
+    "--wait-start/--no-wait-start", default=True, help="Wait for a job start or failure"
+)
 @click.pass_obj
 @run_async
 async def submit(
@@ -130,6 +140,7 @@ async def submit(
     preemptible: bool,
     description: str,
     quiet: bool,
+    wait_start: bool,
 ) -> None:
     """
     Start job using IMAGE.
@@ -188,6 +199,10 @@ async def submit(
             env=env_dict,
         )
         click.echo(JobFormatter()(job, quiet))
+        while wait_start and job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.5)
+            job = await client.jobs.status(job.id)
+            click.echo(f"Status: {job.status}")
 
 
 @job.command(context_settings=dict(ignore_unknown_options=True))
