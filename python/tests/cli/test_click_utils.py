@@ -1,9 +1,8 @@
 from textwrap import dedent
 
-import click
 from click.testing import CliRunner
 
-from neuromation.cli.utils import MainGroup, group, command, DeprecatedGroup
+from neuromation.cli.utils import DeprecatedGroup, MainGroup, command, group
 
 
 def test_print():

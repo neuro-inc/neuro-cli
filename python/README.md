@@ -647,11 +647,11 @@ Name | Description|
 
 * _[neuro job exec](#neuro-job-exec)_: Executes command in a running job.
 * _[neuro job kill](#neuro-job-kill)_: Kill job(s).
-* _[neuro job list](#neuro-job-list)_: Alias for ls (DEPRECATED)
+* _[neuro job list](#neuro-job-list)_: Alias for ls. (DEPRECATED)
 * _[neuro job logs](#neuro-job-logs)_: Fetch the logs of a container.
 * _[neuro job ls](#neuro-job-ls)_: List all jobs.
 
-* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs (DEPRECATED)
+* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs. (DEPRECATED)
 * _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job.
 
 Job should be started with SSH support enabled.
@@ -708,7 +708,7 @@ Name | Description|
 
 ### neuro job list
 
-Alias for ls \(DEPRECATED)
+Alias for ls. \(DEPRECATED)
 
 **Usage:**
 
@@ -782,7 +782,7 @@ Name | Description|
 
 ### neuro job monitor
 
-Alias for logs \(DEPRECATED)
+Alias for logs. \(DEPRECATED)
 
 **Usage:**
 
