@@ -26,13 +26,13 @@ from .formatter import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, run_async
+from .utils import alias, group, run_async
 
 
 log = logging.getLogger(__name__)
 
 
-@click.group()
+@group()
 def job() -> None:
     """
     Job operations.

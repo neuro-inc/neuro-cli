@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Any, List, Optional, Sequence, Tuple, Type
+from typing import List, Optional, Sequence, Type
 
 import aiohttp
 import click
@@ -13,7 +13,7 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
-from .utils import DeprecatedGroup, alias
+from .utils import DeprecatedGroup, MainGroup, alias
 
 
 # For stream copying from file to http or from http to file
@@ -52,89 +52,6 @@ def setup_console_handler(
 
 
 LOG_ERROR = log.error
-
-
-class HelpFormatter(click.HelpFormatter):
-    def write_heading(self, heading: str) -> None:
-        self.write(
-            click.style(
-                "%*s%s:\n" % (self.current_indent, "", heading),
-                bold=True,
-                underline=True,
-            )
-        )
-
-
-class Context(click.Context):
-    def make_formatter(self):
-        return HelpFormatter(
-            width=self.terminal_width, max_width=self.max_content_width
-        )
-
-
-class MainGroup(click.Group):
-    def make_context(
-        self,
-        info_name: str,
-        args: Sequence[str],
-        parent: Optional[click.Context] = None,
-        **extra: Any,
-    ) -> Context:
-        for key, value in self.context_settings.items():
-            if key not in extra:
-                extra[key] = value
-        ctx = Context(self, info_name=info_name, parent=parent, **extra)
-        with ctx.scope(cleanup=False):
-            self.parse_args(ctx, args)
-        return ctx
-
-    def _format_group(
-        self,
-        title: str,
-        grp: Sequence[Tuple[str, click.Command]],
-        formatter: click.HelpFormatter,
-    ) -> None:
-        # allow for 3 times the default spacing
-        if not grp:
-            return
-
-        width = formatter.width
-        assert width is not None
-        limit = width - 6 - max(len(cmd[0]) for cmd in grp)
-
-        rows = []
-        for subcommand, cmd in grp:
-            help = cmd.get_short_help_str(limit)  # type: ignore
-            rows.append((subcommand, help))
-
-        if rows:
-            with formatter.section(title):
-                formatter.write_dl(rows)
-
-    def format_commands(
-        self, ctx: click.Context, formatter: click.HelpFormatter
-    ) -> None:
-        """Extra format methods for multi methods that adds all the commands
-        after the options.
-        """
-        commands: List[Tuple[str, click.Command]] = []
-        groups: List[Tuple[str, click.MultiCommand]] = []
-
-        for subcommand in self.list_commands(ctx):
-            cmd = self.get_command(ctx, subcommand)
-            # What is this, the tool lied about a command.  Ignore it
-            if cmd is None:
-                continue
-            if cmd.hidden:  # type: ignore
-                continue
-
-            if isinstance(cmd, click.MultiCommand):
-                groups.append((subcommand, cmd))
-            else:
-                commands.append((subcommand, cmd))
-
-        self._format_group("Command Groups", groups, formatter)
-        self._format_group("Commands", commands, formatter)
 
 
 @click.group(cls=MainGroup)

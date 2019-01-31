@@ -5,9 +5,10 @@ from . import rc
 from .defaults import API_URL
 from .formatter import ConfigFormatter
 from .rc import Config
+from .utils import group
 
 
-@click.group()
+@group()
 def config() -> None:
     """Client configuration settings commands."""
 

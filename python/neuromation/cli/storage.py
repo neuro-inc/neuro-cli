@@ -7,13 +7,13 @@ from yarl import URL
 from .command_progress_report import ProgressBase
 from .formatter import StorageLsFormatter
 from .rc import Config
-from .utils import run_async
+from .utils import group, run_async
 
 
 log = logging.getLogger(__name__)
 
 
-@click.group()
+@group()
 def storage() -> None:
     """
     Storage operations.

@@ -2,6 +2,8 @@ from pathlib import Path
 
 import click
 
+from .utils import group
+
 
 CFG_FILE = {"bash": Path("~/.bashrc"), "zsh": Path("~/.zshrc")}
 SOURCE_CMD = {"bash": "source", "zsh": "source_zsh"}
@@ -9,7 +11,7 @@ SOURCE_CMD = {"bash": "source", "zsh": "source_zsh"}
 ACTIVATION_TEMPLATE = 'eval "$(_NEURO_COMPLETE={cmd} neuro)"'
 
 
-@click.group()
+@group()
 def completion() -> None:
     """
     Generates code to enable shell-completion.

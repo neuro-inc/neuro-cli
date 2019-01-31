@@ -3,7 +3,7 @@ from textwrap import dedent
 import click
 from click.testing import CliRunner
 
-from neuromation.cli.main import MainGroup
+from neuromation.cli.utils import MainGroup
 
 
 def test_print():
