@@ -4,6 +4,8 @@ import aiohttp
 import click
 from yarl import URL
 
+from neuromation.cli.url_utils import local_path_to_url
+
 from .command_progress_report import ProgressBase
 from .formatter import StorageLsFormatter
 from .rc import Config
@@ -98,9 +100,9 @@ async def cp(
 
     progress_obj = ProgressBase.create_progress(progress)
     if not src.scheme:
-        src = URL("file:" + src.path)
+        src = local_path_to_url(src.path)
     if not dst.scheme:
-        dst = URL("file:" + dst.path)
+        dst = local_path_to_url(dst.path)
     async with cfg.make_client(timeout=timeout) as client:
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
