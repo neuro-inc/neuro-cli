@@ -68,10 +68,8 @@ class Command(MakeContextMixin, click.Command):
 
 
 def command(
-    name: Optional[str] = None, cls: Optional[Type[Command]] = None, **kwargs: Any
+    name: Optional[str] = None, cls: Type[Command] = Command, **kwargs: Any
 ) -> Command:
-    if cls is None:
-        cls = Command
     return click.command(name=name, cls=cls, **kwargs)  # type: ignore
 
 
@@ -176,7 +174,7 @@ def alias(
     help: Optional[str] = None,
 ) -> click.Command:
     if help is None:
-        help = f"Alias for {origin.name}"
+        help = f"Alias for {origin.name}."
     return Command(  # type: ignore
         name=name,
         context_settings=origin.context_settings,
