@@ -92,7 +92,7 @@ def job() -> None:
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
 )
 @click.option(
-    "--volume",
+    "-v", "--volume",
     metavar="MOUNT",
     multiple=True,
     help="Mounts directory from vault into container. "
