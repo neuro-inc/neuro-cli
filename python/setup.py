@@ -30,6 +30,7 @@ setup(
         "yarl>=1.3.0",
         "aiodocker>=0.14.0",
         "click>=7.0",
+        "colorama>=0.4",
     ],
     include_package_data=True,
     description="Neuromation Platform API client",

@@ -5,9 +5,10 @@ from . import rc
 from .defaults import API_URL
 from .formatter import ConfigFormatter
 from .rc import Config
+from .utils import group
 
 
-@click.group()
+@group()
 def config() -> None:
     """Client configuration settings commands."""
 
@@ -81,7 +82,7 @@ def forget() -> None:
     rc.ConfigFactory.forget_auth_token()
 
 
-@click.command()
+@config.command()
 @click.argument("url", required=False, default=API_URL, type=URL)
 def login(url: URL) -> None:
     """
@@ -91,7 +92,7 @@ def login(url: URL) -> None:
     click.echo(f"Logged into {url}")
 
 
-@click.command()
+@config.command()
 def logout() -> None:
     """
     Log out.

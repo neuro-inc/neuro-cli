@@ -18,13 +18,13 @@ from .defaults import (
 from .formatter import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import run_async
+from .utils import group, run_async
 
 
 log = logging.getLogger(__name__)
 
 
-@click.group()
+@group(deprecated=True)
 def model() -> None:
     """
     Model operations.

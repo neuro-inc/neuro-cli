@@ -8,13 +8,13 @@ from neuromation.client.images import Image
 
 from .command_spinner import SpinnerBase
 from .rc import Config
-from .utils import run_async
+from .utils import group, run_async
 
 
-@click.group()
+@group()
 def image() -> None:
     """
-    Docker image operations
+    Docker image operations.
     """
 
 
