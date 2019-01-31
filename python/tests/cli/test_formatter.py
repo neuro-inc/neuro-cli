@@ -27,14 +27,13 @@ from neuromation.client import (
 )
 
 
-TEST_JOB_STATUS = JobStatus.PENDING
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 
 
 @pytest.fixture
 def job_descr():
     return JobDescription(
-        status=TEST_JOB_STATUS,
+        status=JobStatus.PENDING,
         id=TEST_JOB_ID,
         owner="owner",
         history=JobStatusHistory(
