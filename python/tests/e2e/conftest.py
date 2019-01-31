@@ -1,8 +1,6 @@
-import asyncio
 import hashlib
 import logging
 import os
-import platform
 import re
 from collections import namedtuple
 from os.path import join
@@ -102,6 +100,7 @@ def run(monkeypatch, capfd, tmp_path):
     def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
         monkeypatch.setattr(Path, "home", _home)
+
         delay = 0.5
         for i in range(5):
             pre_out, pre_err = capfd.readouterr()
