@@ -1,3 +1,5 @@
+import re
+import shlex
 from functools import wraps
 from typing import (
     Any,
@@ -19,6 +21,8 @@ from neuromation.utils import run
 
 _T = TypeVar("_T")
 
+DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
+
 
 def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
     @wraps(callback)
@@ -29,6 +33,9 @@ def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
 
 
 class HelpFormatter(click.HelpFormatter):
+    def write_usage(self, prog: str, args: str = "", prefix: str = "Usage:") -> None:
+        super().write_usage(prog, args, prefix=click.style(prefix, bold=True) + " ")
+
     def write_heading(self, heading: str) -> None:
         self.write(
             click.style(
@@ -46,7 +53,37 @@ class Context(click.Context):
         )
 
 
-class MakeContextMixin:
+class NeuroClickMixin:
+    def format_help_text(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        """Writes the help text to the formatter if it exists."""
+        help = self.help  # type: ignore
+        deprecated = self.deprecated  # type: ignore
+        if help:
+            help_text, *examples = re.split("Example[s]:\n", help, re.IGNORECASE)
+            formatter.write_paragraph()
+            with formatter.indentation():
+                if deprecated:
+                    help_text += DEPRECATED_HELP_NOTICE
+                formatter.write_text(help_text)
+            examples = [example.strip() for example in examples]
+
+            for example in examples:
+                with formatter.section(
+                    click.style("Examples", bold=True, underline=True)
+                ):
+                    for line in example.splitlines():
+                        is_comment = line.startswith("#")
+                        if is_comment:
+                            formatter.write_text("\b\n" + click.style(line, dim=True))
+                        else:
+                            formatter.write_text("\b\n" + " ".join(shlex.split(line)))
+        elif deprecated:
+            formatter.write_paragraph()
+            with formatter.indentation():
+                formatter.write_text(DEPRECATED_HELP_NOTICE)
+
     def make_context(
         self,
         info_name: str,
@@ -63,7 +100,7 @@ class MakeContextMixin:
         return ctx
 
 
-class Command(MakeContextMixin, click.Command):
+class Command(NeuroClickMixin, click.Command):
     pass
 
 
@@ -73,7 +110,7 @@ def command(
     return click.command(name=name, cls=cls, **kwargs)  # type: ignore
 
 
-class Group(MakeContextMixin, click.Group):
+class Group(NeuroClickMixin, click.Group):
     def command(
         self, *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], Command]:
@@ -100,7 +137,7 @@ def group(name: Optional[str] = None, **kwargs: Any) -> Group:
     return click.group(name=name, **kwargs)  # type: ignore
 
 
-class DeprecatedGroup(MakeContextMixin, click.MultiCommand):
+class DeprecatedGroup(NeuroClickMixin, click.MultiCommand):
     def __init__(
         self, origin: click.MultiCommand, name: Optional[str] = None, **attrs: Any
     ) -> None:

@@ -13,7 +13,7 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
-from .utils import DeprecatedGroup, MainGroup, alias
+from .utils import Context, DeprecatedGroup, MainGroup, alias
 
 
 # For stream copying from file to http or from http to file
@@ -103,7 +103,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
             if sub_cmd is None:
                 click.echo(not_found)
                 break
-            sub_ctx = click.Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
+            sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
             ctx_stack.append(sub_ctx)
         else:
             click.echo(not_found)

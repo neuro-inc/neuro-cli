@@ -169,7 +169,6 @@ async def debug(cfg: Config, id: str, localport: int) -> None:
 
     Examples:
 
-    \b
     neuro model debug --localport 12789 job-abc-def-ghk
     """
     git_key = cfg.github_rsa_path

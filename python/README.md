@@ -402,7 +402,6 @@ neuro config url [OPTIONS] URL
 
 ```bash
 
-
 neuro config url https://platform.neuromation.io/api/v1
 
 ```
@@ -429,7 +428,6 @@ neuro cp [OPTIONS] SOURCE DESTINATION
 **Examples:**
 
 ```bash
-
 
 # copy local file ./foo into remote storage root
 neuro storage cp ./foo storage:///
@@ -561,7 +559,6 @@ neuro image pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
 
 ```bash
 
-
 neuro image pull image:myimage
 neuro image pull image://myfriend/alpine:shared
 neuro image pull image://username/my-alpine:production alpine:from-registry
@@ -590,7 +587,6 @@ neuro image push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
 **Examples:**
 
 ```bash
-
 
 neuro image push myimage
 neuro image push alpine:latest image:my-alpine:production
@@ -655,6 +651,8 @@ Name | Description|
 * _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job.
 
 Job should be started with SSH support enabled.
+
+ (DEPRECATED)
 
 * _[neuro job status](#neuro-job-status)_: Display status of a job.
 * _[neuro job submit](#neuro-job-submit)_: Start job using IMAGE.
@@ -761,8 +759,7 @@ neuro job ls [OPTIONS]
 
 ```bash
 
-
-neuro job list --description="my favourite job"
+neuro job list --description=my favourite job
 neuro job list --status=all
 neuro job list -s pending -s running -q
 
@@ -801,7 +798,7 @@ Name | Description|
 
 ### neuro job ssh
 
-Starts ssh terminal connected to running job.<br/><br/>Job should be started with SSH support enabled.<br/>
+Starts ssh terminal connected to running job.<br/><br/>Job should be started with SSH support enabled.<br/><br/> \(DEPRECATED)<br/>
 
 **Usage:**
 
@@ -813,8 +810,7 @@ neuro job ssh [OPTIONS] ID
 
 ```bash
 
-
-neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk (DEPRECATED)
+neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
 
 ```
 
@@ -862,16 +858,15 @@ neuro job submit [OPTIONS] IMAGE [CMD]...
 
 ```bash
 
-
 # Starts a container pytorch:latest with two paths mounted. Directory /q1/
 # is mounted in read only mode to /qm directory within container.
 # Directory /mod mounted to /mod directory in read-write mode.
-neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw     pytorch:latest
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
 # Starts a container pytorch:latest with connection enabled to port 22 and
 # sets PYTHONPATH environment value to /python.
 # Please note that SSH server should be provided by container.
-neuro job submit --env PYTHONPATH=/python --volume     storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
 ```
 
@@ -1077,7 +1072,6 @@ neuro model debug [OPTIONS] ID
 
 ```bash
 
-
 neuro model debug --localport 12789 job-abc-def-ghk
 
 ```
@@ -1135,7 +1129,6 @@ neuro mv [OPTIONS] SOURCE DESTINATION
 
 ```bash
 
-
 # move or rename remote file
 neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
 neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
@@ -1169,8 +1162,7 @@ neuro ps [OPTIONS]
 
 ```bash
 
-
-neuro job list --description="my favourite job"
+neuro job list --description=my favourite job
 neuro job list --status=all
 neuro job list -s pending -s running -q
 
@@ -1202,7 +1194,6 @@ neuro pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
 
 ```bash
 
-
 neuro image pull image:myimage
 neuro image pull image://myfriend/alpine:shared
 neuro image pull image://username/my-alpine:production alpine:from-registry
@@ -1231,7 +1222,6 @@ neuro push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
 **Examples:**
 
 ```bash
-
 
 neuro image push myimage
 neuro image push alpine:latest image:my-alpine:production
@@ -1262,7 +1252,6 @@ neuro rm [OPTIONS] PATH
 
 ```bash
 
-
 neuro storage rm storage:///foo/bar/
 neuro storage rm storage:/foo/bar/
 neuro storage rm storage://{username}/foo/bar/
@@ -1291,8 +1280,10 @@ neuro share [OPTIONS] URI USER [read|write|manage]
 **Examples:**
 
 ```bash
-neuro share storage:///sample_data/ alice manage neuro share
- image:resnet50 bob read neuro share job:///my_job_id alice write
+
+neuro share storage:///sample_data/ alice manage
+neuro share image:resnet50 bob read
+neuro share job:///my_job_id alice write
 
 ```
 
@@ -1377,7 +1368,6 @@ neuro storage cp [OPTIONS] SOURCE DESTINATION
 
 ```bash
 
-
 # copy local file ./foo into remote storage root
 neuro storage cp ./foo storage:///
 neuro storage cp ./foo storage:/
@@ -1451,7 +1441,6 @@ neuro storage mv [OPTIONS] SOURCE DESTINATION
 
 ```bash
 
-
 # move or rename remote file
 neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
 neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
@@ -1484,7 +1473,6 @@ neuro storage rm [OPTIONS] PATH
 **Examples:**
 
 ```bash
-
 
 neuro storage rm storage:///foo/bar/
 neuro storage rm storage:/foo/bar/
@@ -1553,7 +1541,6 @@ neuro store cp [OPTIONS] SOURCE DESTINATION
 **Examples:**
 
 ```bash
-
 
 # copy local file ./foo into remote storage root
 neuro storage cp ./foo storage:///
@@ -1628,7 +1615,6 @@ neuro store mv [OPTIONS] SOURCE DESTINATION
 
 ```bash
 
-
 # move or rename remote file
 neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
 neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
@@ -1662,7 +1648,6 @@ neuro store rm [OPTIONS] PATH
 
 ```bash
 
-
 neuro storage rm storage:///foo/bar/
 neuro storage rm storage:/foo/bar/
 neuro storage rm storage://{username}/foo/bar/
@@ -1692,16 +1677,15 @@ neuro submit [OPTIONS] IMAGE [CMD]...
 
 ```bash
 
-
 # Starts a container pytorch:latest with two paths mounted. Directory /q1/
 # is mounted in read only mode to /qm directory within container.
 # Directory /mod mounted to /mod directory in read-write mode.
-neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw     pytorch:latest
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
 # Starts a container pytorch:latest with connection enabled to port 22 and
 # sets PYTHONPATH environment value to /python.
 # Please note that SSH server should be provided by container.
-neuro job submit --env PYTHONPATH=/python --volume     storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 
 ```
 

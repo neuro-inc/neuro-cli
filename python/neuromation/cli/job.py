@@ -138,19 +138,17 @@ async def submit(
 
     Examples:
 
-    \b
     # Starts a container pytorch:latest with two paths mounted. Directory /q1/
     # is mounted in read only mode to /qm directory within container.
     # Directory /mod mounted to /mod directory in read-write mode.
     neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
-    pytorch:latest
+      pytorch:latest
 
-    \b
     # Starts a container pytorch:latest with connection enabled to port 22 and
     # sets PYTHONPATH environment value to /python.
     # Please note that SSH server should be provided by container.
     neuro job submit --env PYTHONPATH=/python --volume \
-    storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+      storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
     """
 
     username = cfg.username
@@ -236,7 +234,6 @@ async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
 
     Examples:
 
-    \b
     neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
     """
     git_key = cfg.github_rsa_path
@@ -290,7 +287,6 @@ async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) 
 
     Examples:
 
-    \b
     neuro job list --description="my favourite job"
     neuro job list --status=all
     neuro job list -s pending -s running -q
