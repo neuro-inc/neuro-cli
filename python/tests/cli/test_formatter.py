@@ -58,7 +58,7 @@ class TestOutputFormatter:
 
     def test_non_quiet(self, job_descr) -> None:
         expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {TEST_JOB_STATUS}\n"
+            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Shortcuts:\n"
             + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
