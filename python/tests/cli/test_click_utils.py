@@ -169,3 +169,75 @@ def test_print_deprecated_group_content():
           cmd  Command.
     """
     )
+
+
+def test_print_deprecated_no_help():
+    @command(deprecated=True)
+    def main():
+        pass
+
+    runner = CliRunner()
+    result = runner.invoke(main, ['--help'])
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        Usage: main [OPTIONS]
+
+           (DEPRECATED)
+
+        Options:
+          --help  Show this message and exit.
+    """
+    )
+
+
+def test_print_deprecated_with_help():
+    @command(deprecated=True)
+    def main():
+        """Main help."""
+
+    runner = CliRunner()
+    result = runner.invoke(main, ['--help'])
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        Usage: main [OPTIONS]
+
+          Main help. (DEPRECATED)
+
+        Options:
+          --help  Show this message and exit.
+    """
+    )
+
+
+def test_print_help_with_examples():
+    @command()
+    def main():
+        """
+        Main help.
+
+        Examples:
+
+        # comment
+        example
+
+        """
+
+    runner = CliRunner()
+    result = runner.invoke(main, ['--help'])
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        Usage: main [OPTIONS]
+
+          Main help.
+
+        Examples:
+          # comment
+          example
+
+        Options:
+          --help  Show this message and exit.
+    """
+    )
