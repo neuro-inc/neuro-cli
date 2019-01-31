@@ -29,7 +29,7 @@ setup(
         "python-dateutil>=2.7.0",
         "yarl>=1.3.0",
         "aiodocker>=0.14.0",
-        "click>=4.0",
+        "click>=7.0",
         "colorama>=0.4",
     ],
     include_package_data=True,
