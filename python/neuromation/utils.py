@@ -1,5 +1,7 @@
 import asyncio
+import gc
 import sys
+import warnings
 from typing import Awaitable, TypeVar
 
 
@@ -55,9 +57,13 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
             loop.run_until_complete(loop.shutdown_asyncgens())
         finally:
             asyncio.set_event_loop(None)
+            # simple workaround for:
             # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
-            loop.run_until_complete(asyncio.sleep(0.250, loop=loop))
-            loop.close()
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", ResourceWarning)
+                loop.close()
+                del loop
+                gc.collect(2)
 
 
 def _cancel_all_tasks(
