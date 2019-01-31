@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import List, Optional, Sequence, Tuple, Type
+from typing import Any, List, Optional, Sequence, Tuple, Type
 
 import aiohttp
 import click
@@ -54,7 +54,40 @@ def setup_console_handler(
 LOG_ERROR = log.error
 
 
+class HelpFormatter(click.HelpFormatter):
+    def write_heading(self, heading: str) -> None:
+        self.write(
+            click.style(
+                "%*s%s:\n" % (self.current_indent, "", heading),
+                bold=True,
+                underline=True,
+            )
+        )
+
+
+class Context(click.Context):
+    def make_formatter(self):
+        return HelpFormatter(
+            width=self.terminal_width, max_width=self.max_content_width
+        )
+
+
 class MainGroup(click.Group):
+    def make_context(
+        self,
+        info_name: str,
+        args: Sequence[str],
+        parent: Optional[click.Context] = None,
+        **extra: Any,
+    ) -> Context:
+        for key, value in self.context_settings.items():
+            if key not in extra:
+                extra[key] = value
+        ctx = Context(self, info_name=info_name, parent=parent, **extra)
+        with ctx.scope(cleanup=False):
+            self.parse_args(ctx, args)
+        return ctx
+
     def _format_group(
         self,
         title: str,
