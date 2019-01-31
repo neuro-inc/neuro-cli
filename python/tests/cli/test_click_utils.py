@@ -177,7 +177,7 @@ def test_print_deprecated_no_help():
         pass
 
     runner = CliRunner()
-    result = runner.invoke(main, ['--help'])
+    result = runner.invoke(main, ["--help"])
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
@@ -197,7 +197,7 @@ def test_print_deprecated_with_help():
         """Main help."""
 
     runner = CliRunner()
-    result = runner.invoke(main, ['--help'])
+    result = runner.invoke(main, ["--help"])
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
@@ -225,7 +225,7 @@ def test_print_help_with_examples():
         """
 
     runner = CliRunner()
-    result = runner.invoke(main, ['--help'])
+    result = runner.invoke(main, ["--help"])
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
