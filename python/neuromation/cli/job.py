@@ -251,7 +251,7 @@ async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
 @run_async
 async def logs(cfg: Config, id: str) -> None:
     """
-    Monitor job output stream.
+    Fetch the logs of a container.
     """
     timeout = aiohttp.ClientTimeout(
         total=None, connect=None, sock_read=None, sock_connect=30
