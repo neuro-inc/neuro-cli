@@ -1,5 +1,6 @@
 import textwrap
 
+import click
 import pytest
 from yarl import URL
 
@@ -21,12 +22,12 @@ from neuromation.client import (
     JobDescription,
     JobStatus,
     JobStatusHistory,
+    JobTelemetry,
     Resources,
 )
-from neuromation.client.jobs import JobTelemetry
 
 
-TEST_JOB_STATUS = "pending"
+TEST_JOB_STATUS = JobStatus.PENDING
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 
 
@@ -65,7 +66,7 @@ class TestOutputFormatter:
             + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
-        assert JobFormatter(quiet=False)(job_descr) == expected
+        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
 
 class TestJobOutputFormatter:

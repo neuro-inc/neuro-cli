@@ -78,7 +78,7 @@ class JobStartProgress(BaseFormatter):
         ret = f"\rStatus: {txt_status} {dt:.1f} sec"
         if show_spinner:
             ret += " " + next(self._spinner)
-        ret += " " * 20  # to clear the last of string
+        ret += " " * 20  # to clear the screen line tail
         return ret
 
 
