@@ -137,6 +137,8 @@ async def train(
 
         image_obj = Image(image=image, command=cmdline)
 
+        fmt = JobFormatter(quiet)
+
         res = await client.models.train(
             image=image_obj,
             resources=resources,
@@ -147,7 +149,7 @@ async def train(
             is_preemptible=preemptible,
         )
         job = await client.jobs.status(res.id)
-        click.echo(JobFormatter()(job, quiet))
+        click.echo(fmt(job))
 
 
 @model.command()

@@ -54,7 +54,7 @@ def job_descr():
 
 class TestOutputFormatter:
     def test_quiet(self, job_descr):
-        assert JobFormatter()(job_descr, quiet=True) == TEST_JOB_ID
+        assert JobFormatter(quiet=True)(job_descr) == TEST_JOB_ID
 
     def test_non_quiet(self, job_descr) -> None:
         expected = (
@@ -65,7 +65,7 @@ class TestOutputFormatter:
             + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
-        assert JobFormatter()(job_descr, quiet=False) == expected
+        assert JobFormatter(quiet=False)(job_descr) == expected
 
 
 class TestJobOutputFormatter:

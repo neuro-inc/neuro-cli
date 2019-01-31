@@ -1,12 +1,29 @@
+import itertools
+import os
+import sys
 import time
 from typing import AbstractSet, Iterable, List, Optional
 
+import click
 from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
 from neuromation.client.jobs import JobTelemetry
 
 from .rc import Config
+
+
+COLORS = {
+    JobStatus.PENDING: "yellow",
+    JobStatus.RUNNING: "blue",
+    JobStatus.SUCCEEDED: "green",
+    JobStatus.FAILED: "red",
+    JobStatus.UNKNOWN: "yellow",
+}
+
+
+def format_job_status(status: JobStatus) -> str:
+    return click.style(status.value, fg=COLORS.get(status, "reset"))
 
 
 class BaseFormatter:
@@ -27,17 +44,42 @@ class BaseFormatter:
 
 
 class JobFormatter(BaseFormatter):
-    def __call__(self, job: JobDescription, quiet: bool = True) -> str:
-        if quiet:
+    def __init__(self, quiet: bool = True) -> None:
+        self._quiet = quiet
+
+    def __call__(self, job: JobDescription) -> str:
+        if self._quiet:
             return job.id
         return (
-            f"Job ID: {job.id} Status: {job.status}\n"
+            f"Job ID: {job.id} Status: {format_job_status(job.status)}\n"
             + f"Shortcuts:\n"
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
             + f"  neuro job top {job.id}     # display real-time job telemetry\n"
             + f"  neuro job kill {job.id}    # kill job"
         )
+
+
+class JobStartProgress(BaseFormatter):
+    SPINNER = ("|", "/", "-", "\\")
+
+    def __init__(self) -> None:
+        # FIXME: get the value from config
+        self._quiet = not os.isatty(sys.stdout.fileno())
+        self._time = time.time()
+        self._spinner = itertools.cycle(self.SPINNER)
+
+    def __call__(self, job: JobDescription, *, show_spinner: bool = True) -> str:
+        if self._quiet:
+            return ""
+        new_time = time.time()
+        dt = new_time - self._time
+        txt_status = format_job_status(job.status)
+        ret = f"\rStatus: {txt_status} {dt:.1f} sec"
+        if show_spinner:
+            ret += " " + next(self._spinner)
+        ret += " " * 20  # to clear the last of string
+        return ret
 
 
 class StorageLsFormatter(BaseFormatter):

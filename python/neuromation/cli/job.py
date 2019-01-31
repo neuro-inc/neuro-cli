@@ -28,6 +28,7 @@ from .defaults import (
 from .formatter import (
     JobFormatter,
     JobListFormatter,
+    JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
 )
@@ -198,11 +199,13 @@ async def submit(
             description=description,
             env=env_dict,
         )
-        click.echo(JobFormatter()(job, quiet))
+        click.echo(JobFormatter(quiet)(job))
+        progress = JobStartProgress()
         while wait_start and job.status == JobStatus.PENDING:
             await asyncio.sleep(0.5)
             job = await client.jobs.status(job.id)
-            click.echo(f"Status: {job.status}")
+            click.echo(progress(job), nl=False)
+        click.echo(progress(job, show_spinner=False))
 
 
 @job.command(context_settings=dict(ignore_unknown_options=True))
