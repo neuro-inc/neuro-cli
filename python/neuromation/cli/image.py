@@ -33,10 +33,9 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
 
     Examples:
 
-    \b
-        neuro image push myimage
-        neuro image push alpine:latest image:my-alpine:production
-        neuro image push alpine image://myfriend/alpine:shared
+    neuro image push myimage
+    neuro image push alpine:latest image:my-alpine:production
+    neuro image push alpine image://myfriend/alpine:shared
 
     """
 
@@ -69,10 +68,9 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 
     Examples:
 
-    \b
-        neuro image pull image:myimage
-        neuro image pull image://myfriend/alpine:shared
-        neuro image pull image://username/my-alpine:production alpine:from-registry
+    neuro image pull image:myimage
+    neuro image pull image://myfriend/alpine:shared
+    neuro image pull image://username/my-alpine:production alpine:from-registry
 
     """
 

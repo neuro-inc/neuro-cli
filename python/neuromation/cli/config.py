@@ -21,8 +21,7 @@ def url(url: str) -> None:
 
     Examples:
 
-    \b
-        neuro config url https://platform.neuromation.io/api/v1
+    neuro config url https://platform.neuromation.io/api/v1
     """
     rc.ConfigFactory.update_api_url(url)
 

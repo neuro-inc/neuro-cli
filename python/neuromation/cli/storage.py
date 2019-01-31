@@ -30,7 +30,6 @@ async def rm(cfg: Config, path: str) -> None:
 
     Examples:
 
-    \b
     neuro storage rm storage:///foo/bar/
     neuro storage rm storage:/foo/bar/
     neuro storage rm storage://{username}/foo/bar/
@@ -77,12 +76,10 @@ async def cp(
 
     Examples:
 
-    \b
     # copy local file ./foo into remote storage root
     neuro storage cp ./foo storage:///
     neuro storage cp ./foo storage:/
 
-    \b
     # download remote file foo into local file foo with
     # explicit file:// scheme set
     neuro storage cp storage:///foo file:///foo
@@ -147,12 +144,10 @@ async def mv(cfg: Config, source: str, destination: str) -> None:
 
     Examples:
 
-    \b
     # move or rename remote file
     neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
     neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
 
-    \b
     # move or rename remote directory
     neuro storage mv storage://{username}/foo/ storage://{username}/bar/
     neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
