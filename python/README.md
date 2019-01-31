@@ -115,7 +115,7 @@ You will see here own and shared with you images
 * _[neuro kill](#neuro-kill)_: Kill job(s).
 * _[neuro login](#neuro-login)_: Log into Neuromation Platform.
 * _[neuro logout](#neuro-logout)_: Log out.
-* _[neuro logs](#neuro-logs)_: Monitor job output stream.
+* _[neuro logs](#neuro-logs)_: Fetch the logs of a container.
 * _[neuro ls](#neuro-ls)_: List directory contents.
 
 By default PATH is equal user`s home dir (storage:)
@@ -648,7 +648,7 @@ Name | Description|
 * _[neuro job exec](#neuro-job-exec)_: Executes command in a running job.
 * _[neuro job kill](#neuro-job-kill)_: Kill job(s).
 * _[neuro job list](#neuro-job-list)_: Alias for ls (DEPRECATED)
-* _[neuro job logs](#neuro-job-logs)_: Monitor job output stream.
+* _[neuro job logs](#neuro-job-logs)_: Fetch the logs of a container.
 * _[neuro job ls](#neuro-job-ls)_: List all jobs.
 
 * _[neuro job monitor](#neuro-job-monitor)_: Alias for logs (DEPRECATED)
@@ -730,7 +730,7 @@ Name | Description|
 
 ### neuro job logs
 
-Monitor job output stream.
+Fetch the logs of a container.
 
 **Usage:**
 
@@ -975,7 +975,7 @@ Name | Description|
 
 ## neuro logs
 
-Monitor job output stream.
+Fetch the logs of a container.
 
 **Usage:**
 

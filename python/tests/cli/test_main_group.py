@@ -1,11 +1,12 @@
-import click
-from neuromation.cli.main import MainGroup
-from click.testing import CliRunner
 from textwrap import dedent
+
+import click
+from click.testing import CliRunner
+
+from neuromation.cli.main import MainGroup
 
 
 def test_print():
-
     @click.group()
     def sub_command():
         pass
@@ -24,7 +25,8 @@ def test_print():
     runner = CliRunner()
     result = runner.invoke(main, [])
     assert result.exit_code == 0
-    assert result.output == dedent("""\
+    assert result.output == dedent(
+        """\
         Usage: main [OPTIONS] COMMAND [ARGS]...
 
         Options:
@@ -35,4 +37,5 @@ def test_print():
 
         Commands:
           plain-cmd
-    """)
+    """
+    )
