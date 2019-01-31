@@ -10,9 +10,8 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ign
 
 import neuromation
 from neuromation.cli.rc import RCException
-from neuromation.cli.version_utils import check_newer_version, get_current_version
+from neuromation.cli.version_utils import get_current_version, warn_if_has_newer_version
 from neuromation.logging import ConsoleWarningFormatter
-from neuromation.utils import run_in_background
 
 from . import rc
 from .completion import completion
@@ -68,7 +67,7 @@ LOG_ERROR = log.error
 @click.option("--show-traceback", is_flag=True)
 @click.version_option(
     version=get_current_version().vstring,
-    message="Neuromation Platform Client %(version)s"
+    message="Neuromation Platform Client %(version)s",
 )
 @click.pass_context
 def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
@@ -92,10 +91,11 @@ def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
     setup_console_handler(console_handler, verbose=verbose)
     config = rc.ConfigFactory.load()
     ctx.obj = config
-    # run_in_background(check_newer_version(config))
+
+    # TODO (ajuszkowski 31.1.2019) Run version check task in background
     from neuromation.utils import run
 
-    run(check_newer_version(config))
+    run(warn_if_has_newer_version(config))
 
 
 @cli.command()
