@@ -33,14 +33,14 @@ def parse_doc(ctx, command, stack) -> CommandInfo:
     name = " ".join(stack)
     formatter = ctx.make_formatter()
     command.format_usage(ctx, formatter)
-    usage = formatter.getvalue()
+    usage = click.unstyle(formatter.getvalue())
     usage = re.split(r"usage\s*:", usage, maxsplit=2, flags=re.IGNORECASE)[1].strip()
-    short = command.get_short_help_str(80)
+    short = click.unstyle(command.get_short_help_str(80))
     info = CommandInfo(name=name, usage=usage, short=short)
 
     formatter = ctx.make_formatter()
     command.format_help_text(ctx, formatter)
-    help = formatter.getvalue()
+    help = click.unstyle(formatter.getvalue())
     parts = re.split(r"examples:", help, flags=re.IGNORECASE)
     info.description = dedent(parts[0])
     if len(parts) > 1:
@@ -50,7 +50,7 @@ def parse_doc(ctx, command, stack) -> CommandInfo:
     for param in command.get_params(ctx):
         ret = param.get_help_record(ctx)
         if ret:
-            info.options.append(Option(ret[0], ret[1]))
+            info.options.append(Option(click.unstyle(ret[0]), click.unstyle(ret[1])))
 
     return info
 

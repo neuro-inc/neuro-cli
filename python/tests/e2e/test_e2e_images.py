@@ -96,6 +96,6 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     job_id = captured.out.strip()
     assert job_id.startswith("job-")
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
-    captured = run(["job", "monitor", job_id])
+    captured = run(["job", "logs", job_id])
     assert not captured.err
     assert captured.out.strip() == tag

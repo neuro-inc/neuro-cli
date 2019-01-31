@@ -6,6 +6,8 @@ from dateutil.parser import isoparse  # type: ignore
 from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
 from neuromation.client.jobs import JobTelemetry
 
+from .rc import Config
+
 
 class BaseFormatter:
     def _truncate_string(self, input: Optional[str], max_length: int) -> str:
@@ -24,8 +26,8 @@ class BaseFormatter:
         return "'" + (text or "") + "'"
 
 
-class OutputFormatter(BaseFormatter):
-    def format_job(self, job: JobDescription, quiet: bool = True) -> str:
+class JobFormatter(BaseFormatter):
+    def __call__(self, job: JobDescription, quiet: bool = True) -> str:
         if quiet:
             return job.id
         return (
@@ -41,7 +43,7 @@ class OutputFormatter(BaseFormatter):
 class StorageLsFormatter(BaseFormatter):
     FORMAT = "{type:<15}{size:<15,}{name:<}".format
 
-    def fmt_long(self, lst: List[FileStatus]) -> str:
+    def __call__(self, lst: List[FileStatus]) -> str:
         return "\n".join(
             self.FORMAT(type=status.type.lower(), name=status.path, size=status.size)
             for status in lst
@@ -49,7 +51,7 @@ class StorageLsFormatter(BaseFormatter):
 
 
 class JobStatusFormatter(BaseFormatter):
-    def format_job_status(self, job_status: JobDescription) -> str:
+    def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         if job_status.description:
@@ -65,9 +67,7 @@ class JobStatusFormatter(BaseFormatter):
 
         result += f"Command: {job_status.container.command}\n"
         resource_formatter = ResourcesFormatter()
-        result += (
-            resource_formatter.format_resources(job_status.container.resources) + "\n"
-        )
+        result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
 
         if job_status.http_url:
@@ -103,11 +103,11 @@ class JobTelemetryFormatter(BaseFormatter):
             "gpu_memory": 15,
         }
 
-    def format_timestamp(self, timestamp: float) -> str:
+    def _format_timestamp(self, timestamp: float) -> str:
         # NOTE: ctime returns time wrt timezone
         return str(time.ctime(timestamp))
 
-    def format_header(self) -> str:
+    def header(self) -> str:
         return "\t".join(
             [
                 "TIMESTAMP".ljust(self.col_len["timestamp"]),
@@ -118,8 +118,8 @@ class JobTelemetryFormatter(BaseFormatter):
             ]
         )
 
-    def format(self, info: JobTelemetry) -> str:
-        timestamp = self.format_timestamp(info.timestamp)
+    def __call__(self, info: JobTelemetry) -> str:
+        timestamp = self._format_timestamp(info.timestamp)
         cpu = f"{info.cpu:.3f}"
         mem = f"{info.memory:.3f}"
         gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "N/A"
@@ -147,7 +147,7 @@ class JobListFormatter(BaseFormatter):
             "command": 50,
         }
 
-    def format_jobs(
+    def __call__(
         self,
         jobs: Iterable[JobDescription],
         statuses: AbstractSet[str] = frozenset(),
@@ -197,7 +197,7 @@ class JobListFormatter(BaseFormatter):
 
 
 class ResourcesFormatter(BaseFormatter):
-    def format_resources(self, resources: Resources) -> str:
+    def __call__(self, resources: Resources) -> str:
         lines = list()
         lines.append(f"Memory: {resources.memory_mb} MB")
         lines.append(f"CPU: {resources.cpu:0.1f}")
@@ -212,4 +212,15 @@ class ResourcesFormatter(BaseFormatter):
             lines.append(f'Additional: {",".join(additional)}')
 
         indent = "  "
-        return f"Resources:\n" + indent + f"\n{indent}".join(lines)
+        return "Resources:\n" + indent + f"\n{indent}".join(lines)
+
+
+class ConfigFormatter:
+    def __call__(self, config: Config) -> str:
+        lines = []
+        lines.append(f"User Name: {config.get_platform_user_name()}")
+        lines.append(f"API URL: {config.url}")
+        lines.append(f"Docker Registry URL: {config.docker_registry_url()}")
+        lines.append(f"Github RSA Path: {config.github_rsa_path}")
+        indent = "  "
+        return "Config:\n" + indent + f"\n{indent}".join(lines)

@@ -5,6 +5,27 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.2.1 (2019-01-29)
+==============================
+
+Features
+--------
+
+
+- Implement ``neuro job top`` ([#412](https://github.com/neuromation/platform-api-clients/issues/412))
+
+- Pretty format output for ``neuro config show`` command, print current authentication token by ``neuro config show-token``. ([#426](https://github.com/neuromation/platform-api-clients/issues/426))
+
+- Check `~/.nmrc` config file for strict `0o600` permissions. ([#430](https://github.com/neuromation/platform-api-clients/issues/430))
+
+
+Deprecations and Removals
+-------------------------
+
+
+- Drop `--token` and `--url` parameters from the root command, use `neuro login` and `neuro config url` to setup config parameters. ([#430](https://github.com/neuromation/platform-api-clients/issues/430))
+
+
 Neuromation 0.2.0 (2019-01-28)
 ==============================
 

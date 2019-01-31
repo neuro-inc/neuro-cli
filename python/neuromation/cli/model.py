@@ -15,16 +15,16 @@ from .defaults import (
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
 )
-from .formatter import OutputFormatter
+from .formatter import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import run_async
+from .utils import group, run_async
 
 
 log = logging.getLogger(__name__)
 
 
-@click.group()
+@group(deprecated=True)
 def model() -> None:
     """
     Model operations.
@@ -147,7 +147,7 @@ async def train(
             is_preemptible=preemptible,
         )
         job = await client.jobs.status(res.id)
-        click.echo(OutputFormatter().format_job(job, quiet))
+        click.echo(JobFormatter()(job, quiet))
 
 
 @model.command()
@@ -169,7 +169,6 @@ async def debug(cfg: Config, id: str, localport: int) -> None:
 
     Examples:
 
-    \b
     neuro model debug --localport 12789 job-abc-def-ghk
     """
     git_key = cfg.github_rsa_path
