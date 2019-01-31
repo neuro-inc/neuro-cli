@@ -47,6 +47,7 @@ class Config:
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
+    last_checked_version: Optional[str] = None
 
     @property
     def auth(self) -> Optional[str]:
@@ -135,6 +136,10 @@ class ConfigFactory:
         return cls._update_config(github_rsa_path=github_rsa_path)
 
     @classmethod
+    def update_last_checked_version(cls, last_checked_version: str) -> Config:
+        return cls._update_config(last_checked_version=last_checked_version)
+
+    @classmethod
     def refresh_auth_token(cls, url: URL) -> Config:
         nmrc_config_path = cls.get_path()
         config = load(nmrc_config_path)
@@ -184,6 +189,8 @@ def save(path: Path, config: Config) -> Config:
             "expiration_time": config.auth_token.expiration_time,
             "refresh_token": config.auth_token.refresh_token,
         }
+    if config.last_checked_version:
+        payload["last_checked_version"] = config.last_checked_version
 
     # forbid access to other users
     if path.exists():
@@ -252,6 +259,7 @@ def _load(path: Path) -> Config:
         url=str(api_url),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
+        last_checked_version=payload.get("last_checked_version"),
     )
 
 

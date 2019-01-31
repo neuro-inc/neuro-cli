@@ -132,6 +132,14 @@ class TestFactoryMethods:
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token=no_identity)
 
+    def test_factory_update_last_checked_version(self):
+        config = rc.ConfigFactory.load()
+        assert config.last_checked_version is None
+        newer_version = "1.2.3b4"
+        rc.ConfigFactory.update_last_checked_version(newer_version)
+        config2 = rc.ConfigFactory.load()
+        assert config2.last_checked_version == newer_version
+
     def test_factory_forget_token(self, monkeypatch, nmrc):
         def home():
             return nmrc.parent
