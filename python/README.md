@@ -100,19 +100,11 @@ Name | Description|
 
 * _[neuro completion](#neuro-completion)_: Generates code to enable shell-completion.
 * _[neuro config](#neuro-config)_: Client configuration settings commands.
-* _[neuro cp](#neuro-cp)_:   Copy files and directories.
+* _[neuro cp](#neuro-cp)_: Copy files and directories.
 
-  Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
-  omitted, file:// scheme is assumed.
+Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
+omitted, file:// scheme is assumed.
 
-[1m[4mExamples[0m:
-  [2m# copy local file ./foo into remote storage root[0m
-  neuro storage cp ./foo storage:///
-  neuro storage cp ./foo storage:/
-
-  [2m# download remote file foo into local file foo with[0m
-  [2m# explicit file:// scheme set[0m
-  neuro storage cp storage:///foo file:///foo
 * _[neuro exec](#neuro-exec)_: Executes command in a running job.
 * _[neuro help](#neuro-help)_: Get help on a command.
 * _[neuro image](#neuro-image)_: Docker image operations.
@@ -128,73 +120,35 @@ You will see here own and shared with you images
 
 By default PATH is equal user`s home dir (storage:)
 * _[neuro mkdir](#neuro-mkdir)_: Make directories.
-* _[neuro model](#neuro-model)_: Model operations. [31m(DEPRECATED)[0m
-* _[neuro mv](#neuro-mv)_:   Move or rename files and directories.
+* _[neuro model](#neuro-model)_: Model operations. (DEPRECATED)
+* _[neuro mv](#neuro-mv)_: Move or rename files and directories.
 
-  SOURCE must contain path to the file or directory existing on the storage,
-  and DESTINATION must contain the full path to the target file or directory.
+SOURCE must contain path to the file or directory existing on the storage,
+and DESTINATION must contain the full path to the target file or directory.
 
-[1m[4mExamples[0m:
-  [2m# move or rename remote file[0m
-  neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-  neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+* _[neuro ps](#neuro-ps)_: List all jobs.
 
-  [2m# move or rename remote directory[0m
-  neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-  neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
-* _[neuro ps](#neuro-ps)_:   List all jobs.
+* _[neuro pull](#neuro-pull)_: Pull an image from platform registry.
 
-[1m[4mExamples[0m:
-  neuro job list --description=my favourite job
-  neuro job list --status=all
-  neuro job list -s pending -s running -q
-* _[neuro pull](#neuro-pull)_:   Pull an image from platform registry.
+Remote image name must be URL with image:// scheme. Image names can contain
+tag.
 
-  Remote image name must be URL with image:// scheme. Image names can contain
-  tag.
+* _[neuro push](#neuro-push)_: Push an image to platform registry.
 
-[1m[4mExamples[0m:
-  neuro image pull image:myimage
-  neuro image pull image://myfriend/alpine:shared
-  neuro image pull image://username/my-alpine:production alpine:from-registry
-* _[neuro push](#neuro-push)_:   Push an image to platform registry.
+Remote image must be URL with image:// scheme. Image names can contains tag.
+If tags not specified 'latest' will be used as value.
 
-  Remote image must be URL with image:// scheme. Image names can contains tag.
-  If tags not specified 'latest' will be used as value.
+* _[neuro rm](#neuro-rm)_: Remove files or directories.
 
-[1m[4mExamples[0m:
-  neuro image push myimage
-  neuro image push alpine:latest image:my-alpine:production
-  neuro image push alpine image://myfriend/alpine:shared
-* _[neuro rm](#neuro-rm)_:   Remove files or directories.
+* _[neuro share](#neuro-share)_: Shares resource specified by URI to a USER with PERMISSION
 
-[1m[4mExamples[0m:
-  neuro storage rm storage:///foo/bar/
-  neuro storage rm storage:/foo/bar/
-  neuro storage rm storage://{username}/foo/bar/
-* _[neuro share](#neuro-share)_:   Shares resource specified by URI to a USER with PERMISSION
-
-[1m[4mExamples[0m:
-  neuro share storage:///sample_data/ alice manage
-  neuro share image:resnet50 bob read
-  neuro share job:///my_job_id alice write
 * _[neuro status](#neuro-status)_: Display status of a job.
 * _[neuro storage](#neuro-storage)_: Storage operations.
-* _[neuro store](#neuro-store)_: Alias for storage [31m(DEPRECATED)[0m
-* _[neuro submit](#neuro-submit)_:   Start job using IMAGE.
+* _[neuro store](#neuro-store)_: Alias for storage (DEPRECATED)
+* _[neuro submit](#neuro-submit)_: Start job using IMAGE.
 
-  COMMANDS list will be passed as commands to model container.
+COMMANDS list will be passed as commands to model container.
 
-[1m[4mExamples[0m:
-  [2m# Starts a container pytorch:latest with two paths mounted. Directory /q1/[0m
-  [2m# is mounted in read only mode to /qm directory within container.[0m
-  [2m# Directory /mod mounted to /mod directory in read-write mode.[0m
-  neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
-
-  [2m# Starts a container pytorch:latest with connection enabled to port 22 and[0m
-  [2m# sets PYTHONPATH environment value to /python.[0m
-  [2m# Please note that SSH server should be provided by container.[0m
-  neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 * _[neuro top](#neuro-top)_: Display real-time job telemetry.
 
 
@@ -285,7 +239,7 @@ Name | Description|
 **Commands:**
 
 * _[neuro config auth](#neuro-config-auth)_: Update authorization token.
-* _[neuro config forget](#neuro-config-forget)_: Forget authorization token. [31m(DEPRECATED)[0m
+* _[neuro config forget](#neuro-config-forget)_: Forget authorization token. (DEPRECATED)
 * _[neuro config id_rsa](#neuro-config-id_rsa)_: Update path to id_rsa file with private key.
 
 FILE is being used for accessing remote shell, remote debug.
@@ -295,10 +249,8 @@ Note: this is temporal and going to be replaced in future by JWT token.
 * _[neuro config logout](#neuro-config-logout)_: Log out.
 * _[neuro config show](#neuro-config-show)_: Print current settings.
 * _[neuro config show-token](#neuro-config-show-token)_: Print current authorization token.
-* _[neuro config url](#neuro-config-url)_:   Update settings with provided platform URL.
+* _[neuro config url](#neuro-config-url)_: Update settings with provided platform URL.
 
-[1m[4mExamples[0m:
-  neuro config url https://platform.neuromation.io/api/v1
 
 
 
@@ -324,7 +276,7 @@ Name | Description|
 
 ### neuro config forget
 
-Forget authorization token. [31m\(DEPRECATED)[0m
+Forget authorization token. \(DEPRECATED)
 
 **Usage:**
 
@@ -438,12 +390,20 @@ Name | Description|
 
 ### neuro config url
 
-  Update settings with provided platform URL.<br/><br/>[1m[4mExamples[0m:<br/>  neuro config url https://platform.neuromation.io/api/v1
+Update settings with provided platform URL.<br/>
 
 **Usage:**
 
 ```bash
 neuro config url [OPTIONS] URL
+```
+
+**Examples:**
+
+```bash
+
+neuro config url https://platform.neuromation.io/api/v1
+
 ```
 
 **Options:**
@@ -457,12 +417,26 @@ Name | Description|
 
 ## neuro cp
 
-  Copy files and directories.<br/><br/>  Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>  omitted, file:// scheme is assumed.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# copy local file ./foo into remote storage root[0m<br/>  neuro storage cp ./foo storage:///<br/>  neuro storage cp ./foo storage:/<br/><br/>  [2m# download remote file foo into local file foo with[0m<br/>  [2m# explicit file:// scheme set[0m<br/>  neuro storage cp storage:///foo file:///foo
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
 
 **Usage:**
 
 ```bash
 neuro cp [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# copy local file ./foo into remote storage root
+neuro storage cp ./foo storage:///
+neuro storage cp ./foo storage:/
+
+# download remote file foo into local file foo with
+# explicit file:// scheme set
+neuro storage cp storage:///foo file:///foo
+
 ```
 
 **Options:**
@@ -538,24 +512,16 @@ Name | Description|
 * _[neuro image ls](#neuro-image-ls)_: List user's images which are available for jobs.
 
 You will see here own and shared with you images
-* _[neuro image pull](#neuro-image-pull)_:   Pull an image from platform registry.
+* _[neuro image pull](#neuro-image-pull)_: Pull an image from platform registry.
 
-  Remote image name must be URL with image:// scheme. Image names can contain
-  tag.
+Remote image name must be URL with image:// scheme. Image names can contain
+tag.
 
-[1m[4mExamples[0m:
-  neuro image pull image:myimage
-  neuro image pull image://myfriend/alpine:shared
-  neuro image pull image://username/my-alpine:production alpine:from-registry
-* _[neuro image push](#neuro-image-push)_:   Push an image to platform registry.
+* _[neuro image push](#neuro-image-push)_: Push an image to platform registry.
 
-  Remote image must be URL with image:// scheme. Image names can contains tag.
-  If tags not specified 'latest' will be used as value.
+Remote image must be URL with image:// scheme. Image names can contains tag.
+If tags not specified 'latest' will be used as value.
 
-[1m[4mExamples[0m:
-  neuro image push myimage
-  neuro image push alpine:latest image:my-alpine:production
-  neuro image push alpine image://myfriend/alpine:shared
 
 
 
@@ -581,12 +547,22 @@ Name | Description|
 
 ### neuro image pull
 
-  Pull an image from platform registry.<br/><br/>  Remote image name must be URL with image:// scheme. Image names can contain<br/>  tag.<br/><br/>[1m[4mExamples[0m:<br/>  neuro image pull image:myimage<br/>  neuro image pull image://myfriend/alpine:shared<br/>  neuro image pull image://username/my\-alpine:production alpine:from-registry
+Pull an image from platform registry.<br/><br/>Remote image name must be URL with image:// scheme. Image names can contain<br/>tag.<br/>
 
 **Usage:**
 
 ```bash
 neuro image pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+
+neuro image pull image:myimage
+neuro image pull image://myfriend/alpine:shared
+neuro image pull image://username/my-alpine:production alpine:from-registry
+
 ```
 
 **Options:**
@@ -600,12 +576,22 @@ Name | Description|
 
 ### neuro image push
 
-  Push an image to platform registry.<br/><br/>  Remote image must be URL with image:// scheme. Image names can contains tag.<br/>  If tags not specified 'latest' will be used as value.<br/><br/>[1m[4mExamples[0m:<br/>  neuro image push myimage<br/>  neuro image push alpine:latest image:my-alpine:production<br/>  neuro image push alpine image://myfriend/alpine:shared
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contains tag.<br/>If tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
 ```bash
 neuro image push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+
+neuro image push myimage
+neuro image push alpine:latest image:my-alpine:production
+neuro image push alpine image://myfriend/alpine:shared
+
 ```
 
 **Options:**
@@ -657,38 +643,22 @@ Name | Description|
 
 * _[neuro job exec](#neuro-job-exec)_: Executes command in a running job.
 * _[neuro job kill](#neuro-job-kill)_: Kill job(s).
-* _[neuro job list](#neuro-job-list)_: Alias for ls. [31m(DEPRECATED)[0m
+* _[neuro job list](#neuro-job-list)_: Alias for ls. (DEPRECATED)
 * _[neuro job logs](#neuro-job-logs)_: Fetch the logs of a container.
-* _[neuro job ls](#neuro-job-ls)_:   List all jobs.
+* _[neuro job ls](#neuro-job-ls)_: List all jobs.
 
-[1m[4mExamples[0m:
-  neuro job list --description=my favourite job
-  neuro job list --status=all
-  neuro job list -s pending -s running -q
-* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs. [31m(DEPRECATED)[0m
-* _[neuro job ssh](#neuro-job-ssh)_:   Starts ssh terminal connected to running job.
+* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs. (DEPRECATED)
+* _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job.
 
-  Job should be started with SSH support enabled.
+Job should be started with SSH support enabled.
 
-   [31m(DEPRECATED)[0m
+ (DEPRECATED)
 
-[1m[4mExamples[0m:
-  neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
 * _[neuro job status](#neuro-job-status)_: Display status of a job.
-* _[neuro job submit](#neuro-job-submit)_:   Start job using IMAGE.
+* _[neuro job submit](#neuro-job-submit)_: Start job using IMAGE.
 
-  COMMANDS list will be passed as commands to model container.
+COMMANDS list will be passed as commands to model container.
 
-[1m[4mExamples[0m:
-  [2m# Starts a container pytorch:latest with two paths mounted. Directory /q1/[0m
-  [2m# is mounted in read only mode to /qm directory within container.[0m
-  [2m# Directory /mod mounted to /mod directory in read-write mode.[0m
-  neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
-
-  [2m# Starts a container pytorch:latest with connection enabled to port 22 and[0m
-  [2m# sets PYTHONPATH environment value to /python.[0m
-  [2m# Please note that SSH server should be provided by container.[0m
-  neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
 * _[neuro job top](#neuro-job-top)_: Display real-time job telemetry.
 
 
@@ -736,7 +706,7 @@ Name | Description|
 
 ### neuro job list
 
-Alias for ls. [31m\(DEPRECATED)[0m
+Alias for ls. \(DEPRECATED)
 
 **Usage:**
 
@@ -777,12 +747,22 @@ Name | Description|
 
 ### neuro job ls
 
-  List all jobs.<br/><br/>[1m[4mExamples[0m:<br/>  neuro job list --description=my favourite job<br/>  neuro job list --status=all<br/>  neuro job list \-s pending -s running -q
+List all jobs.<br/>
 
 **Usage:**
 
 ```bash
 neuro job ls [OPTIONS]
+```
+
+**Examples:**
+
+```bash
+
+neuro job list --description=my favourite job
+neuro job list --status=all
+neuro job list -s pending -s running -q
+
 ```
 
 **Options:**
@@ -799,7 +779,7 @@ Name | Description|
 
 ### neuro job monitor
 
-Alias for logs. [31m\(DEPRECATED)[0m
+Alias for logs. \(DEPRECATED)
 
 **Usage:**
 
@@ -818,12 +798,20 @@ Name | Description|
 
 ### neuro job ssh
 
-  Starts ssh terminal connected to running job.<br/><br/>  Job should be started with SSH support enabled.<br/><br/>   [31m\(DEPRECATED)[0m<br/><br/>[1m[4mExamples[0m:<br/>  neuro job ssh \--user alfa --key ./my\_docker_id_rsa job-abc-def-ghk
+Starts ssh terminal connected to running job.<br/><br/>Job should be started with SSH support enabled.<br/><br/> \(DEPRECATED)<br/>
 
 **Usage:**
 
 ```bash
 neuro job ssh [OPTIONS] ID
+```
+
+**Examples:**
+
+```bash
+
+neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
+
 ```
 
 **Options:**
@@ -858,12 +846,28 @@ Name | Description|
 
 ### neuro job submit
 
-  Start job using IMAGE.<br/><br/>  COMMANDS list will be passed as commands to model container.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# Starts a container pytorch:latest with two paths mounted. Directory /q1/[0m<br/>  [2m# is mounted in read only mode to /qm directory within container.[0m<br/>  [2m# Directory /mod mounted to /mod directory in read-write mode.[0m<br/>  neuro job submit \--volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest<br/><br/>  [2m# Starts a container pytorch:latest with connection enabled to port 22 and[0m<br/>  [2m# sets PYTHONPATH environment value to /python.[0m<br/>  [2m# Please note that SSH server should be provided by container.[0m<br/>  neuro job submit \--env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+Start job using IMAGE.<br/><br/>COMMANDS list will be passed as commands to model container.<br/>
 
 **Usage:**
 
 ```bash
 neuro job submit [OPTIONS] IMAGE [CMD]...
+```
+
+**Examples:**
+
+```bash
+
+# Starts a container pytorch:latest with two paths mounted. Directory /q1/
+# is mounted in read only mode to /qm directory within container.
+# Directory /mod mounted to /mod directory in read-write mode.
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
+
+# Starts a container pytorch:latest with connection enabled to port 22 and
+# sets PYTHONPATH environment value to /python.
+# Please note that SSH server should be provided by container.
+neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+
 ```
 
 **Options:**
@@ -1023,7 +1027,7 @@ Name | Description|
 
 ## neuro model
 
-Model operations. [31m\(DEPRECATED)[0m
+Model operations. \(DEPRECATED)
 
 **Usage:**
 
@@ -1040,12 +1044,10 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro model debug](#neuro-model-debug)_:   Starts ssh terminal connected to running job.
+* _[neuro model debug](#neuro-model-debug)_: Starts ssh terminal connected to running job.
 
-  Job should be started with SSH support enabled.
+Job should be started with SSH support enabled.
 
-[1m[4mExamples[0m:
-  neuro model debug --localport 12789 job-abc-def-ghk
 * _[neuro model train](#neuro-model-train)_: Start training job using model.
 
 The training job is created from IMAGE, dataset from DATASET and store
@@ -1058,12 +1060,20 @@ COMMANDS list will be passed as commands to model container.
 
 ### neuro model debug
 
-  Starts ssh terminal connected to running job.<br/><br/>  Job should be started with SSH support enabled.<br/><br/>[1m[4mExamples[0m:<br/>  neuro model debug \--localport 12789 job-abc-def-ghk
+Starts ssh terminal connected to running job.<br/><br/>Job should be started with SSH support enabled.<br/>
 
 **Usage:**
 
 ```bash
 neuro model debug [OPTIONS] ID
+```
+
+**Examples:**
+
+```bash
+
+neuro model debug --localport 12789 job-abc-def-ghk
+
 ```
 
 **Options:**
@@ -1107,12 +1117,26 @@ Name | Description|
 
 ## neuro mv
 
-  Move or rename files and directories.<br/><br/>  SOURCE must contain path to the file or directory existing on the storage,<br/>  and DESTINATION must contain the full path to the target file or directory.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# move or rename remote file[0m<br/>  neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt<br/>  neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt<br/><br/>  [2m# move or rename remote directory[0m<br/>  neuro storage mv storage://{username}/foo/ storage://{username}/bar/<br/>  neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
 
 **Usage:**
 
 ```bash
 neuro mv [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# move or rename remote file
+neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
+neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+
+# move or rename remote directory
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+
 ```
 
 **Options:**
@@ -1126,12 +1150,22 @@ Name | Description|
 
 ## neuro ps
 
-  List all jobs.<br/><br/>[1m[4mExamples[0m:<br/>  neuro job list --description=my favourite job<br/>  neuro job list --status=all<br/>  neuro job list \-s pending -s running -q
+List all jobs.<br/>
 
 **Usage:**
 
 ```bash
 neuro ps [OPTIONS]
+```
+
+**Examples:**
+
+```bash
+
+neuro job list --description=my favourite job
+neuro job list --status=all
+neuro job list -s pending -s running -q
+
 ```
 
 **Options:**
@@ -1148,12 +1182,22 @@ Name | Description|
 
 ## neuro pull
 
-  Pull an image from platform registry.<br/><br/>  Remote image name must be URL with image:// scheme. Image names can contain<br/>  tag.<br/><br/>[1m[4mExamples[0m:<br/>  neuro image pull image:myimage<br/>  neuro image pull image://myfriend/alpine:shared<br/>  neuro image pull image://username/my\-alpine:production alpine:from-registry
+Pull an image from platform registry.<br/><br/>Remote image name must be URL with image:// scheme. Image names can contain<br/>tag.<br/>
 
 **Usage:**
 
 ```bash
 neuro pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+
+neuro image pull image:myimage
+neuro image pull image://myfriend/alpine:shared
+neuro image pull image://username/my-alpine:production alpine:from-registry
+
 ```
 
 **Options:**
@@ -1167,12 +1211,22 @@ Name | Description|
 
 ## neuro push
 
-  Push an image to platform registry.<br/><br/>  Remote image must be URL with image:// scheme. Image names can contains tag.<br/>  If tags not specified 'latest' will be used as value.<br/><br/>[1m[4mExamples[0m:<br/>  neuro image push myimage<br/>  neuro image push alpine:latest image:my-alpine:production<br/>  neuro image push alpine image://myfriend/alpine:shared
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contains tag.<br/>If tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
 ```bash
 neuro push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
+```
+
+**Examples:**
+
+```bash
+
+neuro image push myimage
+neuro image push alpine:latest image:my-alpine:production
+neuro image push alpine image://myfriend/alpine:shared
+
 ```
 
 **Options:**
@@ -1186,12 +1240,22 @@ Name | Description|
 
 ## neuro rm
 
-  Remove files or directories.<br/><br/>[1m[4mExamples[0m:<br/>  neuro storage rm storage:///foo/bar/<br/>  neuro storage rm storage:/foo/bar/<br/>  neuro storage rm storage://{username}/foo/bar/
+Remove files or directories.<br/>
 
 **Usage:**
 
 ```bash
 neuro rm [OPTIONS] PATH
+```
+
+**Examples:**
+
+```bash
+
+neuro storage rm storage:///foo/bar/
+neuro storage rm storage:/foo/bar/
+neuro storage rm storage://{username}/foo/bar/
+
 ```
 
 **Options:**
@@ -1205,12 +1269,22 @@ Name | Description|
 
 ## neuro share
 
-  Shares resource specified by URI to a USER with PERMISSION<br/><br/>[1m[4mExamples[0m:<br/>  neuro share storage:///sample_data/ alice manage<br/>  neuro share image:resnet50 bob read<br/>  neuro share job:///my\_job_id alice write
+Shares resource specified by URI to a USER with PERMISSION<br/>
 
 **Usage:**
 
 ```bash
 neuro share [OPTIONS] URI USER [read|write|manage]
+```
+
+**Examples:**
+
+```bash
+
+neuro share storage:///sample_data/ alice manage
+neuro share image:resnet50 bob read
+neuro share job:///my_job_id alice write
+
 ```
 
 **Options:**
@@ -1260,54 +1334,48 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro storage cp](#neuro-storage-cp)_:   Copy files and directories.
+* _[neuro storage cp](#neuro-storage-cp)_: Copy files and directories.
 
-  Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
-  omitted, file:// scheme is assumed.
+Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
+omitted, file:// scheme is assumed.
 
-[1m[4mExamples[0m:
-  [2m# copy local file ./foo into remote storage root[0m
-  neuro storage cp ./foo storage:///
-  neuro storage cp ./foo storage:/
-
-  [2m# download remote file foo into local file foo with[0m
-  [2m# explicit file:// scheme set[0m
-  neuro storage cp storage:///foo file:///foo
 * _[neuro storage ls](#neuro-storage-ls)_: List directory contents.
 
 By default PATH is equal user`s home dir (storage:)
 * _[neuro storage mkdir](#neuro-storage-mkdir)_: Make directories.
-* _[neuro storage mv](#neuro-storage-mv)_:   Move or rename files and directories.
+* _[neuro storage mv](#neuro-storage-mv)_: Move or rename files and directories.
 
-  SOURCE must contain path to the file or directory existing on the storage,
-  and DESTINATION must contain the full path to the target file or directory.
+SOURCE must contain path to the file or directory existing on the storage,
+and DESTINATION must contain the full path to the target file or directory.
 
-[1m[4mExamples[0m:
-  [2m# move or rename remote file[0m
-  neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-  neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+* _[neuro storage rm](#neuro-storage-rm)_: Remove files or directories.
 
-  [2m# move or rename remote directory[0m
-  neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-  neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
-* _[neuro storage rm](#neuro-storage-rm)_:   Remove files or directories.
-
-[1m[4mExamples[0m:
-  neuro storage rm storage:///foo/bar/
-  neuro storage rm storage:/foo/bar/
-  neuro storage rm storage://{username}/foo/bar/
 
 
 
 
 ### neuro storage cp
 
-  Copy files and directories.<br/><br/>  Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>  omitted, file:// scheme is assumed.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# copy local file ./foo into remote storage root[0m<br/>  neuro storage cp ./foo storage:///<br/>  neuro storage cp ./foo storage:/<br/><br/>  [2m# download remote file foo into local file foo with[0m<br/>  [2m# explicit file:// scheme set[0m<br/>  neuro storage cp storage:///foo file:///foo
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
 
 **Usage:**
 
 ```bash
 neuro storage cp [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# copy local file ./foo into remote storage root
+neuro storage cp ./foo storage:///
+neuro storage cp ./foo storage:/
+
+# download remote file foo into local file foo with
+# explicit file:// scheme set
+neuro storage cp storage:///foo file:///foo
+
 ```
 
 **Options:**
@@ -1361,12 +1429,26 @@ Name | Description|
 
 ### neuro storage mv
 
-  Move or rename files and directories.<br/><br/>  SOURCE must contain path to the file or directory existing on the storage,<br/>  and DESTINATION must contain the full path to the target file or directory.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# move or rename remote file[0m<br/>  neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt<br/>  neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt<br/><br/>  [2m# move or rename remote directory[0m<br/>  neuro storage mv storage://{username}/foo/ storage://{username}/bar/<br/>  neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
 
 **Usage:**
 
 ```bash
 neuro storage mv [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# move or rename remote file
+neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
+neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+
+# move or rename remote directory
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+
 ```
 
 **Options:**
@@ -1380,12 +1462,22 @@ Name | Description|
 
 ### neuro storage rm
 
-  Remove files or directories.<br/><br/>[1m[4mExamples[0m:<br/>  neuro storage rm storage:///foo/bar/<br/>  neuro storage rm storage:/foo/bar/<br/>  neuro storage rm storage://{username}/foo/bar/
+Remove files or directories.<br/>
 
 **Usage:**
 
 ```bash
 neuro storage rm [OPTIONS] PATH
+```
+
+**Examples:**
+
+```bash
+
+neuro storage rm storage:///foo/bar/
+neuro storage rm storage:/foo/bar/
+neuro storage rm storage://{username}/foo/bar/
+
 ```
 
 **Options:**
@@ -1399,7 +1491,7 @@ Name | Description|
 
 ## neuro store
 
-Alias for storage [31m\(DEPRECATED)[0m
+Alias for storage \(DEPRECATED)
 
 **Usage:**
 
@@ -1416,54 +1508,48 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro store cp](#neuro-store-cp)_:   Copy files and directories.
+* _[neuro store cp](#neuro-store-cp)_: Copy files and directories.
 
-  Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
-  omitted, file:// scheme is assumed.
+Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
+omitted, file:// scheme is assumed.
 
-[1m[4mExamples[0m:
-  [2m# copy local file ./foo into remote storage root[0m
-  neuro storage cp ./foo storage:///
-  neuro storage cp ./foo storage:/
-
-  [2m# download remote file foo into local file foo with[0m
-  [2m# explicit file:// scheme set[0m
-  neuro storage cp storage:///foo file:///foo
 * _[neuro store ls](#neuro-store-ls)_: List directory contents.
 
 By default PATH is equal user`s home dir (storage:)
 * _[neuro store mkdir](#neuro-store-mkdir)_: Make directories.
-* _[neuro store mv](#neuro-store-mv)_:   Move or rename files and directories.
+* _[neuro store mv](#neuro-store-mv)_: Move or rename files and directories.
 
-  SOURCE must contain path to the file or directory existing on the storage,
-  and DESTINATION must contain the full path to the target file or directory.
+SOURCE must contain path to the file or directory existing on the storage,
+and DESTINATION must contain the full path to the target file or directory.
 
-[1m[4mExamples[0m:
-  [2m# move or rename remote file[0m
-  neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-  neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+* _[neuro store rm](#neuro-store-rm)_: Remove files or directories.
 
-  [2m# move or rename remote directory[0m
-  neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-  neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
-* _[neuro store rm](#neuro-store-rm)_:   Remove files or directories.
-
-[1m[4mExamples[0m:
-  neuro storage rm storage:///foo/bar/
-  neuro storage rm storage:/foo/bar/
-  neuro storage rm storage://{username}/foo/bar/
 
 
 
 
 ### neuro store cp
 
-  Copy files and directories.<br/><br/>  Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>  omitted, file:// scheme is assumed.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# copy local file ./foo into remote storage root[0m<br/>  neuro storage cp ./foo storage:///<br/>  neuro storage cp ./foo storage:/<br/><br/>  [2m# download remote file foo into local file foo with[0m<br/>  [2m# explicit file:// scheme set[0m<br/>  neuro storage cp storage:///foo file:///foo
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
 
 **Usage:**
 
 ```bash
 neuro store cp [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# copy local file ./foo into remote storage root
+neuro storage cp ./foo storage:///
+neuro storage cp ./foo storage:/
+
+# download remote file foo into local file foo with
+# explicit file:// scheme set
+neuro storage cp storage:///foo file:///foo
+
 ```
 
 **Options:**
@@ -1517,12 +1603,26 @@ Name | Description|
 
 ### neuro store mv
 
-  Move or rename files and directories.<br/><br/>  SOURCE must contain path to the file or directory existing on the storage,<br/>  and DESTINATION must contain the full path to the target file or directory.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# move or rename remote file[0m<br/>  neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt<br/>  neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt<br/><br/>  [2m# move or rename remote directory[0m<br/>  neuro storage mv storage://{username}/foo/ storage://{username}/bar/<br/>  neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
 
 **Usage:**
 
 ```bash
 neuro store mv [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# move or rename remote file
+neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
+neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+
+# move or rename remote directory
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+
 ```
 
 **Options:**
@@ -1536,12 +1636,22 @@ Name | Description|
 
 ### neuro store rm
 
-  Remove files or directories.<br/><br/>[1m[4mExamples[0m:<br/>  neuro storage rm storage:///foo/bar/<br/>  neuro storage rm storage:/foo/bar/<br/>  neuro storage rm storage://{username}/foo/bar/
+Remove files or directories.<br/>
 
 **Usage:**
 
 ```bash
 neuro store rm [OPTIONS] PATH
+```
+
+**Examples:**
+
+```bash
+
+neuro storage rm storage:///foo/bar/
+neuro storage rm storage:/foo/bar/
+neuro storage rm storage://{username}/foo/bar/
+
 ```
 
 **Options:**
@@ -1555,12 +1665,28 @@ Name | Description|
 
 ## neuro submit
 
-  Start job using IMAGE.<br/><br/>  COMMANDS list will be passed as commands to model container.<br/><br/>[1m[4mExamples[0m:<br/>  [2m# Starts a container pytorch:latest with two paths mounted. Directory /q1/[0m<br/>  [2m# is mounted in read only mode to /qm directory within container.[0m<br/>  [2m# Directory /mod mounted to /mod directory in read-write mode.[0m<br/>  neuro job submit \--volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest<br/><br/>  [2m# Starts a container pytorch:latest with connection enabled to port 22 and[0m<br/>  [2m# sets PYTHONPATH environment value to /python.[0m<br/>  [2m# Please note that SSH server should be provided by container.[0m<br/>  neuro job submit \--env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+Start job using IMAGE.<br/><br/>COMMANDS list will be passed as commands to model container.<br/>
 
 **Usage:**
 
 ```bash
 neuro submit [OPTIONS] IMAGE [CMD]...
+```
+
+**Examples:**
+
+```bash
+
+# Starts a container pytorch:latest with two paths mounted. Directory /q1/
+# is mounted in read only mode to /qm directory within container.
+# Directory /mod mounted to /mod directory in read-write mode.
+neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
+
+# Starts a container pytorch:latest with connection enabled to port 22 and
+# sets PYTHONPATH environment value to /python.
+# Please note that SSH server should be provided by container.
+neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+
 ```
 
 **Options:**
