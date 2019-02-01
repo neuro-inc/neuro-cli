@@ -54,14 +54,24 @@ def setup_console_handler(
 LOG_ERROR = log.error
 
 
-@click.group(cls=MainGroup)
-@click.option("-v", "--verbose", count=True, type=int)
-@click.option("--show-traceback", is_flag=True)
+@click.group(cls=MainGroup, invoke_without_command=True)
+@click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode")
+@click.option(
+    "--show-traceback",
+    is_flag=True,
+    help="Show python traceback on error, useful for debugging the tool.",
+)
+@click.option(
+    "--color",
+    type=click.Choice(["yes", "no", "auto"]),
+    default="auto",
+    help="Color mode",
+)
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
 )
 @click.pass_context
-def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
+def cli(ctx: click.Context, verbose: int, show_traceback: bool, color: str) -> None:
     """
     Neuromation console.
     """
@@ -80,8 +90,16 @@ def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
         LOG_ERROR = log.exception
     setup_logging()
     setup_console_handler(console_handler, verbose=verbose)
+    COLORS = {"yes": True, "no": False, "auto": None}
+    real_color: Optional[bool] = COLORS[color]
+    if real_color is None:
+        real_color = sys.stdin.isatty()
+    ctx.color = real_color
     config = rc.ConfigFactory.load()
+    config.color = real_color
     ctx.obj = config
+    if not ctx.invoked_subcommand:
+        click.echo(ctx.get_help())
 
 
 @cli.command()

@@ -24,6 +24,7 @@ from .jobs import (
     Resources,
     Volume,
     Container,
+    JobTelemetry,
 )
 from .models import Models, TrainResult
 from .storage import Storage, FileStatusType, FileStatus
@@ -36,6 +37,7 @@ __all__ = (
     "JobDescription",
     "JobStatus",
     "JobStatusHistory",
+    "JobTelemetry",
     "NetworkPortForwarding",
     "Resources",
     "Volume",
