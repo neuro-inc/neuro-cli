@@ -44,34 +44,34 @@ class TestUrlUtils:
     def test_local_path_to_url__name(self):
         path = "file"
         url = normalize_local_path(path)
-        assert url == Path(f"{self._pwd}/file")
+        assert url == f"{self._pwd}/file"
 
     def test_local_path_to_url__dot_slash_name(self):
         path = "./file"
         url = normalize_local_path(path)
-        assert url == Path(f"{self._pwd}/file")
+        assert url == f"{self._pwd}/file"
 
     def test_local_path_to_url__relative_path(self):
         path = "d/e/file"
         url = normalize_local_path(path)
-        assert url == Path(f"{self._pwd}/d/e/file")
+        assert url == f"{self._pwd}/d/e/file"
 
     def test_local_path_to_url__dot_slash_relative_path(self):
         path = "./d/e/file"
         url = normalize_local_path(path)
-        assert url == Path(f"{self._pwd}/d/e/file")
+        assert url == f"{self._pwd}/d/e/file"
 
     def test_local_path_to_url__tilde_slash_name(self, fake_homedir):
         path = "~/file"
         url = normalize_local_path(path)
-        assert url == Path(f"/home/user/file")
+        assert url == f"/home/user/file"
 
     def test_local_path_to_url__tilde_slash_relative_path(self, fake_homedir):
         path = "~/a/b/c/file"
         url = normalize_local_path(path)
-        assert url == Path(f"/home/user/a/b/c/file")
+        assert url == f"/home/user/a/b/c/file"
 
     def test_local_path_to_url__absolute_path(self, fake_homedir):
         path = "/a/b/c/file"
         url = normalize_local_path(path)
-        assert url == Path(f"/a/b/c/file")
+        assert url == f"/a/b/c/file"
