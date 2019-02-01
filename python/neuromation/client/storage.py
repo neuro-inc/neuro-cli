@@ -50,28 +50,19 @@ class FileStatus:
 
 
 class Storage:
+    """ API operations with storage.
+    All URI-arguments are expected to be already normalized (all local URIs must have
+    no authority and be absolute-pathed, and all storage URIs must have an authority
+    and have relative path from the authority's home directory).
+    """
+
     def __init__(self, api: API, config: Config) -> None:
         self._api = api
         self._config = config
 
     def _uri_to_path(self, uri: URL) -> str:
-        if uri.scheme != "storage":
-            # TODO (asvetlov): change error text, mention storage:// prefix explicitly
-            raise ValueError("Path should be targeting platform storage.")
-
-        ret: List[str] = []
-        if uri.host == "~":
-            ret.append(self._config.username)
-        elif not uri.is_absolute():
-            # absolute paths are considered as relative to home dir
-            ret.append(self._config.username)
-        else:
-            assert uri.host
-            ret.append(uri.host)
-        path = uri.path.strip("/")
-        if path:
-            ret.extend(path.split("/"))
-        return "/".join(ret)
+        prefix = uri.host + "/" if uri.host else ""
+        return prefix + uri.path.strip("/")
 
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = URL("storage") / self._uri_to_path(uri)
@@ -163,15 +154,13 @@ class Storage:
             progress.complete(str(src))
 
     async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
-        src = self._config.norm_file(src)
         path = Path(src.path)
         if not path.exists():
-            raise FileNotFoundError(f"{path} does not exist")
+            raise FileNotFoundError(f"'{path}' does not exist")
         if path.is_dir():
-            raise IsADirectoryError(f"{path} is a directory, use recursive copy")
+            raise IsADirectoryError(f"'{path}' is a directory, use recursive copy")
         if not path.is_file():
-            raise OSError(f"{path} should be a regular file")
-        dst = self._config.norm_storage(dst)
+            raise OSError(f"'{path}' should be a regular file")
         if not dst.name:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
@@ -192,8 +181,6 @@ class Storage:
         await self.create(dst, self._iterate_file(progress, path))
 
     async def upload_dir(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
-        src = self._config.norm_file(src)
-        dst = self._config.norm_storage(dst)
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
             dst = dst / src.name
@@ -223,8 +210,6 @@ class Storage:
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
         loop = asyncio.get_event_loop()
-        src = self._config.norm_storage(src)
-        dst = self._config.norm_file(dst)
         path = Path(dst.path)
         if path.exists():
             if path.is_dir():
@@ -244,8 +229,6 @@ class Storage:
     async def download_dir(
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
-        src = self._config.norm_storage(src)
-        dst = self._config.norm_file(dst)
         path = Path(dst.path)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):

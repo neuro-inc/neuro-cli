@@ -4,7 +4,10 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.cli.url_utils import local_path_to_url
+from neuromation.cli.url_utils import (
+    normalize_local_path_uri,
+    normalize_storage_path_uri,
+)
 
 from .command_progress_report import ProgressBase
 from .formatter import StorageLsFormatter
@@ -36,7 +39,7 @@ async def rm(cfg: Config, path: str) -> None:
     neuro storage rm storage:/foo/bar/
     neuro storage rm storage://{username}/foo/bar/
     """
-    uri = URL(path)
+    uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
@@ -53,7 +56,7 @@ async def ls(cfg: Config, path: str) -> None:
 
     By default PATH is equal user`s home dir (storage:)
     """
-    uri = URL(path)
+    uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
@@ -135,7 +138,7 @@ async def mkdir(cfg: Config, path: str) -> None:
     Make directories.
     """
 
-    uri = URL(path)
+    uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
@@ -167,8 +170,8 @@ async def mv(cfg: Config, source: str, destination: str) -> None:
     neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
     """
 
-    src = URL(source)
-    dst = URL(destination)
+    src = normalize_storage_path_uri(URL(source), cfg.username)
+    dst = normalize_storage_path_uri(URL(destination), cfg.username)
     log.info(f"Using source path '{src}'")
     log.info(f"Using destination path '{dst}'")
 
