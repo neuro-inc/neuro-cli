@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 async def warn_if_has_newer_version(config: rc.Config) -> None:
-    # how to test it?  NO. Units + fake pypi server.
     current_version = get_current_version()
     latest_version = await get_latest_version(config)
     if current_version < latest_version:
@@ -25,7 +24,7 @@ def get_current_version() -> LooseVersion:
 
 
 async def get_latest_version(config: rc.Config) -> LooseVersion:
-    latest_version = config.last_checked_version
+    latest_version = LooseVersion(config.last_checked_version)
     if latest_version is None:
         # TODO (ajsuzwkowski 31.1.2019) Save a timestamp when the version was checked
         latest_version = await get_latest_version_from_pypi()
@@ -54,7 +53,6 @@ def get_versions(pypi_response: Dict[str, Any]) -> List[LooseVersion]:
     return [LooseVersion(version) for version in pypi_response["releases"].keys()]
 
 
-# make a fake server:
 async def request_pypi() -> Optional[Dict[str, Any]]:
     async with aiohttp.ClientSession() as session:
         async with session.get("https://pypi.org/pypi/neuromation/json") as response:
