@@ -66,19 +66,19 @@ class JobStartProgress(BaseFormatter):
 
     def __init__(self) -> None:
         # FIXME: get the value from config
-        self._quiet = not os.isatty(sys.stdout.fileno())
+        self._color = not os.isatty(sys.stdout.fileno())
         self._time = time.time()
         self._spinner = itertools.cycle(self.SPINNER)
         self._last_size = 0
 
     def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
-        if self._quiet:
+        if self._color:
             return ""
         new_time = time.time()
         dt = new_time - self._time
         txt_status = format_job_status(job.status)
         reason = click.style(job.history.reason or "N/A", bold=True)
-        ret = f"\rStatus: {txt_status}, reason: {reason} {dt:.1f} sec"
+        ret = f"\rStatus: {txt_status}, reason: {reason}, {dt:.1f} sec"
         if not finish:
             ret += " " + next(self._spinner)
         ret += " " * 20  # to clear the screen line tail
