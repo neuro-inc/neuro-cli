@@ -90,8 +90,9 @@ neuro [OPTIONS] COMMAND [ARGS]...
 
 Name | Description|
 |----|------------|
-|_\-v, --verbose_||
-|_\--show-traceback_||
+|_\-v, --verbose_|Enable verbose mode|
+|_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
+|_--color \[yes|no|auto]_|Color mode|
 |_--version_|Show the version and exit.|
 |_--help_|Show this message and exit.|
 

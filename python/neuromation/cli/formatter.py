@@ -1,6 +1,4 @@
 import itertools
-import os
-import sys
 import time
 from typing import AbstractSet, Iterable, List, Optional
 
@@ -64,23 +62,22 @@ class JobFormatter(BaseFormatter):
 class JobStartProgress(BaseFormatter):
     SPINNER = ("|", "/", "-", "\\")
 
-    def __init__(self) -> None:
-        # FIXME: get the value from config
-        self._color = not os.isatty(sys.stdout.fileno())
+    def __init__(self, color: bool) -> None:
+        self._color = color
         self._time = time.time()
         self._spinner = itertools.cycle(self.SPINNER)
         self._last_size = 0
 
     def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
-        if self._color:
+        if not self._color:
             return ""
         new_time = time.time()
         dt = new_time - self._time
         txt_status = format_job_status(job.status)
         if job.history.reason:
-            reason = ' ' + click.style(job.history.reason, bold=True)
+            reason = " " + click.style(job.history.reason, bold=True)
         else:
-            reason = ''
+            reason = ""
         ret = f"\rStatus: {txt_status}{reason} [{dt:.1f} sec]"
         if not finish:
             ret += " " + next(self._spinner)

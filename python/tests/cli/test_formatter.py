@@ -1,4 +1,5 @@
 import textwrap
+from typing import Optional
 
 import click
 import pytest
@@ -9,6 +10,7 @@ from neuromation.cli.formatter import (
     ConfigFormatter,
     JobFormatter,
     JobListFormatter,
+    JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
     ResourcesFormatter,
@@ -52,7 +54,7 @@ def job_descr():
     )
 
 
-class TestOutputFormatter:
+class TestJobFormatter:
     def test_quiet(self, job_descr):
         assert click.unstyle(JobFormatter(quiet=True)(job_descr)) == TEST_JOB_ID
 
@@ -66,6 +68,55 @@ class TestOutputFormatter:
             + f"  neuro job kill {TEST_JOB_ID}    # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
+
+
+class TestJobStartProgress:
+    def make_job(self, status: JobStatus, reason: Optional[str]) -> JobDescription:
+        return JobDescription(
+            status=status,
+            owner="test-user",
+            id="test-job",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            ssh_server=URL("ssh://local.host.test:22/"),
+            history=JobStatusHistory(
+                status=status,
+                reason=reason,
+                description="ErrorDesc",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
+            ),
+            container=Container(
+                command="test-command",
+                image="test-image",
+                resources=Resources.create(0.1, 0, None, None, False),
+            ),
+            ssh_auth_server="ssh-auth",
+            is_preemptible=False,
+        )
+
+    def strip(self, text: str) -> str:
+        return click.unstyle(text).strip()
+
+    def test_progress(self) -> None:
+        progress = JobStartProgress(True)
+        assert (
+            self.strip(progress(self.make_job(JobStatus.PENDING, None)))
+            == "Status: pending [0.0 sec] |"
+        )
+        assert (
+            self.strip(progress(self.make_job(JobStatus.PENDING, "ContainerCreating")))
+            == "Status: pending ContainerCreating [0.0 sec] /"
+        )
+        assert (
+            self.strip(progress(self.make_job(JobStatus.PENDING, "ContainerCreating")))
+            == "Status: pending ContainerCreating [0.0 sec] -"
+        )
+        assert (
+            self.strip(progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True))
+            == "Status: succeeded [0.0 sec]"
+        )
 
 
 class TestJobOutputFormatter:
