@@ -54,7 +54,7 @@ def job_descr():
 
 class TestOutputFormatter:
     def test_quiet(self, job_descr):
-        assert JobFormatter(quiet=True)(job_descr) == TEST_JOB_ID
+        assert click.unslyle(JobFormatter(quiet=True)(job_descr)) == TEST_JOB_ID
 
     def test_non_quiet(self, job_descr) -> None:
         expected = (
