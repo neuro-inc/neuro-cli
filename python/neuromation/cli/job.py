@@ -205,8 +205,10 @@ async def submit(
         while wait_start and job.status == JobStatus.PENDING:
             await asyncio.sleep(0.5)
             job = await client.jobs.status(job.id)
-            click.echo(progress(job), nl=False)
-        click.echo(progress(job, finish=True))
+            if not quiet:
+                click.echo(progress(job), nl=False)
+        if not quiet and wait_start:
+            click.echo(progress(job, finish=True))
 
 
 @job.command(context_settings=dict(ignore_unknown_options=True))
