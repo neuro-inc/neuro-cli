@@ -48,10 +48,11 @@ class JobFormatter(BaseFormatter):
         self._quiet = quiet
 
     def __call__(self, job: JobDescription) -> str:
+        job_id = click.style(job.id, bold=True)
         if self._quiet:
-            return job.id
+            return job_id
         return (
-            f"Job ID: {job.id} Status: {format_job_status(job.status)}\n"
+            f"Job ID: {job_id} Status: {format_job_status(job.status)}\n"
             + f"Shortcuts:\n"
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
