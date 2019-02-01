@@ -1,14 +1,41 @@
+import asyncio
 import socket
 import ssl
 from distutils.version import LooseVersion
+from typing import Dict
 
 import aiohttp
 import pytest
+import trustme
 from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
 
 from neuromation.cli.version_utils import get_latest_version_from_pypi, get_versions
+
+
+@pytest.fixture
+def tls_certificate_authority():
+    return trustme.CA()
+
+
+@pytest.fixture
+def tls_certificate(tls_certificate_authority):
+    return tls_certificate_authority.issue_server_cert("localhost", "127.0.0.1", "::1")
+
+
+@pytest.fixture
+def ssl_ctx(tls_certificate):
+    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    tls_certificate.configure_cert(ssl_ctx)
+    return ssl_ctx
+
+
+@pytest.fixture
+def client_ssl_ctx(tls_certificate_authority):
+    ssl_ctx = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+    tls_certificate_authority.configure_trust(ssl_ctx)
+    return ssl_ctx
 
 
 class FakeResolver(AbstractResolver):
@@ -35,12 +62,11 @@ class FakeResolver(AbstractResolver):
 
 
 class FakePypi:
-    def __init__(self, *, loop):
-        self.loop = loop
-        self.app = web.Application(loop=loop)
+    def __init__(self, ssl_context: ssl.SSLContext) -> None:
+        self.app = web.Application()
         self.app.router.add_routes([web.get("/pypi/neuromation/json", self.json_info)])
         self.runner = None
-        self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        self.ssl_context = ssl_context
 
     async def start(self):
         port = unused_port()
@@ -169,30 +195,28 @@ class FakePypi:
 
 
 @pytest.fixture()
-async def info(loop):
-    fake_pypi = FakePypi(loop=loop)
+async def fake_pypi(ssl_ctx: ssl.SSLContext, loop: asyncio.AbstractEventLoop) -> None:
+    fake_pypi = FakePypi(ssl_ctx)
     info = await fake_pypi.start()
     yield info
     await fake_pypi.stop()
 
 
 @pytest.fixture()
-async def session(loop, info):
-    resolver = FakeResolver(info)
-    connector = aiohttp.TCPConnector(loop=loop, resolver=resolver, verify_ssl=False)
-    session = aiohttp.ClientSession(connector=connector, loop=loop)
+async def session(fake_pypi: Dict[str, int], loop: asyncio.AbstractEventLoop) -> None:
+    resolver = FakeResolver(fake_pypi)
+    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)
+    session = aiohttp.ClientSession(connector=connector)
     yield session
     await session.close()
 
 
-@pytest.xfail
-async def test_get_versions(session):
+async def test_get_versions(session: aiohttp.ClientSession) -> None:
     async with session.get("https://pypi.org/pypi/neuromation/json") as resp:
         resp = await resp.json()
         assert get_versions(resp) == [LooseVersion("0.2.0b0"), LooseVersion("0.2.1")]
 
 
-@pytest.xfail
 async def test_get_latest_version_from_pypi(session):
-    latest_version = get_latest_version_from_pypi()
+    latest_version = await get_latest_version_from_pypi()
     assert latest_version == LooseVersion("0.2.1")

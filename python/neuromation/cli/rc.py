@@ -1,4 +1,5 @@
 import os
+from distutils.version import LooseVersion
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -42,12 +43,29 @@ def _create_staging_auth_config() -> AuthConfig:
 
 
 @dataclass
+class PyPIVersion:
+    pypi_version: LooseVersion
+    check_timestamp: int
+
+    @classmethod
+    def from_config(cls, data: Dict[str, Any]):
+        try:
+            pypi_version = LooseVersion(data['pypi_version'])
+            check_timestamp = int(data['check_timestamp'])
+        except (KeyError, TypeError, ValueError):
+            # config has invalid/missing data, ignore it
+            pypi_version = LooseVersion('0.0.0')
+            check_timestamp = 0
+        return cls(pypi_version=pypi_version, check_timestamp=check_timestamp)
+
+
+@dataclass
 class Config:
     auth_config: AuthConfig = field(default_factory=_create_default_auth_config)
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
-    last_checked_version: Optional[str] = None
+    pypi_version: PyPIVersion = field(default_factory=PyPIVersion.from_config({}))
 
     @property
     def auth(self) -> Optional[str]:
