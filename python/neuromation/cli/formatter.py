@@ -111,7 +111,7 @@ class JobTelemetryFormatter(BaseFormatter):
         return "\t".join(
             [
                 "TIMESTAMP".ljust(self.col_len["timestamp"]),
-                "CPU (%)".ljust(self.col_len["cpu"]),
+                "CPU".ljust(self.col_len["cpu"]),
                 "MEMORY (MB)".ljust(self.col_len["memory"]),
                 "GPU (%)".ljust(self.col_len["gpu"]),
                 "GPU_MEMORY (MB)".ljust(self.col_len["gpu_memory"]),
