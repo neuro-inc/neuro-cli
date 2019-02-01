@@ -217,7 +217,7 @@ async def submit(
             if not quiet:
                 click.echo(progress(job), nl=False)
         if not quiet and wait_start:
-            click.echo(progress(job, finish=True))
+            click.echo(progress(job, finish=True), nl=False)
 
 
 @job.command(context_settings=dict(ignore_unknown_options=True))

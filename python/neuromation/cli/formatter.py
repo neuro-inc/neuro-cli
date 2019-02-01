@@ -1,4 +1,5 @@
 import itertools
+import re
 import time
 from typing import AbstractSet, Iterable, List, Optional
 
@@ -9,6 +10,23 @@ from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
 from neuromation.client.jobs import JobTelemetry
 
 from .rc import Config
+
+
+BEFORE_PROGRESS = "\r\033[?25l"
+AFTER_PROGRESS = "\033[?25h\n"
+CLEAR_LINE_TAIL = "\033[0K"
+
+
+# Do nasty hack click to fix unstyle problem
+def _patch_click():
+    import click._compat  # type: ignore
+
+    _ansi_re = re.compile(r"\033\[([;\?0-9]*)([a-zA-Z])")
+    click._compat._ansi_re = _ansi_re
+
+
+_patch_click()
+del _patch_click
 
 
 COLORS = {
@@ -78,10 +96,12 @@ class JobStartProgress(BaseFormatter):
             reason = " " + click.style(job.history.reason, bold=True)
         else:
             reason = ""
-        ret = f"\rStatus: {txt_status}{reason} [{dt:.1f} sec]"
+        ret = BEFORE_PROGRESS + f"\rStatus: {txt_status}{reason} [{dt:.1f} sec]"
         if not finish:
             ret += " " + next(self._spinner)
-        ret += " " * 20  # to clear the screen line tail
+        ret += CLEAR_LINE_TAIL
+        if finish:
+            ret += AFTER_PROGRESS
         return ret
 
 
