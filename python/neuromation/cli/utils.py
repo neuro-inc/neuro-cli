@@ -16,6 +16,7 @@ from typing import (
 
 import click
 
+from neuromation.client import Volume
 from neuromation.utils import run
 
 
@@ -224,4 +225,11 @@ def alias(
         add_help_option=origin.add_help_option,
         hidden=origin.hidden,  # type: ignore
         deprecated=deprecated,
+    )
+
+
+def volume_to_verbose_str(volume: Volume) -> str:
+    return (
+        f"'{volume.storage_path}' mounted to '{volume.container_path}' "
+        f"in {('ro' if volume.read_only else 'rw')} mode"
     )

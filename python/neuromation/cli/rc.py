@@ -3,11 +3,12 @@ from distutils.version import LooseVersion
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
-
+import logging
 import aiohttp
 import yaml
 from yarl import URL
 
+import neuromation
 from neuromation.client import Client
 from neuromation.client.users import get_token_username
 from neuromation.utils import run
@@ -15,6 +16,8 @@ from neuromation.utils import run
 from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
 
+
+log = logging.getLogger(__name__)
 
 class RCException(Exception):
     pass
@@ -47,6 +50,16 @@ class PyPIVersion:
     pypi_version: LooseVersion
     check_timestamp: int
 
+    def warn_if_has_newer_version(self) -> None:
+        current = LooseVersion(neuromation.__version__)
+        if current < self.pypi_version:
+            update_command = "pip install --upgrade neuromation"
+            log.warning(
+                f"You are using Neuromation Platform Client version {current}, "
+                f"however version {self.pypi_version} is available. "
+            )
+            log.warning(f"You should consider upgrading via the '{update_command}' command.")
+
     @classmethod
     def from_config(cls, data: Dict[str, Any]):
         try:
@@ -58,6 +71,10 @@ class PyPIVersion:
             check_timestamp = 0
         return cls(pypi_version=pypi_version, check_timestamp=check_timestamp)
 
+    def to_config(self) -> Dict[str, Any]:
+        return {'pypi_version': self.pypi_version,
+                'check_timestamp': self.check_timestamp}
+
 
 @dataclass
 class Config:
@@ -65,7 +82,8 @@ class Config:
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
-    pypi_version: PyPIVersion = field(default_factory=PyPIVersion.from_config({}))
+    pypi: PyPIVersion = field(default_factory=PyPIVersion.from_config({}))
+    color: bool = field(default=False)  # don't save the field in config
 
     @property
     def auth(self) -> Optional[str]:
@@ -207,8 +225,7 @@ def save(path: Path, config: Config) -> Config:
             "expiration_time": config.auth_token.expiration_time,
             "refresh_token": config.auth_token.refresh_token,
         }
-    if config.last_checked_version:
-        payload["last_checked_version"] = config.last_checked_version
+    payload["pypi"] = config.pypi.to_config()
 
     # forbid access to other users
     if path.exists():
@@ -277,7 +294,7 @@ def _load(path: Path) -> Config:
         url=str(api_url),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
-        last_checked_version=payload.get("last_checked_version"),
+        pypi=PyPIVersion.from_config(payload.get("pypi")),
     )
 
 
