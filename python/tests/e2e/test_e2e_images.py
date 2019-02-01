@@ -90,6 +90,7 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
             "0",
             "-q",
             "--non-preemptible",
+            "--no-wait-start",
         ]
     )
     assert not captured.err
