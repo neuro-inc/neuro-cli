@@ -5,6 +5,7 @@ import click
 from yarl import URL
 
 from neuromation.client import Image, NetworkPortForwarding, Resources
+from neuromation.client.url_utils import normalize_storage_path_uri
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
@@ -115,14 +116,14 @@ async def train(
 
     async with cfg.make_client() as client:
         try:
-            dataset_url = client.cfg.norm_storage(URL(dataset))
+            dataset_url = normalize_storage_path_uri(URL(dataset), cfg.username)
         except ValueError:
             raise ValueError(
                 f"Dataset path should be on platform. " f"Current value {dataset}"
             )
 
         try:
-            resultset_url = client.cfg.norm_storage(URL(results))
+            resultset_url = normalize_storage_path_uri(URL(results), cfg.username)
         except ValueError:
             raise ValueError(
                 f"Results path should be on platform. " f"Current value {results}"
@@ -134,6 +135,12 @@ async def train(
 
         cmdline = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmdline="{cmdline}"')
+
+        if not quiet:
+            # TODO (ajuszkowski 01-Feb-19) normalize image name to URI (issue 452)
+            log.info(f"Using image '{image}'")
+            log.info(f"Using dataset '{dataset_url}'")
+            log.info(f"Using weights '{resultset_url}'")
 
         image_obj = Image(image=image, command=cmdline)
 

@@ -26,7 +26,7 @@ from .formatter import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, group, run_async
+from .utils import alias, group, run_async, volume_to_verbose_str
 
 
 log = logging.getLogger(__name__)
@@ -174,9 +174,18 @@ async def submit(
 
     memory = to_megabytes_str(memory)
     image_obj = Image(image=image, command=cmd)
+    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
+    if not quiet:
+        # TODO (ajuszkowski 01-Feb-19) normalize image name to URI (issue 452)
+        log.info(f"Using image '{image_obj.image}'")
     network = NetworkPortForwarding.from_cli(http, ssh)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
+    if volumes and not quiet:
+        log.info(
+            "Using volumes: \n"
+            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
+        )
 
     async with cfg.make_client() as client:
         job = await client.jobs.submit(

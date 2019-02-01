@@ -7,6 +7,11 @@ from typing import Any, AsyncIterator, Dict, List
 
 from yarl import URL
 
+from neuromation.client.url_utils import (
+    normalize_local_path_uri,
+    normalize_storage_path_uri,
+)
+
 from .abc import AbstractProgress
 from .api import API, ResourceNotFound
 from .config import Config
@@ -55,23 +60,9 @@ class Storage:
         self._config = config
 
     def _uri_to_path(self, uri: URL) -> str:
-        if uri.scheme != "storage":
-            # TODO (asvetlov): change error text, mention storage:// prefix explicitly
-            raise ValueError("Path should be targeting platform storage.")
-
-        ret: List[str] = []
-        if uri.host == "~":
-            ret.append(self._config.username)
-        elif not uri.is_absolute():
-            # absolute paths are considered as relative to home dir
-            ret.append(self._config.username)
-        else:
-            assert uri.host
-            ret.append(uri.host)
-        path = uri.path.strip("/")
-        if path:
-            ret.extend(path.split("/"))
-        return "/".join(ret)
+        uri = normalize_storage_path_uri(uri, self._config.username)
+        prefix = uri.host + "/" if uri.host else ""
+        return prefix + uri.path.lstrip("/")
 
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = URL("storage") / self._uri_to_path(uri)
@@ -163,15 +154,15 @@ class Storage:
             progress.complete(str(src))
 
     async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
-        src = self._config.norm_file(src)
+        src = normalize_local_path_uri(src)
+        dst = normalize_storage_path_uri(dst, self._config.username)
         path = Path(src.path)
         if not path.exists():
-            raise FileNotFoundError(f"{path} does not exist")
+            raise FileNotFoundError(f"'{path}' does not exist")
         if path.is_dir():
-            raise IsADirectoryError(f"{path} is a directory, use recursive copy")
+            raise IsADirectoryError(f"'{path}' is a directory, use recursive copy")
         if not path.is_file():
-            raise OSError(f"{path} should be a regular file")
-        dst = self._config.norm_storage(dst)
+            raise OSError(f"'{path}' should be a regular file")
         if not dst.name:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
@@ -192,11 +183,11 @@ class Storage:
         await self.create(dst, self._iterate_file(progress, path))
 
     async def upload_dir(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
-        src = self._config.norm_file(src)
-        dst = self._config.norm_storage(dst)
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
             dst = dst / src.name
+        src = normalize_local_path_uri(src)
+        dst = normalize_storage_path_uri(dst, self._config.username)
         path = Path(src.path).resolve()
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist")
@@ -222,15 +213,15 @@ class Storage:
     async def download_file(
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
-        loop = asyncio.get_event_loop()
-        src = self._config.norm_storage(src)
-        dst = self._config.norm_file(dst)
+        src = normalize_storage_path_uri(src, self._config.username)
+        dst = normalize_local_path_uri(dst)
         path = Path(dst.path)
         if path.exists():
             if path.is_dir():
                 path = path / src.name
             elif not path.is_file():
                 raise OSError(f"{path} should be a regular file")
+        loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             size = 0  # TODO: display length hint for downloaded file
             progress.start(str(dst), size)
@@ -244,8 +235,8 @@ class Storage:
     async def download_dir(
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
-        src = self._config.norm_storage(src)
-        dst = self._config.norm_file(dst)
+        src = normalize_storage_path_uri(src, self._config.username)
+        dst = normalize_local_path_uri(dst)
         path = Path(dst.path)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
