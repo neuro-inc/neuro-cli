@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 
 async def warn_if_has_newer_version(config: rc.Config) -> None:
+    # how to test it?  NO. Units + fake pypi server.
     current_version = get_current_version()
     latest_version = await get_latest_version(config)
     if current_version < latest_version:
@@ -26,8 +27,8 @@ def get_current_version() -> LooseVersion:
 async def get_latest_version(config: rc.Config) -> LooseVersion:
     latest_version = config.last_checked_version
     if latest_version is None:
-        timeout = aiohttp.ClientTimeout(None, None, 30, 30)
-        latest_version = await get_latest_version_from_pypi(timeout)
+        # TODO (ajsuzwkowski 31.1.2019) Save a timestamp when the version was checked
+        latest_version = await get_latest_version_from_pypi()
         if not latest_version:
             raise ValueError("Could not get the latest version from PyPI")
         ConfigFactory.update_last_checked_version(latest_version.vstring)
@@ -43,10 +44,8 @@ def print_update_warning(current: LooseVersion, latest: LooseVersion) -> None:
     log.warning(f"You should consider upgrading via the '{update_command}' command.")
 
 
-async def get_latest_version_from_pypi(
-    timeout: aiohttp.ClientTimeout
-) -> Optional[LooseVersion]:
-    response = await request_pypi(timeout)
+async def get_latest_version_from_pypi() -> Optional[LooseVersion]:
+    response = await request_pypi()
     if response:
         return max(get_versions(response))
 
@@ -56,8 +55,8 @@ def get_versions(pypi_response: Dict[str, Any]) -> List[LooseVersion]:
 
 
 # make a fake server:
-async def request_pypi(timeout: aiohttp.ClientTimeout) -> Optional[Dict[str, Any]]:
-    async with aiohttp.ClientSession(timeout=timeout) as session:
+async def request_pypi() -> Optional[Dict[str, Any]]:
+    async with aiohttp.ClientSession() as session:
         async with session.get("https://pypi.org/pypi/neuromation/json") as response:
             if response.status == 200:
                 return await response.json()
