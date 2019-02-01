@@ -39,4 +39,4 @@ def normalize_local_path_uri(uri: URL) -> URL:
 
 def normalize_local_path(path: str) -> str:
     """Normalize local file path."""
-    return str(Path(path).expanduser().resolve())
+    return str(Path(path).expanduser().absolute())
