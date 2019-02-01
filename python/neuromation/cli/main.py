@@ -90,7 +90,7 @@ def cli(ctx: click.Context, verbose: int, show_traceback: bool, color: str) -> N
         LOG_ERROR = log.exception
     setup_logging()
     setup_console_handler(console_handler, verbose=verbose)
-    COLORS = {'yes': True, 'no': False, 'auto': None}
+    COLORS = {"yes": True, "no": False, "auto": None}
     real_color: Optional[bool] = COLORS[color]
     if real_color is None:
         real_color = sys.stdin.isatty()
