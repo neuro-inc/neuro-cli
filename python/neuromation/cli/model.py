@@ -135,6 +135,12 @@ async def train(
         cmdline = " ".join(cmd) if cmd is not None else None
         log.debug(f'cmdline="{cmdline}"')
 
+        if not quiet:
+            # TODO (ajuszkowski 01-Feb-19) normalize image name to URI (issue 452)
+            log.info(f"Using image '{image}'")
+            log.info(f"Using dataset '{dataset_url}'")
+            log.info(f"Using weights '{resultset_url}'")
+
         image_obj = Image(image=image, command=cmdline)
 
         res = await client.models.train(

@@ -37,6 +37,7 @@ async def rm(cfg: Config, path: str) -> None:
     neuro storage rm storage://{username}/foo/bar/
     """
     uri = URL(path)
+    log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
         await client.storage.rm(uri)
@@ -53,6 +54,7 @@ async def ls(cfg: Config, path: str) -> None:
     By default PATH is equal user`s home dir (storage:)
     """
     uri = URL(path)
+    log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
         res = await client.storage.ls(uri)
@@ -92,22 +94,26 @@ async def cp(
     src = URL(source)
     dst = URL(destination)
 
-    log.debug(f"src={src}")
-    log.debug(f"dst={dst}")
-
     progress_obj = ProgressBase.create_progress(progress)
     if not src.scheme:
-        src = local_path_to_url(src.path)
+        src = URL(f"file:{src.path}")
     if not dst.scheme:
-        dst = local_path_to_url(dst.path)
-    log.info(f"Copying '{src}' -> '{dst}'")
+        dst = URL(f"file:{dst.path}")
     async with cfg.make_client(timeout=timeout) as client:
         if src.scheme == "file" and dst.scheme == "storage":
+            src = normalize_local_path_uri(src)
+            dst = normalize_storage_path_uri(dst, cfg.username)
+            log.info(f"Using source path '{src}'")
+            log.info(f"Using destination path '{dst}'")
             if recursive:
                 await client.storage.upload_dir(progress_obj, src, dst)
             else:
                 await client.storage.upload_file(progress_obj, src, dst)
         elif src.scheme == "storage" and dst.scheme == "file":
+            src = normalize_storage_path_uri(src, cfg.username)
+            dst = normalize_local_path_uri(dst)
+            log.info(f"Using source path '{src}'")
+            log.info(f"Using destination path '{dst}'")
             if recursive:
                 await client.storage.download_dir(progress_obj, src, dst)
             else:
@@ -130,6 +136,7 @@ async def mkdir(cfg: Config, path: str) -> None:
     """
 
     uri = URL(path)
+    log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
         await client.storage.mkdirs(uri)
@@ -162,6 +169,8 @@ async def mv(cfg: Config, source: str, destination: str) -> None:
 
     src = URL(source)
     dst = URL(destination)
+    log.info(f"Using source path '{src}'")
+    log.info(f"Using destination path '{dst}'")
 
     async with cfg.make_client() as client:
         await client.storage.mv(src, dst)
