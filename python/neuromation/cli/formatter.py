@@ -122,8 +122,8 @@ class JobTelemetryFormatter(BaseFormatter):
         timestamp = self._format_timestamp(info.timestamp)
         cpu = f"{info.cpu:.3f}"
         mem = f"{info.memory:.3f}"
-        gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "N/A"
-        gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "N/A"
+        gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
+        gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
         return "\t".join(
             [
                 timestamp.ljust(self.col_len["timestamp"]),
