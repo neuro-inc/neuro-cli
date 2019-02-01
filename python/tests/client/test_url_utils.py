@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 from yarl import URL
 
-from neuromation.cli.url_utils import (
+from neuromation.client import Client
+from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
-from neuromation.client import Client
 
 
 @pytest.fixture
@@ -178,3 +178,66 @@ async def test_normalize_local_path_uri__bad_scheme(token):
     with pytest.raises(ValueError, match="Invalid local file scheme 'other://'"):
         url = URL("other:path/to/file.txt")
         normalize_local_path_uri(url)
+
+
+# The tests below check that f(f(x)) == f(x) where f is a path normalization function
+
+
+async def test_normalize_storage_path_uri__no_slash__double(token, client):
+    url = URL("storage:path/to/file.txt")
+    url = normalize_storage_path_uri(url, client.username)
+    url = normalize_storage_path_uri(url, client.username)
+    assert url.scheme == "storage"
+    assert url.host == "user"
+    assert url.path == "/path/to/file.txt"
+    assert str(url) == "storage://user/path/to/file.txt"
+
+
+async def test_normalize_local_path_uri__no_slash__double(token, pwd):
+    url = URL("file:path/to/file.txt")
+    url = normalize_local_path_uri(url)
+    url = normalize_local_path_uri(url)
+    assert url.scheme == "file"
+    assert url.host is None
+    assert url.path == f"{pwd}/path/to/file.txt"
+    assert str(url) == f"file://{pwd}/path/to/file.txt"
+
+
+async def test_normalize_storage_path_uri__tilde_slash__double(token, client):
+    url = URL("storage:~/path/to/file.txt")
+    url = normalize_storage_path_uri(url, client.username)
+    url = normalize_storage_path_uri(url, client.username)
+    assert url.scheme == "storage"
+    assert url.host == "user"
+    assert url.path == "/~/path/to/file.txt"
+    assert str(url) == "storage://user/~/path/to/file.txt"
+
+
+async def test_normalize_local_path_uri__tilde_slash__double(token, fake_homedir):
+    url = URL("file:~/path/to/file.txt")
+    url = normalize_local_path_uri(url)
+    url = normalize_local_path_uri(url)
+    assert url.scheme == "file"
+    assert url.host is None
+    assert url.path == f"{fake_homedir}/path/to/file.txt"
+    assert str(url) == f"file://{fake_homedir}/path/to/file.txt"
+
+
+async def test_normalize_storage_path_uri__3_slashes__double(token, client):
+    url = URL("storage:///path/to/file.txt")
+    url = normalize_storage_path_uri(url, client.username)
+    url = normalize_storage_path_uri(url, client.username)
+    assert url.scheme == "storage"
+    assert url.host == "user"
+    assert url.path == "/path/to/file.txt"
+    assert str(url) == "storage://user/path/to/file.txt"
+
+
+async def test_normalize_local_path_uri__3_slashes__double(token, fake_homedir):
+    url = URL("file:///path/to/file.txt")
+    url = normalize_local_path_uri(url)
+    url = normalize_local_path_uri(url)
+    assert url.scheme == "file"
+    assert url.host is None
+    assert url.path == "/path/to/file.txt"
+    assert str(url) == "file:///path/to/file.txt"

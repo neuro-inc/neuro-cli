@@ -4,8 +4,8 @@ from typing import List
 import click
 from yarl import URL
 
-from neuromation.cli.url_utils import normalize_storage_path_uri
 from neuromation.client import Image, NetworkPortForwarding, Resources
+from neuromation.client.url_utils import normalize_storage_path_uri
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (

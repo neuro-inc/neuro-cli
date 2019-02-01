@@ -4,7 +4,7 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.cli.url_utils import (
+from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
@@ -106,8 +106,8 @@ async def cp(
         if src.scheme == "file" and dst.scheme == "storage":
             src = normalize_local_path_uri(src)
             dst = normalize_storage_path_uri(dst, cfg.username)
-            log.info(f"Using source path '{src}'")
-            log.info(f"Using destination path '{dst}'")
+            log.info(f"Using source path:      '{src}'")
+            log.info(f"Using destination path: '{dst}'")
             if recursive:
                 await client.storage.upload_dir(progress_obj, src, dst)
             else:
@@ -115,8 +115,8 @@ async def cp(
         elif src.scheme == "storage" and dst.scheme == "file":
             src = normalize_storage_path_uri(src, cfg.username)
             dst = normalize_local_path_uri(dst)
-            log.info(f"Using source path '{src}'")
-            log.info(f"Using destination path '{dst}'")
+            log.info(f"Using source path:      '{src}'")
+            log.info(f"Using destination path: '{dst}'")
             if recursive:
                 await client.storage.download_dir(progress_obj, src, dst)
             else:
@@ -172,8 +172,8 @@ async def mv(cfg: Config, source: str, destination: str) -> None:
 
     src = normalize_storage_path_uri(URL(source), cfg.username)
     dst = normalize_storage_path_uri(URL(destination), cfg.username)
-    log.info(f"Using source path '{src}'")
-    log.info(f"Using destination path '{dst}'")
+    log.info(f"Using source path:      '{src}'")
+    log.info(f"Using destination path: '{dst}'")
 
     async with cfg.make_client() as client:
         await client.storage.mv(src, dst)

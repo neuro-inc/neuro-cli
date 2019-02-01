@@ -7,6 +7,11 @@ from typing import Any, AsyncIterator, Dict, List
 
 from yarl import URL
 
+from neuromation.client.url_utils import (
+    normalize_local_path_uri,
+    normalize_storage_path_uri,
+)
+
 from .abc import AbstractProgress
 from .api import API, ResourceNotFound
 from .config import Config
@@ -50,19 +55,14 @@ class FileStatus:
 
 
 class Storage:
-    """ API operations with storage.
-    All URI-arguments are expected to be already normalized (all local URIs must have
-    no authority and be absolute-pathed, and all storage URIs must have an authority
-    and have relative path from the authority's home directory).
-    """
-
     def __init__(self, api: API, config: Config) -> None:
         self._api = api
         self._config = config
 
     def _uri_to_path(self, uri: URL) -> str:
+        uri = normalize_storage_path_uri(uri, self._config.username)
         prefix = uri.host + "/" if uri.host else ""
-        return prefix + uri.path.strip("/")
+        return prefix + uri.path.lstrip("/")
 
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = URL("storage") / self._uri_to_path(uri)
@@ -154,6 +154,8 @@ class Storage:
             progress.complete(str(src))
 
     async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
+        src = normalize_local_path_uri(src)
+        dst = normalize_storage_path_uri(dst, self._config.username)
         path = Path(src.path)
         if not path.exists():
             raise FileNotFoundError(f"'{path}' does not exist")
@@ -184,6 +186,8 @@ class Storage:
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
             dst = dst / src.name
+        src = normalize_local_path_uri(src)
+        dst = normalize_storage_path_uri(dst, self._config.username)
         path = Path(src.path).resolve()
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist")
@@ -209,13 +213,15 @@ class Storage:
     async def download_file(
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
-        loop = asyncio.get_event_loop()
+        src = normalize_storage_path_uri(src, self._config.username)
+        dst = normalize_local_path_uri(dst)
         path = Path(dst.path)
         if path.exists():
             if path.is_dir():
                 path = path / src.name
             elif not path.is_file():
                 raise OSError(f"{path} should be a regular file")
+        loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             size = 0  # TODO: display length hint for downloaded file
             progress.start(str(dst), size)
@@ -229,6 +235,8 @@ class Storage:
     async def download_dir(
         self, progress: AbstractProgress, src: URL, dst: URL
     ) -> None:
+        src = normalize_storage_path_uri(src, self._config.username)
+        dst = normalize_local_path_uri(dst)
         path = Path(dst.path)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
