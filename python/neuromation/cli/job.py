@@ -100,6 +100,7 @@ def job() -> None:
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
 )
 @click.option(
+    "-v",
     "--volume",
     metavar="MOUNT",
     multiple=True,
