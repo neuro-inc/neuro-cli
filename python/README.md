@@ -884,7 +884,7 @@ Name | Description|
 |_\--preemptible / --non-preemptible_|Run job on a lower-cost preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
-|_--volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_--help_|Show this message and exit.|
@@ -1703,7 +1703,7 @@ Name | Description|
 |_\--preemptible / --non-preemptible_|Run job on a lower-cost preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
-|_--volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_--help_|Show this message and exit.|
