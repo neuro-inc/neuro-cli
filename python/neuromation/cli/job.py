@@ -200,8 +200,7 @@ async def submit(
             env=env_dict,
         )
         click.echo(JobFormatter(quiet)(job))
-        # FIXME: get the value from config
-        progress = JobStartProgress(os.isatty(sys.stdout.fileno()))
+        progress = JobStartProgress(cfg.color)
         while wait_start and job.status == JobStatus.PENDING:
             await asyncio.sleep(0.5)
             job = await client.jobs.status(job.id)

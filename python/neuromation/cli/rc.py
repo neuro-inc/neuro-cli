@@ -47,7 +47,7 @@ class Config:
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
-    color: bool = field(default=False, metadata={"save": False})
+    color: bool = field(default=False)  # don't save the field in config
 
     @property
     def auth(self) -> Optional[str]:
