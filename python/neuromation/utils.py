@@ -1,4 +1,7 @@
 import asyncio
+import gc
+import sys
+import warnings
 from typing import Awaitable, TypeVar
 
 
@@ -54,13 +57,22 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
             loop.run_until_complete(loop.shutdown_asyncgens())
         finally:
             asyncio.set_event_loop(None)
-            loop.close()
+            # simple workaround for:
+            # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", ResourceWarning)
+                loop.close()
+                del loop
+                gc.collect(2)
 
 
 def _cancel_all_tasks(
     loop: asyncio.AbstractEventLoop, main_task: "asyncio.Task[_T]"
 ) -> None:
-    to_cancel = asyncio.Task.all_tasks(loop)
+    if sys.version_info >= (3, 7):
+        to_cancel = asyncio.all_tasks(loop)
+    else:
+        to_cancel = asyncio.Task.all_tasks(loop)
     if not to_cancel:
         return
 
@@ -71,6 +83,9 @@ def _cancel_all_tasks(
         asyncio.gather(*to_cancel, loop=loop, return_exceptions=True)
     )
 
+    # temporary shut up the logger until aiohttp will be fixed
+    # the message scares people :)
+    return
     for task in to_cancel:
         if task.cancelled():
             continue

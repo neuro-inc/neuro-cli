@@ -26,13 +26,13 @@ from .formatter import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import run_async
+from .utils import alias, group, run_async
 
 
 log = logging.getLogger(__name__)
 
 
-@click.group()
+@group()
 def job() -> None:
     """
     Job operations.
@@ -92,6 +92,7 @@ def job() -> None:
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
 )
 @click.option(
+    "-v",
     "--volume",
     metavar="MOUNT",
     multiple=True,
@@ -138,19 +139,17 @@ async def submit(
 
     Examples:
 
-    \b
     # Starts a container pytorch:latest with two paths mounted. Directory /q1/
     # is mounted in read only mode to /qm directory within container.
     # Directory /mod mounted to /mod directory in read-write mode.
     neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
-    pytorch:latest
+      pytorch:latest
 
-    \b
     # Starts a container pytorch:latest with connection enabled to port 22 and
     # sets PYTHONPATH environment value to /python.
     # Please note that SSH server should be provided by container.
     neuro job submit --env PYTHONPATH=/python --volume \
-    storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
+      storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
     """
 
     username = cfg.username
@@ -220,7 +219,7 @@ async def exec(
     sys.exit(retcode)
 
 
-@job.command()
+@job.command(deprecated=True)
 @click.argument("id")
 @click.option(
     "--user", help="Container user name", default=JOB_SSH_USER, show_default=True
@@ -231,11 +230,11 @@ async def exec(
 async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
     """
     Starts ssh terminal connected to running job.
+
     Job should be started with SSH support enabled.
 
     Examples:
 
-    \b
     neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
     """
     git_key = cfg.github_rsa_path
@@ -248,9 +247,9 @@ async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
 @click.argument("id")
 @click.pass_obj
 @run_async
-async def monitor(cfg: Config, id: str) -> None:
+async def logs(cfg: Config, id: str) -> None:
     """
-    Monitor job output stream
+    Fetch the logs of a container.
     """
     timeout = aiohttp.ClientTimeout(
         total=None, connect=None, sock_read=None, sock_connect=30
@@ -261,6 +260,9 @@ async def monitor(cfg: Config, id: str) -> None:
             if not chunk:
                 break
             click.echo(chunk.decode(errors="ignore"), nl=False)
+
+
+job.add_command(alias(logs, "monitor"))
 
 
 @job.command()
@@ -280,15 +282,12 @@ async def monitor(cfg: Config, id: str) -> None:
 @click.option("-q", "--quiet", is_flag=True)
 @click.pass_obj
 @run_async
-async def list(
-    cfg: Config, status: Sequence[str], description: str, quiet: bool
-) -> None:
+async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) -> None:
     """
     List all jobs.
 
     Examples:
 
-    \b
     neuro job list --description="my favourite job"
     neuro job list --status=all
     neuro job list -s pending -s running -q
@@ -308,13 +307,16 @@ async def list(
     click.echo(formatter(jobs, statuses, description))
 
 
+job.add_command(alias(ls, "list"))
+
+
 @job.command()
 @click.argument("id")
 @click.pass_obj
 @run_async
 async def status(cfg: Config, id: str) -> None:
     """
-    Display status of a job
+    Display status of a job.
     """
     async with cfg.make_client() as client:
         res = await client.jobs.status(id)
@@ -327,7 +329,7 @@ async def status(cfg: Config, id: str) -> None:
 @run_async
 async def top(cfg: Config, id: str) -> None:
     """
-    Display real-time job telemetry
+    Display real-time job telemetry.
     """
     formatter = JobTelemetryFormatter()
     async with cfg.make_client() as client:
@@ -346,7 +348,7 @@ async def top(cfg: Config, id: str) -> None:
 @run_async
 async def kill(cfg: Config, id: Sequence[str]) -> None:
     """
-    Kill job(s)
+    Kill job(s).
     """
     errors = []
     async with cfg.make_client() as client:

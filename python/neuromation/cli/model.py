@@ -18,13 +18,13 @@ from .defaults import (
 from .formatter import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import run_async
+from .utils import group, run_async
 
 
 log = logging.getLogger(__name__)
 
 
-@click.group()
+@group(deprecated=True)
 def model() -> None:
     """
     Model operations.
@@ -169,7 +169,6 @@ async def debug(cfg: Config, id: str, localport: int) -> None:
 
     Examples:
 
-    \b
     neuro model debug --localport 12789 job-abc-def-ghk
     """
     git_key = cfg.github_rsa_path

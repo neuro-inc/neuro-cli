@@ -14,10 +14,10 @@ TEST_IMAGE_NAME = "e2e-banana-image"
 
 
 @pytest.fixture()
-def docker(loop):
+async def docker(loop):
     client = aiodocker.Docker()
     yield client
-    loop.run_until_complete(client.close())
+    await client.close()
 
 
 @pytest.fixture()
@@ -29,21 +29,19 @@ async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
     image_archive = Path(__file__).parent / "assets/echo-tag.tar"
     # TODO use random image name here
     image_name = f"{TEST_IMAGE_NAME}:{tag}"
-    await docker.images.build(
-        fileobj=image_archive.open(mode="r+b"),
-        tag=image_name,
-        buildargs={"TAG": tag},
-        encoding="identity",
-    )
+    with image_archive.open(mode="r+b") as fileobj:
+        await docker.images.build(
+            fileobj=fileobj, tag=image_name, buildargs={"TAG": tag}, encoding="identity"
+        )
 
     return image_name
 
 
 @pytest.fixture()
-def image(loop, docker, tag):
-    image = loop.run_until_complete(generate_image(docker, tag))
+async def image(loop, docker, tag):
+    image = await generate_image(docker, tag)
     yield image
-    loop.run_until_complete(docker.images.delete(image, force=True))
+    await docker.images.delete(image, force=True)
 
 
 @pytest.mark.e2e
@@ -96,6 +94,6 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     job_id = captured.out.strip()
     assert job_id.startswith("job-")
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
-    captured = run(["job", "monitor", job_id])
+    captured = run(["job", "logs", job_id])
     assert not captured.err
     assert captured.out.strip() == tag

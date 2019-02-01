@@ -4,10 +4,10 @@ from yarl import URL
 from neuromation.client import Action, IllegalArgumentError, Permission
 
 from .rc import Config
-from .utils import run_async
+from .utils import command, run_async
 
 
-@click.command()
+@command()
 @click.argument("uri")
 @click.argument("user")
 @click.argument("permission", type=click.Choice(["read", "write", "manage"]))
