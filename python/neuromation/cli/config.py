@@ -10,7 +10,7 @@ from .utils import group
 
 @group()
 def config() -> None:
-    """Client configuration settings commands."""
+    """Client configuration."""
 
 
 @config.command()

@@ -56,15 +56,12 @@ LOG_ERROR = log.error
 
 @click.group(cls=MainGroup)
 @click.option("-v", "--verbose", count=True, type=int)
-@click.option("--show-traceback", is_flag=True)
+@click.option("--show-traceback", is_flag=True, default=True)
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
 )
 @click.pass_context
 def cli(ctx: click.Context, verbose: int, show_traceback: bool) -> None:
-    """
-    Neuromation console.
-    """
     #   ▇ ◣
     #   ▇ ◥ ◣
     # ◣ ◥   ▇
@@ -116,31 +113,33 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         ctx.close()
 
 
-cli.add_command(config.config)
-cli.add_command(config.login)
-cli.add_command(config.logout)
-cli.add_command(storage.storage)
-cli.add_command(storage.rm)
-cli.add_command(storage.ls)
-cli.add_command(storage.cp)
-cli.add_command(storage.mkdir)
-cli.add_command(storage.mv)
-cli.add_command(DeprecatedGroup(storage.storage, name="store"))
-cli.add_command(model.model)
 cli.add_command(job.job)
+cli.add_command(storage.storage)
+cli.add_command(image.image)
+cli.add_command(config.config)
+cli.add_command(completion.completion)
+
+cli.add_command(model.model)
+cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
+
 cli.add_command(job.submit)
-cli.add_command(job.exec)
-cli.add_command(job.logs)
 cli.add_command(alias(job.ls, "ps", help=job.ls.help, deprecated=False))
 cli.add_command(job.status)
-cli.add_command(job.top)
+cli.add_command(job.exec)
+cli.add_command(job.logs)
 cli.add_command(job.kill)
-cli.add_command(image.image)
+cli.add_command(job.top)
+cli.add_command(config.login)
+cli.add_command(config.logout)
+cli.add_command(storage.cp)
+cli.add_command(storage.ls)
+cli.add_command(storage.rm)
+cli.add_command(storage.mkdir)
+cli.add_command(storage.mv)
+cli.add_command(alias(image.ls, "images", help=image.ls.help, deprecated=False))
 cli.add_command(image.push)
 cli.add_command(image.pull)
-cli.add_command(alias(image.ls, "images", help=image.ls.help, deprecated=False))
 cli.add_command(share.share)
-cli.add_command(completion.completion)
 
 
 def main(args: Optional[List[str]] = None) -> None:

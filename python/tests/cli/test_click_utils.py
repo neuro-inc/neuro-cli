@@ -129,8 +129,8 @@ def test_print_deprecated_group():
           --help  Show this message and exit.
 
         Command Groups:
-          alias        Alias for sub-command
           sub-command  Sub-command.
+          alias        Alias for sub-command
     """
     )
 

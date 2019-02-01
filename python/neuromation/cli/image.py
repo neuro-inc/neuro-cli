@@ -14,7 +14,7 @@ from .utils import group, run_async
 @group()
 def image() -> None:
     """
-    Docker image operations.
+    Container image operations.
     """
 
 
@@ -94,9 +94,7 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 @run_async
 async def ls(cfg: Config) -> None:
     """
-    List user's images which are available for jobs.
-
-    You will see here own and shared with you images
+    List images.
     """
 
     async with cfg.make_client() as client:
