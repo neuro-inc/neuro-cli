@@ -205,7 +205,7 @@ async def submit(
             await asyncio.sleep(0.5)
             job = await client.jobs.status(job.id)
             click.echo(progress(job), nl=False)
-        click.echo(progress(job, show_spinner=False))
+        click.echo(progress(job, finish=True))
 
 
 @job.command(context_settings=dict(ignore_unknown_options=True))

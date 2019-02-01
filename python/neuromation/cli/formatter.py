@@ -69,8 +69,9 @@ class JobStartProgress(BaseFormatter):
         self._quiet = not os.isatty(sys.stdout.fileno())
         self._time = time.time()
         self._spinner = itertools.cycle(self.SPINNER)
+        self._last_size = 0
 
-    def __call__(self, job: JobDescription, *, show_spinner: bool = True) -> str:
+    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
         if self._quiet:
             return ""
         new_time = time.time()
@@ -78,7 +79,7 @@ class JobStartProgress(BaseFormatter):
         txt_status = format_job_status(job.status)
         reason = click.style(job.history.reason or "N/A", bold=True)
         ret = f"\rStatus: {txt_status}, reason: {reason} {dt:.1f} sec"
-        if show_spinner:
+        if not finish:
             ret += " " + next(self._spinner)
         ret += " " * 20  # to clear the screen line tail
         return ret
