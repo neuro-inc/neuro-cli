@@ -75,7 +75,7 @@ class JobStartProgress(BaseFormatter):
         new_time = time.time()
         dt = new_time - self._time
         txt_status = format_job_status(job.status)
-        reason = click.style(job.history.reason or "UNKNOWN", bold=True)
+        reason = click.style(job.history.reason or "N/A", bold=True)
         ret = f"\rStatus: {txt_status}, reason: {reason} {dt:.1f} sec"
         if show_spinner:
             ret += " " + next(self._spinner)
