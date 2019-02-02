@@ -55,8 +55,8 @@ class Context(click.Context):
 
 
 class NeuroClickMixin:
-    def get_short_help_str(self, limit=45):
-        text = super().get_short_help_str(limit=limit)
+    def get_short_help_str(self, limit: int = 45) -> str:
+        text = super().get_short_help_str(limit=limit)  # type: ignore
         if text.endswith(".") and not text.endswith("..."):
             text = text[:-1]
         return text
