@@ -1,12 +1,45 @@
+import itertools
+import re
 import time
 from typing import AbstractSet, Iterable, List, Optional
 
+import click
 from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
 from neuromation.client.jobs import JobTelemetry
 
 from .rc import Config
+
+
+BEFORE_PROGRESS = "\r\033[?25l"
+AFTER_PROGRESS = "\033[?25h\n"
+CLEAR_LINE_TAIL = "\033[0K"
+
+
+# Do nasty hack click to fix unstyle problem
+def _patch_click():
+    import click._compat  # type: ignore
+
+    _ansi_re = re.compile(r"\033\[([;\?0-9]*)([a-zA-Z])")
+    click._compat._ansi_re = _ansi_re
+
+
+_patch_click()
+del _patch_click
+
+
+COLORS = {
+    JobStatus.PENDING: "yellow",
+    JobStatus.RUNNING: "blue",
+    JobStatus.SUCCEEDED: "green",
+    JobStatus.FAILED: "red",
+    JobStatus.UNKNOWN: "yellow",
+}
+
+
+def format_job_status(status: JobStatus) -> str:
+    return click.style(status.value, fg=COLORS.get(status, "reset"))
 
 
 class BaseFormatter:
@@ -27,17 +60,49 @@ class BaseFormatter:
 
 
 class JobFormatter(BaseFormatter):
-    def __call__(self, job: JobDescription, quiet: bool = True) -> str:
-        if quiet:
-            return job.id
+    def __init__(self, quiet: bool = True) -> None:
+        self._quiet = quiet
+
+    def __call__(self, job: JobDescription) -> str:
+        job_id = click.style(job.id, bold=True)
+        if self._quiet:
+            return job_id
         return (
-            f"Job ID: {job.id} Status: {job.status}\n"
+            f"Job ID: {job_id} Status: {format_job_status(job.status)}\n"
             + f"Shortcuts:\n"
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
             + f"  neuro job top {job.id}     # display real-time job telemetry\n"
             + f"  neuro job kill {job.id}    # kill job"
         )
+
+
+class JobStartProgress(BaseFormatter):
+    SPINNER = ("|", "/", "-", "\\")
+
+    def __init__(self, color: bool) -> None:
+        self._color = color
+        self._time = time.time()
+        self._spinner = itertools.cycle(self.SPINNER)
+        self._last_size = 0
+
+    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
+        if not self._color:
+            return ""
+        new_time = time.time()
+        dt = new_time - self._time
+        txt_status = format_job_status(job.status)
+        if job.history.reason:
+            reason = " " + click.style(job.history.reason, bold=True)
+        else:
+            reason = ""
+        ret = BEFORE_PROGRESS + f"\rStatus: {txt_status}{reason} [{dt:.1f} sec]"
+        if not finish:
+            ret += " " + next(self._spinner)
+        ret += CLEAR_LINE_TAIL
+        if finish:
+            ret += AFTER_PROGRESS
+        return ret
 
 
 class StorageLsFormatter(BaseFormatter):
@@ -111,7 +176,7 @@ class JobTelemetryFormatter(BaseFormatter):
         return "\t".join(
             [
                 "TIMESTAMP".ljust(self.col_len["timestamp"]),
-                "CPU (%)".ljust(self.col_len["cpu"]),
+                "CPU".ljust(self.col_len["cpu"]),
                 "MEMORY (MB)".ljust(self.col_len["memory"]),
                 "GPU (%)".ljust(self.col_len["gpu"]),
                 "GPU_MEMORY (MB)".ljust(self.col_len["gpu_memory"]),
@@ -122,8 +187,8 @@ class JobTelemetryFormatter(BaseFormatter):
         timestamp = self._format_timestamp(info.timestamp)
         cpu = f"{info.cpu:.3f}"
         mem = f"{info.memory:.3f}"
-        gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "N/A"
-        gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "N/A"
+        gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
+        gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
         return "\t".join(
             [
                 timestamp.ljust(self.col_len["timestamp"]),

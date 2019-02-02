@@ -1,10 +1,8 @@
-import asyncio
+import hashlib
 import logging
 import os
-import platform
 import re
 from collections import namedtuple
-from math import ceil
 from os.path import join
 from pathlib import Path
 from time import sleep
@@ -14,10 +12,7 @@ import pytest
 
 from neuromation.cli import main
 from tests.e2e.utils import (
-    BLOCK_SIZE_MB,
-    FILE_COUNT,
-    FILE_SIZE_MB,
-    GENERATION_TIMEOUT_SEC,
+    FILE_SIZE_B,
     RC_TEXT,
     format_list,
     format_list_pattern,
@@ -45,42 +40,27 @@ def tmpstorage(run, request):
     assert captured.out == ""
 
     yield url
-    # Remove directory only if test succeeded
-    if not request.node._report_sections:  # TODO: find another way to check test status
-        try:
-            run(["storage", "rm", url])
-        except BaseException:
-            # Just ignore cleanup error here
-            pass
+
+    try:
+        run(["storage", "rm", url])
+    except BaseException:
+        # Just ignore cleanup error here
+        pass
 
 
-async def generate_test_data(root, count, size_mb):
-    async def generate_file(name):
-        exec_sha_name = "sha1sum" if platform.platform() == "linux" else "shasum"
-
-        process = await asyncio.create_subprocess_shell(
-            f"""(dd if=/dev/urandom \
-                    bs={BLOCK_SIZE_MB * 1024 * 1024} \
-                    count={ceil(size_mb / BLOCK_SIZE_MB)} \
-                    2>/dev/null) | \
-                    tee {name} | \
-                    {exec_sha_name}""",
-            stdout=asyncio.subprocess.PIPE,
-        )
-
-        stdout, _ = await asyncio.wait_for(
-            process.communicate(), timeout=GENERATION_TIMEOUT_SEC
-        )
-
-        # sha1sum appends file name to the output
-        return name, stdout.decode()[:40]
-
-    return await asyncio.gather(
-        *[
-            generate_file(str(root / name))
-            for name in ("{:04d}.bin".format(i) for i in range(count))
-        ]
-    )
+def generate_random_file(path: Path, size):
+    name = f"{uuid()}.tmp"
+    path_and_name = path / name
+    hasher = hashlib.sha1()
+    with open(path_and_name, "wb") as file:
+        generated = 0
+        while generated < size:
+            length = min(1024 * 1024, size - generated)
+            data = os.urandom(length)
+            file.write(data)
+            hasher.update(data)
+            generated += len(data)
+    return str(path_and_name), hasher.hexdigest()
 
 
 @pytest.fixture(scope="session")
@@ -90,22 +70,18 @@ def static_path(tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def data(static_path):
-    loop = asyncio.get_event_loop()
     folder = static_path / "data"
     folder.mkdir()
-    return loop.run_until_complete(generate_test_data(folder, FILE_COUNT, FILE_SIZE_MB))
+    return generate_random_file(folder, FILE_SIZE_B)
 
 
 @pytest.fixture(scope="session")
 def nested_data(static_path):
-    loop = asyncio.get_event_loop()
     root_dir = static_path / "neested_data" / "nested"
     nested_dir = root_dir / "directory" / "for" / "test"
     nested_dir.mkdir(parents=True, exist_ok=True)
-    data = loop.run_until_complete(
-        generate_test_data(nested_dir, FILE_COUNT, FILE_SIZE_MB)
-    )
-    return data[0][0], data[0][1], str(root_dir)
+    generated_file, hash = generate_random_file(nested_dir, FILE_SIZE_B)
+    return generated_file, hash, str(root_dir)
 
 
 @pytest.fixture

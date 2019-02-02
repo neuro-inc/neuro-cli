@@ -18,7 +18,7 @@ async def mocked_share_client(aiohttp_server, token):
     async def handler(request):
         data = await request.json()
         assert data[0]["action"] in [item.value for item in Action]
-        return web.HTTPCreated()
+        raise web.HTTPCreated()
 
     app = web.Application()
     app.router.add_post("/users/bill/permissions", handler)

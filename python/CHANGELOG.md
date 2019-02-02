@@ -5,6 +5,29 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.2.2 (2019-01-31)
+==============================
+
+Features
+--------
+
+
+- Add top-level aliases for the most frequent commands. ([#439](https://github.com/neuromation/platform-api-clients/issues/439))
+
+- Better formatting for examples section. ([#446](https://github.com/neuromation/platform-api-clients/issues/446))
+
+
+Bugfixes
+--------
+
+
+- Bump `click` version to `7.0+`. ([#437](https://github.com/neuromation/platform-api-clients/issues/437))
+
+- Temporary disable scary logging about unhandled exception. ([#438](https://github.com/neuromation/platform-api-clients/issues/438))
+
+- Fix an error in local path normalization. ([#443](https://github.com/neuromation/platform-api-clients/issues/443))
+
+
 Neuromation 0.2.1 (2019-01-29)
 ==============================
 

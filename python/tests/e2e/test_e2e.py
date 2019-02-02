@@ -22,6 +22,13 @@ def test_print_version(run):
 
 
 @pytest.mark.e2e
+def test_print_help_by_default(run):
+    captured = run(["--color=no"])
+    assert not captured.err
+    assert "Neuromation console." in captured.out
+
+
+@pytest.mark.e2e
 def test_print_config(run):
     captured = run(["config", "show"])
     assert not captured.err
@@ -116,7 +123,7 @@ def test_e2e_storage(
     check_rmdir_on_storage,
     check_dir_absent_on_storage,
 ):
-    srcfile, checksum = data[0]
+    srcfile, checksum = data
 
     # Create directory for the test
     check_create_dir_on_storage("folder")
@@ -166,7 +173,7 @@ def test_job_storage_interaction(
     check_upload_file_to_storage,
     check_file_on_storage_checksum,
 ):
-    srcfile, checksum = data[0]
+    srcfile, checksum = data
     # Create directory for the test
     check_create_dir_on_storage("data")
 

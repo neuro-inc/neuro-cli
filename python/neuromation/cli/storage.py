@@ -4,6 +4,11 @@ import aiohttp
 import click
 from yarl import URL
 
+from neuromation.client.url_utils import (
+    normalize_local_path_uri,
+    normalize_storage_path_uri,
+)
+
 from .command_progress_report import ProgressBase
 from .formatter import StorageLsFormatter
 from .rc import Config
@@ -34,7 +39,8 @@ async def rm(cfg: Config, path: str) -> None:
     neuro storage rm storage:/foo/bar/
     neuro storage rm storage://{username}/foo/bar/
     """
-    uri = URL(path)
+    uri = normalize_storage_path_uri(URL(path), cfg.username)
+    log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
         await client.storage.rm(uri)
@@ -50,7 +56,8 @@ async def ls(cfg: Config, path: str) -> None:
 
     By default PATH is equal user`s home dir (storage:)
     """
-    uri = URL(path)
+    uri = normalize_storage_path_uri(URL(path), cfg.username)
+    log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
         res = await client.storage.ls(uri)
@@ -90,27 +97,36 @@ async def cp(
     src = URL(source)
     dst = URL(destination)
 
-    log.debug(f"src={src}")
-    log.debug(f"dst={dst}")
-
     progress_obj = ProgressBase.create_progress(progress)
     if not src.scheme:
-        src = URL("file:" + src.path)
+        src = URL(f"file:{src.path}")
     if not dst.scheme:
-        dst = URL("file:" + dst.path)
+        dst = URL(f"file:{dst.path}")
     async with cfg.make_client(timeout=timeout) as client:
         if src.scheme == "file" and dst.scheme == "storage":
+            src = normalize_local_path_uri(src)
+            dst = normalize_storage_path_uri(dst, cfg.username)
+            log.info(f"Using source path:      '{src}'")
+            log.info(f"Using destination path: '{dst}'")
             if recursive:
                 await client.storage.upload_dir(progress_obj, src, dst)
             else:
                 await client.storage.upload_file(progress_obj, src, dst)
         elif src.scheme == "storage" and dst.scheme == "file":
+            src = normalize_storage_path_uri(src, cfg.username)
+            dst = normalize_local_path_uri(dst)
+            log.info(f"Using source path:      '{src}'")
+            log.info(f"Using destination path: '{dst}'")
             if recursive:
                 await client.storage.download_dir(progress_obj, src, dst)
             else:
                 await client.storage.download_file(progress_obj, src, dst)
         else:
-            raise RuntimeError(f"Copy operation for {src} -> {dst} is not supported")
+            raise RuntimeError(
+                f"Copy operation of the file with scheme '{src.scheme}'"
+                f" to the file with scheme '{dst.scheme}'"
+                f" is not supported"
+            )
 
 
 @command()
@@ -122,7 +138,8 @@ async def mkdir(cfg: Config, path: str) -> None:
     Make directories.
     """
 
-    uri = URL(path)
+    uri = normalize_storage_path_uri(URL(path), cfg.username)
+    log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
         await client.storage.mkdirs(uri)
@@ -153,8 +170,10 @@ async def mv(cfg: Config, source: str, destination: str) -> None:
     neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
     """
 
-    src = URL(source)
-    dst = URL(destination)
+    src = normalize_storage_path_uri(URL(source), cfg.username)
+    dst = normalize_storage_path_uri(URL(destination), cfg.username)
+    log.info(f"Using source path:      '{src}'")
+    log.info(f"Using destination path: '{dst}'")
 
     async with cfg.make_client() as client:
         await client.storage.mv(src, dst)

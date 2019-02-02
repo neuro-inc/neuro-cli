@@ -15,7 +15,7 @@ def test_copy_local_to_platform_single_file_0(
     check_rm_file_on_storage,
     check_file_absent_on_storage,
 ):
-    srcfile, checksum = data[0]
+    srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
     check_create_dir_on_storage("folder")
@@ -43,7 +43,7 @@ def test_copy_local_to_platform_single_file_1(
     check_file_absent_on_storage,
 ):
     # case when copy happens without the trailing '/'
-    srcfile, checksum = data[0]
+    srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
     check_create_dir_on_storage("folder")
@@ -73,7 +73,7 @@ def test_copy_local_to_platform_single_file_2(
     check_file_absent_on_storage,
 ):
     # case when copy happens with rename to 'different_name.txt'
-    srcfile, checksum = data[0]
+    srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
     check_create_dir_on_storage("folder")
@@ -101,7 +101,7 @@ def test_copy_local_to_platform_single_file_3(
     data, run, tmpstorage, check_dir_absent_on_storage
 ):
     # case when copy happens with rename to 'different_name.txt'
-    srcfile, checksum = data[0]
+    srcfile, checksum = data
 
     # Upload local file to non existing directory
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):

@@ -42,6 +42,7 @@ def test_job_lifecycle(run):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -112,6 +113,7 @@ def test_job_description(run):
             "--description",
             description,
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -182,6 +184,7 @@ def test_unschedulable_job_lifecycle(run):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -237,6 +240,7 @@ def test_two_jobs_at_once(run):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -254,6 +258,7 @@ def test_two_jobs_at_once(run):
             "-g",
             "0",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -446,6 +451,7 @@ def test_e2e_no_env(run):
             "-g",
             "0",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -477,6 +483,7 @@ def test_e2e_env(run):
             "-e",
             "VAR=VAL",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -509,6 +516,7 @@ def test_e2e_env_from_local(run):
             "-e",
             "VAR",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -542,6 +550,7 @@ def test_e2e_multiple_env(run):
             "-e",
             "VAR2=VAL2",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -580,6 +589,7 @@ def test_e2e_multiple_env_from_file(run, tmp_path):
             "--env-file",
             str(env_file),
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -606,6 +616,7 @@ def test_e2e_ssh_exec_true(run):
             "-c",
             "0.1",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -631,6 +642,7 @@ def test_e2e_ssh_exec_false(run):
             "-c",
             "0.1",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -657,6 +669,7 @@ def test_e2e_ssh_exec_no_cmd(run):
             "-c",
             "0.1",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -683,6 +696,7 @@ def test_e2e_ssh_exec_echo(run):
             "-c",
             "0.1",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -708,6 +722,7 @@ def test_e2e_ssh_exec_no_tty(run):
             "-c",
             "0.1",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -734,6 +749,7 @@ def test_e2e_ssh_exec_tty(run):
             "-c",
             "0.1",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -766,6 +782,7 @@ def test_e2e_ssh_exec_dead_job(run):
             "-c",
             "0.1",
             "--non-preemptible",
+            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
         ]

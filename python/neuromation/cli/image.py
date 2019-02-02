@@ -1,3 +1,4 @@
+import logging
 import sys
 
 import click
@@ -9,6 +10,9 @@ from neuromation.client.images import Image
 from .command_spinner import SpinnerBase
 from .rc import Config
 from .utils import command, group, run_async
+
+
+log = logging.getLogger(__name__)
 
 
 @group()
@@ -45,6 +49,9 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
     if remote_image_name:
         remote_image = Image.from_url(URL(remote_image_name), username)
 
+    log.info(f"Using remote image '{remote_image.url}'")
+    log.info(f"Using local image '{local_image.url}'")
+
     spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pushing image {}  ")
 
     async with cfg.make_client() as client:
@@ -79,6 +86,8 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
     remote_image = local_image = Image.from_url(URL(image_name), username)
     if local_image_name:
         local_image = Image.from_local(local_image_name, username)
+    log.info(f"Using remote image '{remote_image.url}'")
+    log.info(f"Using local image '{local_image.url}'")
 
     spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pulling image {}  ")
 

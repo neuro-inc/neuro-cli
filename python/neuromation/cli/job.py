@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import shlex
@@ -7,7 +8,13 @@ from typing import Sequence
 import aiohttp
 import click
 
-from neuromation.client import Image, NetworkPortForwarding, Resources, Volume
+from neuromation.client import (
+    Image,
+    JobStatus,
+    NetworkPortForwarding,
+    Resources,
+    Volume,
+)
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
@@ -21,12 +28,13 @@ from .defaults import (
 from .formatter import (
     JobFormatter,
     JobListFormatter,
+    JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, command, group, run_async
+from .utils import alias, command, group, run_async, volume_to_verbose_str
 
 
 log = logging.getLogger(__name__)
@@ -92,6 +100,7 @@ def job() -> None:
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
 )
 @click.option(
+    "-v",
     "--volume",
     metavar="MOUNT",
     multiple=True,
@@ -110,6 +119,9 @@ def job() -> None:
     "--env-file",
     type=click.Path(exists=True),
     help="File with environment variables to pass",
+)
+@click.option(
+    "--wait-start/--no-wait-start", default=True, help="Wait for a job start or failure"
 )
 @click.pass_obj
 @run_async
@@ -130,6 +142,7 @@ async def submit(
     preemptible: bool,
     description: str,
     quiet: bool,
+    wait_start: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -174,9 +187,18 @@ async def submit(
 
     memory = to_megabytes_str(memory)
     image_obj = Image(image=image, command=cmd)
+    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
+    if not quiet:
+        # TODO (ajuszkowski 01-Feb-19) normalize image name to URI (issue 452)
+        log.info(f"Using image '{image_obj.image}'")
     network = NetworkPortForwarding.from_cli(http, ssh)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
+    if volumes and not quiet:
+        log.info(
+            "Using volumes: \n"
+            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
+        )
 
     async with cfg.make_client() as client:
         job = await client.jobs.submit(
@@ -188,7 +210,15 @@ async def submit(
             description=description,
             env=env_dict,
         )
-        click.echo(JobFormatter()(job, quiet))
+        click.echo(JobFormatter(quiet)(job))
+        progress = JobStartProgress(cfg.color)
+        while wait_start and job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.5)
+            job = await client.jobs.status(job.id)
+            if not quiet:
+                click.echo(progress(job), nl=False)
+        if not quiet and wait_start:
+            click.echo(progress(job, finish=True), nl=False)
 
 
 @command(context_settings=dict(ignore_unknown_options=True))

@@ -101,69 +101,6 @@ async def storage_server(aiohttp_raw_server, storage_path):
     return await aiohttp_raw_server(handler)
 
 
-async def test_uri_to_path_non_storage(token):
-    async with Client(URL("https://example.com"), token) as client:
-        with pytest.raises(ValueError):
-            client.storage._uri_to_path(URL("bad-schema://something"))
-
-
-async def test_uri_to_path_home(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage://~/path")) == "user/path"
-
-
-async def test_uri_to_path_no_user(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage:/data")) == "user/data"
-
-
-async def test_uri_to_path_explicit_user(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage://alice/data")) == "alice/data"
-
-
-async def test_uri_to_path_to_file(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert (
-            client.storage._uri_to_path(URL("storage://alice/data/foo.txt"))
-            == "alice/data/foo.txt"
-        )
-
-
-async def test_uri_to_path_strip_slash(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert (
-            client.storage._uri_to_path(URL("storage://alice/data/foo.txt/"))
-            == "alice/data/foo.txt"
-        )
-
-
-async def test_uri_to_path_root(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage:")) == "user"
-
-
-async def test_uri_to_path_root2(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage:/")) == "user"
-
-
-async def test_uri_to_path_root3(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage://")) == "user"
-
-
-@pytest.mark.xfail
-async def test_uri_to_path_root4(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage:///")) == "/"
-
-
-async def test_uri_to_path_relative(token):
-    async with Client(URL("https://example.com"), token) as client:
-        assert client.storage._uri_to_path(URL("storage:path")) == "user/path"
-
-
 async def test_storage_ls(aiohttp_server, token):
     JSON = {
         "FileStatuses": {
