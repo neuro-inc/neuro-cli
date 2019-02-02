@@ -129,7 +129,7 @@ def test_print_deprecated_group():
           --help  Show this message and exit.
 
         Command Groups:
-          sub-command  Sub-command.
+          sub-command  Sub-command
           alias        Alias for sub-command
     """
     )
@@ -144,7 +144,10 @@ def test_print_deprecated_group_content():
 
     @sub_command.command()
     def cmd():
-        """Command."""
+        """Command.
+
+        Detailed description is here.
+        """
 
     @group(cls=MainGroup)
     def main():
@@ -166,7 +169,7 @@ def test_print_deprecated_group_content():
           --help  Show this message and exit.
 
         Commands:
-          cmd  Command.
+          cmd  Command
     """
     )
 
