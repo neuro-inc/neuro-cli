@@ -1,0 +1,1 @@
+Re-organize CLI commands for better UI/UX experience. Obsolete commands are hidden but still supported.
