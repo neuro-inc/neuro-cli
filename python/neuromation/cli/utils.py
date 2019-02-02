@@ -217,7 +217,7 @@ def alias(
     if help is None:
         help = f"Alias for {origin.name}."
     if hidden is None:
-        hidden = origin.hidden
+        hidden = origin.hidden  # type: ignore
 
     return Command(  # type: ignore
         name=name,
@@ -229,6 +229,6 @@ def alias(
         short_help=origin.short_help,
         options_metavar=origin.options_metavar,
         add_help_option=origin.add_help_option,
-        hidden=hidden,  # type: ignore
+        hidden=hidden,
         deprecated=deprecated,
     )

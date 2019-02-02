@@ -7,7 +7,7 @@ from yarl import URL
 from .command_progress_report import ProgressBase
 from .formatter import StorageLsFormatter
 from .rc import Config
-from .utils import group, run_async
+from .utils import command, group, run_async
 
 
 log = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def storage() -> None:
     """
 
 
-@storage.command()
+@command()
 @click.argument("path")
 @click.pass_obj
 @run_async
@@ -40,7 +40,7 @@ async def rm(cfg: Config, path: str) -> None:
         await client.storage.rm(uri)
 
 
-@storage.command()
+@command()
 @click.argument("path", default="storage://~")
 @click.pass_obj
 @run_async
@@ -58,7 +58,7 @@ async def ls(cfg: Config, path: str) -> None:
     click.echo(StorageLsFormatter()(res))
 
 
-@storage.command()
+@command()
 @click.argument("source")
 @click.argument("destination")
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
@@ -113,7 +113,7 @@ async def cp(
             raise RuntimeError(f"Copy operation for {src} -> {dst} is not supported")
 
 
-@storage.command()
+@command()
 @click.argument("path")
 @click.pass_obj
 @run_async
@@ -128,7 +128,7 @@ async def mkdir(cfg: Config, path: str) -> None:
         await client.storage.mkdirs(uri)
 
 
-@storage.command()
+@command()
 @click.argument("source")
 @click.argument("destination")
 @click.pass_obj
@@ -158,3 +158,10 @@ async def mv(cfg: Config, source: str, destination: str) -> None:
 
     async with cfg.make_client() as client:
         await client.storage.mv(src, dst)
+
+
+storage.add_command(cp)
+storage.add_command(ls)
+storage.add_command(rm)
+storage.add_command(mkdir)
+storage.add_command(mv)

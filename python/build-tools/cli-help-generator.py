@@ -72,12 +72,13 @@ def parse_command(parent_ctx, command, stack) -> CommandInfo:
 
         if isinstance(command, click.MultiCommand):
             for command_name in command.list_commands(ctx):
+                sub_cmd = command.get_command(ctx, command_name)
+                if sub_cmd is None:
+                    continue
+                if sub_cmd.hidden:
+                    continue
                 info.children.append(
-                    parse_command(
-                        ctx,
-                        command.get_command(ctx, command_name),
-                        stack + [command_name],
-                    )
+                    parse_command(ctx, sub_cmd, stack + [command_name])
                 )
 
     return info

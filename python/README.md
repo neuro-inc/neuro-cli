@@ -12,40 +12,25 @@
 		* [neuro job logs](#neuro-job-logs)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job top](#neuro-job-top)
-		* [neuro job list](#neuro-job-list)
-		* [neuro job monitor](#neuro-job-monitor)
-		* [neuro job ssh](#neuro-job-ssh)
 	* [neuro storage](#neuro-storage)
-		* [neuro storage rm](#neuro-storage-rm)
-		* [neuro storage ls](#neuro-storage-ls)
 		* [neuro storage cp](#neuro-storage-cp)
+		* [neuro storage ls](#neuro-storage-ls)
+		* [neuro storage rm](#neuro-storage-rm)
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
 	* [neuro image](#neuro-image)
+		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
 		* [neuro image pull](#neuro-image-pull)
-		* [neuro image ls](#neuro-image-ls)
 	* [neuro config](#neuro-config)
-		* [neuro config url](#neuro-config-url)
-		* [neuro config id_rsa](#neuro-config-id_rsa)
+		* [neuro config login](#neuro-config-login)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config auth](#neuro-config-auth)
-		* [neuro config forget](#neuro-config-forget)
-		* [neuro config login](#neuro-config-login)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
 		* [neuro completion generate](#neuro-completion-generate)
 		* [neuro completion patch](#neuro-completion-patch)
-	* [neuro model](#neuro-model)
-		* [neuro model train](#neuro-model-train)
-		* [neuro model debug](#neuro-model-debug)
-	* [neuro store](#neuro-store)
-		* [neuro store rm](#neuro-store-rm)
-		* [neuro store ls](#neuro-store-ls)
-		* [neuro store cp](#neuro-store-cp)
-		* [neuro store mkdir](#neuro-store-mkdir)
-		* [neuro store mv](#neuro-store-mv)
 	* [neuro submit](#neuro-submit)
 	* [neuro ps](#neuro-ps)
 	* [neuro status](#neuro-status)
@@ -102,8 +87,6 @@ Name | Description|
 * _[neuro image](#neuro-image)_: Container image operations.
 * _[neuro config](#neuro-config)_: Client configuration.
 * _[neuro completion](#neuro-completion)_: Output shell completion code.
-* _[neuro model](#neuro-model)_: Model operations. (DEPRECATED)
-* _[neuro store](#neuro-store)_: Alias for storage (DEPRECATED)
 * _[neuro submit](#neuro-submit)_: Submit an image to run on the cluster.
 
 IMAGE container image name COMMANDS list will be passed as commands to model
@@ -201,14 +184,6 @@ container.
 * _[neuro job logs](#neuro-job-logs)_: Print the logs for a container.
 * _[neuro job kill](#neuro-job-kill)_: Kill job(s).
 * _[neuro job top](#neuro-job-top)_: Display GPU/CPU/Memory usage.
-* _[neuro job list](#neuro-job-list)_: Alias for ls. (DEPRECATED)
-* _[neuro job monitor](#neuro-job-monitor)_: Alias for logs. (DEPRECATED)
-* _[neuro job ssh](#neuro-job-ssh)_: Starts ssh terminal connected to running job.
-
-Job should be started with SSH support enabled.
-
- (DEPRECATED)
-
 
 
 
@@ -390,76 +365,6 @@ Name | Description|
 
 
 
-### neuro job list
-
-Alias for ls. \(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro job list [OPTIONS]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-s, --status \[pending|running|succeeded|failed|all]_|Filter out job by status \(multiple option)|
-|_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
-|_\-q, --quiet_||
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro job monitor
-
-Alias for logs. \(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro job monitor [OPTIONS] ID
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro job ssh
-
-Starts ssh terminal connected to running job.<br/><br/>Job should be started with SSH support enabled.<br/><br/> \(DEPRECATED)<br/>
-
-**Usage:**
-
-```bash
-neuro job ssh [OPTIONS] ID
-```
-
-**Examples:**
-
-```bash
-
-neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--user TEXT_|Container user name  \[default: root]|
-|_--key TEXT_|Path to container private key.|
-|_--help_|Show this message and exit.|
-
-
-
-
 ## neuro storage
 
 Storage operations.
@@ -479,15 +384,15 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro storage rm](#neuro-storage-rm)_: Remove files or directories.
-
-* _[neuro storage ls](#neuro-storage-ls)_: List directory contents.
-
-By default PATH is equal user`s home dir (storage:)
 * _[neuro storage cp](#neuro-storage-cp)_: Copy files and directories.
 
 Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
 omitted, file:// scheme is assumed.
+
+* _[neuro storage ls](#neuro-storage-ls)_: List directory contents.
+
+By default PATH is equal user`s home dir (storage:)
+* _[neuro storage rm](#neuro-storage-rm)_: Remove files or directories.
 
 * _[neuro storage mkdir](#neuro-storage-mkdir)_: Make directories.
 * _[neuro storage mv](#neuro-storage-mv)_: Move or rename files and directories.
@@ -495,54 +400,6 @@ omitted, file:// scheme is assumed.
 SOURCE must contain path to the file or directory existing on the storage,
 and DESTINATION must contain the full path to the target file or directory.
 
-
-
-
-
-### neuro storage rm
-
-Remove files or directories.<br/>
-
-**Usage:**
-
-```bash
-neuro storage rm [OPTIONS] PATH
-```
-
-**Examples:**
-
-```bash
-
-neuro storage rm storage:///foo/bar/
-neuro storage rm storage:/foo/bar/
-neuro storage rm storage://{username}/foo/bar/
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro storage ls
-
-List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
-
-**Usage:**
-
-```bash
-neuro storage ls [OPTIONS] [PATH]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
 
 
 
@@ -577,6 +434,54 @@ Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
 |_\-p, --progress_|Show progress, off by default|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage ls
+
+List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
+
+**Usage:**
+
+```bash
+neuro storage ls [OPTIONS] [PATH]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage rm
+
+Remove files or directories.<br/>
+
+**Usage:**
+
+```bash
+neuro storage rm [OPTIONS] PATH
+```
+
+**Examples:**
+
+```bash
+
+neuro storage rm storage:///foo/bar/
+neuro storage rm storage:/foo/bar/
+neuro storage rm storage://{username}/foo/bar/
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
@@ -653,6 +558,7 @@ Name | Description|
 
 **Commands:**
 
+* _[neuro image ls](#neuro-image-ls)_: List images.
 * _[neuro image push](#neuro-image-push)_: Push an image to platform registry.
 
 Remote image must be URL with image:// scheme. Image names can contains tag.
@@ -663,7 +569,25 @@ If tags not specified 'latest' will be used as value.
 Remote image name must be URL with image:// scheme. Image names can contain
 tag.
 
-* _[neuro image ls](#neuro-image-ls)_: List images.
+
+
+
+
+### neuro image ls
+
+List images.
+
+**Usage:**
+
+```bash
+neuro image ls [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
@@ -726,25 +650,6 @@ Name | Description|
 
 
 
-### neuro image ls
-
-List images.
-
-**Usage:**
-
-```bash
-neuro image ls [OPTIONS]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
 ## neuro config
 
 Client configuration.
@@ -764,58 +669,23 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro config url](#neuro-config-url)_: Update settings with provided platform URL.
-
-* _[neuro config id_rsa](#neuro-config-id_rsa)_: Update path to id_rsa file with private key.
-
-FILE is being used for accessing remote shell, remote debug.
-
-Note: this is temporal and going to be replaced in future by JWT token.
+* _[neuro config login](#neuro-config-login)_: Log into Neuromation Platform.
 * _[neuro config show](#neuro-config-show)_: Print current settings.
 * _[neuro config show-token](#neuro-config-show-token)_: Print current authorization token.
 * _[neuro config auth](#neuro-config-auth)_: Update authorization token.
-* _[neuro config forget](#neuro-config-forget)_: Forget authorization token. (DEPRECATED)
-* _[neuro config login](#neuro-config-login)_: Log into Neuromation Platform.
 * _[neuro config logout](#neuro-config-logout)_: Log out.
 
 
 
 
-### neuro config url
+### neuro config login
 
-Update settings with provided platform URL.<br/>
-
-**Usage:**
-
-```bash
-neuro config url [OPTIONS] URL
-```
-
-**Examples:**
-
-```bash
-
-neuro config url https://platform.neuromation.io/api/v1
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config id_rsa
-
-Update path to id_rsa file with private key.<br/><br/>FILE is being used for accessing remote shell, remote debug.<br/><br/>Note: this is temporal and going to be replaced in future by JWT token.
+Log into Neuromation Platform.
 
 **Usage:**
 
 ```bash
-neuro config id_rsa [OPTIONS] FILE
+neuro config login [OPTIONS] [URL]
 ```
 
 **Options:**
@@ -873,44 +743,6 @@ Update authorization token.
 
 ```bash
 neuro config auth [OPTIONS] TOKEN
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config forget
-
-Forget authorization token. \(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro config forget [OPTIONS]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config login
-
-Log into Neuromation Platform.
-
-**Usage:**
-
-```bash
-neuro config login [OPTIONS] [URL]
 ```
 
 **Options:**
@@ -1001,270 +833,6 @@ neuro completion patch [OPTIONS]
 Name | Description|
 |----|------------|
 |_--shell \[bash|zsh]_|Shell type.  \[default: bash]|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro model
-
-Model operations. \(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro model [OPTIONS] COMMAND [ARGS]...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-**Commands:**
-
-* _[neuro model train](#neuro-model-train)_: Start training job using model.
-
-The training job is created from IMAGE, dataset from DATASET and store
-output weights in RESULTS.
-
-COMMANDS list will be passed as commands to model container.
-* _[neuro model debug](#neuro-model-debug)_: Starts ssh terminal connected to running job.
-
-Job should be started with SSH support enabled.
-
-
-
-
-
-### neuro model train
-
-Start training job using model.<br/><br/>The training job is created from IMAGE, dataset from DATASET and store<br/>output weights in RESULTS.<br/><br/>COMMANDS list will be passed as commands to model container.
-
-**Usage:**
-
-```bash
-neuro model train [OPTIONS] IMAGE DATASET RESULTS [CMD]...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
-|_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
-|_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
-|_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
-|_\-x, --extshm_|Request extended '/dev/shm' space|
-|_--http INTEGER_|Enable HTTP port forwarding to container|
-|_--ssh INTEGER_|Enable SSH port forwarding to container|
-|_\--preemptible / --non-preemptible_|Run job on a lower-cost preemptible instance|
-|_\-d, --description DESC_|Add optional description to the job|
-|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro model debug
-
-Starts ssh terminal connected to running job.<br/><br/>Job should be started with SSH support enabled.<br/>
-
-**Usage:**
-
-```bash
-neuro model debug [OPTIONS] ID
-```
-
-**Examples:**
-
-```bash
-
-neuro model debug --localport 12789 job-abc-def-ghk
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--localport INTEGER_|Local port number for debug  \[default: 31234]|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro store
-
-Alias for storage \(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro store [OPTIONS] COMMAND [ARGS]...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-**Commands:**
-
-* _[neuro store rm](#neuro-store-rm)_: Remove files or directories.
-
-* _[neuro store ls](#neuro-store-ls)_: List directory contents.
-
-By default PATH is equal user`s home dir (storage:)
-* _[neuro store cp](#neuro-store-cp)_: Copy files and directories.
-
-Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
-omitted, file:// scheme is assumed.
-
-* _[neuro store mkdir](#neuro-store-mkdir)_: Make directories.
-* _[neuro store mv](#neuro-store-mv)_: Move or rename files and directories.
-
-SOURCE must contain path to the file or directory existing on the storage,
-and DESTINATION must contain the full path to the target file or directory.
-
-
-
-
-
-### neuro store rm
-
-Remove files or directories.<br/>
-
-**Usage:**
-
-```bash
-neuro store rm [OPTIONS] PATH
-```
-
-**Examples:**
-
-```bash
-
-neuro storage rm storage:///foo/bar/
-neuro storage rm storage:/foo/bar/
-neuro storage rm storage://{username}/foo/bar/
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro store ls
-
-List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
-
-**Usage:**
-
-```bash
-neuro store ls [OPTIONS] [PATH]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro store cp
-
-Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
-
-**Usage:**
-
-```bash
-neuro store cp [OPTIONS] SOURCE DESTINATION
-```
-
-**Examples:**
-
-```bash
-
-# copy local file ./foo into remote storage root
-neuro storage cp ./foo storage:///
-neuro storage cp ./foo storage:/
-
-# download remote file foo into local file foo with
-# explicit file:// scheme set
-neuro storage cp storage:///foo file:///foo
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-r, --recursive_|Recursive copy, off by default|
-|_\-p, --progress_|Show progress, off by default|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro store mkdir
-
-Make directories.
-
-**Usage:**
-
-```bash
-neuro store mkdir [OPTIONS] PATH
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro store mv
-
-Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
-
-**Usage:**
-
-```bash
-neuro store mv [OPTIONS] SOURCE DESTINATION
-```
-
-**Examples:**
-
-```bash
-
-# move or rename remote file
-neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
-
-# move or rename remote directory
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
 |_--help_|Show this message and exit.|
 
 
