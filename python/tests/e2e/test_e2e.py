@@ -22,13 +22,6 @@ def test_print_version(run):
 
 
 @pytest.mark.e2e
-def test_print_help_by_default(run):
-    captured = run(["--color=no"])
-    assert not captured.err
-    assert "Neuromation console." in captured.out
-
-
-@pytest.mark.e2e
 def test_print_config(run):
     captured = run(["config", "show"])
     assert not captured.err

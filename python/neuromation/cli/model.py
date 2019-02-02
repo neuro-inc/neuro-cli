@@ -25,7 +25,7 @@ from .utils import group, run_async
 log = logging.getLogger(__name__)
 
 
-@group(deprecated=True)
+@group(deprecated=True, hidden=True)
 def model() -> None:
     """
     Model operations.
