@@ -1,0 +1,1 @@
+Add `-p/-P` shortcuts for `--preemtible/--non-preemtible` for `neuro submit` command.
