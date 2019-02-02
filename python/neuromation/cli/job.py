@@ -90,6 +90,7 @@ def job() -> None:
 @click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
 @click.option(
     "--preemptible/--non-preemptible",
+    "-p/-P",
     help="Run job on a lower-cost preemptible instance",
     default=True,
 )

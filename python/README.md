@@ -226,7 +226,7 @@ Name | Description|
 |_\-x, --extshm_|Request extended '/dev/shm' space|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
-|_\--preemptible / --non-preemptible_|Run job on a lower-cost preemptible instance|
+|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
@@ -877,7 +877,7 @@ Name | Description|
 |_\-x, --extshm_|Request extended '/dev/shm' space|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
-|_\--preemptible / --non-preemptible_|Run job on a lower-cost preemptible instance|
+|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
