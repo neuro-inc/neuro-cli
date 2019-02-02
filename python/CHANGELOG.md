@@ -14,14 +14,6 @@ Features
 
 - Add `-p/-P` shortcuts for `--preemtible/--non-preemtible` for `neuro submit` command. ([#458](https://github.com/neuromation/platform-api-clients/issues/458))
 
-
-Neuromation 0.3.0 (2019-02-01)
-==============================
-
-Features
---------
-
-
 - Wait for job start/failure on job submit. ([#356](https://github.com/neuromation/platform-api-clients/issues/356))
 
 - Support `-v` as a shortcut for `--volume` in `neuro submit ...` command. ([#383](https://github.com/neuromation/platform-api-clients/issues/383))
