@@ -5,15 +5,15 @@ from . import rc
 from .defaults import API_URL
 from .formatter import ConfigFormatter
 from .rc import Config
-from .utils import group
+from .utils import command, group
 
 
 @group()
 def config() -> None:
-    """Client configuration settings commands."""
+    """Client configuration."""
 
 
-@config.command()
+@command(hidden=True)
 @click.argument("url")
 def url(url: str) -> None:
     """
@@ -26,7 +26,7 @@ def url(url: str) -> None:
     rc.ConfigFactory.update_api_url(url)
 
 
-@config.command(name="id_rsa")
+@command(hidden=True, name="id_rsa")
 @click.argument("file", type=click.Path(exists=True, readable=True, dir_okay=False))
 def id_rsa(file: str) -> None:
     """
@@ -40,7 +40,7 @@ def id_rsa(file: str) -> None:
     rc.ConfigFactory.update_github_rsa_path(file)
 
 
-@config.command()
+@command()
 @click.pass_obj
 def show(cfg: Config) -> None:
     """
@@ -50,7 +50,7 @@ def show(cfg: Config) -> None:
     click.echo(fmt(cfg))
 
 
-@config.command()
+@command()
 @click.pass_obj
 def show_token(cfg: Config) -> None:
     """
@@ -59,7 +59,7 @@ def show_token(cfg: Config) -> None:
     click.echo(cfg.auth)
 
 
-@config.command()
+@command()
 @click.argument("token")
 def auth(token: str) -> None:
     """
@@ -73,7 +73,7 @@ def auth(token: str) -> None:
     rc.ConfigFactory.update_auth_token(token=token)
 
 
-@config.command(deprecated=True)
+@command(hidden=True, deprecated=True)
 def forget() -> None:
     """
     Forget authorization token.
@@ -81,7 +81,7 @@ def forget() -> None:
     rc.ConfigFactory.forget_auth_token()
 
 
-@config.command()
+@command()
 @click.argument("url", required=False, default=API_URL, type=URL)
 def login(url: URL) -> None:
     """
@@ -91,10 +91,22 @@ def login(url: URL) -> None:
     click.echo(f"Logged into {url}")
 
 
-@config.command()
+@command()
 def logout() -> None:
     """
     Log out.
     """
     rc.ConfigFactory.forget_auth_token()
     click.echo("Logged out")
+
+
+config.add_command(login)
+config.add_command(show)
+config.add_command(show_token)
+
+config.add_command(auth)
+config.add_command(logout)
+
+config.add_command(url)
+config.add_command(id_rsa)
+config.add_command(forget)

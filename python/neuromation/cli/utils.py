@@ -42,7 +42,7 @@ class HelpFormatter(click.HelpFormatter):
             click.style(
                 "%*s%s:\n" % (self.current_indent, "", heading),
                 bold=True,
-                underline=True,
+                underline=False,
             )
         )
 
@@ -55,6 +55,12 @@ class Context(click.Context):
 
 
 class NeuroClickMixin:
+    def get_short_help_str(self, limit: int = 45) -> str:
+        text = super().get_short_help_str(limit=limit)  # type: ignore
+        if text.endswith(".") and not text.endswith("..."):
+            text = text[:-1]
+        return text
+
     def format_help_text(
         self, ctx: click.Context, formatter: click.HelpFormatter
     ) -> None:
@@ -72,7 +78,7 @@ class NeuroClickMixin:
 
             for example in examples:
                 with formatter.section(
-                    click.style("Examples", bold=True, underline=True)
+                    click.style("Examples", bold=True, underline=False)
                 ):
                     for line in example.splitlines():
                         is_comment = line.startswith("#")
@@ -131,6 +137,9 @@ class Group(NeuroClickMixin, click.Group):
             return cmd
 
         return decorator
+
+    def list_commands(self, ctx: click.Context) -> Iterable[str]:
+        return self.commands
 
 
 def group(name: Optional[str] = None, **kwargs: Any) -> Group:
@@ -209,10 +218,14 @@ def alias(
     name: str,
     *,
     deprecated: bool = True,
+    hidden: Optional[bool] = None,
     help: Optional[str] = None,
 ) -> click.Command:
     if help is None:
         help = f"Alias for {origin.name}."
+    if hidden is None:
+        hidden = origin.hidden  # type: ignore
+
     return Command(  # type: ignore
         name=name,
         context_settings=origin.context_settings,
@@ -223,7 +236,7 @@ def alias(
         short_help=origin.short_help,
         options_metavar=origin.options_metavar,
         add_help_option=origin.add_help_option,
-        hidden=origin.hidden,  # type: ignore
+        hidden=hidden,
         deprecated=deprecated,
     )
 

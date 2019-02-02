@@ -34,7 +34,7 @@ from .formatter import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, group, run_async, volume_to_verbose_str
+from .utils import alias, command, group, run_async, volume_to_verbose_str
 
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def job() -> None:
     """
 
 
-@job.command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
@@ -146,8 +146,9 @@ async def submit(
     wait_start: bool,
 ) -> None:
     """
-    Start job using IMAGE.
+    Submit an image to run on the cluster.
 
+    IMAGE container image name
     COMMANDS list will be passed as commands to model container.
 
     Examples:
@@ -221,7 +222,7 @@ async def submit(
             click.echo(progress(job, finish=True), nl=False)
 
 
-@job.command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("id")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
@@ -241,7 +242,7 @@ async def exec(
     cfg: Config, id: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
     """
-    Executes command in a running job.
+    Execute command in a running job.
     """
     cmd = shlex.split(" ".join(cmd))
     async with cfg.make_client() as client:
@@ -249,7 +250,7 @@ async def exec(
     sys.exit(retcode)
 
 
-@job.command(deprecated=True)
+@command(deprecated=True, hidden=True)
 @click.argument("id")
 @click.option(
     "--user", help="Container user name", default=JOB_SSH_USER, show_default=True
@@ -273,13 +274,13 @@ async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
         await connect_ssh(client, id, git_key, user, key)
 
 
-@job.command()
+@command()
 @click.argument("id")
 @click.pass_obj
 @run_async
 async def logs(cfg: Config, id: str) -> None:
     """
-    Fetch the logs of a container.
+    Print the logs for a container.
     """
     timeout = aiohttp.ClientTimeout(
         total=None, connect=None, sock_read=None, sock_connect=30
@@ -292,10 +293,7 @@ async def logs(cfg: Config, id: str) -> None:
             click.echo(chunk.decode(errors="ignore"), nl=False)
 
 
-job.add_command(alias(logs, "monitor"))
-
-
-@job.command()
+@command()
 @click.option(
     "-s",
     "--status",
@@ -337,10 +335,7 @@ async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) 
     click.echo(formatter(jobs, statuses, description))
 
 
-job.add_command(alias(ls, "list"))
-
-
-@job.command()
+@command()
 @click.argument("id")
 @click.pass_obj
 @run_async
@@ -353,13 +348,13 @@ async def status(cfg: Config, id: str) -> None:
         click.echo(JobStatusFormatter()(res))
 
 
-@job.command()
+@command()
 @click.argument("id")
 @click.pass_obj
 @run_async
 async def top(cfg: Config, id: str) -> None:
     """
-    Display real-time job telemetry.
+    Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
     async with cfg.make_client() as client:
@@ -372,7 +367,7 @@ async def top(cfg: Config, id: str) -> None:
             click.echo(f"\r{line}", nl=False)
 
 
-@job.command()
+@command()
 @click.argument("id", nargs=-1, required=True)
 @click.pass_obj
 @run_async
@@ -394,3 +389,18 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
 
     for job, error in errors:
         click.echo(format_fail(job, error))
+
+
+job.add_command(submit)
+job.add_command(ls)
+job.add_command(status)
+job.add_command(exec)
+job.add_command(logs)
+job.add_command(kill)
+job.add_command(top)
+
+
+job.add_command(alias(ls, "list", hidden=True))
+job.add_command(alias(logs, "monitor", hidden=True))
+
+job.add_command(ssh)
