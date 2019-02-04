@@ -8,15 +8,15 @@ environment:
 
 platform: x64
 
-init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
 install:
   # install dev dependencies
-  - '%MAKE% init'
+  - '%MAKE% -C python init'
 
 # do not run automatic test discovery
 test: off
 
 build_script:
-  - '%MAKE% test'
+  - '%MAKE% -C python test'
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
