@@ -1,16 +1,25 @@
 import logging
+import shutil
+import sys
 
 import aiohttp
 import click
 from yarl import URL
 
+from neuromation.cli.files_formatter import (
+    AcrossLayout,
+    CommasLayout,
+    ShortFileFormatter,
+    SingleColumnLayout,
+    VerticalLayout,
+)
+from neuromation.client.storage import FileStatus, FileStatusType
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
 
 from .command_progress_report import ProgressBase
-from .formatter import StorageLsFormatter
 from .rc import Config
 from .utils import command, group, run_async
 
@@ -48,9 +57,62 @@ async def rm(cfg: Config, path: str) -> None:
 
 @command()
 @click.argument("path", default="storage://~")
+@click.option(
+    "-C", "force_format_vertical", is_flag=True, help="list entries by columns"
+)
+@click.option(
+    "--format",
+    type=click.Choice(
+        ["across", "commas", "horizontal", "long", "single-column", "vertical"]
+    ),
+    help="Output format accross -x, commas -m, horizontal -x, long -l, single-column -1, vertical -C",
+)
+@click.option("-l", "force_format_long", is_flag=True, help="use a long listing format")
+@click.option(
+    "-m",
+    "force_format_commas",
+    is_flag=True,
+    help="fill width with a comma separated list of entries",
+)
+@click.option(
+    "-N",
+    "--literal",
+    is_flag=True,
+    default=True,
+    help="print entry names without quoting",
+)
+@click.option(
+    "-Q",
+    "--quote-name",
+    "quote",
+    is_flag=True,
+    help="enclose entry names in double quotes",
+)
+@click.option("-w", "--width", type=int, help="set output width, o means no limit")
+@click.option(
+    "-x",
+    "force_format_across",
+    is_flag=True,
+    help="list entries by lines instead of by columns",
+)
+@click.option(
+    "-1", "force_format_single_column", is_flag=True, help="list one file per line"
+)
 @click.pass_obj
 @run_async
-async def ls(cfg: Config, path: str) -> None:
+async def ls(
+    cfg: Config,
+    path: str,
+    format: str,
+    literal: bool,
+    quote: bool,
+    width: int,
+    force_format_across,
+    force_format_commas,
+    force_format_long,
+    force_format_single_column,
+    force_format_vertical,
+) -> None:
     """
     List directory contents.
 
@@ -60,9 +122,41 @@ async def ls(cfg: Config, path: str) -> None:
     log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
-        res = await client.storage.ls(uri)
+        files = await client.storage.ls(uri)
 
-    click.echo(StorageLsFormatter()(res))
+    is_tty = sys.stdout.isatty()
+    if width is None:
+        if is_tty:
+            width, _ = shutil.get_terminal_size((80, 25))
+        else:
+            width = 0
+
+    if quote is None:
+        quote = not literal
+
+    if force_format_across or format == "across" or format == "horizontal":
+        formatter = ShortFileFormatter(quote)
+        layout = AcrossLayout(max_width=width)
+    elif force_format_commas or format == "commas":
+        formatter = ShortFileFormatter(quote)
+        layout = CommasLayout(max_width=width)
+    elif force_format_single_column or format == "single-column":
+        formatter = ShortFileFormatter(quote)
+        layout = SingleColumnLayout()
+    elif force_format_vertical or format == "vertical":
+        formatter = ShortFileFormatter(quote)
+        layout = VerticalLayout(max_width=width)
+    elif force_format_long or format == "long":
+        raise NotImplementedError("Long format is not implemented")
+    else:
+        formatter = ShortFileFormatter(quote)
+        if is_tty:
+            layout = VerticalLayout(max_width=width)
+        else:
+            layout = SingleColumnLayout()
+
+    for line in layout.format(formatter, files):
+        click.echo(line)
 
 
 @command()

@@ -455,6 +455,15 @@ neuro storage ls [OPTIONS] [PATH]
 
 Name | Description|
 |----|------------|
+|_-C_|list entries by columns|
+|_\--format \[across|commas|horizontal|long|single-column|vertical]_|Output format accross \-x, commas -m, horizontal -x, long -l, single-column -1, vertical -C|
+|_-l_|use a long listing format|
+|_-m_|fill width with a comma separated list of entries|
+|_\-N, --literal_|print entry names without quoting|
+|_\-Q, --quote-name_|enclose entry names in double quotes|
+|_\-w, --width INTEGER_|set output width, o means no limit|
+|_-x_|list entries by lines instead of by columns|
+|_-1_|list one file per line|
 |_--help_|Show this message and exit.|
 
 
@@ -1105,6 +1114,15 @@ neuro ls [OPTIONS] [PATH]
 
 Name | Description|
 |----|------------|
+|_-C_|list entries by columns|
+|_\--format \[across|commas|horizontal|long|single-column|vertical]_|Output format accross \-x, commas -m, horizontal -x, long -l, single-column -1, vertical -C|
+|_-l_|use a long listing format|
+|_-m_|fill width with a comma separated list of entries|
+|_\-N, --literal_|print entry names without quoting|
+|_\-Q, --quote-name_|enclose entry names in double quotes|
+|_\-w, --width INTEGER_|set output width, o means no limit|
+|_-x_|list entries by lines instead of by columns|
+|_-1_|list one file per line|
 |_--help_|Show this message and exit.|
 
 
