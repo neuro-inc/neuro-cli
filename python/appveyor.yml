@@ -13,10 +13,10 @@ init:
 
 install:
   # install dev dependencies
-  - cmd: '%MAKE% init'
+  - '%MAKE% init'
 
 # do not run automatic test discovery
 test: off
 
 build_script:
-  - cmd: '%MAKE% test'
+  - '%MAKE% test'
