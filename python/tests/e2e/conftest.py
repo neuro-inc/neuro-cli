@@ -2,6 +2,8 @@ import hashlib
 import logging
 import os
 import re
+import signal
+import sys
 from collections import namedtuple
 from os.path import join
 from pathlib import Path
@@ -22,7 +24,11 @@ from tests.e2e.utils import (
 
 log = logging.getLogger(__name__)
 
-job_id_pattern = r"Job ID:\s*(\S+)"
+job_id_pattern = re.compile(
+    # pattern for UUID v4 taken here: https://stackoverflow.com/a/38191078
+    r"(job-[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})",
+    re.IGNORECASE,
+)
 
 
 class TestRetriesExceeded(Exception):
@@ -132,7 +138,7 @@ def run(monkeypatch, capfd, tmp_path):
             out = post_out[pre_out_size:]
             err = post_err[pre_err_size:]
             if arguments[0:2] in (["job", "submit"], ["model", "train"]):
-                match = re.search(job_id_pattern, out)
+                match = job_id_pattern.match(out)
                 if match:
                     executed_jobs_list.append(match.group(1))
 
@@ -150,6 +156,23 @@ def run(monkeypatch, capfd, tmp_path):
         except BaseException:
             # Just ignore cleanup error here
             pass
+
+
+@pytest.fixture
+def run_with_timeout(monkeypatch, capfd, tmp_path, run):
+    def timeout_handler(x, y):
+        # SystemExit with the code `os.EX_OK` thrown by `sys.exit` is not caught
+        # in `main.py` and at the same time it breaks the loop in `run` method
+        sys.exit(os.EX_OK)
+
+    def _run_with_timeout(arguments, timeout, *, storage_retry=True):
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout)
+        captured = run(arguments, storage_retry=storage_retry)
+        signal.alarm(0)  # cancel the timer
+        return captured
+
+    return _run_with_timeout
 
 
 @pytest.fixture
