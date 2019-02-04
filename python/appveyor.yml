@@ -12,9 +12,6 @@ install:
   # install dev dependencies
   - cmd: '%MAKE% init'
 
-# do not run MSBuild
-build: false
-
 # do not run automatic test discovery
 test: off
 
