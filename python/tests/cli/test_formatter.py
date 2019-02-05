@@ -5,6 +5,14 @@ import click
 import pytest
 from yarl import URL
 
+from neuromation.cli.files_formatter import (
+    AcrossLayout,
+    BaseFileFormatter,
+    CommasLayout,
+    ShortFileFormatter,
+    SingleColumnLayout,
+    VerticalLayout,
+)
 from neuromation.cli.formatter import (
     BaseFormatter,
     ConfigFormatter,
@@ -14,13 +22,13 @@ from neuromation.cli.formatter import (
     JobStatusFormatter,
     JobTelemetryFormatter,
     ResourcesFormatter,
-    StorageLsFormatter,
 )
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 from neuromation.client import (
     Container,
     FileStatus,
+    FileStatusType,
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -482,26 +490,111 @@ class TestJobListFormatter:
         assert self.quiet(jobs, description="test-description-0") == expected, expected
 
 
-class TestLSFormatter:
-    def test_neuro_store_ls_normal(self):
-        expected = (
-            "file           11             file1\n"
-            + "file           12             file2\n"
-            + "directory      0              dir1"
-        )
-        assert (
-            StorageLsFormatter()(
-                [
-                    FileStatus("file1", 11, "FILE", 2018, "read"),
-                    FileStatus("file2", 12, "FILE", 2018, "write"),
-                    FileStatus("dir1", 0, "DIRECTORY", 2018, "manage"),
-                ]
-            )
-            == expected
-        )
+class TestFilesFormatter:
+    files = [
+        FileStatus("File1", 1024, FileStatusType.FILE, 1_514_764_800, "read"),
+        FileStatus("File2", 2048, FileStatusType.FILE, 1_539_166_210, "read"),
+        FileStatus(
+            "File3 with space", 1_024_001, FileStatusType.FILE, 1_549_072_922, "read"
+        ),
+    ]
+    folders = [
+        FileStatus("Folder1", 0, FileStatusType.DIRECTORY, 1_488_510_183, "all"),
+        FileStatus(
+            "Folder with space", 0, FileStatusType.DIRECTORY, 1_488_510_183, "all"
+        ),
+    ]
+    files_and_folders = files + folders
 
-    def test_neuro_store_ls_empty(self):
-        assert StorageLsFormatter()([]) == ""
+    def test_short_formatter(self):
+        literal_formatter = ShortFileFormatter(False)
+        quoted_formatter = ShortFileFormatter(True)
+        for file in self.files_and_folders:
+            assert literal_formatter.format(file, 0) == f"{file.name}"
+            assert quoted_formatter.format(file, 0) == f'"{file.name}"'
+
+    @pytest.mark.parametrize(
+        "formatter", [(ShortFileFormatter(False)), (ShortFileFormatter(True))]
+    )
+    def test_formatters(self, formatter: BaseFileFormatter):
+        widths = []
+        formatted = []
+        for file in self.files_and_folders:
+            formatted_file = formatter.format(file, 0)
+            width = formatter.min_width(file)
+            assert width == len(formatted_file)
+            formatted.append(formatted_file)
+            widths.append(width)
+        assert formatted == formatter.format_list(self.files_and_folders, 0)
+
+    def test_single_column_layout(self):
+        layout = SingleColumnLayout()
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.files)]
+        assert lines == ["File1", "File2", "File3 with space"]
+
+    def test_across_layout(self):
+        layout = AcrossLayout(0, "---")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.folders)]
+        assert lines == ["---".join([file.name for file in self.folders])]
+
+        layout = AcrossLayout(1, "---")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.folders)]
+        assert lines == ["Folder1", "Folder with space"]
+
+        layout = AcrossLayout(25, "==")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.files)]
+        assert lines == ["File1           ==File2", "File3 with space"]
+
+        layout = AcrossLayout(22, " ")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.files)]
+        assert lines == ["File1            File2", "File3 with space"]
+
+    def test_vertical_layout(self):
+        layout = VerticalLayout(0, "---")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.folders)]
+        assert lines == ["---".join([file.name for file in self.folders])]
+
+        layout = VerticalLayout(1, "---")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.folders)]
+        assert lines == ["Folder1", "Folder with space"]
+
+        layout = VerticalLayout(25, " ")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.files)]
+        assert lines == ["File1 File3 with space", "File2"]
+
+        layout = VerticalLayout(22, " ")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.files)]
+        assert lines == ["File1 File3 with space", "File2"]
+
+    def test_commass_layout(self):
+        layout = CommasLayout(0, "---")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.folders)]
+        assert lines == ["---".join([file.name for file in self.folders])]
+
+        layout = CommasLayout(1, ",")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.folders)]
+        assert lines == ["Folder1,", "Folder with space"]
+
+        layout = CommasLayout(25, ",")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.files)]
+        assert lines == ["File1,File2,", "File3 with space"]
+
+        layout = CommasLayout(17, ",")
+        formatter = ShortFileFormatter(False)
+        lines = [line for line in layout.format(formatter, self.files)]
+        assert lines == ["File1,File2,", "File3 with space"]
 
 
 class TestResourcesFormatter:

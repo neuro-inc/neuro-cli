@@ -28,14 +28,14 @@ def transpose(columns: List) -> List:
 
 class BaseFileFormatter(BaseFormatter, abc.ABC):
     @abc.abstractmethod
-    def min_width(self, file: FileStatus) -> int:
+    def min_width(self, file: FileStatus) -> int:  # pragma: no cover
         pass
 
     def min_width_list(self, files: List[FileStatus]) -> List[int]:
         return [self.min_width(file) for file in files]
 
     @abc.abstractmethod
-    def format(self, file: FileStatus, width: int) -> str:
+    def format(self, file: FileStatus, width: int) -> str:  # pragma: no cover
         pass
 
     def format_list(self, files: List[FileStatus], width: int) -> List[str]:
@@ -62,7 +62,7 @@ class BaseLayout(BaseFormatter, abc.ABC):
     @abc.abstractmethod
     def format(
         self, file_formatter: BaseFileFormatter, files: List[FileStatus]
-    ) -> Iterator[str]:
+    ) -> Iterator[str]:  # pragma: no cover
         pass
 
 
