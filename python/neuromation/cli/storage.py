@@ -11,10 +11,12 @@ from neuromation.cli.files_formatter import (
     BaseFileFormatter,
     BaseLayout,
     CommasLayout,
+    LongFileFormatter,
     ShortFileFormatter,
     SingleColumnLayout,
     VerticalLayout,
 )
+from neuromation.client import IllegalArgumentError
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
@@ -69,6 +71,12 @@ async def rm(cfg: Config, path: str) -> None:
     help="Output format accross -x, commas -m, horizontal -x,"
     " long -l, single-column -1, vertical -C",
 )
+@click.option(
+    "--human-readable",
+    "-h",
+    is_flag=True,
+    help="with -l/--format=long  print human readable sizes (e.g., 2K, 540M)",
+)
 @click.option("-l", "force_format_long", is_flag=True, help="use a long listing format")
 @click.option(
     "-m",
@@ -81,7 +89,17 @@ async def rm(cfg: Config, path: str) -> None:
     "--literal",
     is_flag=True,
     default=True,
-    help="print entry names without quoting",
+    help="print entry names without quoting (default)",
+)
+@click.option(
+    "--time-style",
+    "time_style",
+    type=str,
+    default="locale",
+    help="with  -l,  show times using style TEXT: full-iso, long-iso, iso,"
+    " locale, or +FORMAT; FORMAT is interpreted like in 'date'"
+    "; if FORMAT is FORMAT1<newline>FORMAT2, then FORMAT1 applies to non-recent"
+    "files and FORMAT2 to recent files",
 )
 @click.option(
     "-Q",
@@ -114,6 +132,8 @@ async def ls(
     force_format_long: bool,
     force_format_single_column: bool,
     force_format_vertical: bool,
+    time_style: str,
+    human_readable: bool,
 ) -> None:
     """
     List directory contents.
@@ -151,7 +171,30 @@ async def ls(
         formatter = ShortFileFormatter(quote)
         layout = VerticalLayout(max_width=width)
     elif force_format_long or format == "long":
-        raise NotImplementedError("Long format is not implemented")
+        recent_time_format = ""
+        if time_style == "full-iso":
+            time_format = "%Y-%m-%d %H:%M:%S.%f %z"
+        elif time_style == "long-iso":
+            time_format = "%Y-%m-%d %H:%M"
+        elif time_style == "iso":
+            time_format = "%Y-%m-%d"
+            recent_time_format = "%m-%d %H:%M"
+        elif time_style == "locale":
+            time_format = "%b %e %Y"
+            recent_time_format = "%b %e %H:%M"
+        elif time_style.startswith("+"):
+            time_format = time_style[1:]
+            if time_format.find("\n") != -1:
+                time_format, recent_time_format = time_format.split("\n", 2)
+        else:
+            raise IllegalArgumentError(f"Invalid time style: {time_style}")
+        formatter = LongFileFormatter(
+            time_format=time_format,
+            recent_time_format=recent_time_format,
+            human_readable=human_readable,
+            quoted=quote,
+        )
+        layout = SingleColumnLayout()
     else:
         formatter = ShortFileFormatter(quote)
         if is_tty:

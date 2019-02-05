@@ -1,23 +1,30 @@
 import abc
+import datetime
 import enum
+import time
 from math import ceil
-from typing import Any, Iterator, List
+from typing import Any, Iterator, List, Sequence
+
+import humanize
 
 from neuromation.cli.formatter import BaseFormatter
-from neuromation.client.storage import FileStatus
+from neuromation.client.storage import FileStatus, FileStatusType
 
 
-def chunks(list: List[Any], size: int) -> List[Any]:
+RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
+
+
+def chunks(list: Sequence[Any], size: int) -> Sequence[Any]:
     result = []
     for i in range(0, len(list), size):
         result.append(list[i : i + size])
     return result
 
 
-def transpose(columns: List[List[Any]]) -> List[List[Any]]:
+def transpose(columns: Sequence[Sequence[Any]]) -> Sequence[Sequence[Any]]:
     height = len(columns)
     width = len(columns[0])
-    result: List[List[Any]] = [[] for _ in range(width)]
+    result: Sequence[List[Any]] = [[] for _ in range(width)]
     for i in range(width):
         for j in range(height):
             if i < len(columns[j]):
@@ -30,14 +37,14 @@ class BaseFileFormatter(BaseFormatter, abc.ABC):
     def min_width(self, file: FileStatus) -> int:  # pragma: no cover
         pass
 
-    def min_width_list(self, files: List[FileStatus]) -> List[int]:
+    def min_width_list(self, files: Sequence[FileStatus]) -> Sequence[int]:
         return [self.min_width(file) for file in files]
 
     @abc.abstractmethod
     def format(self, file: FileStatus, width: int) -> str:  # pragma: no cover
         pass
 
-    def format_list(self, files: List[FileStatus], width: int) -> List[str]:
+    def format_list(self, files: Sequence[FileStatus], width: int) -> Sequence[str]:
         return [self.format(file, width) for file in files]
 
 
@@ -57,20 +64,91 @@ class ShortFileFormatter(BaseFileFormatter):
         return result
 
 
+class LongFileFormatter(BaseFileFormatter):
+    def __init__(
+        self,
+        separator: str = " ",
+        time_format: str = "%c",
+        recent_time_format: str = "",
+        human_readable: bool = False,
+        quoted: bool = False,
+    ):
+        self.separator = separator
+        self.time_format = time_format
+        if recent_time_format:
+            self.recent_time_format = recent_time_format
+        else:
+            self.recent_time_format = self.time_format
+        self.human_readable = human_readable
+        self.quoted = quoted
+
+    def min_width(self, file: FileStatus) -> int:
+        raise NotImplementedError()
+
+    def format(self, file: FileStatus, width: int) -> str:
+        raise NotImplementedError()
+
+    def parts(self, file: FileStatus) -> Sequence[str]:
+        type = "-"
+        if file.type == FileStatusType.DIRECTORY:
+            type = "d"
+
+        permission = file.permission[0]
+
+        time_format = self.time_format
+        if abs(file.modification_time - time.time()) < RECENT_TIME_DELTA:
+            time_format = self.recent_time_format
+        date = datetime.datetime.fromtimestamp(file.modification_time).strftime(
+            time_format
+        )
+
+        size = file.size
+        if self.human_readable:
+            size = humanize.naturalsize(size, gnu=True).rstrip("B")
+
+        name = file.name
+        if self.quoted:
+            name = f'"{name}"'
+
+        return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
+
+    def parts_list(self, files: Sequence[FileStatus]) -> Sequence[Sequence[str]]:
+        return [self.parts(file) for file in files]
+
+    def format_list(self, files: Sequence[FileStatus], width: int) -> Sequence[str]:
+        table = self.parts_list(files)
+        widths = [0 for _ in table[0]]
+        for row in table:
+            for x in range(len(row)):
+                if widths[x] < len(row[x]):
+                    widths[x] = len(row[x])
+        result: List[str] = []
+        for row in table:
+            line = []
+            for x in range(len(row)):
+                if x == len(row) - 1:
+                    line.append(row[x])
+                else:
+                    line.append(row[x].rjust(widths[x]))
+            result.append(self.separator.join(line))
+        return result
+
+
 class BaseLayout(BaseFormatter, abc.ABC):
     @abc.abstractmethod
     def format(
-        self, file_formatter: BaseFileFormatter, files: List[FileStatus]
+        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
     ) -> Iterator[str]:  # pragma: no cover
         pass
 
 
 class SingleColumnLayout(BaseLayout):
     def format(
-        self, file_formatter: BaseFileFormatter, files: List[FileStatus]
+        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
     ) -> Iterator[str]:
-        for file in files:
-            yield file_formatter.format(file, 0)
+        formatted = file_formatter.format_list(files, 0)
+        for line in formatted:
+            yield line
 
 
 class AcrossLayout(BaseLayout):
@@ -79,7 +157,7 @@ class AcrossLayout(BaseLayout):
         self.separator = separator
 
     def format(
-        self, file_formatter: BaseFileFormatter, files: List[FileStatus]
+        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
     ) -> Iterator[str]:
         # simple case, no width limits
         if not self.max_width:
@@ -124,7 +202,7 @@ class VerticalLayout(BaseLayout):
         self.separator = separator
 
     def format(
-        self, file_formatter: BaseFileFormatter, files: List[FileStatus]
+        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
     ) -> Iterator[str]:
         # simple case, no width limits
         if not self.max_width:
@@ -168,7 +246,7 @@ class CommasLayout(BaseLayout):
         self.separator = separator
 
     def format(
-        self, file_formatter: BaseFileFormatter, files: List[FileStatus]
+        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
     ) -> Iterator[str]:
         formatted_files = file_formatter.format_list(files, 0)
         if not self.max_width:

@@ -457,9 +457,11 @@ Name | Description|
 |----|------------|
 |_-C_|list entries by columns|
 |_\--format \[across|commas|horizontal|long|single-column|vertical]_|Output format accross \-x, commas -m, horizontal -x, long -l, single-column -1, vertical -C|
+|_\-h, --human-readable_|with \-l/--format=long  print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
 |_-m_|fill width with a comma separated list of entries|
-|_\-N, --literal_|print entry names without quoting|
+|_\-N, --literal_|print entry names without quoting \(default)|
+|_\--time-style TEXT_|with  \-l,  show times using style TEXT: full-iso, long-iso, iso, locale, or +FORMAT; FORMAT is interpreted like in 'date'; if FORMAT is FORMAT1<newline>FORMAT2, then FORMAT1 applies to non-recentfiles and FORMAT2 to recent files|
 |_\-Q, --quote-name_|enclose entry names in double quotes|
 |_\-w, --width INTEGER_|set output width, o means no limit|
 |_-x_|list entries by lines instead of by columns|
@@ -1116,9 +1118,11 @@ Name | Description|
 |----|------------|
 |_-C_|list entries by columns|
 |_\--format \[across|commas|horizontal|long|single-column|vertical]_|Output format accross \-x, commas -m, horizontal -x, long -l, single-column -1, vertical -C|
+|_\-h, --human-readable_|with \-l/--format=long  print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
 |_-m_|fill width with a comma separated list of entries|
-|_\-N, --literal_|print entry names without quoting|
+|_\-N, --literal_|print entry names without quoting \(default)|
+|_\--time-style TEXT_|with  \-l,  show times using style TEXT: full-iso, long-iso, iso, locale, or +FORMAT; FORMAT is interpreted like in 'date'; if FORMAT is FORMAT1<newline>FORMAT2, then FORMAT1 applies to non-recentfiles and FORMAT2 to recent files|
 |_\-Q, --quote-name_|enclose entry names in double quotes|
 |_\-w, --width INTEGER_|set output width, o means no limit|
 |_-x_|list entries by lines instead of by columns|
