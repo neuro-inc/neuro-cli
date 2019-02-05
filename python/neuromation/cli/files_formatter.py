@@ -1,24 +1,23 @@
 import abc
 import enum
-from itertools import cycle
 from math import ceil
-from typing import Iterator, List, Type
+from typing import Any, Iterator, List
 
 from neuromation.cli.formatter import BaseFormatter
-from neuromation.client.storage import FileStatus, FileStatusType
+from neuromation.client.storage import FileStatus
 
 
-def chunks(list: List, size: int) -> List:
+def chunks(list: List[Any], size: int) -> List[Any]:
     result = []
     for i in range(0, len(list), size):
         result.append(list[i : i + size])
     return result
 
 
-def transpose(columns: List) -> List:
+def transpose(columns: List[List[Any]]) -> List[List[Any]]:
     height = len(columns)
     width = len(columns[0])
-    result = [[] for _ in range(width)]
+    result: List[List[Any]] = [[] for _ in range(width)]
     for i in range(width):
         for j in range(height):
             if i < len(columns[j]):
@@ -164,7 +163,7 @@ class VerticalLayout(BaseLayout):
 
 
 class CommasLayout(BaseLayout):
-    def __init__(self, max_width: int = 0, separator=", "):
+    def __init__(self, max_width: int = 0, separator: str = ", "):
         self.max_width = max_width
         self.separator = separator
 

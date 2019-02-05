@@ -8,12 +8,13 @@ from yarl import URL
 
 from neuromation.cli.files_formatter import (
     AcrossLayout,
+    BaseFileFormatter,
+    BaseLayout,
     CommasLayout,
     ShortFileFormatter,
     SingleColumnLayout,
     VerticalLayout,
 )
-from neuromation.client.storage import FileStatus, FileStatusType
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
@@ -65,7 +66,8 @@ async def rm(cfg: Config, path: str) -> None:
     type=click.Choice(
         ["across", "commas", "horizontal", "long", "single-column", "vertical"]
     ),
-    help="Output format accross -x, commas -m, horizontal -x, long -l, single-column -1, vertical -C",
+    help="Output format accross -x, commas -m, horizontal -x,"
+    " long -l, single-column -1, vertical -C",
 )
 @click.option("-l", "force_format_long", is_flag=True, help="use a long listing format")
 @click.option(
@@ -107,11 +109,11 @@ async def ls(
     literal: bool,
     quote: bool,
     width: int,
-    force_format_across,
-    force_format_commas,
-    force_format_long,
-    force_format_single_column,
-    force_format_vertical,
+    force_format_across: bool,
+    force_format_commas: bool,
+    force_format_long: bool,
+    force_format_single_column: bool,
+    force_format_vertical: bool,
 ) -> None:
     """
     List directory contents.
@@ -134,6 +136,8 @@ async def ls(
     if quote is None:
         quote = not literal
 
+    layout: BaseLayout
+    formatter: BaseFileFormatter
     if force_format_across or format == "across" or format == "horizontal":
         formatter = ShortFileFormatter(quote)
         layout = AcrossLayout(max_width=width)
