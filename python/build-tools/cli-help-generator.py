@@ -137,7 +137,11 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += "Name | Description|\n"
         md += "|----|------------|\n"
         for option in info.options:
-            md += f"|_{escape_cell(option.pattern.replace('|', ' | '))}_|{escape_cell(option.description)}|\n"
+            md += (
+                f"|_{escape_cell(option.pattern.replace('|', ' | '))}_"
+                f"|{escape_cell(option.description)}|"
+                f"\n"
+            )
 
         md += "\n\n"
 

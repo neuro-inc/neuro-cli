@@ -10,7 +10,7 @@ ISORT_REGEXP := ^python/(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
 MYPY_DIRS :=  neuromation
-MYPY_REGEXP := ^python/+.\\py
+MYPY_REGEXP := ^python/neuromation/+.\\py
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := ^python/.+\\.py
 
