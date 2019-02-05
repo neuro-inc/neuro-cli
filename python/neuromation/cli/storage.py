@@ -64,6 +64,7 @@ async def rm(cfg: Config, path: str) -> None:
 @click.option(
     "-C", "force_format_vertical", is_flag=True, help="list entries by columns"
 )
+@click.option("-f", "force_f", is_flag=True, help="do not sort, enable -U, disable -l")
 @click.option(
     "--format",
     type=click.Choice(
@@ -71,6 +72,9 @@ async def rm(cfg: Config, path: str) -> None:
     ),
     help="Output format accross -x, commas -m, horizontal -x,"
     " long -l, single-column -1, vertical -C",
+)
+@click.option(
+    "--full-time", "force_full_time", is_flag=True, help="like -l --time-style=full-iso"
 )
 @click.option(
     "--group-directories-first",
@@ -100,6 +104,29 @@ async def rm(cfg: Config, path: str) -> None:
     help="print entry names without quoting (default)",
 )
 @click.option(
+    "-Q",
+    "--quote-name",
+    "quote",
+    is_flag=True,
+    help="enclose entry names in double quotes",
+)
+@click.option("-r", "--reverse", is_flag=True, help="reverse order while sorting")
+@click.option(
+    "-S", "force_sort_size", is_flag=True, help="sort by file size, largest first"
+)
+@click.option(
+    "--sort",
+    type=click.Choice(["name", "none", "size", "time"]),
+    default="name",
+    help="sort by TEXT instead of name: none, size, time",
+)
+@click.option(
+    "-t",
+    "force_sort_time",
+    is_flag=True,
+    help="sort by modification time, newest first",
+)
+@click.option(
     "--time-style",
     "time_style",
     type=str,
@@ -110,18 +137,10 @@ async def rm(cfg: Config, path: str) -> None:
     "files and FORMAT2 to recent files",
 )
 @click.option(
-    "-Q",
-    "--quote-name",
-    "quote",
+    "-U",
+    "force_sort_none",
     is_flag=True,
-    help="enclose entry names in double quotes",
-)
-@click.option("-r", "--reverse", is_flag=True, help="reverse order while sorting")
-@click.option(
-    "--sort",
-    type=click.Choice(["name", "none", "size", "time"]),
-    default="name",
-    help="sort by TEXT instead of name: none, size, time",
+    help="do not sort; list entries in directory order",
 )
 @click.option("-w", "--width", type=int, help="set output width, 0 means no limit")
 @click.option(
@@ -152,12 +171,46 @@ async def ls(
     sort: str,
     reverse: bool,
     group_directories_first: bool,
+    force_f: bool,
+    force_sort_none: bool,
+    force_full_time: bool,
+    force_sort_size: bool,
+    force_sort_time: bool,
 ) -> None:
     """
     List directory contents.
 
     By default PATH is equal user`s home dir (storage:)
     """
+
+    if force_format_across:
+        format = "across"
+    if force_format_commas:
+        format = "commas"
+    if force_format_vertical:
+        format = "vertical"
+    if force_format_long:
+        format = "long"
+
+    if force_sort_none:
+        sort = "none"
+
+    if force_full_time:
+        format = "long"
+        time_style = "full-iso"
+
+    if force_sort_size:
+        sort = "size"
+        reverse = True
+
+    if force_sort_time:
+        sort = "time"
+        reverse = True
+
+    if force_f:
+        if format == "long":
+            format = "single-column"
+        sort = "none"
 
     is_tty = sys.stdout.isatty()
     if width is None:
@@ -171,19 +224,19 @@ async def ls(
 
     layout: BaseLayout
     formatter: BaseFileFormatter
-    if force_format_across or format == "across" or format == "horizontal":
+    if format == "across" or format == "horizontal":
         formatter = ShortFileFormatter(quote)
         layout = AcrossLayout(max_width=width)
-    elif force_format_commas or format == "commas":
+    elif format == "commas":
         formatter = ShortFileFormatter(quote)
         layout = CommasLayout(max_width=width)
-    elif force_format_single_column or format == "single-column":
+    elif format == "single-column":
         formatter = ShortFileFormatter(quote)
         layout = SingleColumnLayout()
-    elif force_format_vertical or format == "vertical":
+    elif format == "vertical":
         formatter = ShortFileFormatter(quote)
         layout = VerticalLayout(max_width=width)
-    elif force_format_long or format == "long":
+    elif format == "long":
         recent_time_format = ""
         if time_style == "full-iso":
             time_format = "%Y-%m-%d %H:%M:%S.%f %z"
