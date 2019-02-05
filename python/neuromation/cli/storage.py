@@ -14,6 +14,7 @@ from neuromation.cli.files_formatter import (
     LongFileFormatter,
     ShortFileFormatter,
     SingleColumnLayout,
+    Sorter,
     VerticalLayout,
 )
 from neuromation.client import IllegalArgumentError
@@ -72,6 +73,13 @@ async def rm(cfg: Config, path: str) -> None:
     " long -l, single-column -1, vertical -C",
 )
 @click.option(
+    "--group-directories-first",
+    is_flag=True,
+    help="group directories before files;"
+    " can be augmented with a --sort option, but any"
+    " use of --sort=none (-U) disables grouping",
+)
+@click.option(
     "--human-readable",
     "-h",
     is_flag=True,
@@ -108,6 +116,13 @@ async def rm(cfg: Config, path: str) -> None:
     is_flag=True,
     help="enclose entry names in double quotes",
 )
+@click.option("-r", "--reverse", is_flag=True, help="reverse order while sorting")
+@click.option(
+    "--sort",
+    type=click.Choice(["name", "none", "size", "time"]),
+    default="name",
+    help="sort by TEXT instead of name: none, size, time",
+)
 @click.option("-w", "--width", type=int, help="set output width, 0 means no limit")
 @click.option(
     "-x",
@@ -134,17 +149,15 @@ async def ls(
     force_format_vertical: bool,
     time_style: str,
     human_readable: bool,
+    sort: str,
+    reverse: bool,
+    group_directories_first: bool,
 ) -> None:
     """
     List directory contents.
 
     By default PATH is equal user`s home dir (storage:)
     """
-    uri = normalize_storage_path_uri(URL(path), cfg.username)
-    log.info(f"Using path '{uri}'")
-
-    async with cfg.make_client() as client:
-        files = await client.storage.ls(uri)
 
     is_tty = sys.stdout.isatty()
     if width is None:
@@ -201,6 +214,23 @@ async def ls(
             layout = VerticalLayout(max_width=width)
         else:
             layout = SingleColumnLayout()
+
+    if sort == "none":
+        sorter = Sorter.NONE
+    elif sort == "size":
+        sorter = Sorter.SIZE
+    elif sort == "time":
+        sorter = Sorter.TIME
+    else:
+        sorter = Sorter.NAME
+
+    uri = normalize_storage_path_uri(URL(path), cfg.username)
+    log.info(f"Using path '{uri}'")
+
+    async with cfg.make_client() as client:
+        files = await client.storage.ls(uri)
+
+    sorter.sort(files, reverse=reverse, group_directories_first=group_directories_first)
 
     for line in layout.format(formatter, files):
         click.echo(line)

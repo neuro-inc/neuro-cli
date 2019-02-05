@@ -273,7 +273,44 @@ class CommasLayout(BaseLayout):
             yield row
 
 
-class Order(str, enum.Enum):
+class Sorter(str, enum.Enum):
     NAME = "name"
     NONE = "none"
     SIZE = "size"
+    TIME = "time"
+
+    def sort(
+        self,
+        files: List[FileStatus],
+        reverse: bool = False,
+        group_directories_first: bool = False,
+    ) -> None:
+        if self == self.NONE:
+            return
+        if self == self.NAME:
+            files.sort(
+                key=lambda x: (
+                    group_directories_first
+                    and ((x.type == FileStatusType.FILE) ^ reverse),
+                    x.name,
+                ),
+                reverse=reverse,
+            )
+        elif self == self.SIZE:
+            files.sort(
+                key=lambda x: (
+                    group_directories_first
+                    and ((x.type == FileStatusType.FILE) ^ reverse),
+                    x.size,
+                ),
+                reverse=reverse,
+            )
+        elif self == self.TIME:
+            files.sort(
+                key=lambda x: (
+                    group_directories_first
+                    and ((x.type == FileStatusType.FILE) ^ reverse),
+                    x.modification_time,
+                ),
+                reverse=reverse,
+            )
