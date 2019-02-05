@@ -1,4 +1,5 @@
 import os
+import sys
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -236,7 +237,7 @@ def _create_auth_config(api_url: URL, payload: Dict[str, Any]) -> AuthConfig:
 
 def _load(path: Path) -> Config:
     stat = path.stat()
-    if stat.st_mode & 0o777 != 0o600:
+    if sys.platform != "win32" and stat.st_mode & 0o777 != 0o600:
         raise RCException(
             f"Config file {path} has compromised permission bits, "
             f"run 'chmod 600 {path}' before usage"

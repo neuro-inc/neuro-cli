@@ -120,8 +120,8 @@ class TestAuthCodeApp:
         app = create_auth_code_app(code)
 
         port = unused_port()
-        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
-            assert url == URL(f"http://0.0.0.0:{port}")
+        async with create_app_server_once(app, host="127.0.0.1", port=port) as url:
+            assert url == URL(f"http://127.0.0.1:{port}")
             await self.assert_code_callback_success(code, client, url)
 
     async def test_create_app_server_redirect(self, client: ClientSession) -> None:
@@ -130,8 +130,8 @@ class TestAuthCodeApp:
         app = create_auth_code_app(code, redirect_url=redirect_url)
 
         port = unused_port()
-        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
-            assert url == URL(f"http://0.0.0.0:{port}")
+        async with create_app_server_once(app, host="127.0.0.1", port=port) as url:
+            assert url == URL(f"http://127.0.0.1:{port}")
             await self.assert_code_callback_success(
                 code, client, url, redirect_url=redirect_url
             )
@@ -141,8 +141,8 @@ class TestAuthCodeApp:
         app = create_auth_code_app(code)
 
         port = unused_port()
-        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
-            assert url == URL(f"http://0.0.0.0:{port}")
+        async with create_app_server_once(app, host="127.0.0.1", port=port) as url:
+            assert url == URL(f"http://127.0.0.1:{port}")
             await self.assert_code_callback_failure(code, client, url)
 
     async def test_create_app_server(self, client: ClientSession) -> None:
@@ -150,8 +150,8 @@ class TestAuthCodeApp:
         app = create_auth_code_app(code)
 
         port = unused_port()
-        async with create_app_server(app, host="0.0.0.0", ports=[port]) as url:
-            assert url == URL(f"http://0.0.0.0:{port}")
+        async with create_app_server(app, host="127.0.0.1", ports=[port]) as url:
+            assert url == URL(f"http://127.0.0.1:{port}")
             await self.assert_code_callback_success(code, client, url)
 
     async def test_create_app_server_no_ports(self) -> None:
@@ -159,7 +159,7 @@ class TestAuthCodeApp:
         app = create_auth_code_app(code)
 
         port = unused_port()
-        async with create_app_server_once(app, host="0.0.0.0", port=port):
+        async with create_app_server_once(app, host="127.0.0.1", port=port):
             with pytest.raises(RuntimeError, match="No free ports."):
                 async with create_app_server(app, ports=[port]):
                     pass
@@ -170,9 +170,9 @@ class TestAuthCodeApp:
         outer_port = unused_port()
         inner_port = unused_port()
         async with create_app_server(app, ports=[outer_port, inner_port]) as url:
-            assert url == URL(f"http://0.0.0.0:{outer_port}")
+            assert url == URL(f"http://127.0.0.1:{outer_port}")
             async with create_app_server(app, ports=[outer_port, inner_port]) as url:
-                assert url == URL(f"http://0.0.0.0:{inner_port}")
+                assert url == URL(f"http://127.0.0.1:{inner_port}")
                 await self.assert_code_callback_success(code, client, url)
 
 
@@ -245,7 +245,7 @@ async def auth_config(
         base_url=auth_server,
         client_id=auth_client_id,
         audience="https://platform.dev.neuromation.io",
-        callback_urls=[URL(f"http://0.0.0.0:{port}")],
+        callback_urls=[URL(f"http://127.0.0.1:{port}")],
     )
 
 

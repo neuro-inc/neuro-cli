@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import sys
@@ -163,6 +164,10 @@ cli.add_command(share.share)
 
 
 def main(args: Optional[List[str]] = None) -> None:
+    if sys.platform == "win32":
+        loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(loop)
+
     try:
         cli.main(args=args, standalone_mode=False)
     except ClickAbort:
