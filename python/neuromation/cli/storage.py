@@ -108,7 +108,7 @@ async def rm(cfg: Config, path: str) -> None:
     is_flag=True,
     help="enclose entry names in double quotes",
 )
-@click.option("-w", "--width", type=int, help="set output width, o means no limit")
+@click.option("-w", "--width", type=int, help="set output width, 0 means no limit")
 @click.option(
     "-x",
     "force_format_across",

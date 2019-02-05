@@ -463,7 +463,7 @@ Name | Description|
 |_\-N, --literal_|print entry names without quoting \(default)|
 |_\--time-style TEXT_|with  \-l,  show times using style TEXT: full-iso, long-iso, iso, locale, or +FORMAT; FORMAT is interpreted like in 'date'; if FORMAT is FORMAT1<newline>FORMAT2, then FORMAT1 applies to non-recentfiles and FORMAT2 to recent files|
 |_\-Q, --quote-name_|enclose entry names in double quotes|
-|_\-w, --width INTEGER_|set output width, o means no limit|
+|_\-w, --width INTEGER_|set output width, 0 means no limit|
 |_-x_|list entries by lines instead of by columns|
 |_-1_|list one file per line|
 |_--help_|Show this message and exit.|
@@ -1124,7 +1124,7 @@ Name | Description|
 |_\-N, --literal_|print entry names without quoting \(default)|
 |_\--time-style TEXT_|with  \-l,  show times using style TEXT: full-iso, long-iso, iso, locale, or +FORMAT; FORMAT is interpreted like in 'date'; if FORMAT is FORMAT1<newline>FORMAT2, then FORMAT1 applies to non-recentfiles and FORMAT2 to recent files|
 |_\-Q, --quote-name_|enclose entry names in double quotes|
-|_\-w, --width INTEGER_|set output width, o means no limit|
+|_\-w, --width INTEGER_|set output width, 0 means no limit|
 |_-x_|list entries by lines instead of by columns|
 |_-1_|list one file per line|
 |_--help_|Show this message and exit.|
