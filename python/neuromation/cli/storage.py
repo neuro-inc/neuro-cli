@@ -7,15 +7,11 @@ import click
 from yarl import URL
 
 from neuromation.cli.files_formatter import (
-    BaseFileFormatter,
-    BaseLayout,
-    LongFileFormatter,
-    ShortFileFormatter,
-    SingleColumnLayout,
-    Sorter,
-    VerticalLayout,
+    VerticalColumnsFilesFormatter,
+    LongFilesFormatter,
+    SimpleFilesFormatter,
+    FilesSorter
 )
-from neuromation.client import IllegalArgumentError
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
@@ -86,22 +82,19 @@ async def ls(
     is_tty = sys.stdout.isatty()
     if is_tty:
         if format_long:
-            formatter = LongFileFormatter(human_readable=human_readable)
-            layout = SingleColumnLayout()
+            formatter = LongFilesFormatter(human_readable=human_readable)
         else:
-            formatter = ShortFileFormatter()
             width, _ = shutil.get_terminal_size((80, 25))
-            layout = VerticalLayout(max_width=width)
+            formatter = VerticalColumnsFilesFormatter(width=width)
     else:
-        formatter = ShortFileFormatter()
-        layout = SingleColumnLayout()
+        formatter = SimpleFilesFormatter()
 
     if sort == "size":
-        sorter = Sorter.SIZE
+        sorter = FilesSorter.SIZE
     elif sort == "time":
-        sorter = Sorter.TIME
+        sorter = FilesSorter.TIME
     else:
-        sorter = Sorter.NAME
+        sorter = FilesSorter.NAME
 
     uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")
@@ -111,7 +104,7 @@ async def ls(
 
     sorter.sort(files)
 
-    for line in layout.format(formatter, files):
+    for line in formatter.format(files):
         click.echo(line)
 
 

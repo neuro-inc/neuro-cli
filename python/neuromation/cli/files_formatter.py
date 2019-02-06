@@ -32,43 +32,16 @@ def transpose(columns: Sequence[Sequence[Any]]) -> Sequence[Sequence[Any]]:
     return result
 
 
-class BaseFileFormatter(BaseFormatter, abc.ABC):
-    @abc.abstractmethod
-    def min_width(self, file: FileStatus) -> int:  # pragma: no cover
+class BaseFilesFormatter(BaseFormatter, abc.ABC):
+    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:  # pragma: no cover
         pass
 
-    def min_width_list(self, files: Sequence[FileStatus]) -> Sequence[int]:
-        return [self.min_width(file) for file in files]
 
-    @abc.abstractmethod
-    def format(self, file: FileStatus, width: int) -> str:  # pragma: no cover
-        pass
-
-    def format_list(self, files: Sequence[FileStatus], width: int) -> Sequence[str]:
-        return [self.format(file, width) for file in files]
-
-
-class ShortFileFormatter(BaseFileFormatter):
-    def min_width(self, file: FileStatus) -> int:
-        return len(file.name)
-
-    def format(self, file: FileStatus, width: int) -> str:
-        result = file.name
-
-        return result
-
-
-class LongFileFormatter(BaseFileFormatter):
+class LongFilesFormatter(BaseFilesFormatter):
     def __init__(self, human_readable: bool = False):
         self.human_readable = human_readable
 
-    def min_width(self, file: FileStatus) -> int:
-        raise NotImplementedError()
-
-    def format(self, file: FileStatus, width: int) -> str:
-        raise NotImplementedError()
-
-    def parts(self, file: FileStatus) -> Sequence[str]:
+    def _columns_for_file(self, file: FileStatus):
         type = "-"
         if file.type == FileStatusType.DIRECTORY:
             type = "d"
@@ -87,17 +60,13 @@ class LongFileFormatter(BaseFileFormatter):
 
         return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
 
-    def parts_list(self, files: Sequence[FileStatus]) -> Sequence[Sequence[str]]:
-        return [self.parts(file) for file in files]
-
-    def format_list(self, files: Sequence[FileStatus], width: int) -> Sequence[str]:
-        table = self.parts_list(files)
+    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+        table = [self._columns_for_file(file) for file in files]
         widths = [0 for _ in table[0]]
         for row in table:
             for x in range(len(row)):
                 if widths[x] < len(row[x]):
                     widths[x] = len(row[x])
-        result: List[str] = []
         for row in table:
             line = []
             for x in range(len(row)):
@@ -105,69 +74,50 @@ class LongFileFormatter(BaseFileFormatter):
                     line.append(row[x])
                 else:
                     line.append(row[x].rjust(widths[x]))
-            result.append(" ".join(line))
-        return result
+            yield " ".join(line)
 
 
-class BaseLayout(BaseFormatter, abc.ABC):
-    @abc.abstractmethod
-    def format(
-        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
-    ) -> Iterator[str]:  # pragma: no cover
-        pass
+class SimpleFilesFormatter(BaseFilesFormatter):
+    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+        for file in files:
+            yield f'{file.name}'
 
 
-class SingleColumnLayout(BaseLayout):
-    def format(
-        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
-    ) -> Iterator[str]:
-        formatted = file_formatter.format_list(files, 0)
-        for line in formatted:
-            yield line
+class VerticalColumnsFilesFormatter(BaseFilesFormatter):
+    def __init__(self, width: int):
+        self.width = width
 
-
-class VerticalLayout(BaseLayout):
-    def __init__(self, max_width: int = None):
-        self.max_width = max_width
-
-    def format(
-        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
-    ) -> Iterator[str]:
-        # simple case, no width limits
-        if not self.max_width:
-            yield "  ".join(file_formatter.format_list(files, 0))
-            return
-
-        widths = file_formatter.min_width_list(files)
-
+    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+        items = [f'{file.name}' for file in files]
+        widths = [len(item) for item in items]
         # let`s check how many columns we can use
         test_count = 1
         while True:
-            test_columns = chunks(widths, ceil(len(files) / test_count))
-            test_columns_width = [max(column) for column in test_columns]
-            test_total_width = sum(test_columns_width) + 2 * (len(test_columns) - 1)
-            if test_count == 1 or test_total_width <= self.max_width:
+            test_columns = chunks(widths, ceil(len(items) / test_count))
+            test_columns_widths = [max(column) for column in test_columns]
+            test_total_width = sum(test_columns_widths) + 2 * (len(test_columns) - 1)
+            if test_count == 1 or test_total_width <= self.width:
                 count = test_count
-                columns_width = test_columns_width
-                if test_total_width == self.max_width:
+                columns_widths = test_columns_widths
+                if test_total_width == self.width:
                     break
 
-            if test_total_width >= self.max_width or len(test_columns) == len(files):
+            if test_total_width >= self.width or len(test_columns) == len(items):
                 break
             test_count = test_count + 1
 
-        rows = transpose(chunks(files, ceil(len(files) / count)))
+        rows = transpose(chunks(items, ceil(len(items) / count)))
         for row in rows:
             formatted_row = []
             for i in range(len(row)):
-                formatted = file_formatter.format(row[i], columns_width[i])
+                formatted = row[i]
                 if i < len(row) - 1:
-                    formatted = formatted.ljust(columns_width[i])
+                    formatted = formatted.ljust(columns_widths[i])
                 formatted_row.append(formatted)
             yield "  ".join(formatted_row)
 
 
-class Sorter(str, enum.Enum):
+class FilesSorter(str, enum.Enum):
     NAME = "name"
     SIZE = "size"
     TIME = "time"
