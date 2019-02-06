@@ -7,10 +7,11 @@ import click
 from yarl import URL
 
 from neuromation.cli.files_formatter import (
-    VerticalColumnsFilesFormatter,
+    BaseFilesFormatter,
+    FilesSorter,
     LongFilesFormatter,
     SimpleFilesFormatter,
-    FilesSorter
+    VerticalColumnsFilesFormatter,
 )
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
@@ -82,7 +83,9 @@ async def ls(
     is_tty = sys.stdout.isatty()
     if is_tty:
         if format_long:
-            formatter = LongFilesFormatter(human_readable=human_readable)
+            formatter: BaseFilesFormatter = LongFilesFormatter(
+                human_readable=human_readable
+            )
         else:
             width, _ = shutil.get_terminal_size((80, 25))
             formatter = VerticalColumnsFilesFormatter(width=width)

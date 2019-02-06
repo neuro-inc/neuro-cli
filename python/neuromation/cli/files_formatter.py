@@ -41,7 +41,7 @@ class LongFilesFormatter(BaseFilesFormatter):
     def __init__(self, human_readable: bool = False):
         self.human_readable = human_readable
 
-    def _columns_for_file(self, file: FileStatus):
+    def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
         type = "-"
         if file.type == FileStatusType.DIRECTORY:
             type = "d"
@@ -80,7 +80,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 class SimpleFilesFormatter(BaseFilesFormatter):
     def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
         for file in files:
-            yield f'{file.name}'
+            yield f"{file.name}"
 
 
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
@@ -88,7 +88,7 @@ class VerticalColumnsFilesFormatter(BaseFilesFormatter):
         self.width = width
 
     def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
-        items = [f'{file.name}' for file in files]
+        items = [f"{file.name}" for file in files]
         widths = [len(item) for item in items]
         # let`s check how many columns we can use
         test_count = 1
