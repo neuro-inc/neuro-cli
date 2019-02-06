@@ -1,7 +1,6 @@
 import abc
 import datetime
 import enum
-import time
 from math import ceil
 from typing import Any, Iterator, List, Sequence
 
@@ -12,6 +11,7 @@ from neuromation.client.storage import FileStatus, FileStatusType
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def chunks(list: Sequence[Any], size: int) -> Sequence[Any]:
@@ -49,38 +49,18 @@ class BaseFileFormatter(BaseFormatter, abc.ABC):
 
 
 class ShortFileFormatter(BaseFileFormatter):
-    def __init__(self, quoted: bool = False):
-        self.quoted = quoted
-
     def min_width(self, file: FileStatus) -> int:
-        if self.quoted:
-            return 2 + len(file.name)
         return len(file.name)
 
     def format(self, file: FileStatus, width: int) -> str:
         result = file.name
-        if self.quoted:
-            result = f'"{result}"'
+
         return result
 
 
 class LongFileFormatter(BaseFileFormatter):
-    def __init__(
-        self,
-        separator: str = " ",
-        time_format: str = "%c",
-        recent_time_format: str = "",
-        human_readable: bool = False,
-        quoted: bool = False,
-    ):
-        self.separator = separator
-        self.time_format = time_format
-        if recent_time_format:
-            self.recent_time_format = recent_time_format
-        else:
-            self.recent_time_format = self.time_format
+    def __init__(self, human_readable: bool = False):
         self.human_readable = human_readable
-        self.quoted = quoted
 
     def min_width(self, file: FileStatus) -> int:
         raise NotImplementedError()
@@ -95,11 +75,8 @@ class LongFileFormatter(BaseFileFormatter):
 
         permission = file.permission[0]
 
-        time_format = self.time_format
-        if abs(file.modification_time - time.time()) < RECENT_TIME_DELTA:
-            time_format = self.recent_time_format
         date = datetime.datetime.fromtimestamp(file.modification_time).strftime(
-            time_format
+            TIME_FORMAT
         )
 
         size = file.size
@@ -107,8 +84,6 @@ class LongFileFormatter(BaseFileFormatter):
             size = humanize.naturalsize(size, gnu=True).rstrip("B")
 
         name = file.name
-        if self.quoted:
-            name = f'"{name}"'
 
         return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
 
@@ -130,7 +105,7 @@ class LongFileFormatter(BaseFileFormatter):
                     line.append(row[x])
                 else:
                     line.append(row[x].rjust(widths[x]))
-            result.append(self.separator.join(line))
+            result.append(" ".join(line))
         return result
 
 
@@ -151,62 +126,16 @@ class SingleColumnLayout(BaseLayout):
             yield line
 
 
-class AcrossLayout(BaseLayout):
-    def __init__(self, max_width: int = None, separator: str = "  "):
-        self.max_width = max_width
-        self.separator = separator
-
-    def format(
-        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
-    ) -> Iterator[str]:
-        # simple case, no width limits
-        if not self.max_width:
-            yield self.separator.join(file_formatter.format_list(files, 0))
-            return
-
-        widths = file_formatter.min_width_list(files)
-
-        # let`s check how many columns we can use
-        test_count = 1
-        while True:
-            test_rows = chunks(widths, test_count)
-            test_columns = transpose(test_rows)
-            test_columns_width = [max(column) for column in test_columns]
-            test_total_width = sum(test_columns_width) + (len(test_columns) - 1) * len(
-                self.separator
-            )
-            if test_count == 1 or test_total_width <= self.max_width:
-                count = test_count
-                columns_width = test_columns_width
-                if test_total_width == self.max_width:
-                    break
-
-            if test_total_width >= self.max_width or len(test_columns) == len(files):
-                break
-            test_count = test_count + 1
-
-        rows = chunks(files, count)
-        for row in rows:
-            formatted_row = []
-            for i in range(len(row)):
-                formatted = file_formatter.format(row[i], columns_width[i])
-                if i < len(row) - 1:
-                    formatted = formatted.ljust(columns_width[i])
-                formatted_row.append(formatted)
-            yield self.separator.join(formatted_row)
-
-
 class VerticalLayout(BaseLayout):
-    def __init__(self, max_width: int = None, separator: str = "  "):
+    def __init__(self, max_width: int = None):
         self.max_width = max_width
-        self.separator = separator
 
     def format(
         self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
     ) -> Iterator[str]:
         # simple case, no width limits
         if not self.max_width:
-            yield self.separator.join(file_formatter.format_list(files, 0))
+            yield "  ".join(file_formatter.format_list(files, 0))
             return
 
         widths = file_formatter.min_width_list(files)
@@ -216,9 +145,7 @@ class VerticalLayout(BaseLayout):
         while True:
             test_columns = chunks(widths, ceil(len(files) / test_count))
             test_columns_width = [max(column) for column in test_columns]
-            test_total_width = sum(test_columns_width) + (len(test_columns) - 1) * len(
-                self.separator
-            )
+            test_total_width = sum(test_columns_width) + 2 * (len(test_columns) - 1)
             if test_count == 1 or test_total_width <= self.max_width:
                 count = test_count
                 columns_width = test_columns_width
@@ -237,80 +164,19 @@ class VerticalLayout(BaseLayout):
                 if i < len(row) - 1:
                     formatted = formatted.ljust(columns_width[i])
                 formatted_row.append(formatted)
-            yield self.separator.join(formatted_row)
-
-
-class CommasLayout(BaseLayout):
-    def __init__(self, max_width: int = 0, separator: str = ", "):
-        self.max_width = max_width
-        self.separator = separator
-
-    def format(
-        self, file_formatter: BaseFileFormatter, files: Sequence[FileStatus]
-    ) -> Iterator[str]:
-        formatted_files = file_formatter.format_list(files, 0)
-        if not self.max_width:
-            yield self.separator.join(formatted_files)
-            return
-        row = ""
-        for i in range(len(formatted_files)):
-            if i == len(formatted_files) - 1:
-                separator = ""
-            else:
-                separator = self.separator
-            formatted = formatted_files[i]
-            test = row + formatted + separator
-            if len(test) >= self.max_width:
-                if row:
-                    yield row
-                    row = formatted + separator
-                else:
-                    yield test
-                    row = ""
-            else:
-                row = test
-        if row:
-            yield row
+            yield "  ".join(formatted_row)
 
 
 class Sorter(str, enum.Enum):
     NAME = "name"
-    NONE = "none"
     SIZE = "size"
     TIME = "time"
 
-    def sort(
-        self,
-        files: List[FileStatus],
-        reverse: bool = False,
-        group_directories_first: bool = False,
-    ) -> None:
-        if self == self.NONE:
-            return
+    def sort(self, files: List[FileStatus]) -> None:
         if self == self.NAME:
-            files.sort(
-                key=lambda x: (
-                    group_directories_first
-                    and ((x.type == FileStatusType.FILE) ^ reverse),
-                    x.name,
-                ),
-                reverse=reverse,
-            )
+            field = "name"
         elif self == self.SIZE:
-            files.sort(
-                key=lambda x: (
-                    group_directories_first
-                    and ((x.type == FileStatusType.FILE) ^ reverse),
-                    x.size,
-                ),
-                reverse=reverse,
-            )
+            field = "size"
         elif self == self.TIME:
-            files.sort(
-                key=lambda x: (
-                    group_directories_first
-                    and ((x.type == FileStatusType.FILE) ^ reverse),
-                    x.modification_time,
-                ),
-                reverse=reverse,
-            )
+            field = "modification_time"
+        files.sort(key=lambda x: x.__getattribute__(field))

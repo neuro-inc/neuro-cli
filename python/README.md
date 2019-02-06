@@ -455,25 +455,9 @@ neuro storage ls [OPTIONS] [PATH]
 
 Name | Description|
 |----|------------|
-|_-C_|list entries by columns|
-|_-f_|do not sort, enable \-U, disable -l|
-|_\--format \[across &#124; commas &#124; horizontal &#124; long &#124; single-column &#124; vertical]_|Output format accross \-x, commas -m, horizontal -x, long -l, single-column -1, vertical -C|
-|_\--full-time_|like \-l --time-style=full-iso|
-|_\--group-directories-first_|group directories before files; can be augmented with a \--sort option, but any use of --sort=none \(-U) disables grouping|
-|_\-h, --human-readable_|with \-l/--format=long  print human readable sizes \(e.g., 2K, 540M)|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
-|_-m_|fill width with a comma separated list of entries|
-|_\-N, --literal_|print entry names without quoting \(default)|
-|_\-Q, --quote-name_|enclose entry names in double quotes|
-|_\-r, --reverse_|reverse order while sorting|
-|_-S_|sort by file size, largest first|
-|_--sort \[name &#124; none &#124; size &#124; time]_|sort by TEXT instead of name: none, size, time|
-|_-t_|sort by modification time, newest first|
-|_\--time-style TEXT_|with  \-l,  show times using style TEXT: full-iso, long-iso, iso, locale, or +FORMAT; FORMAT is interpreted like in 'date'; if FORMAT is FORMAT1<newline>FORMAT2, then FORMAT1 applies to non-recentfiles and FORMAT2 to recent files|
-|_-U_|do not sort; list entries in directory order|
-|_\-w, --width INTEGER_|set output width, 0 means no limit|
-|_-x_|list entries by lines instead of by columns|
-|_-1_|list one file per line|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
 |_--help_|Show this message and exit.|
 
 
@@ -1124,25 +1108,9 @@ neuro ls [OPTIONS] [PATH]
 
 Name | Description|
 |----|------------|
-|_-C_|list entries by columns|
-|_-f_|do not sort, enable \-U, disable -l|
-|_\--format \[across &#124; commas &#124; horizontal &#124; long &#124; single-column &#124; vertical]_|Output format accross \-x, commas -m, horizontal -x, long -l, single-column -1, vertical -C|
-|_\--full-time_|like \-l --time-style=full-iso|
-|_\--group-directories-first_|group directories before files; can be augmented with a \--sort option, but any use of --sort=none \(-U) disables grouping|
-|_\-h, --human-readable_|with \-l/--format=long  print human readable sizes \(e.g., 2K, 540M)|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
-|_-m_|fill width with a comma separated list of entries|
-|_\-N, --literal_|print entry names without quoting \(default)|
-|_\-Q, --quote-name_|enclose entry names in double quotes|
-|_\-r, --reverse_|reverse order while sorting|
-|_-S_|sort by file size, largest first|
-|_--sort \[name &#124; none &#124; size &#124; time]_|sort by TEXT instead of name: none, size, time|
-|_-t_|sort by modification time, newest first|
-|_\--time-style TEXT_|with  \-l,  show times using style TEXT: full-iso, long-iso, iso, locale, or +FORMAT; FORMAT is interpreted like in 'date'; if FORMAT is FORMAT1<newline>FORMAT2, then FORMAT1 applies to non-recentfiles and FORMAT2 to recent files|
-|_-U_|do not sort; list entries in directory order|
-|_\-w, --width INTEGER_|set output width, 0 means no limit|
-|_-x_|list entries by lines instead of by columns|
-|_-1_|list one file per line|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
 |_--help_|Show this message and exit.|
 
 
