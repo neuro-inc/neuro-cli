@@ -75,6 +75,9 @@ class AuthCode:
     def callback_url(self, value: URL) -> None:
         self._callback_url = value
 
+    def set_exception(self, exc: Exception) -> None:
+        self._future.set_exception(exc)
+
     def cancel(self) -> None:
         self._future.cancel()
 

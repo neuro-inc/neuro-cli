@@ -43,6 +43,12 @@ class TestAuthCode:
         with pytest.raises(AuthException, match="failed to get an authorization code"):
             await code.wait()
 
+    async def test_wait_exception(self) -> None:
+        code = AuthCode()
+        code.set_exception(AuthException("testerror"))
+        with pytest.raises(AuthException, match="testerror"):
+            await code.wait()
+
     async def test_wait(self) -> None:
         code = AuthCode()
         code.set_value("testcode")
