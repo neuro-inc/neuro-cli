@@ -1,4 +1,5 @@
 import textwrap
+import time
 from typing import Optional
 
 import click
@@ -489,17 +490,44 @@ class TestJobListFormatter:
 
 
 class TestFilesFormatter:
+
     files = [
-        FileStatus("File1", 2048, FileStatusType.FILE, 1_514_764_800, "read"),
-        FileStatus("File2", 1024, FileStatusType.FILE, 1_539_166_210, "read"),
         FileStatus(
-            "File3 with space", 1_024_001, FileStatusType.FILE, 1_549_072_922, "read"
+            "File1",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        ),
+        FileStatus(
+            "File2",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-10-10 13:10:10", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        ),
+        FileStatus(
+            "File3 with space",
+            1_024_001,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2019-02-02 05:02:02", "%Y-%m-%d %H:%M:%S"))),
+            "read",
         ),
     ]
     folders = [
-        FileStatus("Folder1", 0, FileStatusType.DIRECTORY, 1_488_510_183, "all"),
         FileStatus(
-            "1Folder with space", 0, FileStatusType.DIRECTORY, 1_488_510_182, "all"
+            "Folder1",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2017-03-03 06:03:03", "%Y-%m-%d %H:%M:%S"))),
+            "all",
+        ),
+        FileStatus(
+            "1Folder with space",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2017-03-03 06:03:02", "%Y-%m-%d %H:%M:%S"))),
+            "all",
         ),
     ]
     files_and_folders = files + folders

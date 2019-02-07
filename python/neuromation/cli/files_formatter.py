@@ -1,6 +1,6 @@
 import abc
-import datetime
 import enum
+import time
 from math import ceil
 from typing import Any, Iterator, List, Sequence
 
@@ -48,9 +48,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
         permission = file.permission[0]
 
-        date = datetime.datetime.fromtimestamp(file.modification_time).strftime(
-            TIME_FORMAT
-        )
+        date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
 
         size = file.size
         if self.human_readable:
