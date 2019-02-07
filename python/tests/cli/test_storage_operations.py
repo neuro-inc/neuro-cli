@@ -35,7 +35,7 @@ class TestPathRendering:
 
 
 class TestUrlUtils:
-    _pwd = Path.cwd()
+    _pwd = Path.cwd().as_posix()
 
     @pytest.fixture
     def fake_homedir(self, monkeypatch):

@@ -33,10 +33,12 @@ def normalize_local_path_uri(uri: URL) -> URL:
         )
     if uri.host:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
-    path = normalize_local_path(uri.path).lstrip("/")
+    log.info(f'URI path: {uri.path}')
+    path = normalize_local_path(uri.path.lstrip('/'))
+    log.info(f'normalized path: {path}')
     return uri.with_path(path)
 
 
 def normalize_local_path(path: str) -> str:
     """Normalize local file path."""
-    return str(Path(path).expanduser().absolute())
+    return str(Path(path).expanduser().absolute().as_posix())

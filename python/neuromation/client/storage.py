@@ -156,6 +156,7 @@ class Storage:
     async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.username)
+
         path = Path(src.path)
         if not path.exists():
             raise FileNotFoundError(f"'{path}' does not exist")
