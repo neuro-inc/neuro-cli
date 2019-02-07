@@ -1,6 +1,5 @@
-from pathlib import Path
-import pkg_resources
 import logging
+from pathlib import Path
 from textwrap import dedent
 
 import pkg_resources
@@ -264,7 +263,7 @@ def test_warn_in_has_newer_version_no_upgrade(caplog):
 
 def test_warn_in_has_newer_version_need_upgrade(caplog):
     config = rc.Config()
-    config.pypi.pypi_version = pkg_resources.parse_version('100.500')
+    config.pypi.pypi_version = pkg_resources.parse_version("100.500")
     with caplog.at_level(logging.WARNING):
         config.pypi.warn_if_has_newer_version()
-    assert ' version 100.500 is available.' in caplog.records[0].message
+    assert " version 100.500 is available." in caplog.records[0].message
