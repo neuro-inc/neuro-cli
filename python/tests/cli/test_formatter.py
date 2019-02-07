@@ -581,6 +581,18 @@ class TestFilesFormatter:
             "1Folder with space",
         ]
 
+    @pytest.mark.parametrize(
+        "formatter",
+        [
+            (SimpleFilesFormatter()),
+            (VerticalColumnsFilesFormatter(width=100)),
+            (LongFilesFormatter(human_readable=False)),
+        ],
+    )
+    def test_formatter_with_empty_files(self, formatter):
+        files = []
+        assert [] == list(formatter.format(files))
+
     def test_sorter(self):
         sorter = FilesSorter.NAME
         files = self.files_and_folders.copy()
