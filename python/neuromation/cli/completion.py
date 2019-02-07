@@ -14,7 +14,7 @@ ACTIVATION_TEMPLATE = 'eval "$(_NEURO_COMPLETE={cmd} neuro)"'
 @group()
 def completion() -> None:
     """
-    Generates code to enable shell-completion.
+    Output shell completion code.
     """
 
 

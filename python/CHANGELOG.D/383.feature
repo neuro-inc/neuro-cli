@@ -1,1 +1,0 @@
-Support `-v` as a shortcut for `--volume` in `neuro submit ...` command.

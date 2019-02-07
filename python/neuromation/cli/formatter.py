@@ -18,7 +18,7 @@ CLEAR_LINE_TAIL = "\033[0K"
 
 
 # Do nasty hack click to fix unstyle problem
-def _patch_click():
+def _patch_click() -> None:
     import click._compat  # type: ignore
 
     _ansi_re = re.compile(r"\033\[([;\?0-9]*)([a-zA-Z])")

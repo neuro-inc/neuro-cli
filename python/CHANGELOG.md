@@ -5,6 +5,24 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.3.0 (2019-02-01)
+==============================
+
+Features
+--------
+
+
+- Add `-p/-P` shortcuts for `--preemtible/--non-preemtible` for `neuro submit` command. ([#458](https://github.com/neuromation/platform-api-clients/issues/458))
+
+- Wait for job start/failure on job submit. ([#356](https://github.com/neuromation/platform-api-clients/issues/356))
+
+- Support `-v` as a shortcut for `--volume` in `neuro submit ...` command. ([#383](https://github.com/neuromation/platform-api-clients/issues/383))
+
+- Improve resource URI normalization and print normalized URIs back to the user. ([#457](https://github.com/neuromation/platform-api-clients/issues/457))
+
+- Re-organize CLI commands for better UI/UX experience. Obsolete commands are hidden but still supported. ([#460](https://github.com/neuromation/platform-api-clients/issues/460))
+
+
 Neuromation 0.2.2 (2019-01-31)
 ==============================
 
