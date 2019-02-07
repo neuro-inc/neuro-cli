@@ -59,6 +59,8 @@ class LongFilesFormatter(BaseFilesFormatter):
         return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
 
     def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+        if not files:
+            return
         table = [self._columns_for_file(file) for file in files]
         widths = [0 for _ in table[0]]
         for row in table:
@@ -86,6 +88,8 @@ class VerticalColumnsFilesFormatter(BaseFilesFormatter):
         self.width = width
 
     def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+        if not files:
+            return
         items = [f"{file.name}" for file in files]
         widths = [len(item) for item in items]
         # let`s check how many columns we can use

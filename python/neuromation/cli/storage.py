@@ -79,18 +79,17 @@ async def ls(
 
     By default PATH is equal user`s home dir (storage:)
     """
-
-    is_tty = sys.stdout.isatty()
-    if is_tty:
-        if format_long:
-            formatter: BaseFilesFormatter = LongFilesFormatter(
-                human_readable=human_readable
-            )
-        else:
+    if format_long:
+        formatter: BaseFilesFormatter = LongFilesFormatter(
+            human_readable=human_readable
+        )
+    else:
+        is_tty = sys.stdout.isatty()
+        if is_tty:
             width, _ = shutil.get_terminal_size((80, 25))
             formatter = VerticalColumnsFilesFormatter(width=width)
-    else:
-        formatter = SimpleFilesFormatter()
+        else:
+            formatter = SimpleFilesFormatter()
 
     if sort == "size":
         sorter = FilesSorter.SIZE
