@@ -1,3 +1,4 @@
+import asyncio
 import re
 import shlex
 from functools import wraps
@@ -18,6 +19,7 @@ import click
 
 from neuromation.client import Volume
 from neuromation.utils import run
+from .version_utils import VersionChecker
 
 
 _T = TypeVar("_T")
@@ -25,10 +27,19 @@ _T = TypeVar("_T")
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 
 
+async def run_async_function(
+    func: Callable[..., Awaitable[_T]], *args: Any, **kwargs: Any
+) -> _T:
+    loop = asyncio.get_event_loop()
+    version_checker = VersionChecker()
+    loop.create_task(version_checker.run())
+    return await func(*args, **kwargs)
+
+
 def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
     @wraps(callback)
     def wrapper(*args: Any, **kwargs: Any) -> _T:
-        return run(callback(*args, **kwargs))
+        return run(run_async_function(callback, *args, **kwargs))
 
     return wrapper
 

@@ -1,11 +1,12 @@
+import asyncio
 import logging
+import time
 import types
-from distutils.version import LooseVersion
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type, Callable
+import pkg_resources
 
 import aiohttp
 
-from neuromation.cli import rc
 from neuromation.cli.rc import ConfigFactory
 
 
@@ -13,10 +14,12 @@ log = logging.getLogger(__name__)
 
 
 class VersionChecker:
-    def __init__(self, connector: Optional[aiohttp.TCPConnector] = None) -> None:
+    def __init__(self, connector: Optional[aiohttp.TCPConnector] = None,
+                 timer: Callable[[], float] = time.time) -> None:
         if connector is None:
             connector = aiohttp.TCPConnector()
         self._session = aiohttp.ClientSession(connector=connector)
+        self._timer = timer
 
     async def close(self):
         await self._session.close()
@@ -24,7 +27,7 @@ class VersionChecker:
     async def __aenter__(self) -> "VersionChecker":
         return self
 
-    async def __exit__(
+    async def __aexit__(
         self,
         exc_type: Optional[Type[BaseException]],
         exc_value: Optional[BaseException],
@@ -32,30 +35,33 @@ class VersionChecker:
     ) -> None:
         await self.close()
 
-    async def get_latest_version(self, config: rc.Config) -> LooseVersion:
+    async def run(self) -> None:
+        async with self:
+            await self.get_latest_version()
+
+    async def get_latest_version(self) -> None:
         try:
-            async with self._session
-        except:
+            async with self._session.get(
+                "https://pypi.org/pypi/neuromation/json"
+            ) as resp:
+                if resp.status != 200:
+                    log.debug("%s status on fetching PyPI", resp.status)
+                    return
+                data = await resp.json()
+            pypi_version = self._get_max_version(data)
+            ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
+        except asyncio.CancelledError:
             pass
-        latest_version = LooseVersion(config.last_checked_version)
-        if latest_version is None:
-            # TODO (ajsuzwkowski 31.1.2019) Save a timestamp when the version was checked
-            latest_version = await get_latest_version_from_pypi()
-            if not latest_version:
-                raise ValueError("Could not get the latest version from PyPI")
-            ConfigFactory.update_last_checked_version(latest_version.vstring)
-        return latest_version
+        except aiohttp.ClientConnectionError:
+            log.debug("IO error on fetching data from PyPI", exc_info=True)
+        except Exception:
+            log.exception("Error on fetching data from PyPI")
 
-    async def get_latest_version_from_pypi(self) -> Optional[LooseVersion]:
-        response = await request_pypi()
-        if response:
-            return max(get_versions(response))
-
-    def get_versions(self, pypi_response: Dict[str, Any]) -> List[LooseVersion]:
-        return [LooseVersion(version) for version in pypi_response["releases"].keys()]
-
-    async def request_pypi(self) -> Optional[Dict[str, Any]]:
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://pypi.org/pypi/neuromation/json") as response:
-                if response.status == 200:
-                    return await response.json()
+    def _get_max_version(self, pypi_response: Dict[str, Any]) -> Any:
+        try:
+            ret = [
+                pkg_resources.parse_version(version) for version in pypi_response["releases"].keys()
+            ]
+            return max(ver for ver in ret if not ver.is_prerelease)
+        except ValueError:
+            return pkg_resources.parse_version("0.0.0")

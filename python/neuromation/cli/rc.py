@@ -1,9 +1,9 @@
+import logging
 import os
-from distutils.version import LooseVersion
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
-import logging
+
 import aiohttp
 import yaml
 from yarl import URL
@@ -16,8 +16,11 @@ from neuromation.utils import run
 from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
 
+import pkg_resources
+
 
 log = logging.getLogger(__name__)
+
 
 class RCException(Exception):
     pass
@@ -47,33 +50,37 @@ def _create_staging_auth_config() -> AuthConfig:
 
 @dataclass
 class PyPIVersion:
-    pypi_version: LooseVersion
+    pypi_version: Any
     check_timestamp: int
 
     def warn_if_has_newer_version(self) -> None:
-        current = LooseVersion(neuromation.__version__)
+        current = pkg_resources.parse_version(neuromation.__version__)
         if current < self.pypi_version:
             update_command = "pip install --upgrade neuromation"
             log.warning(
                 f"You are using Neuromation Platform Client version {current}, "
                 f"however version {self.pypi_version} is available. "
             )
-            log.warning(f"You should consider upgrading via the '{update_command}' command.")
+            log.warning(
+                f"You should consider upgrading via the '{update_command}' command."
+            )
 
     @classmethod
     def from_config(cls, data: Dict[str, Any]):
         try:
-            pypi_version = LooseVersion(data['pypi_version'])
-            check_timestamp = int(data['check_timestamp'])
+            pypi_version = pkg_resources.parse_version(data["pypi_version"])
+            check_timestamp = int(data["check_timestamp"])
         except (KeyError, TypeError, ValueError):
             # config has invalid/missing data, ignore it
-            pypi_version = LooseVersion('0.0.0')
+            pypi_version = pkg_resources.parse_version("0.0.0")
             check_timestamp = 0
         return cls(pypi_version=pypi_version, check_timestamp=check_timestamp)
 
     def to_config(self) -> Dict[str, Any]:
-        return {'pypi_version': self.pypi_version,
-                'check_timestamp': self.check_timestamp}
+        return {
+            "pypi_version": str(self.pypi_version),
+            "check_timestamp": int(self.check_timestamp),
+        }
 
 
 @dataclass
@@ -82,7 +89,7 @@ class Config:
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
-    pypi: PyPIVersion = field(default_factory=PyPIVersion.from_config({}))
+    pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(pkg_resources.parse_version('0.0.0'), 0))
     color: bool = field(default=False)  # don't save the field in config
 
     @property
@@ -172,8 +179,11 @@ class ConfigFactory:
         return cls._update_config(github_rsa_path=github_rsa_path)
 
     @classmethod
-    def update_last_checked_version(cls, last_checked_version: str) -> Config:
-        return cls._update_config(last_checked_version=last_checked_version)
+    def update_last_checked_version(
+        cls, version: Any, timestamp: int
+    ) -> Config:
+        pypi = PyPIVersion(version, timestamp)
+        return cls._update_config(pypi=pypi)
 
     @classmethod
     def refresh_auth_token(cls, url: URL) -> Config:

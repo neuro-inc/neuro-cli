@@ -10,7 +10,6 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ign
 
 import neuromation
 from neuromation.cli.rc import RCException
-from neuromation.cli.version_utils import get_current_version, warn_if_has_newer_version
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
@@ -70,8 +69,7 @@ COLOR = False
     help="Color mode",
 )
 @click.version_option(
-    version=get_current_version().vstring,
-    message="Neuromation Platform Client %(version)s",
+    version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
 )
 @click.pass_context
 def cli(ctx: click.Context, verbose: int, show_traceback: bool, color: str) -> None:
@@ -102,13 +100,9 @@ def cli(ctx: click.Context, verbose: int, show_traceback: bool, color: str) -> N
     config = rc.ConfigFactory.load()
     config.color = real_color
     ctx.obj = config
+    config.pypi.warn_if_has_newer_version()
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help())
-
-    # TODO (ajuszkowski 31.1.2019) Run version check task in background
-    from neuromation.utils import run
-
-    run(warn_if_has_newer_version(config))
 
 
 @cli.command()
