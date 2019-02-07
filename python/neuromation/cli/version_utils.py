@@ -39,19 +39,19 @@ class VersionChecker:
         await self.close()
 
     async def run(self) -> None:
-        async with self:
-            await self.get_latest_version()
-
-    async def get_latest_version(self) -> None:
         try:
-            pypi_version = self._fetch_pypi()
-            ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
+            async with self:
+                await self.get_latest_version()
         except asyncio.CancelledError:
             pass
         except aiohttp.ClientConnectionError:
             log.debug("IO error on fetching data from PyPI", exc_info=True)
         except Exception:
             log.exception("Error on fetching data from PyPI")
+
+    async def get_latest_version(self) -> None:
+        pypi_version = await self._fetch_pypi()
+        ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
 
     async def _fetch_pypi(self) -> Any:
         async with self._session.get("https://pypi.org/pypi/neuromation/json") as resp:

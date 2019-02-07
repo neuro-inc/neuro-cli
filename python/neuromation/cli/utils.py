@@ -1,6 +1,7 @@
 import asyncio
 import re
 import shlex
+from contextlib import suppress
 from functools import wraps
 from typing import (
     Any,
@@ -33,8 +34,13 @@ async def run_async_function(
 ) -> _T:
     loop = asyncio.get_event_loop()
     version_checker = VersionChecker()
-    loop.create_task(version_checker.run())
-    return await func(*args, **kwargs)
+    task = loop.create_task(version_checker.run())
+    try:
+        return await func(*args, **kwargs)
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
