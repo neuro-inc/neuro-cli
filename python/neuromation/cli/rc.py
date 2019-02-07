@@ -64,6 +64,7 @@ class PyPIVersion:
             log.warning(
                 f"You should consider upgrading via the '{update_command}' command."
             )
+            log.warning("")  # tailing endline
 
     @classmethod
     def from_config(cls, data: Dict[str, Any]):

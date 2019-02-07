@@ -1,5 +1,6 @@
 from pathlib import Path
 from textwrap import dedent
+import pkg_resources
 
 import pytest
 from jose import jwt
@@ -39,6 +40,9 @@ def test_create(nmrc):
       success_redirect_url: https://platform.neuromation.io
       token_url: https://dev-neuromation.auth0.com/oauth/token
     github_rsa_path: ''
+    pypi:
+      check_timestamp: 0
+      pypi_version: 0.0.0
     url: https://platform.dev.neuromation.io/api/v1
     """
     )
@@ -134,11 +138,12 @@ class TestFactoryMethods:
 
     def test_factory_update_last_checked_version(self):
         config = rc.ConfigFactory.load()
-        assert config.last_checked_version is None
-        newer_version = "1.2.3b4"
-        rc.ConfigFactory.update_last_checked_version(newer_version)
+        assert config.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
+        newer_version = pkg_resources.parse_version("1.2.3b4")
+        rc.ConfigFactory.update_last_checked_version(newer_version, 1234)
         config2 = rc.ConfigFactory.load()
-        assert config2.last_checked_version == newer_version
+        assert config2.pypi.pypi_version == newer_version
+        assert config2.pypi.check_timestamp == 1234
 
     def test_factory_forget_token(self, monkeypatch, nmrc):
         def home():
