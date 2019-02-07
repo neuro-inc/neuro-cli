@@ -14,7 +14,9 @@ from aiohttp.web import (
     Application,
     AppRunner,
     HTTPBadRequest,
+    HTTPForbidden,
     HTTPFound,
+    HTTPUnauthorized,
     Request,
     Response,
     TCPSite,
@@ -132,6 +134,9 @@ class AuthCodeCallbackHandler:
         self._redirect_url = redirect_url
 
     async def handle(self, request: Request) -> Response:
+        if "error" in request.query:
+            await self._handle_error(request)
+
         code = request.query.get("code")
 
         if not code:
@@ -143,6 +148,21 @@ class AuthCodeCallbackHandler:
         if self._redirect_url:
             raise HTTPFound(self._redirect_url)
         return Response(text="OK")
+
+    async def _handle_error(self, request: Request) -> None:
+        error = request.query["error"]
+        description = request.query.get("error_description", "")
+
+        exc_factory: Type[Exception]
+        if error == "unauthorized":
+            exc_factory = HTTPUnauthorized
+        elif error == "access_denied":
+            exc_factory = HTTPForbidden
+        else:
+            exc_factory = HTTPBadRequest
+
+        self._code.set_exception(AuthException(description))
+        raise exc_factory(text=description)
 
 
 def create_auth_code_app(

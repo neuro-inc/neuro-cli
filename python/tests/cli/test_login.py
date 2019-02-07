@@ -11,6 +11,7 @@ from aiohttp.web import (
     HTTPForbidden,
     HTTPFound,
     HTTPOk,
+    HTTPUnauthorized,
     Request,
     Response,
     json_response,
@@ -110,17 +111,6 @@ class TestAuthCodeApp:
 
         assert await code.wait() == "testcode"
 
-    async def assert_code_callback_failure(
-        self, code: AuthCode, client: ClientSession, url: URL
-    ) -> None:
-        async with client.get(url) as resp:
-            assert resp.status == HTTPBadRequest.status_code
-            text = await resp.text()
-            assert text == "The 'code' query parameter is missing."
-
-        with pytest.raises(AuthException, match="failed to get an authorization code"):
-            await code.wait()
-
     async def test_create_app_server_once(self, client: ClientSession) -> None:
         code = AuthCode()
         app = create_auth_code_app(code)
@@ -149,7 +139,78 @@ class TestAuthCodeApp:
         port = unused_port()
         async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
             assert url == URL(f"http://0.0.0.0:{port}")
-            await self.assert_code_callback_failure(code, client, url)
+
+            async with client.get(url) as resp:
+                assert resp.status == HTTPBadRequest.status_code
+                text = await resp.text()
+                assert text == "The 'code' query parameter is missing."
+
+            with pytest.raises(
+                AuthException, match="failed to get an authorization code"
+            ):
+                await code.wait()
+
+    async def test_error_unauthorized(self, client: ClientSession) -> None:
+        code = AuthCode()
+        app = create_auth_code_app(code)
+
+        port = unused_port()
+        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
+            assert url == URL(f"http://0.0.0.0:{port}")
+
+            async with client.get(
+                url,
+                params={
+                    "error": "unauthorized",
+                    "error_description": "Test Unauthorized",
+                },
+            ) as resp:
+                assert resp.status == HTTPUnauthorized.status_code
+                text = await resp.text()
+                assert text == "Test Unauthorized"
+
+            with pytest.raises(AuthException, match="Test Unauthorized"):
+                await code.wait()
+
+    async def test_error_access_denied(self, client: ClientSession) -> None:
+        code = AuthCode()
+        app = create_auth_code_app(code)
+
+        port = unused_port()
+        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
+            assert url == URL(f"http://0.0.0.0:{port}")
+
+            async with client.get(
+                url,
+                params={
+                    "error": "access_denied",
+                    "error_description": "Test Access Denied",
+                },
+            ) as resp:
+                assert resp.status == HTTPForbidden.status_code
+                text = await resp.text()
+                assert text == "Test Access Denied"
+
+            with pytest.raises(AuthException, match="Test Access Denied"):
+                await code.wait()
+
+    async def test_error_other(self, client: ClientSession) -> None:
+        code = AuthCode()
+        app = create_auth_code_app(code)
+
+        port = unused_port()
+        async with create_app_server_once(app, host="0.0.0.0", port=port) as url:
+            assert url == URL(f"http://0.0.0.0:{port}")
+
+            async with client.get(
+                url, params={"error": "other", "error_description": "Test Other"}
+            ) as resp:
+                assert resp.status == HTTPBadRequest.status_code
+                text = await resp.text()
+                assert text == "Test Other"
+
+            with pytest.raises(AuthException, match="Test Other"):
+                await code.wait()
 
     async def test_create_app_server(self, client: ClientSession) -> None:
         code = AuthCode()
