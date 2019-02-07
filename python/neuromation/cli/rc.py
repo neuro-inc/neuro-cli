@@ -66,7 +66,7 @@ class PyPIVersion:
             log.warning("")  # tailing endline
 
     @classmethod
-    def from_config(cls, data: Dict[str, Any]):
+    def from_config(cls, data: Dict[str, Any]) -> "PyPIVersion":
         try:
             pypi_version = pkg_resources.parse_version(data["pypi_version"])
             check_timestamp = int(data["check_timestamp"])

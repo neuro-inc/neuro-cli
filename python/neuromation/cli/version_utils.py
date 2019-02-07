@@ -24,7 +24,7 @@ class VersionChecker:
         self._session = aiohttp.ClientSession(connector=connector)
         self._timer = timer
 
-    async def close(self):
+    async def close(self) -> None:
         await self._session.close()
 
     async def __aenter__(self) -> "VersionChecker":
@@ -67,6 +67,6 @@ class VersionChecker:
                 pkg_resources.parse_version(version)
                 for version in pypi_response["releases"].keys()
             ]
-            return max(ver for ver in ret if not ver.is_prerelease)
+            return max(ver for ver in ret if not ver.is_prerelease)  # type: ignore
         except ValueError:
             return pkg_resources.parse_version("0.0.0")
