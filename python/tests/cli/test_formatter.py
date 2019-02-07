@@ -1,3 +1,4 @@
+import re
 import textwrap
 from typing import Optional
 
@@ -101,21 +102,40 @@ class TestJobStartProgress:
 
     def test_progress(self) -> None:
         progress = JobStartProgress(True)
+
         assert (
-            self.strip(progress(self.make_job(JobStatus.PENDING, None)))
-            == "Status: pending [0.0 sec] |"
+            re.match(
+                r"Status: pending \[\d+\.\d+ sec] \|",
+                self.strip(progress(self.make_job(JobStatus.PENDING, None))),
+            )
+            is not None
         )
         assert (
-            self.strip(progress(self.make_job(JobStatus.PENDING, "ContainerCreating")))
-            == "Status: pending ContainerCreating [0.0 sec] /"
+            re.match(
+                r"Status: pending ContainerCreating \[\d+\.\d+ sec] /",
+                self.strip(
+                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
+                ),
+            )
+            is not None
         )
         assert (
-            self.strip(progress(self.make_job(JobStatus.PENDING, "ContainerCreating")))
-            == "Status: pending ContainerCreating [0.0 sec] -"
+            re.match(
+                r"Status: pending ContainerCreating \[\d+\.\d+ sec] -",
+                self.strip(
+                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
+                ),
+            )
+            is not None
         )
         assert (
-            self.strip(progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True))
-            == "Status: succeeded [0.0 sec]"
+            re.match(
+                r"Status: succeeded \[\d+\.\d sec]",
+                self.strip(
+                    progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
+                ),
+            )
+            is not None
         )
 
 
