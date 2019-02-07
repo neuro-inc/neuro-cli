@@ -1,17 +1,17 @@
 import asyncio
 import socket
 import ssl
-from distutils.version import LooseVersion
 from typing import Dict
 
 import aiohttp
+import pkg_resources
 import pytest
 import trustme
 from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
 
-from neuromation.cli.version_utils import get_latest_version_from_pypi, get_versions
+from neuromation.cli.version_utils import VersionChecker
 
 
 @pytest.fixture
@@ -203,20 +203,12 @@ async def fake_pypi(ssl_ctx: ssl.SSLContext, loop: asyncio.AbstractEventLoop) ->
 
 
 @pytest.fixture()
-async def session(fake_pypi: Dict[str, int], loop: asyncio.AbstractEventLoop) -> None:
+async def connector(fake_pypi: Dict[str, int]) -> aiohttp.TCPConnector:
     resolver = FakeResolver(fake_pypi)
-    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)
-    session = aiohttp.ClientSession(connector=connector)
-    yield session
-    await session.close()
+    return aiohttp.TCPConnector(resolver=resolver, ssl=False)
 
 
-async def test_get_versions(session: aiohttp.ClientSession) -> None:
-    async with session.get("https://pypi.org/pypi/neuromation/json") as resp:
-        resp = await resp.json()
-        assert get_versions(resp) == [LooseVersion("0.2.0b0"), LooseVersion("0.2.1")]
-
-
-async def test_get_latest_version_from_pypi(session):
-    latest_version = await get_latest_version_from_pypi()
-    assert latest_version == LooseVersion("0.2.1")
+async def test__fetch_pypi(connector: aiohttp.TCPConnector) -> None:
+    async with VersionChecker(connector=connector) as checker:
+        version = await checker._fetch_pypi()
+        assert version == pkg_resources.parse_version("0.2.1")

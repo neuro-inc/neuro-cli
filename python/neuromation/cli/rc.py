@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
+import pkg_resources
 import yaml
 from yarl import URL
 
@@ -15,8 +16,6 @@ from neuromation.utils import run
 
 from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
-
-import pkg_resources
 
 
 log = logging.getLogger(__name__)
@@ -90,7 +89,9 @@ class Config:
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
-    pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(pkg_resources.parse_version('0.0.0'), 0))
+    pypi: PyPIVersion = field(
+        default_factory=lambda: PyPIVersion(pkg_resources.parse_version("0.0.0"), 0)
+    )
     color: bool = field(default=False)  # don't save the field in config
 
     @property
@@ -180,9 +181,7 @@ class ConfigFactory:
         return cls._update_config(github_rsa_path=github_rsa_path)
 
     @classmethod
-    def update_last_checked_version(
-        cls, version: Any, timestamp: int
-    ) -> Config:
+    def update_last_checked_version(cls, version: Any, timestamp: int) -> Config:
         pypi = PyPIVersion(version, timestamp)
         return cls._update_config(pypi=pypi)
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 from textwrap import dedent
-import pkg_resources
 
+import pkg_resources
 import pytest
 from jose import jwt
 from yarl import URL
