@@ -8,6 +8,7 @@ from yarl import URL
 from neuromation.cli.rc import ConfigFactory
 from neuromation.client import JobStatus as Status
 from tests.e2e.test_e2e_utils import wait_job_change_state_to
+from tests.e2e.utils import attempt
 
 
 TEST_IMAGE_NAME = "e2e-banana-image"
@@ -95,6 +96,11 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     job_id = captured.out.strip()
     assert job_id.startswith("job-")
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
-    captured = run(["job", "logs", job_id])
-    assert not captured.err
-    assert captured.out.strip() == tag
+
+    @attempt()
+    def check_job_output():
+        captured = run(["job", "logs", job_id])
+        assert not captured.err
+        assert captured.out == tag
+
+    check_job_output()
