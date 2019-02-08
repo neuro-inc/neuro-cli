@@ -66,6 +66,16 @@ class Context(click.Context):
         )
 
 
+def format_example(example: str, formatter: click.HelpFormatter) -> None:
+    with formatter.section(click.style("Examples", bold=True, underline=False)):
+        for line in example.splitlines():
+            is_comment = line.startswith("#")
+            if is_comment:
+                formatter.write_text("\b\n" + click.style(line, dim=True))
+            else:
+                formatter.write_text("\b\n" + " ".join(shlex.split(line)))
+
+
 class NeuroClickMixin:
     def get_short_help_str(self, limit: int = 45) -> str:
         text = super().get_short_help_str(limit=limit)  # type: ignore
@@ -90,15 +100,7 @@ class NeuroClickMixin:
             examples = [example.strip() for example in examples]
 
             for example in examples:
-                with formatter.section(
-                    click.style("Examples", bold=True, underline=False)
-                ):
-                    for line in example.splitlines():
-                        is_comment = line.startswith("#")
-                        if is_comment:
-                            formatter.write_text("\b\n" + click.style(line, dim=True))
-                        else:
-                            formatter.write_text("\b\n" + " ".join(shlex.split(line)))
+                format_example(example, formatter)
         elif deprecated:
             formatter.write_paragraph()
             with formatter.indentation():
@@ -121,7 +123,9 @@ class NeuroClickMixin:
 
 
 class NeuroGroupMixin(NeuroClickMixin):
-    def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+    def format_options(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
         self.format_commands(ctx, formatter)
 
 
@@ -230,11 +234,17 @@ class MainGroup(Group):
         self._format_group("Commands", groups, formatter)
         self._format_group("Command Shortcuts", commands, formatter)
 
-    def format_options(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+    def format_options(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
         self.format_commands(ctx, formatter)
         formatter.write_paragraph()
-        formatter.write_text('Use "neuro <command> --help" for more information about a given command.')
-        formatter.write_text('Use "neuro options" for a list of global command-line options (applies to all commands).')
+        formatter.write_text(
+            'Use "neuro <command> --help" for more information about a given command.'
+        )
+        formatter.write_text(
+            'Use "neuro --options" for a list of global command-line options (applies to all commands).'
+        )
 
 
 def alias(

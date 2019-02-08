@@ -1,7 +1,8 @@
 import logging
 import os
 import sys
-from typing import List, Optional, Sequence, Type
+from textwrap import dedent
+from typing import Any, List, Optional, Sequence, Type
 
 import aiohttp
 import click
@@ -13,7 +14,7 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
-from .utils import Context, DeprecatedGroup, MainGroup, alias
+from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
 # For stream copying from file to http or from http to file
@@ -55,8 +56,35 @@ LOG_ERROR = log.error
 COLOR = False
 
 
+def print_options(ctx: click.Context, param: str, value: Any) -> None:
+    if not value or ctx.resilient_parsing:
+        return
+
+    formatter = ctx.make_formatter()
+    formatter.write_text("Options available for any command.")
+    EXAMPLE = dedent(
+        """\
+        # Show config without colors
+        neuro --color=no config show
+    """
+    )
+    format_example(EXAMPLE, formatter)
+
+    opts = []
+    for param in ctx.command.get_params(ctx):
+        rv = param.get_help_record(ctx)
+        if rv is not None:
+            opts.append(rv)
+
+    with formatter.section("Options"):
+        formatter.write_dl(opts)
+
+    click.echo(formatter.getvalue())
+    ctx.exit()
+
+
 @click.group(cls=MainGroup, invoke_without_command=True)
-@click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode")
+@click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
 @click.option(
     "--show-traceback",
     is_flag=True,
@@ -66,7 +94,7 @@ COLOR = False
     "--color",
     type=click.Choice(["yes", "no", "auto"]),
     default="auto",
-    help="Color mode",
+    help="Color mode.",
 )
 @click.option(
     "--disable-pypi-version-check",
@@ -76,6 +104,14 @@ COLOR = False
 )
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
+)
+@click.option(
+    "--options",
+    is_flag=True,
+    callback=print_options,
+    expose_value=False,
+    is_eager=True,
+    help="Show common options.",
 )
 @click.pass_context
 def cli(
@@ -122,14 +158,14 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
     """Get help on a command."""
     top_ctx = ctx.find_root()
 
-    not_found = 'No such command neuro "{}"'.format(" ".join(command))
+    not_found = 'No such command "neuro {}"'.format(" ".join(command))
 
     ctx_stack = [top_ctx]
     for cmd_name in command:
         current_cmd = ctx_stack[-1].command
         if isinstance(current_cmd, click.MultiCommand):
             sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
-            if sub_cmd is None:
+            if sub_cmd is None or sub_cmd.hidden:
                 click.echo(not_found)
                 break
             sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
@@ -143,32 +179,6 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
 
     for ctx in reversed(ctx_stack[1:]):
         ctx.close()
-
-
-@cli.command()
-@click.pass_context
-def options(ctx: click.Context) -> None:
-    """
-    Examples:
-
-    # Show config without colors
-    neuro --color=no config show
-    """
-    top_ctx = ctx.find_root()
-    formatter = ctx.make_formatter()
-    formatter.write_text("Options available for any command.")
-    ctx.command.format_help_text(ctx, formatter)
-
-    opts = []
-    for param in top_ctx.command.get_params(top_ctx):
-        rv = param.get_help_record(top_ctx)
-        if rv is not None:
-            opts.append(rv)
-
-    with formatter.section('Options'):
-        formatter.write_dl(opts)
-
-    click.echo(formatter.getvalue())
 
 
 cli.add_command(job.job)

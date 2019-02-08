@@ -73,11 +73,12 @@ neuro [OPTIONS] COMMAND [ARGS]...
 
 Name | Description|
 |----|------------|
-|_\-v, --verbose_|Enable verbose mode|
+|_\-v, --verbose_|Enable verbose mode.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
-|_--color \[yes|no|auto]_|Color mode|
+|_--color \[yes|no|auto]_|Color mode.|
 |_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
 |_--version_|Show the version and exit.|
+|_--options_|Show common options.|
 |_--help_|Show this message and exit.|
 
 
