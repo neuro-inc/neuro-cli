@@ -91,13 +91,6 @@ async def ls(
         else:
             formatter = SimpleFilesFormatter()
 
-    if sort == "size":
-        sorter = FilesSorter.SIZE
-    elif sort == "time":
-        sorter = FilesSorter.TIME
-    else:
-        sorter = FilesSorter.NAME
-
     uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")
 

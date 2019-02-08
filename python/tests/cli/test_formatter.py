@@ -25,7 +25,6 @@ from neuromation.cli.formatter import (
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 from neuromation.client import (
-    Action,
     Container,
     FileStatus,
     FileStatusType,
