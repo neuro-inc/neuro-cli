@@ -51,7 +51,7 @@ class LongFilesFormatter(BaseFilesFormatter):
     def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
 
         type = self.file_types_mapping[file.type]
-        permission = self.permissions_mapping[file.permission]
+        permission = self.permissions_mapping[Action(file.permission)]
 
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
 
@@ -129,7 +129,7 @@ class FilesSorter(str, enum.Enum):
     SIZE = "size"
     TIME = "time"
 
-    def key(self) -> None:
+    def key(self) -> Any:
         if self == self.NAME:
             field = "name"
         elif self == self.SIZE:
