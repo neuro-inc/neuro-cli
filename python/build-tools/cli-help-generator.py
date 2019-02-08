@@ -138,11 +138,13 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
 
     if info.children:
         md += "**Commands:**\n\n"
+        md +="|||\n"
+        md +="|---|---|\n"
 
         for child in info.children:
             anchor = child.name
             anchor = "#" + anchor.replace(" ", "-")
-            md += f"* _[{child.name}]({anchor})_: {child.description}"
+            md += f"| _[{escape(child.name)}]({anchor})_| {escape(child.short)} |\n"
 
         md += "\n\n"
 
