@@ -4,13 +4,19 @@ import aiohttp
 import click
 from yarl import URL
 
+from neuromation.cli.files_formatter import (
+    BaseFilesFormatter,
+    FilesSorter,
+    LongFilesFormatter,
+    SimpleFilesFormatter,
+    VerticalColumnsFilesFormatter,
+)
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
 
 from .command_progress_report import ProgressBase
-from .formatter import StorageLsFormatter
 from .rc import Config
 from .utils import command, group, run_async
 
@@ -48,21 +54,49 @@ async def rm(cfg: Config, path: str) -> None:
 
 @command()
 @click.argument("path", default="storage://~")
+@click.option(
+    "--human-readable",
+    "-h",
+    is_flag=True,
+    help="with -l print human readable sizes (e.g., 2K, 540M)",
+)
+@click.option("-l", "format_long", is_flag=True, help="use a long listing format")
+@click.option(
+    "--sort",
+    type=click.Choice(["name", "size", "time"]),
+    default="name",
+    help="sort by given field, default is name",
+)
 @click.pass_obj
 @run_async
-async def ls(cfg: Config, path: str) -> None:
+async def ls(
+    cfg: Config, path: str, human_readable: bool, format_long: bool, sort: str
+) -> None:
     """
     List directory contents.
 
     By default PATH is equal user`s home dir (storage:)
     """
+    if format_long:
+        formatter: BaseFilesFormatter = LongFilesFormatter(
+            human_readable=human_readable
+        )
+    else:
+        if cfg.tty:
+            formatter = VerticalColumnsFilesFormatter(width=cfg.terminal_size[0])
+        else:
+            formatter = SimpleFilesFormatter()
+
     uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")
 
     async with cfg.make_client() as client:
-        res = await client.storage.ls(uri)
+        files = await client.storage.ls(uri)
 
-    click.echo(StorageLsFormatter()(res))
+    files = sorted(files, key=FilesSorter(sort).key())
+
+    for line in formatter.__call__(files):
+        click.echo(line)
 
 
 @command()

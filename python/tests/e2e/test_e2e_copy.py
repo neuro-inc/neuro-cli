@@ -3,7 +3,8 @@ from pathlib import PurePath
 
 import pytest
 
-from tests.e2e.utils import FILE_SIZE_B, format_list
+from neuromation.client import FileStatusType
+from tests.e2e.utils import FILE_SIZE_B, output_to_files
 
 
 @pytest.mark.e2e
@@ -81,13 +82,24 @@ def test_copy_local_to_platform_single_file_2(
     check_upload_file_to_storage("different_name.txt", "folder", srcfile)
 
     # Ensure file is there
-    check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
-    captured = run(["storage", "ls", tmpstorage + "folder/"])
-    split = captured.out.split("\n")
-    assert (
-        format_list(name="different_name.txt", size=FILE_SIZE_B, type="file") in split
-    )
-    assert format_list(name=file_name, size=FILE_SIZE_B, type="file") not in split
+    captured = run(["storage", "ls", "-l", tmpstorage + "folder/"])
+    files = output_to_files(captured.out)
+    for file in files:
+        if (
+            file.name == "different_name.txt"
+            and file.type == FileStatusType.FILE
+            and file.size == FILE_SIZE_B
+        ):
+            break
+    else:
+        raise AssertionError("File different_name.txt not found after uploading")
+
+    for file in files:
+        if file.name == file_name and file.type == FileStatusType.FILE:
+            raise AssertionError(
+                f"File {file_name} found on storage, "
+                f"it's must be uploaded as different_name.txt"
+            )
 
     # Remove the file from platform
     check_rm_file_on_storage("different_name.txt", "folder")

@@ -4,12 +4,13 @@ from time import sleep
 import pytest
 
 import neuromation
+from neuromation.client import FileStatusType
 from tests.e2e.test_e2e_utils import (
     Status,
     assert_job_state,
     wait_job_change_state_from,
 )
-from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list
+from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
 
 
 @pytest.mark.e2e
@@ -139,12 +140,17 @@ def test_e2e_storage(
     check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Confirm file has been renamed
-    captured = run(["storage", "ls", f"{tmpstorage}folder"])
-    captured_output_list = captured.out.split("\n")
+    captured = run(["storage", "ls", "-l", f"{tmpstorage}folder"])
     assert not captured.err
-    expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
-    assert expected_line in captured_output_list
-    assert "foo" not in captured_output_list
+    files = output_to_files(captured.out)
+    for file in files:
+        if file.name == "bar" and file.type == FileStatusType.FILE:
+            break
+    else:
+        raise AssertionError("File bar not found after renaming from foo")
+    for file in files:
+        if file.name == "foo" and file.type == FileStatusType.FILE:
+            raise AssertionError("File foo still on storage after renaming to bar")
 
     # Rename directory on the storage
     check_rename_directory_on_storage("folder", "folder2")
@@ -165,6 +171,7 @@ def test_job_storage_interaction(
     check_create_dir_on_storage,
     check_upload_file_to_storage,
     check_file_on_storage_checksum,
+    check_file_exists_on_storage,
 ):
     srcfile, checksum = data
     # Create directory for the test
@@ -206,11 +213,7 @@ def test_job_storage_interaction(
         try:
             assert_job_state(run, job_id, Status.SUCCEEDED)
             # Confirm file has been copied
-            captured = run(["storage", "ls", f"{tmpstorage}result"])
-            captured_output_list = captured.out.split("\n")
-            assert not captured.err
-            expected_line = format_list(type="file", size=FILE_SIZE_B, name="foo")
-            assert expected_line in captured_output_list
+            check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
             # Download into local dir and confirm checksum
             check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")

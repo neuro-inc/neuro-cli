@@ -1,12 +1,12 @@
 import itertools
 import re
 import time
-from typing import AbstractSet, Iterable, List, Optional
+from typing import AbstractSet, Iterable, Optional
 
 import click
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.client import JobDescription, JobStatus, Resources
 from neuromation.client.jobs import JobTelemetry
 
 from .rc import Config
@@ -103,16 +103,6 @@ class JobStartProgress(BaseFormatter):
         if finish:
             ret += AFTER_PROGRESS
         return ret
-
-
-class StorageLsFormatter(BaseFormatter):
-    FORMAT = "{type:<15}{size:<15,}{name:<}".format
-
-    def __call__(self, lst: List[FileStatus]) -> str:
-        return "\n".join(
-            self.FORMAT(type=status.type.lower(), name=status.path, size=status.size)
-            for status in lst
-        )
 
 
 class JobStatusFormatter(BaseFormatter):

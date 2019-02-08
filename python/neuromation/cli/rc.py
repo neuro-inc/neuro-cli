@@ -94,6 +94,10 @@ class Config:
     github_rsa_path: str = ""
     pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(NO_VERSION, 0))
     color: bool = field(default=False)  # don't save the field in config
+    tty: bool = field(default=False)  # don't save the field in config
+    terminal_size: Tuple[int, int] = field(
+        default=(80, 24)
+    )  # don't save the field in config
 
     @property
     def auth(self) -> Optional[str]:
