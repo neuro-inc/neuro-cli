@@ -102,7 +102,7 @@ def run(monkeypatch, capfd, tmp_path):
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
-                main(["--show-traceback"] + arguments)
+                main(["--show-traceback", "--disable-pypi-version-check"] + arguments)
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem

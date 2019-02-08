@@ -1,6 +1,8 @@
+import logging
 from pathlib import Path
 from textwrap import dedent
 
+import pkg_resources
 import pytest
 from jose import jwt
 from yarl import URL
@@ -39,6 +41,9 @@ def test_create(nmrc):
       success_redirect_url: https://platform.neuromation.io
       token_url: https://dev-neuromation.auth0.com/oauth/token
     github_rsa_path: ''
+    pypi:
+      check_timestamp: 0
+      pypi_version: 0.0.0
     url: https://platform.dev.neuromation.io/api/v1
     """
     )
@@ -131,6 +136,15 @@ class TestFactoryMethods:
         no_identity = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token=no_identity)
+
+    def test_factory_update_last_checked_version(self):
+        config = rc.ConfigFactory.load()
+        assert config.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
+        newer_version = pkg_resources.parse_version("1.2.3b4")
+        rc.ConfigFactory.update_last_checked_version(newer_version, 1234)
+        config2 = rc.ConfigFactory.load()
+        assert config2.pypi.pypi_version == newer_version
+        assert config2.pypi.check_timestamp == 1234
 
     def test_factory_forget_token(self, monkeypatch, nmrc):
         def home():
@@ -238,3 +252,18 @@ def test_unregistered():
     config = rc.Config()
     with pytest.raises(rc.RCException):
         config._check_registered()
+
+
+def test_warn_in_has_newer_version_no_upgrade(caplog):
+    config = rc.Config()
+    with caplog.at_level(logging.WARNING):
+        config.pypi.warn_if_has_newer_version()
+    assert not caplog.records
+
+
+def test_warn_in_has_newer_version_need_upgrade(caplog):
+    config = rc.Config()
+    config.pypi.pypi_version = pkg_resources.parse_version("100.500")
+    with caplog.at_level(logging.WARNING):
+        config.pypi.warn_if_has_newer_version()
+    assert " version 100.500 is available." in caplog.records[0].message

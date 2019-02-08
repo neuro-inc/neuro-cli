@@ -68,11 +68,23 @@ COLOR = False
     default="auto",
     help="Color mode",
 )
+@click.option(
+    "--disable-pypi-version-check",
+    is_flag=True,
+    help="Don't periodically check PyPI to determine whether a new version of "
+    "Neuromation CLI is available for download.",
+)
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
 )
 @click.pass_context
-def cli(ctx: click.Context, verbose: int, show_traceback: bool, color: str) -> None:
+def cli(
+    ctx: click.Context,
+    verbose: int,
+    show_traceback: bool,
+    color: str,
+    disable_pypi_version_check: bool,
+) -> None:
     #   ▇ ◣
     #   ▇ ◥ ◣
     # ◣ ◥   ▇
@@ -91,12 +103,14 @@ def cli(ctx: click.Context, verbose: int, show_traceback: bool, color: str) -> N
     COLORS = {"yes": True, "no": False, "auto": None}
     real_color: Optional[bool] = COLORS[color]
     if real_color is None:
-        real_color = sys.stdin.isatty()
+        real_color = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
     COLOR = real_color
     ctx.color = real_color
     config = rc.ConfigFactory.load()
     config.color = real_color
     ctx.obj = config
+    if not disable_pypi_version_check:
+        config.pypi.warn_if_has_newer_version()
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help())
 
