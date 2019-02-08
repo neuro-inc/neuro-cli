@@ -1,0 +1,1 @@
+Use colored mode only if all stdin, stdout, and stderr are tty.
