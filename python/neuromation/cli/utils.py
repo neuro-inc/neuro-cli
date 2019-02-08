@@ -209,8 +209,8 @@ class MainGroup(Group):
             else:
                 commands.append((subcommand, cmd))
 
-        self._format_group("Command Groups", groups, formatter)
-        self._format_group("Commands", commands, formatter)
+        self._format_group("Commands", groups, formatter)
+        self._format_group("Command Shortcuts", commands, formatter)
 
 
 def alias(
