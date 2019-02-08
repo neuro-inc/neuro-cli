@@ -91,7 +91,7 @@ def cli(ctx: click.Context, verbose: int, show_traceback: bool, color: str) -> N
     COLORS = {"yes": True, "no": False, "auto": None}
     real_color: Optional[bool] = COLORS[color]
     if real_color is None:
-        real_color = sys.stdin.isatty()
+        real_color = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
     COLOR = real_color
     ctx.color = real_color
     config = rc.ConfigFactory.load()
