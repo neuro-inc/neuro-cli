@@ -63,10 +63,10 @@ class TestJobFormatter:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Shortcuts:\n"
-            + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
-            + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro job kill {TEST_JOB_ID}    # kill job"
+            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
+            + f"  neuro monitor {TEST_JOB_ID} # monitor job stdout\n"
+            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
+            + f"  neuro kill {TEST_JOB_ID}    # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -105,14 +105,14 @@ class TestJobStartProgress:
 
         assert (
             re.match(
-                r"Status: pending \[\d+\.\d+ sec] \|",
+                r"Status: pending \[elapsed \d+\.\d+ sec] \|",
                 self.strip(progress(self.make_job(JobStatus.PENDING, None))),
             )
             is not None
         )
         assert (
             re.match(
-                r"Status: pending ContainerCreating \[\d+\.\d+ sec] /",
+                r"Status: pending ContainerCreating \[elapsed \d+\.\d+ sec] /",
                 self.strip(
                     progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
                 ),
@@ -121,7 +121,7 @@ class TestJobStartProgress:
         )
         assert (
             re.match(
-                r"Status: pending ContainerCreating \[\d+\.\d+ sec] -",
+                r"Status: pending ContainerCreating \[elapsed \d+\.\d+ sec] -",
                 self.strip(
                     progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
                 ),
@@ -130,7 +130,7 @@ class TestJobStartProgress:
         )
         assert (
             re.match(
-                r"Status: succeeded \[\d+\.\d sec]",
+                r"Status: succeeded \[elapsed \d+\.\d sec]",
                 self.strip(
                     progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
                 ),
@@ -570,9 +570,9 @@ class TestConfigFormatter:
             github_rsa_path="path",
         )
         out = ConfigFormatter()(config)
-        assert out == textwrap.dedent(
+        assert click.unstyle(out) == textwrap.dedent(
             """\
-            Config:
+            User Configuration:
               User Name: user
               API URL: https://platform.dev.neuromation.io/api/v1
               Docker Registry URL: https://registry.dev.neuromation.io

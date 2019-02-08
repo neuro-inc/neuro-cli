@@ -95,7 +95,7 @@ class JobStartProgress(BaseFormatter):
         self._color = color
         self._time = time.time()
         self._spinner = itertools.cycle(self.SPINNER)
-        self._prev = ''
+        self._prev = ""
 
     def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
         if not self._color:
@@ -105,10 +105,10 @@ class JobStartProgress(BaseFormatter):
         msg = format_job_status(job.status)
         if job.history.reason:
             msg += " " + style(job.history.reason, bold=True)
-        ret = ''
+        ret = ""
         if msg != self._prev:
             if self._prev:
-                ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + '\n'
+                ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
             self._prev = msg
         ret += self.LINE_PRE + msg + f" [elapsed {dt:.1f} sec]"
         if not finish:
@@ -297,9 +297,21 @@ class ResourcesFormatter(BaseFormatter):
 class ConfigFormatter:
     def __call__(self, config: Config) -> str:
         lines = []
-        lines.append(f"User Name: {config.get_platform_user_name()}")
-        lines.append(f"API URL: {config.url}")
-        lines.append(f"Docker Registry URL: {config.docker_registry_url()}")
-        lines.append(f"Github RSA Path: {config.github_rsa_path}")
+        lines.append(
+            style("User Name", bold=True) + f": {config.get_platform_user_name()}"
+        )
+        lines.append(style("API URL", bold=True) + f": {config.url}")
+        lines.append(
+            style("Docker Registry URL", bold=True)
+            + f": {config.docker_registry_url()}"
+        )
+        lines.append(
+            style("Github RSA Path", bold=True) + f": {config.github_rsa_path}"
+        )
         indent = "  "
-        return "Config:\n" + indent + f"\n{indent}".join(lines)
+        return (
+            style("User Configuration", bold=True)
+            + ":\n"
+            + indent
+            + f"\n{indent}".join(lines)
+        )
