@@ -28,14 +28,15 @@ def test_print():
         """\
         Usage: main [OPTIONS] COMMAND [ARGS]...
 
-        Options:
-          --help  Show this message and exit.
-
-        Command Groups:
+        Commands:
           sub-command
 
-        Commands:
+        Command Shortcuts:
           plain-cmd
+
+        Use "neuro <command> --help" for more information about a given command.
+        Use "neuro --options" for a list of global command-line options (applies to all
+        commands).
     """
     )
 
@@ -60,14 +61,15 @@ def test_print_use_group_helpers():
         """\
         Usage: main [OPTIONS] COMMAND [ARGS]...
 
-        Options:
-          --help  Show this message and exit.
-
-        Command Groups:
+        Commands:
           sub-command
 
-        Commands:
+        Command Shortcuts:
           plain-cmd
+
+        Use "neuro <command> --help" for more information about a given command.
+        Use "neuro --options" for a list of global command-line options (applies to all
+        commands).
     """
     )
 
@@ -81,7 +83,7 @@ def test_print_hidden():
     def plain_cmd():
         pass
 
-    @group(cls=MainGroup)
+    @group()
     def main():
         pass
 
@@ -95,10 +97,7 @@ def test_print_hidden():
         """\
         Usage: main [OPTIONS] COMMAND [ARGS]...
 
-        Options:
-          --help  Show this message and exit.
-
-        Command Groups:
+        Commands:
           sub-command
     """
     )
@@ -111,7 +110,7 @@ def test_print_deprecated_group():
         Sub-command.
         """
 
-    @group(cls=MainGroup)
+    @group()
     def main():
         pass
 
@@ -125,10 +124,7 @@ def test_print_deprecated_group():
         """\
         Usage: main [OPTIONS] COMMAND [ARGS]...
 
-        Options:
-          --help  Show this message and exit.
-
-        Command Groups:
+        Commands:
           sub-command  Sub-command
           alias        Alias for sub-command
     """
@@ -164,9 +160,6 @@ def test_print_deprecated_group_content():
         Usage: main alias [OPTIONS] COMMAND [ARGS]...
 
           Alias for sub-command (DEPRECATED)
-
-        Options:
-          --help  Show this message and exit.
 
         Commands:
           cmd  Command
