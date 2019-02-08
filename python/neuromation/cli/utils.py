@@ -126,7 +126,7 @@ class NeuroGroupMixin(NeuroClickMixin):
     def format_options(
         self, ctx: click.Context, formatter: click.HelpFormatter
     ) -> None:
-        self.format_commands(ctx, formatter)
+        self.format_commands(ctx, formatter)  # type: ignore
 
 
 class Command(NeuroClickMixin, click.Command):
@@ -243,7 +243,8 @@ class MainGroup(Group):
             'Use "neuro <command> --help" for more information about a given command.'
         )
         formatter.write_text(
-            'Use "neuro --options" for a list of global command-line options (applies to all commands).'
+            'Use "neuro --options" for a list of global command-line options '
+            "(applies to all commands)."
         )
 
 

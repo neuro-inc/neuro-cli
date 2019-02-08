@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 from textwrap import dedent
-from typing import Any, List, Optional, Sequence, Type
+from typing import Any, List, Optional, Sequence, Type, Union
 
 import aiohttp
 import click
@@ -56,7 +56,9 @@ LOG_ERROR = log.error
 COLOR = False
 
 
-def print_options(ctx: click.Context, param: str, value: Any) -> None:
+def print_options(
+    ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
+) -> Any:
     if not value or ctx.resilient_parsing:
         return
 
@@ -71,8 +73,8 @@ def print_options(ctx: click.Context, param: str, value: Any) -> None:
     format_example(EXAMPLE, formatter)
 
     opts = []
-    for param in ctx.command.get_params(ctx):
-        rv = param.get_help_record(ctx)
+    for parameter in ctx.command.get_params(ctx):
+        rv = parameter.get_help_record(ctx)
         if rv is not None:
             opts.append(rv)
 
@@ -165,7 +167,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         current_cmd = ctx_stack[-1].command
         if isinstance(current_cmd, click.MultiCommand):
             sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
-            if sub_cmd is None or sub_cmd.hidden:
+            if sub_cmd is None or sub_cmd.hidden:  # type: ignore
                 click.echo(not_found)
                 break
             sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
