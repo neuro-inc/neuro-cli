@@ -120,9 +120,7 @@ def cli(
 @click.pass_context
 def help(ctx: click.Context, command: Sequence[str]) -> None:
     """Get help on a command."""
-    top_ctx = ctx
-    while top_ctx.parent is not None:
-        top_ctx = top_ctx.parent
+    top_ctx = ctx.find_root()
 
     not_found = 'No such command neuro "{}"'.format(" ".join(command))
 
@@ -145,6 +143,32 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
 
     for ctx in reversed(ctx_stack[1:]):
         ctx.close()
+
+
+@cli.command()
+@click.pass_context
+def options(ctx: click.Context) -> None:
+    """
+    Examples:
+
+    # Show config without colors
+    neuro --color=no config show
+    """
+    top_ctx = ctx.find_root()
+    formatter = ctx.make_formatter()
+    formatter.write_text("Options available for any command.")
+    ctx.command.format_help_text(ctx, formatter)
+
+    opts = []
+    for param in top_ctx.command.get_params(top_ctx):
+        rv = param.get_help_record(top_ctx)
+        if rv is not None:
+            opts.append(rv)
+
+    with formatter.section('Options'):
+        formatter.write_dl(opts)
+
+    click.echo(formatter.getvalue())
 
 
 cli.add_command(job.job)
