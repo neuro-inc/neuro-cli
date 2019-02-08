@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, Optional, Type
 import aiohttp
 import pkg_resources
 
-from neuromation.cli.rc import ConfigFactory
+from neuromation.cli.rc import NO_VERSION, ConfigFactory
 
 
 log = logging.getLogger(__name__)
@@ -41,15 +41,15 @@ class VersionChecker:
     async def run(self) -> None:
         try:
             async with self:
-                await self.get_latest_version()
+                await self.update_latest_version()
         except asyncio.CancelledError:
-            pass
+            raise
         except aiohttp.ClientConnectionError:
             log.debug("IO error on fetching data from PyPI", exc_info=True)
-        except Exception:
+        except Exception:  # pragma: no cover
             log.exception("Error on fetching data from PyPI")
 
-    async def get_latest_version(self) -> None:
+    async def update_latest_version(self) -> None:
         pypi_version = await self._fetch_pypi()
         ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
 
@@ -57,7 +57,7 @@ class VersionChecker:
         async with self._session.get("https://pypi.org/pypi/neuromation/json") as resp:
             if resp.status != 200:
                 log.debug("%s status on fetching PyPI", resp.status)
-                return
+                return NO_VERSION
             data = await resp.json()
         return self._get_max_version(data)
 
@@ -68,5 +68,5 @@ class VersionChecker:
                 for version in pypi_response["releases"].keys()
             ]
             return max(ver for ver in ret if not ver.is_prerelease)  # type: ignore
-        except ValueError:
-            return pkg_resources.parse_version("0.0.0")
+        except (KeyError, ValueError):
+            return NO_VERSION

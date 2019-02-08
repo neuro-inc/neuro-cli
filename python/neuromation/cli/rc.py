@@ -25,6 +25,9 @@ class RCException(Exception):
     pass
 
 
+NO_VERSION = pkg_resources.parse_version("0.0.0")
+
+
 def _create_default_auth_config() -> AuthConfig:
     return _create_dev_auth_config()
 
@@ -72,7 +75,7 @@ class PyPIVersion:
             check_timestamp = int(data["check_timestamp"])
         except (KeyError, TypeError, ValueError):
             # config has invalid/missing data, ignore it
-            pypi_version = pkg_resources.parse_version("0.0.0")
+            pypi_version = NO_VERSION
             check_timestamp = 0
         return cls(pypi_version=pypi_version, check_timestamp=check_timestamp)
 
@@ -89,9 +92,7 @@ class Config:
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
-    pypi: PyPIVersion = field(
-        default_factory=lambda: PyPIVersion(pkg_resources.parse_version("0.0.0"), 0)
-    )
+    pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(NO_VERSION, 0))
     color: bool = field(default=False)  # don't save the field in config
 
     @property
