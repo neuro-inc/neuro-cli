@@ -80,16 +80,22 @@ Name | Description|
 |_--help_|Show this message and exit.|
 
 
-**Commands:**
+**Command Groups:**
 
 |||
 |---|---|
-| _[neuro help](#neuro-help)_| Get help on a command |
 | _[neuro job](#neuro-job)_| Job operations |
 | _[neuro storage](#neuro-storage)_| Storage operations |
 | _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
+
+
+**Commands:**
+
+|||
+|---|---|
+| _[neuro help](#neuro-help)_| Get help on a command |
 | _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
