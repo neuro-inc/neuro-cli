@@ -1,6 +1,4 @@
 import logging
-import shutil
-import sys
 
 import aiohttp
 import click
