@@ -84,10 +84,8 @@ async def ls(
             human_readable=human_readable
         )
     else:
-        is_tty = sys.stdout.isatty()
-        if is_tty:
-            width, _ = shutil.get_terminal_size((80, 25))
-            formatter = VerticalColumnsFilesFormatter(width=width)
+        if cfg.tty:
+            formatter = VerticalColumnsFilesFormatter(width=cfg.terminal_size[0])
         else:
             formatter = SimpleFilesFormatter()
 
