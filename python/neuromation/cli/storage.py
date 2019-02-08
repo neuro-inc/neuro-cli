@@ -104,9 +104,9 @@ async def ls(
     async with cfg.make_client() as client:
         files = await client.storage.ls(uri)
 
-    sorter.sort(files)
+    files = sorted(files, key=FilesSorter(sort).key())
 
-    for line in formatter.format(files):
+    for line in formatter.__call__(files):
         click.echo(line)
 
 

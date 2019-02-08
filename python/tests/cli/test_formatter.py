@@ -25,6 +25,7 @@ from neuromation.cli.formatter import (
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 from neuromation.client import (
+    Action,
     Container,
     FileStatus,
     FileStatusType,
@@ -520,60 +521,60 @@ class TestFilesFormatter:
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2017-03-03 06:03:03", "%Y-%m-%d %H:%M:%S"))),
-            "all",
+            "manage",
         ),
         FileStatus(
             "1Folder with space",
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2017-03-03 06:03:02", "%Y-%m-%d %H:%M:%S"))),
-            "all",
+            "manage",
         ),
     ]
     files_and_folders = files + folders
 
     def test_simple_formatter(self):
         formatter = SimpleFilesFormatter()
-        assert list(formatter.format(self.files_and_folders)) == [
+        assert list(formatter(self.files_and_folders)) == [
             f"{file.name}" for file in self.files_and_folders
         ]
 
     def test_long_formatter(self):
         formatter = LongFilesFormatter(human_readable=False)
-        assert list(formatter.format(self.files_and_folders)) == [
+        assert list(formatter(self.files_and_folders)) == [
             "-r    2048 2018-01-01 03:00:00 File1",
             "-r    1024 2018-10-10 13:10:10 File2",
             "-r 1024001 2019-02-02 05:02:02 File3 with space",
-            "da       0 2017-03-03 06:03:03 Folder1",
-            "da       0 2017-03-03 06:03:02 1Folder with space",
+            "dm       0 2017-03-03 06:03:03 Folder1",
+            "dm       0 2017-03-03 06:03:02 1Folder with space",
         ]
 
         formatter = LongFilesFormatter(human_readable=True)
-        assert list(formatter.format(self.files_and_folders)) == [
+        assert list(formatter(self.files_and_folders)) == [
             "-r    2.0K 2018-01-01 03:00:00 File1",
             "-r    1.0K 2018-10-10 13:10:10 File2",
             "-r 1000.0K 2019-02-02 05:02:02 File3 with space",
-            "da       0 2017-03-03 06:03:03 Folder1",
-            "da       0 2017-03-03 06:03:02 1Folder with space",
+            "dm       0 2017-03-03 06:03:03 Folder1",
+            "dm       0 2017-03-03 06:03:02 1Folder with space",
         ]
 
     def test_column_formatter(self):
         formatter = VerticalColumnsFilesFormatter(width=40)
-        assert list(formatter.format(self.files_and_folders)) == [
+        assert list(formatter(self.files_and_folders)) == [
             "File1             Folder1",
             "File2             1Folder with space",
             "File3 with space",
         ]
 
         formatter = VerticalColumnsFilesFormatter(width=36)
-        assert list(formatter.format(self.files_and_folders)) == [
+        assert list(formatter(self.files_and_folders)) == [
             "File1             Folder1",
             "File2             1Folder with space",
             "File3 with space",
         ]
 
         formatter = VerticalColumnsFilesFormatter(width=1)
-        assert list(formatter.format(self.files_and_folders)) == [
+        assert list(formatter(self.files_and_folders)) == [
             "File1",
             "File2",
             "File3 with space",
@@ -591,12 +592,11 @@ class TestFilesFormatter:
     )
     def test_formatter_with_empty_files(self, formatter):
         files = []
-        assert [] == list(formatter.format(files))
+        assert [] == list(formatter(files))
 
     def test_sorter(self):
         sorter = FilesSorter.NAME
-        files = self.files_and_folders.copy()
-        sorter.sort(files)
+        files = sorted(self.files_and_folders, key=sorter.key())
         assert files == [
             self.folders[1],
             self.files[0],
@@ -606,11 +606,11 @@ class TestFilesFormatter:
         ]
 
         sorter = FilesSorter.SIZE
-        sorter.sort(files)
+        files = sorted(self.files_and_folders, key=sorter.key())
         assert files[2:5] == [self.files[1], self.files[0], self.files[2]]
 
         sorter = FilesSorter.TIME
-        sorter.sort(files)
+        files = sorted(self.files_and_folders, key=sorter.key())
         assert files == [
             self.folders[1],
             self.folders[0],

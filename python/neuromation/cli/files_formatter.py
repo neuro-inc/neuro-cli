@@ -1,5 +1,6 @@
 import abc
 import enum
+import operator
 import time
 from math import ceil
 from typing import Any, Iterator, List, Sequence
@@ -7,7 +8,7 @@ from typing import Any, Iterator, List, Sequence
 import humanize
 
 from neuromation.cli.formatter import BaseFormatter
-from neuromation.client.storage import FileStatus, FileStatusType
+from neuromation.client import Action, FileStatus, FileStatusType
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -33,20 +34,24 @@ def transpose(columns: Sequence[Sequence[Any]]) -> Sequence[Sequence[Any]]:
 
 
 class BaseFilesFormatter(BaseFormatter, abc.ABC):
-    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:  # pragma: no cover
+    def __call__(
+        self, files: Sequence[FileStatus]
+    ) -> Iterator[str]:  # pragma: no cover
         pass
 
 
 class LongFilesFormatter(BaseFilesFormatter):
+    permissions_mapping = {Action.MANAGE: "m", Action.WRITE: "w", Action.READ: "r"}
+
+    file_types_mapping = {FileStatusType.FILE: "-", FileStatusType.DIRECTORY: "d"}
+
     def __init__(self, human_readable: bool = False):
         self.human_readable = human_readable
 
     def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
-        type = "-"
-        if file.type == FileStatusType.DIRECTORY:
-            type = "d"
 
-        permission = file.permission[0]
+        type = self.file_types_mapping[file.type]
+        permission = self.permissions_mapping[file.permission]
 
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
 
@@ -58,7 +63,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
         return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
 
-    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+    def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:
             return
         table = [self._columns_for_file(file) for file in files]
@@ -78,19 +83,19 @@ class LongFilesFormatter(BaseFilesFormatter):
 
 
 class SimpleFilesFormatter(BaseFilesFormatter):
-    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+    def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         for file in files:
-            yield f"{file.name}"
+            yield file.name
 
 
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
     def __init__(self, width: int):
         self.width = width
 
-    def format(self, files: Sequence[FileStatus]) -> Iterator[str]:
+    def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:
             return
-        items = [f"{file.name}" for file in files]
+        items = [file.name for file in files]
         widths = [len(item) for item in items]
         # let`s check how many columns we can use
         test_count = 1
@@ -124,11 +129,11 @@ class FilesSorter(str, enum.Enum):
     SIZE = "size"
     TIME = "time"
 
-    def sort(self, files: List[FileStatus]) -> None:
+    def key(self) -> None:
         if self == self.NAME:
             field = "name"
         elif self == self.SIZE:
             field = "size"
         elif self == self.TIME:
             field = "modification_time"
-        files.sort(key=lambda x: x.__getattribute__(field))
+        return operator.attrgetter(field)

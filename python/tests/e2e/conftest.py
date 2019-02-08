@@ -84,7 +84,7 @@ def run(monkeypatch, capfd, tmp_path):
     executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
-    rc_text = RC_TEXT.format(token=e2e_test_token)
+    rc_text = RC_TEXT.__call__(token=e2e_test_token)
     config_path = tmp_path / ".nmrc"
     config_path.write_text(rc_text)
     config_path.chmod(0o600)
