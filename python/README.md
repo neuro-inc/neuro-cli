@@ -82,7 +82,7 @@ Name | Description|
 
 **Command Groups:**
 
-|||
+|Usage|Description|
 |---|---|
 | _[neuro job](#neuro-job)_| Job operations |
 | _[neuro storage](#neuro-storage)_| Storage operations |
@@ -93,7 +93,7 @@ Name | Description|
 
 **Commands:**
 
-|||
+|Usage|Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
 | _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
@@ -156,7 +156,7 @@ Name | Description|
 
 **Commands:**
 
-|||
+|Usage|Description|
 |---|---|
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
@@ -366,7 +366,7 @@ Name | Description|
 
 **Commands:**
 
-|||
+|Usage|Description|
 |---|---|
 | _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
 | _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
@@ -531,7 +531,7 @@ Name | Description|
 
 **Commands:**
 
-|||
+|Usage|Description|
 |---|---|
 | _[neuro image ls](#neuro-image-ls)_| List images |
 | _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
@@ -636,7 +636,7 @@ Name | Description|
 
 **Commands:**
 
-|||
+|Usage|Description|
 |---|---|
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
@@ -761,7 +761,7 @@ Name | Description|
 
 **Commands:**
 
-|||
+|Usage|Description|
 |---|---|
 | _[neuro completion generate](#neuro-completion-generate)_| Provide an instruction for shell completion generation |
 | _[neuro completion patch](#neuro-completion-patch)_| Automatically patch shell configuration profile to enable completion |

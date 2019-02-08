@@ -141,7 +141,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
     groups = [child for child in info.children if child.is_group]
     if groups:
         md += "**Command Groups:**\n\n"
-        md += "|||\n"
+        md += "|Usage|Description|\n"
         md += "|---|---|\n"
         for group in groups:
             anchor = group.name
@@ -152,7 +152,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
     commands = [child for child in info.children if not child.is_group]
     if commands:
         md += "**Commands:**\n\n"
-        md += "|||\n"
+        md += "|Usage|Description|\n"
         md += "|---|---|\n"
         for command in commands:
             anchor = command.name
