@@ -2,8 +2,6 @@ import hashlib
 import logging
 import os
 import re
-import signal
-import sys
 from collections import namedtuple
 from os.path import join
 from pathlib import Path
