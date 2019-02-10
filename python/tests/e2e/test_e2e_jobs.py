@@ -606,7 +606,7 @@ def test_e2e_multiple_env_from_file(run, tmp_path):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_true(run):
-    command = 'bash -c "sleep 1m; false"'
+    command = 'bash -c "sleep 15m; false"'
     captured = run(
         [
             "job",
@@ -632,7 +632,7 @@ def test_e2e_ssh_exec_true(run):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_false(run):
-    command = 'bash -c "sleep 1m; false"'
+    command = 'bash -c "sleep 15m; false"'
     captured = run(
         [
             "job",
@@ -659,7 +659,7 @@ def test_e2e_ssh_exec_false(run):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_cmd(run):
-    command = 'bash -c "sleep 1m; false"'
+    command = 'bash -c "sleep 15m; false"'
     captured = run(
         [
             "job",
@@ -686,7 +686,7 @@ def test_e2e_ssh_exec_no_cmd(run):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_echo(run):
-    command = 'bash -c "sleep 1m; false"'
+    command = 'bash -c "sleep 15m; false"'
     captured = run(
         [
             "job",
@@ -712,7 +712,7 @@ def test_e2e_ssh_exec_echo(run):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_tty(run):
-    command = 'bash -c "sleep 1m; false"'
+    command = 'bash -c "sleep 15m; false"'
     captured = run(
         [
             "job",
@@ -739,7 +739,7 @@ def test_e2e_ssh_exec_no_tty(run):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_tty(run):
-    command = 'bash -c "sleep 1m; false"'
+    command = 'bash -c "sleep 15m; false"'
     captured = run(
         [
             "job",
