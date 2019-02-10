@@ -159,23 +159,6 @@ def run(monkeypatch, capfd, tmp_path):
 
 
 @pytest.fixture
-def run_with_timeout(monkeypatch, capfd, tmp_path, run):
-    def timeout_handler(x, y):
-        # SystemExit with the code `os.EX_OK` thrown by `sys.exit` is not caught
-        # in `main.py` and at the same time it breaks the loop in `run` method
-        sys.exit(os.EX_OK)
-
-    def _run_with_timeout(arguments, timeout, *, storage_retry=True):
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout)
-        captured = run(arguments, storage_retry=storage_retry)
-        signal.alarm(0)  # cancel the timer
-        return captured
-
-    return _run_with_timeout
-
-
-@pytest.fixture
 def check_file_exists_on_storage(run, tmpstorage):
     """
     Tests if file with given name and size exists in given path
