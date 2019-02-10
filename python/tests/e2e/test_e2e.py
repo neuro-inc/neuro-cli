@@ -48,7 +48,7 @@ def test_e2e_job_top(run):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
-    bash_script = "sleep 10s"
+    bash_script = "sleep 10m"
     command = f"bash -c '{bash_script}'"
     captured = run(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
     job_id = captured.out.strip()
