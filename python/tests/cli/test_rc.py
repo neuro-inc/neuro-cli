@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from textwrap import dedent
+from unittest import mock
 
 import pkg_resources
 import pytest
@@ -154,18 +155,22 @@ class TestFactoryMethods:
         jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
         jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
         jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
-        test_token = AuthToken.create_non_expiring(f"{jwt_hdr}.{jwt_claims}.{jwt_sig}")
-        config: Config = Config(
+        token = f"{jwt_hdr}.{jwt_claims}.{jwt_sig}"
+
+        rc.ConfigFactory.update_auth_token(token)
+        expected_config = Config(
             url=DEFAULTS.url,
-            auth_token=test_token,
+            auth_token=AuthToken(
+                token=token, expiration_time=mock.ANY, refresh_token=""
+            ),
             github_rsa_path=DEFAULTS.github_rsa_path,
         )
-        rc.ConfigFactory.update_auth_token(test_token.token)
-        config2: Config = rc.ConfigFactory.load()
-        assert config == config2
+        config: Config = rc.ConfigFactory.load()
+        assert config == expected_config
+
         rc.ConfigFactory.forget_auth_token()
         config3: Config = rc.ConfigFactory.load()
-        default_config: config = Config()
+        default_config: Config = Config()
         assert config3 == default_config
 
 
