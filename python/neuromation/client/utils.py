@@ -18,5 +18,5 @@ def create_registry_url(platform_url: str) -> str:
     url = URL(platform_url)
     assert url.host is not None
     host = url.host.replace("platform.", "registry.")
-    registry_url = url.with_host(host).with_path("")
+    registry_url = url.with_host(host).with_path("/v2")
     return str(registry_url)
