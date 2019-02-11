@@ -74,6 +74,7 @@ class Client:
         if isinstance(url, str):
             url = URL(url)
         self._url = url
+        # this is temporary until we implement getting server configuration dynamically:
         registry_url = registry_url or create_registry_url(str(self._url))
         self._registry_url = URL(registry_url)
         assert token

@@ -14,7 +14,7 @@ from neuromation.client import Client, create_registry_url
 from neuromation.client.users import get_token_username
 from neuromation.utils import run
 
-from .defaults import API_URL, REGISTRY_URL
+from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
 
 
@@ -100,7 +100,7 @@ class Config:
         default=(80, 24)
     )  # don't save the field in config
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.registry_url = create_registry_url(self.url)
 
     @property
@@ -129,7 +129,7 @@ class Config:
 
     def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None) -> Client:
         token, username = self._check_registered()
-        kwargs = {}
+        kwargs: Dict[str, Any] = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
         if self.registry_url:
