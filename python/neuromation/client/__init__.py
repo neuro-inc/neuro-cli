@@ -4,6 +4,7 @@ from typing import Union, Type, Optional
 import aiohttp
 from yarl import URL
 
+from neuromation.client.utils import create_registry_url
 from .abc import AbstractProgress, AbstractSpinner
 from .api import (
     API,
@@ -67,13 +68,18 @@ class Client:
         url: Union[URL, str],
         token: str,
         *,
+        registry_url: Union[URL, str] = "",  # default value is always overwritten
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
         self._url = url
+        registry_url = registry_url or create_registry_url(str(self._url))
+        if isinstance(registry_url, str):
+            registry_url = URL(registry_url)
+        self._registry_url = registry_url
         assert token
-        self._config = Config(url, token)
+        self._config = Config(url, self._registry_url, token)
         self._api = API(url, token, timeout)
         self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)

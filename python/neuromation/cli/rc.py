@@ -10,11 +10,11 @@ import yaml
 from yarl import URL
 
 import neuromation
-from neuromation.client import Client
+from neuromation.client import Client, create_registry_url
 from neuromation.client.users import get_token_username
 from neuromation.utils import run
 
-from .defaults import API_URL
+from .defaults import API_URL, REGISTRY_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
 
 
@@ -90,6 +90,7 @@ class PyPIVersion:
 class Config:
     auth_config: AuthConfig = field(default_factory=_create_default_auth_config)
     url: str = API_URL
+    registry_url: str = ""
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
     pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(NO_VERSION, 0))
@@ -99,17 +100,14 @@ class Config:
         default=(80, 24)
     )  # don't save the field in config
 
+    def __post_init__(self):
+        self.registry_url = create_registry_url(self.url)
+
     @property
     def auth(self) -> Optional[str]:
         if self.auth_token:
             return self.auth_token.token
         return None
-
-    def docker_registry_url(self) -> URL:
-        platform_url = URL(self.url)
-        assert platform_url.host
-        registry_host = platform_url.host.replace("platform.", "registry.")
-        return URL(f"{platform_url.scheme}://{registry_host}")
 
     def get_platform_user_name(self) -> Optional[str]:
         if self.auth:
@@ -134,6 +132,8 @@ class Config:
         kwargs = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
+        if self.registry_url:
+            kwargs["registry_url"] = self.registry_url
         return Client(self.url, token, **kwargs)
 
 
@@ -164,8 +164,11 @@ class ConfigFactory:
     @classmethod
     def update_api_url(cls, url: str) -> Config:
         cls._validate_api_url(url)
+        registry_url = create_registry_url(url)
         auth_config = _create_auth_config(URL(url), {})
-        return cls._update_config(auth_config=auth_config, url=url)
+        return cls._update_config(
+            auth_config=auth_config, url=url, registry_url=registry_url
+        )
 
     @classmethod
     def _validate_api_url(cls, url: str) -> None:
@@ -300,13 +303,14 @@ def _load(path: Path) -> Config:
     with path.open("r") as f:
         payload = yaml.load(f)
 
-    api_url = URL(payload["url"])
-    auth_config = _create_auth_config(api_url, payload)
+    api_url = payload["url"]
+    auth_config = _create_auth_config(URL(api_url), payload)
     auth_token = _create_auth_token(payload)
 
     return Config(
         auth_config=auth_config,
-        url=str(api_url),
+        url=api_url,
+        registry_url=create_registry_url(api_url),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
         pypi=PyPIVersion.from_config(payload.get("pypi")),

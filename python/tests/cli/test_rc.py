@@ -175,14 +175,14 @@ class TestFactoryMethods:
 
 
 def test_docker_url():
-    assert DEFAULTS.docker_registry_url() == URL("https://registry.dev.neuromation.io")
+    assert DEFAULTS.registry_url == "https://registry.dev.neuromation.io"
     custom_staging = rc.Config(url="https://platform.staging.neuromation.io/api/v1")
-    url = custom_staging.docker_registry_url()
-    assert url == URL("https://registry.staging.neuromation.io")
+    url = custom_staging.registry_url
+    assert url == "https://registry.staging.neuromation.io"
 
     prod = rc.Config(url="https://platform.neuromation.io/api/v1")
-    url = prod.docker_registry_url()
-    assert url == URL("https://registry.neuromation.io")
+    url = prod.registry_url
+    assert url == "https://registry.neuromation.io"
 
 
 @pytest.mark.parametrize("identity_claim", JWT_IDENTITY_CLAIM_OPTIONS)
@@ -229,12 +229,13 @@ def test_create_existing(nmrc):
 def test_load(nmrc):
     document = """
         url: 'http://a.b/c'
+        registry_url: 'http://registry.a.b/c'
     """
     nmrc.write_text(document)
     nmrc.chmod(0o600)
 
     config = rc.load(nmrc)
-    assert config == rc.Config(url="http://a.b/c")
+    assert config == rc.Config(url="http://a.b/c", registry_url="http://registry.a.b/c")
 
 
 def test_load_missing(nmrc):

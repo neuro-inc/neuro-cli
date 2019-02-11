@@ -77,11 +77,8 @@ class Images:
                     },
                 )
             raise
-        registry_url = self._config.url.with_host(
-            str(self._config.url.host).replace("platform.", "registry.")
-        ).with_path("/v2/")
         self._registry = Registry(
-            registry_url, self._config.token, self._config.username
+            self._config.registry_url, self._config.token, self._config.username
         )
 
     async def close(self) -> None:
@@ -95,8 +92,8 @@ class Images:
         return {"username": "token", "password": self._config.token}
 
     def _repo(self, image: Image) -> str:
-        registry_hostname = str(self._config.url.host).replace("platform.", "registry.")
-        return f"{registry_hostname}/{image.url.host}{image.url.path}"
+        # TODO (ajuszkowski, 11-Feb-2019) here we use only regisrty host, not host:port
+        return f"{self._config.registry_url.host}/{image.url.host}{image.url.path}"
 
     async def push(
         self, local_image: Image, remote_image: Image, spinner: AbstractSpinner
