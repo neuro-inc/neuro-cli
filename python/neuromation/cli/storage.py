@@ -79,11 +79,13 @@ async def ls(
     """
     if format_long:
         formatter: BaseFilesFormatter = LongFilesFormatter(
-            human_readable=human_readable
+            human_readable=human_readable, color=cfg.color
         )
     else:
         if cfg.tty:
-            formatter = VerticalColumnsFilesFormatter(width=cfg.terminal_size[0])
+            formatter = VerticalColumnsFilesFormatter(
+                width=cfg.terminal_size[0], color=cfg.color
+            )
         else:
             formatter = SimpleFilesFormatter()
 

@@ -9,7 +9,9 @@ from yarl import URL
 
 from neuromation.cli.files_formatter import (
     FilesSorter,
+    Indicators,
     LongFilesFormatter,
+    Painter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
@@ -552,6 +554,79 @@ class TestJobListFormatter:
         assert self.quiet(jobs, description="test-description-0") == expected, expected
 
 
+class TestPainter:
+    def test_painter_initializing(self, monkeypatch):
+        painter = Painter(color=False)
+        assert not painter._color
+
+        monkeypatch.setenv("LS_COLORS", "")
+        painter = Painter(color=True)
+        assert not painter._color
+
+        monkeypatch.setenv("LS_COLORS", "1")
+        painter = Painter(color=True)
+        assert painter._color
+
+    def test_color_parsing_simple(self, monkeypatch):
+        monkeypatch.setenv("LS_COLORS", "rs=1;0;1")
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+
+        monkeypatch.setenv("LS_COLORS", ":rs=1;0;1")
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+
+        monkeypatch.setenv("LS_COLORS", "rs=1;0;1:")
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+
+        monkeypatch.setenv("LS_COLORS", "rs=1;0;1:fi=32;42")
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+        assert painter.color_indicator[Indicators.FILE] == "32;42"
+
+        monkeypatch.setenv("LS_COLORS", "rs=1;0;1:fi=")
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+        assert painter.color_indicator[Indicators.FILE] == ""
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("\\a", "\a"),
+            ("\\b", "\b"),
+            ("\\e", chr(27)),
+            ("\\f", "\f"),
+            ("\\n", "\n"),
+            ("\\r", "\r"),
+            ("\\t", "\t"),
+            ("\\v", "\v"),
+            ("\\?", chr(127)),
+            ("\\_", " "),
+            ("a\\n", "a\n"),
+        ],
+    )
+    def test_color_parsing_escaped_simple(self, monkeypatch, escaped, result):
+        monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == result
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("\\7", chr(7)),
+            ("\\8", "8"),
+            ("\\10", chr(8)),
+            ("a\\2", "a" + chr(2)),
+            ("a\\2b", "a" + chr(2) + "b"),
+        ],
+    )
+    def test_color_parsing_escaped_octal(self, monkeypatch, escaped, result):
+        monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == result
+
+
 class TestFilesFormatter:
 
     files = [
@@ -602,7 +677,7 @@ class TestFilesFormatter:
         ]
 
     def test_long_formatter(self):
-        formatter = LongFilesFormatter(human_readable=False)
+        formatter = LongFilesFormatter(human_readable=False, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "-r    2048 2018-01-01 03:00:00 File1",
             "-r    1024 2018-10-10 13:10:10 File2",
@@ -611,7 +686,7 @@ class TestFilesFormatter:
             "dm       0 2017-03-03 06:03:02 1Folder with space",
         ]
 
-        formatter = LongFilesFormatter(human_readable=True)
+        formatter = LongFilesFormatter(human_readable=True, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "-r    2.0K 2018-01-01 03:00:00 File1",
             "-r    1.0K 2018-10-10 13:10:10 File2",
@@ -621,21 +696,21 @@ class TestFilesFormatter:
         ]
 
     def test_column_formatter(self):
-        formatter = VerticalColumnsFilesFormatter(width=40)
+        formatter = VerticalColumnsFilesFormatter(width=40, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "File1             Folder1",
             "File2             1Folder with space",
             "File3 with space",
         ]
 
-        formatter = VerticalColumnsFilesFormatter(width=36)
+        formatter = VerticalColumnsFilesFormatter(width=36, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "File1             Folder1",
             "File2             1Folder with space",
             "File3 with space",
         ]
 
-        formatter = VerticalColumnsFilesFormatter(width=1)
+        formatter = VerticalColumnsFilesFormatter(width=1, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "File1",
             "File2",
@@ -648,8 +723,8 @@ class TestFilesFormatter:
         "formatter",
         [
             (SimpleFilesFormatter()),
-            (VerticalColumnsFilesFormatter(width=100)),
-            (LongFilesFormatter(human_readable=False)),
+            (VerticalColumnsFilesFormatter(width=100, color=False)),
+            (LongFilesFormatter(human_readable=False, color=False)),
         ],
     )
     def test_formatter_with_empty_files(self, formatter):
