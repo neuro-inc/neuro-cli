@@ -689,7 +689,7 @@ class TestConfigFormatter:
             """\
             Config:
               User Name: user
-              API URL: https://platform.dev.neuromation.io/api/v1
-              Docker Registry URL: https://registry.dev.neuromation.io
+              API URL: https://dev.ai.neuromation.io/api/v1
+              Docker Registry URL: https://registry-dev.ai.neuromation.io
               Github RSA Path: path"""
         )
