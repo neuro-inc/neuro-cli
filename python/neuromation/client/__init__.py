@@ -68,16 +68,14 @@ class Client:
         url: Union[URL, str],
         token: str,
         *,
-        registry_url: Union[URL, str] = "",  # default value is always overwritten
+        registry_url: str = "",  # default value is always overwritten
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
         self._url = url
         registry_url = registry_url or create_registry_url(str(self._url))
-        if isinstance(registry_url, str):
-            registry_url = URL(registry_url)
-        self._registry_url = registry_url
+        self._registry_url = URL(registry_url)
         assert token
         self._config = Config(url, self._registry_url, token)
         self._api = API(url, token, timeout)

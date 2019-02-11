@@ -67,6 +67,32 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url == config2.url
 
+    def test_factory_update_url_registry_url_updates_old_cnames(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(
+            url="http://dev.platform.neuromation.io/api/v1", auth_token=auth_token
+        )
+        rc.ConfigFactory.update_api_url(
+            url="http://staging.platform.neuromation.io/api/v1"
+        )
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url == "http://dev.platform.neuromation.io/api/v1"
+        assert config.registry_url == "http://dev.registry.neuromation.io"
+        assert config2.url == "http://staging.platform.neuromation.io/api/v1"
+        assert config2.registry_url == "http://staging.registry.neuromation.io"
+
+    def test_factory_update_url_registry_url_updates_new_cnames(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(
+            url="https://dev.ai.neuromation.io/api/v1", auth_token=auth_token
+        )
+        rc.ConfigFactory.update_api_url(url="https://staging.ai.neuromation.io/api/v1")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url == "https://dev.ai.neuromation.io/api/v1"
+        assert config.registry_url == "https://registry-dev.ai.neuromation.io"
+        assert config2.url == "https://staging.ai.neuromation.io/api/v1"
+        assert config2.registry_url == "https://registry-staging.ai.neuromation.io"
+
     def test_factory_update_url_malformed(self):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)

@@ -12,8 +12,8 @@ else:
 
 
 def create_registry_url(platform_url: str) -> str:
-    if platform_url == defaults.API_URL:
-        return defaults.REGISTRY_URL
+    if platform_url == "https://dev.ai.neuromation.io/api/v1":
+        return "https://registry-dev.ai.neuromation.io"
     if platform_url == "https://staging.ai.neuromation.io/api/v1":
         return "https://registry-staging.ai.neuromation.io"
     platform_url = URL(platform_url)

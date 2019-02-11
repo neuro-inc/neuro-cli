@@ -164,11 +164,8 @@ class ConfigFactory:
     @classmethod
     def update_api_url(cls, url: str) -> Config:
         cls._validate_api_url(url)
-        registry_url = create_registry_url(url)
         auth_config = _create_auth_config(URL(url), {})
-        return cls._update_config(
-            auth_config=auth_config, url=url, registry_url=registry_url
-        )
+        return cls._update_config(auth_config=auth_config, url=url)
 
     @classmethod
     def _validate_api_url(cls, url: str) -> None:
@@ -310,7 +307,7 @@ def _load(path: Path) -> Config:
     return Config(
         auth_config=auth_config,
         url=api_url,
-        registry_url=create_registry_url(api_url),
+        registry_url=payload.get("registry_url", ""),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
         pypi=PyPIVersion.from_config(payload.get("pypi")),
