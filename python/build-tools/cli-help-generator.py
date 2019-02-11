@@ -155,7 +155,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         for group in groups:
             anchor = group.name
             anchor = "#" + anchor.replace(" ", "-")
-            md += f"| _[{escape(group.name)}]({anchor})_| {escape(group.short)} |\n"
+            md += f"| _[{escape_cell(group.name)}]({anchor})_| {escape_cell(group.short)} |\n"
         md += "\n\n"
 
     commands = [child for child in info.children if not child.is_group]
@@ -166,7 +166,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         for command in commands:
             anchor = command.name
             anchor = "#" + anchor.replace(" ", "-")
-            md += f"| _[{escape(command.name)}]({anchor})_| {escape(command.short)} |\n"
+            md += f"| _[{escape_cell(command.name)}]({anchor})_| {escape_cell(command.short)} |\n"
         md += "\n\n"
 
     return md
