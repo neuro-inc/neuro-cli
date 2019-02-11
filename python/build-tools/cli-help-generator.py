@@ -182,9 +182,12 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
 def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
     md = generate_markdown(info, header_prefix)
     if info.children:
+        groups = [child for child in info.children if child.is_group]
+        commands = [child for child in info.children if not child.is_group]
         md += "\n\n" + "\n\n".join(
-            generate_command_markdown(sub_command, header_prefix + "#")
-            for sub_command in sorted(info.children, key=operator.attrgetter("name"))
+            generate_command_markdown(item, header_prefix + "#")
+            for item in sorted(groups, key=operator.attrgetter("name"))
+            + sorted(commands, key=operator.attrgetter("name"))
         )
     return md
 

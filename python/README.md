@@ -12,14 +12,10 @@
 		* [neuro config logout](#neuro-config-logout)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
-	* [neuro cp](#neuro-cp)
-	* [neuro exec](#neuro-exec)
-	* [neuro help](#neuro-help)
 	* [neuro image](#neuro-image)
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image pull](#neuro-image-pull)
 		* [neuro image push](#neuro-image-push)
-	* [neuro images](#neuro-images)
 	* [neuro job](#neuro-job)
 		* [neuro job exec](#neuro-job-exec)
 		* [neuro job kill](#neuro-job-kill)
@@ -28,6 +24,16 @@
 		* [neuro job status](#neuro-job-status)
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job top](#neuro-job-top)
+	* [neuro storage](#neuro-storage)
+		* [neuro storage cp](#neuro-storage-cp)
+		* [neuro storage ls](#neuro-storage-ls)
+		* [neuro storage mkdir](#neuro-storage-mkdir)
+		* [neuro storage mv](#neuro-storage-mv)
+		* [neuro storage rm](#neuro-storage-rm)
+	* [neuro cp](#neuro-cp)
+	* [neuro exec](#neuro-exec)
+	* [neuro help](#neuro-help)
+	* [neuro images](#neuro-images)
 	* [neuro kill](#neuro-kill)
 	* [neuro login](#neuro-login)
 	* [neuro logout](#neuro-logout)
@@ -41,12 +47,6 @@
 	* [neuro rm](#neuro-rm)
 	* [neuro share](#neuro-share)
 	* [neuro status](#neuro-status)
-	* [neuro storage](#neuro-storage)
-		* [neuro storage cp](#neuro-storage-cp)
-		* [neuro storage ls](#neuro-storage-ls)
-		* [neuro storage mkdir](#neuro-storage-mkdir)
-		* [neuro storage mv](#neuro-storage-mv)
-		* [neuro storage rm](#neuro-storage-rm)
 	* [neuro submit](#neuro-submit)
 	* [neuro top](#neuro-top)
 * [Api](#Api)
@@ -311,81 +311,6 @@ Name | Description|
 
 
 
-## neuro cp
-
-Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
-
-**Usage:**
-
-```bash
-neuro cp [OPTIONS] SOURCE DESTINATION
-```
-
-**Examples:**
-
-```bash
-
-# copy local file ./foo into remote storage root
-neuro storage cp ./foo storage:///
-neuro storage cp ./foo storage:/
-
-# download remote file foo into local file foo with
-# explicit file:// scheme set
-neuro storage cp storage:///foo file:///foo
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-r, --recursive_|Recursive copy, off by default|
-|_\-p, --progress_|Show progress, off by default|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro exec
-
-Execute command in a running job.
-
-**Usage:**
-
-```bash
-neuro exec [OPTIONS] ID CMD...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro help
-
-Get help on a command.
-
-**Usage:**
-
-```bash
-neuro help [OPTIONS] [COMMAND]...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
 ## neuro image
 
 Container image operations.
@@ -480,25 +405,6 @@ neuro image push myimage
 neuro image push alpine:latest image:my-alpine:production
 neuro image push alpine image://myfriend/alpine:shared
 
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro images
-
-List images.
-
-**Usage:**
-
-```bash
-neuro images [OPTIONS]
 ```
 
 **Options:**
@@ -709,6 +615,268 @@ Display GPU/CPU/Memory usage.
 
 ```bash
 neuro job top [OPTIONS] ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro storage
+
+Storage operations.
+
+**Usage:**
+
+```bash
+neuro storage [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
+| _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
+| _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
+| _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
+| _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
+
+
+
+
+### neuro storage cp
+
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
+
+**Usage:**
+
+```bash
+neuro storage cp [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# copy local file ./foo into remote storage root
+neuro storage cp ./foo storage:///
+neuro storage cp ./foo storage:/
+
+# download remote file foo into local file foo with
+# explicit file:// scheme set
+neuro storage cp storage:///foo file:///foo
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-r, --recursive_|Recursive copy, off by default|
+|_\-p, --progress_|Show progress, off by default|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage ls
+
+List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
+
+**Usage:**
+
+```bash
+neuro storage ls [OPTIONS] [PATH]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
+|_-l_|use a long listing format|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage mkdir
+
+Make directories.
+
+**Usage:**
+
+```bash
+neuro storage mkdir [OPTIONS] PATH
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage mv
+
+Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
+
+**Usage:**
+
+```bash
+neuro storage mv [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# move or rename remote file
+neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
+neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+
+# move or rename remote directory
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/
+neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage rm
+
+Remove files or directories.<br/>
+
+**Usage:**
+
+```bash
+neuro storage rm [OPTIONS] PATH
+```
+
+**Examples:**
+
+```bash
+
+neuro storage rm storage:///foo/bar/
+neuro storage rm storage:/foo/bar/
+neuro storage rm storage://{username}/foo/bar/
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro cp
+
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
+
+**Usage:**
+
+```bash
+neuro cp [OPTIONS] SOURCE DESTINATION
+```
+
+**Examples:**
+
+```bash
+
+# copy local file ./foo into remote storage root
+neuro storage cp ./foo storage:///
+neuro storage cp ./foo storage:/
+
+# download remote file foo into local file foo with
+# explicit file:// scheme set
+neuro storage cp storage:///foo file:///foo
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-r, --recursive_|Recursive copy, off by default|
+|_\-p, --progress_|Show progress, off by default|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro exec
+
+Execute command in a running job.
+
+**Usage:**
+
+```bash
+neuro exec [OPTIONS] ID CMD...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro help
+
+Get help on a command.
+
+**Usage:**
+
+```bash
+neuro help [OPTIONS] [COMMAND]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro images
+
+List images.
+
+**Usage:**
+
+```bash
+neuro images [OPTIONS]
 ```
 
 **Options:**
@@ -1026,174 +1194,6 @@ Display status of a job.
 
 ```bash
 neuro status [OPTIONS] ID
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro storage
-
-Storage operations.
-
-**Usage:**
-
-```bash
-neuro storage [OPTIONS] COMMAND [ARGS]...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-**Commands:**
-
-|Usage|Description|
-|---|---|
-| _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
-| _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
-| _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
-| _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
-| _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
-
-
-
-
-### neuro storage cp
-
-Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
-
-**Usage:**
-
-```bash
-neuro storage cp [OPTIONS] SOURCE DESTINATION
-```
-
-**Examples:**
-
-```bash
-
-# copy local file ./foo into remote storage root
-neuro storage cp ./foo storage:///
-neuro storage cp ./foo storage:/
-
-# download remote file foo into local file foo with
-# explicit file:// scheme set
-neuro storage cp storage:///foo file:///foo
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-r, --recursive_|Recursive copy, off by default|
-|_\-p, --progress_|Show progress, off by default|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro storage ls
-
-List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
-
-**Usage:**
-
-```bash
-neuro storage ls [OPTIONS] [PATH]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
-|_-l_|use a long listing format|
-|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro storage mkdir
-
-Make directories.
-
-**Usage:**
-
-```bash
-neuro storage mkdir [OPTIONS] PATH
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro storage mv
-
-Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
-
-**Usage:**
-
-```bash
-neuro storage mv [OPTIONS] SOURCE DESTINATION
-```
-
-**Examples:**
-
-```bash
-
-# move or rename remote file
-neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
-
-# move or rename remote directory
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro storage rm
-
-Remove files or directories.<br/>
-
-**Usage:**
-
-```bash
-neuro storage rm [OPTIONS] PATH
-```
-
-**Examples:**
-
-```bash
-
-neuro storage rm storage:///foo/bar/
-neuro storage rm storage:/foo/bar/
-neuro storage rm storage://{username}/foo/bar/
-
 ```
 
 **Options:**
