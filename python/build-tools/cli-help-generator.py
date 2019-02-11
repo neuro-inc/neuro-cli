@@ -184,7 +184,7 @@ def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
     if info.children:
         md += "\n\n" + "\n\n".join(
             generate_command_markdown(sub_command, header_prefix + "#")
-            for sub_command in info.children
+            for sub_command in sorted(info.children, key=operator.attrgetter("name"))
         )
     return md
 
