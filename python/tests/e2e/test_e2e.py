@@ -45,6 +45,49 @@ def test_empty_directory_ls_output(run, tmpstorage):
 
 
 @pytest.mark.e2e
+def test_e2e_job_top(run):
+    def split_non_empty_parts(line, separator=None):
+        return [part.strip() for part in line.split(separator) if part.strip()]
+
+    bash_script = "sleep 10m"
+    command = f"bash -c '{bash_script}'"
+    captured = run(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
+    job_id = captured.out.strip()
+    wait_job_change_state_from(run, job_id, "Status: pending")
+
+    captured = run(["job", "top", job_id])
+
+    header_line, top_line = split_non_empty_parts(captured.out, separator="\n")
+    header_parts = split_non_empty_parts(header_line, separator="\t")
+    assert header_parts == [
+        "TIMESTAMP",
+        "CPU",
+        "MEMORY (MB)",
+        "GPU (%)",
+        "GPU_MEMORY (MB)",
+    ]
+
+    line_parts = split_non_empty_parts(top_line, separator="\t")
+    timestamp_pattern_parts = [
+        ("weekday", "[A-Z][a-z][a-z]"),
+        ("month", "[A-Z][a-z][a-z]"),
+        ("day", r"\d+"),
+        ("day", r"\d\d:\d\d:\d\d"),
+        ("year", "2019"),
+    ]
+    timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
+    expected_parts = [
+        ("timestamp", timestamp_pattern),
+        ("cpu", r"\d.\d\d\d"),
+        ("memory", r"\d.\d\d\d"),
+        ("gpu", "0"),
+        ("gpu memory", "0"),
+    ]
+    for actual, (description, pattern) in zip(line_parts, expected_parts):
+        assert re.match(pattern, actual) is not None, f"error in matching {description}"
+
+
+@pytest.mark.e2e
 def test_e2e_shm_run_without(run):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"

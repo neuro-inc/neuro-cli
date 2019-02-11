@@ -17,7 +17,11 @@ from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, hash_hex, output_to_files
 
 log = logging.getLogger(__name__)
 
-job_id_pattern = r"Job ID:\s*(\S+)"
+job_id_pattern = re.compile(
+    # pattern for UUID v4 taken here: https://stackoverflow.com/a/38191078
+    r"(job-[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})",
+    re.IGNORECASE,
+)
 
 
 class TestRetriesExceeded(Exception):
@@ -127,7 +131,7 @@ def run(monkeypatch, capfd, tmp_path):
             out = post_out[pre_out_size:]
             err = post_err[pre_err_size:]
             if arguments[0:2] in (["job", "submit"], ["model", "train"]):
-                match = re.search(job_id_pattern, out)
+                match = job_id_pattern.match(out)
                 if match:
                     executed_jobs_list.append(match.group(1))
 
