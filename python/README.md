@@ -85,36 +85,36 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
+| _[neuro completion](#neuro-completion)_| Output shell completion code |
+| _[neuro config](#neuro-config)_| Client configuration |
+| _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro job](#neuro-job)_| Job operations |
 | _[neuro storage](#neuro-storage)_| Storage operations |
-| _[neuro image](#neuro-image)_| Container image operations |
-| _[neuro config](#neuro-config)_| Client configuration |
-| _[neuro completion](#neuro-completion)_| Output shell completion code |
 
 
 **Commands:**
 
 |Usage|Description|
 |---|---|
-| _[neuro help](#neuro-help)_| Get help on a command |
-| _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
-| _[neuro ps](#neuro-ps)_| List all jobs |
-| _[neuro status](#neuro-status)_| Display status of a job |
+| _[neuro cp](#neuro-cp)_| Copy files and directories |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
-| _[neuro logs](#neuro-logs)_| Print the logs for a container |
+| _[neuro help](#neuro-help)_| Get help on a command |
+| _[neuro images](#neuro-images)_| List images |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
-| _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
 | _[neuro login](#neuro-login)_| Log into Neuromation Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
-| _[neuro cp](#neuro-cp)_| Copy files and directories |
+| _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro ls](#neuro-ls)_| List directory contents |
-| _[neuro rm](#neuro-rm)_| Remove files or directories |
 | _[neuro mkdir](#neuro-mkdir)_| Make directories |
 | _[neuro mv](#neuro-mv)_| Move or rename files and directories |
-| _[neuro images](#neuro-images)_| List images |
-| _[neuro push](#neuro-push)_| Push an image to platform registry |
+| _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
+| _[neuro push](#neuro-push)_| Push an image to platform registry |
+| _[neuro rm](#neuro-rm)_| Remove files or directories |
 | _[neuro share](#neuro-share)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro share... |
+| _[neuro status](#neuro-status)_| Display status of a job |
+| _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
+| _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
 
 
 
@@ -159,12 +159,12 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
+| _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
+| _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
+| _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
-| _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
-| _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
-| _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
+| _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
 
 
@@ -371,9 +371,9 @@ Name | Description|
 |---|---|
 | _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
 | _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
-| _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
+| _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 
 
 
@@ -538,8 +538,8 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro image ls](#neuro-image-ls)_| List images |
-| _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
+| _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 
 
 
@@ -642,11 +642,11 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
+| _[neuro config auth](#neuro-config-auth)_| Update authorization token |
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
+| _[neuro config logout](#neuro-config-logout)_| Log out |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
-| _[neuro config auth](#neuro-config-auth)_| Update authorization token |
-| _[neuro config logout](#neuro-config-logout)_| Log out |
 
 
 

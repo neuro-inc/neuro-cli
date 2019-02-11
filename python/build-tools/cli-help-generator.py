@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import operator
 import os
 import re
 import sys
@@ -152,7 +153,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += "**Command Groups:**\n\n"
         md += "|Usage|Description|\n"
         md += "|---|---|\n"
-        for group in groups:
+        for group in sorted(groups, key=operator.attrgetter("name")):
             anchor = group.name
             anchor = "#" + anchor.replace(" ", "-")
             md += (
@@ -166,7 +167,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += "**Commands:**\n\n"
         md += "|Usage|Description|\n"
         md += "|---|---|\n"
-        for command in commands:
+        for command in sorted(commands, key=operator.attrgetter("name")):
             anchor = command.name
             anchor = "#" + anchor.replace(" ", "-")
             md += (
