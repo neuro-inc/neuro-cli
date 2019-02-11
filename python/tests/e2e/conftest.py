@@ -11,13 +11,8 @@ from uuid import uuid4 as uuid
 import pytest
 
 from neuromation.cli import main
-from tests.e2e.utils import (
-    FILE_SIZE_B,
-    RC_TEXT,
-    format_list,
-    format_list_pattern,
-    hash_hex,
-)
+from neuromation.client import FileStatusType
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, hash_hex, output_to_files
 
 
 log = logging.getLogger(__name__)
@@ -107,7 +102,7 @@ def run(monkeypatch, capfd, tmp_path):
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
-                main(["--show-traceback"] + arguments)
+                main(["--show-traceback", "--disable-pypi-version-check"] + arguments)
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem
@@ -161,11 +156,18 @@ def check_file_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str, size: int):
         path = tmpstorage + path
-        captured = run(["storage", "ls", path])
-        captured_output_list = captured.out.split("\n")
-        expected_line = format_list(type="file", size=size, name=name)
+        captured = run(["storage", "ls", "-l", path])
         assert not captured.err
-        assert expected_line in captured_output_list
+        files = output_to_files(captured.out)
+        for file in files:
+            if (
+                file.type == FileStatusType.FILE
+                and file.name == name
+                and file.size == size
+            ):
+                break
+        else:
+            raise AssertionError(f"File {name} with size {size} not found in {path}")
 
     return go
 
@@ -179,10 +181,14 @@ def check_dir_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["storage", "ls", path])
-        captured_output_list = captured.out.split("\n")
-        assert f"directory      0              {name}" in captured_output_list
+        captured = run(["storage", "ls", "-l", path])
         assert not captured.err
+        files = output_to_files(captured.out)
+        for file in files:
+            if file.type == FileStatusType.DIRECTORY and file.path == name:
+                break
+        else:
+            raise AssertionError(f"Dir {name} not found in {path}")
 
     return go
 
@@ -196,10 +202,12 @@ def check_dir_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["storage", "ls", path])
-        split = captured.out.split("\n")
-        assert format_list(name=name, size=0, type="directory") not in split
+        captured = run(["storage", "ls", "-l", path])
         assert not captured.err
+        files = output_to_files(captured.out)
+        for file in files:
+            if file.type == FileStatusType.DIRECTORY and file.path == name:
+                raise AssertionError(f"Dir {name} found in {path}")
 
     return go
 
@@ -213,10 +221,12 @@ def check_file_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["storage", "ls", path])
-        pattern = format_list_pattern(name=name)
-        assert not re.search(pattern, captured.out)
+        captured = run(["storage", "ls", "-l", path])
         assert not captured.err
+        files = output_to_files(captured.out)
+        for file in files:
+            if file.type == FileStatusType.FILE and file.path == name:
+                raise AssertionError(f"File {name} found in {path}")
 
     return go
 

@@ -109,6 +109,11 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
             escaped.append(after)
         return "<br/>".join(escaped)
 
+    def escape_cell(text: str) -> str:
+        escaped = escape(text)
+        escaped = re.sub(r"\|", r"&#124;", escaped)
+        return escaped
+
     md = ""
     md += f"{header_prefix}# {info.name}"
     md += "\n\n"
@@ -134,7 +139,11 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += "Name | Description|\n"
         md += "|----|------------|\n"
         for option in info.options:
-            md += f"|_{escape(option.pattern)}_|{escape(option.description)}|\n"
+            md += (
+                f"|_{escape_cell(option.pattern.replace('|', ' | '))}_"
+                f"|{escape_cell(option.description)}|"
+                f"\n"
+            )
 
         md += "\n\n"
 

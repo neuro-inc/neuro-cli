@@ -58,7 +58,7 @@
 Welcome to Neuromation API Python client.
 Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) you can:
 * [Execute and debug jobs](#neuro-job)
-* [Manipulate Data](#neuro-store)
+* [Manipulate Data](#neuro-storage)
 * Make some fun
 
 # neuro
@@ -75,7 +75,8 @@ Name | Description|
 |----|------------|
 |_\-v, --verbose_|Enable verbose mode|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
-|_--color \[yes|no|auto]_|Color mode|
+|_--color \[yes &#124; no &#124; auto]_|Color mode|
+|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
 |_--version_|Show the version and exit.|
 |_--help_|Show this message and exit.|
 
@@ -242,7 +243,7 @@ neuro job list -s pending -s running -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending|running|succeeded|failed|all]_|Filter out job by status \(multiple option)|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
 |_\-q, --quiet_||
 |_--help_|Show this message and exit.|
@@ -426,6 +427,9 @@ neuro storage ls [OPTIONS] [PATH]
 
 Name | Description|
 |----|------------|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
+|_-l_|use a long listing format|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
 |_--help_|Show this message and exit.|
 
 
@@ -783,7 +787,7 @@ neuro completion generate [OPTIONS]
 
 Name | Description|
 |----|------------|
-|_--shell \[bash|zsh]_|Shell type.  \[default: bash]|
+|_--shell \[bash &#124; zsh]_|Shell type.  \[default: bash]|
 |_--help_|Show this message and exit.|
 
 
@@ -803,7 +807,7 @@ neuro completion patch [OPTIONS]
 
 Name | Description|
 |----|------------|
-|_--shell \[bash|zsh]_|Shell type.  \[default: bash]|
+|_--shell \[bash &#124; zsh]_|Shell type.  \[default: bash]|
 |_--help_|Show this message and exit.|
 
 
@@ -882,7 +886,7 @@ neuro job list -s pending -s running -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending|running|succeeded|failed|all]_|Filter out job by status \(multiple option)|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
 |_\-q, --quiet_||
 |_--help_|Show this message and exit.|
@@ -1074,6 +1078,9 @@ neuro ls [OPTIONS] [PATH]
 
 Name | Description|
 |----|------------|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
+|_-l_|use a long listing format|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
 |_--help_|Show this message and exit.|
 
 

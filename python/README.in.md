@@ -5,7 +5,7 @@
 Welcome to Neuromation API Python client.
 Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) you can:
 * [Execute and debug jobs](#neuro-job)
-* [Manipulate Data](#neuro-store)
+* [Manipulate Data](#neuro-storage)
 * Make some fun
 
 {cli_doc}

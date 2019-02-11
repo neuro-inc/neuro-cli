@@ -1,12 +1,15 @@
+import logging
 import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
+import pkg_resources
 import yaml
 from yarl import URL
 
+import neuromation
 from neuromation.client import Client
 from neuromation.client.users import get_token_username
 from neuromation.utils import run
@@ -15,8 +18,14 @@ from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
 
 
+log = logging.getLogger(__name__)
+
+
 class RCException(Exception):
     pass
+
+
+NO_VERSION = pkg_resources.parse_version("0.0.0")
 
 
 def _create_default_auth_config() -> AuthConfig:
@@ -42,12 +51,53 @@ def _create_staging_auth_config() -> AuthConfig:
 
 
 @dataclass
+class PyPIVersion:
+    pypi_version: Any
+    check_timestamp: int
+
+    def warn_if_has_newer_version(self) -> None:
+        current = pkg_resources.parse_version(neuromation.__version__)
+        if current < self.pypi_version:
+            update_command = "pip install --upgrade neuromation"
+            log.warning(
+                f"You are using Neuromation Platform Client version {current}, "
+                f"however version {self.pypi_version} is available. "
+            )
+            log.warning(
+                f"You should consider upgrading via the '{update_command}' command."
+            )
+            log.warning("")  # tailing endline
+
+    @classmethod
+    def from_config(cls, data: Dict[str, Any]) -> "PyPIVersion":
+        try:
+            pypi_version = pkg_resources.parse_version(data["pypi_version"])
+            check_timestamp = int(data["check_timestamp"])
+        except (KeyError, TypeError, ValueError):
+            # config has invalid/missing data, ignore it
+            pypi_version = NO_VERSION
+            check_timestamp = 0
+        return cls(pypi_version=pypi_version, check_timestamp=check_timestamp)
+
+    def to_config(self) -> Dict[str, Any]:
+        return {
+            "pypi_version": str(self.pypi_version),
+            "check_timestamp": int(self.check_timestamp),
+        }
+
+
+@dataclass
 class Config:
     auth_config: AuthConfig = field(default_factory=_create_default_auth_config)
     url: str = API_URL
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
+    pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(NO_VERSION, 0))
     color: bool = field(default=False)  # don't save the field in config
+    tty: bool = field(default=False)  # don't save the field in config
+    terminal_size: Tuple[int, int] = field(
+        default=(80, 24)
+    )  # don't save the field in config
 
     @property
     def auth(self) -> Optional[str]:
@@ -136,6 +186,11 @@ class ConfigFactory:
         return cls._update_config(github_rsa_path=github_rsa_path)
 
     @classmethod
+    def update_last_checked_version(cls, version: Any, timestamp: int) -> Config:
+        pypi = PyPIVersion(version, timestamp)
+        return cls._update_config(pypi=pypi)
+
+    @classmethod
     def refresh_auth_token(cls, url: URL) -> Config:
         nmrc_config_path = cls.get_path()
         config = load(nmrc_config_path)
@@ -185,6 +240,7 @@ def save(path: Path, config: Config) -> Config:
             "expiration_time": config.auth_token.expiration_time,
             "refresh_token": config.auth_token.refresh_token,
         }
+    payload["pypi"] = config.pypi.to_config()
 
     # forbid access to other users
     if path.exists():
@@ -253,6 +309,7 @@ def _load(path: Path) -> Config:
         url=str(api_url),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
+        pypi=PyPIVersion.from_config(payload.get("pypi")),
     )
 
 

@@ -1,10 +1,18 @@
+import re
 import textwrap
+import time
 from typing import Optional
 
 import click
 import pytest
 from yarl import URL
 
+from neuromation.cli.files_formatter import (
+    FilesSorter,
+    LongFilesFormatter,
+    SimpleFilesFormatter,
+    VerticalColumnsFilesFormatter,
+)
 from neuromation.cli.formatter import (
     BaseFormatter,
     ConfigFormatter,
@@ -14,13 +22,13 @@ from neuromation.cli.formatter import (
     JobStatusFormatter,
     JobTelemetryFormatter,
     ResourcesFormatter,
-    StorageLsFormatter,
 )
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 from neuromation.client import (
     Container,
     FileStatus,
+    FileStatusType,
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -101,21 +109,40 @@ class TestJobStartProgress:
 
     def test_progress(self) -> None:
         progress = JobStartProgress(True)
+
         assert (
-            self.strip(progress(self.make_job(JobStatus.PENDING, None)))
-            == "Status: pending [0.0 sec] |"
+            re.match(
+                r"Status: pending \[\d+\.\d+ sec] \|",
+                self.strip(progress(self.make_job(JobStatus.PENDING, None))),
+            )
+            is not None
         )
         assert (
-            self.strip(progress(self.make_job(JobStatus.PENDING, "ContainerCreating")))
-            == "Status: pending ContainerCreating [0.0 sec] /"
+            re.match(
+                r"Status: pending ContainerCreating \[\d+\.\d+ sec] /",
+                self.strip(
+                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
+                ),
+            )
+            is not None
         )
         assert (
-            self.strip(progress(self.make_job(JobStatus.PENDING, "ContainerCreating")))
-            == "Status: pending ContainerCreating [0.0 sec] -"
+            re.match(
+                r"Status: pending ContainerCreating \[\d+\.\d+ sec] -",
+                self.strip(
+                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
+                ),
+            )
+            is not None
         )
         assert (
-            self.strip(progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True))
-            == "Status: succeeded [0.0 sec]"
+            re.match(
+                r"Status: succeeded \[\d+\.\d sec]",
+                self.strip(
+                    progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
+                ),
+            )
+            is not None
         )
 
 
@@ -482,26 +509,134 @@ class TestJobListFormatter:
         assert self.quiet(jobs, description="test-description-0") == expected, expected
 
 
-class TestLSFormatter:
-    def test_neuro_store_ls_normal(self):
-        expected = (
-            "file           11             file1\n"
-            + "file           12             file2\n"
-            + "directory      0              dir1"
-        )
-        assert (
-            StorageLsFormatter()(
-                [
-                    FileStatus("file1", 11, "FILE", 2018, "read"),
-                    FileStatus("file2", 12, "FILE", 2018, "write"),
-                    FileStatus("dir1", 0, "DIRECTORY", 2018, "manage"),
-                ]
-            )
-            == expected
-        )
+class TestFilesFormatter:
 
-    def test_neuro_store_ls_empty(self):
-        assert StorageLsFormatter()([]) == ""
+    files = [
+        FileStatus(
+            "File1",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        ),
+        FileStatus(
+            "File2",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-10-10 13:10:10", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        ),
+        FileStatus(
+            "File3 with space",
+            1_024_001,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2019-02-02 05:02:02", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        ),
+    ]
+    folders = [
+        FileStatus(
+            "Folder1",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2017-03-03 06:03:03", "%Y-%m-%d %H:%M:%S"))),
+            "manage",
+        ),
+        FileStatus(
+            "1Folder with space",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2017-03-03 06:03:02", "%Y-%m-%d %H:%M:%S"))),
+            "manage",
+        ),
+    ]
+    files_and_folders = files + folders
+
+    def test_simple_formatter(self):
+        formatter = SimpleFilesFormatter()
+        assert list(formatter(self.files_and_folders)) == [
+            f"{file.name}" for file in self.files_and_folders
+        ]
+
+    def test_long_formatter(self):
+        formatter = LongFilesFormatter(human_readable=False)
+        assert list(formatter(self.files_and_folders)) == [
+            "-r    2048 2018-01-01 03:00:00 File1",
+            "-r    1024 2018-10-10 13:10:10 File2",
+            "-r 1024001 2019-02-02 05:02:02 File3 with space",
+            "dm       0 2017-03-03 06:03:03 Folder1",
+            "dm       0 2017-03-03 06:03:02 1Folder with space",
+        ]
+
+        formatter = LongFilesFormatter(human_readable=True)
+        assert list(formatter(self.files_and_folders)) == [
+            "-r    2.0K 2018-01-01 03:00:00 File1",
+            "-r    1.0K 2018-10-10 13:10:10 File2",
+            "-r 1000.0K 2019-02-02 05:02:02 File3 with space",
+            "dm       0 2017-03-03 06:03:03 Folder1",
+            "dm       0 2017-03-03 06:03:02 1Folder with space",
+        ]
+
+    def test_column_formatter(self):
+        formatter = VerticalColumnsFilesFormatter(width=40)
+        assert list(formatter(self.files_and_folders)) == [
+            "File1             Folder1",
+            "File2             1Folder with space",
+            "File3 with space",
+        ]
+
+        formatter = VerticalColumnsFilesFormatter(width=36)
+        assert list(formatter(self.files_and_folders)) == [
+            "File1             Folder1",
+            "File2             1Folder with space",
+            "File3 with space",
+        ]
+
+        formatter = VerticalColumnsFilesFormatter(width=1)
+        assert list(formatter(self.files_and_folders)) == [
+            "File1",
+            "File2",
+            "File3 with space",
+            "Folder1",
+            "1Folder with space",
+        ]
+
+    @pytest.mark.parametrize(
+        "formatter",
+        [
+            (SimpleFilesFormatter()),
+            (VerticalColumnsFilesFormatter(width=100)),
+            (LongFilesFormatter(human_readable=False)),
+        ],
+    )
+    def test_formatter_with_empty_files(self, formatter):
+        files = []
+        assert [] == list(formatter(files))
+
+    def test_sorter(self):
+        sorter = FilesSorter.NAME
+        files = sorted(self.files_and_folders, key=sorter.key())
+        assert files == [
+            self.folders[1],
+            self.files[0],
+            self.files[1],
+            self.files[2],
+            self.folders[0],
+        ]
+
+        sorter = FilesSorter.SIZE
+        files = sorted(self.files_and_folders, key=sorter.key())
+        assert files[2:5] == [self.files[1], self.files[0], self.files[2]]
+
+        sorter = FilesSorter.TIME
+        files = sorted(self.files_and_folders, key=sorter.key())
+        assert files == [
+            self.folders[1],
+            self.folders[0],
+            self.files[0],
+            self.files[1],
+            self.files[2],
+        ]
 
 
 class TestResourcesFormatter:
