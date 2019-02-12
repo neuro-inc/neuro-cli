@@ -67,6 +67,32 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url == config2.url
 
+    def test_factory_update_url_registry_url_updates_old_cnames(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(
+            url="http://dev.platform.neuromation.io/api/v1", auth_token=auth_token
+        )
+        rc.ConfigFactory.update_api_url(
+            url="http://staging.platform.neuromation.io/api/v1"
+        )
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url == "http://dev.platform.neuromation.io/api/v1"
+        assert config.registry_url == "http://dev.registry.neuromation.io"
+        assert config2.url == "http://staging.platform.neuromation.io/api/v1"
+        assert config2.registry_url == "http://staging.registry.neuromation.io"
+
+    def test_factory_update_url_registry_url_updates_new_cnames(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(
+            url="https://dev.ai.neuromation.io/api/v1", auth_token=auth_token
+        )
+        rc.ConfigFactory.update_api_url(url="https://staging.ai.neuromation.io/api/v1")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url == "https://dev.ai.neuromation.io/api/v1"
+        assert config.registry_url == "https://registry-dev.ai.neuromation.io"
+        assert config2.url == "https://staging.ai.neuromation.io/api/v1"
+        assert config2.registry_url == "https://registry-staging.ai.neuromation.io"
+
     def test_factory_update_url_malformed(self):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
@@ -175,14 +201,14 @@ class TestFactoryMethods:
 
 
 def test_docker_url():
-    assert DEFAULTS.docker_registry_url() == URL("https://registry.dev.neuromation.io")
+    assert DEFAULTS.registry_url == "https://registry.dev.neuromation.io"
     custom_staging = rc.Config(url="https://platform.staging.neuromation.io/api/v1")
-    url = custom_staging.docker_registry_url()
-    assert url == URL("https://registry.staging.neuromation.io")
+    url = custom_staging.registry_url
+    assert url == "https://registry.staging.neuromation.io"
 
     prod = rc.Config(url="https://platform.neuromation.io/api/v1")
-    url = prod.docker_registry_url()
-    assert url == URL("https://registry.neuromation.io")
+    url = prod.registry_url
+    assert url == "https://registry.neuromation.io"
 
 
 @pytest.mark.parametrize("identity_claim", JWT_IDENTITY_CLAIM_OPTIONS)
@@ -229,12 +255,13 @@ def test_create_existing(nmrc):
 def test_load(nmrc):
     document = """
         url: 'http://a.b/c'
+        registry_url: 'http://registry.a.b/c'
     """
     nmrc.write_text(document)
     nmrc.chmod(0o600)
 
     config = rc.load(nmrc)
-    assert config == rc.Config(url="http://a.b/c")
+    assert config == rc.Config(url="http://a.b/c", registry_url="http://registry.a.b/c")
 
 
 def test_load_missing(nmrc):

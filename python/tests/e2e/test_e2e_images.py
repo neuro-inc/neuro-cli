@@ -76,8 +76,9 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
 
     # Execute image and check result
     config = ConfigFactory.load()
-    repo = str(URL(config.url).host).replace("platform.", "registry.")
-    image_with_repo = f'{repo}/{image_url.host}/{image_url.path.lstrip("/")}'
+    registry_url = URL(config.registry_url)
+    path = image_url.path
+    image_with_repo = f'{registry_url.host}/{image_url.host}/{path.lstrip("/")}'
     captured = run(
         [
             "job",
