@@ -818,28 +818,29 @@ def test_e2e_job_list_filtered_by_status(run):
     captured = run(["job", "ls", "--quiet"])
     out = captured.out.strip()
     jobs_ls = set(out.split("\n"))
-    # check as subset not equality because multiple builds can run in parallel
+    # check '<=' (not '==') multiple builds run in parallel can interfere
     assert jobs <= jobs_ls
 
     # no status filtering (same as running+pending)
     captured = run(["job", "ls", "--quiet"])
     out = captured.out.strip()
     jobs_ls_no_arg = set(out.split("\n"))
-    # check as subset not equality because multiple builds can run in parallel
+    # check '<=' (not '==') multiple builds run in parallel can interfere
     assert jobs <= jobs_ls_no_arg
 
     # 1 status filter: running
     captured = run(["job", "ls", "--status", "running", "--quiet"])
     out = captured.out.strip()
     jobs_ls = set(out.split("\n"))
-    # check as subset not equality because multiple builds can run in parallel
+    # check '<=' (not '==') multiple builds run in parallel can interfere
     assert jobs <= jobs_ls
 
     # 2 status filters: pending+running is the same as without arguments
     captured = run(["job", "ls", "-s", "pending", "-s", "running", "-q"])
     out = captured.out.strip()
     jobs_ls = set(out.split("\n"))
-    assert jobs_ls == jobs_ls_no_arg
+    # check '<=' (not '==') multiple builds run in parallel can interfere
+    assert jobs_ls <= jobs_ls_no_arg
 
     # "all" status filter is the same as "running+pending+failed+succeeded"
     captured = run(["job", "ls", "-s", "all", "-q"])
@@ -862,4 +863,4 @@ def test_e2e_job_list_filtered_by_status(run):
     )
     out = captured.out.strip()
     jobs_ls_all_explicit = set(out.split("\n"))
-    assert jobs_ls_all == jobs_ls_all_explicit
+    assert jobs_ls_all <= jobs_ls_all_explicit
