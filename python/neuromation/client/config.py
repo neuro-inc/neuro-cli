@@ -2,7 +2,7 @@ import aiohttp
 from yarl import URL
 
 from neuromation.cli.login import AuthConfig, ServerConfig
-from neuromation.client import API, DEFAULT_TIMEOUT
+from neuromation.client import DEFAULT_TIMEOUT
 from neuromation.client.users import get_token_username
 
 
@@ -35,28 +35,28 @@ class ConfigLoadException(Exception):
     pass
 
 
-async def get_server_config(
-    url: URL, token: str = "", timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
-) -> ServerConfig:
-    api = API(url, token=token, timeout=timeout)
-    async with api.request("GET", URL("config")) as resp:
-        payload = await resp.json()
-        # TODO (ajuszkowski, 5-Feb-2019) validate received data
-        auth_url = URL(payload["auth_url"])
-        token_url = URL(payload["token_url"])
-        client_id = payload["client_id"]
-        audience = payload["audience"]
-        success_redirect_url = payload.get("success_redirect_url")
-        if success_redirect_url:
-            success_redirect_url = URL(success_redirect_url)
-        callback_urls = tuple(URL(u) for u in payload.get("callback_urls", []))
-        auth_config = AuthConfig(
-            auth_url=auth_url,
-            token_url=token_url,
-            client_id=client_id,
-            audience=audience,
-            success_redirect_url=success_redirect_url,
-            callback_urls=callback_urls,
-        )
-        registry_url = URL(payload["registry_url"])
-        return ServerConfig(registry_url=registry_url, auth_config=auth_config)
+async def get_server_config(url: URL) -> ServerConfig:
+    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as client:
+        async with client.get(url.with_path("/config")) as resp:
+            if resp.status != 200:
+                raise RuntimeError(f"Unable to get server configuration: {resp.status}")
+            payload = await resp.json()
+            # TODO (ajuszkowski, 5-Feb-2019) validate received data
+            auth_url = URL(payload["auth_url"])
+            token_url = URL(payload["token_url"])
+            client_id = payload["client_id"]
+            audience = payload["audience"]
+            success_redirect_url = payload.get("success_redirect_url")
+            if success_redirect_url:
+                success_redirect_url = URL(success_redirect_url)
+            callback_urls = tuple(URL(u) for u in payload.get("callback_urls", []))
+            auth_config = AuthConfig(
+                auth_url=auth_url,
+                token_url=token_url,
+                client_id=client_id,
+                audience=audience,
+                success_redirect_url=success_redirect_url,
+                callback_urls=callback_urls,
+            )
+            registry_url = URL(payload["registry_url"])
+            return ServerConfig(registry_url=registry_url, auth_config=auth_config)

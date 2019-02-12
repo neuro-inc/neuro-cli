@@ -4,7 +4,6 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.login import AuthConfig
-from neuromation.client import IllegalArgumentError
 from neuromation.client.config import ServerConfig, get_server_config
 
 
@@ -59,5 +58,5 @@ async def test_get_server_config__fail(aiohttp_server):
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    with pytest.raises(IllegalArgumentError, match="unexpected server error"):
-        config = await get_server_config(srv.make_url("/"))
+    with pytest.raises(RuntimeError, match="Unable to get server configuration: 500"):
+        await get_server_config(srv.make_url("/"))
