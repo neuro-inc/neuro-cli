@@ -285,7 +285,10 @@ def _create_auth_config(api_url: URL, payload: Dict[str, Any]) -> AuthConfig:
         )
 
     # TODO: temporary hardcoded until /api/v1/config is implemented
-    if api_url == URL("https://platform.staging.neuromation.io/api/v1"):
+    if api_url in (
+        URL("https://platform.staging.neuromation.io/api/v1"),
+        URL("https://staging.ai.neuromation.io/api/v1"),
+    ):
         return _create_staging_auth_config()
     return _create_default_auth_config()
 

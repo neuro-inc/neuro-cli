@@ -13,7 +13,7 @@ from neuromation.cli.rc import AuthToken, Config
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
-DEFAULTS = rc.Config(url="https://platform.dev.neuromation.io/api/v1")
+DEFAULTS = rc.Config(url="https://dev.ai.neuromation.io/api/v1")
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def test_create(nmrc):
     pypi:
       check_timestamp: 0
       pypi_version: 0.0.0
-    url: https://platform.dev.neuromation.io/api/v1
+    url: https://dev.ai.neuromation.io/api/v1
     """
     )
     assert nmrc.read_text() == expected_text
@@ -127,17 +127,17 @@ class TestFactoryMethods:
 
     def test_factory_update_url_and_auth_config(self):
         config = rc.ConfigFactory.load()
-        assert config.url == "https://platform.dev.neuromation.io/api/v1"
+        assert config.url == "https://dev.ai.neuromation.io/api/v1"
+        assert config.registry_url == "https://registry-dev.ai.neuromation.io"
         assert config.auth_config.auth_url == URL(
             "https://dev-neuromation.auth0.com/authorize"
         )
 
-        rc.ConfigFactory.update_api_url(
-            url="https://platform.staging.neuromation.io/api/v1"
-        )
+        rc.ConfigFactory.update_api_url(url="https://staging.ai.neuromation.io/api/v1")
 
         config = rc.ConfigFactory.load()
-        assert config.url == "https://platform.staging.neuromation.io/api/v1"
+        assert config.url == "https://staging.ai.neuromation.io/api/v1"
+        assert config.registry_url == "https://registry-staging.ai.neuromation.io"
         assert config.auth_config.auth_url == URL(
             "https://staging-neuromation.auth0.com/authorize"
         )
@@ -201,14 +201,12 @@ class TestFactoryMethods:
 
 
 def test_docker_url():
-    assert DEFAULTS.registry_url == "https://registry.dev.neuromation.io"
-    custom_staging = rc.Config(url="https://platform.staging.neuromation.io/api/v1")
-    url = custom_staging.registry_url
-    assert url == "https://registry.staging.neuromation.io"
+    assert DEFAULTS.registry_url == "https://registry-dev.ai.neuromation.io"
+    custom_staging = rc.Config(url="https://staging.io.neuromation.io/api/v1")
+    assert custom_staging.registry_url == "https://staging.io.neuromation.io"
 
     prod = rc.Config(url="https://platform.neuromation.io/api/v1")
-    url = prod.registry_url
-    assert url == "https://registry.neuromation.io"
+    assert prod.registry_url == "https://registry.neuromation.io"
 
 
 @pytest.mark.parametrize("identity_claim", JWT_IDENTITY_CLAIM_OPTIONS)
