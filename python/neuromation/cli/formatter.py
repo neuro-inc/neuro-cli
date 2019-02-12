@@ -1,7 +1,7 @@
 import itertools
 import re
 import time
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 import click
 from dateutil.parser import isoparse  # type: ignore
