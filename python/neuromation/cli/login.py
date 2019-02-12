@@ -345,6 +345,12 @@ class AuthConfig:
         )
 
 
+@dataclass(frozen=True)
+class ServerConfig:
+    auth_config: AuthConfig
+    registry_url: URL
+
+
 class AuthNegotiator:
     def __init__(
         self,

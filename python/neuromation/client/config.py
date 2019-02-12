@@ -1,6 +1,8 @@
 from yarl import URL
 
-from .users import get_token_username
+from neuromation.cli.login import AuthConfig, ServerConfig
+from neuromation.client import API
+from neuromation.client.users import get_token_username
 
 
 class Config:
@@ -26,3 +28,33 @@ class Config:
     @property
     def username(self) -> str:
         return self._username
+
+
+class ConfigLoadException(Exception):
+    pass
+
+
+async def get_server_config(api: API) -> ServerConfig:
+    url = URL("config")
+
+    async with api.request("GET", url) as resp:
+        payload = await resp.json()
+        # TODO (ajuszkowski, 5-Feb-2019) validate received data
+        auth_url = URL(payload["auth_url"])
+        token_url = URL(payload["token_url"])
+        client_id = payload["client_id"]
+        audience = payload["audience"]
+        success_redirect_url = payload.get("success_redirect_url")
+        if success_redirect_url:
+            success_redirect_url = URL(success_redirect_url)
+        callback_urls = tuple(URL(u) for u in payload.get("callback_urls", []))
+        auth_config = AuthConfig(
+            auth_url=auth_url,
+            token_url=token_url,
+            client_id=client_id,
+            audience=audience,
+            success_redirect_url=success_redirect_url,
+            callback_urls=callback_urls,
+        )
+        registry_url = URL(payload["registry_url"])
+        return ServerConfig(registry_url=registry_url, auth_config=auth_config)
