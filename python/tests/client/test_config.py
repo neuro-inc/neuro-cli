@@ -4,11 +4,11 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.login import AuthConfig
-from neuromation.client import API, DEFAULT_TIMEOUT, IllegalArgumentError
+from neuromation.client import IllegalArgumentError
 from neuromation.client.config import ServerConfig, get_server_config
 
 
-async def test_load_client_config__request_auth_config(aiohttp_server):
+async def test_get_server_config(aiohttp_server):
     registry_url = "http://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -51,7 +51,7 @@ async def test_load_client_config__request_auth_config(aiohttp_server):
     )
 
 
-async def test_load_client_config__request_auth_config__fail(aiohttp_server):
+async def test_get_server_config__fail(aiohttp_server):
     async def handler(request):
         raise aiohttp.web.HTTPInternalServerError(reason="unexpected server error")
 
