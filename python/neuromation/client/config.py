@@ -37,7 +37,7 @@ class ConfigLoadException(Exception):
 
 async def get_server_config(url: URL) -> ServerConfig:
     async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as client:
-        async with client.get(url.with_path("/config")) as resp:
+        async with client.get(url / "config") as resp:
             if resp.status != 200:
                 raise RuntimeError(f"Unable to get server configuration: {resp.status}")
             payload = await resp.json()
