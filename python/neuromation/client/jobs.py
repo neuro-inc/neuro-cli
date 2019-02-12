@@ -10,12 +10,14 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Set,
     SupportsInt,
     Tuple,
 )
 from urllib.parse import urlparse
 
 from aiohttp import WSServerHandshakeError
+from multidict import MultiDict
 from yarl import URL
 
 from .api import API, IllegalArgumentError
@@ -388,9 +390,10 @@ class Jobs:
             res = await resp.json()
             return JobDescription.from_api(res)
 
-    async def list(self) -> List[JobDescription]:
+    async def list(self, statuses: Set[str]) -> List[JobDescription]:
         url = URL(f"jobs")
-        async with self._api.request("GET", url) as resp:
+        params = MultiDict([("status", s) for s in statuses])
+        async with self._api.request("GET", url, params=params) as resp:
             ret = await resp.json()
             return [JobDescription.from_api(j) for j in ret["jobs"]]
 

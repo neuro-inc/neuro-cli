@@ -253,9 +253,9 @@ neuro job ls [OPTIONS]
 
 ```bash
 
-neuro job list --description=my favourite job
-neuro job list --status=all
-neuro job list -s pending -s running -q
+neuro job ls --description=my favourite job
+neuro job ls --status=all
+neuro job ls -s pending -s running -q
 
 ```
 
@@ -907,9 +907,9 @@ neuro ps [OPTIONS]
 
 ```bash
 
-neuro job list --description=my favourite job
-neuro job list --status=all
-neuro job list -s pending -s running -q
+neuro job ls --description=my favourite job
+neuro job ls --status=all
+neuro job ls -s pending -s running -q
 
 ```
 
