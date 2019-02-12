@@ -87,7 +87,7 @@ async def ls(
                 width=cfg.terminal_size[0], color=cfg.color
             )
         else:
-            formatter = SimpleFilesFormatter()
+            formatter = SimpleFilesFormatter(cfg.color)
 
     uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")

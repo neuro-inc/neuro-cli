@@ -714,7 +714,7 @@ class TestFilesFormatter:
     files_and_folders = files + folders
 
     def test_simple_formatter(self):
-        formatter = SimpleFilesFormatter()
+        formatter = SimpleFilesFormatter(color=False)
         assert list(formatter(self.files_and_folders)) == [
             f"{file.name}" for file in self.files_and_folders
         ]
@@ -765,7 +765,7 @@ class TestFilesFormatter:
     @pytest.mark.parametrize(
         "formatter",
         [
-            (SimpleFilesFormatter()),
+            (SimpleFilesFormatter(color=False)),
             (VerticalColumnsFilesFormatter(width=100, color=False)),
             (LongFilesFormatter(human_readable=False, color=False)),
         ],

@@ -360,9 +360,12 @@ class LongFilesFormatter(BaseFilesFormatter):
 
 
 class SimpleFilesFormatter(BaseFilesFormatter):
+    def __init__(self, color: bool):
+        self.painter = Painter(color)
+
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         for file in files:
-            yield file.name
+            yield self.painter.paint(file.name, file)
 
 
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
