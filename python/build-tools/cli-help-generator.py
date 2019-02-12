@@ -153,7 +153,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += "**Command Groups:**\n\n"
         md += "|Usage|Description|\n"
         md += "|---|---|\n"
-        for group in sorted(groups, key=operator.attrgetter("name")):
+        for group in groups:
             anchor = group.name
             anchor = "#" + anchor.replace(" ", "-")
             md += (
@@ -167,7 +167,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += "**Commands:**\n\n"
         md += "|Usage|Description|\n"
         md += "|---|---|\n"
-        for command in sorted(commands, key=operator.attrgetter("name")):
+        for command in commands:
             anchor = command.name
             anchor = "#" + anchor.replace(" ", "-")
             md += (
@@ -186,8 +186,7 @@ def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
         commands = [child for child in info.children if not child.is_group]
         md += "\n\n" + "\n\n".join(
             generate_command_markdown(item, header_prefix + "#")
-            for item in sorted(groups, key=operator.attrgetter("name"))
-            + sorted(commands, key=operator.attrgetter("name"))
+            for item in groups + commands
         )
     return md
 
