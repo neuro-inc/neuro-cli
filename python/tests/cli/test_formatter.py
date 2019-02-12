@@ -8,10 +8,13 @@ import pytest
 from yarl import URL
 
 from neuromation.cli.files_formatter import (
+    BSDAttributes,
+    BSDPainter,
     FilesSorter,
-    Indicators,
+    GnuIndicators,
+    GnuPainter,
     LongFilesFormatter,
-    Painter,
+    NonePainter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
@@ -554,41 +557,37 @@ class TestJobListFormatter:
         assert self.quiet(jobs, description="test-description-0") == expected, expected
 
 
-class TestPainter:
-    def test_painter_initializing(self, monkeypatch):
-        painter = Painter(color=False)
-        assert not painter._color
+class TestNonePainter:
+    def test_simple(self):
+        painter = NonePainter()
+        file = FileStatus(
+            "File1",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        assert painter.paint(file.name, file) == file.name
 
-        monkeypatch.setenv("LS_COLORS", "")
-        painter = Painter(color=True)
-        assert not painter._color
 
-        monkeypatch.setenv("LS_COLORS", "1")
-        painter = Painter(color=True)
-        assert painter._color
+class TestGnuPainter:
+    def test_color_parsing_simple(self):
+        painter = GnuPainter("rs=1;0;1")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
 
-    def test_color_parsing_simple(self, monkeypatch):
-        monkeypatch.setenv("LS_COLORS", "rs=1;0;1")
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+        painter = GnuPainter(":rs=1;0;1")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
 
-        monkeypatch.setenv("LS_COLORS", ":rs=1;0;1")
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+        painter = GnuPainter("rs=1;0;1:")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
 
-        monkeypatch.setenv("LS_COLORS", "rs=1;0;1:")
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
+        painter = GnuPainter("rs=1;0;1:fi=32;42")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+        assert painter.color_indicator[GnuIndicators.FILE] == "32;42"
 
-        monkeypatch.setenv("LS_COLORS", "rs=1;0;1:fi=32;42")
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
-        assert painter.color_indicator[Indicators.FILE] == "32;42"
-
-        monkeypatch.setenv("LS_COLORS", "rs=1;0;1:fi=")
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == "1;0;1"
-        assert painter.color_indicator[Indicators.FILE] == ""
+        painter = GnuPainter("rs=1;0;1:fi=")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+        assert painter.color_indicator[GnuIndicators.FILE] == ""
 
     @pytest.mark.parametrize(
         "escaped,result",
@@ -609,17 +608,14 @@ class TestPainter:
             ("a\\=b", "a=b"),
         ],
     )
-    def test_color_parsing_escaped_simple(self, monkeypatch, escaped, result):
-        monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == result
+    def test_color_parsing_escaped_simple(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
 
-        monkeypatch.setenv("LS_COLORS", escaped + "=1;2")
-        painter = Painter(color=True)
+        painter = GnuPainter(escaped + "=1;2")
         assert painter.color_ext_type[result] == "1;2"
 
-        monkeypatch.setenv("LS_COLORS", escaped + "=" + escaped)
-        painter = Painter(color=True)
+        painter = GnuPainter(escaped + "=" + escaped)
         assert painter.color_ext_type[result] == result
 
     @pytest.mark.parametrize(
@@ -632,17 +628,14 @@ class TestPainter:
             ("a\\2b", "a" + chr(2) + "b"),
         ],
     )
-    def test_color_parsing_escaped_octal(self, monkeypatch, escaped, result):
-        monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == result
+    def test_color_parsing_escaped_octal(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
 
-        monkeypatch.setenv("LS_COLORS", escaped + "=1;2")
-        painter = Painter(color=True)
+        painter = GnuPainter(escaped + "=1;2")
         assert painter.color_ext_type[result] == "1;2"
 
-        monkeypatch.setenv("LS_COLORS", escaped + "=" + escaped)
-        painter = Painter(color=True)
+        painter = GnuPainter(escaped + "=" + escaped)
         assert painter.color_ext_type[result] == result
 
     @pytest.mark.parametrize(
@@ -656,18 +649,75 @@ class TestPainter:
             ("a\\x2z", "a" + chr(0x2) + "z"),
         ],
     )
-    def test_color_parsing_escaped_hex(self, monkeypatch, escaped, result):
-        monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
-        painter = Painter(color=True)
-        assert painter.color_indicator[Indicators.RESET] == result
+    def test_color_parsing_escaped_hex(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
 
-        monkeypatch.setenv("LS_COLORS", escaped + "=1;2")
-        painter = Painter(color=True)
+        painter = GnuPainter(escaped + "=1;2")
         assert painter.color_ext_type[result] == "1;2"
 
-        monkeypatch.setenv("LS_COLORS", escaped + "=" + escaped)
-        painter = Painter(color=True)
+        painter = GnuPainter(escaped + "=" + escaped)
         assert painter.color_ext_type[result] == result
+
+    def test_coloring(self):
+        file = FileStatus(
+            "test.txt",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        folder = FileStatus(
+            "tmp",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "write",
+        )
+        painter = GnuPainter("di=32;41:fi=0;44:no=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;44mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+
+        painter = GnuPainter("di=32;41:no=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+
+        painter = GnuPainter("no=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+
+        painter = GnuPainter("*.text=0;46")
+        assert painter.paint(file.name, file) == "test.txt"
+        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+
+        painter = GnuPainter("*.txt=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+
+
+class TestBSDPainter:
+    def test_color_parsing(self):
+        painter = BSDPainter("exfxcxdxbxegedabagacad")
+        assert painter._colors[BSDAttributes.DIRECTORY] == "ex"
+
+    def test_coloring(self):
+        file = FileStatus(
+            "test.txt",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        folder = FileStatus(
+            "tmp",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "write",
+        )
+        painter = BSDPainter("exfxcxdxbxegedabagacad")
+        assert painter.paint(file.name, file) == "test.txt"
+        assert painter.paint(folder.name, folder) == "\x1b[34mtmp\x1b[0m"
 
 
 class TestFilesFormatter:

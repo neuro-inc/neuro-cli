@@ -8,7 +8,7 @@ from math import ceil
 from typing import Any, Dict, Iterator, List, Sequence
 
 import humanize
-from click import unstyle
+from click import style, unstyle
 
 from neuromation.cli.formatter import BaseFormatter
 from neuromation.client import Action, FileStatus, FileStatusType
@@ -36,7 +36,7 @@ def transpose(columns: Sequence[Sequence[Any]]) -> Sequence[Sequence[Any]]:
     return result
 
 
-class Indicators(str, enum.Enum):
+class GnuIndicators(str, enum.Enum):
     LEFT = "lc"
     RIGHT = "rc"
     END = "ec"
@@ -73,53 +73,57 @@ class ParseState(enum.Enum):
     PS_HEX = enum.auto()
 
 
-class Painter:
-    def __init__(self, color: bool):
-        self._color = color
-        if self._color:
-            self._defaults()
-            self._parse_env()
+class BasePainter(abc.ABC):
+    @abc.abstractmethod
+    def paint(self, label: str, file: FileStatus) -> str:
+        pass
+
+
+class NonePainter(BasePainter):
+    def paint(self, label: str, file: FileStatus) -> str:
+        return label
+
+
+class GnuPainter(BasePainter):
+    def __init__(self, ls_colors: str):
+        self._defaults()
+        self._parse_ls_colors(ls_colors)
 
     def _defaults(self) -> None:
-        self.color_indicator: Dict[Indicators, str] = {
-            Indicators.LEFT: "\033[",
-            Indicators.RIGHT: "m",
-            Indicators.END: "",
-            Indicators.RESET: "0",
-            Indicators.NORM: "",
-            Indicators.FILE: "",
-            Indicators.DIR: "01;34",
-            Indicators.LINK: "01;36",
-            Indicators.FIFO: "33",
-            Indicators.SOCKET: "01;35",
-            Indicators.BLK: "01;33",
-            Indicators.CHR: "01;33",
-            Indicators.MISSING: "",
-            Indicators.ORPHAN: "",
-            Indicators.EXEC: "01;32",
-            Indicators.DOOR: "01;35",
-            Indicators.SETUID: "37;41",
-            Indicators.SETGID: "30;43",
-            Indicators.STICKY: "37;44",
-            Indicators.OTHER_WRITABLE: "34;42",
-            Indicators.STICKY_OTHER_WRITABLE: "30;42",
-            Indicators.CAP: "30;41",
-            Indicators.MULTI_HARD_LINK: "",
-            Indicators.CLR_TO_EOL: "\033[K",
+        self.color_indicator: Dict[GnuIndicators, str] = {
+            GnuIndicators.LEFT: "\033[",
+            GnuIndicators.RIGHT: "m",
+            GnuIndicators.END: "",
+            GnuIndicators.RESET: "0",
+            GnuIndicators.NORM: "",
+            GnuIndicators.FILE: "",
+            GnuIndicators.DIR: "01;34",
+            GnuIndicators.LINK: "01;36",
+            GnuIndicators.FIFO: "33",
+            GnuIndicators.SOCKET: "01;35",
+            GnuIndicators.BLK: "01;33",
+            GnuIndicators.CHR: "01;33",
+            GnuIndicators.MISSING: "",
+            GnuIndicators.ORPHAN: "",
+            GnuIndicators.EXEC: "01;32",
+            GnuIndicators.DOOR: "01;35",
+            GnuIndicators.SETUID: "37;41",
+            GnuIndicators.SETGID: "30;43",
+            GnuIndicators.STICKY: "37;44",
+            GnuIndicators.OTHER_WRITABLE: "34;42",
+            GnuIndicators.STICKY_OTHER_WRITABLE: "30;42",
+            GnuIndicators.CAP: "30;41",
+            GnuIndicators.MULTI_HARD_LINK: "",
+            GnuIndicators.CLR_TO_EOL: "\033[K",
         }
         self.color_ext_type: Dict[str, str] = {}
 
-    def _parse_env(self) -> None:
+    def _parse_ls_colors(self, ls_colors: str) -> None:
         def process(left: str, right: str) -> None:
             try:
-                self.color_indicator[Indicators(left)] = right
+                self.color_indicator[GnuIndicators(left)] = right
             except ValueError:
                 self.color_ext_type[left] = right
-
-        ls_colors = os.getenv("LS_COLORS")
-        if not ls_colors:
-            self._color = False
-            return
 
         pos = 0
         left = right = escaped = ""
@@ -282,30 +286,98 @@ class Painter:
             process(left, right)
 
     def paint(self, label: str, file: FileStatus) -> str:
-        if self._color:
-            mapping = {
-                FileStatusType.FILE: self.color_indicator[Indicators.FILE],
-                FileStatusType.DIRECTORY: self.color_indicator[Indicators.DIR],
-            }
-            color = mapping[file.type]
-            if not color:
-                color = self.color_indicator[Indicators.NORM]
-            if file.type == FileStatusType.FILE:
-                for pattern, value in self.color_ext_type.items():
-                    if fnmatch(file.name, pattern):
-                        color = value
-                        break
-            if color:
-                return (
-                    self.color_indicator[Indicators.LEFT]
-                    + color
-                    + self.color_indicator[Indicators.RIGHT]
-                    + label
-                    + self.color_indicator[Indicators.LEFT]
-                    + self.color_indicator[Indicators.RESET]
-                    + self.color_indicator[Indicators.RIGHT]
-                )
+        mapping = {
+            FileStatusType.FILE: self.color_indicator[GnuIndicators.FILE],
+            FileStatusType.DIRECTORY: self.color_indicator[GnuIndicators.DIR],
+        }
+        color = mapping[file.type]
+        if not color:
+            color = self.color_indicator[GnuIndicators.NORM]
+        if file.type == FileStatusType.FILE:
+            for pattern, value in self.color_ext_type.items():
+                if fnmatch(file.name, pattern):
+                    color = value
+                    break
+        if color:
+            return (
+                self.color_indicator[GnuIndicators.LEFT]
+                + color
+                + self.color_indicator[GnuIndicators.RIGHT]
+                + label
+                + self.color_indicator[GnuIndicators.LEFT]
+                + self.color_indicator[GnuIndicators.RESET]
+                + self.color_indicator[GnuIndicators.RIGHT]
+            )
         return label
+
+
+class BSDAttributes(enum.Enum):
+    DIRECTORY = 1
+    LINK = 2
+    SOCKET = 3
+    PIPE = 4
+    EXECUTABLE = 5
+    BLOCK = 6
+    CHARACTER = 7
+    EXECUTABLE_SETUID = 8
+    EXECUTABLE_SETGID = 9
+    DIRECTORY_WRITABLE_OTHERS_WITH_STICKY = 10
+    DIRECTORY_WRITABLE_OTHERS_WITHOUT_STICKY = 11
+
+
+class BSDPainter(BasePainter):
+    def __init__(self, lscolors: str):
+        self._parse_lscolors(lscolors)
+
+    def _parse_lscolors(self, lscolors: str) -> None:
+        parts = chunks(lscolors, 2)
+        self._colors: Dict[BSDAttributes, str] = {}
+        num = 0
+        for attr in BSDAttributes:
+            self._colors[attr] = parts[num]
+            num += 1
+
+    def paint(self, label: str, file: FileStatus) -> str:
+        color = ""
+        if file.type == FileStatusType.DIRECTORY:
+            color = self._colors[BSDAttributes.DIRECTORY]
+        if color:
+            char_to_color = {
+                "a": "black",
+                "b": "red",
+                "c": "green",
+                "d": "brown",
+                "e": "blue",
+                "f": "magenta",
+                "g": "cyan",
+                "h": "white",
+            }
+            bold = None
+            fg = bg = None
+            if color[0].lower() in char_to_color.keys():
+                fg = char_to_color[color[0].lower()]
+                if color[0].isupper():
+                    bold = True
+            if color[1] in char_to_color.keys():
+                bg = char_to_color[color[1]]
+            if fg or bg or bold:
+                return style(label, fg=fg, bg=bg, bold=bold)
+        return label
+
+
+class PainterFactory:
+    @classmethod
+    def detect(cls, color: bool) -> BasePainter:
+        if color:
+            ls_colors = os.getenv("LS_COLORS")
+            if ls_colors:
+                return GnuPainter(ls_colors)
+            lscolors = os.getenv("LSCOLORS")
+            if lscolors:
+                return BSDPainter(lscolors)
+
+            pass
+        return NonePainter()
 
 
 class BaseFilesFormatter(BaseFormatter, abc.ABC):
@@ -322,7 +394,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
     def __init__(self, human_readable: bool, color: bool):
         self.human_readable = human_readable
-        self.painter = Painter(color)
+        self.painter = PainterFactory.detect(color)
 
     def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
 
@@ -361,7 +433,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
 class SimpleFilesFormatter(BaseFilesFormatter):
     def __init__(self, color: bool):
-        self.painter = Painter(color)
+        self.painter = PainterFactory.detect(color)
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         for file in files:
@@ -371,7 +443,7 @@ class SimpleFilesFormatter(BaseFilesFormatter):
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
     def __init__(self, width: int, color: bool):
         self.width = width
-        self.painter = Painter(color)
+        self.painter = PainterFactory.detect(color)
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:
