@@ -1,5 +1,4 @@
 API_URL = "https://platform.dev.neuromation.io/api/v1"
-REGISTRY_URL = "https://registry.dev.neuromation.io"
 JOB_GPU_NUMBER = 0
 JOB_GPU_MODEL = "nvidia-tesla-k80"
 JOB_CPU_NUMBER = 0.1

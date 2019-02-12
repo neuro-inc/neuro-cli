@@ -78,7 +78,7 @@ class Images:
                 )
             raise
         self._registry = Registry(
-            self._config.registry_url.with_path("/v2"),
+            self._config.registry_url.with_path("/v2/"),
             self._config.token,
             self._config.username,
         )

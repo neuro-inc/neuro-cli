@@ -101,7 +101,7 @@ class Config:
     )  # don't save the field in config
 
     def __post_init__(self) -> None:
-        self.registry_url = create_registry_url(self.url)
+        self.registry_url = self.registry_url or create_registry_url(self.url)
 
     @property
     def auth(self) -> Optional[str]:
