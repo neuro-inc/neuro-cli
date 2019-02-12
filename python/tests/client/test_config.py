@@ -8,7 +8,7 @@ from neuromation.client import API, DEFAULT_TIMEOUT, IllegalArgumentError
 from neuromation.client.config import ServerConfig, get_server_config
 
 
-async def test_load_client_config__request_auth_config(aiohttp_server, token):
+async def test_load_client_config__request_auth_config(aiohttp_server):
     registry_url = "http://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -37,9 +37,7 @@ async def test_load_client_config__request_auth_config(aiohttp_server, token):
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    api = API(srv.make_url("/"), token=token, timeout=DEFAULT_TIMEOUT)
-
-    config = await get_server_config(api)
+    config = await get_server_config(srv.make_url("/"))
     assert config == ServerConfig(
         registry_url=URL(registry_url),
         auth_config=AuthConfig(
@@ -53,7 +51,7 @@ async def test_load_client_config__request_auth_config(aiohttp_server, token):
     )
 
 
-async def test_load_client_config__request_auth_config__fail(aiohttp_server, token):
+async def test_load_client_config__request_auth_config__fail(aiohttp_server):
     async def handler(request):
         raise aiohttp.web.HTTPInternalServerError(reason="unexpected server error")
 
@@ -61,7 +59,5 @@ async def test_load_client_config__request_auth_config__fail(aiohttp_server, tok
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    api = API(srv.make_url("/"), token=token, timeout=DEFAULT_TIMEOUT)
-
     with pytest.raises(IllegalArgumentError, match="unexpected server error"):
-        config = await get_server_config(api)
+        config = await get_server_config(srv.make_url("/"))

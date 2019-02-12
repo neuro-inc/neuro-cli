@@ -1,7 +1,8 @@
+import aiohttp
 from yarl import URL
 
 from neuromation.cli.login import AuthConfig, ServerConfig
-from neuromation.client import API
+from neuromation.client import API, DEFAULT_TIMEOUT
 from neuromation.client.users import get_token_username
 
 
@@ -34,10 +35,11 @@ class ConfigLoadException(Exception):
     pass
 
 
-async def get_server_config(api: API) -> ServerConfig:
-    url = URL("config")
-
-    async with api.request("GET", url) as resp:
+async def get_server_config(
+    url: URL, token: str = "", timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+) -> ServerConfig:
+    api = API(url, token=token, timeout=timeout)
+    async with api.request("GET", URL("config")) as resp:
         payload = await resp.json()
         # TODO (ajuszkowski, 5-Feb-2019) validate received data
         auth_url = URL(payload["auth_url"])
