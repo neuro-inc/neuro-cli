@@ -6,8 +6,7 @@ from aiohttp.web import HTTPCreated
 from jose import JWTError, jwt
 from yarl import URL
 
-from . import ClientError
-from .api import API
+from .api import API, ClientError
 
 
 JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"

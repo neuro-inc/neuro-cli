@@ -4,7 +4,7 @@ from typing import Dict
 import aiohttp
 from yarl import URL
 
-from . import API
+from .api import API
 
 
 TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
