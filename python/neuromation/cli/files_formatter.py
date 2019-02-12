@@ -3,10 +3,12 @@ import enum
 import operator
 import os
 import time
+from fnmatch import fnmatch
 from math import ceil
 from typing import Any, Dict, Iterator, List, Sequence
 
 import humanize
+from click import unstyle
 
 from neuromation.cli.formatter import BaseFormatter
 from neuromation.client import Action, FileStatus, FileStatusType
@@ -135,6 +137,9 @@ class Painter:
             elif state == ParseState.PS_OCTAL:
                 if char in ["0", "1", "2", "3", "4", "5", "6", "7"]:
                     num = num * 8 + ord(char) - ord("0")
+                    if num > 7:
+                        state = ParseState.PS_ESCAPED_END
+                        escaped = chr(num)
                     pos += 1
                 else:
                     state = ParseState.PS_ESCAPED_END
@@ -142,13 +147,20 @@ class Painter:
             elif state == ParseState.PS_HEX:
                 if char in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
                     num = num * 16 + ord(char) - ord("0")
+                    if num > 15:
+                        state = ParseState.PS_ESCAPED_END
+                        escaped = chr(num)
                     pos += 1
                 elif char.upper() in ["A", "B", "C", "D", "E", "F"]:
                     num = num * 16 + 10 + ord(char.upper()) - ord("A")
+                    if num > 15:
+                        state = ParseState.PS_ESCAPED_END
+                        escaped = chr(num)
                     pos += 1
                 else:
                     state = ParseState.PS_ESCAPED_END
                     escaped = chr(num)
+
             elif state == ParseState.PS_ESCAPED_END:
                 stack.pop()
                 state = stack.pop()
@@ -161,9 +173,13 @@ class Painter:
                 if char in ["0", "1", "2", "3", "4", "5", "6", "7"]:
                     stack.append(state)
                     state = ParseState.PS_OCTAL
+                    num = 0
                 elif char.upper() == "X":
                     stack.append(state)
                     state = ParseState.PS_HEX
+                    num = 0
+                    pos += 1
+
                 elif char == "a":
                     escaped = "\a"
                     stack.append(state)
@@ -265,6 +281,32 @@ class Painter:
         if state == ParseState.PS_RIGHT and len(right):
             process(left, right)
 
+    def paint(self, label: str, file: FileStatus) -> str:
+        if self._color:
+            mapping = {
+                FileStatusType.FILE: self.color_indicator[Indicators.FILE],
+                FileStatusType.DIRECTORY: self.color_indicator[Indicators.DIR],
+            }
+            color = mapping[file.type]
+            if not color:
+                color = self.color_indicator[Indicators.NORM]
+            if file.type == FileStatusType.FILE:
+                for pattern, value in self.color_ext_type.items():
+                    if fnmatch(file.name, pattern):
+                        color = value
+                        break
+            if color:
+                return (
+                    self.color_indicator[Indicators.LEFT]
+                    + color
+                    + self.color_indicator[Indicators.RIGHT]
+                    + label
+                    + self.color_indicator[Indicators.LEFT]
+                    + self.color_indicator[Indicators.RESET]
+                    + self.color_indicator[Indicators.RIGHT]
+                )
+        return label
+
 
 class BaseFilesFormatter(BaseFormatter, abc.ABC):
     def __call__(
@@ -280,7 +322,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
     def __init__(self, human_readable: bool, color: bool):
         self.human_readable = human_readable
-        self.color = color
+        self.painter = Painter(color)
 
     def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
 
@@ -293,7 +335,7 @@ class LongFilesFormatter(BaseFilesFormatter):
         if self.human_readable:
             size = humanize.naturalsize(size, gnu=True).rstrip("B")
 
-        name = file.name
+        name = self.painter.paint(file.name, file)
 
         return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
 
@@ -304,8 +346,9 @@ class LongFilesFormatter(BaseFilesFormatter):
         widths = [0 for _ in table[0]]
         for row in table:
             for x in range(len(row)):
-                if widths[x] < len(row[x]):
-                    widths[x] = len(row[x])
+                cell_width = len(unstyle(row[x]))
+                if widths[x] < cell_width:
+                    widths[x] = cell_width
         for row in table:
             line = []
             for x in range(len(row)):
@@ -325,13 +368,13 @@ class SimpleFilesFormatter(BaseFilesFormatter):
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
     def __init__(self, width: int, color: bool):
         self.width = width
-        self.color = color
+        self.painter = Painter(color)
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:
             return
-        items = [file.name for file in files]
-        widths = [len(item) for item in items]
+        items = [self.painter.paint(file.name, file) for file in files]
+        widths = [len(unstyle(item)) for item in items]
         # let`s check how many columns we can use
         test_count = 1
         while True:

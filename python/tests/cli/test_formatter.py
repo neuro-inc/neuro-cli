@@ -604,12 +604,23 @@ class TestPainter:
             ("\\?", chr(127)),
             ("\\_", " "),
             ("a\\n", "a\n"),
+            ("a\\tb", "a\tb"),
+            ("a\\t\\rb", "a\t\rb"),
+            ("a\\=b", "a=b"),
         ],
     )
     def test_color_parsing_escaped_simple(self, monkeypatch, escaped, result):
         monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
         painter = Painter(color=True)
         assert painter.color_indicator[Indicators.RESET] == result
+
+        monkeypatch.setenv("LS_COLORS", escaped + "=1;2")
+        painter = Painter(color=True)
+        assert painter.color_ext_type[result] == "1;2"
+
+        monkeypatch.setenv("LS_COLORS", escaped + "=" + escaped)
+        painter = Painter(color=True)
+        assert painter.color_ext_type[result] == result
 
     @pytest.mark.parametrize(
         "escaped,result",
@@ -625,6 +636,38 @@ class TestPainter:
         monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
         painter = Painter(color=True)
         assert painter.color_indicator[Indicators.RESET] == result
+
+        monkeypatch.setenv("LS_COLORS", escaped + "=1;2")
+        painter = Painter(color=True)
+        assert painter.color_ext_type[result] == "1;2"
+
+        monkeypatch.setenv("LS_COLORS", escaped + "=" + escaped)
+        painter = Painter(color=True)
+        assert painter.color_ext_type[result] == result
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("\\x7", chr(0x7)),
+            ("\\x8", chr(0x8)),
+            ("\\x10", chr(0x10)),
+            ("\\XaA", chr(0xAA)),
+            ("a\\x222", "a" + chr(0x22) + "2"),
+            ("a\\x2z", "a" + chr(0x2) + "z"),
+        ],
+    )
+    def test_color_parsing_escaped_hex(self, monkeypatch, escaped, result):
+        monkeypatch.setenv("LS_COLORS", "rs=" + escaped)
+        painter = Painter(color=True)
+        assert painter.color_indicator[Indicators.RESET] == result
+
+        monkeypatch.setenv("LS_COLORS", escaped + "=1;2")
+        painter = Painter(color=True)
+        assert painter.color_ext_type[result] == "1;2"
+
+        monkeypatch.setenv("LS_COLORS", escaped + "=" + escaped)
+        painter = Painter(color=True)
+        assert painter.color_ext_type[result] == result
 
 
 class TestFilesFormatter:
