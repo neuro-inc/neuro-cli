@@ -309,7 +309,8 @@ async def auth_config(
 ) -> AsyncIterator[AuthConfig]:
     port = unused_port()
     yield AuthConfig.create(
-        base_url=auth_server,
+        auth_url=auth_server / "authorize",
+        token_url=auth_server / "oauth/token",
         client_id=auth_client_id,
         audience="https://platform.dev.neuromation.io",
         callback_urls=[URL(f"http://0.0.0.0:{port}")],
@@ -376,6 +377,89 @@ class TestTokenClient:
                     refresh_token="test_refresh_token",
                 )
                 await client.refresh(token)
+
+
+class TestAuthConfig:
+    def test_is_initialized__no_auth_url(self):
+        auth_config = AuthConfig(
+            auth_url=URL(""),
+            token_url=URL("url"),
+            client_id="client_id",
+            audience="audience",
+            callback_urls=(
+                URL("url1"),
+                URL("url2"),
+            ),
+            success_redirect_url=URL("url"),
+        )
+        assert auth_config.is_initialized() is False
+
+    def test_is_initialized__no_token_url(self):
+        auth_config = AuthConfig(
+            auth_url=URL("url"),
+            token_url=URL(""),
+            client_id="client_id",
+            audience="audience",
+            callback_urls=(
+                URL("url1"),
+                URL("url2"),
+            ),
+            success_redirect_url=URL("url"),
+        )
+        assert auth_config.is_initialized() is False
+
+    def test_is_initialized__no_client_id(self):
+        auth_config = AuthConfig(
+            auth_url=URL("url"),
+            token_url=URL("url"),
+            client_id="",
+            audience="audience",
+            callback_urls=(
+                URL("url1"),
+                URL("url2"),
+            ),
+            success_redirect_url=URL("url"),
+        )
+        assert auth_config.is_initialized() is False
+
+    def test_is_initialized__no_audience(self):
+        auth_config = AuthConfig(
+            auth_url=URL("url"),
+            token_url=URL("url"),
+            client_id="client_id",
+            audience="",
+            callback_urls=(
+                URL("url1"),
+                URL("url2"),
+            ),
+            success_redirect_url=URL("url"),
+        )
+        assert auth_config.is_initialized() is False
+
+    def test_is_initialized__no_callback_urls(self):
+        auth_config = AuthConfig(
+            auth_url=URL("url"),
+            token_url=URL("url"),
+            client_id="client_id",
+            audience="audience",
+            callback_urls=[],
+            success_redirect_url=URL("url"),
+        )
+        assert auth_config.is_initialized() is True
+
+    def test_is_initialized__no_success_redirect_url(self):
+        auth_config = AuthConfig(
+            auth_url=URL("url"),
+            token_url=URL("url"),
+            client_id="client_id",
+            audience="audience",
+            callback_urls=(
+                URL("url1"),
+                URL("url2"),
+            ),
+            success_redirect_url=None,
+        )
+        assert auth_config.is_initialized() is True
 
 
 class TestAuthNegotiator:

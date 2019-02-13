@@ -327,7 +327,7 @@ class AuthConfig:
         return [cast(int, url.port) for url in self.callback_urls]
 
     def is_initialized(self):
-        return self.auth_url and self.token_url and self.client_id and self.auth_url
+        return bool(self.auth_url and self.token_url and self.client_id and self.audience)
 
     @classmethod
     def create(
