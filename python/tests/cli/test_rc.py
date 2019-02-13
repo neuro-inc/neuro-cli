@@ -9,6 +9,7 @@ from jose import jwt
 from yarl import URL
 
 from neuromation.cli import rc
+from neuromation.cli.login import AuthConfig
 from neuromation.cli.rc import AuthToken, Config
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
@@ -29,23 +30,59 @@ def patch_home_for_test(monkeypatch, nmrc):
     monkeypatch.setattr(Path, "home", home)
 
 
-def test_create(nmrc):
+def test_create__with_defaults(nmrc):
     conf = rc.create(nmrc, Config())
     assert conf == DEFAULTS
     assert nmrc.exists()
     expected_text = dedent(
         """\
-    auth_config:
-      audience: https://platform.dev.neuromation.io
-      auth_url: https://dev-neuromation.auth0.com/authorize
-      client_id: V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR
-      success_redirect_url: https://platform.neuromation.io
-      token_url: https://dev-neuromation.auth0.com/oauth/token
     github_rsa_path: ''
     pypi:
       check_timestamp: 0
       pypi_version: 0.0.0
     url: https://dev.ai.neuromation.io/api/v1
+    """
+    )
+    assert nmrc.read_text() == expected_text
+
+
+def test_create__filled(nmrc):
+    config = Config(
+        url="https://dev.ai/api/v1",
+        registry_url="https://registry-dev.ai/api/v1",
+        auth_config=AuthConfig(
+            auth_url=URL("url"),
+            token_url=URL("url"),
+            client_id="client_id",
+            audience="audience",
+            callback_urls=(URL("url1"), URL("url2")),
+            success_redirect_url=URL("url"),
+        ),
+        auth_token=AuthToken(
+            token="token", expiration_time=100_500, refresh_token="refresh_token"
+        ),
+    )
+    created_config = rc.create(nmrc, config)
+    assert created_config == config
+    assert nmrc.exists()
+    print(nmrc.read_text())
+    expected_text = dedent(
+        """\
+    auth_config:
+      audience: audience
+      auth_url: url
+      client_id: client_id
+      success_redirect_url: url
+      token_url: url
+    auth_token:
+      expiration_time: 100500
+      refresh_token: refresh_token
+      token: token
+    github_rsa_path: ''
+    pypi:
+      check_timestamp: 0
+      pypi_version: 0.0.0
+    url: https://dev.ai/api/v1
     """
     )
     assert nmrc.read_text() == expected_text

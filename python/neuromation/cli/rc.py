@@ -203,21 +203,7 @@ class ConfigFactory:
 
 
 def save(path: Path, config: Config) -> Config:
-    success_redirect_url = None
-    if config.auth_config.success_redirect_url:
-        success_redirect_url = str(config.auth_config.success_redirect_url)
-
-    payload = {
-        "url": config.url,
-        "auth_config": {
-            "auth_url": str(config.auth_config.auth_url),
-            "token_url": str(config.auth_config.token_url),
-            "client_id": config.auth_config.client_id,
-            "audience": config.auth_config.audience,
-            "success_redirect_url": success_redirect_url,
-        },
-        "github_rsa_path": config.github_rsa_path,
-    }
+    payload = {"url": config.url, "github_rsa_path": config.github_rsa_path}
     if config.auth_config.is_initialized():
         payload["auth_config"] = _serialize_auth_config(config.auth_config)
     if config.auth_token:
