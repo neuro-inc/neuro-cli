@@ -8,7 +8,7 @@ from neuromation.client.config import ServerConfig, get_server_config
 
 
 async def test_get_server_config(aiohttp_server):
-    registry_url = "http://registry.dev.neuromation.io"
+    registry_url = "https://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
@@ -45,6 +45,42 @@ async def test_get_server_config(aiohttp_server):
             client_id=client_id,
             audience=audience,
             callback_urls=tuple(URL(u) for u in callback_urls),
+            success_redirect_url=URL(success_redirect_url),
+        ),
+    )
+
+
+async def test_get_server_config_no_callback_urls(aiohttp_server):
+    registry_url = "https://registry.dev.neuromation.io"
+    auth_url = "https://dev-neuromation.auth0.com/authorize"
+    token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    client_id = "this_is_client_id"
+    audience = "https://platform.dev.neuromation.io"
+    success_redirect_url = "https://platform.neuromation.io"
+    JSON = {
+        "registry_url": registry_url,
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "client_id": client_id,
+        "audience": audience,
+        "success_redirect_url": success_redirect_url,
+    }
+
+    async def handler(request):
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/config", handler)
+    srv = await aiohttp_server(app)
+
+    config = await get_server_config(srv.make_url("/"))
+    assert config == ServerConfig(
+        registry_url=URL(registry_url),
+        auth_config=AuthConfig(
+            auth_url=URL(auth_url),
+            token_url=URL(token_url),
+            client_id=client_id,
+            audience=audience,
             success_redirect_url=URL(success_redirect_url),
         ),
     )

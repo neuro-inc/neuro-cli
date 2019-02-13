@@ -47,9 +47,14 @@ async def get_server_config(url: URL) -> ServerConfig:
             client_id = payload["client_id"]
             audience = payload["audience"]
             success_redirect_url = payload.get("success_redirect_url")
-            if success_redirect_url:
+            if success_redirect_url is not None:
                 success_redirect_url = URL(success_redirect_url)
-            callback_urls = tuple(URL(u) for u in payload.get("callback_urls", []))
+            callback_urls = payload.get("callback_urls")
+            callback_urls = (
+                tuple(URL(u) for u in callback_urls)
+                if callback_urls is not None
+                else AuthConfig.callback_urls
+            )
             auth_config = AuthConfig(
                 auth_url=auth_url,
                 token_url=token_url,
