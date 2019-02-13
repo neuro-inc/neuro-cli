@@ -175,7 +175,7 @@ class TestFactoryMethods:
                     URL("https://0.0.0.0:789"),
                 ),
                 success_redirect_url=URL("https://success_redirect"),
-            )
+            ),
         )
 
     @pytest.fixture
@@ -207,7 +207,7 @@ class TestFactoryMethods:
     async def test_factory_update_url(self, server_config_url, server_config):
         auth_token = AuthToken.create_non_expiring("token1")
         config = Config(url="http://old-platform-url", auth_token=auth_token)
-        await rc.ConfigFactory.update_api_url(url=str(server_config_url))
+        rc.ConfigFactory.update_api_url(url=str(server_config_url))
         config2 = rc.ConfigFactory.load()
 
         uninit_auth_config = AuthConfig.create_uninitialized()
