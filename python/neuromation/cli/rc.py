@@ -203,7 +203,7 @@ class ConfigFactory:
 
 
 def save(path: Path, config: Config) -> Config:
-    payload = {
+    payload: Dict[str, Any] = {
         "url": config.url,
         "github_rsa_path": config.github_rsa_path,
         "registry_url": config.registry_url,
@@ -264,6 +264,7 @@ def _deserialize_auth_config(payload: Dict[str, Any]) -> Optional[AuthConfig]:
             success_redirect_url=success_redirect_url,
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
+    return None  # for mypy
 
 
 def _deserialize_auth_token(payload: Dict[str, Any]) -> Optional[AuthToken]:

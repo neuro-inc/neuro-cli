@@ -326,7 +326,7 @@ class AuthConfig:
     def callback_ports(self) -> List[int]:
         return [cast(int, url.port) for url in self.callback_urls]
 
-    def is_initialized(self):
+    def is_initialized(self) -> bool:
         return bool(
             self.auth_url and self.token_url and self.client_id and self.audience
         )

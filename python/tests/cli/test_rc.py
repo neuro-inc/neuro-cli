@@ -205,7 +205,9 @@ class TestFactoryMethods:
 
     async def test_factory_update_url(self, server_config_url, server_config):
         auth_token = AuthToken.create_non_expiring("token1")
-        config = Config(url="http://old-platform-url", auth_token=auth_token, github_rsa_path="path")
+        config = Config(
+            url="http://old-platform-url", auth_token=auth_token, github_rsa_path="path"
+        )
         await rc.ConfigFactory.update_api_url(url=str(server_config_url))
         config2 = rc.ConfigFactory.load()
 
