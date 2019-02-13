@@ -289,11 +289,14 @@ def _load(path: Path) -> Config:
         payload = yaml.load(f)
 
     api_url = payload["url"]
+
     auth_config = _deserialize_auth_config(payload)
+    if auth_config is None:
+        auth_config = Config.auth_config
     auth_token = _deserialize_auth_token(payload)
 
     return Config(
-        auth_config=auth_config or Config.auth_config,
+        auth_config=auth_config,
         url=api_url,
         # cast to str as somehow yaml.load loads registry_url as 'yaml.URL' not 'str'
         registry_url=str(payload.get("registry_url", "")),

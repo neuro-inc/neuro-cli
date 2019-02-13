@@ -13,7 +13,6 @@ from neuromation.cli import rc
 from neuromation.cli.login import AuthConfig, ServerConfig
 from neuromation.cli.rc import AuthToken, Config
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
-from neuromation.utils import run
 
 
 DEFAULTS = rc.Config(url="https://dev.ai.neuromation.io/api/v1")
@@ -206,8 +205,8 @@ class TestFactoryMethods:
 
     async def test_factory_update_url(self, server_config_url, server_config):
         auth_token = AuthToken.create_non_expiring("token1")
-        config = Config(url="http://old-platform-url", auth_token=auth_token)
-        rc.ConfigFactory.update_api_url(url=str(server_config_url))
+        config = Config(url="http://old-platform-url", auth_token=auth_token, github_rsa_path="path")
+        await rc.ConfigFactory.update_api_url(url=str(server_config_url))
         config2 = rc.ConfigFactory.load()
 
         uninit_auth_config = AuthConfig.create_uninitialized()
@@ -217,7 +216,7 @@ class TestFactoryMethods:
         assert config.registry_url == ""
         assert config.auth_config == uninit_auth_config
         assert config.auth_token == auth_token
-        assert config.github_rsa_path == ""
+        assert config.github_rsa_path == "path"
         assert config.pypi == uninit_config.pypi
         assert config.color == uninit_config.color
         assert config.tty == uninit_config.tty
@@ -227,7 +226,7 @@ class TestFactoryMethods:
         assert config2.registry_url == str(server_config.registry_url)
         assert config2.auth_config == server_config.auth_config
         assert config2.auth_token is None
-        assert config2.github_rsa_path == ""
+        assert config2.github_rsa_path == "path"
         assert config2.pypi == uninit_config.pypi
         assert config2.color == uninit_config.color
         assert config2.tty == uninit_config.tty
