@@ -386,10 +386,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
-            callback_urls=(
-                URL("url1"),
-                URL("url2"),
-            ),
+            callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
         assert auth_config.is_initialized() is False
@@ -400,10 +397,7 @@ class TestAuthConfig:
             token_url=URL(""),
             client_id="client_id",
             audience="audience",
-            callback_urls=(
-                URL("url1"),
-                URL("url2"),
-            ),
+            callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
         assert auth_config.is_initialized() is False
@@ -414,10 +408,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="",
             audience="audience",
-            callback_urls=(
-                URL("url1"),
-                URL("url2"),
-            ),
+            callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
         assert auth_config.is_initialized() is False
@@ -428,10 +419,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="",
-            callback_urls=(
-                URL("url1"),
-                URL("url2"),
-            ),
+            callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
         assert auth_config.is_initialized() is False
@@ -453,10 +441,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
-            callback_urls=(
-                URL("url1"),
-                URL("url2"),
-            ),
+            callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=None,
         )
         assert auth_config.is_initialized() is True

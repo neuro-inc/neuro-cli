@@ -679,6 +679,8 @@ class TestResourcesFormatter:
 class TestConfigFormatter:
     def test_output(self, token) -> None:
         config = Config(
+            url="https://dev.url/api/v1",
+            registry_url="https://registry-dev.url/api/v1",
             auth_token=AuthToken(
                 token=token, refresh_token="refresh-token", expiration_time=123_456
             ),
@@ -689,7 +691,7 @@ class TestConfigFormatter:
             """\
             Config:
               User Name: user
-              API URL: https://dev.ai.neuromation.io/api/v1
-              Docker Registry URL: https://registry-dev.ai.neuromation.io
+              API URL: https://dev.url/api/v1
+              Docker Registry URL: https://registry-dev.url/api/v1
               Github RSA Path: path"""
         )
