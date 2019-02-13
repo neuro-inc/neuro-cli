@@ -3,7 +3,6 @@
 # Table of Contents
 * [Preface](#Preface)
 * [neuro](#neuro)
-	* [neuro help](#neuro-help)
 	* [neuro job](#neuro-job)
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job ls](#neuro-job-ls)
@@ -31,6 +30,7 @@
 	* [neuro completion](#neuro-completion)
 		* [neuro completion generate](#neuro-completion-generate)
 		* [neuro completion patch](#neuro-completion-patch)
+	* [neuro help](#neuro-help)
 	* [neuro submit](#neuro-submit)
 	* [neuro ps](#neuro-ps)
 	* [neuro status](#neuro-status)
@@ -81,76 +81,40 @@ Name | Description|
 |_--help_|Show this message and exit.|
 
 
+**Command Groups:**
+
+|Usage|Description|
+|---|---|
+| _[neuro job](#neuro-job)_| Job operations |
+| _[neuro storage](#neuro-storage)_| Storage operations |
+| _[neuro image](#neuro-image)_| Container image operations |
+| _[neuro config](#neuro-config)_| Client configuration |
+| _[neuro completion](#neuro-completion)_| Output shell completion code |
+
+
 **Commands:**
 
-* _[neuro help](#neuro-help)_: Get help on a command.
-* _[neuro job](#neuro-job)_: Job operations.
-* _[neuro storage](#neuro-storage)_: Storage operations.
-* _[neuro image](#neuro-image)_: Container image operations.
-* _[neuro config](#neuro-config)_: Client configuration.
-* _[neuro completion](#neuro-completion)_: Output shell completion code.
-* _[neuro submit](#neuro-submit)_: Submit an image to run on the cluster.
-
-IMAGE container image name COMMANDS list will be passed as commands to model
-container.
-
-* _[neuro ps](#neuro-ps)_: List all jobs.
-
-* _[neuro status](#neuro-status)_: Display status of a job.
-* _[neuro exec](#neuro-exec)_: Execute command in a running job.
-* _[neuro logs](#neuro-logs)_: Print the logs for a container.
-* _[neuro kill](#neuro-kill)_: Kill job(s).
-* _[neuro top](#neuro-top)_: Display GPU/CPU/Memory usage.
-* _[neuro login](#neuro-login)_: Log into Neuromation Platform.
-* _[neuro logout](#neuro-logout)_: Log out.
-* _[neuro cp](#neuro-cp)_: Copy files and directories.
-
-Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
-omitted, file:// scheme is assumed.
-
-* _[neuro ls](#neuro-ls)_: List directory contents.
-
-By default PATH is equal user`s home dir (storage:)
-* _[neuro rm](#neuro-rm)_: Remove files or directories.
-
-* _[neuro mkdir](#neuro-mkdir)_: Make directories.
-* _[neuro mv](#neuro-mv)_: Move or rename files and directories.
-
-SOURCE must contain path to the file or directory existing on the storage,
-and DESTINATION must contain the full path to the target file or directory.
-
-* _[neuro images](#neuro-images)_: List images.
-* _[neuro push](#neuro-push)_: Push an image to platform registry.
-
-Remote image must be URL with image:// scheme. Image names can contains tag.
-If tags not specified 'latest' will be used as value.
-
-* _[neuro pull](#neuro-pull)_: Pull an image from platform registry.
-
-Remote image name must be URL with image:// scheme. Image names can contain
-tag.
-
-* _[neuro share](#neuro-share)_: Shares resource specified by URI to a USER with PERMISSION
-
-
-
-
-
-## neuro help
-
-Get help on a command.
-
-**Usage:**
-
-```bash
-neuro help [OPTIONS] [COMMAND]...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
+|Usage|Description|
+|---|---|
+| _[neuro help](#neuro-help)_| Get help on a command |
+| _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
+| _[neuro ps](#neuro-ps)_| List all jobs |
+| _[neuro status](#neuro-status)_| Display status of a job |
+| _[neuro exec](#neuro-exec)_| Execute command in a running job |
+| _[neuro logs](#neuro-logs)_| Print the logs for a container |
+| _[neuro kill](#neuro-kill)_| Kill job\(s) |
+| _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
+| _[neuro login](#neuro-login)_| Log into Neuromation Platform |
+| _[neuro logout](#neuro-logout)_| Log out |
+| _[neuro cp](#neuro-cp)_| Copy files and directories |
+| _[neuro ls](#neuro-ls)_| List directory contents |
+| _[neuro rm](#neuro-rm)_| Remove files or directories |
+| _[neuro mkdir](#neuro-mkdir)_| Make directories |
+| _[neuro mv](#neuro-mv)_| Move or rename files and directories |
+| _[neuro images](#neuro-images)_| List images |
+| _[neuro push](#neuro-push)_| Push an image to platform registry |
+| _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
+| _[neuro share](#neuro-share)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro share... |
 
 
 
@@ -174,18 +138,15 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro job submit](#neuro-job-submit)_: Submit an image to run on the cluster.
-
-IMAGE container image name COMMANDS list will be passed as commands to model
-container.
-
-* _[neuro job ls](#neuro-job-ls)_: List all jobs.
-
-* _[neuro job status](#neuro-job-status)_: Display status of a job.
-* _[neuro job exec](#neuro-job-exec)_: Execute command in a running job.
-* _[neuro job logs](#neuro-job-logs)_: Print the logs for a container.
-* _[neuro job kill](#neuro-job-kill)_: Kill job(s).
-* _[neuro job top](#neuro-job-top)_: Display GPU/CPU/Memory usage.
+|Usage|Description|
+|---|---|
+| _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
+| _[neuro job ls](#neuro-job-ls)_| List all jobs |
+| _[neuro job status](#neuro-job-status)_| Display status of a job |
+| _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
+| _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
+| _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
+| _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
 
 
 
@@ -387,22 +348,13 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro storage cp](#neuro-storage-cp)_: Copy files and directories.
-
-Either SOURCE or DESTINATION should have storage:// scheme. If scheme is
-omitted, file:// scheme is assumed.
-
-* _[neuro storage ls](#neuro-storage-ls)_: List directory contents.
-
-By default PATH is equal user`s home dir (storage:)
-* _[neuro storage rm](#neuro-storage-rm)_: Remove files or directories.
-
-* _[neuro storage mkdir](#neuro-storage-mkdir)_: Make directories.
-* _[neuro storage mv](#neuro-storage-mv)_: Move or rename files and directories.
-
-SOURCE must contain path to the file or directory existing on the storage,
-and DESTINATION must contain the full path to the target file or directory.
-
+|Usage|Description|
+|---|---|
+| _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
+| _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
+| _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
+| _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
+| _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
 
 
 
@@ -564,17 +516,11 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro image ls](#neuro-image-ls)_: List images.
-* _[neuro image push](#neuro-image-push)_: Push an image to platform registry.
-
-Remote image must be URL with image:// scheme. Image names can contains tag.
-If tags not specified 'latest' will be used as value.
-
-* _[neuro image pull](#neuro-image-pull)_: Pull an image from platform registry.
-
-Remote image name must be URL with image:// scheme. Image names can contain
-tag.
-
+|Usage|Description|
+|---|---|
+| _[neuro image ls](#neuro-image-ls)_| List images |
+| _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
+| _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
 
 
 
@@ -675,11 +621,13 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro config login](#neuro-config-login)_: Log into Neuromation Platform.
-* _[neuro config show](#neuro-config-show)_: Print current settings.
-* _[neuro config show-token](#neuro-config-show-token)_: Print current authorization token.
-* _[neuro config auth](#neuro-config-auth)_: Update authorization token.
-* _[neuro config logout](#neuro-config-logout)_: Log out.
+|Usage|Description|
+|---|---|
+| _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
+| _[neuro config show](#neuro-config-show)_| Print current settings |
+| _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
+| _[neuro config auth](#neuro-config-auth)_| Update authorization token |
+| _[neuro config logout](#neuro-config-logout)_| Log out |
 
 
 
@@ -798,8 +746,10 @@ Name | Description|
 
 **Commands:**
 
-* _[neuro completion generate](#neuro-completion-generate)_: Provide an instruction for shell completion generation.
-* _[neuro completion patch](#neuro-completion-patch)_: Automatically patch shell configuration profile to enable completion
+|Usage|Description|
+|---|---|
+| _[neuro completion generate](#neuro-completion-generate)_| Provide an instruction for shell completion generation |
+| _[neuro completion patch](#neuro-completion-patch)_| Automatically patch shell configuration profile to enable completion |
 
 
 
@@ -839,6 +789,25 @@ neuro completion patch [OPTIONS]
 Name | Description|
 |----|------------|
 |_--shell \[bash &#124; zsh]_|Shell type.  \[default: bash]|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro help
+
+Get help on a command.
+
+**Usage:**
+
+```bash
+neuro help [OPTIONS] [COMMAND]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
