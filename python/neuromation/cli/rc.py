@@ -136,9 +136,9 @@ class ConfigFactory:
         return cls._update_config(auth_token=None)
 
     @classmethod
-    def update_api_url(cls, url: str) -> Config:
+    async def update_api_url(cls, url: str) -> Config:
         cls._validate_api_url(url)
-        server_config = run(get_server_config(URL(url)))
+        server_config = await get_server_config(URL(url))
         return cls._update_config(
             auth_config=server_config.auth_config,
             registry_url=server_config.registry_url,
@@ -203,7 +203,11 @@ class ConfigFactory:
 
 
 def save(path: Path, config: Config) -> Config:
-    payload = {"url": config.url, "github_rsa_path": config.github_rsa_path}
+    payload = {
+        "url": config.url,
+        "github_rsa_path": config.github_rsa_path,
+        "registry_url": config.registry_url,
+    }
     if config.auth_config.is_initialized():
         payload["auth_config"] = _serialize_auth_config(config.auth_config)
     if config.auth_token:
@@ -242,6 +246,7 @@ def _serialize_auth_config(auth_config: AuthConfig) -> Dict[str, Any]:
         "client_id": auth_config.client_id,
         "audience": auth_config.audience,
         "success_redirect_url": success_redirect_url,
+        "callback_urls": [str(u) for u in auth_config.callback_urls],
     }
 
 
@@ -257,6 +262,7 @@ def _deserialize_auth_config(payload: Dict[str, Any]) -> Optional[AuthConfig]:
             client_id=auth_config["client_id"],
             audience=auth_config["audience"],
             success_redirect_url=success_redirect_url,
+            callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
 
 
@@ -289,7 +295,8 @@ def _load(path: Path) -> Config:
     return Config(
         auth_config=auth_config or Config.auth_config,
         url=api_url,
-        registry_url=payload.get("registry_url", ""),
+        # cast to str as somehow yaml.load loads registry_url as 'yaml.URL' not 'str'
+        registry_url=str(payload.get("registry_url", "")),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
         pypi=PyPIVersion.from_config(payload.get("pypi")),

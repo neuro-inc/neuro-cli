@@ -5,13 +5,15 @@ from unittest import mock
 
 import pkg_resources
 import pytest
+from aiohttp import web
 from jose import jwt
 from yarl import URL
 
 from neuromation.cli import rc
-from neuromation.cli.login import AuthConfig
+from neuromation.cli.login import AuthConfig, ServerConfig
 from neuromation.cli.rc import AuthToken, Config
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
+from neuromation.utils import run
 
 
 DEFAULTS = rc.Config(url="https://dev.ai.neuromation.io/api/v1")
@@ -40,6 +42,7 @@ def test_create__with_defaults(nmrc):
     pypi:
       check_timestamp: 0
       pypi_version: 0.0.0
+    registry_url: ''
     url: https://dev.ai.neuromation.io/api/v1
     """
     )
@@ -65,12 +68,14 @@ def test_create__filled(nmrc):
     created_config = rc.create(nmrc, config)
     assert created_config == config
     assert nmrc.exists()
-    print(nmrc.read_text())
     expected_text = dedent(
         """\
     auth_config:
       audience: audience
       auth_url: url
+      callback_urls:
+      - url1
+      - url2
       client_id: client_id
       success_redirect_url: url
       token_url: url
@@ -82,6 +87,7 @@ def test_create__filled(nmrc):
     pypi:
       check_timestamp: 0
       pypi_version: 0.0.0
+    registry_url: https://registry-dev.ai/api/v1
     url: https://dev.ai/api/v1
     """
     )
@@ -96,88 +102,6 @@ class TestFactoryMethods:
         rc.ConfigFactory._update_config(url="http://abc.def", auth_token=auth_token)
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
-
-    def test_factory_update_url(self):
-        auth_token = AuthToken.create_non_expiring("token1")
-        config: Config = Config(url="http://abc.def", auth_token=auth_token)
-        rc.ConfigFactory.update_api_url(url="http://abc.def")
-        config2: Config = rc.ConfigFactory.load()
-        assert config.url == config2.url
-
-    def test_factory_update_url_registry_url_updates_old_cnames(self):
-        auth_token = AuthToken.create_non_expiring("token1")
-        config: Config = Config(
-            url="http://dev.platform.neuromation.io/api/v1", auth_token=auth_token
-        )
-        rc.ConfigFactory.update_api_url(
-            url="http://staging.platform.neuromation.io/api/v1"
-        )
-        config2: Config = rc.ConfigFactory.load()
-        assert config.url == "http://dev.platform.neuromation.io/api/v1"
-        assert config.registry_url == "http://dev.registry.neuromation.io"
-        assert config2.url == "http://staging.platform.neuromation.io/api/v1"
-        assert config2.registry_url == "http://staging.registry.neuromation.io"
-
-    def test_factory_update_url_registry_url_updates_new_cnames(self):
-        auth_token = AuthToken.create_non_expiring("token1")
-        config: Config = Config(
-            url="https://dev.ai.neuromation.io/api/v1", auth_token=auth_token
-        )
-        rc.ConfigFactory.update_api_url(url="https://staging.ai.neuromation.io/api/v1")
-        config2: Config = rc.ConfigFactory.load()
-        assert config.url == "https://dev.ai.neuromation.io/api/v1"
-        assert config.registry_url == "https://registry-dev.ai.neuromation.io"
-        assert config2.url == "https://staging.ai.neuromation.io/api/v1"
-        assert config2.registry_url == "https://registry-staging.ai.neuromation.io"
-
-    def test_factory_update_url_malformed(self):
-        auth_token = AuthToken.create_non_expiring("token1")
-        config: Config = Config(url="http://abc.def", auth_token=auth_token)
-        with pytest.raises(ValueError):
-            rc.ConfigFactory.update_api_url(url="ftp://abc.def")
-        config2: Config = rc.ConfigFactory.load()
-        assert config.url != config2.url
-
-    def test_factory_update_url_malformed_trailing_slash(self):
-        auth_token = AuthToken.create_non_expiring("token1")
-        config: Config = Config(url="http://abc.def", auth_token=auth_token)
-        with pytest.raises(ValueError):
-            rc.ConfigFactory.update_api_url(url="http://abc.def/")
-        config2: Config = rc.ConfigFactory.load()
-        assert config.url != config2.url
-
-    def test_factory_update_url_malformed_with_fragment(self):
-        auth_token = AuthToken.create_non_expiring("token1")
-        config: Config = Config(url="http://abc.def", auth_token=auth_token)
-        with pytest.raises(ValueError):
-            rc.ConfigFactory.update_api_url(url="http://abc.def?blabla")
-        config2: Config = rc.ConfigFactory.load()
-        assert config.url != config2.url
-
-    def test_factory_update_url_malformed_with_anchor(self):
-        auth_token = AuthToken.create_non_expiring("token1")
-        config: Config = Config(url="http://abc.def", auth_token=auth_token)
-        with pytest.raises(ValueError):
-            rc.ConfigFactory.update_api_url(url="http://abc.def#ping")
-        config2: Config = rc.ConfigFactory.load()
-        assert config.url != config2.url
-
-    def test_factory_update_url_and_auth_config(self):
-        config = rc.ConfigFactory.load()
-        assert config.url == "https://dev.ai.neuromation.io/api/v1"
-        assert config.registry_url == "https://registry-dev.ai.neuromation.io"
-        assert config.auth_config.auth_url == URL(
-            "https://dev-neuromation.auth0.com/authorize"
-        )
-
-        rc.ConfigFactory.update_api_url(url="https://staging.ai.neuromation.io/api/v1")
-
-        config = rc.ConfigFactory.load()
-        assert config.url == "https://staging.ai.neuromation.io/api/v1"
-        assert config.registry_url == "https://registry-staging.ai.neuromation.io"
-        assert config.auth_config.auth_url == URL(
-            "https://staging-neuromation.auth0.com/authorize"
-        )
 
     def test_factory_update_id_rsa(self):
         config: Config = Config(
@@ -236,14 +160,118 @@ class TestFactoryMethods:
         default_config: Config = Config()
         assert config3 == default_config
 
+    @pytest.fixture
+    def server_config(self):
+        return ServerConfig(
+            registry_url=URL("registry_url"),
+            auth_config=AuthConfig(
+                auth_url=URL("https://auth0"),
+                token_url=URL("https://token"),
+                client_id="this_is_client_id",
+                audience="https://audience",
+                callback_urls=(
+                    URL("https://0.0.0.0:123"),
+                    URL("https://0.0.0.0:456"),
+                    URL("https://0.0.0.0:789"),
+                ),
+                success_redirect_url=URL("https://success_redirect"),
+            )
+        )
+
+    @pytest.fixture
+    @pytest.mark.asyncio
+    async def server_config_url(self, server_config, aiohttp_server):
+        registry_url: URL = server_config.registry_url
+        auth_config: AuthConfig = server_config.auth_config
+        JSON = {
+            "registry_url": str(registry_url),
+            "auth_url": str(auth_config.auth_url),
+            "token_url": str(auth_config.token_url),
+            "client_id": auth_config.client_id,
+            "audience": auth_config.audience,
+            "callback_urls": [str(u) for u in auth_config.callback_urls],
+            "success_redirect_url": str(auth_config.success_redirect_url),
+        }
+
+        async def handler(request):
+            return web.json_response(JSON)
+
+        app = web.Application()
+        app.router.add_get("/config", handler)
+        srv = await aiohttp_server(app)
+
+        yield srv.make_url("")
+
+        await app.cleanup()
+
+    async def test_factory_update_url(self, server_config_url, server_config):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config = Config(url="http://old-platform-url", auth_token=auth_token)
+        await rc.ConfigFactory.update_api_url(url=str(server_config_url))
+        config2 = rc.ConfigFactory.load()
+
+        uninit_auth_config = AuthConfig.create_uninitialized()
+        uninit_config = Config()
+
+        assert config.url == "http://old-platform-url"
+        assert config.registry_url == ""
+        assert config.auth_config == uninit_auth_config
+        assert config.auth_token == auth_token
+        assert config.github_rsa_path == ""
+        assert config.pypi == uninit_config.pypi
+        assert config.color == uninit_config.color
+        assert config.tty == uninit_config.tty
+        assert config.terminal_size == uninit_config.terminal_size
+
+        assert config2.url == str(server_config_url)
+        assert config2.registry_url == str(server_config.registry_url)
+        assert config2.auth_config == server_config.auth_config
+        assert config2.auth_token is None
+        assert config2.github_rsa_path == ""
+        assert config2.pypi == uninit_config.pypi
+        assert config2.color == uninit_config.color
+        assert config2.tty == uninit_config.tty
+        assert config2.terminal_size == uninit_config.terminal_size
+
+    async def test_factory_update_url_malformed(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
+        with pytest.raises(ValueError):
+            await rc.ConfigFactory.update_api_url(url="ftp://abc.def")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
+    async def test_factory_update_url_malformed_trailing_slash(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
+        with pytest.raises(ValueError):
+            await rc.ConfigFactory.update_api_url(url="http://abc.def/")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
+    async def test_factory_update_url_malformed_with_fragment(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
+        with pytest.raises(ValueError):
+            await rc.ConfigFactory.update_api_url(url="http://abc.def?blabla")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
+    async def test_factory_update_url_malformed_with_anchor(self):
+        auth_token = AuthToken.create_non_expiring("token1")
+        config: Config = Config(url="http://abc.def", auth_token=auth_token)
+        with pytest.raises(ValueError):
+            await rc.ConfigFactory.update_api_url(url="http://abc.def#ping")
+        config2: Config = rc.ConfigFactory.load()
+        assert config.url != config2.url
+
 
 def test_docker_url():
-    assert DEFAULTS.registry_url == "https://registry-dev.ai.neuromation.io"
-    custom_staging = rc.Config(url="https://staging.io.neuromation.io/api/v1")
-    assert custom_staging.registry_url == "https://staging.io.neuromation.io"
-
-    prod = rc.Config(url="https://platform.neuromation.io/api/v1")
-    assert prod.registry_url == "https://registry.neuromation.io"
+    assert DEFAULTS.registry_url == ""
+    custom_staging = rc.Config(
+        url="https://platform.io/api/v1", registry_url="https://registry.io"
+    )
+    assert custom_staging.registry_url == "https://registry.io"
 
 
 @pytest.mark.parametrize("identity_claim", JWT_IDENTITY_CLAIM_OPTIONS)
