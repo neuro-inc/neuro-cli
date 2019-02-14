@@ -10,6 +10,8 @@ else:
 
 
 def create_registry_url(platform_url: str) -> str:
+    if platform_url == "https://dev.neu.ro/api/v1":
+        return "https://registry-dev.neu.ro"
     if platform_url == "https://dev.ai.neuromation.io/api/v1":
         return "https://registry-dev.ai.neuromation.io"
     if platform_url == "https://staging.ai.neuromation.io/api/v1":
