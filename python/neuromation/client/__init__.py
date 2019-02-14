@@ -4,7 +4,6 @@ from typing import Union, Type, Optional
 import aiohttp
 from yarl import URL
 
-from neuromation.client.utils import create_registry_url
 from .abc import AbstractProgress, AbstractSpinner
 from .api import (
     API,
@@ -67,14 +66,12 @@ class Client:
         url: Union[URL, str],
         token: str,
         *,
-        registry_url: str = "",  # default value is always overwritten
+        registry_url: str = "",
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
         self._url = url
-        # this is temporary until we implement getting server configuration dynamically:
-        registry_url = registry_url or create_registry_url(str(self._url))
         self._registry_url = URL(registry_url)
         assert token
         self._config = Config(url, self._registry_url, token)
