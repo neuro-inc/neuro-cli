@@ -7,7 +7,17 @@ import click
 import pytest
 from yarl import URL
 
-from neuromation.cli.files_formatter import (
+from neuromation.cli.formatters import (
+    ConfigFormatter,
+    JobFormatter,
+    JobListFormatter,
+    JobStartProgress,
+    JobStatusFormatter,
+    JobTelemetryFormatter,
+)
+from neuromation.cli.formatters.abc import BaseFormatter
+from neuromation.cli.formatters.jobs import ResourcesFormatter
+from neuromation.cli.formatters.storage import (
     BSDAttributes,
     BSDPainter,
     FilesSorter,
@@ -17,16 +27,6 @@ from neuromation.cli.files_formatter import (
     NonePainter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
-)
-from neuromation.cli.formatter import (
-    BaseFormatter,
-    ConfigFormatter,
-    JobFormatter,
-    JobListFormatter,
-    JobStartProgress,
-    JobStatusFormatter,
-    JobTelemetryFormatter,
-    ResourcesFormatter,
 )
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config

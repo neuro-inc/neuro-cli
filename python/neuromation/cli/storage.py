@@ -4,19 +4,19 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.cli.files_formatter import (
-    BaseFilesFormatter,
-    FilesSorter,
-    LongFilesFormatter,
-    SimpleFilesFormatter,
-    VerticalColumnsFilesFormatter,
-)
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
 
 from .command_progress_report import ProgressBase
+from .formatters import (
+    BaseFilesFormatter,
+    FilesSorter,
+    LongFilesFormatter,
+    SimpleFilesFormatter,
+    VerticalColumnsFilesFormatter,
+)
 from .rc import Config
 from .utils import command, group, run_async
 

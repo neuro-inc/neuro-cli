@@ -10,8 +10,9 @@ from typing import Any, Dict, Iterator, List, Sequence
 import humanize
 from click import style, unstyle
 
-from neuromation.cli.formatter import BaseFormatter
 from neuromation.client import Action, FileStatus, FileStatusType
+
+from .abc import BaseFormatter
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -380,7 +381,8 @@ class PainterFactory:
         return NonePainter()
 
 
-class BaseFilesFormatter(BaseFormatter, abc.ABC):
+class BaseFilesFormatter(BaseFormatter):
+    @abc.abstractmethod
     def __call__(
         self, files: Sequence[FileStatus]
     ) -> Iterator[str]:  # pragma: no cover
@@ -483,10 +485,12 @@ class FilesSorter(str, enum.Enum):
     TIME = "time"
 
     def key(self) -> Any:
+        field = None
         if self == self.NAME:
             field = "name"
         elif self == self.SIZE:
             field = "size"
         elif self == self.TIME:
             field = "modification_time"
+        assert field
         return operator.attrgetter(field)
