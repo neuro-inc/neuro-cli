@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import sys
 from textwrap import dedent
 from typing import Any, List, Optional, Sequence, Type, Union
@@ -138,14 +139,17 @@ def cli(
         LOG_ERROR = log.exception
     setup_logging()
     setup_console_handler(console_handler, verbose=verbose)
+    tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
     COLORS = {"yes": True, "no": False, "auto": None}
     real_color: Optional[bool] = COLORS[color]
     if real_color is None:
-        real_color = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
+        real_color = tty
     COLOR = real_color
     ctx.color = real_color
     config = rc.ConfigFactory.load()
     config.color = real_color
+    config.tty = tty
+    config.terminal_size = shutil.get_terminal_size()
     ctx.obj = config
     if not disable_pypi_version_check:
         config.pypi.warn_if_has_newer_version()

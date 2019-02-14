@@ -4,12 +4,13 @@ from time import sleep
 import pytest
 
 import neuromation
+from neuromation.client import FileStatusType
 from tests.e2e.test_e2e_utils import (
     Status,
     assert_job_state,
     wait_job_change_state_from,
 )
-from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, format_list
+from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
 
 
 @pytest.mark.e2e
@@ -41,6 +42,49 @@ def test_empty_directory_ls_output(run, tmpstorage):
     captured = run(["storage", "ls", tmpstorage])
     assert not captured.err
     assert not captured.out
+
+
+@pytest.mark.e2e
+def test_e2e_job_top(run):
+    def split_non_empty_parts(line, separator=None):
+        return [part.strip() for part in line.split(separator) if part.strip()]
+
+    bash_script = "sleep 10m"
+    command = f"bash -c '{bash_script}'"
+    captured = run(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
+    job_id = captured.out.strip()
+    wait_job_change_state_from(run, job_id, "Status: pending")
+
+    captured = run(["job", "top", job_id])
+
+    header_line, top_line = split_non_empty_parts(captured.out, separator="\n")
+    header_parts = split_non_empty_parts(header_line, separator="\t")
+    assert header_parts == [
+        "TIMESTAMP",
+        "CPU",
+        "MEMORY (MB)",
+        "GPU (%)",
+        "GPU_MEMORY (MB)",
+    ]
+
+    line_parts = split_non_empty_parts(top_line, separator="\t")
+    timestamp_pattern_parts = [
+        ("weekday", "[A-Z][a-z][a-z]"),
+        ("month", "[A-Z][a-z][a-z]"),
+        ("day", r"\d+"),
+        ("day", r"\d\d:\d\d:\d\d"),
+        ("year", "2019"),
+    ]
+    timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
+    expected_parts = [
+        ("timestamp", timestamp_pattern),
+        ("cpu", r"\d.\d\d\d"),
+        ("memory", r"\d.\d\d\d"),
+        ("gpu", "0"),
+        ("gpu memory", "0"),
+    ]
+    for actual, (description, pattern) in zip(line_parts, expected_parts):
+        assert re.match(pattern, actual) is not None, f"error in matching {description}"
 
 
 @pytest.mark.e2e
@@ -139,12 +183,17 @@ def test_e2e_storage(
     check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Confirm file has been renamed
-    captured = run(["storage", "ls", f"{tmpstorage}folder"])
-    captured_output_list = captured.out.split("\n")
+    captured = run(["storage", "ls", "-l", f"{tmpstorage}folder"])
     assert not captured.err
-    expected_line = format_list(type="file", size=FILE_SIZE_B, name="bar")
-    assert expected_line in captured_output_list
-    assert "foo" not in captured_output_list
+    files = output_to_files(captured.out)
+    for file in files:
+        if file.name == "bar" and file.type == FileStatusType.FILE:
+            break
+    else:
+        raise AssertionError("File bar not found after renaming from foo")
+    for file in files:
+        if file.name == "foo" and file.type == FileStatusType.FILE:
+            raise AssertionError("File foo still on storage after renaming to bar")
 
     # Rename directory on the storage
     check_rename_directory_on_storage("folder", "folder2")
@@ -165,6 +214,7 @@ def test_job_storage_interaction(
     check_create_dir_on_storage,
     check_upload_file_to_storage,
     check_file_on_storage_checksum,
+    check_file_exists_on_storage,
 ):
     srcfile, checksum = data
     # Create directory for the test
@@ -206,11 +256,7 @@ def test_job_storage_interaction(
         try:
             assert_job_state(run, job_id, Status.SUCCEEDED)
             # Confirm file has been copied
-            captured = run(["storage", "ls", f"{tmpstorage}result"])
-            captured_output_list = captured.out.split("\n")
-            assert not captured.err
-            expected_line = format_list(type="file", size=FILE_SIZE_B, name="foo")
-            assert expected_line in captured_output_list
+            check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
             # Download into local dir and confirm checksum
             check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
 from aiohttp import WSMessage
@@ -9,6 +9,8 @@ from .utils import asynccontextmanager
 
 
 log = logging.getLogger(__name__)
+
+DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
 class ClientError(Exception):
@@ -68,15 +70,16 @@ class API:
         method: str,
         rel_url: URL,
         *,
+        params: Optional[Mapping[str, str]] = None,
         data: Any = None,
         json: Any = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
-        assert not rel_url.is_absolute()
+        assert not rel_url.is_absolute(), rel_url
         url = (self._url / "").join(rel_url)
         log.debug("Fetch [%s] %s", method, url)
         async with self._session.request(
-            method, url, headers=headers, json=json, data=data
+            method, url, headers=headers, params=params, json=json, data=data
         ) as resp:
             try:
                 resp.raise_for_status()

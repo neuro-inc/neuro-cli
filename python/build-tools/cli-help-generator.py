@@ -27,6 +27,7 @@ class CommandInfo:
     options: List[Option] = field(default_factory=list)
     examples: str = None
     children: List[Any] = field(default_factory=list)  # CommandInfo
+    is_group: bool = False
 
 
 def parse_doc(ctx, command, stack) -> CommandInfo:
@@ -36,7 +37,8 @@ def parse_doc(ctx, command, stack) -> CommandInfo:
     usage = click.unstyle(formatter.getvalue())
     usage = re.split(r"usage\s*:", usage, maxsplit=2, flags=re.IGNORECASE)[1].strip()
     short = click.unstyle(command.get_short_help_str(80))
-    info = CommandInfo(name=name, usage=usage, short=short)
+    is_group = isinstance(command, click.MultiCommand)
+    info = CommandInfo(name=name, usage=usage, short=short, is_group=is_group)
 
     formatter = ctx.make_formatter()
     command.format_help_text(ctx, formatter)
@@ -70,7 +72,7 @@ def parse_command(parent_ctx, command, stack) -> CommandInfo:
     ) as ctx:
         info = parse_doc(ctx, command, stack)
 
-        if isinstance(command, click.MultiCommand):
+        if info.is_group:
             for command_name in command.list_commands(ctx):
                 sub_cmd = command.get_command(ctx, command_name)
                 if sub_cmd is None:
@@ -107,6 +109,11 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
             escaped.append(after)
         return "<br/>".join(escaped)
 
+    def escape_cell(text: str) -> str:
+        escaped = escape(text)
+        escaped = re.sub(r"\|", r"&#124;", escaped)
+        return escaped
+
     md = ""
     md += f"{header_prefix}# {info.name}"
     md += "\n\n"
@@ -132,18 +139,40 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
         md += "Name | Description|\n"
         md += "|----|------------|\n"
         for option in info.options:
-            md += f"|_{escape(option.pattern)}_|{escape(option.description)}|\n"
+            md += (
+                f"|_{escape_cell(option.pattern.replace('|', ' | '))}_"
+                f"|{escape_cell(option.description)}|"
+                f"\n"
+            )
 
         md += "\n\n"
 
-    if info.children:
-        md += "**Commands:**\n\n"
-
-        for child in info.children:
-            anchor = child.name
+    groups = [child for child in info.children if child.is_group]
+    if groups:
+        md += "**Command Groups:**\n\n"
+        md += "|Usage|Description|\n"
+        md += "|---|---|\n"
+        for group in groups:
+            anchor = group.name
             anchor = "#" + anchor.replace(" ", "-")
-            md += f"* _[{child.name}]({anchor})_: {child.description}"
+            md += (
+                f"| _[{escape_cell(group.name)}]({anchor})_"
+                f"| {escape_cell(group.short)} |\n"
+            )
+        md += "\n\n"
 
+    commands = [child for child in info.children if not child.is_group]
+    if commands:
+        md += "**Commands:**\n\n"
+        md += "|Usage|Description|\n"
+        md += "|---|---|\n"
+        for command in commands:
+            anchor = command.name
+            anchor = "#" + anchor.replace(" ", "-")
+            md += (
+                f"| _[{escape_cell(command.name)}]({anchor})_"
+                f"| {escape_cell(command.short)} |\n"
+            )
         md += "\n\n"
 
     return md
@@ -152,9 +181,11 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
 def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
     md = generate_markdown(info, header_prefix)
     if info.children:
+        groups = [child for child in info.children if child.is_group]
+        commands = [child for child in info.children if not child.is_group]
         md += "\n\n" + "\n\n".join(
-            generate_command_markdown(sub_command, header_prefix + "#")
-            for sub_command in info.children
+            generate_command_markdown(item, header_prefix + "#")
+            for item in groups + commands
         )
     return md
 

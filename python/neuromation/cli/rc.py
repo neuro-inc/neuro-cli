@@ -11,6 +11,7 @@ from yarl import URL
 
 import neuromation
 from neuromation.client import Client
+from neuromation.client.config import get_server_config
 from neuromation.client.users import get_token_username
 from neuromation.utils import run
 
@@ -26,28 +27,6 @@ class RCException(Exception):
 
 
 NO_VERSION = pkg_resources.parse_version("0.0.0")
-
-
-def _create_default_auth_config() -> AuthConfig:
-    return _create_dev_auth_config()
-
-
-def _create_dev_auth_config() -> AuthConfig:
-    return AuthConfig.create(
-        base_url=URL("https://dev-neuromation.auth0.com"),
-        client_id="V7Jz87W9lhIlo0MyD0O6dufBvcXwM4DR",
-        audience="https://platform.dev.neuromation.io",
-        success_redirect_url=URL("https://platform.neuromation.io"),
-    )
-
-
-def _create_staging_auth_config() -> AuthConfig:
-    return AuthConfig.create(
-        base_url=URL("https://staging-neuromation.auth0.com"),
-        client_id="uJV0pm5JPdHkXsSd525rlhFDVcEuUnaV",
-        audience="https://platform.staging.neuromation.io",
-        success_redirect_url=URL("https://platform.neuromation.io"),
-    )
 
 
 @dataclass
@@ -88,24 +67,21 @@ class PyPIVersion:
 
 @dataclass
 class Config:
-    auth_config: AuthConfig = field(default_factory=_create_default_auth_config)
     url: str = API_URL
+    registry_url: str = ""
+    auth_config: AuthConfig = AuthConfig.create_uninitialized()
     auth_token: Optional[AuthToken] = None
     github_rsa_path: str = ""
     pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(NO_VERSION, 0))
     color: bool = field(default=False)  # don't save the field in config
+    tty: bool = field(default=False)  # don't save the field in config
+    terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
 
     @property
     def auth(self) -> Optional[str]:
         if self.auth_token:
             return self.auth_token.token
         return None
-
-    def docker_registry_url(self) -> URL:
-        platform_url = URL(self.url)
-        assert platform_url.host
-        registry_host = platform_url.host.replace("platform.", "registry.")
-        return URL(f"{platform_url.scheme}://{registry_host}")
 
     def get_platform_user_name(self) -> Optional[str]:
         if self.auth:
@@ -127,9 +103,11 @@ class Config:
 
     def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None) -> Client:
         token, username = self._check_registered()
-        kwargs = {}
+        kwargs: Dict[str, Any] = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
+        if self.registry_url:
+            kwargs["registry_url"] = self.registry_url
         return Client(self.url, token, **kwargs)
 
 
@@ -158,10 +136,14 @@ class ConfigFactory:
         return cls._update_config(auth_token=None)
 
     @classmethod
-    def update_api_url(cls, url: str) -> Config:
+    async def update_api_url(cls, url: str) -> Config:
         cls._validate_api_url(url)
-        auth_config = _create_auth_config(URL(url), {})
-        return cls._update_config(auth_config=auth_config, url=url)
+        server_config = await get_server_config(URL(url))
+        return cls._update_config(
+            auth_config=server_config.auth_config,
+            registry_url=server_config.registry_url,
+            url=url,
+        )
 
     @classmethod
     def _validate_api_url(cls, url: str) -> None:
@@ -191,8 +173,14 @@ class ConfigFactory:
         nmrc_config_path = cls.get_path()
         config = load(nmrc_config_path)
         cls._validate_api_url(str(url))
-        auth_config = _create_auth_config(url, {})
-        config = replace(config, auth_config=auth_config, url=str(url), auth_token=None)
+        server_config = run(get_server_config(url))
+        config = replace(
+            config,
+            auth_config=server_config.auth_config,
+            registry_url=str(server_config.registry_url),
+            url=str(url),
+            auth_token=None,
+        )
         config = cls._refresh_auth_token(config, force=True)
         save(nmrc_config_path, config)
         return config
@@ -215,21 +203,13 @@ class ConfigFactory:
 
 
 def save(path: Path, config: Config) -> Config:
-    success_redirect_url = None
-    if config.auth_config.success_redirect_url:
-        success_redirect_url = str(config.auth_config.success_redirect_url)
-
-    payload = {
+    payload: Dict[str, Any] = {
         "url": config.url,
-        "auth_config": {
-            "auth_url": str(config.auth_config.auth_url),
-            "token_url": str(config.auth_config.token_url),
-            "client_id": config.auth_config.client_id,
-            "audience": config.auth_config.audience,
-            "success_redirect_url": success_redirect_url,
-        },
         "github_rsa_path": config.github_rsa_path,
+        "registry_url": config.registry_url,
     }
+    if config.auth_config.is_initialized():
+        payload["auth_config"] = _serialize_auth_config(config.auth_config)
     if config.auth_token:
         payload["auth_token"] = {
             "token": config.auth_token.token,
@@ -255,7 +235,39 @@ def load(path: Path) -> Config:
         return _load(path)
 
 
-def _create_auth_token(payload: Dict[str, Any]) -> Optional[AuthToken]:
+def _serialize_auth_config(auth_config: AuthConfig) -> Dict[str, Any]:
+    assert auth_config.is_initialized(), auth_config
+    success_redirect_url = None
+    if auth_config.success_redirect_url:
+        success_redirect_url = str(auth_config.success_redirect_url)
+    return {
+        "auth_url": str(auth_config.auth_url),
+        "token_url": str(auth_config.token_url),
+        "client_id": auth_config.client_id,
+        "audience": auth_config.audience,
+        "success_redirect_url": success_redirect_url,
+        "callback_urls": [str(u) for u in auth_config.callback_urls],
+    }
+
+
+def _deserialize_auth_config(payload: Dict[str, Any]) -> Optional[AuthConfig]:
+    auth_config = payload.get("auth_config")
+    if auth_config:
+        success_redirect_url = auth_config.get("success_redirect_url")
+        if success_redirect_url:
+            success_redirect_url = URL(success_redirect_url)
+        return AuthConfig(
+            auth_url=URL(auth_config["auth_url"]),
+            token_url=URL(auth_config["token_url"]),
+            client_id=auth_config["client_id"],
+            audience=auth_config["audience"],
+            success_redirect_url=success_redirect_url,
+            callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
+        )
+    return None  # for mypy
+
+
+def _deserialize_auth_token(payload: Dict[str, Any]) -> Optional[AuthToken]:
     if "auth_token" in payload:
         return AuthToken(
             token=payload["auth_token"]["token"],
@@ -265,25 +277,6 @@ def _create_auth_token(payload: Dict[str, Any]) -> Optional[AuthToken]:
     if "auth" in payload:
         return AuthToken.create_non_expiring(payload["auth"])
     return None
-
-
-def _create_auth_config(api_url: URL, payload: Dict[str, Any]) -> AuthConfig:
-    if "auth_config" in payload:
-        success_redirect_url = payload["auth_config"].get("success_redirect_url")
-        if success_redirect_url:
-            success_redirect_url = URL(success_redirect_url)
-        return AuthConfig(
-            auth_url=URL(payload["auth_config"]["auth_url"]),
-            token_url=URL(payload["auth_config"]["token_url"]),
-            client_id=payload["auth_config"]["client_id"],
-            audience=payload["auth_config"]["audience"],
-            success_redirect_url=success_redirect_url,
-        )
-
-    # TODO: temporary hardcoded until /api/v1/config is implemented
-    if api_url == URL("https://platform.staging.neuromation.io/api/v1"):
-        return _create_staging_auth_config()
-    return _create_default_auth_config()
 
 
 def _load(path: Path) -> Config:
@@ -296,13 +289,18 @@ def _load(path: Path) -> Config:
     with path.open("r") as f:
         payload = yaml.load(f)
 
-    api_url = URL(payload["url"])
-    auth_config = _create_auth_config(api_url, payload)
-    auth_token = _create_auth_token(payload)
+    api_url = payload["url"]
+
+    auth_config = _deserialize_auth_config(payload)
+    if auth_config is None:
+        auth_config = Config.auth_config
+    auth_token = _deserialize_auth_token(payload)
 
     return Config(
         auth_config=auth_config,
-        url=str(api_url),
+        url=api_url,
+        # cast to str as somehow yaml.load loads registry_url as 'yaml.URL' not 'str'
+        registry_url=str(payload.get("registry_url", "")),
         auth_token=auth_token,
         github_rsa_path=payload.get("github_rsa_path", ""),
         pypi=PyPIVersion.from_config(payload.get("pypi")),

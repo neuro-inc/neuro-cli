@@ -31,11 +31,12 @@ setup(
         "aiodocker>=0.14.0",
         "click>=7.0",
         "colorama>=0.4",
+        "humanize>=0.5"
     ],
     include_package_data=True,
     description="Neuromation Platform API client",
     long_description=readme,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
     author="Neuromation Team",
     author_email="pypi@neuromation.io",  # TODO: change this email
     license=license,

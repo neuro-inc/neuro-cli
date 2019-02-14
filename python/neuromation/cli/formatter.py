@@ -1,12 +1,12 @@
 import itertools
 import re
 import time
-from typing import AbstractSet, Iterable, List, Optional
+from typing import Iterable, Optional
 
 from click import style
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.client import FileStatus, JobDescription, JobStatus, Resources
+from neuromation.client import JobDescription, JobStatus, Resources
 from neuromation.client.jobs import JobTelemetry
 
 from .rc import Config
@@ -119,16 +119,6 @@ class JobStartProgress(BaseFormatter):
         return ret
 
 
-class StorageLsFormatter(BaseFormatter):
-    FORMAT = "{type:<15}{size:<15,}{name:<}".format
-
-    def __call__(self, lst: List[FileStatus]) -> str:
-        return "\n".join(
-            self.FORMAT(type=status.type.lower(), name=status.path, size=status.size)
-            for status in lst
-        )
-
-
 class JobStatusFormatter(BaseFormatter):
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
@@ -226,14 +216,7 @@ class JobListFormatter(BaseFormatter):
             "command": 50,
         }
 
-    def __call__(
-        self,
-        jobs: Iterable[JobDescription],
-        statuses: AbstractSet[str] = frozenset(),
-        description: str = "",
-    ) -> str:
-        if statuses:
-            jobs = [j for j in jobs if j.status in statuses]
+    def __call__(self, jobs: Iterable[JobDescription], description: str = "") -> str:
         if description:
             jobs = [j for j in jobs if j.description == description]
 
@@ -302,8 +285,7 @@ class ConfigFormatter:
         )
         lines.append(style("API URL", bold=True) + f": {config.url}")
         lines.append(
-            style("Docker Registry URL", bold=True)
-            + f": {config.docker_registry_url()}"
+            style("Docker Registry URL", bold=True) + f": {config.registry_url()}"
         )
         lines.append(
             style("Github RSA Path", bold=True) + f": {config.github_rsa_path}"

@@ -5,7 +5,7 @@ from . import rc
 from .defaults import API_URL
 from .formatter import ConfigFormatter
 from .rc import Config
-from .utils import command, group
+from .utils import command, group, run_async
 
 
 @group()
@@ -15,7 +15,8 @@ def config() -> None:
 
 @command(hidden=True)
 @click.argument("url")
-def url(url: str) -> None:
+@run_async
+async def url(url: str) -> None:
     """
     Update settings with provided platform URL.
 
@@ -23,7 +24,7 @@ def url(url: str) -> None:
 
     neuro config url https://platform.neuromation.io/api/v1
     """
-    rc.ConfigFactory.update_api_url(url)
+    await rc.ConfigFactory.update_api_url(url)
 
 
 @command(hidden=True, name="id_rsa")

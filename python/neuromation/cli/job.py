@@ -316,9 +316,9 @@ async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) 
 
     Examples:
 
-    neuro job list --description="my favourite job"
-    neuro job list --status=all
-    neuro job list -s pending -s running -q
+    neuro job ls --description="my favourite job"
+    neuro job ls --status=all
+    neuro job ls -s pending -s running -q
     """
 
     status = status or ["running", "pending"]
@@ -329,10 +329,10 @@ async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) 
         statuses = set()
 
     async with cfg.make_client() as client:
-        jobs = await client.jobs.list()
+        jobs = await client.jobs.list(statuses)
 
     formatter = JobListFormatter(quiet=quiet)
-    click.echo(formatter(jobs, statuses, description))
+    click.echo(formatter(jobs, description))
 
 
 @command()

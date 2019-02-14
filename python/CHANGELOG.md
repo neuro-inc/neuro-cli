@@ -5,6 +5,30 @@
 
 [comment]: # (towncrier release notes start)
 
+
+Neuromation 0.4.0 (2019-02-12)
+==============================
+
+Features
+--------
+
+
+- Check the lastest PyPI neuromation release, suggest to upgrade if PyPI has a newer version. ([#308](https://github.com/neuromation/platform-api-clients/issues/308))
+
+- Changes in `neuro store ls` behavior: display files by columns by default, add option `-l` for long output, display one per line for pipes by default. ([#427](https://github.com/neuromation/platform-api-clients/issues/427))
+
+- Set up the platform to work with the new platform DNS names. ([#495](https://github.com/neuromation/platform-api-clients/issues/495))
+
+
+Bugfixes
+--------
+
+
+- Use colored mode only if all stdin, stdout, and stderr are tty. ([#473](https://github.com/neuromation/platform-api-clients/issues/473))
+
+- Improved login error reporting ([#477](https://github.com/neuromation/platform-api-clients/issues/477))
+
+
 Neuromation 0.3.0 (2019-02-01)
 ==============================
 
