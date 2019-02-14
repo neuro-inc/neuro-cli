@@ -10,7 +10,7 @@ black==18.9b0
 setuptools==40.8.0
 wheel==0.33.0
 cmarkgfm==0.4.2
-twine==1.12.1
+twine==1.13.0
 pytest-xdist==1.26.1
 markdown-toc==1.2.4
 pytest-testmon==0.9.15
