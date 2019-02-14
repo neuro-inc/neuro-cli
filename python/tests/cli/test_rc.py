@@ -10,8 +10,9 @@ from jose import jwt
 from yarl import URL
 
 from neuromation.cli import rc
-from neuromation.cli.login import AuthConfig, ServerConfig
+from neuromation.cli.login import AuthConfig
 from neuromation.cli.rc import AuthToken, Config, load, save
+from neuromation.client.config import ServerConfig
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
