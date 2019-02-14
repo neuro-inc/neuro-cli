@@ -112,14 +112,14 @@ class TestJobStartProgress:
 
         assert (
             re.search(
-                r"Status: pending \[elapsed \d+\.\d+ sec] \|",
+                r"Status: pending \[\d+\.\d+ sec] \|",
                 self.strip(progress(self.make_job(JobStatus.PENDING, None))),
             )
             is not None
         )
         assert (
             re.search(
-                r"Status: pending ContainerCreating \[elapsed \d+\.\d+ sec] /",
+                r"Status: pending ContainerCreating \[\d+\.\d+ sec] /",
                 self.strip(
                     progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
                 ),
@@ -128,7 +128,7 @@ class TestJobStartProgress:
         )
         assert (
             re.search(
-                r"Status: pending ContainerCreating \[elapsed \d+\.\d+ sec] -",
+                r"Status: pending ContainerCreating \[\d+\.\d+ sec] -",
                 self.strip(
                     progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
                 ),
@@ -137,7 +137,7 @@ class TestJobStartProgress:
         )
         assert (
             re.search(
-                r"Status: succeeded \[elapsed \d+\.\d sec]",
+                r"Status: succeeded \[\d+\.\d sec]",
                 self.strip(
                     progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
                 ),

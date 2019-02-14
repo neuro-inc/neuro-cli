@@ -110,7 +110,7 @@ class JobStartProgress(BaseFormatter):
             if self._prev:
                 ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
             self._prev = msg
-        ret += self.LINE_PRE + msg + f" [elapsed {dt:.1f} sec]"
+        ret += self.LINE_PRE + msg + f" [{dt:.1f} sec]"
         if not finish:
             ret += " " + next(self._spinner)
         ret += CLEAR_LINE_TAIL
@@ -285,7 +285,7 @@ class ConfigFormatter:
         )
         lines.append(style("API URL", bold=True) + f": {config.url}")
         lines.append(
-            style("Docker Registry URL", bold=True) + f": {config.registry_url()}"
+            style("Docker Registry URL", bold=True) + f": {config.registry_url}"
         )
         lines.append(
             style("Github RSA Path", bold=True) + f": {config.github_rsa_path}"
