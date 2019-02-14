@@ -272,6 +272,8 @@ class TestRegistry:
         app.router.add_get("/v2/_catalog", handler)
 
         srv = await aiohttp_server(app)
-        async with Client(srv.make_url("/v2/"), token) as client:
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+        async with Client(url, registry_url=registry_url, token=token) as client:
             ret = await client.images.ls()
         assert ret == [URL(image) for image in JSON["repositories"]]

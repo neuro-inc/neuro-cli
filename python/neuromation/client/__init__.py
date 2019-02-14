@@ -66,14 +66,12 @@ class Client:
         url: Union[URL, str],
         token: str,
         *,
-        registry_url: str = "",  # default value is always overwritten
+        registry_url: str = "",
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
         self._url = url
-        # this is temporary until we implement getting server configuration dynamically:
-        assert registry_url, "registry url was not provided"
         self._registry_url = URL(registry_url)
         assert token
         self._config = Config(url, self._registry_url, token)
