@@ -1,5 +1,5 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import click
 
@@ -20,10 +20,7 @@ def completion() -> None:
 
 
 @completion.command()
-@click.argument(
-    "shell",
-    type=click.Choice(["bash", "zsh"]),
-)
+@click.argument("shell", type=click.Choice(["bash", "zsh"]))
 def generate(shell: str) -> None:
     """
     Provide an instruction for shell completion generation.
@@ -33,15 +30,14 @@ def generate(shell: str) -> None:
 
 
 @completion.command()
-@click.argument(
-    'shell',
-    type=click.Choice(["bash", "zsh"]),
-)
+@click.argument("shell", type=click.Choice(["bash", "zsh"]))
 def patch(shell: str) -> None:
     """
     Automatically patch shell configuration profile to enable completion
     """
     profile_file = CFG_FILE[shell].expanduser()
     with profile_file.open("a+") as profile:
-        profile.write(ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0]))
+        profile.write(
+            ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0])
+        )
         profile.write("\n")
