@@ -326,22 +326,39 @@ class AuthConfig:
     def callback_ports(self) -> List[int]:
         return [cast(int, url.port) for url in self.callback_urls]
 
+    def is_initialized(self) -> bool:
+        return bool(
+            self.auth_url and self.token_url and self.client_id and self.audience
+        )
+
     @classmethod
     def create(
         cls,
-        base_url: URL,
+        auth_url: URL,
+        token_url: URL,
         client_id: str,
         audience: str,
         success_redirect_url: Optional[URL] = None,
         callback_urls: Optional[Sequence[URL]] = None,
     ) -> "AuthConfig":
         return cls(
-            auth_url=base_url.with_path("/authorize"),
-            token_url=base_url.with_path("/oauth/token"),
+            auth_url=auth_url,
+            token_url=token_url,
             client_id=client_id,
             audience=audience,
             success_redirect_url=success_redirect_url,
             callback_urls=callback_urls or cls.callback_urls,
+        )
+
+    @classmethod
+    def create_uninitialized(cls) -> "AuthConfig":
+        return cls.create(
+            auth_url=URL(""),
+            token_url=URL(""),
+            client_id="",
+            audience="",
+            success_redirect_url=None,
+            callback_urls=None,
         )
 
 
