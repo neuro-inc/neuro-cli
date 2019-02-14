@@ -1,12 +1,10 @@
 import os
 import re
 from time import sleep, time
-from urllib.parse import urlparse
 
 import aiohttp
 import pytest
 
-from neuromation.cli.rc import ConfigFactory
 from neuromation.utils import run as run_async
 from tests.e2e.test_e2e_utils import (
     Status,
