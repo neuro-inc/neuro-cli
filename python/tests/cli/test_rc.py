@@ -15,7 +15,7 @@ from neuromation.cli.rc import AuthToken, Config, load, save
 from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
-DEFAULTS = rc.Config(url="https://dev.ai.neuromation.io/api/v1")
+DEFAULTS = rc.Config(url="https://dev.neu.ro/api/v1")
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def test_create__with_defaults(nmrc):
       check_timestamp: 0
       pypi_version: 0.0.0
     registry_url: ''
-    url: https://dev.ai.neuromation.io/api/v1
+    url: https://dev.neu.ro/api/v1
     """
     )
     assert nmrc.read_text() == expected_text

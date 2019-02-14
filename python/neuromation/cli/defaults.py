@@ -1,4 +1,4 @@
-API_URL = "https://dev.ai.neuromation.io/api/v1"
+API_URL = "https://dev.neu.ro/api/v1"
 JOB_GPU_NUMBER = 0
 JOB_GPU_MODEL = "nvidia-tesla-k80"
 JOB_CPU_NUMBER = 0.1
