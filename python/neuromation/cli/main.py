@@ -53,7 +53,6 @@ def setup_console_handler(
 
 
 LOG_ERROR = log.error
-COLOR = False
 
 
 @click.group(cls=MainGroup, invoke_without_command=True)
@@ -96,7 +95,7 @@ def cli(
     # ◥ ◣ ▇      Deep network training,
     #   ◥ ▇      inference and datasets
     #     ◥
-    global COLOR, LOG_ERROR
+    global LOG_ERROR
     if show_traceback:
         LOG_ERROR = log.exception
     setup_logging()
@@ -106,7 +105,6 @@ def cli(
     real_color: Optional[bool] = COLORS[color]
     if real_color is None:
         real_color = tty
-    COLOR = real_color
     ctx.color = real_color
     config = rc.ConfigFactory.load()
     config.color = real_color
@@ -249,6 +247,3 @@ def main(args: Optional[List[str]] = None) -> None:
     except Exception as e:
         LOG_ERROR(f"{e}")
         sys.exit(1)
-    finally:
-        if COLOR:
-            print("\033[?25h", end="")  # make sure that the cursor is shown
