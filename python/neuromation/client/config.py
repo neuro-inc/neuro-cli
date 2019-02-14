@@ -1,5 +1,6 @@
+from dataclasses import dataclass
+
 import aiohttp
-from attr import dataclass
 from yarl import URL
 
 from neuromation.cli.login import AuthConfig
