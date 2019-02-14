@@ -1,12 +1,10 @@
 import os
 import re
 from time import sleep, time
-from urllib.parse import urlparse
 
 import aiohttp
 import pytest
 
-from neuromation.cli.rc import ConfigFactory
 from neuromation.utils import run as run_async
 from tests.e2e.test_e2e_utils import (
     Status,
@@ -329,12 +327,12 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
     loop_sleep = 1
     service_wait_time = 60
 
-    async def get_(platform_url):
+    async def get_(url):
         succeeded = None
         start_time = time()
         while not succeeded and (int(time() - start_time) < service_wait_time):
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://{job_id}.jobs-{platform_url}") as resp:
+                async with session.get(url) as resp:
                     succeeded = resp.status == 200
             if not succeeded:
                 sleep(loop_sleep)
@@ -345,7 +343,7 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
     check_create_dir_on_storage("result")
 
     # Start the job
-    command = '/usr/sbin/nginx -g "daemon off;"'
+    command = 'timeout 5m /usr/sbin/nginx -g "daemon off;"'
     captured = run(
         [
             "model",
@@ -368,16 +366,15 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
     wait_job_change_state_from(run, job_id, Status.PENDING, Status.FAILED)
 
-    config = ConfigFactory.load()
-    parsed_url = urlparse(config.url)
+    captured = run(["job", "status", job_id])
+    url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
 
-    assert run_async(get_(parsed_url.netloc))
+    probe = run_async(get_(url))
 
+    # job will be killed in run(), but let's kill it twice
     run(["job", "kill", job_id])
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+
+    assert probe
 
 
 @pytest.mark.e2e
@@ -385,12 +382,12 @@ def test_model_without_command(run, tmpstorage, check_create_dir_on_storage):
     loop_sleep = 1
     service_wait_time = 60
 
-    async def get_(platform_url):
+    async def get_(url):
         succeeded = None
         start_time = time()
         while not succeeded and (int(time() - start_time) < service_wait_time):
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://{job_id}.jobs-{platform_url}") as resp:
+                async with session.get(url) as resp:
                     succeeded = resp.status == 200
             if not succeeded:
                 sleep(loop_sleep)
@@ -424,16 +421,15 @@ def test_model_without_command(run, tmpstorage, check_create_dir_on_storage):
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
     wait_job_change_state_from(run, job_id, Status.PENDING, Status.FAILED)
 
-    config = ConfigFactory.load()
-    parsed_url = urlparse(config.url)
+    captured = run(["job", "status", job_id])
+    url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
 
-    assert run_async(get_(parsed_url.netloc))
+    probe = run_async(get_(url))
 
-    captured = run(["job", "kill", job_id])
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+    # job will be killed in run(), but let's kill it twice
+    run(["job", "kill", job_id])
+
+    assert probe
 
 
 @pytest.mark.e2e
