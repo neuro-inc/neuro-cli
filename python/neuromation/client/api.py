@@ -1,5 +1,5 @@
 import logging
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
 from aiohttp import WSMessage
@@ -68,6 +68,7 @@ class API:
         method: str,
         rel_url: URL,
         *,
+        params: Optional[Mapping[str, str]] = None,
         data: Any = None,
         json: Any = None,
         headers: Optional[Dict[str, str]] = None,
@@ -76,7 +77,7 @@ class API:
         url = (self._url / "").join(rel_url)
         log.debug("Fetch [%s] %s", method, url)
         async with self._session.request(
-            method, url, headers=headers, json=json, data=data
+            method, url, headers=headers, params=params, json=json, data=data
         ) as resp:
             try:
                 resp.raise_for_status()

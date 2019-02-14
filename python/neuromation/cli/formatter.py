@@ -1,7 +1,7 @@
 import itertools
 import re
 import time
-from typing import AbstractSet, Iterable, Optional
+from typing import Iterable, Optional
 
 import click
 from dateutil.parser import isoparse  # type: ignore
@@ -202,14 +202,7 @@ class JobListFormatter(BaseFormatter):
             "command": 50,
         }
 
-    def __call__(
-        self,
-        jobs: Iterable[JobDescription],
-        statuses: AbstractSet[str] = frozenset(),
-        description: str = "",
-    ) -> str:
-        if statuses:
-            jobs = [j for j in jobs if j.status in statuses]
+    def __call__(self, jobs: Iterable[JobDescription], description: str = "") -> str:
         if description:
             jobs = [j for j in jobs if j.description == description]
 

@@ -597,8 +597,9 @@ async def test_list(aiohttp_server, token):
     app.router.add_get("/jobs", handler)
 
     srv = await aiohttp_server(app)
+    statuses = {"pending", "running", "failed", "succeeded"}
 
     async with Client(srv.make_url("/"), token) as client:
-        ret = await client.jobs.list()
+        ret = await client.jobs.list(statuses)
 
     assert ret == [JobDescription.from_api(j) for j in JSON["jobs"]]
