@@ -6,7 +6,6 @@ from .jobs import (
     JobStartProgress,
 )
 from .storage import (
-    PainterFactory,
     BaseFilesFormatter,
     LongFilesFormatter,
     SimpleFilesFormatter,

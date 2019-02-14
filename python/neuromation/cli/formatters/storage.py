@@ -76,7 +76,7 @@ class ParseState(enum.Enum):
 
 class BasePainter(abc.ABC):
     @abc.abstractmethod
-    def paint(self, label: str, file: FileStatus) -> str:
+    def paint(self, label: str, file: FileStatus) -> str:  # pragma: no cover
         pass
 
 
@@ -279,9 +279,7 @@ class GnuPainter(BasePainter):
         if state == ParseState.PS_ESCAPED_END:
             stack.pop()
             state = stack.pop()
-            if state == ParseState.PS_LEFT:
-                left += escaped
-            else:
+            if state == ParseState.PS_RIGHT:  # pragma no branch
                 right += escaped
         if state == ParseState.PS_RIGHT and len(right):
             process(left, right)

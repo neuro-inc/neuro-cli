@@ -25,6 +25,7 @@ from neuromation.cli.formatters.storage import (
     GnuPainter,
     LongFilesFormatter,
     NonePainter,
+    PainterFactory,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
@@ -585,6 +586,10 @@ class TestGnuPainter:
         assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
         assert painter.color_indicator[GnuIndicators.FILE] == "32;42"
 
+        painter = GnuPainter("rs=1;0;1:fi")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+        assert painter.color_indicator[GnuIndicators.FILE] == ""
+
         painter = GnuPainter("rs=1;0;1:fi=")
         assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
         assert painter.color_indicator[GnuIndicators.FILE] == ""
@@ -717,7 +722,38 @@ class TestBSDPainter:
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad")
         assert painter.paint(file.name, file) == "test.txt"
-        assert painter.paint(folder.name, folder) == "\x1b[34mtmp\x1b[0m"
+        assert painter.paint(folder.name, folder) == click.style("tmp", fg="blue")
+
+        painter = BSDPainter("Eafxcxdxbxegedabagacad")
+        assert painter.paint(file.name, file) == "test.txt"
+        assert painter.paint(folder.name, folder) == click.style(
+            "tmp", fg="blue", bg="black", bold=True
+        )
+
+
+class TestPainterFactory:
+    def test_detection(self, monkeypatch):
+        monkeypatch.setenv("LS_COLORS", "")
+        monkeypatch.setenv("LSCOLORS", "")
+        painter = PainterFactory.detect(True)
+        assert isinstance(painter, NonePainter)
+
+        monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
+        monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
+        painter_without_color = PainterFactory.detect(False)
+        painter_with_color = PainterFactory.detect(True)
+        assert isinstance(painter_without_color, NonePainter)
+        assert not isinstance(painter_with_color, NonePainter)
+
+        monkeypatch.setenv("LSCOLORS", "")
+        monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
+        painter = PainterFactory.detect(True)
+        assert isinstance(painter, GnuPainter)
+
+        monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
+        monkeypatch.setenv("LS_COLORS", "")
+        painter = PainterFactory.detect(True)
+        assert isinstance(painter, BSDPainter)
 
 
 class TestFilesFormatter:
