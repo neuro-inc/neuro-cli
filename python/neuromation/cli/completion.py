@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 import click
 
@@ -8,7 +9,7 @@ from .utils import group
 CFG_FILE = {"bash": Path("~/.bashrc"), "zsh": Path("~/.zshrc")}
 SOURCE_CMD = {"bash": "source", "zsh": "source_zsh"}
 
-ACTIVATION_TEMPLATE = 'eval "$(_NEURO_COMPLETE={cmd} neuro)"'
+ACTIVATION_TEMPLATE = 'eval "$(_NEURO_COMPLETE={cmd} {exe})"'
 
 
 @group()
@@ -19,28 +20,22 @@ def completion() -> None:
 
 
 @completion.command()
-@click.option(
-    "--shell",
+@click.argument(
+    "shell",
     type=click.Choice(["bash", "zsh"]),
-    help="Shell type.",
-    default="bash",
-    show_default=True,
 )
 def generate(shell: str) -> None:
     """
     Provide an instruction for shell completion generation.
     """
     click.echo(f"Push the following line into your {CFG_FILE[shell]}")
-    click.echo(ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell]))
+    click.echo(ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0]))
 
 
 @completion.command()
-@click.option(
-    "--shell",
+@click.argument(
+    'shell',
     type=click.Choice(["bash", "zsh"]),
-    help="Shell type.",
-    default="bash",
-    show_default=True,
 )
 def patch(shell: str) -> None:
     """
@@ -48,5 +43,5 @@ def patch(shell: str) -> None:
     """
     profile_file = CFG_FILE[shell].expanduser()
     with profile_file.open("a+") as profile:
-        profile.write(ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell]))
+        profile.write(ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0]))
         profile.write("\n")
