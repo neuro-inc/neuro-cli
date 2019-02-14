@@ -131,7 +131,7 @@ def run(monkeypatch, capfd, tmp_path):
             out = post_out[pre_out_size:]
             err = post_err[pre_err_size:]
             if arguments[0:2] in (["job", "submit"], ["model", "train"]):
-                match = job_id_pattern.match(out)
+                match = job_id_pattern.search(out)
                 if match:
                     executed_jobs_list.append(match.group(1))
 
