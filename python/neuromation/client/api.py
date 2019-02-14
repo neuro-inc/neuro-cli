@@ -10,6 +10,8 @@ from .utils import asynccontextmanager
 
 log = logging.getLogger(__name__)
 
+DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
+
 
 class ClientError(Exception):
     pass
@@ -73,7 +75,7 @@ class API:
         json: Any = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
-        assert not rel_url.is_absolute()
+        assert not rel_url.is_absolute(), rel_url
         url = (self._url / "").join(rel_url)
         log.debug("Fetch [%s] %s", method, url)
         async with self._session.request(

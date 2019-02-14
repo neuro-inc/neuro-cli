@@ -14,6 +14,7 @@ from .api import (
     AuthError,
     AuthenticationError,
     AuthorizationError,
+    DEFAULT_TIMEOUT,
 )
 from .jobs import (
     Jobs,
@@ -58,8 +59,6 @@ __all__ = (
     "AbstractProgress",
     "AbstractSpinner",
 )
-
-DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
 class Client:
