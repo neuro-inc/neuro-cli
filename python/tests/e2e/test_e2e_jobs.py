@@ -345,7 +345,7 @@ def test_model_train_with_http(run, tmpstorage, check_create_dir_on_storage):
     check_create_dir_on_storage("result")
 
     # Start the job
-    command = '/usr/sbin/nginx -g "daemon off;"'
+    command = 'timeout 5m /usr/sbin/nginx -g "daemon off;"'
     captured = run(
         [
             "model",
