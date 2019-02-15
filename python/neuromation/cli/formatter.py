@@ -109,7 +109,6 @@ class JobStatusFormatter(BaseFormatter):
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
-
         if job_status.description:
             result += f"Description: {job_status.description}\n"
         result += f"Status: {job_status.status}"
@@ -119,7 +118,6 @@ class JobStatusFormatter(BaseFormatter):
             and job_status.status in [JobStatus.FAILED, JobStatus.PENDING]
         ):
             result += f" ({job_status.history.reason})"
-
         result += f"\nImage: {job_status.container.image}\n"
 
         result += f"Command: {job_status.container.command}\n"
