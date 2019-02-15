@@ -762,14 +762,13 @@ Provide an instruction for shell completion generation.
 **Usage:**
 
 ```bash
-neuro completion generate [OPTIONS]
+neuro completion generate [OPTIONS] [bash|zsh]
 ```
 
 **Options:**
 
 Name | Description|
 |----|------------|
-|_--shell \[bash &#124; zsh]_|Shell type.  \[default: bash]|
 |_--help_|Show this message and exit.|
 
 
@@ -782,14 +781,13 @@ Automatically patch shell configuration profile to enable completion
 **Usage:**
 
 ```bash
-neuro completion patch [OPTIONS]
+neuro completion patch [OPTIONS] [bash|zsh]
 ```
 
 **Options:**
 
 Name | Description|
 |----|------------|
-|_--shell \[bash &#124; zsh]_|Shell type.  \[default: bash]|
 |_--help_|Show this message and exit.|
 
 

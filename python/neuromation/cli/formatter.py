@@ -12,8 +12,8 @@ from neuromation.client.jobs import JobTelemetry
 from .rc import Config
 
 
-BEFORE_PROGRESS = "\r\033[?25l"
-AFTER_PROGRESS = "\033[?25h\n"
+BEFORE_PROGRESS = "\r"
+AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
 
 
