@@ -60,7 +60,7 @@ def test_job_lifecycle(run_cli):
     assert job_id in jobs_updated
 
     # Wait until the job is running
-    wait_job_change_state_to(run, job_id, Status.RUNNING)
+    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
 
     # Check that it is in a running job list
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -81,7 +81,7 @@ def test_job_lifecycle(run_cli):
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
 
     # Check that it is not in a running job list anymore
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -131,7 +131,7 @@ def test_job_description(run_cli):
     assert job_id in jobs_updated
 
     # Wait until the job is running
-    wait_job_change_state_to(run, job_id, Status.RUNNING, Status.FAILED)
+    wait_job_change_state_to(run_cli, job_id, Status.RUNNING, Status.FAILED)
 
     # Check that it is in a running job list
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -154,7 +154,7 @@ def test_job_description(run_cli):
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
 
     # Check that it is not in a running job list anymore
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -201,7 +201,7 @@ def test_unschedulable_job_lifecycle(run_cli):
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
     wait_job_change_state_to(
-        run, job_id, "(Cluster doesn't have resources to fulfill request.)"
+        run_cli, job_id, "(Cluster doesn't have resources to fulfill request.)"
     )
 
     # Kill the job
@@ -210,7 +210,7 @@ def test_unschedulable_job_lifecycle(run_cli):
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
 
     # Check that it is not in a running job list anymore
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -377,7 +377,7 @@ def test_model_train_with_http(run_cli, tmpstorage, check_create_dir_on_storage)
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run, job_id, Status.RUNNING)
+    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
 
 
 @pytest.mark.e2e

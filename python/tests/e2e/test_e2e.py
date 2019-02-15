@@ -53,7 +53,7 @@ def test_e2e_job_top(run_cli):
     command = f"bash -c '{bash_script}'"
     captured = run_cli(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
     job_id = captured.out.strip()
-    wait_job_change_state_from(run, job_id, "Status: pending")
+    wait_job_change_state_from(run_cli, job_id, "Status: pending")
 
     captured = run_cli(["job", "top", job_id])
 
@@ -110,10 +110,10 @@ def test_e2e_shm_run_without(run_cli):
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run, job_id, "Status: pending")
-    wait_job_change_state_from(run, job_id, "Status: running")
+    wait_job_change_state_from(run_cli, job_id, "Status: pending")
+    wait_job_change_state_from(run_cli, job_id, "Status: running")
 
-    assert_job_state(run, job_id, "Status: succeeded")
+    assert_job_state(run_cli, job_id, "Status: succeeded")
 
 
 @pytest.mark.e2e
@@ -139,8 +139,8 @@ def test_e2e_shm_run_with(run_cli):
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run, job_id, "Status: pending")
-    wait_job_change_state_from(run, job_id, "Status: running")
+    wait_job_change_state_from(run_cli, job_id, "Status: pending")
+    wait_job_change_state_from(run_cli, job_id, "Status: running")
 
     assert_job_state(run_cli, job_id, "Status: failed")
 
@@ -251,8 +251,8 @@ def test_job_storage_interaction(
         job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
 
         # Wait for job to finish
-        wait_job_change_state_from(run, job_id, Status.PENDING)
-        wait_job_change_state_from(run, job_id, Status.RUNNING)
+        wait_job_change_state_from(run_cli, job_id, Status.PENDING)
+        wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
         try:
             assert_job_state(run_cli, job_id, Status.SUCCEEDED)
             # Confirm file has been copied

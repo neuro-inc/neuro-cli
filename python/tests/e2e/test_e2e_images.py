@@ -96,7 +96,7 @@ def test_images_complete_lifecycle(run_cli, image, tag, loop, docker):
     assert not captured.err
     job_id = captured.out.strip()
     assert job_id.startswith("job-")
-    wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
+    wait_job_change_state_to(run_cli, job_id, Status.SUCCEEDED, Status.FAILED)
 
     @attempt()
     def check_job_output():
