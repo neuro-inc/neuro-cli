@@ -36,21 +36,34 @@ def tiny_container():
     return ["-m", "20M", "-c", "0.1", "-g", "0", "--non-preemptible"]
 
 
+@pytest.fixture
+def secret_job(run_job_and_wait_status, tiny_container, run):
+    def go(http_port: bool):
+        secret = str(uuid())
+        # Run http job
+        command = (
+            f"bash -c \"echo '{secret}' > /usr/share/nginx/html/secret.txt; "
+            f"timeout 5m /usr/sbin/nginx -g 'daemon off;'\""
+        )
+        if http_port:
+            args = ["--http", "80", "-d", "nginx with secret file and http port"]
+        else:
+            args = ["-d", "nginx with secret file and without http port"]
+
+        http_job_id = run_job_and_wait_status(
+            NGINX_IMAGE_NAME, command, tiny_container + args
+        )
+        return http_job_id, secret
+
+    return go
+
+
 @pytest.mark.e2e
-def test_connectivity(run, run_job_and_wait_status, check_http_get, tiny_container):
+def test_connectivity(
+    run, secret_job, run_job_and_wait_status, check_http_get, tiny_container
+):
 
-    secret = str(uuid())
-
-    # Run http job
-    command = (
-        f"bash -c \"echo '{secret}' > /usr/share/nginx/html/secret.txt; "
-        f"timeout 5m /usr/sbin/nginx -g 'daemon off;'\""
-    )
-    http_job_id = run_job_and_wait_status(
-        NGINX_IMAGE_NAME,
-        command,
-        tiny_container + ["--http", "80", "-d", "nginx with secret file"],
-    )
+    http_job_id, secret = secret_job(True)
 
     captured = run(["job", "status", http_job_id])
     url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
@@ -76,13 +89,7 @@ def test_connectivity(run, run_job_and_wait_status, check_http_get, tiny_contain
     #  TODO internal hostname test must be here
 
     # Run job without shared http port
-    command = "timeout 5m /usr/sbin/nginx -g 'daemon off;'"
-    no_http_job_id = run_job_and_wait_status(
-        NGINX_IMAGE_NAME,
-        command,
-        tiny_container
-        + ["--http", "80", "-d", "nginx with secret file but without ingress"],
-    )
+    no_http_job_id, secret = secret_job(False)
 
     # Let's emulate external url
     secret_url = secret_url.replace(http_job_id, no_http_job_id)
