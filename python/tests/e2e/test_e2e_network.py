@@ -1,25 +1,30 @@
 import re
 from uuid import uuid4 as uuid
 
+import pytest
 
 from tests.e2e.test_e2e_utils import (
     Status,
     wait_job_change_state_from,
-    wait_job_change_state_to
+    wait_job_change_state_to,
 )
+
 
 NGINX_IMAGE_NAME = "nginx:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 ALPINE_IMAGE_NAME = "alpine:latest"
 
 
-
+@pytest.mark.e2e
 def test_http_port(run, check_http_get):
 
     secret = str(uuid())
 
     # Run http job
-    command = f"bash -c \"echo '{secret}' > /usr/share/nginx/html/secret.txt; timeout 5m /usr/sbin/nginx -g 'daemon off;'\""
+    command = (
+        f"bash -c \"echo '{secret}' > /usr/share/nginx/html/secret.txt; "
+        f"timeout 5m /usr/sbin/nginx -g 'daemon off;'\""
+    )
     captured = run(
         [
             "job",
@@ -79,4 +84,3 @@ def test_http_port(run, check_http_get):
 
     #  internal hostname getting hack
     #  TODO replace next code when
-    #  https://github.com/neuromation/platform-api-clients/issues/516 will be implemented

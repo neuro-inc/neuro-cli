@@ -6,15 +6,16 @@ from collections import namedtuple
 from os.path import join
 from pathlib import Path
 from time import sleep
-from uuid import uuid4 as uuid
 from typing import Sequence, Union
-import pytest
+from uuid import uuid4 as uuid
+
 import aiohttp
+import pytest
 
 from neuromation.cli import main
 from neuromation.client import FileStatusType
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, hash_hex, output_to_files, attempt
 from neuromation.utils import run as run_async
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, attempt, hash_hex, output_to_files
 
 
 log = logging.getLogger(__name__)
@@ -379,7 +380,7 @@ def check_http_get():
                     status=resp.status,
                     message=f"Server return {resp.status}",
                     history=tuple(),
-                    request_info=resp.request_info
+                    request_info=resp.request_info,
                 )
 
     @attempt(30, 2)
