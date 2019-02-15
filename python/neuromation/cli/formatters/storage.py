@@ -294,7 +294,6 @@ class GnuPainter(BasePainter):
 
         if state == ParseState.PS_CARRET:
             raise EnvironmentError("Cannot parse coloring scheme")
-
         if state in [ParseState.PS_HEX, ParseState.PS_OCTAL]:
             escaped = chr(num)
             state = stack.pop()

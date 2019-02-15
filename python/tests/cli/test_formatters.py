@@ -594,12 +594,6 @@ class TestGnuPainter:
         assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
         assert painter.color_indicator[GnuIndicators.FILE] == ""
 
-        with pytest.raises(EnvironmentError):
-            painter = GnuPainter("rs=^")
-
-        with pytest.raises(EnvironmentError):
-            painter = GnuPainter("rs=a^")
-
     @pytest.mark.parametrize(
         "escaped,result",
         [
@@ -674,6 +668,7 @@ class TestGnuPainter:
         "escaped,result",
         [
             ("^a", chr(1)),
+            ("^?", chr(127)),
             ("^z", chr(26)),
             ("a^Z", "a" + chr(26)),
             ("a^Zb", "a" + chr(26) + "b"),
@@ -688,6 +683,14 @@ class TestGnuPainter:
 
         painter = GnuPainter(escaped + "=" + escaped)
         assert painter.color_ext_type[result] == result
+
+    @pytest.mark.parametrize("escaped", [("^1"), ("^"), ("^" + chr(130))])
+    def test_color_parsing_carret_incorrect(self, escaped):
+        with pytest.raises(EnvironmentError):
+            GnuPainter("rs=" + escaped)
+
+        with pytest.raises(EnvironmentError):
+            GnuPainter(escaped + "=1;2")
 
     def test_coloring(self):
         file = FileStatus(
