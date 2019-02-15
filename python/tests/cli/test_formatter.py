@@ -301,6 +301,49 @@ class TestJobOutputFormatter:
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
+    def test_running_job(self) -> None:
+        description = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            id="test-job",
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description=None,
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:24.759433+00:00",
+                finished_at=None,
+            ),
+            http_url=URL("http://local.host.test/"),
+            ssh_server=URL("ssh://local.host.test:22/"),
+            container=Container(
+                command="test-command",
+                image="test-image",
+                resources=Resources.create(0.1, 0, None, None, False),
+            ),
+            ssh_auth_server="ssh-auth",
+            is_preemptible=False,
+            internal_hostname="host.local",
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Owner: test-user\n"
+            "Description: test job description\n"
+            "Status: running\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Internal Hostname: host.local\n"
+            "Http URL: http://local.host.test/\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:24.759433+00:00"
+        )
+
 
 class TestJobTelemetryFormatter:
     def _format(self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str):
