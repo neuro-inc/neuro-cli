@@ -151,4 +151,6 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        run_cli(["storage", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False)
+        run_cli(
+            ["storage", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False
+        )
