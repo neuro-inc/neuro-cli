@@ -7,12 +7,14 @@ from os.path import join
 from pathlib import Path
 from time import sleep
 from uuid import uuid4 as uuid
-
+from typing import Sequence, Union
 import pytest
+import aiohttp
 
 from neuromation.cli import main
 from neuromation.client import FileStatusType
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, hash_hex, output_to_files
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, hash_hex, output_to_files, attempt
+from neuromation.utils import run as run_async
 
 
 log = logging.getLogger(__name__)
@@ -362,5 +364,26 @@ def check_rename_directory_on_storage(run, tmpstorage):
         )
         assert not captured.err
         assert captured.out == ""
+
+    return go
+
+
+@pytest.fixture()
+def check_http_get():
+    async def http_get(url, accepted_statuses: Sequence[int]) -> Union[str, None]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status in accepted_statuses:
+                    return await resp.text()
+                raise aiohttp.ClientResponseError(
+                    status=resp.status,
+                    message=f"Server return {resp.status}",
+                    history=tuple(),
+                    request_info=resp.request_info
+                )
+
+    @attempt(30, 2)
+    def go(url, accepted_statuses: Sequence[int] = tuple([200])):
+        return run_async(http_get(url, accepted_statuses))
 
     return go
