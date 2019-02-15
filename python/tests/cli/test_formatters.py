@@ -594,6 +594,12 @@ class TestGnuPainter:
         assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
         assert painter.color_indicator[GnuIndicators.FILE] == ""
 
+        with pytest.raises(EnvironmentError):
+            painter = GnuPainter("rs=^")
+
+        with pytest.raises(EnvironmentError):
+            painter = GnuPainter("rs=a^")
+
     @pytest.mark.parametrize(
         "escaped,result",
         [
@@ -655,6 +661,25 @@ class TestGnuPainter:
         ],
     )
     def test_color_parsing_escaped_hex(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
+
+        painter = GnuPainter(escaped + "=1;2")
+        assert painter.color_ext_type[result] == "1;2"
+
+        painter = GnuPainter(escaped + "=" + escaped)
+        assert painter.color_ext_type[result] == result
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("^a", chr(1)),
+            ("^z", chr(26)),
+            ("a^Z", "a" + chr(26)),
+            ("a^Zb", "a" + chr(26) + "b"),
+        ],
+    )
+    def test_color_parsing_carret(self, escaped, result):
         painter = GnuPainter("rs=" + escaped)
         assert painter.color_indicator[GnuIndicators.RESET] == result
 

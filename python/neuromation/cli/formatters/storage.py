@@ -72,6 +72,7 @@ class ParseState(enum.Enum):
     PS_RIGHT = enum.auto()
     PS_OCTAL = enum.auto()
     PS_HEX = enum.auto()
+    PS_CARRET = enum.auto()
 
 
 class BasePainter(abc.ABC):
@@ -242,6 +243,17 @@ class GnuPainter(BasePainter):
                     stack.append(state)
                     state = ParseState.PS_ESCAPED_END
                     pos += 1
+            elif state == ParseState.PS_CARRET:
+                if "@" <= char <= "~":
+                    escaped = chr(ord(char) & 0o37)
+                elif char == "?":
+                    escaped = chr(127)
+                else:
+                    raise EnvironmentError("Cannot parse coloring scheme")
+                stack.append(state)
+                state = ParseState.PS_ESCAPED_END
+                pos += 1
+
             elif state == ParseState.PS_LEFT:
                 if char == "\\":
                     stack.append(state)
@@ -252,6 +264,11 @@ class GnuPainter(BasePainter):
                     right = ""
                     state = ParseState.PS_RIGHT
                     pos += 1
+                elif char == "^":
+                    stack.append(state)
+                    state = ParseState.PS_CARRET
+                    pos += 1
+                    escaped = ""
                 else:
                     left += char
                     pos = pos + 1
@@ -266,9 +283,17 @@ class GnuPainter(BasePainter):
                         process(left, right)
                     state = ParseState.PS_START
                     pos += 1
+                elif char == "^":
+                    stack.append(state)
+                    state = ParseState.PS_CARRET
+                    pos += 1
+                    escaped = ""
                 else:
                     right += char
                     pos += 1
+
+        if state == ParseState.PS_CARRET:
+            raise EnvironmentError("Cannot parse coloring scheme")
 
         if state in [ParseState.PS_HEX, ParseState.PS_OCTAL]:
             escaped = chr(num)
