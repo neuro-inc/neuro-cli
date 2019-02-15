@@ -1,8 +1,6 @@
 import pytest
 from jose import jwt
 
-from neuromation.cli import main
-
 
 @pytest.fixture
 def token():
