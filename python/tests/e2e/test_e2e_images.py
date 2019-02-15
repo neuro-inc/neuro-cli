@@ -46,9 +46,9 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
-def test_images_complete_lifecycle(run, image, tag, loop, docker):
+def test_images_complete_lifecycle(run_cli, image, tag, loop, docker):
     # Let`s push image
-    captured = run(["image", "push", image])
+    captured = run_cli(["image", "push", image])
 
     assert not captured.err
 
@@ -57,7 +57,7 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     assert image_url.path.lstrip("/") == image
 
     # Check if image available on registry
-    captured = run(["image", "ls"])
+    captured = run_cli(["image", "ls"])
 
     image_urls = [URL(line) for line in captured.out.splitlines() if line]
     for url in image_urls:
@@ -68,7 +68,7 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     pulled_image = f"{image}-pull"
 
     # Pull image as with another tag
-    captured = run(["image", "pull", str(image_url), pulled_image])
+    captured = run_cli(["image", "pull", str(image_url), pulled_image])
     assert not captured.err
     assert pulled_image == captured.out.strip()
     # Check if image exists and remove, all-in-one swiss knife
@@ -79,7 +79,7 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     registry_url = URL(config.registry_url)
     path = image_url.path
     image_with_repo = f'{registry_url.host}/{image_url.host}/{path.lstrip("/")}'
-    captured = run(
+    captured = run_cli(
         [
             "job",
             "submit",
@@ -100,7 +100,7 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
 
     @attempt()
     def check_job_output():
-        captured = run(["job", "logs", job_id])
+        captured = run_cli(["job", "logs", job_id])
         assert not captured.err
         assert captured.out == tag
 

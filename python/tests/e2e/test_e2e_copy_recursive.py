@@ -6,7 +6,7 @@ from tests.e2e.utils import FILE_SIZE_B, hash_hex
 @pytest.mark.e2e
 def test_e2e_copy_recursive_to_platform(
     nested_data,
-    run,
+    run_cli,
     tmp_path,
     tmpstorage,
     check_create_dir_on_storage,
@@ -19,7 +19,7 @@ def test_e2e_copy_recursive_to_platform(
     target_file_name = srcfile.split("/")[-1]
 
     # Upload local file
-    captured = run(["storage", "cp", "-r", dir_path, tmpstorage])
+    captured = run_cli(["storage", "cp", "-r", dir_path, tmpstorage])
     assert not captured.err
     assert not captured.out
 
@@ -31,7 +31,7 @@ def test_e2e_copy_recursive_to_platform(
 
     targetdir = tmp_path / "bar"
     targetdir.mkdir()
-    run(["storage", "cp", "-r", f"{tmpstorage}", str(targetdir)])
+    run_cli(["storage", "cp", "-r", f"{tmpstorage}", str(targetdir)])
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
     print("target file", targetfile)

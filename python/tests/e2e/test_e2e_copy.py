@@ -65,7 +65,7 @@ def test_copy_local_to_platform_single_file_1(
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_2(
     data,
-    run,
+    run_cli,
     tmpstorage,
     check_create_dir_on_storage,
     check_upload_file_to_storage,
@@ -82,7 +82,7 @@ def test_copy_local_to_platform_single_file_2(
     check_upload_file_to_storage("different_name.txt", "folder", srcfile)
 
     # Ensure file is there
-    captured = run(["storage", "ls", "-l", tmpstorage + "folder/"])
+    captured = run_cli(["storage", "ls", "-l", tmpstorage + "folder/"])
     files = output_to_files(captured.out)
     for file in files:
         if (
@@ -110,14 +110,14 @@ def test_copy_local_to_platform_single_file_2(
 
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_3(
-    data, run, tmpstorage, check_dir_absent_on_storage
+    data, run_cli, tmpstorage, check_dir_absent_on_storage
 ):
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
 
     # Upload local file to non existing directory
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        captured = run(
+        captured = run_cli(
             ["storage", "cp", srcfile, tmpstorage + "/non_existing_dir/"],
             storage_retry=False,
         )
@@ -130,11 +130,11 @@ def test_copy_local_to_platform_single_file_3(
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_non_existing_local(
-    run, tmp_path, tmpstorage
+    run_cli, tmp_path, tmpstorage
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        run(
+        run_cli(
             [
                 "storage",
                 "cp",
@@ -147,8 +147,8 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_____existing_local(
-    run, tmp_path, tmpstorage
+    run_cli, tmp_path, tmpstorage
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
-        run(["storage", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False)
+        run_cli(["storage", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False)

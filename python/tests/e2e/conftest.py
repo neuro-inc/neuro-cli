@@ -32,16 +32,16 @@ SysCap = namedtuple("SysCap", "out err")
 
 
 @pytest.fixture
-def tmpstorage(run, request):
+def tmpstorage(run_cli, request):
     url = "storage:" + str(uuid()) + "/"
-    captured = run(["storage", "mkdir", url])
+    captured = run_cli(["storage", "mkdir", url])
     assert not captured.err
     assert captured.out == ""
 
     yield url
 
     try:
-        run(["storage", "rm", url])
+        run_cli(["storage", "rm", url])
     except BaseException:
         # Just ignore cleanup error here
         pass
@@ -84,7 +84,7 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def run(monkeypatch, capfd, tmp_path):
+def run_cli(monkeypatch, capfd, tmp_path):
     executed_jobs_list = []
     e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
 
@@ -152,7 +152,7 @@ def run(monkeypatch, capfd, tmp_path):
 
 
 @pytest.fixture
-def check_file_exists_on_storage(run, tmpstorage):
+def check_file_exists_on_storage(run_cli, tmpstorage):
     """
     Tests if file with given name and size exists in given path
     Assert if file absent or something went bad
@@ -160,7 +160,7 @@ def check_file_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str, size: int):
         path = tmpstorage + path
-        captured = run(["storage", "ls", "-l", path])
+        captured = run_cli(["storage", "ls", "-l", path])
         assert not captured.err
         files = output_to_files(captured.out)
         for file in files:
@@ -177,7 +177,7 @@ def check_file_exists_on_storage(run, tmpstorage):
 
 
 @pytest.fixture
-def check_dir_exists_on_storage(run, tmpstorage):
+def check_dir_exists_on_storage(run_cli, tmpstorage):
     """
     Tests if dir exists in given path
     Assert if dir absent or something went bad
@@ -185,7 +185,7 @@ def check_dir_exists_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["storage", "ls", "-l", path])
+        captured = run_cli(["storage", "ls", "-l", path])
         assert not captured.err
         files = output_to_files(captured.out)
         for file in files:
@@ -198,7 +198,7 @@ def check_dir_exists_on_storage(run, tmpstorage):
 
 
 @pytest.fixture
-def check_dir_absent_on_storage(run, tmpstorage):
+def check_dir_absent_on_storage(run_cli, tmpstorage):
     """
     Tests if dir with given name absent in given path.
     Assert if dir present or something went bad
@@ -206,7 +206,7 @@ def check_dir_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["storage", "ls", "-l", path])
+        captured = run_cli(["storage", "ls", "-l", path])
         assert not captured.err
         files = output_to_files(captured.out)
         for file in files:
@@ -217,7 +217,7 @@ def check_dir_absent_on_storage(run, tmpstorage):
 
 
 @pytest.fixture
-def check_file_absent_on_storage(run, tmpstorage):
+def check_file_absent_on_storage(run_cli, tmpstorage):
     """
     Tests if file with given name absent in given path.
     Assert if file present or something went bad
@@ -225,7 +225,7 @@ def check_file_absent_on_storage(run, tmpstorage):
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["storage", "ls", "-l", path])
+        captured = run_cli(["storage", "ls", "-l", path])
         assert not captured.err
         files = output_to_files(captured.out)
         for file in files:
@@ -236,7 +236,7 @@ def check_file_absent_on_storage(run, tmpstorage):
 
 
 @pytest.fixture
-def check_file_on_storage_checksum(run, tmpstorage):
+def check_file_on_storage_checksum(run_cli, tmpstorage):
     """
     Tests if file on storage in given path has same checksum. File will be downloaded
     to temporary folder first. Assert if checksum mismatched
@@ -252,7 +252,7 @@ def check_file_on_storage_checksum(run, tmpstorage):
             target_file = join(tmpdir, name)
         delay = 5  # need a relative big initial delay to synchronize 16MB file
         for i in range(5):
-            run(["storage", "cp", f"{path}/{name}", target])
+            run_cli(["storage", "cp", f"{path}/{name}", target])
             try:
                 assert hash_hex(target_file) == checksum
                 return
@@ -267,14 +267,14 @@ def check_file_on_storage_checksum(run, tmpstorage):
 
 
 @pytest.fixture
-def check_create_dir_on_storage(run, tmpstorage):
+def check_create_dir_on_storage(run_cli, tmpstorage):
     """
     Create dir on storage and assert if something went bad
     """
 
     def go(path: str):
         path = tmpstorage + path
-        captured = run(["storage", "mkdir", path])
+        captured = run_cli(["storage", "mkdir", path])
         assert not captured.err
         assert captured.out == ""
 
@@ -282,35 +282,35 @@ def check_create_dir_on_storage(run, tmpstorage):
 
 
 @pytest.fixture
-def check_rmdir_on_storage(run, tmpstorage):
+def check_rmdir_on_storage(run_cli, tmpstorage):
     """
     Remove dir on storage and assert if something went bad
     """
 
     def go(path: str):
         path = tmpstorage + path
-        captured = run(["storage", "rm", path])
+        captured = run_cli(["storage", "rm", path])
         assert not captured.err
 
     return go
 
 
 @pytest.fixture
-def check_rm_file_on_storage(run, tmpstorage):
+def check_rm_file_on_storage(run_cli, tmpstorage):
     """
     Remove file in given path in storage and if something went bad
     """
 
     def go(name: str, path: str):
         path = tmpstorage + path
-        captured = run(["storage", "rm", f"{path}/{name}"])
+        captured = run_cli(["storage", "rm", f"{path}/{name}"])
         assert not captured.err
 
     return go
 
 
 @pytest.fixture
-def check_upload_file_to_storage(run, tmpstorage):
+def check_upload_file_to_storage(run_cli, tmpstorage):
     """
     Upload local file with given name to storage and assert if something went bad
     """
@@ -318,11 +318,11 @@ def check_upload_file_to_storage(run, tmpstorage):
     def go(name: str, path: str, local_file: str):
         path = tmpstorage + path
         if name is None:
-            captured = run(["storage", "cp", local_file, f"{path}"])
+            captured = run_cli(["storage", "cp", local_file, f"{path}"])
             assert not captured.err
             assert captured.out == ""
         else:
-            captured = run(["storage", "cp", local_file, f"{path}/{name}"])
+            captured = run_cli(["storage", "cp", local_file, f"{path}/{name}"])
             assert not captured.err
             assert captured.out == ""
 
@@ -330,13 +330,13 @@ def check_upload_file_to_storage(run, tmpstorage):
 
 
 @pytest.fixture
-def check_rename_file_on_storage(run, tmpstorage):
+def check_rename_file_on_storage(run_cli, tmpstorage):
     """
     Rename file on storage and assert if something went bad
     """
 
     def go(name_from: str, path_from: str, name_to: str, path_to: str):
-        captured = run(
+        captured = run_cli(
             [
                 "storage",
                 "mv",
@@ -351,13 +351,13 @@ def check_rename_file_on_storage(run, tmpstorage):
 
 
 @pytest.fixture
-def check_rename_directory_on_storage(run, tmpstorage):
+def check_rename_directory_on_storage(run_cli, tmpstorage):
     """
     Rename directory on storage and assert if something went bad
     """
 
     def go(path_from: str, path_to: str):
-        captured = run(
+        captured = run_cli(
             ["storage", "mv", f"{tmpstorage}{path_from}", f"{tmpstorage}{path_to}"]
         )
         assert not captured.err

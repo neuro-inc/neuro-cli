@@ -14,48 +14,48 @@ from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
 
 
 @pytest.mark.e2e
-def test_print_version(run):
+def test_print_version(run_cli):
     expected_out = f"Neuromation Platform Client {neuromation.__version__}"
 
-    captured = run(["--version"])
+    captured = run_cli(["--version"])
     assert not captured.err
     assert captured.out == expected_out
 
 
 @pytest.mark.e2e
-def test_print_config(run):
-    captured = run(["config", "show"])
+def test_print_config(run_cli):
+    captured = run_cli(["config", "show"])
     assert not captured.err
     assert "API URL: https://platform.dev.neuromation.io/api/v1" in captured.out
 
 
 @pytest.mark.e2e
-def test_print_config_token(run):
-    captured = run(["config", "show-token"])
+def test_print_config_token(run_cli):
+    captured = run_cli(["config", "show-token"])
     assert not captured.err
     assert captured.out  # some secure information was printed
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(run, tmpstorage):
+def test_empty_directory_ls_output(run_cli, tmpstorage):
     # Ensure output of ls - empty directory shall print nothing.
-    captured = run(["storage", "ls", tmpstorage])
+    captured = run_cli(["storage", "ls", tmpstorage])
     assert not captured.err
     assert not captured.out
 
 
 @pytest.mark.e2e
-def test_e2e_job_top(run):
+def test_e2e_job_top(run_cli):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
     bash_script = "sleep 10m"
     command = f"bash -c '{bash_script}'"
-    captured = run(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
+    captured = run_cli(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
     job_id = captured.out.strip()
     wait_job_change_state_from(run, job_id, "Status: pending")
 
-    captured = run(["job", "top", job_id])
+    captured = run_cli(["job", "top", job_id])
 
     header_line, top_line = split_non_empty_parts(captured.out, separator="\n")
     header_parts = split_non_empty_parts(header_line, separator="\t")
@@ -88,11 +88,11 @@ def test_e2e_job_top(run):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_without(run):
+def test_e2e_shm_run_without(run_cli):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    captured = run(
+    captured = run_cli(
         [
             "job",
             "submit",
@@ -117,11 +117,11 @@ def test_e2e_shm_run_without(run):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_with(run):
+def test_e2e_shm_run_with(run_cli):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    captured = run(
+    captured = run_cli(
         [
             "job",
             "submit",
@@ -142,13 +142,13 @@ def test_e2e_shm_run_with(run):
     wait_job_change_state_from(run, job_id, "Status: pending")
     wait_job_change_state_from(run, job_id, "Status: running")
 
-    assert_job_state(run, job_id, "Status: failed")
+    assert_job_state(run_cli, job_id, "Status: failed")
 
 
 @pytest.mark.e2e
 def test_e2e_storage(
     data,
-    run,
+    run_cli,
     tmp_path,
     tmpstorage,
     check_create_dir_on_storage,
@@ -183,7 +183,7 @@ def test_e2e_storage(
     check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Confirm file has been renamed
-    captured = run(["storage", "ls", "-l", f"{tmpstorage}folder"])
+    captured = run_cli(["storage", "ls", "-l", f"{tmpstorage}folder"])
     assert not captured.err
     files = output_to_files(captured.out)
     for file in files:
@@ -207,7 +207,7 @@ def test_e2e_storage(
 
 @pytest.mark.e2e
 def test_job_storage_interaction(
-    run,
+    run_cli,
     data,
     tmpstorage,
     tmp_path,
@@ -227,7 +227,7 @@ def test_job_storage_interaction(
     for i in range(5):
         # Run a job to copy file
         command = "cp /data/foo /res/foo"
-        captured = run(
+        captured = run_cli(
             [
                 "job",
                 "submit",
@@ -254,7 +254,7 @@ def test_job_storage_interaction(
         wait_job_change_state_from(run, job_id, Status.PENDING)
         wait_job_change_state_from(run, job_id, Status.RUNNING)
         try:
-            assert_job_state(run, job_id, Status.SUCCEEDED)
+            assert_job_state(run_cli, job_id, Status.SUCCEEDED)
             # Confirm file has been copied
             check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
