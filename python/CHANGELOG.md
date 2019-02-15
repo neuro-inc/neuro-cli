@@ -5,6 +5,19 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.5.0 (2019-02-15)
+==============================
+
+Features
+--------
+
+
+- Add support for server-side job list filtering (speedup of the `neuro ps`) ([#474](https://github.com/neuromation/platform-api-clients/issues/474))
+
+- Improve shell completion logic, make shell type argument mandatory. ([#506](https://github.com/neuromation/platform-api-clients/issues/506))
+
+- Move to `https://dev.neu.ro/api/v1` for the dev environment. Please use `registry-dev.neu.ro` for naming your docker images. ([#510](https://github.com/neuromation/platform-api-clients/pull/510))
+
 
 Neuromation 0.4.0 (2019-02-12)
 ==============================
