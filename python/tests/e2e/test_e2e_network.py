@@ -104,7 +104,7 @@ def test_connectivity(
     captured = run(
         ["job", "submit"]
         + tiny_container
-        + ["--http", "80", "-d", "secret ingress fetcher "]
+        + ["-d", "secret ingress fetcher "]
         + [ALPINE_IMAGE_NAME, command]
     )
     assert not captured.err
