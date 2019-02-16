@@ -24,7 +24,7 @@ job_id_pattern = re.compile(
 )
 
 
-class TestRetriesExceeded(Exception):
+class RetriesExceeded(Exception):
     pass
 
 
@@ -137,7 +137,7 @@ def run(monkeypatch, capfd, tmp_path):
 
             return SysCap(out.strip(), err.strip())
         else:
-            raise TestRetriesExceeded(
+            raise RetriesExceeded(
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
             )
 
