@@ -124,7 +124,8 @@ class JobStatusFormatter(BaseFormatter):
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
-
+        if job_status.internal_hostname:
+            result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
             result = f"{result}Http URL: {job_status.http_url}\n"
         if job_status.container.env:
