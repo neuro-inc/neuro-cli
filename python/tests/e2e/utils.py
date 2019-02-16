@@ -11,7 +11,11 @@ BLOCK_SIZE_MB = 16
 FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = "url: https://platform.dev.neuromation.io/api/v1\nauth: {token}"
+RC_TEXT = (
+    "url: https://dev.neu.ro/api/v1\n"
+    "registry_url: https://registry-dev.neu.ro\n"
+    "auth: {token}"
+)
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 format_list = "{type:<15}{size:<15,}{name:<}".format
 format_list_pattern = "(file|directory)\\s*\\d+\\s*{name}".format

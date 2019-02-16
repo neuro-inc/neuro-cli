@@ -1,9 +1,17 @@
+from dataclasses import dataclass
+
 import aiohttp
 from yarl import URL
 
-from neuromation.cli.login import AuthConfig, ServerConfig
+from neuromation.cli.login import AuthConfig
 from neuromation.client import DEFAULT_TIMEOUT
 from neuromation.client.users import get_token_username
+
+
+@dataclass(frozen=True)
+class ServerConfig:
+    auth_config: AuthConfig
+    registry_url: URL
 
 
 class Config:

@@ -26,7 +26,7 @@ def test_print_version(run_cli):
 def test_print_config(run_cli):
     captured = run_cli(["config", "show"])
     assert not captured.err
-    assert "API URL: https://platform.dev.neuromation.io/api/v1" in captured.out
+    assert "API URL: https://dev.neu.ro/api/v1" in captured.out
 
 
 @pytest.mark.e2e
