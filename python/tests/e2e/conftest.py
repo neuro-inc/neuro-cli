@@ -24,10 +24,6 @@ job_id_pattern = re.compile(
 )
 
 
-class RetriesExceeded(Exception):
-    pass
-
-
 SysCap = namedtuple("SysCap", "out err")
 
 
@@ -137,7 +133,7 @@ def run(monkeypatch, capfd, tmp_path):
 
             return SysCap(out.strip(), err.strip())
         else:
-            raise RetriesExceeded(
+            raise RuntimeError(
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
             )
 
