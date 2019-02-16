@@ -133,9 +133,7 @@ def run(monkeypatch, capfd, tmp_path):
 
             return SysCap(out.strip(), err.strip())
         else:
-            raise RuntimeError(
-                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
-            )
+            raise RuntimeError(f"Retries exceeded during 'neuro {' '.join(arguments)}'")
 
     yield _run
     # try to kill all executed jobs regardless of the status
