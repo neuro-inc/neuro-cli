@@ -366,7 +366,7 @@ def test_model_train_with_http(run_cli, tmpstorage, check_create_dir_on_storage)
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
     wait_job_change_state_from(run_cli, job_id, Status.PENDING, Status.FAILED)
 
-    captured = run(["job", "status", job_id])
+    captured = run_cli(["job", "status", job_id])
     url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
 
     probe = run_async(get_(url))
@@ -421,7 +421,7 @@ def test_model_without_command(run_cli, tmpstorage, check_create_dir_on_storage)
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
     wait_job_change_state_from(run_cli, job_id, Status.PENDING, Status.FAILED)
 
-    captured = run(["job", "status", job_id])
+    captured = run_cli(["job", "status", job_id])
     url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
 
     probe = run_async(get_(url))
