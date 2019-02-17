@@ -242,7 +242,7 @@ class Helper:
                     raise AssertionError(f"timeout exceeded, last output: '{out}'")
 
     @run_async
-    def assert_job_state(self, job_id, state):
+    async def assert_job_state(self, job_id, state):
         async with self._config.make_client() as client:
             job = await client.jobs.status(job_id)
             assert job.status == state
