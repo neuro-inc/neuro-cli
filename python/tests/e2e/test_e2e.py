@@ -37,9 +37,9 @@ def test_print_config_token(run_cli):
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(run_cli, tmpstorage):
+def test_empty_directory_ls_output(run_cli, helper):
     # Ensure output of ls - empty directory shall print nothing.
-    captured = run_cli(["storage", "ls", tmpstorage])
+    captured = run_cli(["storage", "ls", helper.tmpstorage])
     assert not captured.err
     assert not captured.out
 
@@ -146,54 +146,30 @@ def test_e2e_shm_run_with(run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_storage(
-    data,
-    run_cli,
-    tmp_path,
-    tmpstorage,
-    check_create_dir_on_storage,
-    check_upload_file_to_storage,
-    check_file_exists_on_storage,
-    check_file_on_storage_checksum,
-    check_rename_file_on_storage,
-    check_rename_directory_on_storage,
-    check_rmdir_on_storage,
-    check_dir_absent_on_storage,
-):
+def test_e2e_storage(data, run_cli, tmp_path, helper):
     srcfile, checksum = data
 
     # Create directory for the test
-    check_create_dir_on_storage("folder")
+    helper.check_create_dir_on_storage("folder")
 
     # Upload local file
-    check_upload_file_to_storage("foo", "folder", str(srcfile))
+    helper.check_upload_file_to_storage("foo", "folder", str(srcfile))
 
     # Confirm file has been uploaded
-    check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
+    helper.check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
 
     # Download into local file and confirm checksum
-    check_file_on_storage_checksum("foo", "folder", checksum, str(tmp_path), "bar")
+    helper.check_file_on_storage_checksum(
+        "foo", "folder", checksum, str(tmp_path), "bar"
+    )
 
     # Download into deeper local dir and confirm checksum
     localdir = tmp_path / "baz"
     localdir.mkdir()
-    check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
+    helper.check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
 
     # Rename file on the storage
-    check_rename_file_on_storage("foo", "folder", "bar", "folder")
-
-    # Confirm file has been renamed
-    captured = run_cli(["storage", "ls", "-l", f"{tmpstorage}folder"])
-    assert not captured.err
-    files = output_to_files(captured.out)
-    for file in files:
-        if file.name == "bar" and file.type == FileStatusType.FILE:
-            break
-    else:
-        raise AssertionError("File bar not found after renaming from foo")
-    for file in files:
-        if file.name == "foo" and file.type == FileStatusType.FILE:
-            raise AssertionError("File foo still on storage after renaming to bar")
+    helper.check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Rename directory on the storage
     check_rename_directory_on_storage("folder", "folder2")

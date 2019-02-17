@@ -3,17 +3,27 @@ import logging
 import os
 import re
 from collections import namedtuple
+from contextlib import suppress
 from os.path import join
 from pathlib import Path
 from time import sleep
 from uuid import uuid4 as uuid
 
 import pytest
+from yarl import URL
 
-from neuromation.cli import main
+from neuromation.cli import main, rc
+from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.client import FileStatusType
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, hash_hex, output_to_files
+from neuromation.utils import run
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, output_to_files
 
+
+JOB_TIMEOUT = 60 * 5
+JOB_WAIT_SLEEP_SECONDS = 2
+
+
+DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
 log = logging.getLogger(__name__)
 
@@ -31,20 +41,228 @@ class TestRetriesExceeded(Exception):
 SysCap = namedtuple("SysCap", "out err")
 
 
+def run_async(coro):
+    def wrapper(*args, **kwargs):
+        return run(coro(*args, **kwargs))
+
+    return wrapper
+
+
+class Helper:
+    def __init__(self, config):
+        self._config = config
+        self._tmpstorage = "storage:" + str(uuid()) + "/"
+        self.mkdir("")
+
+    def close(self):
+        if self._tmpstorage is not None:
+            with suppress(Exception):
+                self.rm("")
+            self._tmpstorage = None
+
+    @property
+    def tmpstorage(self):
+        return self._tmpstorage
+
+    @run_async
+    async def mkdir(self, path):
+        url = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            await client.storage.mkdirs(url)
+
+    @run_async
+    async def rm(self, path):
+        url = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            await client.storage.rm(url)
+
+    @run_async
+    async def check_file_exists_on_storage(self, name: str, path: str, size: int):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            files = await cli.storage.ls(path)
+            for file in files:
+                if (
+                    file.type == FileStatusType.FILE
+                    and file.name == name
+                    and file.size == size
+                ):
+                    break
+            else:
+                raise AssertionError(
+                    f"File {name} with size {size} not found in {path}"
+                )
+
+    @run_async
+    async def check_dir_exists_on_storage(self, name: str, path: str):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            files = await cli.storage.ls(path)
+            for file in files:
+                if file.type == FileStatusType.DIRECTORY and file.path == name:
+                    break
+            else:
+                raise AssertionError(f"Dir {name} not found in {path}")
+
+    @run_async
+    async def check_dir_absent_on_storage(self, name: str, path: str):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            files = await cli.storage.ls(path)
+            for file in files:
+                if file.type == FileStatusType.DIRECTORY and file.path == name:
+                    raise AssertionError(f"Dir {name} found in {path}")
+
+    @run_async
+    async def check_file_absent_on_storage(self, name: str, path: str):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            files = await cli.storage.ls(path)
+            for file in files:
+                if file.type == FileStatusType.FILE and file.path == name:
+                    raise AssertionError(f"File {name} found in {path}")
+
+    @run_async
+    async def check_file_on_storage_checksum(
+        self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
+    ):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            if tmpname:
+                target = join(tmpdir, tmpname)
+                target_file = target
+            else:
+                target = tmpdir
+                target_file = join(tmpdir, name)
+            delay = 5  # need a relative big initial delay to synchronize 16MB file
+            for i in range(5):
+                await cli.storage.download_dir(DUMMY_PROGRESS, f"{path}/{name}", target)
+                try:
+                    assert self.hash_hex(target_file) == checksum
+                    return
+                except AssertionError:
+                    # the file was not synchronized between platform storage nodes
+                    # need to try again
+                    await asyncio.sleep(delay)
+                    delay *= 2
+            raise AssertionError("checksum test failed for {path}")
+
+    @run_async
+    async def check_create_dir_on_storage(self, path: str):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            await client.storage.mkdirs(path)
+
+    @run_async
+    async def check_rmdir_on_storage(self, path: str):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            await client.rmdir(path)
+
+    @run_async
+    async def check_rm_file_on_storage(name: str, path: str):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            await client.storage.rm(f"{path}/{name}")
+
+    @run_async
+    async def check_upload_file_to_storage(self, name: str, path: str, local_file: str):
+        path = URL(self.tmpstorage + path)
+        async with self._config.make_client() as client:
+            if name is None:
+                await client.storage.upload_file(DUMMY_PROGRESS, local_file, path)
+            else:
+                await client.storage.upload_file(
+                    DUMMY_PROGRESS, URL("file:" + local_file), URL(f"{path}/{name}")
+                )
+
+    @run_async
+    async def check_rename_file_on_storage(
+        self, name_from: str, path_from: str, name_to: str, path_to: str
+    ):
+        async with self._config.make_client() as client:
+            await client.storage.mv(
+                URL(f"{self.tmpstorage}{path_from}/{name_from}"),
+                URL(f"{self.tmpstorage}{path_to}/{name_to}"),
+            )
+            files1 = await client.storage.ls(URL(f"{self.tmpstorage}{path_from}"))
+            names1 = {f.name for f in files1}
+            assert name_from not in names1
+
+            files2 = await client.storage.ls(URL(f"{self.tmpstorage}{path_to}"))
+            names2 = {f.name for f in files2}
+            assert name_to in names2
+
+    @run_async
+    async def check_rename_directory_on_storage(self, path_from: str, path_to: str):
+        async with self._config.make_client() as client:
+            await client.storage.mv(
+                URL(f"{self.tmpstorage}{path_from}"), URL(f"{self.tmpstorage}{path_to}")
+            )
+
+    def hash_hex(self, file):
+        _hash = sha1()
+        with open(file, "rb") as f:
+            for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
+                _hash.update(block)
+
+        return _hash.hexdigest()
+
+    @run_async
+    async def wait_job_change_state_from(self, job_id, str_wait, str_stop=None):
+        out = str_wait
+        start_time = time()
+        async with self._config.make_client() as client:
+            while (str_wait in out) and (int(time() - start_time) < JOB_TIMEOUT):
+                await asyncio.sleep(JOB_WAIT_SLEEP_SECONDS)
+                captured = run_cli(["job", "status", job_id])
+                out = captured.out
+                if str_stop and str_stop in out:
+                    raise AssertionError(f"failed running job {job_id}: {str_stop}")
+
+    @run_async
+    async def wait_job_change_state_to(self, job_id, str_target, str_stop=None):
+        assert str_target
+        out = ""
+        start_time = time()
+        async with self._config.make_client() as client:
+            while str_target not in out:
+                await asyncio.sleep(JOB_WAIT_SLEEP_SECONDS)
+                captured = run_cli(["job", "status", job_id])
+                out = captured.out
+                if str_stop and str_stop in out:
+                    raise AssertionError(
+                        f"failed running job {job_id}: '{str_stop}' in '{out}'"
+                    )
+                if int(time() - start_time) > JOB_TIMEOUT:
+                    raise AssertionError(f"timeout exceeded, last output: '{out}'")
+
+
 @pytest.fixture
-def tmpstorage(run_cli, request):
-    url = "storage:" + str(uuid()) + "/"
-    captured = run_cli(["storage", "mkdir", url])
-    assert not captured.err
-    assert captured.out == ""
+def config(tmp_path, monkeypatch):
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
+    if e2e_test_token:
+        # setup config for CircleCI build,
+        # use existing config file otherwise
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        config_path = tmp_path / ".nmrc"
+        config_path.write_text(rc_text)
+        config_path.chmod(0o600)
 
-    yield url
+        def _home():
+            return Path(tmp_path)
 
-    try:
-        run_cli(["storage", "rm", url])
-    except BaseException:
-        # Just ignore cleanup error here
-        pass
+        monkeypatch.setattr(Path, "home", _home)
+
+    config = rc.ConfigFactory.load()
+    yield config
+
+
+@pytest.fixture
+def helper(config):
+    ret = Helper(config)
+    yield ret
+    ret.close()
 
 
 def generate_random_file(path: Path, size):
@@ -84,21 +302,11 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def run_cli(monkeypatch, capfd, tmp_path):
+def run_cli(capfd, config):
     executed_jobs_list = []
-    e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME"]
-
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-    config_path = tmp_path / ".nmrc"
-    config_path.write_text(rc_text)
-    config_path.chmod(0o600)
-
-    def _home():
-        return Path(tmp_path)
 
     def _run(arguments, *, storage_retry=True):
         log.info("Run 'neuro %s'", " ".join(arguments))
-        monkeypatch.setattr(Path, "home", _home)
 
         delay = 0.5
         for i in range(5):
@@ -149,218 +357,3 @@ def run_cli(monkeypatch, capfd, tmp_path):
         except BaseException:
             # Just ignore cleanup error here
             pass
-
-
-@pytest.fixture
-def check_file_exists_on_storage(run_cli, tmpstorage):
-    """
-    Tests if file with given name and size exists in given path
-    Assert if file absent or something went bad
-    """
-
-    def go(name: str, path: str, size: int):
-        path = tmpstorage + path
-        captured = run_cli(["storage", "ls", "-l", path])
-        assert not captured.err
-        files = output_to_files(captured.out)
-        for file in files:
-            if (
-                file.type == FileStatusType.FILE
-                and file.name == name
-                and file.size == size
-            ):
-                break
-        else:
-            raise AssertionError(f"File {name} with size {size} not found in {path}")
-
-    return go
-
-
-@pytest.fixture
-def check_dir_exists_on_storage(run_cli, tmpstorage):
-    """
-    Tests if dir exists in given path
-    Assert if dir absent or something went bad
-    """
-
-    def go(name: str, path: str):
-        path = tmpstorage + path
-        captured = run_cli(["storage", "ls", "-l", path])
-        assert not captured.err
-        files = output_to_files(captured.out)
-        for file in files:
-            if file.type == FileStatusType.DIRECTORY and file.path == name:
-                break
-        else:
-            raise AssertionError(f"Dir {name} not found in {path}")
-
-    return go
-
-
-@pytest.fixture
-def check_dir_absent_on_storage(run_cli, tmpstorage):
-    """
-    Tests if dir with given name absent in given path.
-    Assert if dir present or something went bad
-    """
-
-    def go(name: str, path: str):
-        path = tmpstorage + path
-        captured = run_cli(["storage", "ls", "-l", path])
-        assert not captured.err
-        files = output_to_files(captured.out)
-        for file in files:
-            if file.type == FileStatusType.DIRECTORY and file.path == name:
-                raise AssertionError(f"Dir {name} found in {path}")
-
-    return go
-
-
-@pytest.fixture
-def check_file_absent_on_storage(run_cli, tmpstorage):
-    """
-    Tests if file with given name absent in given path.
-    Assert if file present or something went bad
-    """
-
-    def go(name: str, path: str):
-        path = tmpstorage + path
-        captured = run_cli(["storage", "ls", "-l", path])
-        assert not captured.err
-        files = output_to_files(captured.out)
-        for file in files:
-            if file.type == FileStatusType.FILE and file.path == name:
-                raise AssertionError(f"File {name} found in {path}")
-
-    return go
-
-
-@pytest.fixture
-def check_file_on_storage_checksum(run_cli, tmpstorage):
-    """
-    Tests if file on storage in given path has same checksum. File will be downloaded
-    to temporary folder first. Assert if checksum mismatched
-    """
-
-    def go(name: str, path: str, checksum: str, tmpdir: str, tmpname: str):
-        path = tmpstorage + path
-        if tmpname:
-            target = join(tmpdir, tmpname)
-            target_file = target
-        else:
-            target = tmpdir
-            target_file = join(tmpdir, name)
-        delay = 5  # need a relative big initial delay to synchronize 16MB file
-        for i in range(5):
-            run_cli(["storage", "cp", f"{path}/{name}", target])
-            try:
-                assert hash_hex(target_file) == checksum
-                return
-            except AssertionError:
-                # the file was not synchronized between platform storage nodes
-                # need to try again
-                sleep(delay)
-                delay *= 2
-        raise AssertionError("checksum test failed for {path}")
-
-    return go
-
-
-@pytest.fixture
-def check_create_dir_on_storage(run_cli, tmpstorage):
-    """
-    Create dir on storage and assert if something went bad
-    """
-
-    def go(path: str):
-        path = tmpstorage + path
-        captured = run_cli(["storage", "mkdir", path])
-        assert not captured.err
-        assert captured.out == ""
-
-    return go
-
-
-@pytest.fixture
-def check_rmdir_on_storage(run_cli, tmpstorage):
-    """
-    Remove dir on storage and assert if something went bad
-    """
-
-    def go(path: str):
-        path = tmpstorage + path
-        captured = run_cli(["storage", "rm", path])
-        assert not captured.err
-
-    return go
-
-
-@pytest.fixture
-def check_rm_file_on_storage(run_cli, tmpstorage):
-    """
-    Remove file in given path in storage and if something went bad
-    """
-
-    def go(name: str, path: str):
-        path = tmpstorage + path
-        captured = run_cli(["storage", "rm", f"{path}/{name}"])
-        assert not captured.err
-
-    return go
-
-
-@pytest.fixture
-def check_upload_file_to_storage(run_cli, tmpstorage):
-    """
-    Upload local file with given name to storage and assert if something went bad
-    """
-
-    def go(name: str, path: str, local_file: str):
-        path = tmpstorage + path
-        if name is None:
-            captured = run_cli(["storage", "cp", local_file, f"{path}"])
-            assert not captured.err
-            assert captured.out == ""
-        else:
-            captured = run_cli(["storage", "cp", local_file, f"{path}/{name}"])
-            assert not captured.err
-            assert captured.out == ""
-
-    return go
-
-
-@pytest.fixture
-def check_rename_file_on_storage(run_cli, tmpstorage):
-    """
-    Rename file on storage and assert if something went bad
-    """
-
-    def go(name_from: str, path_from: str, name_to: str, path_to: str):
-        captured = run_cli(
-            [
-                "storage",
-                "mv",
-                f"{tmpstorage}{path_from}/{name_from}",
-                f"{tmpstorage}{path_to}/{name_to}",
-            ]
-        )
-        assert not captured.err
-        assert captured.out == ""
-
-    return go
-
-
-@pytest.fixture
-def check_rename_directory_on_storage(run_cli, tmpstorage):
-    """
-    Rename directory on storage and assert if something went bad
-    """
-
-    def go(path_from: str, path_to: str):
-        captured = run_cli(
-            ["storage", "mv", f"{tmpstorage}{path_from}", f"{tmpstorage}{path_to}"]
-        )
-        assert not captured.err
-        assert captured.out == ""
-
-    return go

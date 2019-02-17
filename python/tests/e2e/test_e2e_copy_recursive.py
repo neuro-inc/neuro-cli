@@ -1,6 +1,6 @@
 import pytest
 
-from tests.e2e.utils import FILE_SIZE_B, hash_hex
+from tests.e2e.utils import FILE_SIZE_B
 
 
 @pytest.mark.e2e
@@ -14,6 +14,7 @@ def test_e2e_copy_recursive_to_platform(
     check_file_exists_on_storage,
     check_rmdir_on_storage,
     check_dir_absent_on_storage,
+    helper,
 ):
     srcfile, checksum, dir_path = nested_data
     target_file_name = srcfile.split("/")[-1]
@@ -35,7 +36,7 @@ def test_e2e_copy_recursive_to_platform(
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
     print("target file", targetfile)
-    assert hash_hex(targetfile) == checksum
+    assert helper.hash_hex(targetfile) == checksum
 
     # Remove test dir
     check_rmdir_on_storage("nested")

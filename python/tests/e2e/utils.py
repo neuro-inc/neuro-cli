@@ -56,15 +56,6 @@ def output_to_files(output: str) -> Sequence[FileStatus]:
     return result
 
 
-def hash_hex(file):
-    _hash = sha1()
-    with open(file, "rb") as f:
-        for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
-            _hash.update(block)
-
-    return _hash.hexdigest()
-
-
 def attempt(attempts: int = 4, sleep_time: float = 15.0):
     """
     This decorator allow function fail up to _attempts_ times with
