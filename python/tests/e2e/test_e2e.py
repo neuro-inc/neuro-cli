@@ -4,11 +4,10 @@ from time import sleep
 import pytest
 
 import neuromation
-from neuromation.client import FileStatusType
+from neuromation.client import FileStatusType, JobStatus
 from tests.e2e.test_e2e_utils import (
     Status,
     assert_job_state,
-    wait_job_change_state_from,
 )
 from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
 
@@ -45,7 +44,7 @@ def test_empty_directory_ls_output(run_cli, helper):
 
 
 @pytest.mark.e2e
-def test_e2e_job_top(run_cli):
+def test_e2e_job_top(helper, run_cli):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
@@ -53,7 +52,7 @@ def test_e2e_job_top(run_cli):
     command = f"bash -c '{bash_script}'"
     captured = run_cli(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
     job_id = captured.out.strip()
-    wait_job_change_state_from(run_cli, job_id, "Status: pending")
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
 
     captured = run_cli(["job", "top", job_id])
 
@@ -88,7 +87,7 @@ def test_e2e_job_top(run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_without(run_cli):
+def test_e2e_shm_run_without(helper, run_cli):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
@@ -110,14 +109,14 @@ def test_e2e_shm_run_without(run_cli):
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run_cli, job_id, "Status: pending")
-    wait_job_change_state_from(run_cli, job_id, "Status: running")
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run_cli, job_id, "Status: succeeded")
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_with(run_cli):
+def test_e2e_shm_run_with(helper, run_cli):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
@@ -139,10 +138,10 @@ def test_e2e_shm_run_with(run_cli):
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run_cli, job_id, "Status: pending")
-    wait_job_change_state_from(run_cli, job_id, "Status: running")
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(run_cli, job_id, JobStatus.RUNNING)
 
-    assert_job_state(run_cli, job_id, "Status: failed")
+    helper.assert_job_state(job_id, JobStatus.FAILED)
 
 
 @pytest.mark.e2e
@@ -183,21 +182,18 @@ def test_e2e_storage(data, run_cli, tmp_path, helper):
 
 @pytest.mark.e2e
 def test_job_storage_interaction(
+        helper,
     run_cli,
     data,
     tmpstorage,
     tmp_path,
-    check_create_dir_on_storage,
-    check_upload_file_to_storage,
-    check_file_on_storage_checksum,
-    check_file_exists_on_storage,
 ):
     srcfile, checksum = data
     # Create directory for the test
-    check_create_dir_on_storage("data")
+    helper.check_create_dir_on_storage("data")
 
     # Upload local file
-    check_upload_file_to_storage("foo", "data", str(srcfile))
+    helper.check_upload_file_to_storage("foo", "data", str(srcfile))
 
     delay = 0.5
     for i in range(5):
@@ -227,15 +223,15 @@ def test_job_storage_interaction(
         job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
 
         # Wait for job to finish
-        wait_job_change_state_from(run_cli, job_id, Status.PENDING)
-        wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+        helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
         try:
-            assert_job_state(run_cli, job_id, Status.SUCCEEDED)
+            helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
             # Confirm file has been copied
-            check_file_exists_on_storage("foo", "", FILE_SIZE_B)
+            helper.check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
             # Download into local dir and confirm checksum
-            check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")
+            helper.check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")
 
             break
         except AssertionError:

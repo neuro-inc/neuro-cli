@@ -6,12 +6,6 @@ import aiohttp
 import pytest
 
 from neuromation.utils import run as run_async
-from tests.e2e.test_e2e_utils import (
-    Status,
-    assert_job_state,
-    wait_job_change_state_from,
-    wait_job_change_state_to,
-)
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
@@ -19,7 +13,7 @@ NGINX_IMAGE_NAME = "nginx:latest"
 
 
 @pytest.mark.e2e
-def test_job_lifecycle(run_cli):
+def test_job_lifecycle(helper, run_cli):
     # Remember original running jobs
     captured = run_cli(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
@@ -58,7 +52,7 @@ def test_job_lifecycle(run_cli):
     assert job_id in jobs_updated
 
     # Wait until the job is running
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     # Check that it is in a running job list
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -79,7 +73,7 @@ def test_job_lifecycle(run_cli):
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
     # Check that it is not in a running job list anymore
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -88,7 +82,7 @@ def test_job_lifecycle(run_cli):
 
 
 @pytest.mark.e2e
-def test_job_description(run_cli):
+def test_job_description(helper, run_cli):
     # Remember original running jobs
     captured = run_cli(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
@@ -129,7 +123,7 @@ def test_job_description(run_cli):
     assert job_id in jobs_updated
 
     # Wait until the job is running
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING, Status.FAILED)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING, JobStatus.FAILED)
 
     # Check that it is in a running job list
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -152,7 +146,7 @@ def test_job_description(run_cli):
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
     # Check that it is not in a running job list anymore
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -161,7 +155,7 @@ def test_job_description(run_cli):
 
 
 @pytest.mark.e2e
-def test_unschedulable_job_lifecycle(run_cli):
+def test_unschedulable_job_lifecycle(helper, run_cli):
     # Remember original running jobs
     captured = run_cli(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
@@ -198,7 +192,8 @@ def test_unschedulable_job_lifecycle(run_cli):
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
-    wait_job_change_state_to(
+    assert False, "fix the following check"
+    helper.wait_job_change_state_to(
         run_cli, job_id, "(Cluster doesn't have resources to fulfill request.)"
     )
 
@@ -208,7 +203,7 @@ def test_unschedulable_job_lifecycle(run_cli):
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
     # Check that it is not in a running job list anymore
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -217,7 +212,7 @@ def test_unschedulable_job_lifecycle(run_cli):
 
 
 @pytest.mark.e2e
-def test_two_jobs_at_once(run_cli):
+def test_two_jobs_at_once(helper, run_cli):
     # Remember original running jobs
     captured = run_cli(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
@@ -277,8 +272,8 @@ def test_two_jobs_at_once(run_cli):
     assert second_job_id in jobs_updated
 
     # Wait until the job is running
-    wait_job_change_state_to(run_cli, first_job_id, Status.RUNNING, Status.FAILED)
-    wait_job_change_state_to(run_cli, second_job_id, Status.RUNNING, Status.FAILED)
+    helper.wait_job_change_state_to(first_job_id, Status.RUNNING, JobStatus.FAILED)
+    helper.wait_job_change_state_to(second_job_id, Status.RUNNING, JobStatus.FAILED)
 
     # Check that it is in a running job list
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -301,8 +296,8 @@ def test_two_jobs_at_once(run_cli):
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
-    wait_job_change_state_from(run_cli, first_job_id, Status.RUNNING)
-    wait_job_change_state_from(run_cli, second_job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(first_job_id, JobStatus.RUNNING)
+    helper.wait_job_change_state_from(second_job_id, JobStatus.RUNNING)
 
     # Check that it is not in a running job list anymore
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -323,7 +318,7 @@ def test_job_kill_non_existing(run_cli):
 
 
 @pytest.mark.e2e
-def test_model_train_with_http(run_cli, tmpstorage, check_create_dir_on_storage):
+def test_model_train_with_http(helper, run_cli, tmpstorage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -339,7 +334,7 @@ def test_model_train_with_http(run_cli, tmpstorage, check_create_dir_on_storage)
         return succeeded
 
     # Create directory for the test, going to be model and result output
-    check_create_dir_on_storage("model")
+    helper.check_create_dir_on_storage("model")
     check_create_dir_on_storage("result")
 
     # Start the job
@@ -364,7 +359,7 @@ def test_model_train_with_http(run_cli, tmpstorage, check_create_dir_on_storage)
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING, Status.FAILED)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
 
     captured = run_cli(["job", "status", job_id])
     url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
@@ -378,7 +373,7 @@ def test_model_train_with_http(run_cli, tmpstorage, check_create_dir_on_storage)
 
 
 @pytest.mark.e2e
-def test_model_without_command(run_cli, tmpstorage, check_create_dir_on_storage):
+def test_model_without_command(helper, run_cli, tmpstorage):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -394,8 +389,8 @@ def test_model_without_command(run_cli, tmpstorage, check_create_dir_on_storage)
         return succeeded
 
     # Create directory for the test, going to be model and result output
-    check_create_dir_on_storage("model")
-    check_create_dir_on_storage("result")
+    helper.check_create_dir_on_storage("model")
+    helper.check_create_dir_on_storage("result")
 
     # Start the job
     captured = run_cli(
@@ -419,7 +414,7 @@ def test_model_without_command(run_cli, tmpstorage, check_create_dir_on_storage)
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING, Status.FAILED)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
 
     captured = run_cli(["job", "status", job_id])
     url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
@@ -433,7 +428,7 @@ def test_model_without_command(run_cli, tmpstorage, check_create_dir_on_storage)
 
 
 @pytest.mark.e2e
-def test_e2e_no_env(run_cli):
+def test_e2e_no_env(helper, run_cli):
     bash_script = 'echo "begin"$VAR"end"  | grep beginend'
     command = f"bash -c '{bash_script}'"
     captured = run_cli(
@@ -456,14 +451,14 @@ def test_e2e_no_env(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING)
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run_cli, job_id, "Status: succeeded")
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e
-def test_e2e_env(run_cli):
+def test_e2e_env(helper.run_cli):
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
     captured = run_cli(
@@ -488,14 +483,14 @@ def test_e2e_env(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING)
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run_cli, job_id, "Status: succeeded")
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e
-def test_e2e_env_from_local(run_cli):
+def test_e2e_env_from_local(helper, run_cli):
     os.environ["VAR"] = "VAL"
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
@@ -521,14 +516,14 @@ def test_e2e_env_from_local(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING)
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run_cli, job_id, "Status: succeeded")
+    helper.assert_job_state(run_cli, job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e
-def test_e2e_multiple_env(run_cli):
+def test_e2e_multiple_env(helper, run_cli):
     bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
     command = f"bash -c '{bash_script}'"
     captured = run_cli(
@@ -555,15 +550,15 @@ def test_e2e_multiple_env(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING)
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run_cli, job_id, "Status: succeeded")
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.xfail
 @pytest.mark.e2e
-def test_e2e_multiple_env_from_file(run_cli, tmp_path):
+def test_e2e_multiple_env_from_file(helper, run_cli, tmp_path):
     env_file = tmp_path / "env_file"
     env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
     bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
@@ -594,14 +589,14 @@ def test_e2e_multiple_env_from_file(run_cli, tmp_path):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING)
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run_cli, job_id, "Status: succeeded")
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_true(run_cli):
+def test_e2e_ssh_exec_true(helper, run_cli):
     command = 'bash -c "sleep 15m; false"'
     captured = run_cli(
         [
@@ -620,14 +615,14 @@ def test_e2e_ssh_exec_true(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = run_cli(["job", "exec", "--no-key-check", job_id, "true"])
     assert captured.out == ""
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_false(run_cli):
+def test_e2e_ssh_exec_false(helper, run_cli):
     command = 'bash -c "sleep 15m; false"'
     captured = run_cli(
         [
@@ -646,7 +641,7 @@ def test_e2e_ssh_exec_false(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     with pytest.raises(SystemExit) as cm:
         run_cli(["job", "exec", "--no-key-check", job_id, "false"])
@@ -654,7 +649,7 @@ def test_e2e_ssh_exec_false(run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_no_cmd(run_cli):
+def test_e2e_ssh_exec_no_cmd(helper, run_cli):
     command = 'bash -c "sleep 15m; false"'
     captured = run_cli(
         [
@@ -673,7 +668,7 @@ def test_e2e_ssh_exec_no_cmd(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     with pytest.raises(SystemExit) as cm:
         run_cli(["job", "exec", "--no-key-check", job_id])
@@ -681,7 +676,7 @@ def test_e2e_ssh_exec_no_cmd(run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_echo(run_cli):
+def test_e2e_ssh_exec_echo(helper, run_cli):
     command = 'bash -c "sleep 15m; false"'
     captured = run_cli(
         [
@@ -700,14 +695,14 @@ def test_e2e_ssh_exec_echo(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = run_cli(["job", "exec", "--no-key-check", job_id, "echo 1"])
     assert captured.out == "1"
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_no_tty(run_cli):
+def test_e2e_ssh_exec_no_tty(helper, run_cli):
     command = 'bash -c "sleep 15m; false"'
     captured = run_cli(
         [
@@ -726,7 +721,7 @@ def test_e2e_ssh_exec_no_tty(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     with pytest.raises(SystemExit) as cm:
         run_cli(["job", "exec", "--no-key-check", job_id, "[ -t 1 ]"])
@@ -734,7 +729,7 @@ def test_e2e_ssh_exec_no_tty(run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_tty(run_cli):
+def test_e2e_ssh_exec_tty(helper, run_cli):
     command = 'bash -c "sleep 15m; false"'
     captured = run_cli(
         [
@@ -753,7 +748,7 @@ def test_e2e_ssh_exec_tty(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_to(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = run_cli(["job", "exec", "-t", "--no-key-check", job_id, "[ -t 1 ]"])
     assert captured.out == ""
@@ -767,7 +762,7 @@ def test_e2e_ssh_exec_no_job(run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_dead_job(run_cli):
+def test_e2e_ssh_exec_dead_job(helper, run_cli):
     command = "true"
     captured = run_cli(
         [
@@ -786,8 +781,8 @@ def test_e2e_ssh_exec_dead_job(run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
 
-    wait_job_change_state_from(run_cli, job_id, Status.PENDING)
-    wait_job_change_state_from(run_cli, job_id, Status.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
     with pytest.raises(SystemExit) as cm:
         run_cli(["job", "exec", "--no-key-check", job_id, "true"])
@@ -795,7 +790,7 @@ def test_e2e_ssh_exec_dead_job(run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_job_list_filtered_by_status(run_cli):
+def test_e2e_job_list_filtered_by_status(helper, run_cli):
     N_JOBS = 5
 
     # submit N jobs
@@ -804,7 +799,7 @@ def test_e2e_job_list_filtered_by_status(run_cli):
         command = "sleep 10m"
         captured = run_cli(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
         job_id = captured.out.strip()
-        wait_job_change_state_from(run_cli, job_id, Status.PENDING)
+        helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
         jobs.add(job_id)
 
     # no status filtering (same as running+pending)

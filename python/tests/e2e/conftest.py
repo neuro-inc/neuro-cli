@@ -241,6 +241,12 @@ class Helper:
                 if int(time() - start_time) > JOB_TIMEOUT:
                     raise AssertionError(f"timeout exceeded, last output: '{out}'")
 
+    @run_async
+    def assert_job_state(self, job_id, state):
+        async with self._config.make_client() as client:
+            job = await client.jobs.status(job_id)
+            assert job.status == state
+
 
 @pytest.fixture
 def config(tmp_path, monkeypatch):

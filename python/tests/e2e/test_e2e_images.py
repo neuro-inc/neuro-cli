@@ -6,8 +6,7 @@ import pytest
 from yarl import URL
 
 from neuromation.cli.rc import ConfigFactory
-from neuromation.client import JobStatus as Status
-from tests.e2e.test_e2e_utils import wait_job_change_state_to
+from neuromation.client import JobStatus
 from tests.e2e.utils import attempt
 
 
@@ -46,7 +45,7 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
-def test_images_complete_lifecycle(run_cli, image, tag, loop, docker):
+def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     # Let`s push image
     captured = run_cli(["image", "push", image])
 
@@ -96,7 +95,7 @@ def test_images_complete_lifecycle(run_cli, image, tag, loop, docker):
     assert not captured.err
     job_id = captured.out.strip()
     assert job_id.startswith("job-")
-    wait_job_change_state_to(run_cli, job_id, Status.SUCCEEDED, Status.FAILED)
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
     @attempt()
     def check_job_output():
