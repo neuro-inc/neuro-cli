@@ -1,12 +1,14 @@
+import asyncio
 import hashlib
 import logging
 import os
 import re
 from collections import namedtuple
 from contextlib import suppress
+from hashlib import sha1
 from os.path import join
 from pathlib import Path
-from time import sleep
+from time import sleep, time
 from uuid import uuid4 as uuid
 
 import pytest
@@ -16,7 +18,7 @@ from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.client import FileStatusType
 from neuromation.utils import run
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, output_to_files
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
 
 
 JOB_TIMEOUT = 60 * 5
@@ -80,7 +82,7 @@ class Helper:
     async def check_file_exists_on_storage(self, name: str, path: str, size: int):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
-            files = await cli.storage.ls(path)
+            files = await client.storage.ls(path)
             for file in files:
                 if (
                     file.type == FileStatusType.FILE
@@ -97,7 +99,7 @@ class Helper:
     async def check_dir_exists_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
-            files = await cli.storage.ls(path)
+            files = await client.storage.ls(path)
             for file in files:
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
                     break
@@ -108,7 +110,7 @@ class Helper:
     async def check_dir_absent_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
-            files = await cli.storage.ls(path)
+            files = await client.storage.ls(path)
             for file in files:
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
                     raise AssertionError(f"Dir {name} found in {path}")
@@ -117,7 +119,7 @@ class Helper:
     async def check_file_absent_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
-            files = await cli.storage.ls(path)
+            files = await client.storage.ls(path)
             for file in files:
                 if file.type == FileStatusType.FILE and file.path == name:
                     raise AssertionError(f"File {name} found in {path}")
@@ -136,7 +138,9 @@ class Helper:
                 target_file = join(tmpdir, name)
             delay = 5  # need a relative big initial delay to synchronize 16MB file
             for i in range(5):
-                await cli.storage.download_dir(DUMMY_PROGRESS, f"{path}/{name}", target)
+                await client.storage.download_dir(
+                    DUMMY_PROGRESS, f"{path}/{name}", target
+                )
                 try:
                     assert self.hash_hex(target_file) == checksum
                     return
@@ -160,7 +164,7 @@ class Helper:
             await client.rmdir(path)
 
     @run_async
-    async def check_rm_file_on_storage(name: str, path: str):
+    async def check_rm_file_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
             await client.storage.rm(f"{path}/{name}")
@@ -203,7 +207,7 @@ class Helper:
     def hash_hex(self, file):
         _hash = sha1()
         with open(file, "rb") as f:
-            for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
+            for block in iter(lambda: f.read(16 * 1024 * 1024), b""):
                 _hash.update(block)
 
         return _hash.hexdigest()

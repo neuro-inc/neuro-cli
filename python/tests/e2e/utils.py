@@ -3,7 +3,6 @@ import time
 from time import sleep
 from typing import Sequence
 
-from _sha1 import sha1
 from neuromation.client import FileStatus, FileStatusType
 
 

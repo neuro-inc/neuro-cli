@@ -1,5 +1,4 @@
 import enum
-from time import sleep, time
 
 
 class Status(str, enum.Enum):
