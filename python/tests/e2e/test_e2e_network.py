@@ -7,8 +7,9 @@ import pytest
 from tests.e2e.test_e2e_utils import (
     Status,
     wait_job_change_state_from,
-    wait_job_change_state_to,
+    wait_job_change_state_to
 )
+from tests.e2e.utils import attempt
 
 
 NGINX_IMAGE_NAME = "nginx:latest"
@@ -94,9 +95,16 @@ def test_connectivity(
         ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret network fetcher "]
     )
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
-    captured = run(["job", "logs", job_id])
-    assert not captured.err
-    assert captured.out == secret
+
+    @attempt()
+    def check_internal_test_job_output():
+        captured = run(["job", "logs", job_id])
+        assert not captured.err
+        assert captured.out == secret
+
+    check_internal_test_job_output()
+
+
 
     # let's kill unused http job
     run(["job", "kill", job_id])
@@ -124,9 +132,12 @@ def test_connectivity(
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
     wait_job_change_state_to(run, job_id, Status.FAILED, Status.SUCCEEDED)
 
-    captured = run(["job", "logs", job_id])
-    assert not captured.err
-    assert re.search(r"wget.+404.+Not Found", captured.out) is not None
+    @attempt()
+    def check_no_http_internal_test_job_output():
+        captured = run(["job", "logs", job_id])
+        assert not captured.err
+        assert re.search(r"wget.+404.+Not Found", captured.out) is not None
+    check_no_http_internal_test_job_output()
 
     # internal network test
     # code below commented from 18/02/2019
