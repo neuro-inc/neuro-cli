@@ -8,10 +8,7 @@ from tests.e2e.utils import FILE_SIZE_B, output_to_files
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_0(
-        helper,
-    data,
-):
+def test_copy_local_to_platform_single_file_0(helper, data):
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
@@ -31,10 +28,7 @@ def test_copy_local_to_platform_single_file_0(
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_1(
-        helper,
-    data,
-):
+def test_copy_local_to_platform_single_file_1(helper, data):
     # case when copy happens without the trailing '/'
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
@@ -55,10 +49,7 @@ def test_copy_local_to_platform_single_file_1(
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_2(
-    data,
-    run_cli,
-):
+def test_copy_local_to_platform_single_file_2(data, run_cli):
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
@@ -79,9 +70,7 @@ def test_copy_local_to_platform_single_file_2(
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_3(
-    helper, data, run_cli
-):
+def test_copy_local_to_platform_single_file_3(helper, data, run_cli):
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
 
@@ -100,7 +89,7 @@ def test_copy_local_to_platform_single_file_3(
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_non_existing_local(
-    run_cli, tmp_path, tmpstorage
+    helper, run_cli, tmp_path
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
@@ -108,7 +97,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
             [
                 "storage",
                 "cp",
-                tmpstorage + "/not-exist-foo",
+                helper.tmpstorage + "/not-exist-foo",
                 str(tmp_path / "not-exist-bar"),
             ],
             storage_retry=False,
@@ -117,10 +106,11 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
 
 @pytest.mark.e2e
 def test_e2e_copy_non_existing_platform_to_____existing_local(
-    run_cli, tmp_path, tmpstorage
+    helper, run_cli, tmp_path
 ):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
         run_cli(
-            ["storage", "cp", tmpstorage + "/foo", str(tmp_path)], storage_retry=False
+            ["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)],
+            storage_retry=False,
         )

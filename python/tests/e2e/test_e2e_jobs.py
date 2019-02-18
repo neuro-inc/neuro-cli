@@ -318,7 +318,7 @@ def test_job_kill_non_existing(run_cli):
 
 
 @pytest.mark.e2e
-def test_model_train_with_http(helper, run_cli, tmpstorage):
+def test_model_train_with_http(helper, run_cli):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -353,8 +353,8 @@ def test_model_train_with_http(helper, run_cli, tmpstorage):
             "80",
             "--non-preemptible",
             NGINX_IMAGE_NAME,
-            f"{tmpstorage}/model",
-            f"{tmpstorage}/result",
+            f"{helper.tmpstorage}/model",
+            f"{helper.tmpstorage}/result",
             command,
         ]
     )
@@ -373,7 +373,7 @@ def test_model_train_with_http(helper, run_cli, tmpstorage):
 
 
 @pytest.mark.e2e
-def test_model_without_command(helper, run_cli, tmpstorage):
+def test_model_without_command(helper, run_cli):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -407,8 +407,8 @@ def test_model_without_command(helper, run_cli, tmpstorage):
             "80",
             "--non-preemptible",
             NGINX_IMAGE_NAME,
-            f"{tmpstorage}/model",
-            f"{tmpstorage}/result",
+            f"{helper.tmpstorage}/model",
+            f"{helper.tmpstorage}/result",
             "-d",
             "simple test job",
         ]
@@ -458,7 +458,7 @@ def test_e2e_no_env(helper, run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_env(helperm, run_cli):
+def test_e2e_env(helper, run_cli):
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
     captured = run_cli(

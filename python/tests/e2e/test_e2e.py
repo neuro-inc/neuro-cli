@@ -177,12 +177,7 @@ def test_e2e_storage(data, run_cli, tmp_path, helper):
 
 
 @pytest.mark.e2e
-def test_job_storage_interaction(
-        helper,
-    run_cli,
-    data,
-    tmp_path,
-):
+def test_job_storage_interaction(helper, run_cli, data, tmp_path):
     srcfile, checksum = data
     # Create directory for the test
     helper.check_create_dir_on_storage("data")
@@ -226,7 +221,9 @@ def test_job_storage_interaction(
             helper.check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
             # Download into local dir and confirm checksum
-            helper.check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")
+            helper.check_file_on_storage_checksum(
+                "foo", "result", checksum, tmp_path, "bar"
+            )
 
             break
         except AssertionError:
