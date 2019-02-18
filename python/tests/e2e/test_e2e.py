@@ -4,8 +4,8 @@ from time import sleep
 import pytest
 
 import neuromation
-from neuromation.client import FileStatusType, JobStatus
-from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
+from neuromation.client import JobStatus
+from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
@@ -167,13 +167,13 @@ def test_e2e_storage(data, run_cli, tmp_path, helper):
     helper.check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Rename directory on the storage
-    check_rename_directory_on_storage("folder", "folder2")
+    helper.check_rename_directory_on_storage("folder", "folder2")
 
     # Remove test dir
-    check_rmdir_on_storage("folder2")
+    helper.check_rmdir_on_storage("folder2")
 
     # And confirm
-    check_dir_absent_on_storage("folder2", "")
+    helper.check_dir_absent_on_storage("folder2", "")
 
 
 @pytest.mark.e2e

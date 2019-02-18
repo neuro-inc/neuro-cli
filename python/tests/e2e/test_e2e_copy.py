@@ -3,8 +3,7 @@ from pathlib import PurePath
 
 import pytest
 
-from neuromation.client import FileStatusType
-from tests.e2e.utils import FILE_SIZE_B, output_to_files
+from tests.e2e.utils import FILE_SIZE_B
 
 
 @pytest.mark.e2e
@@ -49,7 +48,7 @@ def test_copy_local_to_platform_single_file_1(helper, data):
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_2(data, run_cli):
+def test_copy_local_to_platform_single_file_2(helper, data, run_cli):
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
@@ -60,7 +59,7 @@ def test_copy_local_to_platform_single_file_2(data, run_cli):
 
     # Ensure file is there
     helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
-    helper.check_file_absent_on_storage(file, "folder")
+    helper.check_file_absent_on_storage(file_name, "folder")
 
     # Remove the file from platform
     helper.check_rm_file_on_storage("different_name.txt", "folder")

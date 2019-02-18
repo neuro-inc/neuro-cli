@@ -5,6 +5,7 @@ from time import sleep, time
 import aiohttp
 import pytest
 
+from neuromation.client import JobStatus
 from neuromation.utils import run as run_async
 
 
@@ -272,8 +273,8 @@ def test_two_jobs_at_once(helper, run_cli):
     assert second_job_id in jobs_updated
 
     # Wait until the job is running
-    helper.wait_job_change_state_to(first_job_id, Status.RUNNING, JobStatus.FAILED)
-    helper.wait_job_change_state_to(second_job_id, Status.RUNNING, JobStatus.FAILED)
+    helper.wait_job_change_state_to(first_job_id, JobStatus.RUNNING, JobStatus.FAILED)
+    helper.wait_job_change_state_to(second_job_id, JobStatus.RUNNING, JobStatus.FAILED)
 
     # Check that it is in a running job list
     captured = run_cli(["job", "ls", "--status", "running"])
@@ -335,7 +336,7 @@ def test_model_train_with_http(helper, run_cli):
 
     # Create directory for the test, going to be model and result output
     helper.check_create_dir_on_storage("model")
-    check_create_dir_on_storage("result")
+    helper.check_create_dir_on_storage("result")
 
     # Start the job
     command = 'timeout 5m /usr/sbin/nginx -g "daemon off;"'
