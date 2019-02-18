@@ -7,7 +7,7 @@ import pytest
 from tests.e2e.test_e2e_utils import (
     Status,
     wait_job_change_state_from,
-    wait_job_change_state_to
+    wait_job_change_state_to,
 )
 from tests.e2e.utils import attempt
 
@@ -104,8 +104,6 @@ def test_connectivity(
 
     check_internal_test_job_output()
 
-
-
     # let's kill unused http job
     run(["job", "kill", job_id])
 
@@ -137,6 +135,7 @@ def test_connectivity(
         captured = run(["job", "logs", job_id])
         assert not captured.err
         assert re.search(r"wget.+404.+Not Found", captured.out) is not None
+
     check_no_http_internal_test_job_output()
 
     # internal network test
