@@ -383,7 +383,7 @@ def check_http_get():
                     request_info=resp.request_info,
                 )
 
-    @attempt(30, 2)
+    @attempt(24, 5)
     def go(url, accepted_statuses: Sequence[int] = tuple([200])):
         return run_async(http_get(url, accepted_statuses))
 

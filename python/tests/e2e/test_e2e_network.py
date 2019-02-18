@@ -66,9 +66,9 @@ def test_connectivity(
     http_job_id, secret = secret_job(True)
 
     captured = run(["job", "status", http_job_id])
-    url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
+    ingress_url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
 
-    secret_url = url + "/secret.txt"
+    secret_url = ingress_url + "/secret.txt"
 
     # external ingress test
     probe = check_http_get(secret_url)
@@ -77,25 +77,38 @@ def test_connectivity(
     # internal ingress test
     command = f"wget -q {secret_url} -O -"
     job_id = run_job_and_wait_status(
-        ALPINE_IMAGE_NAME,
-        command,
-        tiny_container + ["--http", "80", "-d", "secret ingress fetcher "],
+        ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret ingress fetcher "]
     )
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
     captured = run(["job", "logs", job_id])
     assert not captured.err
     assert captured.out == secret
 
-    #  TODO internal hostname test must be here
+    # internal network test
+    captured = run(["job", "status", http_job_id])
+    assert not captured.err
+    internal_hostname = re.search(r"Internal Hostname:\s+(\S+)", captured.out).group(1)
+    internal_secret_url = f"http://{internal_hostname}/secret.txt"
+    command = f"wget -q {internal_secret_url} -O -"
+    job_id = run_job_and_wait_status(
+        ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret network fetcher "]
+    )
+    wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
+    captured = run(["job", "logs", job_id])
+    assert not captured.err
+    assert captured.out == secret
 
-    # Run job without shared http port
+    # let's kill unused http job
+    run(["job", "kill", job_id])
+
+    # Run another job without shared http port
     no_http_job_id, secret = secret_job(False)
 
     # Let's emulate external url
     secret_url = secret_url.replace(http_job_id, no_http_job_id)
 
     #  external ingress test
-    #  it will take ~1 min, because we will wait while nginx started
+    #  it will take ~2 min, because we will wait while nginx started
     with pytest.raises(aiohttp.ClientResponseError):
         check_http_get(secret_url)
 
@@ -115,4 +128,25 @@ def test_connectivity(
     assert not captured.err
     assert re.search(r"wget.+404.+Not Found", captured.out) is not None
 
-    #  TODO internal hostname test must be here
+    # internal network test
+    # code below commented from 18/02/2019
+    # because by default k8s will not register DNS name if pod
+    # haven't any service
+    # TODO uncomment next part if behavior changed
+
+    # captured = run(["job", "status", no_http_job_ id])
+    # assert not captured.err
+    # internal_hostname = \
+    # re.search(r"Internal Hostname:\s+(\S+)", captured.out).group(1)
+    # internal_secret_url = f"http://{internal_hostname}/secret.txt"
+    # command = f"wget -q {internal_secret_url} -O -"
+    # job_id = run_job_and_wait_status(
+    #     ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret network fetcher "]
+    # )
+    # wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
+    # captured = run(["job", "logs", job_id])
+    # assert not captured.err
+    # assert captured.out == secret
+    # let's kill unused http job
+
+    run(["job", "kill", no_http_job_id])
