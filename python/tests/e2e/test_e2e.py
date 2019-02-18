@@ -5,10 +5,6 @@ import pytest
 
 import neuromation
 from neuromation.client import FileStatusType, JobStatus
-from tests.e2e.test_e2e_utils import (
-    Status,
-    assert_job_state,
-)
 from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
 
 
@@ -185,7 +181,6 @@ def test_job_storage_interaction(
         helper,
     run_cli,
     data,
-    tmpstorage,
     tmp_path,
 ):
     srcfile, checksum = data
@@ -212,9 +207,9 @@ def test_job_storage_interaction(
                 "--http",
                 "80",
                 "--volume",
-                f"{tmpstorage}data:/data:ro",
+                f"{helper.tmpstorage}data:/data:ro",
                 "--volume",
-                f"{tmpstorage}result:/res:rw",
+                f"{helper.tmpstorage}result:/res:rw",
                 "--non-preemptible",
                 UBUNTU_IMAGE_NAME,
                 command,

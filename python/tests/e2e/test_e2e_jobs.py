@@ -458,7 +458,7 @@ def test_e2e_no_env(helper, run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_env(helper.run_cli):
+def test_e2e_env(helperm, run_cli):
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
     captured = run_cli(
