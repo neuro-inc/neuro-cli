@@ -8,7 +8,7 @@ from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
 
-from .abc import BaseFormatter
+from .utils import truncate_string, wrap
 
 
 BEFORE_PROGRESS = "\r"
@@ -28,7 +28,7 @@ def format_job_status(status: JobStatus) -> str:
     return click.style(status.value, fg=COLORS.get(status, "reset"))
 
 
-class JobFormatter(BaseFormatter):
+class JobFormatter:
     def __init__(self, quiet: bool = True) -> None:
         self._quiet = quiet
 
@@ -46,7 +46,7 @@ class JobFormatter(BaseFormatter):
         )
 
 
-class JobStatusFormatter(BaseFormatter):
+class JobStatusFormatter:
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
@@ -90,7 +90,7 @@ class JobStatusFormatter(BaseFormatter):
         return result
 
 
-class JobTelemetryFormatter(BaseFormatter):
+class JobTelemetryFormatter:
     def __init__(self) -> None:
         self.col_len = {
             "timestamp": 24,
@@ -132,7 +132,7 @@ class JobTelemetryFormatter(BaseFormatter):
         )
 
 
-class JobListFormatter(BaseFormatter):
+class JobListFormatter:
     def __init__(self, quiet: bool = False):
         self.quiet = quiet
         self.tab = "\t"
@@ -168,7 +168,7 @@ class JobListFormatter(BaseFormatter):
 
     def _format_job_line(self, job: JobDescription) -> str:
         def truncate_then_wrap(value: str, key: str) -> str:
-            return self._wrap(self._truncate_string(value, self.column_lengths[key]))
+            return wrap(truncate_string(value, self.column_lengths[key]))
 
         if self.quiet:
             return job.id.ljust(self.column_lengths["id"])
@@ -186,7 +186,7 @@ class JobListFormatter(BaseFormatter):
         )
 
 
-class ResourcesFormatter(BaseFormatter):
+class ResourcesFormatter:
     def __call__(self, resources: Resources) -> str:
         lines = list()
         lines.append(f"Memory: {resources.memory_mb} MB")
@@ -205,7 +205,7 @@ class ResourcesFormatter(BaseFormatter):
         return "Resources:\n" + indent + f"\n{indent}".join(lines)
 
 
-class JobStartProgress(BaseFormatter):
+class JobStartProgress:
     SPINNER = ("|", "/", "-", "\\")
 
     def __init__(self, color: bool) -> None:

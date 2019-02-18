@@ -1,9 +1,7 @@
 from neuromation.cli.rc import Config
 
-from .abc import BaseFormatter
 
-
-class ConfigFormatter(BaseFormatter):
+class ConfigFormatter:
     def __call__(self, config: Config) -> str:
         lines = []
         lines.append(f"User Name: {config.get_platform_user_name()}")

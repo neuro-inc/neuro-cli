@@ -12,8 +12,6 @@ from click import style, unstyle
 
 from neuromation.client import Action, FileStatus, FileStatusType
 
-from .abc import BaseFormatter
-
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -403,7 +401,7 @@ class PainterFactory:
         return NonePainter()
 
 
-class BaseFilesFormatter(BaseFormatter):
+class BaseFilesFormatter:
     @abc.abstractmethod
     def __call__(
         self, files: Sequence[FileStatus]

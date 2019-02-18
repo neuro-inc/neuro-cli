@@ -15,7 +15,6 @@ from neuromation.cli.formatters import (
     JobStatusFormatter,
     JobTelemetryFormatter,
 )
-from neuromation.cli.formatters.abc import BaseFormatter
 from neuromation.cli.formatters.jobs import ResourcesFormatter
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
@@ -29,6 +28,7 @@ from neuromation.cli.formatters.storage import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
+from neuromation.cli.formatters.utils import truncate_string, wrap
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 from neuromation.client import (
@@ -406,22 +406,20 @@ class TestJobTelemetryFormatter:
         )
 
 
-class TestBaseFormatter:
+class TestUtils:
     def test_truncate_string(self):
-        truncate = BaseFormatter()._truncate_string
-        assert truncate(None, 15) == ""
-        assert truncate("", 15) == ""
-        assert truncate("not truncated", 15) == "not truncated"
-        assert truncate("A" * 10, 1) == "..."
-        assert truncate("A" * 10, 3) == "..."
-        assert truncate("A" * 10, 5) == "AA..."
-        assert truncate("A" * 6, 5) == "AA..."
-        assert truncate("A" * 7, 5) == "AA..."
-        assert truncate("A" * 10, 10) == "A" * 10
-        assert truncate("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
+        assert truncate_string(None, 15) == ""
+        assert truncate_string("", 15) == ""
+        assert truncate_string("not truncated", 15) == "not truncated"
+        assert truncate_string("A" * 10, 1) == "..."
+        assert truncate_string("A" * 10, 3) == "..."
+        assert truncate_string("A" * 10, 5) == "AA..."
+        assert truncate_string("A" * 6, 5) == "AA..."
+        assert truncate_string("A" * 7, 5) == "AA..."
+        assert truncate_string("A" * 10, 10) == "A" * 10
+        assert truncate_string("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
 
     def test_wrap_string(self):
-        wrap = BaseFormatter()._wrap
         assert wrap("123") == "'123'"
         assert wrap(" ") == "' '"
         assert wrap("") == "''"
