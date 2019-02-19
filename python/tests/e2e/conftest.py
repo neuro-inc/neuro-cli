@@ -244,6 +244,11 @@ class Helper:
             job = await client.jobs.status(job_id)
             assert job.status == state
 
+    @run_async
+    async def job_info(self, job_id):
+        async with self._config.make_client() as client:
+            return await client.jobs.status(job_id)
+
 
 @pytest.fixture
 def config(tmp_path, monkeypatch):
