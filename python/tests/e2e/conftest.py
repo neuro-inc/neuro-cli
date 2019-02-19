@@ -255,18 +255,16 @@ class Helper:
 @pytest.fixture
 def config(tmp_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
-    if e2e_test_token:
-        # setup config for CircleCI build,
-        # use existing config file otherwise
-        rc_text = RC_TEXT.format(token=e2e_test_token)
-        config_path = tmp_path / ".nmrc"
-        config_path.write_text(rc_text)
-        config_path.chmod(0o600)
 
-        def _home():
-            return Path(tmp_path)
+    rc_text = RC_TEXT.format(token=e2e_test_token)
+    config_path = tmp_path / ".nmrc"
+    config_path.write_text(rc_text)
+    config_path.chmod(0o600)
 
-        monkeypatch.setattr(Path, "home", _home)
+    def _home():
+        return Path(tmp_path)
+
+    monkeypatch.setattr(Path, "home", _home)
 
     config = rc.ConfigFactory.load()
     yield config
