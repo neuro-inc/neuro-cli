@@ -161,7 +161,7 @@ class Helper:
     async def check_rmdir_on_storage(self, path: str):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
-            await client.rm(path)
+            await client.storage.rm(path)
 
     @run_async
     async def check_rm_file_on_storage(self, name: str, path: str):
