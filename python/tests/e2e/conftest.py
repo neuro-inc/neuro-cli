@@ -167,7 +167,7 @@ class Helper:
     async def check_rm_file_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
-            await client.storage.rm(f"{path}/{name}")
+            await client.storage.rm(path / name)
 
     @run_async
     async def check_upload_file_to_storage(self, name: str, path: str, local_file: str):
