@@ -86,7 +86,7 @@ _e2e:
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--cov-append \
-		--verbose
+		--verbose \
 		tests
 
 
