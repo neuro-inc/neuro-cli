@@ -36,14 +36,21 @@ class JobFormatter:
         job_id = click.style(job.id, bold=True)
         if self._quiet:
             return job_id
-        return (
-            f"Job ID: {job_id} Status: {format_job_status(job.status)}\n"
-            + f"Shortcuts:\n"
+
+        result = f"Job ID: {job_id} Status: {format_job_status(job.status)}\n"
+
+        if job.http_url:
+            result += f"Http URL: {job.http_url}\n"
+
+        result += (
+            f"Shortcuts:\n"
             + f"  neuro job status {job.id}  # check job status\n"
             + f"  neuro job monitor {job.id} # monitor job stdout\n"
             + f"  neuro job top {job.id}     # display real-time job telemetry\n"
             + f"  neuro job kill {job.id}    # kill job"
         )
+
+        return result
 
 
 class JobStatusFormatter:
