@@ -174,7 +174,9 @@ class Helper:
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
             if name is None:
-                await client.storage.upload_file(DUMMY_PROGRESS, local_file, path)
+                await client.storage.upload_file(
+                    DUMMY_PROGRESS, URL("file:" + local_file), path
+                )
             else:
                 await client.storage.upload_file(
                     DUMMY_PROGRESS, URL("file:" + local_file), URL(f"{path}/{name}")
