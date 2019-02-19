@@ -7,10 +7,8 @@ from os.path import join
 from pathlib import Path
 from shutil import move
 from time import sleep
-from typing import Sequence, Union
 from uuid import uuid4 as uuid
 
-import aiohttp
 import pytest
 
 from neuromation.cli import main
