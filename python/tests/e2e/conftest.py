@@ -414,24 +414,3 @@ def check_rename_directory_on_storage(run, tmpstorage):
         assert captured.out == ""
 
     return go
-
-
-@pytest.fixture()
-def check_http_get():
-    async def http_get(url, accepted_statuses: Sequence[int]) -> Union[str, None]:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status in accepted_statuses:
-                    return await resp.text()
-                raise aiohttp.ClientResponseError(
-                    status=resp.status,
-                    message=f"Server return {resp.status}",
-                    history=tuple(),
-                    request_info=resp.request_info,
-                )
-
-    @attempt(24, 5)
-    def go(url, accepted_statuses: Sequence[int] = tuple([200])):
-        return run_async(http_get(url, accepted_statuses))
-
-    return go

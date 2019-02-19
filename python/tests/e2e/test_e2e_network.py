@@ -1,19 +1,43 @@
 import re
+from typing import Sequence, Union
 from uuid import uuid4 as uuid
 
 import aiohttp
 import pytest
 
+from neuromation.utils import run as run_async
 from tests.e2e.test_e2e_utils import (
     Status,
     wait_job_change_state_from,
     wait_job_change_state_to,
 )
+from tests.e2e.utils import attempt
 
 
 NGINX_IMAGE_NAME = "nginx:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 ALPINE_IMAGE_NAME = "alpine:latest"
+
+
+@pytest.fixture()
+def check_http_get():
+    async def http_get(url, accepted_statuses: Sequence[int]) -> Union[str, None]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status in accepted_statuses:
+                    return await resp.text()
+                raise aiohttp.ClientResponseError(
+                    status=resp.status,
+                    message=f"Server return {resp.status}",
+                    history=tuple(),
+                    request_info=resp.request_info,
+                )
+
+    @attempt(12, 5)
+    def go(url, accepted_statuses: Sequence[int] = tuple([200])):
+        return run_async(http_get(url, accepted_statuses))
+
+    return go
 
 
 @pytest.fixture
