@@ -35,9 +35,9 @@ def test_print_config_token(run_cli):
 def test_empty_directory_ls_output(run_cli, helper):
     # Ensure output of ls - empty directory shall print nothing.
     captured = run_cli(["storage", "ls", helper.tmpstorage])
-    assert not captured.err
-    # stdout has "Using path ..." line
-    assert len(captured.out.splitlines()) == 1 and captured.out.startswith("Using path")
+    assert not captured.out
+    # FIXME: stderr has "Using path ..." line
+    assert len(captured.err.splitlines()) == 1 and captured.err.startswith("Using path")
 
 
 @pytest.mark.e2e
