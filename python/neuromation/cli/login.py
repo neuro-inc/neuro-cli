@@ -178,6 +178,7 @@ def create_auth_code_app(
 async def create_app_server_once(
     app: Application, *, host: str = "0.0.0.0", port: int = 8080
 ) -> AsyncIterator[URL]:
+    runner = None
     try:
         runner = AppRunner(app, access_log=None)
         await runner.setup()
@@ -185,8 +186,9 @@ async def create_app_server_once(
         await site.start()
         yield URL(site.name)
     finally:
-        await runner.shutdown()
-        await runner.cleanup()
+        if runner:
+            await runner.shutdown()
+            await runner.cleanup()
 
 
 @asynccontextmanager
