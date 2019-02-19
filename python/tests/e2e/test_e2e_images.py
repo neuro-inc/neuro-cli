@@ -47,7 +47,7 @@ async def image(loop, docker, tag):
 @pytest.mark.e2e
 def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     # Let`s push image
-    run_cli(["image", "push", image])
+    captured = run_cli(["image", "push", image])
 
     # stderr has "Used image ..." lines
     # assert not captured.err
