@@ -5,6 +5,7 @@ import re
 from collections import namedtuple
 from os.path import join
 from pathlib import Path
+from shutil import move
 from time import sleep
 from typing import Sequence, Union
 from uuid import uuid4 as uuid
@@ -152,6 +153,52 @@ def run(monkeypatch, capfd, tmp_path):
         except BaseException:
             # Just ignore cleanup error here
             pass
+
+
+@pytest.fixture
+def switch_user(tmp_path):
+    """
+        This fixture allow switch effective user for running `neuro`
+        between CLIENT_TEST_E2E_USER_NAME and CLIENT_TEST_E2E_USER_NAME_ALT
+
+        After test it will revert default user back
+        But it can breaks e2e cleanup, please made cleanup for alt user self
+    """
+    switched: bool = False
+
+    def _switch():
+        nonlocal switched
+        config_path = tmp_path / ".nmrc"
+        backup_patch = tmp_path / ".nmrc.backup"
+        if switched:
+            move(backup_patch, config_path)
+        else:
+            move(config_path, backup_patch)
+            e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME_ALT"]
+            rc_text = RC_TEXT.format(token=e2e_test_token)
+            config_path.write_text(rc_text)
+            config_path.chmod(0o600)
+        switched = not switched
+
+    yield _switch
+
+    if switched:
+        _switch()
+
+
+@pytest.fixture()
+def check_job_output(run):
+    """
+        Wait while job output will satisfy given regexp
+    """
+
+    @attempt()
+    def go(job_id, expected, flags=0):
+        captured = run(["job", "logs", job_id])
+        assert not captured.err
+        assert re.search(expected, captured.out, flags)
+
+    return go
 
 
 @pytest.fixture

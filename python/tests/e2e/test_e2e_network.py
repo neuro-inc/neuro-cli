@@ -9,7 +9,6 @@ from tests.e2e.test_e2e_utils import (
     wait_job_change_state_from,
     wait_job_change_state_to,
 )
-from tests.e2e.utils import attempt
 
 
 NGINX_IMAGE_NAME = "nginx:latest"
@@ -54,72 +53,86 @@ def secret_job(run_job_and_wait_status, tiny_container, run):
         http_job_id = run_job_and_wait_status(
             NGINX_IMAGE_NAME, command, tiny_container + args
         )
-        return http_job_id, secret
+        captured = run(["job", "status", http_job_id])
+        match_ingress_url = re.search(r"Http URL:\s+(\S+)", captured.out)
+        if match_ingress_url:
+            ingress_url = match_ingress_url.group(1)
+        else:
+            ingress_url = None
+        internal_hostname = re.search(
+            r"Internal Hostname:\s+(\S+)", captured.out
+        ).group(1)
+
+        return {
+            "id": http_job_id,
+            "secret": secret,
+            "ingress_url": ingress_url,
+            "internal_hostname": internal_hostname,
+        }
 
     return go
 
 
 @pytest.mark.e2e
-def test_connectivity(
-    run, secret_job, run_job_and_wait_status, check_http_get, tiny_container
+def test_connectivity_job_with_http_port(
+    run,
+    secret_job,
+    run_job_and_wait_status,
+    check_http_get,
+    tiny_container,
+    check_job_output,
 ):
 
-    http_job_id, secret = secret_job(True)
+    http_job = secret_job(True)
 
-    captured = run(["job", "status", http_job_id])
-    ingress_url = re.search(r"Http URL:\s+(\S+)", captured.out).group(1)
-
-    secret_url = ingress_url + "/secret.txt"
+    ingress_secret_url = f"{http_job['ingress_url']}/secret.txt"
 
     # external ingress test
-    probe = check_http_get(secret_url)
-    assert probe.strip() == secret
+    probe = check_http_get(ingress_secret_url)
+    assert probe.strip() == http_job["secret"]
 
     # internal ingress test
-    command = f"wget -q {secret_url} -O -"
+    command = f"wget -q {ingress_secret_url} -O -"
     job_id = run_job_and_wait_status(
         ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret ingress fetcher "]
     )
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
-    captured = run(["job", "logs", job_id])
-    assert not captured.err
-    assert captured.out == secret
+    check_job_output(job_id, http_job["secret"])
 
     # internal network test
-    captured = run(["job", "status", http_job_id])
-    assert not captured.err
-    internal_hostname = re.search(r"Internal Hostname:\s+(\S+)", captured.out).group(1)
-    internal_secret_url = f"http://{internal_hostname}/secret.txt"
+    internal_secret_url = f"http://{http_job['internal_hostname']}/secret.txt"
     command = f"wget -q {internal_secret_url} -O -"
     job_id = run_job_and_wait_status(
-        ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret network fetcher "]
+        ALPINE_IMAGE_NAME,
+        command,
+        tiny_container + ["-d", "secret internal network fetcher "],
     )
     wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
+    check_job_output(job_id, http_job["secret"])
 
-    @attempt()
-    def check_internal_test_job_output():
-        captured = run(["job", "logs", job_id])
-        assert not captured.err
-        assert captured.out == secret
 
-    check_internal_test_job_output()
-
-    # let's kill unused http job
-    run(["job", "kill", job_id])
+@pytest.mark.e2e
+def test_connectivity_job_without_http_port(
+    run, secret_job, check_http_get, tiny_container, check_job_output
+):
+    # run http job for getting url
+    http_job = secret_job(True)
+    run(["job", "kill", http_job["id"]])
+    ingress_secret_url = f"{http_job['ingress_url']}/secret.txt"
 
     # Run another job without shared http port
-    no_http_job_id, secret = secret_job(False)
+    no_http_job = secret_job(False)
 
     # Let's emulate external url
-    secret_url = secret_url.replace(http_job_id, no_http_job_id)
+    ingress_secret_url = ingress_secret_url.replace(http_job["id"], no_http_job["id"])
 
-    #  external ingress test
-    #  it will take ~2 min, because we will wait while nginx started
+    # external ingress test
+    # it will take ~2 min, because we need to wait while nginx started
     with pytest.raises(aiohttp.ClientResponseError):
-        check_http_get(secret_url)
+        check_http_get(ingress_secret_url)
 
     # internal ingress test
-    command = f"wget -q {secret_url} -O -"
+    command = f"wget -q {ingress_secret_url} -O -"
     captured = run(
         ["job", "submit"]
         + tiny_container
@@ -129,34 +142,50 @@ def test_connectivity(
     assert not captured.err
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
     wait_job_change_state_to(run, job_id, Status.FAILED, Status.SUCCEEDED)
-
-    @attempt()
-    def check_no_http_internal_test_job_output():
-        captured = run(["job", "logs", job_id])
-        assert not captured.err
-        assert re.search(r"wget.+404.+Not Found", captured.out) is not None
-
-    check_no_http_internal_test_job_output()
+    check_job_output(job_id, r"wget.+404.+Not Found")
 
     # internal network test
-    # code below commented from 18/02/2019
+    # cannot be implemented now
     # because by default k8s will not register DNS name if pod
     # haven't any service
-    # TODO uncomment next part if behavior changed
 
-    # captured = run(["job", "status", no_http_job_ id])
-    # assert not captured.err
-    # internal_hostname = \
-    # re.search(r"Internal Hostname:\s+(\S+)", captured.out).group(1)
-    # internal_secret_url = f"http://{internal_hostname}/secret.txt"
-    # command = f"wget -q {internal_secret_url} -O -"
-    # job_id = run_job_and_wait_status(
-    #     ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret network fetcher "]
-    # )
-    # wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
-    # captured = run(["job", "logs", job_id])
-    # assert not captured.err
-    # assert captured.out == secret
-    # let's kill unused http job
 
-    run(["job", "kill", no_http_job_id])
+@pytest.mark.e2e
+@pytest.mark.xfail
+def test_check_isolation(
+    run,
+    secret_job,
+    run_job_and_wait_status,
+    tiny_container,
+    switch_user,
+    check_job_output,
+):
+    http_job = secret_job(True)
+
+    ingress_secret_url = f"{http_job['ingress_url']}/secret.txt"
+
+    switch_user()
+
+    # internal ingress test
+    command = f"wget -q {ingress_secret_url} -O -"
+    job_id = run_job_and_wait_status(
+        ALPINE_IMAGE_NAME,
+        command,
+        tiny_container + ["-d", "alt secret ingress fetcher "],
+    )
+    wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
+    check_job_output(job_id, http_job["secret"])
+
+    # internal network test
+    internal_secret_url = f"http://{http_job['internal_hostname']}/secret.txt"
+    command = f"wget -q {internal_secret_url} -O -"
+    job_id = run_job_and_wait_status(
+        ALPINE_IMAGE_NAME, command, tiny_container + ["-d", "secret network fetcher "]
+    )
+    # This job must be failed,
+    # wget must return error. something like "Connection refused"
+    # but we have problem at this moment
+    # TODO check next lines when problem will fixed
+    wait_job_change_state_to(run, job_id, Status.FAILED, Status.SUCCEEDED)
+    # With some unknown status
+    check_job_output(job_id, r"Connection refused")
