@@ -85,7 +85,13 @@ def job() -> None:
     default=JOB_MEMORY_AMOUNT,
     show_default=True,
 )
-@click.option("-x", "--extshm", is_flag=True, help="Request extended '/dev/shm' space")
+@click.option(
+    "-x/-X",
+    "--extshm/--no-extshm",
+    is_flag=True,
+    default=True,
+    help="Request extended '/dev/shm' space",
+)
 @click.option("--http", type=int, help="Enable HTTP port forwarding to container")
 @click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
 @click.option(

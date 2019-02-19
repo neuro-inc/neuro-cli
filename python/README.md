@@ -185,7 +185,7 @@ Name | Description|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
-|_\-x, --extshm_|Request extended '/dev/shm' space|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance|
@@ -845,7 +845,7 @@ Name | Description|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
-|_\-x, --extshm_|Request extended '/dev/shm' space|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance|
