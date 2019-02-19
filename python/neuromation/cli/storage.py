@@ -4,19 +4,19 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.cli.files_formatter import (
-    BaseFilesFormatter,
-    FilesSorter,
-    LongFilesFormatter,
-    SimpleFilesFormatter,
-    VerticalColumnsFilesFormatter,
-)
 from neuromation.client.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
 
 from .command_progress_report import ProgressBase
+from .formatters import (
+    BaseFilesFormatter,
+    FilesSorter,
+    LongFilesFormatter,
+    SimpleFilesFormatter,
+    VerticalColumnsFilesFormatter,
+)
 from .rc import Config
 from .utils import command, group, run_async
 
@@ -79,13 +79,15 @@ async def ls(
     """
     if format_long:
         formatter: BaseFilesFormatter = LongFilesFormatter(
-            human_readable=human_readable
+            human_readable=human_readable, color=cfg.color
         )
     else:
         if cfg.tty:
-            formatter = VerticalColumnsFilesFormatter(width=cfg.terminal_size[0])
+            formatter = VerticalColumnsFilesFormatter(
+                width=cfg.terminal_size[0], color=cfg.color
+            )
         else:
-            formatter = SimpleFilesFormatter()
+            formatter = SimpleFilesFormatter(cfg.color)
 
     uri = normalize_storage_path_uri(URL(path), cfg.username)
     log.info(f"Using path '{uri}'")
