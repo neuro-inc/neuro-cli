@@ -139,7 +139,7 @@ class Helper:
             delay = 5  # need a relative big initial delay to synchronize 16MB file
             for i in range(5):
                 await client.storage.download_dir(
-                    DUMMY_PROGRESS, f"{path}/{name}", target
+                    DUMMY_PROGRESS, path / name, URL("file:" + target)
                 )
                 try:
                     assert self.hash_hex(target_file) == checksum
@@ -161,7 +161,7 @@ class Helper:
     async def check_rmdir_on_storage(self, path: str):
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
-            await client.rmdir(path)
+            await client.rm(path)
 
     @run_async
     async def check_rm_file_on_storage(self, name: str, path: str):
