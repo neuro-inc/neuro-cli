@@ -13,7 +13,6 @@ import pytest
 
 from neuromation.cli import main
 from neuromation.client import FileStatusType
-from neuromation.utils import run as run_async
 from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, attempt, hash_hex, output_to_files
 
 
