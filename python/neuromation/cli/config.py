@@ -3,7 +3,7 @@ from yarl import URL
 
 from . import rc
 from .defaults import API_URL
-from .formatter import ConfigFormatter
+from .formatters import ConfigFormatter
 from .rc import Config
 from .utils import command, group, run_async
 

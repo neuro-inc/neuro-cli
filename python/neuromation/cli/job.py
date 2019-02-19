@@ -25,7 +25,7 @@ from .defaults import (
     JOB_MEMORY_AMOUNT,
     JOB_SSH_USER,
 )
-from .formatter import (
+from .formatters import (
     JobFormatter,
     JobListFormatter,
     JobStartProgress,

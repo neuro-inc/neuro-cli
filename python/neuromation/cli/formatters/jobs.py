@@ -1,33 +1,19 @@
 import itertools
 import re
 import time
-from typing import Iterable, Optional
+from typing import Iterable
 
 import click
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.client import JobDescription, JobStatus, Resources
-from neuromation.client.jobs import JobTelemetry
+from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
 
-from .rc import Config
+from .utils import truncate_string, wrap
 
 
 BEFORE_PROGRESS = "\r"
 AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
-
-
-# Do nasty hack click to fix unstyle problem
-def _patch_click() -> None:
-    import click._compat  # type: ignore
-
-    _ansi_re = re.compile(r"\033\[([;\?0-9]*)([a-zA-Z])")
-    click._compat._ansi_re = _ansi_re
-
-
-_patch_click()
-del _patch_click
-
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -42,24 +28,7 @@ def format_job_status(status: JobStatus) -> str:
     return click.style(status.value, fg=COLORS.get(status, "reset"))
 
 
-class BaseFormatter:
-    def _truncate_string(self, input: Optional[str], max_length: int) -> str:
-        if input is None:
-            return ""
-        if len(input) <= max_length:
-            return input
-        len_tail, placeholder = 3, "..."
-        if max_length < len_tail or max_length < len(placeholder):
-            return placeholder
-        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
-        index_stop = max_length - len(placeholder) - len(tail)
-        return input[:index_stop] + placeholder + tail
-
-    def _wrap(self, text: Optional[str]) -> str:
-        return "'" + (text or "") + "'"
-
-
-class JobFormatter(BaseFormatter):
+class JobFormatter:
     def __init__(self, quiet: bool = True) -> None:
         self._quiet = quiet
 
@@ -84,35 +53,7 @@ class JobFormatter(BaseFormatter):
         return result
 
 
-class JobStartProgress(BaseFormatter):
-    SPINNER = ("|", "/", "-", "\\")
-
-    def __init__(self, color: bool) -> None:
-        self._color = color
-        self._time = time.time()
-        self._spinner = itertools.cycle(self.SPINNER)
-        self._last_size = 0
-
-    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
-        if not self._color:
-            return ""
-        new_time = time.time()
-        dt = new_time - self._time
-        txt_status = format_job_status(job.status)
-        if job.history.reason:
-            reason = " " + click.style(job.history.reason, bold=True)
-        else:
-            reason = ""
-        ret = BEFORE_PROGRESS + f"\rStatus: {txt_status}{reason} [{dt:.1f} sec]"
-        if not finish:
-            ret += " " + next(self._spinner)
-        ret += CLEAR_LINE_TAIL
-        if finish:
-            ret += AFTER_PROGRESS
-        return ret
-
-
-class JobStatusFormatter(BaseFormatter):
+class JobStatusFormatter:
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
@@ -156,7 +97,7 @@ class JobStatusFormatter(BaseFormatter):
         return result
 
 
-class JobTelemetryFormatter(BaseFormatter):
+class JobTelemetryFormatter:
     def __init__(self) -> None:
         self.col_len = {
             "timestamp": 24,
@@ -198,7 +139,7 @@ class JobTelemetryFormatter(BaseFormatter):
         )
 
 
-class JobListFormatter(BaseFormatter):
+class JobListFormatter:
     def __init__(self, quiet: bool = False):
         self.quiet = quiet
         self.tab = "\t"
@@ -234,7 +175,7 @@ class JobListFormatter(BaseFormatter):
 
     def _format_job_line(self, job: JobDescription) -> str:
         def truncate_then_wrap(value: str, key: str) -> str:
-            return self._wrap(self._truncate_string(value, self.column_lengths[key]))
+            return wrap(truncate_string(value, self.column_lengths[key]))
 
         if self.quiet:
             return job.id.ljust(self.column_lengths["id"])
@@ -252,7 +193,7 @@ class JobListFormatter(BaseFormatter):
         )
 
 
-class ResourcesFormatter(BaseFormatter):
+class ResourcesFormatter:
     def __call__(self, resources: Resources) -> str:
         lines = list()
         lines.append(f"Memory: {resources.memory_mb} MB")
@@ -271,12 +212,41 @@ class ResourcesFormatter(BaseFormatter):
         return "Resources:\n" + indent + f"\n{indent}".join(lines)
 
 
-class ConfigFormatter:
-    def __call__(self, config: Config) -> str:
-        lines = []
-        lines.append(f"User Name: {config.get_platform_user_name()}")
-        lines.append(f"API URL: {config.url}")
-        lines.append(f"Docker Registry URL: {config.registry_url}")
-        lines.append(f"Github RSA Path: {config.github_rsa_path}")
-        indent = "  "
-        return "Config:\n" + indent + f"\n{indent}".join(lines)
+class JobStartProgress:
+    SPINNER = ("|", "/", "-", "\\")
+
+    def __init__(self, color: bool) -> None:
+        self._color = color
+        self._time = time.time()
+        self._spinner = itertools.cycle(self.SPINNER)
+        self._last_size = 0
+
+    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
+        if not self._color:
+            return ""
+        new_time = time.time()
+        dt = new_time - self._time
+        txt_status = format_job_status(job.status)
+        if job.history.reason:
+            reason = " " + click.style(job.history.reason, bold=True)
+        else:
+            reason = ""
+        ret = BEFORE_PROGRESS + f"\rStatus: {txt_status}{reason} [{dt:.1f} sec]"
+        if not finish:
+            ret += " " + next(self._spinner)
+        ret += CLEAR_LINE_TAIL
+        if finish:
+            ret += AFTER_PROGRESS
+        return ret
+
+
+# Do nasty hack click to fix unstyle problem
+def _patch_click() -> None:
+    import click._compat  # type: ignore
+
+    _ansi_re = re.compile(r"\033\[([;\?0-9]*)([a-zA-Z])")
+    click._compat._ansi_re = _ansi_re
+
+
+_patch_click()
+del _patch_click
