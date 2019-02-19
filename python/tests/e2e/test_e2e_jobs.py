@@ -193,9 +193,14 @@ def test_unschedulable_job_lifecycle(helper, run_cli):
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
-    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
-    job = helper.job_info(job_id)
-    assert job.history.reason == "Cluster doesn't have resources to fulfill request."
+    for i in range(10):
+        job = helper.job_info(job_id)
+        if job.history.reason == "Cluster doesn't have resources to fulfill request.":
+            break
+        else:
+            sleep(5)
+    else:
+        raise AssertionError("Timeout")
 
     # Kill the job
     captured = run_cli(["job", "kill", job_id])
