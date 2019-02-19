@@ -328,7 +328,10 @@ def run_cli(capfd, config):
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
-                main(["--show-traceback", "--disable-pypi-version-check"] + arguments)
+                main(
+                    ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
+                    + arguments
+                )
             except SystemExit as exc:
                 if exc.code == os.EX_IOERR:
                     # network problem
