@@ -51,6 +51,8 @@ def test_job_lifecycle(run):
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
 
+    assert re.search("Http URL: http", captured.out), captured.out
+
     # Check it is in a running,pending job list now
     captured = run(["job", "ls", "--status", "running", "--status", "pending"])
     store_out_list = captured.out.strip().split("\n")[1:]
