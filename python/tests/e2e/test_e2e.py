@@ -37,7 +37,7 @@ def test_empty_directory_ls_output(run_cli, helper):
     captured = run_cli(["storage", "ls", helper.tmpstorage])
     assert not captured.err
     # stdout has "Using path ..." line
-    assert len(captured.out.splitlines()) == 1 and captures.out.startswith("Using path")
+    assert len(captured.out.splitlines()) == 1 and captured.out.startswith("Using path")
 
 
 @pytest.mark.e2e
