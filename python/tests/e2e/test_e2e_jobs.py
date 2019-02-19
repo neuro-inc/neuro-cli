@@ -193,7 +193,7 @@ def test_unschedulable_job_lifecycle(helper, run_cli):
     store_out_list = captured.out.strip().split("\n")[1:]
     jobs_updated = [x.split("\t")[0] for x in store_out_list]
     assert job_id in jobs_updated
-    helper.wait_job_change_state_to(run_cli, job_id, JobStatus.FAILED)
+    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
     job = helper.job_info(job_id)
     assert job.history.reason == "Cluster doesn't have resources to fulfill request."
 
@@ -519,7 +519,7 @@ def test_e2e_env_from_local(helper, run_cli):
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    helper.assert_job_state(run_cli, job_id, JobStatus.SUCCEEDED)
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e

@@ -136,7 +136,7 @@ def test_e2e_shm_run_with(helper, run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(run_cli, job_id, JobStatus.RUNNING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
     helper.assert_job_state(job_id, JobStatus.FAILED)
 
