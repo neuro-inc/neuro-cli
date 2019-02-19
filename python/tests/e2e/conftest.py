@@ -137,8 +137,9 @@ class Helper:
                 target = tmpdir
                 target_file = join(tmpdir, name)
             delay = 5  # need a relative big initial delay to synchronize 16MB file
+            await asyncio.sleep(delay)
             for i in range(5):
-                await client.storage.download_dir(
+                await client.storage.download_file(
                     DUMMY_PROGRESS, path / name, URL("file:" + target)
                 )
                 try:
