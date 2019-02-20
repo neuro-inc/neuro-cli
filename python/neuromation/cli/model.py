@@ -16,7 +16,7 @@ from .defaults import (
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
 )
-from .formatter import JobFormatter
+from .formatters import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
 from .utils import group, run_async

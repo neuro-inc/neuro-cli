@@ -1,28 +1,35 @@
 import re
 import textwrap
 import time
+from dataclasses import replace
 from typing import Optional
 
 import click
 import pytest
 from yarl import URL
 
-from neuromation.cli.files_formatter import (
-    FilesSorter,
-    LongFilesFormatter,
-    SimpleFilesFormatter,
-    VerticalColumnsFilesFormatter,
-)
-from neuromation.cli.formatter import (
-    BaseFormatter,
+from neuromation.cli.formatters import (
     ConfigFormatter,
     JobFormatter,
     JobListFormatter,
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    ResourcesFormatter,
 )
+from neuromation.cli.formatters.jobs import ResourcesFormatter
+from neuromation.cli.formatters.storage import (
+    BSDAttributes,
+    BSDPainter,
+    FilesSorter,
+    GnuIndicators,
+    GnuPainter,
+    LongFilesFormatter,
+    NonePainter,
+    PainterFactory,
+    SimpleFilesFormatter,
+    VerticalColumnsFilesFormatter,
+)
+from neuromation.cli.formatters.utils import truncate_string, wrap
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 from neuromation.client import (
@@ -69,6 +76,19 @@ class TestJobFormatter:
     def test_non_quiet(self, job_descr) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
+            + f"Shortcuts:\n"
+            + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
+            + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
+            + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
+            + f"  neuro job kill {TEST_JOB_ID}    # kill job"
+        )
+        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
+
+    def test_non_quiet_http_url(self, job_descr) -> None:
+        job_descr = replace(job_descr, http_url=URL("https://job.dev"))
+        expected = (
+            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
+            + f"Http URL: https://job.dev\n"
             + f"Shortcuts:\n"
             + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
             + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
@@ -400,22 +420,20 @@ class TestJobTelemetryFormatter:
         )
 
 
-class TestBaseFormatter:
+class TestUtils:
     def test_truncate_string(self):
-        truncate = BaseFormatter()._truncate_string
-        assert truncate(None, 15) == ""
-        assert truncate("", 15) == ""
-        assert truncate("not truncated", 15) == "not truncated"
-        assert truncate("A" * 10, 1) == "..."
-        assert truncate("A" * 10, 3) == "..."
-        assert truncate("A" * 10, 5) == "AA..."
-        assert truncate("A" * 6, 5) == "AA..."
-        assert truncate("A" * 7, 5) == "AA..."
-        assert truncate("A" * 10, 10) == "A" * 10
-        assert truncate("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
+        assert truncate_string(None, 15) == ""
+        assert truncate_string("", 15) == ""
+        assert truncate_string("not truncated", 15) == "not truncated"
+        assert truncate_string("A" * 10, 1) == "..."
+        assert truncate_string("A" * 10, 3) == "..."
+        assert truncate_string("A" * 10, 5) == "AA..."
+        assert truncate_string("A" * 6, 5) == "AA..."
+        assert truncate_string("A" * 7, 5) == "AA..."
+        assert truncate_string("A" * 10, 10) == "A" * 10
+        assert truncate_string("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
 
     def test_wrap_string(self):
-        wrap = BaseFormatter()._wrap
         assert wrap("123") == "'123'"
         assert wrap(" ") == "' '"
         assert wrap("") == "''"
@@ -552,6 +570,232 @@ class TestJobListFormatter:
         assert self.quiet(jobs, description="test-description-0") == expected, expected
 
 
+class TestNonePainter:
+    def test_simple(self):
+        painter = NonePainter()
+        file = FileStatus(
+            "File1",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        assert painter.paint(file.name, file) == file.name
+
+
+class TestGnuPainter:
+    def test_color_parsing_simple(self):
+        painter = GnuPainter("rs=1;0;1")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+
+        painter = GnuPainter(":rs=1;0;1")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+
+        painter = GnuPainter("rs=1;0;1:")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+
+        painter = GnuPainter("rs=1;0;1:fi=32;42")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+        assert painter.color_indicator[GnuIndicators.FILE] == "32;42"
+
+        painter = GnuPainter("rs=1;0;1:fi")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+        assert painter.color_indicator[GnuIndicators.FILE] == ""
+
+        painter = GnuPainter("rs=1;0;1:fi=")
+        assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
+        assert painter.color_indicator[GnuIndicators.FILE] == ""
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("\\a", "\a"),
+            ("\\b", "\b"),
+            ("\\e", chr(27)),
+            ("\\f", "\f"),
+            ("\\n", "\n"),
+            ("\\r", "\r"),
+            ("\\t", "\t"),
+            ("\\v", "\v"),
+            ("\\?", chr(127)),
+            ("\\_", " "),
+            ("a\\n", "a\n"),
+            ("a\\tb", "a\tb"),
+            ("a\\t\\rb", "a\t\rb"),
+            ("a\\=b", "a=b"),
+        ],
+    )
+    def test_color_parsing_escaped_simple(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
+
+        painter = GnuPainter(escaped + "=1;2")
+        assert painter.color_ext_type[result] == "1;2"
+
+        painter = GnuPainter(escaped + "=" + escaped)
+        assert painter.color_ext_type[result] == result
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("\\7", chr(7)),
+            ("\\8", "8"),
+            ("\\10", chr(8)),
+            ("a\\2", "a" + chr(2)),
+            ("a\\2b", "a" + chr(2) + "b"),
+        ],
+    )
+    def test_color_parsing_escaped_octal(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
+
+        painter = GnuPainter(escaped + "=1;2")
+        assert painter.color_ext_type[result] == "1;2"
+
+        painter = GnuPainter(escaped + "=" + escaped)
+        assert painter.color_ext_type[result] == result
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("\\x7", chr(0x7)),
+            ("\\x8", chr(0x8)),
+            ("\\x10", chr(0x10)),
+            ("\\XaA", chr(0xAA)),
+            ("a\\x222", "a" + chr(0x22) + "2"),
+            ("a\\x2z", "a" + chr(0x2) + "z"),
+        ],
+    )
+    def test_color_parsing_escaped_hex(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
+
+        painter = GnuPainter(escaped + "=1;2")
+        assert painter.color_ext_type[result] == "1;2"
+
+        painter = GnuPainter(escaped + "=" + escaped)
+        assert painter.color_ext_type[result] == result
+
+    @pytest.mark.parametrize(
+        "escaped,result",
+        [
+            ("^a", chr(1)),
+            ("^?", chr(127)),
+            ("^z", chr(26)),
+            ("a^Z", "a" + chr(26)),
+            ("a^Zb", "a" + chr(26) + "b"),
+        ],
+    )
+    def test_color_parsing_carret(self, escaped, result):
+        painter = GnuPainter("rs=" + escaped)
+        assert painter.color_indicator[GnuIndicators.RESET] == result
+
+        painter = GnuPainter(escaped + "=1;2")
+        assert painter.color_ext_type[result] == "1;2"
+
+        painter = GnuPainter(escaped + "=" + escaped)
+        assert painter.color_ext_type[result] == result
+
+    @pytest.mark.parametrize("escaped", [("^1"), ("^"), ("^" + chr(130))])
+    def test_color_parsing_carret_incorrect(self, escaped):
+        with pytest.raises(EnvironmentError):
+            GnuPainter("rs=" + escaped)
+
+        with pytest.raises(EnvironmentError):
+            GnuPainter(escaped + "=1;2")
+
+    def test_coloring(self):
+        file = FileStatus(
+            "test.txt",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        folder = FileStatus(
+            "tmp",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "write",
+        )
+        painter = GnuPainter("di=32;41:fi=0;44:no=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;44mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+
+        painter = GnuPainter("di=32;41:no=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+
+        painter = GnuPainter("no=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+
+        painter = GnuPainter("*.text=0;46")
+        assert painter.paint(file.name, file) == "test.txt"
+        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+
+        painter = GnuPainter("*.txt=0;46")
+        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+
+
+class TestBSDPainter:
+    def test_color_parsing(self):
+        painter = BSDPainter("exfxcxdxbxegedabagacad")
+        assert painter._colors[BSDAttributes.DIRECTORY] == "ex"
+
+    def test_coloring(self):
+        file = FileStatus(
+            "test.txt",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        folder = FileStatus(
+            "tmp",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "write",
+        )
+        painter = BSDPainter("exfxcxdxbxegedabagacad")
+        assert painter.paint(file.name, file) == "test.txt"
+        assert painter.paint(folder.name, folder) == click.style("tmp", fg="blue")
+
+        painter = BSDPainter("Eafxcxdxbxegedabagacad")
+        assert painter.paint(file.name, file) == "test.txt"
+        assert painter.paint(folder.name, folder) == click.style(
+            "tmp", fg="blue", bg="black", bold=True
+        )
+
+
+class TestPainterFactory:
+    def test_detection(self, monkeypatch):
+        monkeypatch.setenv("LS_COLORS", "")
+        monkeypatch.setenv("LSCOLORS", "")
+        painter = PainterFactory.detect(True)
+        assert isinstance(painter, NonePainter)
+
+        monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
+        monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
+        painter_without_color = PainterFactory.detect(False)
+        painter_with_color = PainterFactory.detect(True)
+        assert isinstance(painter_without_color, NonePainter)
+        assert not isinstance(painter_with_color, NonePainter)
+
+        monkeypatch.setenv("LSCOLORS", "")
+        monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
+        painter = PainterFactory.detect(True)
+        assert isinstance(painter, GnuPainter)
+
+        monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
+        monkeypatch.setenv("LS_COLORS", "")
+        painter = PainterFactory.detect(True)
+        assert isinstance(painter, BSDPainter)
+
+
 class TestFilesFormatter:
 
     files = [
@@ -596,13 +840,13 @@ class TestFilesFormatter:
     files_and_folders = files + folders
 
     def test_simple_formatter(self):
-        formatter = SimpleFilesFormatter()
+        formatter = SimpleFilesFormatter(color=False)
         assert list(formatter(self.files_and_folders)) == [
             f"{file.name}" for file in self.files_and_folders
         ]
 
     def test_long_formatter(self):
-        formatter = LongFilesFormatter(human_readable=False)
+        formatter = LongFilesFormatter(human_readable=False, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "-r    2048 2018-01-01 03:00:00 File1",
             "-r    1024 2018-10-10 13:10:10 File2",
@@ -611,7 +855,7 @@ class TestFilesFormatter:
             "dm       0 2017-03-03 06:03:02 1Folder with space",
         ]
 
-        formatter = LongFilesFormatter(human_readable=True)
+        formatter = LongFilesFormatter(human_readable=True, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "-r    2.0K 2018-01-01 03:00:00 File1",
             "-r    1.0K 2018-10-10 13:10:10 File2",
@@ -621,21 +865,21 @@ class TestFilesFormatter:
         ]
 
     def test_column_formatter(self):
-        formatter = VerticalColumnsFilesFormatter(width=40)
+        formatter = VerticalColumnsFilesFormatter(width=40, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "File1             Folder1",
             "File2             1Folder with space",
             "File3 with space",
         ]
 
-        formatter = VerticalColumnsFilesFormatter(width=36)
+        formatter = VerticalColumnsFilesFormatter(width=36, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "File1             Folder1",
             "File2             1Folder with space",
             "File3 with space",
         ]
 
-        formatter = VerticalColumnsFilesFormatter(width=1)
+        formatter = VerticalColumnsFilesFormatter(width=1, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "File1",
             "File2",
@@ -647,9 +891,9 @@ class TestFilesFormatter:
     @pytest.mark.parametrize(
         "formatter",
         [
-            (SimpleFilesFormatter()),
-            (VerticalColumnsFilesFormatter(width=100)),
-            (LongFilesFormatter(human_readable=False)),
+            (SimpleFilesFormatter(color=False)),
+            (VerticalColumnsFilesFormatter(width=100, color=False)),
+            (LongFilesFormatter(human_readable=False, color=False)),
         ],
     )
     def test_formatter_with_empty_files(self, formatter):

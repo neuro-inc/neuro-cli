@@ -6,8 +6,7 @@ import pytest
 from yarl import URL
 
 from neuromation.cli.rc import ConfigFactory
-from neuromation.client import JobStatus as Status
-from tests.e2e.test_e2e_utils import wait_job_change_state_to
+from neuromation.client import JobStatus
 from tests.e2e.utils import attempt
 
 
@@ -46,18 +45,19 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
-def test_images_complete_lifecycle(run, image, tag, loop, docker):
+def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     # Let`s push image
-    captured = run(["image", "push", image])
+    captured = run_cli(["image", "push", image])
 
-    assert not captured.err
+    # stderr has "Used image ..." lines
+    # assert not captured.err
 
     image_url = URL(captured.out.strip())
     assert image_url.scheme == "image"
     assert image_url.path.lstrip("/") == image
 
     # Check if image available on registry
-    captured = run(["image", "ls"])
+    captured = run_cli(["image", "ls"])
 
     image_urls = [URL(line) for line in captured.out.splitlines() if line]
     for url in image_urls:
@@ -68,8 +68,9 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     pulled_image = f"{image}-pull"
 
     # Pull image as with another tag
-    captured = run(["image", "pull", str(image_url), pulled_image])
-    assert not captured.err
+    captured = run_cli(["image", "pull", str(image_url), pulled_image])
+    # stderr has "Used image ..." lines
+    # assert not captured.err
     assert pulled_image == captured.out.strip()
     # Check if image exists and remove, all-in-one swiss knife
     loop.run_until_complete(docker.images.delete(pulled_image, force=True))
@@ -79,7 +80,7 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     registry_url = URL(config.registry_url)
     path = image_url.path
     image_with_repo = f'{registry_url.host}/{image_url.host}/{path.lstrip("/")}'
-    captured = run(
+    captured = run_cli(
         [
             "job",
             "submit",
@@ -96,11 +97,11 @@ def test_images_complete_lifecycle(run, image, tag, loop, docker):
     assert not captured.err
     job_id = captured.out.strip()
     assert job_id.startswith("job-")
-    wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
     @attempt()
     def check_job_output():
-        captured = run(["job", "logs", job_id])
+        captured = run_cli(["job", "logs", job_id])
         assert not captured.err
         assert captured.out == tag
 
