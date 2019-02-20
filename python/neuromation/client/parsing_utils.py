@@ -8,8 +8,8 @@ from .images import IMAGE_SCHEME, DockerImage
 class ImageParser:
     default_tag = "latest"
 
-    def __init__(self, username: str, registry_url: str):
-        self._username = username
+    def __init__(self, default_user: str, registry_url: str):
+        self._default_user = default_user
         self._registry = self._get_registry_hostname(registry_url)
 
     def parse_local(self, image: str) -> DockerImage:
@@ -60,7 +60,7 @@ class ImageParser:
                     f"scheme '{IMAGE_SCHEME}://' expected, found: '{scheme}"
                 )
             registry = self._registry
-            owner = self._username if not url.host or url.host == "~" else url.host
+            owner = self._default_user if not url.host or url.host == "~" else url.host
         elif require_scheme:
             raise ValueError(f"scheme '{IMAGE_SCHEME}://' is required")
 
