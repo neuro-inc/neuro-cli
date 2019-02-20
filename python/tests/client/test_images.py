@@ -283,7 +283,7 @@ class TestImageParser:
     ):
         image = "image://ubuntu"
         with pytest.raises(ValueError, match="no image name specified"):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     @pytest.mark.parametrize("require_scheme", [True, False])
     def test_parse_as_neuro_image_with_scheme_2_slash_user_with_tag_fail(
@@ -291,7 +291,7 @@ class TestImageParser:
     ):
         image = "image://ubuntu:v10.04"
         with pytest.raises(ValueError, match="port can't be converted to integer"):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     @pytest.mark.parametrize("require_scheme", [True, False])
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag(
@@ -354,7 +354,7 @@ class TestImageParser:
         )
 
     @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag_2(
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag(
         self, require_scheme
     ):
         image = "image:////ubuntu"
@@ -411,49 +411,49 @@ class TestImageParser:
         image = "ubuntu"
         msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_no_slash_with_tag_fail(self):
         image = "ubuntu:v10.04"
         msg = "scheme 'image://' expected, found: 'ubuntu://'"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_1_slash_no_tag_fail(self):
         image = "library/ubuntu"
         msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_1_slash_with_tag_fail(self):
         image = "library/ubuntu:v10.04"
         msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_2_slash_no_tag_fail(self):
         image = "docker.io/library/ubuntu"
         msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_2_slash_with_tag_fail(self):
         image = "docker.io/library/ubuntu:v10.04"
         msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_3_slash_no_tag_fail(self):
         image = "something/docker.io/library/ubuntu"
         msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self):
         image = "something/docker.io/library/ubuntu:v10.04"
         msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
-            parsed = self.parser.parse_as_neuro_image(image)
+            self.parser.parse_as_neuro_image(image)
 
 
 @pytest.mark.usefixtures("patch_docker_host")

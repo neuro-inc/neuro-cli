@@ -76,7 +76,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     loop.run_until_complete(docker.images.delete(pulled_image, force=True))
 
     # Execute image and check result
-    config = ConfigFactory.load()
+    ConfigFactory.load()
     captured = run_cli(
         [
             "job",

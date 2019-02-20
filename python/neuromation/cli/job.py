@@ -16,7 +16,6 @@ from neuromation.client import (
     Resources,
     Volume,
 )
-from neuromation.client.images import IMAGE_SCHEME
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
