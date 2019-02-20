@@ -1,0 +1,1 @@
+Extended '/dev/shm' space (`--extshm`) turned on by default
