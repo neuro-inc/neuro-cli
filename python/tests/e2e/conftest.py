@@ -16,7 +16,7 @@ from yarl import URL
 
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
-from neuromation.client import FileStatusType
+from neuromation.client import FileStatusType, ResourceNotFound
 from neuromation.utils import run
 from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
 
@@ -143,7 +143,7 @@ class Helper:
                     await client.storage.download_file(
                         DUMMY_PROGRESS, path / name, URL("file:" + target)
                     )
-                except neuromation.client.ResourceNotFound:
+                except ResourceNotFound:
                     # the file was not synchronized between platform storage nodes
                     # need to try again
                     await asyncio.sleep(delay)
