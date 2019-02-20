@@ -68,7 +68,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     pulled_image = f"{image}-pull"
 
     # Pull image as with another tag
-    captured = run_cli(["image", "pull", str(image_url), pulled_image])
+    captured = run_cli(["image", "pull", f"image:{image}", pulled_image])
     # stderr has "Used image ..." lines
     # assert not captured.err
     assert pulled_image == captured.out.strip()
@@ -77,16 +77,11 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
 
     # Execute image and check result
     config = ConfigFactory.load()
-    registry_url = URL(config.registry_url)
-    path = image_url.path
-    image_with_repo = f'{registry_url.host}/{image_url.host}/{path.lstrip("/")}'
     captured = run_cli(
         [
             "job",
             "submit",
-            image_with_repo,
-            "--memory",
-            "100M",
+            f"image:{image}",
             "-g",
             "0",
             "-q",
