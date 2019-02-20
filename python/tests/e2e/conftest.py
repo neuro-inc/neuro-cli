@@ -129,19 +129,25 @@ class Helper:
         self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
     ):
         path = URL(self.tmpstorage + path)
+        if tmpname:
+            target = join(tmpdir, tmpname)
+            target_file = target
+        else:
+            target = tmpdir
+            target_file = join(tmpdir, name)
         async with self._config.make_client() as client:
-            if tmpname:
-                target = join(tmpdir, tmpname)
-                target_file = target
-            else:
-                target = tmpdir
-                target_file = join(tmpdir, name)
             delay = 5  # need a relative big initial delay to synchronize 16MB file
             await asyncio.sleep(delay)
             for i in range(5):
-                await client.storage.download_file(
-                    DUMMY_PROGRESS, path / name, URL("file:" + target)
-                )
+                try:
+                    await client.storage.download_file(
+                        DUMMY_PROGRESS, path / name, URL("file:" + target)
+                    )
+                except neuromation.client.ResourceNotFound:
+                    # the file was not synchronized between platform storage nodes
+                    # need to try again
+                    await asyncio.sleep(delay)
+                    delay *= 2
                 try:
                     assert self.hash_hex(target_file) == checksum
                     return
