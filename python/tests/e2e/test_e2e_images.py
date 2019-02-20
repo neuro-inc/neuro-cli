@@ -68,7 +68,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     pulled_image = f"{image}-pull"
 
     # Pull image as with another tag
-    captured = run_cli(["image", "pull", f"image:{image}", pulled_image])
+    captured = run_cli(["image", "pull", f"image://~/{image}", pulled_image])
     # stderr has "Used image ..." lines
     # assert not captured.err
     assert pulled_image == captured.out.strip()

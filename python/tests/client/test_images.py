@@ -123,7 +123,7 @@ class TestImageParser:
 
     def test_parse_as_docker_image_with_image_scheme_fail(self):
         image = "image://ubuntu"
-        msg = "scheme 'image://' is not allowed for local images"
+        msg = "scheme 'image://' is not allowed for docker images"
         with pytest.raises(ValueError, match=msg):
             self.parser.parse_as_docker_image(image)
 
@@ -415,7 +415,7 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_no_scheme_no_slash_with_tag_fail(self):
         image = "ubuntu:v10.04"
-        msg = "scheme 'image://' expected, found: 'ubuntu://'"
+        msg = "scheme 'image://' is required"
         with pytest.raises(ValueError, match=msg):
             self.parser.parse_as_neuro_image(image)
 

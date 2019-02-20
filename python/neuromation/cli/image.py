@@ -46,7 +46,7 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
     remote_img = (
         parser.parse_as_neuro_image(remote_image_name)
         if remote_image_name
-        else parser.convert_to_remote_in_neuro_registry(local_img)
+        else parser.convert_to_neuro_image(local_img)
     )
 
     # TODO: check out all todos by ajuszkowski in this PR!
