@@ -43,7 +43,7 @@ class DockerImage:
     def as_repo_str(self) -> str:
         # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
         pre = f"{self.registry}/{self.owner}/" if self.is_in_neuro_registry() else ""
-        return pre + self.name
+        return pre + self.as_local_str()
 
     def as_local_str(self) -> str:
         return f"{self.name}:{self.tag}"
