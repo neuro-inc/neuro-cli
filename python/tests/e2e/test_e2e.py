@@ -4,58 +4,54 @@ from time import sleep
 import pytest
 
 import neuromation
-from neuromation.client import FileStatusType
-from tests.e2e.test_e2e_utils import (
-    Status,
-    assert_job_state,
-    wait_job_change_state_from,
-)
-from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
+from neuromation.client import JobStatus
+from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
-def test_print_version(run):
+def test_print_version(run_cli):
     expected_out = f"Neuromation Platform Client {neuromation.__version__}"
 
-    captured = run(["--version"])
+    captured = run_cli(["--version"])
     assert not captured.err
     assert captured.out == expected_out
 
 
 @pytest.mark.e2e
-def test_print_config(run):
-    captured = run(["config", "show"])
+def test_print_config(run_cli):
+    captured = run_cli(["config", "show"])
     assert not captured.err
     assert "API URL: https://dev.neu.ro/api/v1" in captured.out
 
 
 @pytest.mark.e2e
-def test_print_config_token(run):
-    captured = run(["config", "show-token"])
+def test_print_config_token(run_cli):
+    captured = run_cli(["config", "show-token"])
     assert not captured.err
     assert captured.out  # some secure information was printed
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(run, tmpstorage):
+def test_empty_directory_ls_output(run_cli, helper):
     # Ensure output of ls - empty directory shall print nothing.
-    captured = run(["storage", "ls", tmpstorage])
-    assert not captured.err
+    captured = run_cli(["storage", "ls", helper.tmpstorage])
     assert not captured.out
+    # FIXME: stderr has "Using path ..." line
+    assert len(captured.err.splitlines()) == 1 and captured.err.startswith("Using path")
 
 
 @pytest.mark.e2e
-def test_e2e_job_top(run):
+def test_e2e_job_top(helper, run_cli):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
     bash_script = "sleep 10m"
     command = f"bash -c '{bash_script}'"
-    captured = run(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
+    captured = run_cli(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
     job_id = captured.out.strip()
-    wait_job_change_state_from(run, job_id, "Status: pending")
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
 
-    captured = run(["job", "top", job_id])
+    captured = run_cli(["job", "top", job_id])
 
     header_line, top_line = split_non_empty_parts(captured.out, separator="\n")
     header_parts = split_non_empty_parts(header_line, separator="\t")
@@ -88,11 +84,11 @@ def test_e2e_job_top(run):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_without(run):
+def test_e2e_shm_run_without(helper, run_cli):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    captured = run(
+    captured = run_cli(
         [
             "job",
             "submit",
@@ -110,18 +106,18 @@ def test_e2e_shm_run_without(run):
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run, job_id, "Status: pending")
-    wait_job_change_state_from(run, job_id, "Status: running")
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run, job_id, "Status: succeeded")
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_with(run):
+def test_e2e_shm_run_with(helper, run_cli):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    captured = run(
+    captured = run_cli(
         [
             "job",
             "submit",
@@ -139,95 +135,62 @@ def test_e2e_shm_run_with(run):
     )
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run, job_id, "Status: pending")
-    wait_job_change_state_from(run, job_id, "Status: running")
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    assert_job_state(run, job_id, "Status: failed")
+    helper.assert_job_state(job_id, JobStatus.FAILED)
 
 
 @pytest.mark.e2e
-def test_e2e_storage(
-    data,
-    run,
-    tmp_path,
-    tmpstorage,
-    check_create_dir_on_storage,
-    check_upload_file_to_storage,
-    check_file_exists_on_storage,
-    check_file_on_storage_checksum,
-    check_rename_file_on_storage,
-    check_rename_directory_on_storage,
-    check_rmdir_on_storage,
-    check_dir_absent_on_storage,
-):
+def test_e2e_storage(data, run_cli, tmp_path, helper):
     srcfile, checksum = data
 
     # Create directory for the test
-    check_create_dir_on_storage("folder")
+    helper.check_create_dir_on_storage("folder")
 
     # Upload local file
-    check_upload_file_to_storage("foo", "folder", str(srcfile))
+    helper.check_upload_file_to_storage("foo", "folder", str(srcfile))
 
     # Confirm file has been uploaded
-    check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
+    helper.check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
 
     # Download into local file and confirm checksum
-    check_file_on_storage_checksum("foo", "folder", checksum, str(tmp_path), "bar")
+    helper.check_file_on_storage_checksum(
+        "foo", "folder", checksum, str(tmp_path), "bar"
+    )
 
     # Download into deeper local dir and confirm checksum
     localdir = tmp_path / "baz"
     localdir.mkdir()
-    check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
+    helper.check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
 
     # Rename file on the storage
-    check_rename_file_on_storage("foo", "folder", "bar", "folder")
-
-    # Confirm file has been renamed
-    captured = run(["storage", "ls", "-l", f"{tmpstorage}folder"])
-    assert not captured.err
-    files = output_to_files(captured.out)
-    for file in files:
-        if file.name == "bar" and file.type == FileStatusType.FILE:
-            break
-    else:
-        raise AssertionError("File bar not found after renaming from foo")
-    for file in files:
-        if file.name == "foo" and file.type == FileStatusType.FILE:
-            raise AssertionError("File foo still on storage after renaming to bar")
+    helper.check_rename_file_on_storage("foo", "folder", "bar", "folder")
 
     # Rename directory on the storage
-    check_rename_directory_on_storage("folder", "folder2")
+    helper.check_rename_directory_on_storage("folder", "folder2")
 
     # Remove test dir
-    check_rmdir_on_storage("folder2")
+    helper.check_rmdir_on_storage("folder2")
 
     # And confirm
-    check_dir_absent_on_storage("folder2", "")
+    helper.check_dir_absent_on_storage("folder2", "")
 
 
 @pytest.mark.e2e
-def test_job_storage_interaction(
-    run,
-    data,
-    tmpstorage,
-    tmp_path,
-    check_create_dir_on_storage,
-    check_upload_file_to_storage,
-    check_file_on_storage_checksum,
-    check_file_exists_on_storage,
-):
+def test_job_storage_interaction(helper, run_cli, data, tmp_path):
     srcfile, checksum = data
     # Create directory for the test
-    check_create_dir_on_storage("data")
+    helper.check_create_dir_on_storage("data")
 
     # Upload local file
-    check_upload_file_to_storage("foo", "data", str(srcfile))
+    helper.check_upload_file_to_storage("foo", "data", str(srcfile))
 
     delay = 0.5
     for i in range(5):
         # Run a job to copy file
         command = "cp /data/foo /res/foo"
-        captured = run(
+        captured = run_cli(
             [
                 "job",
                 "submit",
@@ -240,9 +203,9 @@ def test_job_storage_interaction(
                 "--http",
                 "80",
                 "--volume",
-                f"{tmpstorage}data:/data:ro",
+                f"{helper.tmpstorage}data:/data:ro",
                 "--volume",
-                f"{tmpstorage}result:/res:rw",
+                f"{helper.tmpstorage}result:/res:rw",
                 "--non-preemptible",
                 UBUNTU_IMAGE_NAME,
                 command,
@@ -251,15 +214,17 @@ def test_job_storage_interaction(
         job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
 
         # Wait for job to finish
-        wait_job_change_state_from(run, job_id, Status.PENDING)
-        wait_job_change_state_from(run, job_id, Status.RUNNING)
+        helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
         try:
-            assert_job_state(run, job_id, Status.SUCCEEDED)
+            helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
             # Confirm file has been copied
-            check_file_exists_on_storage("foo", "", FILE_SIZE_B)
+            helper.check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
             # Download into local dir and confirm checksum
-            check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")
+            helper.check_file_on_storage_checksum(
+                "foo", "result", checksum, tmp_path, "bar"
+            )
 
             break
         except AssertionError:

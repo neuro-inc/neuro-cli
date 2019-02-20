@@ -1,10 +1,4 @@
-import re
-import time
 from time import sleep
-from typing import Sequence
-
-from _sha1 import sha1
-from neuromation.client import FileStatus, FileStatusType
 
 
 BLOCK_SIZE_MB = 16
@@ -27,42 +21,6 @@ file_format_re = (
     r"(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+"
     r"(?P<name>.+)"
 )
-
-
-def output_to_files(output: str) -> Sequence[FileStatus]:
-    result = []
-    for match in re.finditer(file_format_re, output):
-        type = FileStatusType.FILE
-        if match["type"] == "d":
-            type = FileStatusType.DIRECTORY
-
-        permission = "read"
-        if match["permission"] == "w":
-            permission = "write"
-        elif match["permission"] == "m":
-            permission = "manage"
-
-        ts = int(time.mktime(time.strptime(match["time"], "%Y-%m-%d %H:%M:%S")))
-
-        result.append(
-            FileStatus(
-                path=match["name"],
-                size=int(match["size"]),
-                type=type,
-                modification_time=ts,
-                permission=permission,
-            )
-        )
-    return result
-
-
-def hash_hex(file):
-    _hash = sha1()
-    with open(file, "rb") as f:
-        for block in iter(lambda: f.read(BLOCK_SIZE_MB * 1024 * 1024), b""):
-            _hash.update(block)
-
-    return _hash.hexdigest()
 
 
 def attempt(attempts: int = 4, sleep_time: float = 15.0):

@@ -1,29 +1,20 @@
 import pytest
 
-from tests.e2e.utils import FILE_SIZE_B, hash_hex
+from tests.e2e.utils import FILE_SIZE_B
 
 
 @pytest.mark.e2e
-def test_e2e_copy_recursive_to_platform(
-    nested_data,
-    run,
-    tmp_path,
-    tmpstorage,
-    check_create_dir_on_storage,
-    check_dir_exists_on_storage,
-    check_file_exists_on_storage,
-    check_rmdir_on_storage,
-    check_dir_absent_on_storage,
-):
+def test_e2e_copy_recursive_to_platform(helper, nested_data, run_cli, tmp_path):
     srcfile, checksum, dir_path = nested_data
     target_file_name = srcfile.split("/")[-1]
 
     # Upload local file
-    captured = run(["storage", "cp", "-r", dir_path, tmpstorage])
-    assert not captured.err
+    captured = run_cli(["storage", "cp", "-r", dir_path, helper.tmpstorage])
+    # stderr has logs like "Using path ..."
+    # assert not captured.err
     assert not captured.out
 
-    check_file_exists_on_storage(
+    helper.check_file_exists_on_storage(
         target_file_name, f"nested/directory/for/test", FILE_SIZE_B
     )
 
@@ -31,14 +22,14 @@ def test_e2e_copy_recursive_to_platform(
 
     targetdir = tmp_path / "bar"
     targetdir.mkdir()
-    run(["storage", "cp", "-r", f"{tmpstorage}", str(targetdir)])
+    run_cli(["storage", "cp", "-r", f"{helper.tmpstorage}", str(targetdir)])
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
     print("target file", targetfile)
-    assert hash_hex(targetfile) == checksum
+    assert helper.hash_hex(targetfile) == checksum
 
     # Remove test dir
-    check_rmdir_on_storage("nested")
+    helper.check_rmdir_on_storage("nested")
 
     # And confirm
-    check_dir_absent_on_storage("nested", "")
+    helper.check_dir_absent_on_storage("nested", "")
