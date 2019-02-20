@@ -45,11 +45,28 @@ def test_e2e_job_top(helper, run_cli):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
-    bash_script = "sleep 10m"
+    bash_script = (
+        "COUNTER=0; while [[ ! -f /data/dummy ]] && [[ $COUNTER -lt 100 ]]; "
+        "do sleep 1; let COUNTER+=1; done; sleep 15"
+    )
     command = f"bash -c '{bash_script}'"
-    captured = run_cli(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
+    captured = run_cli(
+        [
+            "job",
+            "submit",
+            "--volume",
+            f"{helper.tmpstorage}:/data:ro",
+            UBUNTU_IMAGE_NAME,
+            command,
+            "--quiet",
+        ]
+    )
     job_id = captured.out.strip()
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+
+    # the job is running
+    # upload a file and unblock the job
+    helper.check_upload_file_to_storage("dummy", "", __file__)
 
     captured = run_cli(["job", "top", job_id])
 
