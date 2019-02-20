@@ -173,8 +173,16 @@ class Helper:
     @run_async
     async def check_rm_file_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
+        delay = 0.5
         async with self._config.make_client() as client:
-            await client.storage.rm(path / name)
+            for i in range(10):
+                try:
+                    await client.storage.rm(path / name)
+                except ResourceNotFound:
+                    await asyncio.sleep(delay)
+                    delay *= 2
+                else:
+                    return
 
     @run_async
     async def check_upload_file_to_storage(self, name: str, path: str, local_file: str):
