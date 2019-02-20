@@ -45,7 +45,7 @@ def test_e2e_job_top(helper, run_cli):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
-    bash_script = "while [[ ! -f /data/dummy ]]; do; sleep 1 done; sleep 30"
+    bash_script = "while [[ ! -f /data/dummy ]]; do sleep 1; done; sleep 30"
     command = f"bash -c '{bash_script}'"
     captured = run_cli(
         [
