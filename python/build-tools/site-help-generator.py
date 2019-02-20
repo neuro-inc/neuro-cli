@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 
-import os
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
-from textwrap import dedent
-from typing import Any, List
 
 import click
 
@@ -28,13 +24,13 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
     out = []
     with click.Context(cmd, parent=parent_ctx, info_name=cmd.name) as ctx:
         category = parent_ctx.command.name
-        if category == 'cli':
-            category = 'shortcuts'
+        if category == "cli":
+            category = "shortcuts"
         meta = {
             "title": ctx.command_path,
             "short_title": cmd.name,
             "category": category,
-            "path": "/" + category + '/' + cmd.name,
+            "path": "/" + category + "/" + cmd.name,
             "index": "true",
         }
         write_meta(meta, out)
@@ -62,12 +58,12 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
 
             # durty code for wrapping options with backticks
             l4 = []
-            l1 = re.split(' ?/ ?', name)
+            l1 = re.split(" ?/ ?", name)
             for part in l1:
-                l2 = re.split(' ?, ?', part)
-                l4.append(', '.join(['`'+ part2+'`' for part2 in l2]))
+                l2 = re.split(" ?, ?", part)
+                l4.append(", ".join(["`" + part2 + "`" for part2 in l2]))
 
-            name2 = ' / '.join(l4)
+            name2 = " / ".join(l4)
 
             w1 = max(w1, len(name2))
             w2 = max(w2, len(descr))
@@ -146,8 +142,8 @@ def gen_shortcuts(index, commands, target_path, ctx):
     meta = {
         "title": "shortcuts",
         "path": "/shortcuts",
-        "category": 'shortcuts',
-        'index': 'true',
+        "category": "shortcuts",
+        "index": "true",
     }
     write_meta(meta, out)
 
@@ -155,10 +151,7 @@ def gen_shortcuts(index, commands, target_path, ctx):
     out.append("")
 
     for cmd in commands:
-        out.append(
-            f"- [neuro {cmd.name}](/{cmd.name}): "
-            f"{cmd.get_short_help_str()}"
-        )
+        out.append(f"- [neuro {cmd.name}](/{cmd.name}): " f"{cmd.get_short_help_str()}")
 
     fname = target_path / f"{index:02d}_00__shortcuts.md"
     fname.write_text("\n".join(out))
@@ -196,7 +189,7 @@ def main(target_dir):
                 continue
             if cmd.hidden:
                 continue
-            if cmd.name == 'help':
+            if cmd.name == "help":
                 continue
 
             if isinstance(cmd, click.MultiCommand):
@@ -207,7 +200,7 @@ def main(target_dir):
     for i, group in enumerate(groups, 1):
         gen_group(i, group, target_path, ctx)
 
-    gen_shortcuts(i+1, shortcuts, target_path, ctx)
+    gen_shortcuts(i + 1, shortcuts, target_path, ctx)
 
 
 if __name__ == "__main__":
