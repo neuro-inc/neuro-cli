@@ -9,6 +9,7 @@ from tests.e2e.test_e2e_utils import (
     Status,
     assert_job_state,
     wait_job_change_state_from,
+    wait_job_change_state_to,
 )
 from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME, output_to_files
 
@@ -88,61 +89,36 @@ def test_e2e_job_top(run):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_without(run):
+@pytest.mark.parametrize(
+    "switch,expected",
+    [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
+)
+def test_e2e_shm_switch(switch, expected, run):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    captured = run(
-        [
-            "job",
-            "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "--non-preemptible",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
+    arguments = [
+        "job",
+        "submit",
+        "-m",
+        "20M",
+        "-c",
+        "0.1",
+        "-g",
+        "0",
+        "--non-preemptible",
+    ]
+    if switch is not None:
+        arguments.append(switch)
+    arguments += [UBUNTU_IMAGE_NAME, command]
+    captured = run(arguments)
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run, job_id, "Status: pending")
-    wait_job_change_state_from(run, job_id, "Status: running")
-
-    assert_job_state(run, job_id, "Status: succeeded")
-
-
-@pytest.mark.e2e
-def test_e2e_shm_run_with(run):
-    # Start the df test job
-    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
-    command = f"bash -c '{bash_script}'"
-    captured = run(
-        [
-            "job",
-            "submit",
-            "-x",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "--non-preemptible",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    wait_job_change_state_from(run, job_id, "Status: pending")
-    wait_job_change_state_from(run, job_id, "Status: running")
-
-    assert_job_state(run, job_id, "Status: failed")
+    if expected:
+        wait_job_change_state_to(run, job_id, Status.FAILED, Status.SUCCEEDED)
+    else:
+        wait_job_change_state_to(run, job_id, Status.SUCCEEDED, Status.FAILED)
 
 
 @pytest.mark.e2e
