@@ -40,7 +40,7 @@ class ImageParser:
                 f"scheme '{IMAGE_SCHEME}://' is not allowed for local images"
             )
 
-        name, tag = self._split_image_name(image.lstrip("/"))
+        name, tag = self._split_image_name(image)
 
         return DockerImage(name=name, tag=tag)
 
@@ -57,7 +57,7 @@ class ImageParser:
             if url.scheme != IMAGE_SCHEME:
                 scheme = f"{url.scheme}://" if url.scheme else ""
                 raise ValueError(
-                    f"scheme '{IMAGE_SCHEME}://' expected, found: '{scheme}"
+                    f"scheme '{IMAGE_SCHEME}://' expected, found: '{scheme}'"
                 )
             registry = self._registry
             owner = self._default_user if not url.host or url.host == "~" else url.host
@@ -90,8 +90,8 @@ class ImageParser:
             )
         return url.host
 
-    def _check_allowed_uri_elements(self, url) -> None:
-        if url.path == "/":
+    def _check_allowed_uri_elements(self, url: URL) -> None:
+        if not url.path or url.path == "/":
             raise ValueError("no image name specified")
         if url.query:
             raise ValueError(f"query is not allowed, found: '{url.query}'")
@@ -102,4 +102,4 @@ class ImageParser:
         if url.password:
             raise ValueError(f"password is not allowed, found: '{url.password}'")
         if url.port:
-            raise ValueError(f"password is not allowed, found: '{url.port}'")
+            raise ValueError(f"port is not allowed, found: '{url.port}'")
