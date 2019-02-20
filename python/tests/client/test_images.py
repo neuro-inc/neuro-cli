@@ -472,6 +472,8 @@ class TestImageParser:
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
+    parser = ImageParser(default_user="bob", registry_url="https://reg.neu.ro")
+
     @pytest.fixture()
     def spinner(self) -> SpinnerBase:
         return SpinnerBase.create_spinner(False)
@@ -483,22 +485,18 @@ class TestImages:
         ),
     )
     async def test_unavailable_docker(self, patched_init, token, spinner):
+        image = self.parser.parse_remote(f"image://bob/image:bananas")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:bananas"), client.username
-                )
                 await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
     )
     async def test_unknown_docker_error(self, patched_init, token, spinner):
+        image = self.parser.parse_remote(f"image://bob/image:bananas")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"something went wrong"):
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:bananas"), client.username
-                )
                 await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
@@ -506,11 +504,9 @@ class TestImages:
         patched_tag.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
+        image = self.parser.parse_remote(f"image://bob/image:bananas-no-more")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"not found"):
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:bananas-no-more"), client.username
-                )
                 await client.images.push(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
@@ -522,11 +518,9 @@ class TestImages:
         patched_push.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
+        image = self.parser.parse_remote(f"image://bob/image:bananas-no-more")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(AuthorizationError):
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:bananas-not-for-you"), client.username
-                )
                 await client.images.push(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
@@ -539,11 +533,9 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_push.return_value = error_generator()
+        image = self.parser.parse_remote(f"image://bob/image:bananas-wrong-food")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError) as exc_info:
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:bananas-wrong-food"), client.username
-                )
                 await client.images.push(image, image, spinner)
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
         assert exc_info.value.message == "Mocked message"
@@ -556,10 +548,8 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
+        image = self.parser.parse_remote(f"image://bob/image:bananas-is-here")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
-            image = DockerImage.build_remote(
-                URL("image://bob/image:banana-is-here"), client.username
-            )
             result = await client.images.push(image, image, spinner)
         assert result == image
 
@@ -569,10 +559,8 @@ class TestImages:
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
+            image = self.parser.parse_remote(f"image://bob/image:no-bananas-here")
             with pytest.raises(ValueError, match=r"not found"):
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:no-bananas-here"), client.username
-                )
                 await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
@@ -580,11 +568,9 @@ class TestImages:
         patched_pull.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
+        image = self.parser.parse_remote(f"image://bob/image:not-your-bananas")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(AuthorizationError):
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:not-your-bananas"), client.username
-                )
                 await client.images.pull(image, image, spinner)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
@@ -593,11 +579,9 @@ class TestImages:
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_pull.return_value = error_generator()
+        image = self.parser.parse_remote(f"image://bob/image:nuts-here")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError) as exc_info:
-                image = DockerImage.build_remote(
-                    URL("image://bob/image:nuts-here"), client.username
-                )
                 await client.images.pull(image, image, spinner)
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
         assert exc_info.value.message == "Mocked message"
@@ -610,10 +594,8 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_pull.return_value = message_generator()
+        image = self.parser.parse_remote(f"image://bob/image:bananas")
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
-            image = DockerImage.build_remote(
-                URL("image://bob/image:bananas"), client.username
-            )
             result = await client.images.pull(image, image, spinner)
         assert result == image
 
