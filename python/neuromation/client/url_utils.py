@@ -1,10 +1,6 @@
-import logging
 from pathlib import Path
 
 from yarl import URL
-
-
-log = logging.getLogger(__name__)
 
 
 def normalize_storage_path_uri(uri: URL, username: str) -> URL:
