@@ -198,7 +198,7 @@ async def submit(
     image_parser = ImageParser(
         cfg.username, cfg.registry_url, remote_by_default_in_neuro_registry=False
     )
-    parsed_image = image_parser.parse_remote(image, require_scheme=False)
+    parsed_image = image_parser.parse_as_remote(image, require_scheme=False)
     # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
     if not quiet:
         log.info(f"Using image '{parsed_image.as_url()}'")

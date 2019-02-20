@@ -18,19 +18,19 @@ class ImageParser:
         self._registry = self._get_registry_hostname(registry_url)
         self._remote_by_default_in_neuro_registry = remote_by_default_in_neuro_registry
 
-    def parse_local(self, image: str) -> DockerImage:
+    def parse_as_local(self, image: str) -> DockerImage:
         try:
             return self._parse_local(image)
         except ValueError as e:
             raise ValueError(f"Invalid local image '{image}': {e}") from e
 
-    def parse_remote(self, image: str, require_scheme: bool) -> DockerImage:
+    def parse_as_remote(self, image: str, require_scheme: bool) -> DockerImage:
         try:
             return self._parse_remote(image, require_scheme)
         except ValueError as e:
             if not require_scheme:
                 try:
-                    as_local = self.parse_local(image)
+                    as_local = self.parse_as_local(image)
                     return DockerImage(
                         name=as_local.name,
                         tag=as_local.tag,

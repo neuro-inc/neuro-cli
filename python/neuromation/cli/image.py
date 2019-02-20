@@ -44,11 +44,11 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
     parser = ImageParser(
         cfg.username, cfg.registry_url, remote_by_default_in_neuro_registry=True
     )
-    local_img = parser.parse_local(image_name)
+    local_img = parser.parse_as_local(image_name)
     remote_img = (
-        parser.parse_remote(remote_image_name, require_scheme=True)
+        parser.parse_as_remote(remote_image_name, require_scheme=True)
         if remote_image_name
-        else parser.parse_remote(image_name, require_scheme=False)
+        else parser.parse_as_remote(image_name, require_scheme=False)
     )
 
     # TODO: check out all todos by ajuszkowski in this PR!
@@ -87,11 +87,11 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
     parser = ImageParser(
         cfg.username, cfg.registry_url, remote_by_default_in_neuro_registry=True
     )
-    remote_img = parser.parse_remote(image_name, require_scheme=True)
+    remote_img = parser.parse_as_remote(image_name, require_scheme=True)
     local_img = (
-        parser.parse_local(local_image_name)
+        parser.parse_as_local(local_image_name)
         if local_image_name
-        else parser.parse_local(remote_img.as_local())
+        else parser.parse_as_local(remote_img.as_local())
     )
 
     log.info(f"Using remote image '{remote_img.as_url()}'")
