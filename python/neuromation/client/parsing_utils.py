@@ -53,7 +53,9 @@ class ImageParser:
         if not image:
             raise ValueError("empty image name")
         if not self.is_in_neuro_registry(image):
-            raise ValueError(f"scheme '{IMAGE_SCHEME}://' is required")
+            raise ValueError(
+                f"scheme '{IMAGE_SCHEME}://' is required for remote images"
+            )
 
         url = URL(image)
         assert url.scheme == IMAGE_SCHEME

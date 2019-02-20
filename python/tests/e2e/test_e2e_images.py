@@ -5,7 +5,6 @@ import aiodocker
 import pytest
 from yarl import URL
 
-from neuromation.cli.rc import ConfigFactory
 from neuromation.client import JobStatus
 from tests.e2e.utils import attempt
 
@@ -76,7 +75,6 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     loop.run_until_complete(docker.images.delete(pulled_image, force=True))
 
     # Execute image and check result
-    ConfigFactory.load()
     captured = run_cli(
         [
             "job",
