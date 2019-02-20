@@ -1,7 +1,8 @@
+import logging
 import re
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import aiodocker
 import aiohttp
@@ -17,44 +18,32 @@ from .registry import Registry
 STATUS_FORBIDDEN = 403
 STATUS_NOT_FOUND = 404
 STATUS_CUSTOM_ERROR = 900
-DEFAULT_TAG = "latest"
+
+log = logging.getLogger(__name__)
+
+IMAGE_SCHEME = "image"
 
 
+# TODO: maybe move to cli/utqils as image_utils
 @dataclass(frozen=True)
-class Image:
-    url: URL
-    local: str
+class DockerImage:
+    name: str
+    tag: str = "latest"
+    owner: Optional[str] = None
+    registry: Optional[str] = None
 
-    @classmethod
-    def from_url(cls, url: URL, username: str) -> "Image":
-        if not url:
-            raise ValueError(f"Image URL cannot be empty")
-        if url.scheme != "image":
-            raise ValueError(f"Invalid scheme, for image URL: {url}")
-        if url.path == "/" or url.query or url.fragment or url.user or url.port:
-            raise ValueError(f"Invalid image URL: {url}")
-        colon_count = url.path.count(":")
-        if colon_count > 1:
-            raise ValueError(f"Invalid image URL, only one colon allowed: {url}")
+    def as_url(self) -> str:
+        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
+        pre = f"{IMAGE_SCHEME}://{self.owner}/" if self.registry and self.owner else ""
+        return f"{pre}{self.name}:{self.tag}"
 
-        if not colon_count:
-            url = url.with_path(f"{url.path}:{DEFAULT_TAG}")
+    def as_repo(self) -> str:
+        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
+        pre = f"{self.registry}/{self.owner}/" if self.registry and self.owner else ""
+        return pre + self.name
 
-        if not url.host:
-            url = URL(f"image://{username}/{url.path.lstrip('/')}")
-
-        return cls(url=url, local=url.path.lstrip("/"))
-
-    @classmethod
-    def from_local(cls, name: str, username: str) -> "Image":
-        colon_count = name.count(":")
-        if colon_count > 1:
-            raise ValueError(f"Invalid image name, only one colon allowed: {name}")
-
-        if not colon_count:
-            name = f"{name}:{DEFAULT_TAG}"
-
-        return cls(url=URL(f"image://{username}/{name}"), local=name)
+    def as_local(self) -> str:
+        return f"{self.name}:{self.tag}"
 
 
 class Images:
@@ -93,22 +82,21 @@ class Images:
     def _auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._config.token}
 
-    def _repo(self, image: Image) -> str:
-        # TODO (ajuszkowski, 11-Feb-2019) here we use only registry host, not host:port
-        return f"{self._config.registry_url.host}/{image.url.host}{image.url.path}"
-
     async def push(
-        self, local_image: Image, remote_image: Image, spinner: AbstractSpinner
-    ) -> Image:
-        repo = self._repo(local_image)
+        self,
+        local_image: DockerImage,
+        remote_image: DockerImage,
+        spinner: AbstractSpinner,
+    ) -> DockerImage:
+        repo = remote_image.as_repo()
         spinner.start("Pushing image ...")
         try:
-            await self._docker.images.tag(local_image.local, repo)
+            await self._docker.images.tag(local_image.as_local(), repo)
         except DockerError as error:
             spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
-                    f"Image {local_image.local} was not found "
+                    f"Image {local_image.as_local()} was not found "
                     "in your local docker images"
                 ) from error
         spinner.tick()
@@ -121,7 +109,9 @@ class Images:
             spinner.complete()
             # TODO check this part when registry fixed
             if error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(f"Access denied {remote_image.url}") from error
+                raise AuthorizationError(
+                    f"Access denied {remote_image.as_url()}"
+                ) from error
             raise  # pragma: no cover
         async for obj in stream:
             spinner.tick()
@@ -133,9 +123,12 @@ class Images:
         return remote_image
 
     async def pull(
-        self, remote_image: Image, local_image: Image, spinner: AbstractSpinner
-    ) -> Image:
-        repo = self._repo(remote_image)
+        self,
+        remote_image: DockerImage,
+        local_image: DockerImage,
+        spinner: AbstractSpinner,
+    ) -> DockerImage:
+        repo = remote_image.as_repo()
         spinner.start("Pulling image ...")
         try:
             stream = await self._docker.pull(
@@ -146,11 +139,13 @@ class Images:
             spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
-                    f"Image {remote_image.url} was not found " "in registry"
+                    f"Image {remote_image.as_url()} was not found " "in registry"
                 ) from error
             # TODO check this part when registry fixed
             elif error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(f"Access denied {remote_image.url}") from error
+                raise AuthorizationError(
+                    f"Access denied {remote_image.as_url()}"
+                ) from error
             raise  # pragma: no cover
         spinner.tick()
 
@@ -162,7 +157,7 @@ class Images:
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         spinner.tick()
 
-        await self._docker.images.tag(repo, local_image.local)
+        await self._docker.images.tag(repo, local_image.as_local())
         spinner.complete()
 
         return local_image
