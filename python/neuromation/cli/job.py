@@ -146,7 +146,7 @@ async def submit(
     wait_start: bool,
 ) -> None:
     """
-    Submit an image to run on the cluster.
+    Submit a job to run in the cluster.
 
     IMAGE container image name
     COMMANDS list will be passed as commands to model container.

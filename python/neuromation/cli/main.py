@@ -55,7 +55,11 @@ def setup_console_handler(
 LOG_ERROR = log.error
 
 
-@click.group(cls=MainGroup, invoke_without_command=True)
+@click.group(
+    cls=MainGroup,
+    invoke_without_command=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 @click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode")
 @click.option(
     "--show-traceback",
@@ -201,7 +205,7 @@ def main(args: Optional[List[str]] = None) -> None:
         LOG_ERROR(f"Cannot authenticate ({error})")
         sys.exit(os.EX_NOPERM)
     except neuromation.client.AuthorizationError as error:
-        LOG_ERROR(f"You haven`t enough permission ({error})")
+        LOG_ERROR(f"Not enough permissions ({error})")
         sys.exit(os.EX_NOPERM)
 
     except neuromation.client.ClientError as error:
