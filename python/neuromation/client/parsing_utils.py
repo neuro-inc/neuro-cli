@@ -8,9 +8,15 @@ from .images import IMAGE_SCHEME, DockerImage
 class ImageParser:
     default_tag = "latest"
 
-    def __init__(self, default_user: str, registry_url: str):
+    def __init__(
+        self,
+        default_user: str,
+        registry_url: str,
+        remote_by_default_in_neuro_registry: bool,
+    ):
         self._default_user = default_user
         self._registry = self._get_registry_hostname(registry_url)
+        self._remote_by_default_in_neuro_registry = remote_by_default_in_neuro_registry
 
     def parse_local(self, image: str) -> DockerImage:
         try:
@@ -18,14 +24,19 @@ class ImageParser:
         except ValueError as e:
             raise ValueError(f"Invalid local image '{image}': {e}") from e
 
-    def parse_remote(self, image: str, require_scheme: bool = True) -> DockerImage:
+    def parse_remote(self, image: str, require_scheme: bool) -> DockerImage:
         try:
             return self._parse_remote(image, require_scheme)
         except ValueError as e:
             if not require_scheme:
                 try:
                     as_local = self.parse_local(image)
-                    return DockerImage(name=as_local.name, tag=as_local.tag)
+                    return DockerImage(
+                        name=as_local.name,
+                        tag=as_local.tag,
+                        owner=self._default_user,
+                        registry=self._registry,
+                    )
                 except ValueError:
                     pass
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
@@ -63,6 +74,9 @@ class ImageParser:
             owner = self._default_user if not url.host or url.host == "~" else url.host
         elif require_scheme:
             raise ValueError(f"scheme '{IMAGE_SCHEME}://' is required")
+        elif self._remote_by_default_in_neuro_registry:
+            registry = self._registry
+            owner = self._default_user
 
         name, tag = self._split_image_name(url.path.lstrip("/"))
 
