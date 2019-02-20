@@ -31,7 +31,6 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
             "short_title": cmd.name,
             "category": category,
             "path": "/" + category + "/" + cmd.name,
-            "index": "false",
         }
         write_meta(meta, out)
 
