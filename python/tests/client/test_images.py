@@ -7,12 +7,12 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.command_spinner import SpinnerBase
-from neuromation.client import AuthorizationError, Client
+from neuromation.client import AuthorizationError, Client, ImageParser
 from neuromation.client.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
     STATUS_NOT_FOUND,
-    Image,
+    DockerImage,
 )
 
 
@@ -24,95 +24,450 @@ def patch_docker_host():
         yield
 
 
-class TestImage:
-    @pytest.mark.parametrize(
-        "test_url,expected_url,expected_local",
-        [
-            (URL("image://bob/php:7-fpm"), URL("image://bob/php:7-fpm"), "php:7-fpm"),
-            (URL("image://bob/php"), URL("image://bob/php:latest"), "php:latest"),
-            (URL("image:php:7-fpm"), URL("image://bob/php:7-fpm"), "php:7-fpm"),
-            (URL("image:php"), URL("image://bob/php:latest"), "php:latest"),
-            (
-                URL("image://bob/project/php:7-fpm"),
-                URL("image://bob/project/php:7-fpm"),
-                "project/php:7-fpm",
-            ),
-            (
-                URL("image:project/php"),
-                URL("image://bob/project/php:latest"),
-                "project/php:latest",
-            ),
-        ],
-    )
-    def test_correct_url(self, test_url, expected_url, expected_local):
-        image = Image.from_url(test_url, "bob")
-        assert image.url == expected_url
-        assert image.local == expected_local
-
-    def test_from_empty_url(self):
-        with pytest.raises(ValueError, match="Image URL cannot be empty"):
-            Image.from_url(url=URL(""), username="bob")
-        pass
-
-    def test_from_invalid_scheme_url(self):
-        with pytest.raises(ValueError, match=r"Invalid scheme"):
-            Image.from_url(
-                url=URL("http://neuromation.io/what/does/the/fox/say"), username="ylvis"
-            )
-        pass
-
-    def test_empty_path_url(self):
-        with pytest.raises(ValueError, match=r"Image URL cannot be empty"):
-            Image.from_url(url=URL("image:"), username="bob")
-        with pytest.raises(ValueError, match=r"Invalid image"):
-            Image.from_url(url=URL("image:///"), username="bob")
-        pass
-
-    def test_url_with_query(self):
-        with pytest.raises(ValueError, match=r"Invalid image"):
-            Image.from_url(url=URL("image://bob/image?bad=idea"), username="bob")
-        pass
-
-    def test_url_with_user(self):
-        with pytest.raises(ValueError, match=r"Invalid image"):
-            Image.from_url(url=URL("image://alien@bob/image"), username="bob")
-        pass
-
-    def test_url_with_port(self):
-        with pytest.raises(ValueError, match=r"Invalid image"):
-            Image.from_url(url=URL("image://bob:80/image"), username="bob")
-        pass
-
-    def test_url_with_few_colons(self):
-        with pytest.raises(ValueError, match=r"only one colon allowed"):
-            Image.from_url(url=URL("image://bob/image:tag1:tag2"), username="bob")
-        pass
+class TestImageParser:
+    parser = ImageParser(default_user="alice", registry_url="https://reg.neu.ro")
 
     @pytest.mark.parametrize(
-        "test_local,expected_url,expected_local",
+        "registry_url",
         [
-            ("php:7-fpm", URL("image://bob/php:7-fpm"), "php:7-fpm"),
-            ("php", URL("image://bob/php:latest"), "php:latest"),
-            (
-                "project/php:7-fpm",
-                URL("image://bob/project/php:7-fpm"),
-                "project/php:7-fpm",
-            ),
-            (
-                "project/php",
-                URL("image://bob/project/php:latest"),
-                "project/php:latest",
-            ),
+            "http://reg.neu.ro",
+            "https://reg.neu.ro",
+            "http://reg.neu.ro:5000",
+            "https://reg.neu.ro/bla/bla",
+            "http://reg.neu.ro:5000/bla/bla",
         ],
     )
-    def test_correct_local(self, test_local, expected_url, expected_local):
-        image = Image.from_local(test_local, "bob")
-        assert image.url == expected_url
-        assert image.local == expected_local
+    def test__get_registry_hostname(self, registry_url):
+        registry = self.parser._get_registry_hostname(registry_url)
+        assert registry == "reg.neu.ro"
 
-    def test_local_with_few_colons(self):
-        with pytest.raises(ValueError, match=r"only one colon allowed"):
-            Image.from_local("image:tag1:tag2", "bob")
+    @pytest.mark.parametrize(
+        "registry_url",
+        ["", "reg.neu.ro", "reg.neu.ro:5000", "https://", "https:///bla/bla"],
+    )
+    def test__get_registry_hostname_bad_registry_url(self, registry_url):
+        with pytest.raises(ValueError, match="Empty hostname in registry URL"):
+            self.parser._get_registry_hostname(registry_url)
+
+    def test__split_image_name_no_colon(self):
+        splitted = self.parser._split_image_name("ubuntu")
+        assert splitted == ("ubuntu", "latest")
+
+    def test__split_image_name_1_colon(self):
+        splitted = self.parser._split_image_name("ubuntu:v10.04")
+        assert splitted == ("ubuntu", "v10.04")
+
+    def test__split_image_name_2_colon(self):
+        with pytest.raises(ValueError, match="too many tags"):
+            self.parser._split_image_name("ubuntu:v10.04:LTS")
+
+    @pytest.mark.parametrize(
+        "url", ["", "/", "image://", "image:///", "image://bob", "image://bob/"]
+    )
+    def test__check_allowed_uri_elements__no_path(self, url):
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser._check_allowed_uri_elements(URL(url))
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "image://bob/ubuntu:v10.04?key=value",
+            "image://bob/ubuntu?key=value",
+            "image:///ubuntu?key=value",
+            "image:ubuntu?key=value",
+        ],
+    )
+    def test__check_allowed_uri_elements__with_query(self, url):
+        with pytest.raises(ValueError, match="query is not allowed"):
+            self.parser._check_allowed_uri_elements(URL(url))
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "image://bob/ubuntu:v10.04#fragment",
+            "image://bob/ubuntu#fragment",
+            "image:///ubuntu#fragment",
+            "image:ubuntu#fragment",
+        ],
+    )
+    def test__check_allowed_uri_elements__with_fragment(self, url):
+        with pytest.raises(ValueError, match="fragment is not allowed"):
+            self.parser._check_allowed_uri_elements(URL(url))
+
+    def test__check_allowed_uri_elements__with_user(self):
+        url = "image://user@bob/ubuntu"
+        with pytest.raises(ValueError, match="user is not allowed"):
+            self.parser._check_allowed_uri_elements(URL(url))
+
+    def test__check_allowed_uri_elements__with_password(self):
+        url = "image://:password@bob/ubuntu"
+        with pytest.raises(ValueError, match="password is not allowed"):
+            self.parser._check_allowed_uri_elements(URL(url))
+
+    def test__check_allowed_uri_elements__with_port(self):
+        url = "image://bob:443/ubuntu"
+        with pytest.raises(ValueError, match="port is not allowed"):
+            self.parser._check_allowed_uri_elements(URL(url))
+
+    # public method: parse_local
+
+    def test_parse_local_empty_fail(self):
+        image = ""
+        with pytest.raises(ValueError, match="empty image name"):
+            self.parser.parse_local(image)
+
+    def test_parse_local_none_fail(self):
+        image = None
+        with pytest.raises(ValueError, match="empty image name"):
+            self.parser.parse_local(image)
+
+    def test_parse_local_with_image_scheme_fail(self):
+        image = "image://ubuntu"
+        msg = "scheme 'image://' is not allowed for local images"
+        with pytest.raises(ValueError, match=msg):
+            self.parser.parse_local(image)
+
+    def test_parse_local_with_other_scheme_ok(self):
+        image = "http://ubuntu"
+        parsed = self.parser.parse_local(image)
+        # instead of parser, the docker client will fail
+        assert parsed == DockerImage(name="http", tag="//ubuntu")
+
+    def test_parse_local_no_tag(self):
+        image = "ubuntu"
+        parsed = self.parser.parse_local(image)
+        assert parsed == DockerImage(name="ubuntu", tag="latest")
+
+    def test_parse_local_with_tag(self):
+        image = "ubuntu:v10.04"
+        parsed = self.parser.parse_local(image)
+        assert parsed == DockerImage(name="ubuntu", tag="v10.04")
+
+    def test_parse_local_2_tag_fail(self):
+        image = "ubuntu:v10.04:LTS"
+        msg = "cannot parse image name 'ubuntu:v10.04:LTS': too many tags"
+        with pytest.raises(ValueError, match=msg):
+            self.parser.parse_local(image)
+
+    # public method: parse_remote
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_empty_fail(self, require_scheme):
+        image = ""
+        with pytest.raises(ValueError, match="empty image name"):
+            self.parser.parse_remote(image, require_scheme=require_scheme)
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_none_fail(self, require_scheme):
+        image = None
+        with pytest.raises(ValueError, match="empty image name"):
+            self.parser.parse_remote(image, require_scheme=require_scheme)
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_with_user_with_tag(self, require_scheme):
+        image = "image://bob/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_with_user_with_tag_2(self, require_scheme):
+        image = "image://bob/library/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_with_user_no_tag(self, require_scheme):
+        image = "image://bob/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_with_user_no_tag_2(self, require_scheme):
+        image = "image://bob/library/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_no_slash_no_user_no_tag(self, require_scheme):
+        image = "image:ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_no_slash_no_user_no_tag_2(self, require_scheme):
+        image = "image:library/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_no_slash_no_user_with_tag(self, require_scheme):
+        image = "image:ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_no_slash_no_user_with_tag_2(self, require_scheme):
+        image = "image:library/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_1_slash_no_user_no_tag(self, require_scheme):
+        image = "image:/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_1_slash_no_user_no_tag_2(self, require_scheme):
+        image = "image:/library/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_1_slash_no_user_with_tag(self, require_scheme):
+        image = "image:/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_1_slash_no_user_with_tag_2(self, require_scheme):
+        image = "image:/library/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_2_slash_user_no_tag_fail(self, require_scheme):
+        image = "image://ubuntu"
+        with pytest.raises(ValueError, match="no image name specified"):
+            parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_2_slash_user_with_tag_fail(self, require_scheme):
+        image = "image://ubuntu:v10.04"
+        with pytest.raises(ValueError, match="port can't be converted to integer"):
+            parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_3_slash_no_user_no_tag(self, require_scheme):
+        image = "image:///ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_3_slash_no_user_no_tag_2(self, require_scheme):
+        image = "image:///library/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_3_slash_no_user_with_tag(self, require_scheme):
+        image = "image:///ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_3_slash_no_user_with_tag_2(self, require_scheme):
+        image = "image:///library/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_4_slash_no_user_with_tag(self, require_scheme):
+        image = "image:////ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_4_slash_no_user_with_tag_2(self, require_scheme):
+        image = "image:////library/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_4_slash_no_user_no_tag_2(self, require_scheme):
+        image = "image:////ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_4_slash_no_user_no_tag_2(self, require_scheme):
+        image = "image:////library/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_tilde_user_no_tag(self, require_scheme):
+        image = "image://~/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_tilde_user_no_tag_2(self, require_scheme):
+        image = "image://~/library/ubuntu"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_tilde_user_with_tag(self, require_scheme):
+        image = "image://~/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    @pytest.mark.parametrize("require_scheme", [True, False])
+    def test_parse_remote_with_scheme_tilde_user_with_tag_2(self, require_scheme):
+        image = "image://~/library/ubuntu:v10.04"
+        parsed = self.parser.parse_remote(image, require_scheme=require_scheme)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
+        )
+
+    def test_parse_remote_no_scheme_no_slash_no_tag(self):
+        image = "ubuntu"
+
+        msg = "scheme 'image://' is required"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner=None, registry=None
+        )
+
+    def test_parse_remote_no_scheme_no_slash_with_tag(self):
+        image = "ubuntu:v10.04"
+
+        msg = "scheme 'image://' expected, found: 'ubuntu://'"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="v10.04", owner=None, registry=None
+        )
+
+    def test_parse_remote_no_scheme_1_slash_no_tag(self):
+        image = "library/ubuntu"
+
+        msg = "scheme 'image://' is required"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="latest", owner=None, registry=None
+        )
+
+    def test_parse_remote_no_scheme_1_slash_with_tag(self):
+        image = "library/ubuntu:v10.04"
+
+        msg = "scheme 'image://' is required"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="library/ubuntu", tag="v10.04", owner=None, registry=None
+        )
+
+    def test_parse_remote_no_scheme_2_slash_no_tag(self):
+        image = "docker.io/library/ubuntu"
+
+        msg = "scheme 'image://' is required"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="docker.io/library/ubuntu", tag="latest", owner=None, registry=None
+        )
+
+    def test_parse_remote_no_scheme_2_slash_with_tag(self):
+        image = "docker.io/library/ubuntu:v10.04"
+
+        msg = "scheme 'image://' is required"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="docker.io/library/ubuntu", tag="v10.04", owner=None, registry=None
+        )
+
+    def test_parse_remote_no_scheme_3_slash_no_tag(self):
+        image = "something/docker.io/library/ubuntu"
+
+        msg = "scheme 'image://' is required"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="something/docker.io/library/ubuntu",
+            tag="latest",
+            owner=None,
+            registry=None,
+        )
+
+    def test_parse_remote_no_scheme_3_slash_with_tag(self):
+        image = "something/docker.io/library/ubuntu:v10.04"
+
+        msg = "scheme 'image://' is required"
+        with pytest.raises(ValueError, match=msg):
+            parsed = self.parser.parse_remote(image, require_scheme=True)
+
+        parsed = self.parser.parse_remote(image, require_scheme=False)
+        assert parsed == DockerImage(
+            name="something/docker.io/library/ubuntu",
+            tag="v10.04",
+            owner=None,
+            registry=None,
+        )
 
 
 @pytest.mark.usefixtures("patch_docker_host")
@@ -130,7 +485,7 @@ class TestImages:
     async def test_unavailable_docker(self, patched_init, token, spinner):
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:bananas"), client.username
                 )
                 await client.images.pull(image, image, spinner)
@@ -141,7 +496,7 @@ class TestImages:
     async def test_unknown_docker_error(self, patched_init, token, spinner):
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"something went wrong"):
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:bananas"), client.username
                 )
                 await client.images.pull(image, image, spinner)
@@ -153,7 +508,7 @@ class TestImages:
         )
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"not found"):
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:bananas-no-more"), client.username
                 )
                 await client.images.push(image, image, spinner)
@@ -169,7 +524,7 @@ class TestImages:
         )
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(AuthorizationError):
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:bananas-not-for-you"), client.username
                 )
                 await client.images.push(image, image, spinner)
@@ -186,7 +541,7 @@ class TestImages:
         patched_push.return_value = error_generator()
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError) as exc_info:
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:bananas-wrong-food"), client.username
                 )
                 await client.images.push(image, image, spinner)
@@ -202,7 +557,7 @@ class TestImages:
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
-            image = Image.from_url(
+            image = DockerImage.build_remote(
                 URL("image://bob/image:banana-is-here"), client.username
             )
             result = await client.images.push(image, image, spinner)
@@ -215,7 +570,7 @@ class TestImages:
         )
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(ValueError, match=r"not found"):
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:no-bananas-here"), client.username
                 )
                 await client.images.pull(image, image, spinner)
@@ -227,7 +582,7 @@ class TestImages:
         )
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(AuthorizationError):
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:not-your-bananas"), client.username
                 )
                 await client.images.pull(image, image, spinner)
@@ -240,7 +595,7 @@ class TestImages:
         patched_pull.return_value = error_generator()
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
             with pytest.raises(DockerError) as exc_info:
-                image = Image.from_url(
+                image = DockerImage.build_remote(
                     URL("image://bob/image:nuts-here"), client.username
                 )
                 await client.images.pull(image, image, spinner)
@@ -256,7 +611,9 @@ class TestImages:
         patched_tag.return_value = True
         patched_pull.return_value = message_generator()
         async with Client(URL("https://api.localhost.localdomain"), token) as client:
-            image = Image.from_url(URL("image://bob/image:bananas"), client.username)
+            image = DockerImage.build_remote(
+                URL("image://bob/image:bananas"), client.username
+            )
             result = await client.images.pull(image, image, spinner)
         assert result == image
 
