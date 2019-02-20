@@ -84,7 +84,6 @@ def test_e2e_job_top(helper, run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_without(helper, run_cli):
 @pytest.mark.parametrize(
     "switch,expected",
     [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
@@ -112,9 +111,9 @@ def test_e2e_shm_switch(switch, expected, helper, run_cli):
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
     if expected:
-        helper.wait_job_change_state_to(run, job_id, JobStatus.FAILED, JobStatus.SUCCEEDED)
+        helper.wait_job_change_state_to(job_id, JobStatus.FAILED, JobStatus.SUCCEEDED)
     else:
-        helper.wait_job_change_state_to(run, job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
+        helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
 @pytest.mark.e2e
