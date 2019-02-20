@@ -137,7 +137,6 @@ async def train(
         log.debug(f'cmdline="{cmdline}"')
 
         if not quiet:
-            # TODO (ajuszkowski 01-Feb-19) normalize image name to URI (issue 452)
             log.info(f"Using image '{image}'")
             log.info(f"Using dataset '{dataset_url}'")
             log.info(f"Using weights '{resultset_url}'")

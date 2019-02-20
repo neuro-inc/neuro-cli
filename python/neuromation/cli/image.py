@@ -49,7 +49,6 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
         else parser.convert_to_neuro_image(local_img)
     )
 
-    # TODO: check out all todos by ajuszkowski in this PR!
     log.info(f"Using local image '{local_img.as_local_str()}'")
     log.info(f"Using remote image '{remote_img.as_url_str()}'")
     log.debug(f"LOCAL: '{local_img}'")
