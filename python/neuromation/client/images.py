@@ -32,17 +32,19 @@ class DockerImage:
     owner: Optional[str] = None
     registry: Optional[str] = None
 
-    def as_url(self) -> str:
-        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
-        pre = f"{IMAGE_SCHEME}://{self.owner}/" if self.registry and self.owner else ""
+    def is_in_neuro_registry(self) -> bool:
+        return bool(self.registry and self.owner)
+
+    def as_url_str(self) -> str:
+        pre = f"{IMAGE_SCHEME}://{self.owner}/" if self.is_in_neuro_registry() else ""
         return f"{pre}{self.name}:{self.tag}"
 
-    def as_repo(self) -> str:
+    def as_repo_str(self) -> str:
         # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
-        pre = f"{self.registry}/{self.owner}/" if self.registry and self.owner else ""
+        pre = f"{self.registry}/{self.owner}/" if self.is_in_neuro_registry() else ""
         return pre + self.name
 
-    def as_local(self) -> str:
+    def as_local_str(self) -> str:
         return f"{self.name}:{self.tag}"
 
 
@@ -88,15 +90,15 @@ class Images:
         remote_image: DockerImage,
         spinner: AbstractSpinner,
     ) -> DockerImage:
-        repo = remote_image.as_repo()
+        repo = remote_image.as_repo_str()
         spinner.start("Pushing image ...")
         try:
-            await self._docker.images.tag(local_image.as_local(), repo)
+            await self._docker.images.tag(local_image.as_local_str(), repo)
         except DockerError as error:
             spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
-                    f"Image {local_image.as_local()} was not found "
+                    f"Image {local_image.as_local_str()} was not found "
                     "in your local docker images"
                 ) from error
         spinner.tick()
@@ -110,7 +112,7 @@ class Images:
             # TODO check this part when registry fixed
             if error.status == STATUS_FORBIDDEN:
                 raise AuthorizationError(
-                    f"Access denied {remote_image.as_url()}"
+                    f"Access denied {remote_image.as_url_str()}"
                 ) from error
             raise  # pragma: no cover
         async for obj in stream:
@@ -128,7 +130,7 @@ class Images:
         local_image: DockerImage,
         spinner: AbstractSpinner,
     ) -> DockerImage:
-        repo = remote_image.as_repo()
+        repo = remote_image.as_repo_str()
         spinner.start("Pulling image ...")
         try:
             stream = await self._docker.pull(
@@ -139,12 +141,12 @@ class Images:
             spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
-                    f"Image {remote_image.as_url()} was not found " "in registry"
+                    f"Image {remote_image.as_url_str()} was not found " "in registry"
                 ) from error
             # TODO check this part when registry fixed
             elif error.status == STATUS_FORBIDDEN:
                 raise AuthorizationError(
-                    f"Access denied {remote_image.as_url()}"
+                    f"Access denied {remote_image.as_url_str()}"
                 ) from error
             raise  # pragma: no cover
         spinner.tick()
@@ -157,7 +159,7 @@ class Images:
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
         spinner.tick()
 
-        await self._docker.images.tag(repo, local_image.as_local())
+        await self._docker.images.tag(repo, local_image.as_local_str())
         spinner.complete()
 
         return local_image

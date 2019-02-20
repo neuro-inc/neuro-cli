@@ -8,15 +8,9 @@ from .images import IMAGE_SCHEME, DockerImage
 class ImageParser:
     default_tag = "latest"
 
-    def __init__(
-        self,
-        default_user: str,
-        registry_url: str,
-        remote_by_default_in_neuro_registry: bool,
-    ):
+    def __init__(self, default_user: str, registry_url: str):
         self._default_user = default_user
         self._registry = self._get_registry_hostname(registry_url)
-        self._remote_by_default_in_neuro_registry = remote_by_default_in_neuro_registry
 
     def parse_as_local(self, image: str) -> DockerImage:
         try:
@@ -24,22 +18,22 @@ class ImageParser:
         except ValueError as e:
             raise ValueError(f"Invalid local image '{image}': {e}") from e
 
-    def parse_as_remote(self, image: str, require_scheme: bool) -> DockerImage:
+    def parse_as_remote(self, image: str) -> DockerImage:
         try:
-            return self._parse_remote(image, require_scheme)
+            return self._parse_remote(image)
         except ValueError as e:
-            if not require_scheme:
-                try:
-                    as_local = self.parse_as_local(image)
-                    return DockerImage(
-                        name=as_local.name,
-                        tag=as_local.tag,
-                        owner=self._default_user,
-                        registry=self._registry,
-                    )
-                except ValueError:
-                    pass
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
+
+    def convert_to_remote_in_neuro_registry(self, image: DockerImage) -> DockerImage:
+        return DockerImage(
+            name=image.name,
+            tag=image.tag,
+            owner=self._default_user,
+            registry=self._registry,
+        )
+
+    def convert_to_local(self, image: DockerImage) -> DockerImage:
+        return DockerImage(name=image.name, tag=image.tag)
 
     def _parse_local(self, image: str) -> DockerImage:
         if not image:
@@ -55,7 +49,7 @@ class ImageParser:
 
         return DockerImage(name=name, tag=tag)
 
-    def _parse_remote(self, image: str, require_scheme: bool) -> DockerImage:
+    def _parse_remote(self, image: str) -> DockerImage:
         if not image:
             raise ValueError("empty image name")
 
@@ -63,21 +57,14 @@ class ImageParser:
 
         self._check_allowed_uri_elements(url)
 
-        registry, owner = None, None
-        if url.scheme:
-            if url.scheme != IMAGE_SCHEME:
-                scheme = f"{url.scheme}://" if url.scheme else ""
-                raise ValueError(
-                    f"scheme '{IMAGE_SCHEME}://' expected, found: '{scheme}'"
-                )
-            registry = self._registry
-            owner = self._default_user if not url.host or url.host == "~" else url.host
-        elif require_scheme:
+        if not url.scheme:
             raise ValueError(f"scheme '{IMAGE_SCHEME}://' is required")
-        elif self._remote_by_default_in_neuro_registry:
-            registry = self._registry
-            owner = self._default_user
+        if url.scheme != IMAGE_SCHEME:
+            scheme = f"{url.scheme}://" if url.scheme else ""
+            raise ValueError(f"scheme '{IMAGE_SCHEME}://' expected, found: '{scheme}'")
 
+        registry = self._registry
+        owner = self._default_user if not url.host or url.host == "~" else url.host
         name, tag = self._split_image_name(url.path.lstrip("/"))
 
         return DockerImage(name=name, tag=tag, registry=registry, owner=owner)

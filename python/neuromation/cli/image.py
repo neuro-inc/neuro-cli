@@ -41,19 +41,17 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
 
     """
 
-    parser = ImageParser(
-        cfg.username, cfg.registry_url, remote_by_default_in_neuro_registry=True
-    )
+    parser = ImageParser(cfg.username, cfg.registry_url)
     local_img = parser.parse_as_local(image_name)
     remote_img = (
-        parser.parse_as_remote(remote_image_name, require_scheme=True)
+        parser.parse_as_remote(remote_image_name)
         if remote_image_name
-        else parser.parse_as_remote(image_name, require_scheme=False)
+        else parser.convert_to_remote_in_neuro_registry(local_img)
     )
 
     # TODO: check out all todos by ajuszkowski in this PR!
-    log.info(f"Using local image '{local_img.as_local()}'")
-    log.info(f"Using remote image '{remote_img.as_url()}'")
+    log.info(f"Using local image '{local_img.as_local_str()}'")
+    log.info(f"Using remote image '{remote_img.as_url_str()}'")
     log.debug(f"LOCAL: '{local_img}'")
     log.debug(f"REMOTE: '{remote_img}'")
 
@@ -61,7 +59,7 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
 
     async with cfg.make_client() as client:
         result_remote_image = await client.images.push(local_img, remote_img, spinner)
-        click.echo(result_remote_image.as_url())
+        click.echo(result_remote_image.as_url_str())
 
 
 @command()
@@ -84,18 +82,16 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 
     """
 
-    parser = ImageParser(
-        cfg.username, cfg.registry_url, remote_by_default_in_neuro_registry=True
-    )
-    remote_img = parser.parse_as_remote(image_name, require_scheme=True)
+    parser = ImageParser(cfg.username, cfg.registry_url)
+    remote_img = parser.parse_as_remote(image_name)
     local_img = (
         parser.parse_as_local(local_image_name)
         if local_image_name
-        else parser.parse_as_local(remote_img.as_local())
+        else parser.convert_to_local(remote_img)
     )
 
-    log.info(f"Using remote image '{remote_img.as_url()}'")
-    log.info(f"Using local image '{local_img.as_local()}'")
+    log.info(f"Using remote image '{remote_img.as_url_str()}'")
+    log.info(f"Using local image '{local_img.as_local_str()}'")
     log.debug(f"REMOTE: '{remote_img}'")
     log.debug(f"LOCAL: '{local_img}'")
 
@@ -103,7 +99,7 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 
     async with cfg.make_client() as client:
         result_local_image = await client.images.pull(remote_img, local_img, spinner)
-        click.echo(result_local_image.as_local())
+        click.echo(result_local_image.as_local_str())
 
 
 @command()
