@@ -24,8 +24,9 @@ log = logging.getLogger(__name__)
 IMAGE_SCHEME = "image"
 
 
-# TODO: maybe move to cli/utqils as image_utils
 @dataclass(frozen=True)
+# TODO (ajuszkowski, 20-feb-2019): rename this class: docker-images refer to both local
+# images and images in docker hub, and neuro-images refer to an image in neuro registry
 class DockerImage:
     name: str
     tag: str = "latest"

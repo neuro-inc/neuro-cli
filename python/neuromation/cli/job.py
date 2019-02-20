@@ -16,6 +16,7 @@ from neuromation.client import (
     Resources,
     Volume,
 )
+from neuromation.client.images import IMAGE_SCHEME
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
@@ -196,11 +197,10 @@ async def submit(
     memory = to_megabytes_str(memory)
 
     image_parser = ImageParser(cfg.username, cfg.registry_url)
-    try:
-        parsed_image = image_parser.parse_as_remote(image)
-    except ValueError:
-        parsed_image = image_parser.parse_as_local(image)
-
+    if image_parser.is_in_neuro_registry(image):
+        parsed_image = image_parser.parse_as_neuro_image(image)
+    else:
+        parsed_image = image_parser.parse_as_docker_image(image)
     # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
     if not quiet:
         log.info(f"Using image '{parsed_image.as_url_str()}'")

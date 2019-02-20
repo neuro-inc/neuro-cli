@@ -12,17 +12,21 @@ class ImageParser:
         self._default_user = default_user
         self._registry = self._get_registry_hostname(registry_url)
 
-    def parse_as_local(self, image: str) -> DockerImage:
+    def parse_as_docker_image(self, image: str) -> DockerImage:
         try:
-            return self._parse_local(image)
+            return self._parse_as_docker_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid local image '{image}': {e}") from e
 
-    def parse_as_remote(self, image: str) -> DockerImage:
+    def parse_as_neuro_image(self, image: str) -> DockerImage:
         try:
-            return self._parse_remote(image)
+            return self._parse_as_neuro_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
+
+    def is_in_neuro_registry(self, image: str) -> bool:
+        # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
+        return image.startswith(f"{IMAGE_SCHEME}:")
 
     def convert_to_remote_in_neuro_registry(self, image: DockerImage) -> DockerImage:
         return DockerImage(
@@ -32,15 +36,14 @@ class ImageParser:
             registry=self._registry,
         )
 
-    def convert_to_local(self, image: DockerImage) -> DockerImage:
+    def convert_to_docker_image(self, image: DockerImage) -> DockerImage:
         return DockerImage(name=image.name, tag=image.tag)
 
-    def _parse_local(self, image: str) -> DockerImage:
+    def _parse_as_docker_image(self, image: str) -> DockerImage:
         if not image:
             raise ValueError("empty image name")
 
-        # This is hack because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
-        if image.startswith(f"{IMAGE_SCHEME}://"):
+        if self.is_in_neuro_registry(image):
             raise ValueError(
                 f"scheme '{IMAGE_SCHEME}://' is not allowed for local images"
             )
@@ -49,7 +52,7 @@ class ImageParser:
 
         return DockerImage(name=name, tag=tag)
 
-    def _parse_remote(self, image: str) -> DockerImage:
+    def _parse_as_neuro_image(self, image: str) -> DockerImage:
         if not image:
             raise ValueError("empty image name")
 

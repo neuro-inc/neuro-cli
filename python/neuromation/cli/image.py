@@ -42,9 +42,9 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
     """
 
     parser = ImageParser(cfg.username, cfg.registry_url)
-    local_img = parser.parse_as_local(image_name)
+    local_img = parser.parse_as_docker_image(image_name)
     remote_img = (
-        parser.parse_as_remote(remote_image_name)
+        parser.parse_as_neuro_image(remote_image_name)
         if remote_image_name
         else parser.convert_to_remote_in_neuro_registry(local_img)
     )
@@ -83,11 +83,11 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
     """
 
     parser = ImageParser(cfg.username, cfg.registry_url)
-    remote_img = parser.parse_as_remote(image_name)
+    remote_img = parser.parse_as_neuro_image(image_name)
     local_img = (
-        parser.parse_as_local(local_image_name)
+        parser.parse_as_docker_image(local_image_name)
         if local_image_name
-        else parser.convert_to_local(remote_img)
+        else parser.convert_to_docker_image(remote_img)
     )
 
     log.info(f"Using remote image '{remote_img.as_url_str()}'")
