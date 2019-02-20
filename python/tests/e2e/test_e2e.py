@@ -47,17 +47,23 @@ def test_e2e_job_top(helper, run_cli):
 
     bash_script = "while [[ ! -f /data/dummy ]]; do; sleep 1 done; sleep 30"
     command = f"bash -c '{bash_script}'"
-    captured = run_cli(["job", "submit",
-                "--volume",
-                f"{helper.tmpstorage}:/data:ro",
-
-UBUNTU_IMAGE_NAME, command, "--quiet"])
+    captured = run_cli(
+        [
+            "job",
+            "submit",
+            "--volume",
+            f"{helper.tmpstorage}:/data:ro",
+            UBUNTU_IMAGE_NAME,
+            command,
+            "--quiet",
+        ]
+    )
     job_id = captured.out.strip()
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
 
     # the job is running
     # upload a file and unblock the job
-    helper.check_upload_file_to_storage('dummy', '', __file__)
+    helper.check_upload_file_to_storage("dummy", "", __file__)
 
     captured = run_cli(["job", "top", job_id])
 
