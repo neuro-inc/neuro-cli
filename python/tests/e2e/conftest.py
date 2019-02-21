@@ -6,6 +6,7 @@ import re
 from collections import namedtuple
 from contextlib import suppress
 from hashlib import sha1
+from itertools import cycle
 from os.path import join
 from pathlib import Path
 from time import sleep, time
@@ -53,16 +54,25 @@ def run_async(coro):
 
 
 class Helper:
-    def __init__(self, config):
-        self._config = config
+    def __init__(self, tokens):
+        self._tokens = tokens
+        self._config = None
+        self.refresh()
         self._tmpstorage = "storage:" + str(uuid()) + "/"
         self.mkdir("")
+
+    def refresh(self):
+        self._config = rc.ConfigFactory.load()
 
     def close(self):
         if self._tmpstorage is not None:
             with suppress(Exception):
                 self.rm("")
             self._tmpstorage = None
+
+    @property
+    def config(self):
+        return self._config
 
     @property
     def tmpstorage(self):
@@ -293,57 +303,47 @@ class Helper:
 
 
 @pytest.fixture
-def config_path(tmp_path):
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-    path = tmp_path / ".nmrc"
-    path.write_text(rc_text)
-    path.chmod(0o600)
-    return path
+def tokens_store(tmp_path, monkeypatch):
+    def _get_path():
+        return tmp_path / ".nmrc"
+
+    class Store:
+        def __init__(self, tokens):
+            self._tokens = tokens
+            self._cycle = None
+            self._token = None
+            self.reset()
+
+        def _set(self, token):
+            self._token = token
+            rc_text = RC_TEXT.format(token=self._token)
+            path = _get_path()
+            path.write_text(rc_text)
+            path.chmod(0o600)
+            return self.current()
+
+        def next(self):
+            return self._set(next(self._cycle))
+
+        def current(self):
+            return self._token
+
+        def reset(self):
+            self._cycle = cycle(self._tokens)
+            return self.next()
+
+    tokens = [
+        os.getenv("CLIENT_TEST_E2E_USER_NAME"),
+        os.getenv("CLIENT_TEST_E2E_USER_NAME_ALT"),
+    ]
+    store = Store(tokens)
+    monkeypatch.setattr(rc.ConfigFactory, "get_path", _get_path)
+    return store
 
 
 @pytest.fixture
-def config(config_path, monkeypatch):
-    def _config_path() -> Path:
-        return config_path
-
-    with monkeypatch.context() as ctx:
-        ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
-        config = rc.ConfigFactory.load()
-    yield config
-
-
-@pytest.fixture
-def helper(config):
-    ret = Helper(config)
-    yield ret
-    ret.close()
-
-
-@pytest.fixture
-def config_path_alt(tmp_path):
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-    path = tmp_path / ".nmrc.alt"
-    path.write_text(rc_text)
-    path.chmod(0o600)
-    return path
-
-
-@pytest.fixture
-def config_alt(config_path_alt, monkeypatch):
-    def _config_path() -> Path:
-        return config_path_alt
-
-    with monkeypatch.context() as ctx:
-        ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
-        config = rc.ConfigFactory.load()
-    yield config
-
-
-@pytest.fixture
-def helper_alt(config_alt):
-    ret = Helper(config_alt)
+def helper(tokens_store):
+    ret = Helper(tokens_store)
     yield ret
     ret.close()
 
@@ -428,60 +428,30 @@ def _run_cli(capfd, arguments, storage_retry=True):
 
 
 @pytest.fixture
-def run_cli(capfd, monkeypatch, config_path):
+def run_cli(capfd, tokens_store):
     executed_jobs_list = []
 
-    def _config_path() -> Path:
-        return config_path
-
     def _run(arguments, *, storage_retry=True):
-        with monkeypatch.context() as ctx:
-            ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
-            captured = _run_cli(capfd, arguments, storage_retry=storage_retry)
-            if arguments[0:2] in (
-                ["job", "submit"],
-                ["model", "train"],
-            ) or arguments == ["submit"]:
-                match = job_id_pattern.search(captured.out)
-                if match:
-                    executed_jobs_list.append(match.group(1))
-            return captured
+        captured = _run_cli(capfd, arguments, storage_retry=storage_retry)
+        if arguments[0:2] in (["job", "submit"], ["model", "train"]) or arguments == [
+            "submit"
+        ]:
+            match = job_id_pattern.search(captured.out)
+            if match:
+                executed_jobs_list.append(match.group(1))
+        return captured
 
     yield _run
     # try to kill all executed jobs regardless of the status
     if executed_jobs_list:
         try:
-            _run(["job", "kill"] + executed_jobs_list)
-        except BaseException:
-            # Just ignore cleanup error here
-            pass
-
-
-@pytest.fixture
-def run_cli_alt(capfd, monkeypatch, config_path_alt):
-    executed_jobs_list = []
-
-    def _config_path() -> Path:
-        return config_path_alt
-
-    def _run(arguments, *, storage_retry=True):
-        with monkeypatch.context() as ctx:
-            ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
-            captured = _run_cli(capfd, arguments, storage_retry=storage_retry)
-            if arguments[0:2] in (
-                ["job", "submit"],
-                ["model", "train"],
-            ) or arguments == ["submit"]:
-                match = job_id_pattern.search(captured.out)
-                if match:
-                    executed_jobs_list.append(match.group(1))
-            return captured
-
-    yield _run
-    # try to kill all executed jobs regardless of the status
-    if executed_jobs_list:
-        try:
-            _run(["job", "kill"] + executed_jobs_list)
+            first = tokens_store.reset()
+            while True:
+                for job_id in executed_jobs_list:
+                    _run(["job", "kill"] + job_id, storage_retry=False)
+                token = tokens_store.next()
+                if token == first:
+                    break
         except BaseException:
             # Just ignore cleanup error here
             pass

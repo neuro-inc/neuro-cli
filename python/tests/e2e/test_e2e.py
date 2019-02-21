@@ -43,8 +43,7 @@ def test_empty_directory_ls_output(run_cli, helper):
     # Ensure output of ls - empty directory shall print nothing.
     captured = run_cli(["storage", "ls", helper.tmpstorage])
     assert not captured.out
-    # FIXME: stderr has "Using path ..." line
-    assert len(captured.err.splitlines()) == 1 and captured.err.startswith("Using path")
+    assert not captured.err
 
 
 @pytest.mark.e2e
