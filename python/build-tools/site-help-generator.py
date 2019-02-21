@@ -174,7 +174,7 @@ def gen_shortcuts(index, commands, target_path, ctx):
     out.append("")
 
     for cmd in commands:
-        out.append(f"- [neuro {cmd.name}](/{cmd.name}): " f"{cmd.get_short_help_str()}")
+        out.append(f"- [neuro {cmd.name}](/shortcuts/{cmd.name}): " f"{cmd.get_short_help_str()}")
 
     fname = target_path / f"{index:02d}_00__shortcuts.md"
     fname.write_text("\n".join(out))
