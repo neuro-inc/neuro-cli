@@ -4,7 +4,6 @@
 * Switch to `master` branch (`git checkout master`).
 * Open `neuromation/__init__.py`, increment the `__version__` string, e.g. `__version__ = '1.2.3'`.
 * Run `towncrier` to update `CHANGELOG.md`.
-* Run `./build-tools/check-changelog.py CHANGELOG.md` checker.
 * Open `CHANGELOG.md`, make sure that the generated file content looks good. Fix it if needed.
 * Regenerate site docs. 
   * You need a clone of https://github.com/neuromation/platform-web project sibling to this repo.
