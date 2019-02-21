@@ -5,6 +5,7 @@ import os
 import re
 from collections import namedtuple
 from contextlib import suppress
+from functools import partial
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -21,12 +22,11 @@ from neuromation.client import FileStatusType, ResourceNotFound
 from neuromation.utils import run
 from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
 
-from neuromation.cli import main
-from neuromation.client import FileStatusType
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, attempt, hash_hex, output_to_files
 
 JOB_TIMEOUT = 60 * 5
 JOB_WAIT_SLEEP_SECONDS = 2
+JOB_OUTPUT_TIMEOUT = 60 * 5
+JOB_OUTPUT_SLEEP_SECONDS = 2
 
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
@@ -270,28 +270,85 @@ class Helper:
         async with self._config.make_client() as client:
             return await client.jobs.status(job_id)
 
+    @run_async
+    async def check_job_output(self, job_id, expected, flags=0):
+        """
+            Wait while job output will satisfy given regexp
+        """
+        started_at = time()
+        while time() - started_at < JOB_OUTPUT_TIMEOUT:
+            chunks = []
+            async with self._config.make_client() as client:
+                async for chunk in client.jobs.monitor(job_id):
+                    if not chunk:
+                        break
+                    chunks.append(chunk.decode())
+                    if re.search(expected, "".join(chunks), flags):
+                        return
+                    if time() - started_at < JOB_OUTPUT_TIMEOUT:
+                        break
+            await asyncio.sleep(JOB_OUTPUT_SLEEP_SECONDS)
+
+        raise AssertionError(
+            f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
+        )
+
 
 @pytest.fixture
-def config(tmp_path, monkeypatch):
+def config_path(tmp_path):
+    return tmp_path / ".nmrc"
+
+
+@pytest.fixture
+def config(config_path, monkeypatch):
+    def _config_path() -> Path:
+        return config_path
+
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
 
     rc_text = RC_TEXT.format(token=e2e_test_token)
-    config_path = tmp_path / ".nmrc"
+
     config_path.write_text(rc_text)
     config_path.chmod(0o600)
-
-    def _home():
-        return Path(tmp_path)
-
-    monkeypatch.setattr(Path, "home", _home)
-
-    config = rc.ConfigFactory.load()
+    with monkeypatch.context() as ctx:
+        ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
+        config = rc.ConfigFactory.load()
     yield config
 
 
 @pytest.fixture
 def helper(config):
     ret = Helper(config)
+    yield ret
+    ret.close()
+
+
+@pytest.fixture
+def config_path_alt(tmp_path):
+    return tmp_path / ".nmrc.alt"
+
+
+@pytest.fixture
+def config_alt(config_path_alt, monkeypatch):
+    def _config_path() -> Path:
+        return config_path_alt
+
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
+
+    rc_text = RC_TEXT.format(token=e2e_test_token)
+
+    config_path_alt.write_text(rc_text)
+    config_path_alt.chmod(0o600)
+
+    with monkeypatch.context() as ctx:
+        ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
+        config = rc.ConfigFactory.load()
+    yield config
+
+
+@pytest.fixture
+def helper_alt(config_alt):
+    ret = Helper(config_alt)
     yield ret
     ret.close()
 
@@ -332,56 +389,68 @@ def nested_data(static_path):
     return generated_file, hash, str(root_dir)
 
 
+def _run_cli(capfd, arguments, storage_retry=True):
+    log.info("Run 'neuro %s'", " ".join(arguments))
+
+    delay = 0.5
+    for i in range(5):
+        pre_out, pre_err = capfd.readouterr()
+        pre_out_size = len(pre_out)
+        pre_err_size = len(pre_err)
+        try:
+            main(
+                ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
+                + arguments
+            )
+        except SystemExit as exc:
+            if exc.code == os.EX_IOERR:
+                # network problem
+                sleep(delay)
+                delay *= 2
+                continue
+            elif (
+                exc.code == os.EX_OSFILE
+                and arguments
+                and arguments[0] == "storage"
+                and storage_retry
+            ):
+                # NFS storage has a lag between pushing data on one storage API node
+                # and fetching it on other node
+                # retry is the only way to avoid it
+                sleep(delay)
+                delay *= 2
+                continue
+            elif exc.code != os.EX_OK:
+                raise
+        post_out, post_err = capfd.readouterr()
+        out = post_out[pre_out_size:]
+        err = post_err[pre_err_size:]
+        return SysCap(out.strip(), err.strip())
+    else:
+        raise TestRetriesExceeded(
+            f"Retries exceeded during 'neuro {' '.join(arguments)}'"
+        )
+
+
 @pytest.fixture
-def run_cli(capfd, config):
+def run_cli(capfd, monkeypatch, config_path):
     executed_jobs_list = []
 
-    def _run(arguments, *, storage_retry=True):
-        log.info("Run 'neuro %s'", " ".join(arguments))
+    def _config_path() -> Path:
+        return config_path
 
-        delay = 0.5
-        for i in range(5):
-            pre_out, pre_err = capfd.readouterr()
-            pre_out_size = len(pre_out)
-            pre_err_size = len(pre_err)
-            try:
-                main(
-                    ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
-                    + arguments
-                )
-            except SystemExit as exc:
-                if exc.code == os.EX_IOERR:
-                    # network problem
-                    sleep(delay)
-                    delay *= 2
-                    continue
-                elif (
-                    exc.code == os.EX_OSFILE
-                    and arguments
-                    and arguments[0] == "storage"
-                    and storage_retry
-                ):
-                    # NFS storage has a lag between pushing data on one storage API node
-                    # and fetching it on other node
-                    # retry is the only way to avoid it
-                    sleep(delay)
-                    delay *= 2
-                    continue
-                elif exc.code != os.EX_OK:
-                    raise
-            post_out, post_err = capfd.readouterr()
-            out = post_out[pre_out_size:]
-            err = post_err[pre_err_size:]
-            if arguments[0:2] in (["job", "submit"], ["model", "train"]):
-                match = job_id_pattern.search(out)
+    def _run(arguments, *, storage_retry=True):
+        with monkeypatch.context() as ctx:
+            ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
+            captured = _run_cli(capfd, arguments, storage_retry=storage_retry)
+            if arguments[0:2] in (
+                ["job", "submit"],
+                ["model", "train"],
+            ) or arguments == ["submit"]:
+                match = job_id_pattern.search(captured.out)
                 if match:
                     executed_jobs_list.append(match.group(1))
-
-            return SysCap(out.strip(), err.strip())
-        else:
-            raise TestRetriesExceeded(
-                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
-            )
+            return captured
 
     yield _run
     # try to kill all executed jobs regardless of the status
@@ -394,46 +463,30 @@ def run_cli(capfd, config):
 
 
 @pytest.fixture
-def switch_user(tmp_path):
-    """
-        This fixture allow switch effective user for running `neuro`
-        between CLIENT_TEST_E2E_USER_NAME and CLIENT_TEST_E2E_USER_NAME_ALT
+def run_cli_alt(capfd, monkeypatch, config_path_alt):
+    executed_jobs_list = []
 
-        After test it will revert default user back
-        But it can breaks e2e cleanup, please made cleanup for alt user self
-    """
-    switched: bool = False
+    def _config_path() -> Path:
+        return config_path_alt
 
-    def _switch():
-        nonlocal switched
-        config_path = tmp_path / ".nmrc"
-        backup_patch = tmp_path / ".nmrc.backup"
-        if switched:
-            move(backup_patch, config_path)
-        else:
-            move(config_path, backup_patch)
-            e2e_test_token = os.environ["CLIENT_TEST_E2E_USER_NAME_ALT"]
-            rc_text = RC_TEXT.format(token=e2e_test_token)
-            config_path.write_text(rc_text)
-            config_path.chmod(0o600)
-        switched = not switched
+    def _run(arguments, *, storage_retry=True):
+        with monkeypatch.context() as ctx:
+            ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
+            captured = _run_cli(capfd, arguments, storage_retry=storage_retry)
+            if arguments[0:2] in (
+                ["job", "submit"],
+                ["model", "train"],
+            ) or arguments == ["submit"]:
+                match = job_id_pattern.search(captured.out)
+                if match:
+                    executed_jobs_list.append(match.group(1))
+            return captured
 
-    yield _switch
-
-    if switched:
-        _switch()
-
-
-@pytest.fixture()
-def check_job_output(run):
-    """
-        Wait while job output will satisfy given regexp
-    """
-
-    @attempt()
-    def go(job_id, expected, flags=0):
-        captured = run(["job", "logs", job_id])
-        assert not captured.err
-        assert re.search(expected, captured.out, flags)
-
-    return go
+    yield _run
+    # try to kill all executed jobs regardless of the status
+    if executed_jobs_list:
+        try:
+            _run(["job", "kill"] + executed_jobs_list)
+        except BaseException:
+            # Just ignore cleanup error here
+            pass
