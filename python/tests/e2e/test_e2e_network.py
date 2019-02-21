@@ -30,7 +30,7 @@ def check_http_get():
                     request_info=resp.request_info,
                 )
 
-    @attempt(12, 5)
+    @attempt(3, 5)
     def go(url, accepted_statuses: Sequence[int] = tuple([200])):
         return run_async(http_get(url, accepted_statuses))
 
@@ -106,7 +106,7 @@ def test_connectivity_job_with_http_port(
     assert probe.strip() == http_job["secret"]
 
     # internal ingress test
-    command = f"wget -q {ingress_secret_url} -O -"
+    command = f"wget -q -T 15 {ingress_secret_url} -O -"
     job_id = run_job_and_wait_status(
         ALPINE_IMAGE_NAME,
         command,
@@ -117,7 +117,7 @@ def test_connectivity_job_with_http_port(
 
     # internal network test
     internal_secret_url = f"http://{http_job['internal_hostname']}/secret.txt"
-    command = f"wget -q {internal_secret_url} -O -"
+    command = f"wget -q -T 15 {internal_secret_url} -O -"
     job_id = run_job_and_wait_status(
         ALPINE_IMAGE_NAME,
         command,
@@ -150,7 +150,7 @@ def test_connectivity_job_without_http_port(
         check_http_get(ingress_secret_url)
 
     # internal ingress test
-    command = f"wget -q {ingress_secret_url} -O -"
+    command = f"wget -q -T 15 {ingress_secret_url} -O -"
     job_id = run_job_and_wait_status(
         ALPINE_IMAGE_NAME,
         command,
@@ -179,7 +179,7 @@ def test_check_isolation(
     helper.refresh()
 
     # internal ingress test
-    command = f"wget -q {ingress_secret_url} -O -"
+    command = f"wget -q -T 15 {ingress_secret_url} -O -"
     job_id = run_job_and_wait_status(
         ALPINE_IMAGE_NAME,
         command,
@@ -190,11 +190,8 @@ def test_check_isolation(
 
     # internal network test
     internal_secret_url = f"http://{http_job['internal_hostname']}/secret.txt"
-    command = f"wget -q {internal_secret_url} -O -"
+    command = f"wget -q -T 15 {internal_secret_url} -O -"
     # This job must be failed,
-    # wget must return error. something like "Connection refused"
-    # but we have problem at this moment
-    # TODO check next lines when problem will fixed
     job_id = run_job_and_wait_status(
         ALPINE_IMAGE_NAME,
         command,
