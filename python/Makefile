@@ -207,14 +207,6 @@ update-deps:
 .PHONY: changelog
 changelog:
 	echo "Read RELEASE.md for release process instructions"
-	@exit 10
-endif
-	towncrier --version $(VERSION) --yes
-	$(EDITOR) CHANGELOG.md
-	./build-tools/check-changelog.py CHANGELOG.md
-	git add CHANGELOG.md
-	git add CHANGELOG.D
-	git commit -m "Release $(VERSION)"
 
 .PHONY: release
 release:
