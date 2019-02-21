@@ -46,7 +46,9 @@ class JobFormatter:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
         out.append(f"  neuro status {job.id}  " + style("# check job status", dim=True))
-        out.append(f"  neuro logs {job.id} " + style("# monitor job stdout", dim=True))
+        out.append(
+            f"  neuro logs {job.id}    " + style("# monitor job stdout", dim=True)
+        )
         out.append(
             f"  neuro top {job.id}     "
             + style("# display real-time job telemetry", dim=True)
@@ -215,7 +217,7 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
-    SPINNER = ("|", "/", "-", "\\")
+    SPINNER = ("◢", "◣", "◤", "◥")
     LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
 
     def __init__(self, color: bool) -> None:
@@ -223,6 +225,7 @@ class JobStartProgress:
         self._time = time.time()
         self._spinner = itertools.cycle(self.SPINNER)
         self._prev = ""
+        self._prev_reason = ""
 
     def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
         if not self._color:
@@ -232,10 +235,12 @@ class JobStartProgress:
         msg = format_job_status(job.status)
         if job.history.reason:
             reason = job.history.reason
-        elif not self._prev:
+            self._prev_reason = reason
+        elif not self._prev_reason:
             reason = "Initializing"
         else:
             reason = ""
+            self._prev_reason = reason
         if reason:
             msg += " " + style(reason, bold=True)
         ret = ""

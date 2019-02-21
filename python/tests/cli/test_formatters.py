@@ -77,7 +77,7 @@ class TestJobFormatter:
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Shortcuts:\n"
             + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID} # monitor job stdout\n"
+            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
             + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro kill {TEST_JOB_ID}    # kill job"
         )
@@ -90,7 +90,7 @@ class TestJobFormatter:
             + f"Http URL: https://job.dev\n"
             + f"Shortcuts:\n"
             + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID} # monitor job stdout\n"
+            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
             + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro kill {TEST_JOB_ID}    # kill job"
         )
