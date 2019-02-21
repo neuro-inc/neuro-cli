@@ -94,7 +94,7 @@ class Helper:
                     and file.name == name
                     and file.size == size
                 ):
-                    break
+                    return
         raise AssertionError(f"File {name} with size {size} not found in {path}")
 
     @run_async
