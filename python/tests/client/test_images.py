@@ -189,12 +189,12 @@ class TestImageParser:
             name="library/ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
         )
 
-    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag(self):
+    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag_fail(self):
         image = "image:ubuntu"
-        parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
-            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
-        )
+        with pytest.raises(
+            ValueError, match="scheme 'image://' is required for remote images"
+        ):
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag_2(self):
         image = "image:library/ubuntu"

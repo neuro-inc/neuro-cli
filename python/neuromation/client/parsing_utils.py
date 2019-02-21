@@ -26,7 +26,9 @@ class ImageNameParser:
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
-        return image.startswith(f"{IMAGE_SCHEME}:")
+        starts_with_scheme = image.startswith(f"{IMAGE_SCHEME}:")
+        looks_like_uri = "/" in image or image.count(":") > 1
+        return starts_with_scheme and looks_like_uri
 
     def convert_to_neuro_image(self, image: DockerImage) -> DockerImage:
         return DockerImage(
