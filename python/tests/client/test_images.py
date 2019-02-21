@@ -123,8 +123,9 @@ class TestImageParser:
 
     def test_parse_as_docker_image_with_image_scheme_fail(self):
         image = "image://ubuntu"
-        msg = "scheme 'image://' is not allowed for docker images"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(
+            ValueError, match="scheme 'image://' is not allowed for docker images"
+        ):
             self.parser.parse_as_docker_image(image)
 
     def test_parse_as_docker_image_with_other_scheme_ok(self):
@@ -145,262 +146,193 @@ class TestImageParser:
 
     def test_parse_as_docker_image_2_tag_fail(self):
         image = "ubuntu:v10.04:LTS"
-        msg = "cannot parse image name 'ubuntu:v10.04:LTS': too many tags"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="too many tags"):
             self.parser.parse_as_docker_image(image)
 
     # public method: parse_remote
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_empty_fail(self, require_scheme):
+    def test_parse_as_neuro_image_empty_fail(self):
         image = ""
         with pytest.raises(ValueError, match="empty image name"):
             self.parser.parse_as_neuro_image(image)
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_none_fail(self, require_scheme):
+    def test_parse_as_neuro_image_none_fail(self):
         image = None
         with pytest.raises(ValueError, match="empty image name"):
             self.parser.parse_as_neuro_image(image)
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_with_user_with_tag(self, require_scheme):
+    def test_parse_as_neuro_image_with_scheme_with_user_with_tag(self):
         image = "image://bob/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_with_user_with_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_with_user_with_tag_2(self):
         image = "image://bob/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_with_user_no_tag(self, require_scheme):
+    def test_parse_as_neuro_image_with_scheme_with_user_no_tag(self):
         image = "image://bob/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_with_user_no_tag_2(self, require_scheme):
+    def test_parse_as_neuro_image_with_scheme_with_user_no_tag_2(self):
         image = "image://bob/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag(self):
         image = "image:ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag_2(self):
         image = "image:library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag(self):
         image = "image:ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag_2(self):
         image = "image:library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag(self):
         image = "image:/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag_2(self):
         image = "image:/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag(self):
         image = "image:/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag_2(self):
         image = "image:/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_2_slash_user_no_tag_fail(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_2_slash_user_no_tag_fail(self):
         image = "image://ubuntu"
         with pytest.raises(ValueError, match="no image name specified"):
             self.parser.parse_as_neuro_image(image)
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_2_slash_user_with_tag_fail(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_2_slash_user_with_tag_fail(self):
         image = "image://ubuntu:v10.04"
         with pytest.raises(ValueError, match="port can't be converted to integer"):
             self.parser.parse_as_neuro_image(image)
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag(self):
         image = "image:///ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag_2(self):
         image = "image:///library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag(self):
         image = "image:///ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag_2(self):
         image = "image:///library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag(self):
         image = "image:////ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag_2(self):
         image = "image:////library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag(self):
         image = "image:////ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag_2(self):
         image = "image:////library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag(self, require_scheme):
+    def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag(self):
         image = "image://~/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag_2(self, require_scheme):
+    def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag_2(self):
         image = "image://~/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag(self, require_scheme):
+    def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag(self):
         image = "image://~/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
-    @pytest.mark.parametrize("require_scheme", [True, False])
-    def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag_2(
-        self, require_scheme
-    ):
+    def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag_2(self):
         image = "image://~/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == DockerImage(
@@ -409,50 +341,42 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_no_scheme_no_slash_no_tag_fail(self):
         image = "ubuntu"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_no_slash_with_tag_fail(self):
         image = "ubuntu:v10.04"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_1_slash_no_tag_fail(self):
         image = "library/ubuntu"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_1_slash_with_tag_fail(self):
         image = "library/ubuntu:v10.04"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_2_slash_no_tag_fail(self):
         image = "docker.io/library/ubuntu"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_2_slash_with_tag_fail(self):
         image = "docker.io/library/ubuntu:v10.04"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_3_slash_no_tag_fail(self):
         image = "something/docker.io/library/ubuntu"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self):
         image = "something/docker.io/library/ubuntu:v10.04"
-        msg = "scheme 'image://' is required"
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
 
