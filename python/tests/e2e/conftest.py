@@ -84,8 +84,8 @@ class Helper:
     @run_async
     async def check_file_exists_on_storage(self, name: str, path: str, size: int):
         path = URL(self.tmpstorage + path)
-        delay = STORAGE_DELAY
-        t0 = time()
+        # delay = STORAGE_DELAY
+        # t0 = time()
         async with self._config.make_client() as client:
             files = await client.storage.ls(path)
             for file in files:
