@@ -153,7 +153,7 @@ Name | Description|
 
 ### neuro job submit
 
-Submit an image to run on the cluster.<br/><br/>IMAGE container image name COMMANDS list will be passed as commands to model<br/>container.<br/>
+Submit an image to run on the cluster.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -185,16 +185,16 @@ Name | Description|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
-|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
-|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance|
+|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
-|_\--wait-start / --no-wait-start_|Wait for a job start or failure|
+|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -813,7 +813,7 @@ Name | Description|
 
 ## neuro submit
 
-Submit an image to run on the cluster.<br/><br/>IMAGE container image name COMMANDS list will be passed as commands to model<br/>container.<br/>
+Submit an image to run on the cluster.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -845,16 +845,16 @@ Name | Description|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
-|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
-|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance|
+|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-d, --description DESC_|Add optional description to the job|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
-|_\--wait-start / --no-wait-start_|Wait for a job start or failure|
+|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
