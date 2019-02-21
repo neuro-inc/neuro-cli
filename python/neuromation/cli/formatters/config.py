@@ -1,3 +1,5 @@
+from click import style
+
 from neuromation.cli.rc import Config
 
 

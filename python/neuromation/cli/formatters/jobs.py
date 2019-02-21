@@ -1,5 +1,4 @@
 import itertools
-import re
 import time
 from typing import Iterable
 
