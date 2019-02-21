@@ -84,17 +84,24 @@ class Helper:
     @run_async
     async def check_file_exists_on_storage(self, name: str, path: str, size: int):
         path = URL(self.tmpstorage + path)
-        # delay = STORAGE_DELAY
-        # t0 = time()
+        delay = STORAGE_DELAY
+        t0 = time()
         async with self._config.make_client() as client:
-            files = await client.storage.ls(path)
-            for file in files:
-                if (
-                    file.type == FileStatusType.FILE
-                    and file.name == name
-                    and file.size == size
-                ):
-                    return
+            while time() - t0 < STORAGE_MAX_TIME:
+                try:
+                    files = await client.storage.ls(path)
+                except ResourceNotFound:
+                    pass
+                else:
+                    for file in files:
+                        if (
+                            file.type == FileStatusType.FILE
+                            and file.name == name
+                            and file.size == size
+                        ):
+                            return
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 60)
         raise AssertionError(f"File {name} with size {size} not found in {path}")
 
     @run_async
