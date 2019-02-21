@@ -3,13 +3,13 @@
 * Make sure that the code is in a good shape, all tests are passed etc.
 * Switch to `master` branch (`git checkout master`).
 * Open `neuromation/__init__.py`, increment the `__version__` string, e.g. `__version__ = '1.2.3'`.
+* Run `make format`.
 * Run `towncrier` to update `CHANGELOG.md`.
 * Open `CHANGELOG.md`, make sure that the generated file content looks good. Fix it if needed.
 * Regenerate site docs. 
   * You need a clone of https://github.com/neuromation/platform-web project sibling to this repo.
   * Run `./build-tools/site-help-generator.py`. The tool regenerates files in `platform-web/docs`.
   * Create a Pull Request for generated docs. Make sure that the docs PR passes CI checks.
-* Run `make format`.
 * Commit changed `__init__.py`, `CHANGELOD.md` and deleted change pieces in `CHANGELOG.D`. Use `Release 1.2.3` commit message
 * Push commited changes on github using the master branch.
 * Wait for CircleCI checks finish, make sure that all tests are passed.
