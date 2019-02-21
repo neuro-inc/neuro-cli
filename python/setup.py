@@ -25,7 +25,6 @@ license = None
 
 setup(
     name="neuromation",
-    # TODO: decide where take/store versions
     version=version,
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
