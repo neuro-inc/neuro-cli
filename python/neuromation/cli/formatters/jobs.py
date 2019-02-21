@@ -1,33 +1,19 @@
 import itertools
 import re
 import time
-from typing import Iterable, Optional
+from typing import Iterable
 
 from click import style
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.client import JobDescription, JobStatus, Resources
-from neuromation.client.jobs import JobTelemetry
+from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
 
-from .rc import Config
+from .utils import truncate_string, wrap
 
 
 BEFORE_PROGRESS = "\r"
 AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
-
-
-# Do nasty hack click to fix unstyle problem
-def _patch_click() -> None:
-    import click._compat  # type: ignore
-
-    _ansi_re = re.compile(r"\033\[([;\?0-9]*)([a-zA-Z])")
-    click._compat._ansi_re = _ansi_re
-
-
-_patch_click()
-del _patch_click
-
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -42,24 +28,7 @@ def format_job_status(status: JobStatus) -> str:
     return style(status.value, fg=COLORS.get(status, "reset"))
 
 
-class BaseFormatter:
-    def _truncate_string(self, input: Optional[str], max_length: int) -> str:
-        if input is None:
-            return ""
-        if len(input) <= max_length:
-            return input
-        len_tail, placeholder = 3, "..."
-        if max_length < len_tail or max_length < len(placeholder):
-            return placeholder
-        tail = input[-len_tail:] if max_length > len(placeholder) + len_tail else ""
-        index_stop = max_length - len(placeholder) - len(tail)
-        return input[:index_stop] + placeholder + tail
-
-    def _wrap(self, text: Optional[str]) -> str:
-        return "'" + (text or "") + "'"
-
-
-class JobFormatter(BaseFormatter):
+class JobFormatter:
     def __init__(self, quiet: bool = True) -> None:
         self._quiet = quiet
 
@@ -74,6 +43,8 @@ class JobFormatter(BaseFormatter):
             + style("Status", bold=True)
             + f": {format_job_status(job.status)}"
         )
+        if job.http_url:
+            out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
         out.append(f"  neuro status {job.id}  " + style("# check job status", dim=True))
         out.append(
@@ -87,39 +58,7 @@ class JobFormatter(BaseFormatter):
         return "\n".join(out)
 
 
-class JobStartProgress(BaseFormatter):
-    SPINNER = ("|", "/", "-", "\\")
-    LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
-
-    def __init__(self, color: bool) -> None:
-        self._color = color
-        self._time = time.time()
-        self._spinner = itertools.cycle(self.SPINNER)
-        self._prev = ""
-
-    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
-        if not self._color:
-            return ""
-        new_time = time.time()
-        dt = new_time - self._time
-        msg = format_job_status(job.status)
-        if job.history.reason:
-            msg += " " + style(job.history.reason, bold=True)
-        ret = ""
-        if msg != self._prev:
-            if self._prev:
-                ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
-            self._prev = msg
-        ret += self.LINE_PRE + msg + f" [{dt:.1f} sec]"
-        if not finish:
-            ret += " " + next(self._spinner)
-        ret += CLEAR_LINE_TAIL
-        if finish:
-            ret += AFTER_PROGRESS
-        return ret
-
-
-class JobStatusFormatter(BaseFormatter):
+class JobStatusFormatter:
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
@@ -138,7 +77,8 @@ class JobStatusFormatter(BaseFormatter):
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
-
+        if job_status.internal_hostname:
+            result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
             result = f"{result}Http URL: {job_status.http_url}\n"
         if job_status.container.env:
@@ -162,7 +102,7 @@ class JobStatusFormatter(BaseFormatter):
         return result
 
 
-class JobTelemetryFormatter(BaseFormatter):
+class JobTelemetryFormatter:
     def __init__(self) -> None:
         self.col_len = {
             "timestamp": 24,
@@ -204,7 +144,7 @@ class JobTelemetryFormatter(BaseFormatter):
         )
 
 
-class JobListFormatter(BaseFormatter):
+class JobListFormatter:
     def __init__(self, quiet: bool = False):
         self.quiet = quiet
         self.tab = "\t"
@@ -240,7 +180,7 @@ class JobListFormatter(BaseFormatter):
 
     def _format_job_line(self, job: JobDescription) -> str:
         def truncate_then_wrap(value: str, key: str) -> str:
-            return self._wrap(self._truncate_string(value, self.column_lengths[key]))
+            return wrap(truncate_string(value, self.column_lengths[key]))
 
         if self.quiet:
             return job.id.ljust(self.column_lengths["id"])
@@ -258,7 +198,7 @@ class JobListFormatter(BaseFormatter):
         )
 
 
-class ResourcesFormatter(BaseFormatter):
+class ResourcesFormatter:
     def __call__(self, resources: Resources) -> str:
         lines = list()
         lines.append(f"Memory: {resources.memory_mb} MB")
@@ -277,23 +217,39 @@ class ResourcesFormatter(BaseFormatter):
         return "Resources:\n" + indent + f"\n{indent}".join(lines)
 
 
-class ConfigFormatter:
-    def __call__(self, config: Config) -> str:
-        lines = []
-        lines.append(
-            style("User Name", bold=True) + f": {config.get_platform_user_name()}"
-        )
-        lines.append(style("API URL", bold=True) + f": {config.url}")
-        lines.append(
-            style("Docker Registry URL", bold=True) + f": {config.registry_url}"
-        )
-        lines.append(
-            style("Github RSA Path", bold=True) + f": {config.github_rsa_path}"
-        )
-        indent = "  "
-        return (
-            style("User Configuration", bold=True)
-            + ":\n"
-            + indent
-            + f"\n{indent}".join(lines)
-        )
+class JobStartProgress:
+    SPINNER = ("|", "/", "-", "\\")
+    LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
+
+    def __init__(self, color: bool) -> None:
+        self._color = color
+        self._time = time.time()
+        self._spinner = itertools.cycle(self.SPINNER)
+        self._prev = ""
+
+    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
+        if not self._color:
+            return ""
+        new_time = time.time()
+        dt = new_time - self._time
+        msg = format_job_status(job.status)
+        if job.history.reason:
+            reason = job.history.reason
+        elif not self._prev:
+            reason = "Initializing"
+        else:
+            reason = ""
+        if reason:
+            msg += " " + style(reason, bold=True)
+        ret = ""
+        if msg != self._prev:
+            if self._prev:
+                ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
+            self._prev = msg
+        ret += self.LINE_PRE + msg + f" [{dt:.1f} sec]"
+        if not finish:
+            ret += " " + next(self._spinner)
+        ret += CLEAR_LINE_TAIL
+        if finish:
+            ret += AFTER_PROGRESS
+        return ret
