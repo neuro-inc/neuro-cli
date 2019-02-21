@@ -294,7 +294,12 @@ class Helper:
 
 @pytest.fixture
 def config_path(tmp_path):
-    return tmp_path / ".nmrc"
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
+    rc_text = RC_TEXT.format(token=e2e_test_token)
+    path = tmp_path / ".nmrc"
+    path.write_text(rc_text)
+    path.chmod(0o600)
+    return path
 
 
 @pytest.fixture
@@ -302,12 +307,6 @@ def config(config_path, monkeypatch):
     def _config_path() -> Path:
         return config_path
 
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
-
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-
-    config_path.write_text(rc_text)
-    config_path.chmod(0o600)
     with monkeypatch.context() as ctx:
         ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
         config = rc.ConfigFactory.load()
@@ -323,20 +322,18 @@ def helper(config):
 
 @pytest.fixture
 def config_path_alt(tmp_path):
-    return tmp_path / ".nmrc.alt"
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
+    rc_text = RC_TEXT.format(token=e2e_test_token)
+    path = tmp_path / ".nmrc.alt"
+    path.write_text(rc_text)
+    path.chmod(0o600)
+    return path
 
 
 @pytest.fixture
 def config_alt(config_path_alt, monkeypatch):
     def _config_path() -> Path:
         return config_path_alt
-
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
-
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-
-    config_path_alt.write_text(rc_text)
-    config_path_alt.chmod(0o600)
 
     with monkeypatch.context() as ctx:
         ctx.setattr(rc.ConfigFactory, "get_path", _config_path)
