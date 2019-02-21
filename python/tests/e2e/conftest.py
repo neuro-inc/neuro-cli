@@ -24,6 +24,9 @@ from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
 JOB_TIMEOUT = 60 * 5
 JOB_WAIT_SLEEP_SECONDS = 2
 
+STORAGE_DELAY = 0.5
+STORAGE_MAX_TIME = 3*60
+
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
@@ -81,19 +84,26 @@ class Helper:
     @run_async
     async def check_file_exists_on_storage(self, name: str, path: str, size: int):
         path = URL(self.tmpstorage + path)
+        delay = STORAGE_DELAY
+        t0 = time()
         async with self._config.make_client() as client:
-            files = await client.storage.ls(path)
-            for file in files:
-                if (
-                    file.type == FileStatusType.FILE
-                    and file.name == name
-                    and file.size == size
-                ):
-                    break
-            else:
-                raise AssertionError(
-                    f"File {name} with size {size} not found in {path}"
-                )
+            while time() - t0 < STORAGE_MAX_TIME:
+                try:
+                    files = await client.storage.ls(path)
+                except ResourceNotFound:
+                    pass
+                else:
+                    for file in files:
+                        if (
+                            file.type == FileStatusType.FILE
+                            and file.name == name
+                            and file.size == size
+                        ):
+                            return
+                print("Wait in check_file_exists_on_storage")
+                await asyncio.sleep(delay)
+                delay *= 2
+        raise AssertionError(f"File {name} with size {size} not found in {path}")
 
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str):
