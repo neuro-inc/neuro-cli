@@ -18,6 +18,13 @@ def test_print_version(run_cli):
 
 
 @pytest.mark.e2e
+def test_print_options(run_cli):
+    captured = run_cli(["--options"])
+    assert not captured.err
+    assert "Options" in captured.out
+
+
+@pytest.mark.e2e
 def test_print_config(run_cli):
     captured = run_cli(["config", "show"])
     assert not captured.err
@@ -45,11 +52,28 @@ def test_e2e_job_top(helper, run_cli):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
-    bash_script = "sleep 10m"
+    bash_script = (
+        "COUNTER=0; while [[ ! -f /data/dummy ]] && [[ $COUNTER -lt 100 ]]; "
+        "do sleep 1; let COUNTER+=1; done; sleep 15"
+    )
     command = f"bash -c '{bash_script}'"
-    captured = run_cli(["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"])
+    captured = run_cli(
+        [
+            "job",
+            "submit",
+            "--volume",
+            f"{helper.tmpstorage}:/data:ro",
+            UBUNTU_IMAGE_NAME,
+            command,
+            "--quiet",
+        ]
+    )
     job_id = captured.out.strip()
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+
+    # the job is running
+    # upload a file and unblock the job
+    helper.check_upload_file_to_storage("dummy", "", __file__)
 
     captured = run_cli(["job", "top", job_id])
 
@@ -84,61 +108,36 @@ def test_e2e_job_top(helper, run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_shm_run_without(helper, run_cli):
+@pytest.mark.parametrize(
+    "switch,expected",
+    [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
+)
+def test_e2e_shm_switch(switch, expected, helper, run_cli):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    captured = run_cli(
-        [
-            "job",
-            "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "--non-preemptible",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
+    arguments = [
+        "job",
+        "submit",
+        "-m",
+        "20M",
+        "-c",
+        "0.1",
+        "-g",
+        "0",
+        "--non-preemptible",
+    ]
+    if switch is not None:
+        arguments.append(switch)
+    arguments += [UBUNTU_IMAGE_NAME, command]
+    captured = run_cli(arguments)
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
-
-
-@pytest.mark.e2e
-def test_e2e_shm_run_with(helper, run_cli):
-    # Start the df test job
-    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
-    command = f"bash -c '{bash_script}'"
-    captured = run_cli(
-        [
-            "job",
-            "submit",
-            "-x",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "--non-preemptible",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    helper.assert_job_state(job_id, JobStatus.FAILED)
+    if expected:
+        helper.wait_job_change_state_to(job_id, JobStatus.FAILED, JobStatus.SUCCEEDED)
+    else:
+        helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
 @pytest.mark.e2e

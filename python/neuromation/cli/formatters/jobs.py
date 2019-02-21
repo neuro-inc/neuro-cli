@@ -1,9 +1,8 @@
 import itertools
-import re
 import time
 from typing import Iterable
 
-import click
+from click import style
 from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
@@ -14,6 +13,7 @@ from .utils import truncate_string, wrap
 BEFORE_PROGRESS = "\r"
 AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
+LINE_UP = "\033[1F"
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -25,7 +25,7 @@ COLORS = {
 
 
 def format_job_status(status: JobStatus) -> str:
-    return click.style(status.value, fg=COLORS.get(status, "reset"))
+    return style(status.value, fg=COLORS.get(status, "reset"))
 
 
 class JobFormatter:
@@ -33,24 +33,29 @@ class JobFormatter:
         self._quiet = quiet
 
     def __call__(self, job: JobDescription) -> str:
-        job_id = click.style(job.id, bold=True)
+        job_id = job.id
         if self._quiet:
             return job_id
-
-        result = f"Job ID: {job_id} Status: {format_job_status(job.status)}\n"
-
-        if job.http_url:
-            result += f"Http URL: {job.http_url}\n"
-
-        result += (
-            f"Shortcuts:\n"
-            + f"  neuro job status {job.id}  # check job status\n"
-            + f"  neuro job monitor {job.id} # monitor job stdout\n"
-            + f"  neuro job top {job.id}     # display real-time job telemetry\n"
-            + f"  neuro job kill {job.id}    # kill job"
+        out = []
+        out.append(
+            style("Job ID", bold=True)
+            + f": {job_id} "
+            + style("Status", bold=True)
+            + f": {format_job_status(job.status)}"
         )
-
-        return result
+        if job.http_url:
+            out.append(style("Http URL", bold=True) + f": {job.http_url}")
+        out.append(style("Shortcuts", bold=True) + ":")
+        out.append(f"  neuro status {job.id}  " + style("# check job status", dim=True))
+        out.append(
+            f"  neuro logs {job.id}    " + style("# monitor job stdout", dim=True)
+        )
+        out.append(
+            f"  neuro top {job.id}     "
+            + style("# display real-time job telemetry", dim=True)
+        )
+        out.append(f"  neuro kill {job.id}    " + style("# kill job", dim=True))
+        return "\n".join(out)
 
 
 class JobStatusFormatter:
@@ -213,40 +218,45 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
-    SPINNER = ("|", "/", "-", "\\")
+    SPINNER = ("◢", "◣", "◤", "◥")
+    LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
 
     def __init__(self, color: bool) -> None:
         self._color = color
         self._time = time.time()
         self._spinner = itertools.cycle(self.SPINNER)
-        self._last_size = 0
+        self._prev = ""
+        self._prev_reason = ""
 
     def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
         if not self._color:
             return ""
         new_time = time.time()
         dt = new_time - self._time
-        txt_status = format_job_status(job.status)
+        msg = format_job_status(job.status)
         if job.history.reason:
-            reason = " " + click.style(job.history.reason, bold=True)
+            reason = job.history.reason
+            self._prev_reason = reason
+        elif not self._prev_reason:
+            reason = "Initializing"
         else:
             reason = ""
-        ret = BEFORE_PROGRESS + f"\rStatus: {txt_status}{reason} [{dt:.1f} sec]"
+        if reason:
+            msg += " " + style(reason, bold=True)
+        if self._prev:
+            ret = LINE_UP
+        else:
+            ret = ""
+        # ret = LINE_UP
+        # ret = ""
+        if msg != self._prev:
+            if self._prev:
+                ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
+            self._prev = msg
+        ret += self.LINE_PRE + msg + f" [{dt:.1f} sec]"
         if not finish:
             ret += " " + next(self._spinner)
-        ret += CLEAR_LINE_TAIL
+        ret += CLEAR_LINE_TAIL + "\n"
         if finish:
             ret += AFTER_PROGRESS
         return ret
-
-
-# Do nasty hack click to fix unstyle problem
-def _patch_click() -> None:
-    import click._compat  # type: ignore
-
-    _ansi_re = re.compile(r"\033\[([;\?0-9]*)([a-zA-Z])")
-    click._compat._ansi_re = _ansi_re
-
-
-_patch_click()
-del _patch_click
