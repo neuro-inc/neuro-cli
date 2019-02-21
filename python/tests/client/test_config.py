@@ -14,9 +14,9 @@ async def test_get_server_config(aiohttp_server):
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     callback_urls = [
-        "http://0.0.0.0:54540",
-        "http://0.0.0.0:54541",
-        "http://0.0.0.0:54542",
+        "http://127.0.0.1:54540",
+        "http://127.0.0.1:54541",
+        "http://127.0.0.1:54542",
     ]
     success_redirect_url = "https://platform.neuromation.io"
     JSON = {
