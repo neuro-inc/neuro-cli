@@ -1,5 +1,1 @@
-from pkg_resources import get_distribution
-
-__version__ = get_distribution(__name__).version
-
-__all__ = ["__version__"]
+__version__ = "0.6.0a0"
