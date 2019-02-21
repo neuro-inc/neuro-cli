@@ -113,6 +113,7 @@ def print_options(
     callback=print_options,
     expose_value=False,
     is_eager=True,
+    hidden=True,
     help="Show common options.",
 )
 @click.pass_context
