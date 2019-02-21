@@ -66,6 +66,8 @@ class Helper:
 
     def close(self):
         if self._tmpstorage is not None:
+            self._tokens.reset()
+            self.refresh()
             with suppress(Exception):
                 self.rm("")
             self._tmpstorage = None
@@ -384,74 +386,73 @@ def nested_data(static_path):
     return generated_file, hash, str(root_dir)
 
 
-def _run_cli(capfd, arguments, storage_retry=True):
-    log.info("Run 'neuro %s'", " ".join(arguments))
-
-    delay = 0.5
-    for i in range(5):
-        pre_out, pre_err = capfd.readouterr()
-        pre_out_size = len(pre_out)
-        pre_err_size = len(pre_err)
-        try:
-            main(
-                ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
-                + arguments
-            )
-        except SystemExit as exc:
-            if exc.code == os.EX_IOERR:
-                # network problem
-                sleep(delay)
-                delay *= 2
-                continue
-            elif (
-                exc.code == os.EX_OSFILE
-                and arguments
-                and arguments[0] == "storage"
-                and storage_retry
-            ):
-                # NFS storage has a lag between pushing data on one storage API node
-                # and fetching it on other node
-                # retry is the only way to avoid it
-                sleep(delay)
-                delay *= 2
-                continue
-            elif exc.code != os.EX_OK:
-                raise
-        post_out, post_err = capfd.readouterr()
-        out = post_out[pre_out_size:]
-        err = post_err[pre_err_size:]
-        return SysCap(out.strip(), err.strip())
-    else:
-        raise TestRetriesExceeded(
-            f"Retries exceeded during 'neuro {' '.join(arguments)}'"
-        )
-
-
 @pytest.fixture
 def run_cli(capfd, tokens_store):
     executed_jobs_list = []
 
     def _run(arguments, *, storage_retry=True):
-        captured = _run_cli(capfd, arguments, storage_retry=storage_retry)
-        if arguments[0:2] in (["job", "submit"], ["model", "train"]) or arguments == [
-            "submit"
-        ]:
-            match = job_id_pattern.search(captured.out)
-            if match:
-                executed_jobs_list.append(match.group(1))
-        return captured
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
+        delay = 0.5
+        for i in range(5):
+            pre_out, pre_err = capfd.readouterr()
+            pre_out_size = len(pre_out)
+            pre_err_size = len(pre_err)
+            try:
+                main(
+                    ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
+                    + arguments
+                )
+            except SystemExit as exc:
+                if exc.code == os.EX_IOERR:
+                    # network problem
+                    sleep(delay)
+                    delay *= 2
+                    continue
+                elif (
+                    exc.code == os.EX_OSFILE
+                    and arguments
+                    and arguments[0] == "storage"
+                    and storage_retry
+                ):
+                    # NFS storage has a lag between pushing data on one storage API node
+                    # and fetching it on other node
+                    # retry is the only way to avoid it
+                    sleep(delay)
+                    delay *= 2
+                    continue
+                elif exc.code != os.EX_OK:
+                    raise
+            post_out, post_err = capfd.readouterr()
+            out = post_out[pre_out_size:]
+            err = post_err[pre_err_size:]
+            if arguments[0:2] in (["job", "submit"], ["model", "train"]):
+                match = job_id_pattern.search(out)
+                if match:
+                    executed_jobs_list.append([match.group(1), tokens_store.current()])
+
+            return SysCap(out.strip(), err.strip())
+        else:
+            raise TestRetriesExceeded(
+                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
+            )
 
     yield _run
     # try to kill all executed jobs regardless of the status
     if executed_jobs_list:
-        try:
-            first = tokens_store.reset()
-            while True:
-                for job_id in executed_jobs_list:
-                    _run(["job", "kill"] + job_id, storage_retry=False)
-                token = tokens_store.next()
-                if token == first:
-                    break
-        except BaseException:
-            # Just ignore cleanup error here
-            pass
+        first = tokens_store.reset()
+        while True:
+            jobs = [
+                job_id
+                for job_id, token in executed_jobs_list
+                if token == tokens_store.current()
+            ]
+            if jobs:
+                try:
+                    _run(["job", "kill"] + jobs, storage_retry=False)
+                except BaseException:
+                    # Just ignore cleanup error here
+                    pass
+            token = tokens_store.next()
+            if token == first:
+                break
