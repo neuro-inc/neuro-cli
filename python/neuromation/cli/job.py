@@ -188,12 +188,12 @@ async def submit(
 
     env_dict = {}
     for line in env:
-        splited = line.split("=", 1)
-        if len(splited) == 1:
-            val = os.environ.get(splited[0], "")
-            env_dict[splited[0]] = val
+        splitted = line.split("=", 1)
+        if len(splitted) == 1:
+            val = os.environ.get(splitted[0], "")
+            env_dict[splitted[0]] = val
         else:
-            env_dict[splited[0]] = splited[1]
+            env_dict[splitted[0]] = splitted[1]
 
     cmd = " ".join(cmd) if cmd is not None else None
     log.debug(f'cmd="{cmd}"')
