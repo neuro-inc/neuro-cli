@@ -66,6 +66,10 @@ class Context(click.Context):
         )
 
 
+def split_examples(help: str) -> Tuple[str, ...]:
+    return re.split("Example[s]:\n", help, re.IGNORECASE)
+
+
 def format_example(example: str, formatter: click.HelpFormatter) -> None:
     with formatter.section(click.style("Examples", bold=True, underline=False)):
         for line in example.splitlines():
@@ -90,7 +94,7 @@ class NeuroClickMixin:
         help = self.help  # type: ignore
         deprecated = self.deprecated  # type: ignore
         if help:
-            help_text, *examples = re.split("Example[s]:\n", help, re.IGNORECASE)
+            help_text, *examples = split_examples(help)
             if help_text:
                 formatter.write_paragraph()
                 with formatter.indentation():

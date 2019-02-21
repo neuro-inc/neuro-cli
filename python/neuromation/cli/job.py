@@ -90,6 +90,7 @@ def job() -> None:
     "--extshm/--no-extshm",
     is_flag=True,
     default=True,
+    show_default=True,
     help="Request extended '/dev/shm' space",
 )
 @click.option("--http", type=int, help="Enable HTTP port forwarding to container")
@@ -99,6 +100,7 @@ def job() -> None:
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
     default=True,
+    show_default=True,
 )
 @click.option(
     "-d", "--description", metavar="DESC", help="Add optional description to the job"
@@ -128,7 +130,10 @@ def job() -> None:
     help="File with environment variables to pass",
 )
 @click.option(
-    "--wait-start/--no-wait-start", default=True, help="Wait for a job start or failure"
+    "--wait-start/--no-wait-start",
+    default=True,
+    show_default=True,
+    help="Wait for a job start or failure",
 )
 @click.pass_obj
 @run_async
@@ -154,8 +159,9 @@ async def submit(
     """
     Submit an image to run on the cluster.
 
-    IMAGE container image name
-    COMMANDS list will be passed as commands to model container.
+    IMAGE container image name.
+
+    CMD list will be passed as commands to model container.
 
     Examples:
 

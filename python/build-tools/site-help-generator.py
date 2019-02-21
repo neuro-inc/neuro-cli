@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 import re
+import shlex
 import sys
 from pathlib import Path
 
 import click
+from click.formatting import wrap_text
 
 from neuromation.cli.main import cli
+from neuromation.cli.utils import split_examples
 
 
 HERE = Path(sys.argv[0]).resolve().parent
@@ -37,6 +40,10 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
         out.append(cmd.get_short_help_str())
         out.append("")
 
+        if cmd.deprecated:
+            out.append("~~DEPRECATED~~")
+            out.append("")
+
         out.append("### Usage")
         out.append("```bash")
         pieces = cmd.collect_usage_pieces(ctx)
@@ -44,8 +51,24 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
         out.append("```")
         out.append("")
 
-        out.append(click.unstyle(cmd.help))
+        help, *examples = split_examples(cmd.help)
+        help2 = click.unstyle(help)
+        help3 = re.sub(r"([A-Z0-9\-]{3,60})", r"`\1`", help2)
+        out.append(wrap_text(help3))
         out.append("")
+
+        for example in examples:
+            out.append("### Examples")
+            out.append("")
+            out.append("```bash")
+            example2 = click.unstyle(example)
+            for line in example2.splitlines():
+                if line.startswith("#"):
+                    out.append(line)
+                else:
+                    out.append(" ".join(shlex.split(line)))
+            out.append("```")
+            out.append("")
 
         opts = []
         w1 = w2 = 0
@@ -63,10 +86,11 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
                 l4.append(", ".join(["`" + part2 + "`" for part2 in l2]))
 
             name2 = " / ".join(l4)
+            descr2 = re.sub(r"(\[.+\])", r"_\1_", descr)
 
             w1 = max(w1, len(name2))
-            w2 = max(w2, len(descr))
-            opts.append((name2, descr))
+            w2 = max(w2, len(descr2))
+            opts.append((name2, descr2))
 
         name_title = "Name".ljust(w1)
         descr_title = "Description".ljust(w2)
@@ -196,10 +220,10 @@ def main(target_dir):
             else:
                 shortcuts.append(cmd)
 
-    for i, group in enumerate(groups, 1):
-        gen_group(i, group, target_path, ctx)
+    gen_shortcuts(1, shortcuts, target_path, ctx)
 
-    gen_shortcuts(i + 1, shortcuts, target_path, ctx)
+    for i, group in enumerate(groups, 2):
+        gen_group(i, group, target_path, ctx)
 
 
 if __name__ == "__main__":
