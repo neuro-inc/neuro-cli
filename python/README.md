@@ -97,7 +97,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
-| _[neuro submit](#neuro-submit)_| Submit a job to run in the cluster |
+| _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
@@ -140,7 +140,7 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro job submit](#neuro-job-submit)_| Submit a job to run in the cluster |
+| _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
@@ -153,7 +153,7 @@ Name | Description|
 
 ### neuro job submit
 
-Submit a job to run in the cluster.<br/><br/>IMAGE container image name COMMANDS list will be passed as commands to model<br/>container.<br/>
+Submit an image to run on the cluster.<br/><br/>IMAGE container image name COMMANDS list will be passed as commands to model<br/>container.<br/>
 
 **Usage:**
 
@@ -813,7 +813,7 @@ Name | Description|
 
 ## neuro submit
 
-Submit a job to run in the cluster.<br/><br/>IMAGE container image name COMMANDS list will be passed as commands to model<br/>container.<br/>
+Submit an image to run on the cluster.<br/><br/>IMAGE container image name COMMANDS list will be passed as commands to model<br/>container.<br/>
 
 **Usage:**
 
