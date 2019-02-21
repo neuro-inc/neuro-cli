@@ -7,7 +7,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.command_spinner import SpinnerBase
-from neuromation.client import AuthorizationError, Client, ImageParser
+from neuromation.client import AuthorizationError, Client, ImageNameParser
 from neuromation.client.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
@@ -25,7 +25,7 @@ def patch_docker_host():
 
 
 class TestImageParser:
-    parser = ImageParser(default_user="alice", registry_url="https://reg.neu.ro")
+    parser = ImageNameParser(default_user="alice", registry_url="https://reg.neu.ro")
 
     @pytest.mark.parametrize(
         "registry_url",
@@ -382,7 +382,7 @@ class TestImageParser:
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
-    parser = ImageParser(default_user="bob", registry_url="https://reg.neu.ro")
+    parser = ImageNameParser(default_user="bob", registry_url="https://reg.neu.ro")
 
     @pytest.fixture()
     def spinner(self) -> SpinnerBase:

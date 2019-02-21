@@ -32,11 +32,11 @@ from .storage import Storage, FileStatusType, FileStatus
 from .users import Action, Permission, Users
 from .images import Images
 from .config import Config
-from .parsing_utils import ImageParser
+from .parsing_utils import ImageNameParser
 
 __all__ = (
     "Image",
-    "ImageParser",
+    "ImageNameParser",
     "JobDescription",
     "JobStatus",
     "JobStatusHistory",

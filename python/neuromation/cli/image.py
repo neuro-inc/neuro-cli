@@ -3,7 +3,7 @@ import sys
 
 import click
 
-from neuromation.client import ImageParser
+from neuromation.client import ImageNameParser
 
 from .command_spinner import SpinnerBase
 from .rc import Config
@@ -41,7 +41,7 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
 
     """
 
-    parser = ImageParser(cfg.username, cfg.registry_url)
+    parser = ImageNameParser(cfg.username, cfg.registry_url)
     local_img = parser.parse_as_docker_image(image_name)
     remote_img = (
         parser.parse_as_neuro_image(remote_image_name)
@@ -81,7 +81,7 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 
     """
 
-    parser = ImageParser(cfg.username, cfg.registry_url)
+    parser = ImageNameParser(cfg.username, cfg.registry_url)
     remote_img = parser.parse_as_neuro_image(image_name)
     local_img = (
         parser.parse_as_docker_image(local_image_name)

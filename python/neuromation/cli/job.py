@@ -10,7 +10,7 @@ import click
 
 from neuromation.client import (
     Image,
-    ImageParser,
+    ImageNameParser,
     JobStatus,
     NetworkPortForwarding,
     Resources,
@@ -195,7 +195,7 @@ async def submit(
 
     memory = to_megabytes_str(memory)
 
-    image_parser = ImageParser(cfg.username, cfg.registry_url)
+    image_parser = ImageNameParser(cfg.username, cfg.registry_url)
     if image_parser.is_in_neuro_registry(image):
         parsed_image = image_parser.parse_as_neuro_image(image)
     else:

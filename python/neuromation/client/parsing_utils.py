@@ -5,7 +5,7 @@ from yarl import URL
 from .images import IMAGE_SCHEME, DockerImage
 
 
-class ImageParser:
+class ImageNameParser:
     default_tag = "latest"
 
     def __init__(self, default_user: str, registry_url: str):
