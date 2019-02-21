@@ -248,7 +248,7 @@ class JobStartProgress:
         else:
             ret = ""
         # ret = LINE_UP
-        #ret = ""
+        # ret = ""
         if msg != self._prev:
             if self._prev:
                 ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
