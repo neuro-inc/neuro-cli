@@ -1,4 +1,3 @@
-import re
 import textwrap
 import time
 from dataclasses import replace
@@ -130,39 +129,18 @@ class TestJobStartProgress:
     def test_progress(self) -> None:
         progress = JobStartProgress(True)
 
-        assert (
-            re.search(
-                r"Status: pending Initializing \[\d+\.\d+ sec] \|",
-                self.strip(progress(self.make_job(JobStatus.PENDING, None))),
-            )
-            is not None
+        assert "Status: pending Initializing" in self.strip(
+            progress(self.make_job(JobStatus.PENDING, None))
         )
-        assert (
-            re.search(
-                r"Status: pending ContainerCreating \[\d+\.\d+ sec] /",
-                self.strip(
-                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-                ),
-            )
-            is not None
+        assert "Status: pending ContainerCreating" in self.strip(
+            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
         )
-        assert (
-            re.search(
-                r"Status: pending ContainerCreating \[\d+\.\d+ sec] -",
-                self.strip(
-                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-                ),
-            )
-            is not None
+        assert "Status: pending ContainerCreating" in self.strip(
+            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
         )
-        assert (
-            re.search(
-                r"Status: succeeded \[\d+\.\d sec]",
-                self.strip(
-                    progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
-                ),
-            )
-            is not None
+
+        assert "Status: succeeded" in self.strip(
+            progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
         )
 
 
