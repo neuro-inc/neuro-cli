@@ -5,11 +5,9 @@ import os
 import re
 from collections import namedtuple
 from contextlib import suppress
-from functools import partial
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
-from shutil import move
 from time import sleep, time
 from uuid import uuid4 as uuid
 
