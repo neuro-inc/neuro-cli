@@ -13,6 +13,7 @@ from .utils import truncate_string, wrap
 BEFORE_PROGRESS = "\r"
 AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
+LINE_UP = "\033[1F"
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -240,10 +241,14 @@ class JobStartProgress:
             reason = "Initializing"
         else:
             reason = ""
-            self._prev_reason = reason
         if reason:
             msg += " " + style(reason, bold=True)
-        ret = ""
+        if self._prev:
+            ret = LINE_UP
+        else:
+            ret = ""
+        # ret = LINE_UP
+        #ret = ""
         if msg != self._prev:
             if self._prev:
                 ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
@@ -251,7 +256,7 @@ class JobStartProgress:
         ret += self.LINE_PRE + msg + f" [{dt:.1f} sec]"
         if not finish:
             ret += " " + next(self._spinner)
-        ret += CLEAR_LINE_TAIL
+        ret += CLEAR_LINE_TAIL + "\n"
         if finish:
             ret += AFTER_PROGRESS
         return ret
