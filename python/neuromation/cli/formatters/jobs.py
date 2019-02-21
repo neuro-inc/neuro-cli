@@ -46,9 +46,7 @@ class JobFormatter:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
         out.append(f"  neuro status {job.id}  " + style("# check job status", dim=True))
-        out.append(
-            f"  neuro logs {job.id} " + style("# monitor job stdout", dim=True)
-        )
+        out.append(f"  neuro logs {job.id} " + style("# monitor job stdout", dim=True))
         out.append(
             f"  neuro top {job.id}     "
             + style("# display real-time job telemetry", dim=True)
