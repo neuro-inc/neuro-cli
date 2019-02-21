@@ -18,6 +18,13 @@ def test_print_version(run_cli):
 
 
 @pytest.mark.e2e
+def test_print_options(run_cli):
+    captured = run_cli(["--options"])
+    assert not captured.err
+    assert "Options" in captured.out
+
+
+@pytest.mark.e2e
 def test_print_config(run_cli):
     captured = run_cli(["config", "show"])
     assert not captured.err

@@ -2,7 +2,8 @@ import logging
 import os
 import shutil
 import sys
-from typing import List, Optional, Sequence, Type
+from textwrap import dedent
+from typing import Any, List, Optional, Sequence, Type, Union
 
 import aiohttp
 import click
@@ -14,7 +15,7 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
-from .utils import Context, DeprecatedGroup, MainGroup, alias
+from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
 # For stream copying from file to http or from http to file
@@ -55,8 +56,37 @@ def setup_console_handler(
 LOG_ERROR = log.error
 
 
+def print_options(
+    ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
+) -> Any:
+    if not value or ctx.resilient_parsing:
+        return
+
+    formatter = ctx.make_formatter()
+    formatter.write_text("Options available for any command.")
+    EXAMPLE = dedent(
+        """\
+        # Show config without colors
+        neuro --color=no config show
+    """
+    )
+    format_example(EXAMPLE, formatter)
+
+    opts = []
+    for parameter in ctx.command.get_params(ctx):
+        rv = parameter.get_help_record(ctx)
+        if rv is not None:
+            opts.append(rv)
+
+    with formatter.section("Options"):
+        formatter.write_dl(opts)
+
+    click.echo(formatter.getvalue())
+    ctx.exit()
+
+
 @click.group(cls=MainGroup, invoke_without_command=True)
-@click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode")
+@click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
 @click.option(
     "--show-traceback",
     is_flag=True,
@@ -66,7 +96,7 @@ LOG_ERROR = log.error
     "--color",
     type=click.Choice(["yes", "no", "auto"]),
     default="auto",
-    help="Color mode",
+    help="Color mode.",
 )
 @click.option(
     "--disable-pypi-version-check",
@@ -76,6 +106,15 @@ LOG_ERROR = log.error
 )
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
+)
+@click.option(
+    "--options",
+    is_flag=True,
+    callback=print_options,
+    expose_value=False,
+    is_eager=True,
+    hidden=True,
+    help="Show common options.",
 )
 @click.pass_context
 def cli(
@@ -122,18 +161,16 @@ def cli(
 @click.pass_context
 def help(ctx: click.Context, command: Sequence[str]) -> None:
     """Get help on a command."""
-    top_ctx = ctx
-    while top_ctx.parent is not None:
-        top_ctx = top_ctx.parent
+    top_ctx = ctx.find_root()
 
-    not_found = 'No such command neuro "{}"'.format(" ".join(command))
+    not_found = 'No such command "neuro {}"'.format(" ".join(command))
 
     ctx_stack = [top_ctx]
     for cmd_name in command:
         current_cmd = ctx_stack[-1].command
         if isinstance(current_cmd, click.MultiCommand):
             sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
-            if sub_cmd is None:
+            if sub_cmd is None or sub_cmd.hidden:  # type: ignore
                 click.echo(not_found)
                 break
             sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)

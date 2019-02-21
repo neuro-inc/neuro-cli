@@ -1,4 +1,3 @@
-import re
 import textwrap
 import time
 from dataclasses import replace
@@ -77,10 +76,10 @@ class TestJobFormatter:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Shortcuts:\n"
-            + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
-            + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro job kill {TEST_JOB_ID}    # kill job"
+            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
+            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
+            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
+            + f"  neuro kill {TEST_JOB_ID}    # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -90,10 +89,10 @@ class TestJobFormatter:
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Http URL: https://job.dev\n"
             + f"Shortcuts:\n"
-            + f"  neuro job status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro job monitor {TEST_JOB_ID} # monitor job stdout\n"
-            + f"  neuro job top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro job kill {TEST_JOB_ID}    # kill job"
+            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
+            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
+            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
+            + f"  neuro kill {TEST_JOB_ID}    # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -130,39 +129,18 @@ class TestJobStartProgress:
     def test_progress(self) -> None:
         progress = JobStartProgress(True)
 
-        assert (
-            re.match(
-                r"Status: pending \[\d+\.\d+ sec] \|",
-                self.strip(progress(self.make_job(JobStatus.PENDING, None))),
-            )
-            is not None
+        assert "Status: pending Initializing" in self.strip(
+            progress(self.make_job(JobStatus.PENDING, None))
         )
-        assert (
-            re.match(
-                r"Status: pending ContainerCreating \[\d+\.\d+ sec] /",
-                self.strip(
-                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-                ),
-            )
-            is not None
+        assert "Status: pending ContainerCreating" in self.strip(
+            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
         )
-        assert (
-            re.match(
-                r"Status: pending ContainerCreating \[\d+\.\d+ sec] -",
-                self.strip(
-                    progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-                ),
-            )
-            is not None
+        assert "Status: pending ContainerCreating" in self.strip(
+            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
         )
-        assert (
-            re.match(
-                r"Status: succeeded \[\d+\.\d sec]",
-                self.strip(
-                    progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
-                ),
-            )
-            is not None
+
+        assert "Status: succeeded" in self.strip(
+            progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
         )
 
 
@@ -974,9 +952,9 @@ class TestConfigFormatter:
             github_rsa_path="path",
         )
         out = ConfigFormatter()(config)
-        assert out == textwrap.dedent(
+        assert click.unstyle(out) == textwrap.dedent(
             """\
-            Config:
+            User Configuration:
               User Name: user
               API URL: https://dev.url/api/v1
               Docker Registry URL: https://registry-dev.url/api/v1

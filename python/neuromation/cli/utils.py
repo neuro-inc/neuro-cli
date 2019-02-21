@@ -66,6 +66,16 @@ class Context(click.Context):
         )
 
 
+def format_example(example: str, formatter: click.HelpFormatter) -> None:
+    with formatter.section(click.style("Examples", bold=True, underline=False)):
+        for line in example.splitlines():
+            is_comment = line.startswith("#")
+            if is_comment:
+                formatter.write_text("\b\n" + click.style(line, dim=True))
+            else:
+                formatter.write_text("\b\n" + " ".join(shlex.split(line)))
+
+
 class NeuroClickMixin:
     def get_short_help_str(self, limit: int = 45) -> str:
         text = super().get_short_help_str(limit=limit)  # type: ignore
@@ -81,23 +91,16 @@ class NeuroClickMixin:
         deprecated = self.deprecated  # type: ignore
         if help:
             help_text, *examples = re.split("Example[s]:\n", help, re.IGNORECASE)
-            formatter.write_paragraph()
-            with formatter.indentation():
-                if deprecated:
-                    help_text += DEPRECATED_HELP_NOTICE
-                formatter.write_text(help_text)
+            if help_text:
+                formatter.write_paragraph()
+                with formatter.indentation():
+                    if deprecated:
+                        help_text += DEPRECATED_HELP_NOTICE
+                    formatter.write_text(help_text)
             examples = [example.strip() for example in examples]
 
             for example in examples:
-                with formatter.section(
-                    click.style("Examples", bold=True, underline=False)
-                ):
-                    for line in example.splitlines():
-                        is_comment = line.startswith("#")
-                        if is_comment:
-                            formatter.write_text("\b\n" + click.style(line, dim=True))
-                        else:
-                            formatter.write_text("\b\n" + " ".join(shlex.split(line)))
+                format_example(example, formatter)
         elif deprecated:
             formatter.write_paragraph()
             with formatter.indentation():
@@ -119,6 +122,13 @@ class NeuroClickMixin:
         return ctx
 
 
+class NeuroGroupMixin(NeuroClickMixin):
+    def format_options(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        self.format_commands(ctx, formatter)  # type: ignore
+
+
 class Command(NeuroClickMixin, click.Command):
     pass
 
@@ -129,7 +139,7 @@ def command(
     return click.command(name=name, cls=cls, **kwargs)  # type: ignore
 
 
-class Group(NeuroClickMixin, click.Group):
+class Group(NeuroGroupMixin, click.Group):
     def command(
         self, *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], Command]:
@@ -159,7 +169,7 @@ def group(name: Optional[str] = None, **kwargs: Any) -> Group:
     return click.group(name=name, **kwargs)  # type: ignore
 
 
-class DeprecatedGroup(NeuroClickMixin, click.MultiCommand):
+class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
     def __init__(
         self, origin: click.MultiCommand, name: Optional[str] = None, **attrs: Any
     ) -> None:
@@ -221,8 +231,21 @@ class MainGroup(Group):
             else:
                 commands.append((subcommand, cmd))
 
-        self._format_group("Command Groups", groups, formatter)
-        self._format_group("Commands", commands, formatter)
+        self._format_group("Commands", groups, formatter)
+        self._format_group("Command Shortcuts", commands, formatter)
+
+    def format_options(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        self.format_commands(ctx, formatter)
+        formatter.write_paragraph()
+        formatter.write_text(
+            'Use "neuro <command> --help" for more information about a given command.'
+        )
+        formatter.write_text(
+            'Use "neuro --options" for a list of global command-line options '
+            "(applies to all commands)."
+        )
 
 
 def alias(
