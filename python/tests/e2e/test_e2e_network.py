@@ -72,7 +72,7 @@ def secret_job(run_job_and_wait_status, tiny_container, run_cli, helper):
         # Run http job
         command = (
             f"bash -c \"echo '{secret}' > /usr/share/nginx/html/secret.txt; "
-            f"timeout 5m /usr/sbin/nginx -g 'daemon off;'\""
+            f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         if http_port:
             args = ["--http", "80", "-d", "nginx with secret file and http port"]
