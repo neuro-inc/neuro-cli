@@ -47,7 +47,7 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
         out.append("### Usage")
         out.append("```bash")
         pieces = cmd.collect_usage_pieces(ctx)
-        out.append(f"neuro {cmd.name} " + " ".join(pieces))
+        out.append(f"{ctx.command_path} " + " ".join(pieces))
         out.append("```")
         out.append("")
 
@@ -163,7 +163,7 @@ def gen_group(index, group, target_path, parent_ctx):
 def gen_shortcuts(index, commands, target_path, ctx):
     out = []
     meta = {
-        "title": "shortcuts",
+        "title": "Shortcuts",
         "path": "/shortcuts",
         "category": "shortcuts",
         "index": "true",
