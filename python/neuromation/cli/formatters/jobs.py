@@ -47,7 +47,7 @@ class JobFormatter:
         out.append(style("Shortcuts", bold=True) + ":")
         out.append(f"  neuro status {job.id}  " + style("# check job status", dim=True))
         out.append(
-            f"  neuro monitor {job.id} " + style("# monitor job stdout", dim=True)
+            f"  neuro logs {job.id} " + style("# monitor job stdout", dim=True)
         )
         out.append(
             f"  neuro top {job.id}     "
