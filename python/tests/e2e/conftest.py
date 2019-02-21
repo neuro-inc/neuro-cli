@@ -87,7 +87,7 @@ class Helper:
         delay = STORAGE_DELAY
         t0 = time()
         async with self._config.make_client() as client:
-           files = await client.storage.ls(path)
+            files = await client.storage.ls(path)
             for file in files:
                 if (
                     file.type == FileStatusType.FILE
@@ -95,9 +95,7 @@ class Helper:
                     and file.size == size
                 ):
                     break
-        raise AssertionError(
-            f"File {name} with size {size} not found in {path}"
-        )
+        raise AssertionError(f"File {name} with size {size} not found in {path}")
 
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str):
