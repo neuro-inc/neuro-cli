@@ -50,7 +50,6 @@ def run_job_and_wait_status(run_cli, helper):
             ["job", "submit"] + params + ([image, command] if command else [image])
         )
 
-        assert not captured.err
         job_id = job_id_pattern.search(captured.out).group(1)
         helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
         helper.wait_job_change_state_to(job_id, wait_state, stop_state)
