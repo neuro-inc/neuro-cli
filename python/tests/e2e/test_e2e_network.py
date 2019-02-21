@@ -199,4 +199,4 @@ def test_check_isolation(
         wait_state=JobStatus.FAILED,
         stop_state=JobStatus.SUCCEEDED,
     )
-    helper.check_job_output(job_id, r"Operation timed out")
+    helper.check_job_output(job_id, r"timed out")
