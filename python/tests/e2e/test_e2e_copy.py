@@ -3,6 +3,7 @@ from pathlib import PurePath
 
 import pytest
 
+from neuromation.cli.const import EX_OSFILE
 from tests.e2e.utils import FILE_SIZE_B
 
 
@@ -74,7 +75,7 @@ def test_copy_local_to_platform_single_file_3(helper, data, run_cli):
     srcfile, checksum = data
 
     # Upload local file to non existing directory
-    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
+    with pytest.raises(SystemExit, match=str(EX_OSFILE)):
         captured = run_cli(
             ["storage", "cp", srcfile, helper.tmpstorage + "/non_existing_dir/"],
             storage_retry=False,
@@ -91,7 +92,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
     helper, run_cli, tmp_path
 ):
     # Try downloading non existing file
-    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
+    with pytest.raises(SystemExit, match=str(EX_OSFILE)):
         run_cli(
             [
                 "storage",
@@ -108,7 +109,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
     helper, run_cli, tmp_path
 ):
     # Try downloading non existing file
-    with pytest.raises(SystemExit, match=str(os.EX_OSFILE)):
+    with pytest.raises(SystemExit, match=str(EX_OSFILE)):
         run_cli(
             ["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)],
             storage_retry=False,

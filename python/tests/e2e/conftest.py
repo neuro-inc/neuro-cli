@@ -16,6 +16,7 @@ from yarl import URL
 
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
+from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
 from neuromation.client import FileStatusType, ResourceNotFound
 from neuromation.utils import run
 from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
@@ -353,13 +354,13 @@ def run_cli(capfd, config):
                     + arguments
                 )
             except SystemExit as exc:
-                if exc.code == os.EX_IOERR:
+                if exc.code == EX_IOERR:
                     # network problem
                     sleep(delay)
                     delay *= 2
                     continue
                 elif (
-                    exc.code == os.EX_OSFILE
+                    exc.code == EX_OSFILE
                     and arguments
                     and arguments[0] == "storage"
                     and storage_retry
@@ -370,7 +371,7 @@ def run_cli(capfd, config):
                     sleep(delay)
                     delay *= 2
                     continue
-                elif exc.code != os.EX_OK:
+                elif exc.code != EX_OK:
                     raise
             post_out, post_err = capfd.readouterr()
             out = post_out[pre_out_size:]
