@@ -16,6 +16,7 @@ async def client(loop, token):
         yield client
 
 
+# asvetlov: I don't like autouse but it is the fastest fix
 @pytest.fixture(autouse=True)
 def fake_homedir(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
