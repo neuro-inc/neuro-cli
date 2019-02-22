@@ -4,7 +4,6 @@ from urllib.parse import urlparse
 import pytest
 
 from neuromation.cli.command_handlers import PlatformStorageOperation
-from neuromation.client.url_utils import normalize_local_path
 
 
 class TestPathRendering:
