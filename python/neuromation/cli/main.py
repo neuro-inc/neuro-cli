@@ -1,5 +1,4 @@
 import logging
-import os
 import shutil
 import sys
 from textwrap import dedent
@@ -15,6 +14,7 @@ from neuromation.cli.rc import RCException
 from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
+from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
@@ -228,50 +228,50 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(e.exit_code)
     except neuromation.client.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
-        sys.exit(os.EX_DATAERR)
+        sys.exit(EX_DATAERR)
 
     except neuromation.client.ResourceNotFound as error:
         LOG_ERROR(f"{error}")
-        sys.exit(os.EX_OSFILE)
+        sys.exit(EX_OSFILE)
 
     except neuromation.client.AuthenticationError as error:
         LOG_ERROR(f"Cannot authenticate ({error})")
-        sys.exit(os.EX_NOPERM)
+        sys.exit(EX_NOPERM)
     except neuromation.client.AuthorizationError as error:
         LOG_ERROR(f"Not enough permissions ({error})")
-        sys.exit(os.EX_NOPERM)
+        sys.exit(EX_NOPERM)
 
     except neuromation.client.ClientError as error:
         LOG_ERROR(f"Application error ({error})")
-        sys.exit(os.EX_SOFTWARE)
+        sys.exit(EX_SOFTWARE)
 
     except RCException as error:
         LOG_ERROR(f"{error}")
-        sys.exit(os.EX_SOFTWARE)
+        sys.exit(EX_SOFTWARE)
 
     except aiohttp.ClientError as error:
         LOG_ERROR(f"Connection error ({error})")
-        sys.exit(os.EX_IOERR)
+        sys.exit(EX_IOERR)
 
     except DockerError as error:
         LOG_ERROR(f"Docker API error: {error.message}")
-        sys.exit(os.EX_PROTOCOL)
+        sys.exit(EX_PROTOCOL)
 
     except NotImplementedError as error:
         LOG_ERROR(f"{error}")
-        sys.exit(os.EX_SOFTWARE)
+        sys.exit(EX_SOFTWARE)
     except FileNotFoundError as error:
         LOG_ERROR(f"File not found ({error})")
-        sys.exit(os.EX_OSFILE)
+        sys.exit(EX_OSFILE)
     except NotADirectoryError as error:
         LOG_ERROR(f"{error}")
-        sys.exit(os.EX_OSFILE)
+        sys.exit(EX_OSFILE)
     except PermissionError as error:
         LOG_ERROR(f"Cannot access file ({error})")
-        sys.exit(os.EX_NOPERM)
+        sys.exit(EX_NOPERM)
     except OSError as error:
         LOG_ERROR(f"I/O Error ({error})")
-        sys.exit(os.EX_IOERR)
+        sys.exit(EX_IOERR)
 
     except KeyboardInterrupt:
         LOG_ERROR("Aborting.")
