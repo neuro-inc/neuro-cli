@@ -5,7 +5,7 @@ import pytest
 
 import neuromation
 from neuromation.client import JobStatus
-from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME
+from tests.e2e.utils import FILE_SIZE_B, JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
@@ -57,19 +57,12 @@ def test_e2e_job_top(helper):
         "do sleep 1; let COUNTER+=1; done; sleep 15"
     )
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            "--volume",
-            f"{helper.tmpstorage}:/data:ro",
-            UBUNTU_IMAGE_NAME,
-            command,
-            "--quiet",
-        ]
+
+    job_id = helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME,
+        command,
+        JOB_TINY_CONTAINER_PARAMS + ["--volume", f"{helper.tmpstorage}:/data:ro"],
     )
-    job_id = captured.out
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
 
     # the job is running
     # upload a file and unblock the job
@@ -116,28 +109,20 @@ def test_e2e_shm_switch(switch, expected, helper):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    arguments = [
-        "job",
-        "submit",
-        "-m",
-        "20M",
-        "-c",
-        "0.1",
-        "-g",
-        "0",
-        "--non-preemptible",
-    ]
+    params = [] + JOB_TINY_CONTAINER_PARAMS
     if switch is not None:
-        arguments.append(switch)
-    arguments += [UBUNTU_IMAGE_NAME, command]
-    captured = helper.run_cli(arguments)
+        params.append(switch)
 
-    out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
     if expected:
-        helper.wait_job_change_state_to(job_id, JobStatus.FAILED, JobStatus.SUCCEEDED)
+        job_id = helper.run_job_and_wait_state(
+            UBUNTU_IMAGE_NAME, command, params, JobStatus.FAILED, JobStatus.SUCCEEDED
+        )
+        status = helper.job_info(job_id)
+        assert re.search(r"Exit code: 1", status.history.description)
     else:
-        helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
+        helper.run_job_and_wait_state(
+            UBUNTU_IMAGE_NAME, command, params, JobStatus.SUCCEEDED, JobStatus.FAILED
+        )
 
 
 @pytest.mark.e2e
@@ -186,37 +171,25 @@ def test_job_storage_interaction(helper, data, tmp_path):
     helper.check_upload_file_to_storage("foo", "data", str(srcfile))
 
     delay = 0.5
+    command = "cp /data/foo /res/foo"
     for i in range(5):
         # Run a job to copy file
-        command = "cp /data/foo /res/foo"
-        captured = helper.run_cli(
-            [
-                "job",
-                "submit",
-                "-m",
-                "20M",
-                "-c",
-                "0.1",
-                "-g",
-                "0",
-                "--http",
-                "80",
-                "--volume",
-                f"{helper.tmpstorage}data:/data:ro",
-                "--volume",
-                f"{helper.tmpstorage}result:/res:rw",
-                "--non-preemptible",
+        try:
+            helper.run_job_and_wait_state(
                 UBUNTU_IMAGE_NAME,
                 command,
-            ]
-        )
-        job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-
-        # Wait for job to finish
-        helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-        try:
-            helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+                JOB_TINY_CONTAINER_PARAMS
+                + [
+                    "--http",
+                    "80",
+                    "--volume",
+                    f"{helper.tmpstorage}data:/data:ro",
+                    "--volume",
+                    f"{helper.tmpstorage}result:/res:rw",
+                ],
+                JobStatus.SUCCEEDED,
+                JobStatus.FAILED,
+            )
             # Confirm file has been copied
             helper.check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
@@ -224,7 +197,6 @@ def test_job_storage_interaction(helper, data, tmp_path):
             helper.check_file_on_storage_checksum(
                 "foo", "result", checksum, tmp_path, "bar"
             )
-
             break
         except AssertionError:
             sleep(delay)

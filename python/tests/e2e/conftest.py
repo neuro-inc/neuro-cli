@@ -20,7 +20,12 @@ from yarl import URL
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
-from neuromation.client import FileStatusType, JobStatus, ResourceNotFound
+from neuromation.client import (
+    FileStatusType,
+    JobDescription,
+    JobStatus,
+    ResourceNotFound,
+)
 from neuromation.utils import run
 from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, attempt
 
@@ -280,7 +285,7 @@ class Helper:
             assert job.status == state
 
     @run_async
-    async def job_info(self, job_id):
+    async def job_info(self, job_id) -> JobDescription:
         async with self._config.make_client() as client:
             return await client.jobs.status(job_id)
 
