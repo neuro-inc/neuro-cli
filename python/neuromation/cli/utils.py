@@ -1,7 +1,7 @@
 import asyncio
 import re
-import shlex
 from contextlib import suppress
+import shlex
 from functools import wraps
 from typing import (
     Any,
