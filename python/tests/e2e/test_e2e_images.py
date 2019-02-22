@@ -44,19 +44,19 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
-def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
+def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     # Let`s push image
-    captured = run_cli(["image", "push", image])
+    captured = helper.run_cli(["image", "push", image])
 
     # stderr has "Used image ..." lines
     # assert not captured.err
 
-    image_url = URL(captured.out.strip())
+    image_url = URL(captured.out)
     assert image_url.scheme == "image"
     assert image_url.path.lstrip("/") == image
 
     # Check if image available on registry
-    captured = run_cli(["image", "ls"])
+    captured = helper.run_cli(["image", "ls"])
 
     image_urls = [URL(line) for line in captured.out.splitlines() if line]
     for url in image_urls:
@@ -67,10 +67,10 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     pulled_image = f"{image}-pull"
 
     # Pull image as with another tag
-    captured = run_cli(["image", "pull", str(image_url), pulled_image])
+    captured = helper.run_cli(["image", "pull", str(image_url), pulled_image])
     # stderr has "Used image ..." lines
     # assert not captured.err
-    assert pulled_image == captured.out.strip()
+    assert pulled_image == captured.out
     # Check if image exists and remove, all-in-one swiss knife
     loop.run_until_complete(docker.images.delete(pulled_image, force=True))
 
@@ -79,7 +79,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     registry_url = URL(config.registry_url)
     path = image_url.path
     image_with_repo = f'{registry_url.host}/{image_url.host}/{path.lstrip("/")}'
-    captured = run_cli(
+    captured = helper.run_cli(
         [
             "job",
             "submit",
@@ -94,13 +94,13 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
         ]
     )
     assert not captured.err
-    job_id = captured.out.strip()
+    job_id = captured.out
     assert job_id.startswith("job-")
     helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
     @attempt()
     def check_job_output():
-        captured = run_cli(["job", "logs", job_id])
+        captured = helper.run_cli(["job", "logs", job_id])
         assert not captured.err
         assert captured.out == tag
 

@@ -1,14 +1,11 @@
 import re
-from typing import Sequence, Union
 from uuid import uuid4 as uuid
 
 import aiohttp
 import pytest
 
 from neuromation.client import JobDescription, JobStatus
-from neuromation.utils import run as run_async
-from tests.e2e.conftest import job_id_pattern
-from tests.e2e.utils import attempt
+from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 
 NGINX_IMAGE_NAME = "nginx:latest"
@@ -16,56 +13,8 @@ UBUNTU_IMAGE_NAME = "ubuntu:latest"
 ALPINE_IMAGE_NAME = "alpine:latest"
 
 
-@pytest.fixture()
-def check_http_get():
-    async def http_get(url, accepted_statuses: Sequence[int]) -> Union[str, None]:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status in accepted_statuses:
-                    return await resp.text()
-                raise aiohttp.ClientResponseError(
-                    status=resp.status,
-                    message=f"Server return {resp.status}",
-                    history=tuple(),
-                    request_info=resp.request_info,
-                )
-
-    @attempt(3, 5)
-    def go(url, accepted_statuses: Sequence[int] = tuple([200])):
-        return run_async(http_get(url, accepted_statuses))
-
-    return go
-
-
 @pytest.fixture
-def run_job_and_wait_status(run_cli, helper):
-    def go(
-        image,
-        command,
-        params,
-        wait_state=JobStatus.RUNNING,
-        stop_state=JobStatus.FAILED,
-    ):
-        captured = run_cli(
-            ["job", "submit"] + params + ([image, command] if command else [image])
-        )
-
-        job_id = job_id_pattern.search(captured.out).group(1)
-        helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
-        helper.wait_job_change_state_to(job_id, wait_state, stop_state)
-
-        return job_id
-
-    return go
-
-
-@pytest.fixture()
-def tiny_container():
-    return ["-m", "20M", "-c", "0.1", "-g", "0", "--non-preemptible"]
-
-
-@pytest.fixture
-def secret_job(run_job_and_wait_status, tiny_container, run_cli, helper):
+def secret_job(helper):
     def go(http_port: bool):
         secret = str(uuid())
         # Run http job
@@ -78,8 +27,8 @@ def secret_job(run_job_and_wait_status, tiny_container, run_cli, helper):
         else:
             args = ["-d", "nginx with secret file and without http port"]
 
-        http_job_id = run_job_and_wait_status(
-            NGINX_IMAGE_NAME, command, tiny_container + args
+        http_job_id = helper.run_job_and_wait_state(
+            NGINX_IMAGE_NAME, command, JOB_TINY_CONTAINER_PARAMS + args
         )
         status: JobDescription = helper.job_info(http_job_id)
         return {
@@ -93,9 +42,7 @@ def secret_job(run_job_and_wait_status, tiny_container, run_cli, helper):
 
 
 @pytest.mark.e2e
-def test_connectivity_job_with_http_port(
-    secret_job, check_http_get, tiny_container, run_job_and_wait_status, helper
-):
+def test_connectivity_job_with_http_port(secret_job, check_http_get, helper):
 
     http_job = secret_job(True)
 
@@ -103,14 +50,15 @@ def test_connectivity_job_with_http_port(
 
     # external ingress test
     probe = check_http_get(ingress_secret_url)
+    assert probe
     assert probe.strip() == http_job["secret"]
 
     # internal ingress test
     command = f"wget -q -T 15 {ingress_secret_url} -O -"
-    job_id = run_job_and_wait_status(
+    job_id = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME,
         command,
-        tiny_container + ["-d", "secret ingress fetcher "],
+        JOB_TINY_CONTAINER_PARAMS + ["-d", "secret ingress fetcher "],
         wait_state=JobStatus.SUCCEEDED,
     )
     helper.check_job_output(job_id, re.escape(http_job["secret"]))
@@ -118,22 +66,20 @@ def test_connectivity_job_with_http_port(
     # internal network test
     internal_secret_url = f"http://{http_job['internal_hostname']}/secret.txt"
     command = f"wget -q -T 15 {internal_secret_url} -O -"
-    job_id = run_job_and_wait_status(
+    job_id = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME,
         command,
-        tiny_container + ["-d", "secret internal network fetcher "],
+        JOB_TINY_CONTAINER_PARAMS + ["-d", "secret internal network fetcher "],
         wait_state=JobStatus.SUCCEEDED,
     )
     helper.check_job_output(job_id, re.escape(http_job["secret"]))
 
 
 @pytest.mark.e2e
-def test_connectivity_job_without_http_port(
-    secret_job, check_http_get, tiny_container, run_cli, helper, run_job_and_wait_status
-):
+def test_connectivity_job_without_http_port(secret_job, check_http_get, helper):
     # run http job for getting url
     http_job = secret_job(True)
-    run_cli(["job", "kill", http_job["id"]])
+    helper.run_cli(["job", "kill", http_job["id"]])
     ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
 
     # Run another job without shared http port
@@ -151,10 +97,10 @@ def test_connectivity_job_without_http_port(
 
     # internal ingress test
     command = f"wget -q -T 15 {ingress_secret_url} -O -"
-    job_id = run_job_and_wait_status(
+    job_id = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME,
         command,
-        tiny_container + ["-d", "secret ingress fetcher "],
+        JOB_TINY_CONTAINER_PARAMS + ["-d", "secret ingress fetcher "],
         wait_state=JobStatus.FAILED,
         stop_state=JobStatus.SUCCEEDED,
     )
@@ -168,35 +114,31 @@ def test_connectivity_job_without_http_port(
 
 
 @pytest.mark.e2e
-def test_check_isolation(
-    tokens_store, secret_job, tiny_container, helper, run_job_and_wait_status
-):
+def test_check_isolation(secret_job, helper_alt):
     http_job = secret_job(True)
 
     ingress_secret_url = f"{http_job['ingress_url']}/secret.txt"
 
-    tokens_store.next()
-    helper.refresh()
-
     # internal ingress test
     command = f"wget -q -T 15 {ingress_secret_url} -O -"
-    job_id = run_job_and_wait_status(
+    job_id = helper_alt.run_job_and_wait_state(
         ALPINE_IMAGE_NAME,
         command,
-        tiny_container + ["-d", "secret ingress fetcher "],
+        JOB_TINY_CONTAINER_PARAMS + ["-d", "secret ingress fetcher "],
         wait_state=JobStatus.SUCCEEDED,
     )
-    helper.check_job_output(job_id, re.escape(http_job["secret"]))
+    helper_alt.check_job_output(job_id, re.escape(http_job["secret"]))
 
     # internal network test
+
     internal_secret_url = f"http://{http_job['internal_hostname']}/secret.txt"
     command = f"wget -q -T 15 {internal_secret_url} -O -"
     # This job must be failed,
-    job_id = run_job_and_wait_status(
+    job_id = helper_alt.run_job_and_wait_state(
         ALPINE_IMAGE_NAME,
         command,
-        tiny_container + ["-d", "secret internal network fetcher "],
+        JOB_TINY_CONTAINER_PARAMS + ["-d", "secret internal network fetcher "],
         wait_state=JobStatus.FAILED,
         stop_state=JobStatus.SUCCEEDED,
     )
-    helper.check_job_output(job_id, r"timed out")
+    helper_alt.check_job_output(job_id, r"timed out")

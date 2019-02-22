@@ -9,46 +9,46 @@ from tests.e2e.utils import FILE_SIZE_B, UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
-def test_print_version(run_cli):
+def test_print_version(helper):
     expected_out = f"Neuromation Platform Client {neuromation.__version__}"
 
-    captured = run_cli(["--version"])
+    captured = helper.run_cli(["--version"])
     assert not captured.err
     assert captured.out == expected_out
 
 
 @pytest.mark.e2e
-def test_print_options(run_cli):
-    captured = run_cli(["--options"])
+def test_print_options(helper):
+    captured = helper.run_cli(["--options"])
     assert not captured.err
     assert "Options" in captured.out
 
 
 @pytest.mark.e2e
-def test_print_config(run_cli):
-    captured = run_cli(["config", "show"])
+def test_print_config(helper):
+    captured = helper.run_cli(["config", "show"])
     assert not captured.err
     assert "API URL: https://dev.neu.ro/api/v1" in captured.out
 
 
 @pytest.mark.e2e
-def test_print_config_token(run_cli):
-    captured = run_cli(["config", "show-token"])
+def test_print_config_token(helper):
+    captured = helper.run_cli(["config", "show-token"])
     assert not captured.err
     assert captured.out  # some secure information was printed
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(run_cli, helper):
+def test_empty_directory_ls_output(helper):
     # Ensure output of ls - empty directory shall print nothing.
-    captured = run_cli(["storage", "ls", helper.tmpstorage])
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert not captured.out
     # FIXME: stderr has "Using path ..." line
     assert len(captured.err.splitlines()) == 1 and captured.err.startswith("Using path")
 
 
 @pytest.mark.e2e
-def test_e2e_job_top(helper, run_cli):
+def test_e2e_job_top(helper):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
 
@@ -57,7 +57,7 @@ def test_e2e_job_top(helper, run_cli):
         "do sleep 1; let COUNTER+=1; done; sleep 15"
     )
     command = f"bash -c '{bash_script}'"
-    captured = run_cli(
+    captured = helper.run_cli(
         [
             "job",
             "submit",
@@ -68,14 +68,14 @@ def test_e2e_job_top(helper, run_cli):
             "--quiet",
         ]
     )
-    job_id = captured.out.strip()
+    job_id = captured.out
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
 
     # the job is running
     # upload a file and unblock the job
     helper.check_upload_file_to_storage("dummy", "", __file__)
 
-    captured = run_cli(["job", "top", job_id])
+    captured = helper.run_cli(["job", "top", job_id])
 
     header_line, top_line = split_non_empty_parts(captured.out, separator="\n")
     header_parts = split_non_empty_parts(header_line, separator="\t")
@@ -112,7 +112,7 @@ def test_e2e_job_top(helper, run_cli):
     "switch,expected",
     [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
 )
-def test_e2e_shm_switch(switch, expected, helper, run_cli):
+def test_e2e_shm_switch(switch, expected, helper):
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
@@ -130,7 +130,7 @@ def test_e2e_shm_switch(switch, expected, helper, run_cli):
     if switch is not None:
         arguments.append(switch)
     arguments += [UBUNTU_IMAGE_NAME, command]
-    captured = run_cli(arguments)
+    captured = helper.run_cli(arguments)
 
     out = captured.out
     job_id = re.match("Job ID: (.+) Status:", out).group(1)
@@ -141,7 +141,7 @@ def test_e2e_shm_switch(switch, expected, helper, run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_storage(data, run_cli, tmp_path, helper):
+def test_e2e_storage(data, tmp_path, helper):
     srcfile, checksum = data
 
     # Create directory for the test
@@ -177,7 +177,7 @@ def test_e2e_storage(data, run_cli, tmp_path, helper):
 
 
 @pytest.mark.e2e
-def test_job_storage_interaction(helper, run_cli, data, tmp_path):
+def test_job_storage_interaction(helper, data, tmp_path):
     srcfile, checksum = data
     # Create directory for the test
     helper.check_create_dir_on_storage("data")
@@ -189,7 +189,7 @@ def test_job_storage_interaction(helper, run_cli, data, tmp_path):
     for i in range(5):
         # Run a job to copy file
         command = "cp /data/foo /res/foo"
-        captured = run_cli(
+        captured = helper.run_cli(
             [
                 "job",
                 "submit",
