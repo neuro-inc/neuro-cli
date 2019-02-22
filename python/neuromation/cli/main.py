@@ -18,9 +18,6 @@ from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
-# For stream copying from file to http or from http to file
-BUFFER_SIZE_MB = 16
-
 log = logging.getLogger(__name__)
 
 
