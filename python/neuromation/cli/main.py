@@ -11,10 +11,10 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ign
 
 import neuromation
 from neuromation.cli.rc import RCException
-from neuromation.logging import ConsoleWarningFormatter
 
 from . import completion, config, image, job, model, rc, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
+from .log_formatter import ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
@@ -36,9 +36,9 @@ def setup_logging() -> None:
 
 
 def setup_console_handler(
-    handler: logging.StreamHandler, verbose: int, noansi: bool = False
+    handler: logging.StreamHandler, verbose: int, color: bool
 ) -> None:
-    if not handler.stream.closed and handler.stream.isatty() and noansi is False:
+    if color:
         format_class: Type[logging.Formatter] = ConsoleWarningFormatter
     else:
         format_class = logging.Formatter
@@ -137,14 +137,14 @@ def cli(
     global LOG_ERROR
     if show_traceback:
         LOG_ERROR = log.exception
-    setup_logging()
-    setup_console_handler(console_handler, verbose=verbose)
     tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
     COLORS = {"yes": True, "no": False, "auto": None}
     real_color: Optional[bool] = COLORS[color]
     if real_color is None:
         real_color = tty
     ctx.color = real_color
+    setup_logging()
+    setup_console_handler(console_handler, verbose=verbose, color=real_color)
     config = rc.ConfigFactory.load()
     config.color = real_color
     config.tty = tty

@@ -1,6 +1,6 @@
 import logging
 
-from . import colors
+import click
 
 
 class ConsoleWarningFormatter(logging.Formatter):
@@ -12,9 +12,9 @@ class ConsoleWarningFormatter(logging.Formatter):
         separator = ": "
 
         if record.levelno == logging.WARNING:
-            return colors.COLOR_FUNCS["yellow"](record.levelname) + separator
+            return click.style(record.levelname, fg="yellow") + separator
         if record.levelno == logging.ERROR:
-            return colors.COLOR_FUNCS["red"](record.levelname) + separator
+            return click.style(record.levelname, fg="red") + separator
 
         return ""
 

@@ -1,6 +1,6 @@
 from logging import ERROR, WARNING, LogRecord
 
-from neuromation.logging import ConsoleWarningFormatter
+from neuromation.cli.log_formatter import ConsoleWarningFormatter
 
 
 formatter = ConsoleWarningFormatter("%(name)s.%(funcName)s: %(message)s")
