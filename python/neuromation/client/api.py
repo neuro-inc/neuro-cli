@@ -68,7 +68,7 @@ class API:
         }
 
     @property
-    def connector(self):
+    def connector(self) -> aiohttp.TCPConnector:
         return self._connector
 
     async def close(self) -> None:
