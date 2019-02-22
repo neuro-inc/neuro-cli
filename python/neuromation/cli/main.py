@@ -14,7 +14,7 @@ from neuromation.cli.rc import RCException
 
 from . import completion, config, image, job, model, rc, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
-from .log_formatter import ConsoleWarningFormatter, ConsoleHandler
+from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
@@ -24,9 +24,7 @@ BUFFER_SIZE_MB = 16
 log = logging.getLogger(__name__)
 
 
-def setup_logging(
-    verbose: int, color: bool
-) -> None:
+def setup_logging(verbose: int, color: bool) -> None:
     root_logger = logging.getLogger()
     handler = ConsoleHandler()
     root_logger.addHandler(handler)
