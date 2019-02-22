@@ -15,6 +15,7 @@ from neuromation.client.config import get_server_config
 from neuromation.client.users import get_token_username
 from neuromation.utils import run
 
+from .const import WIN32
 from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
 
@@ -281,7 +282,7 @@ def _deserialize_auth_token(payload: Dict[str, Any]) -> Optional[AuthToken]:
 
 def _load(path: Path) -> Config:
     stat = path.stat()
-    if stat.st_mode & 0o777 != 0o600:
+    if not WIN32 and stat.st_mode & 0o777 != 0o600:
         raise RCException(
             f"Config file {path} has compromised permission bits, "
             f"run 'chmod 600 {path}' before usage"

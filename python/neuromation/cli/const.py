@@ -1,3 +1,8 @@
+import sys
+
+
+WIN32 = sys.platform == "win32"
+
 # Python on Windows doesn't expose these constants in os module
 
 EX_CANTCREAT = 73
