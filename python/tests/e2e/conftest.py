@@ -6,7 +6,6 @@ import re
 from collections import namedtuple
 from contextlib import suppress
 from hashlib import sha1
-from itertools import cycle
 from os.path import join
 from pathlib import Path
 from time import sleep, time
@@ -17,6 +16,7 @@ from yarl import URL
 
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
+from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
 from neuromation.client import FileStatusType, ResourceNotFound
 from neuromation.utils import run
 from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
@@ -54,20 +54,13 @@ def run_async(coro):
 
 
 class Helper:
-    def __init__(self, tokens):
-        self._tokens = tokens
-        self._config = None
-        self.refresh()
+    def __init__(self, config):
+        self._config = config
         self._tmpstorage = "storage:" + str(uuid()) + "/"
         self.mkdir("")
 
-    def refresh(self):
-        self._config = rc.ConfigFactory.load()
-
     def close(self):
         if self._tmpstorage is not None:
-            self._tokens.reset()
-            self.refresh()
             with suppress(Exception):
                 self.rm("")
             self._tmpstorage = None
@@ -305,47 +298,29 @@ class Helper:
 
 
 @pytest.fixture
-def tokens_store(tmp_path, monkeypatch):
-    def _get_path():
-        return tmp_path / ".nmrc"
+def config(tmp_path, monkeypatch):
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
 
-    class Store:
-        def __init__(self, tokens):
-            self._tokens = tokens
-            self._cycle = None
-            self._token = None
-            self.reset()
+    if e2e_test_token:
+        # Make a config on CI
+        # use default user config for local testing
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        config_path = tmp_path / ".nmrc"
+        config_path.write_text(rc_text)
+        config_path.chmod(0o600)
 
-        def _set(self, token):
-            self._token = token
-            rc_text = RC_TEXT.format(token=self._token)
-            path = _get_path()
-            path.write_text(rc_text)
-            path.chmod(0o600)
-            return self.current()
+        def _home():
+            return Path(tmp_path)
 
-        def next(self):
-            return self._set(next(self._cycle))
+        monkeypatch.setattr(Path, "home", _home)
 
-        def current(self):
-            return self._token
-
-        def reset(self):
-            self._cycle = cycle(self._tokens)
-            return self.next()
-
-    tokens = [
-        os.getenv("CLIENT_TEST_E2E_USER_NAME"),
-        os.getenv("CLIENT_TEST_E2E_USER_NAME_ALT"),
-    ]
-    store = Store(tokens)
-    monkeypatch.setattr(rc.ConfigFactory, "get_path", _get_path)
-    return store
+    config = rc.ConfigFactory.load()
+    yield config
 
 
 @pytest.fixture
-def helper(tokens_store):
-    ret = Helper(tokens_store)
+def helper(config):
+    ret = Helper(config)
     yield ret
     ret.close()
 
@@ -387,7 +362,7 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def run_cli(capfd, tokens_store):
+def run_cli(capfd, config):
     executed_jobs_list = []
 
     def _run(arguments, *, storage_retry=True):
@@ -404,13 +379,13 @@ def run_cli(capfd, tokens_store):
                     + arguments
                 )
             except SystemExit as exc:
-                if exc.code == os.EX_IOERR:
+                if exc.code == EX_IOERR:
                     # network problem
                     sleep(delay)
                     delay *= 2
                     continue
                 elif (
-                    exc.code == os.EX_OSFILE
+                    exc.code == EX_OSFILE
                     and arguments
                     and arguments[0] == "storage"
                     and storage_retry
@@ -421,7 +396,7 @@ def run_cli(capfd, tokens_store):
                     sleep(delay)
                     delay *= 2
                     continue
-                elif exc.code != os.EX_OK:
+                elif exc.code != EX_OK:
                     raise
             post_out, post_err = capfd.readouterr()
             out = post_out[pre_out_size:]
@@ -429,7 +404,7 @@ def run_cli(capfd, tokens_store):
             if arguments[0:2] in (["job", "submit"], ["model", "train"]):
                 match = job_id_pattern.search(out)
                 if match:
-                    executed_jobs_list.append([match.group(1), tokens_store.current()])
+                    executed_jobs_list.append(match.group(1))
 
             return SysCap(out.strip(), err.strip())
         else:
@@ -440,19 +415,8 @@ def run_cli(capfd, tokens_store):
     yield _run
     # try to kill all executed jobs regardless of the status
     if executed_jobs_list:
-        first = tokens_store.reset()
-        while True:
-            jobs = [
-                job_id
-                for job_id, token in executed_jobs_list
-                if token == tokens_store.current()
-            ]
-            if jobs:
-                try:
-                    _run(["job", "kill"] + jobs, storage_retry=False)
-                except BaseException:
-                    # Just ignore cleanup error here
-                    pass
-            token = tokens_store.next()
-            if token == first:
-                break
+        try:
+            _run(["job", "kill"] + executed_jobs_list)
+        except BaseException:
+            # Just ignore cleanup error here
+            pass

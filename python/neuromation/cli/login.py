@@ -176,7 +176,7 @@ def create_auth_code_app(
 
 @asynccontextmanager
 async def create_app_server_once(
-    app: Application, *, host: str = "0.0.0.0", port: int = 8080
+    app: Application, *, host: str = "127.0.0.1", port: int = 8080
 ) -> AsyncIterator[URL]:
     runner = AppRunner(app, access_log=None)
     try:
@@ -191,7 +191,7 @@ async def create_app_server_once(
 
 @asynccontextmanager
 async def create_app_server(
-    app: Application, *, host: str = "0.0.0.0", ports: Sequence[int] = (8080,)
+    app: Application, *, host: str = "127.0.0.1", ports: Sequence[int] = (8080,)
 ) -> AsyncIterator[URL]:
     for port in ports:
         try:
@@ -311,9 +311,9 @@ class AuthConfig:
     audience: str
 
     callback_urls: Sequence[URL] = (
-        URL("http://0.0.0.0:54540"),
-        URL("http://0.0.0.0:54541"),
-        URL("http://0.0.0.0:54542"),
+        URL("http://127.0.0.1:54540"),
+        URL("http://127.0.0.1:54541"),
+        URL("http://127.0.0.1:54542"),
     )
 
     success_redirect_url: Optional[URL] = None
