@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from textwrap import dedent
 from unittest import mock
@@ -334,6 +335,7 @@ def test_load_missing(nmrc):
     assert config == DEFAULTS
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="chmod 0o600 works on Posix only")
 def test_load_bad_file_mode(nmrc):
     document = """
         url: 'http://a.b/c'
