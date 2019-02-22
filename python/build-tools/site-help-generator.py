@@ -63,10 +63,14 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
             out.append("```bash")
             example2 = click.unstyle(example)
             for line in example2.splitlines():
+                line = line.strip()
                 if line.startswith("#"):
                     out.append(line)
                 else:
-                    out.append(" ".join(shlex.split(line)))
+                    if line:
+                        out.append("$ " + " ".join(shlex.split(line)))
+                    else:
+                        out.append("")
             out.append("```")
             out.append("")
 
