@@ -23,3 +23,13 @@ class ConsoleWarningFormatter(logging.Formatter):
             record.msg = record.msg.decode("utf-8")
         message = super(ConsoleWarningFormatter, self).format(record)
         return "{0}{1}".format(self.get_level_message(record), message)
+
+
+class ConsoleHandler(logging.StreamHandler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            click.echo(msg + self.terminator, err=True)
+            self.flush()
+        except Exception:  # pragma: no cover
+            self.handleError(record)

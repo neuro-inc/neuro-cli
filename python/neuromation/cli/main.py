@@ -14,7 +14,7 @@ from neuromation.cli.rc import RCException
 
 from . import completion, config, image, job, model, rc, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
-from .log_formatter import ConsoleWarningFormatter
+from .log_formatter import ConsoleWarningFormatter, ConsoleHandler
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
@@ -22,22 +22,16 @@ from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 BUFFER_SIZE_MB = 16
 
 log = logging.getLogger(__name__)
-console_handler = logging.StreamHandler(sys.stderr)
 
 
-def setup_logging() -> None:
+def setup_logging(
+    verbose: int, color: bool
+) -> None:
     root_logger = logging.getLogger()
-    root_logger.addHandler(console_handler)
+    handler = ConsoleHandler()
+    root_logger.addHandler(handler)
     root_logger.setLevel(logging.DEBUG)
 
-    # Select modules logging, if necessary
-    # logging.getLogger("aiohttp.internal").propagate = False
-    # logging.getLogger("aiohttp.client").setLevel(logging.DEBUG)
-
-
-def setup_console_handler(
-    handler: logging.StreamHandler, verbose: int, color: bool
-) -> None:
     if color:
         format_class: Type[logging.Formatter] = ConsoleWarningFormatter
     else:
@@ -143,8 +137,7 @@ def cli(
     if real_color is None:
         real_color = tty
     ctx.color = real_color
-    setup_logging()
-    setup_console_handler(console_handler, verbose=verbose, color=real_color)
+    setup_logging(verbose=verbose, color=real_color)
     config = rc.ConfigFactory.load()
     config.color = real_color
     config.tty = tty
