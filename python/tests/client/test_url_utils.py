@@ -17,8 +17,8 @@ async def client(loop, token):
 
 
 @pytest.fixture
-def fake_homedir(monkeypatch):
-    monkeypatch.setenv("HOME", "/home/user")
+def fake_homedir(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
     return Path.home()
 
 
