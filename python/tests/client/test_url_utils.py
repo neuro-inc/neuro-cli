@@ -101,25 +101,6 @@ async def test_normalize_local_path_uri__3_slashes_relative(token, pwd):
     assert str(url) == "file:///path/to/file.txt"
 
 
-async def test_normalize_storage_path_uri__4_slashes_relative(token, client):
-    url = URL("storage:////path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username)
-    assert url.scheme == "storage"
-    assert url.host == "user"
-    assert url.path == "/path/to/file.txt"
-    assert str(url) == "storage://user/path/to/file.txt"
-
-
-async def test_normalize_local_path_uri__4_slashes_relative(token, pwd):
-    # the test is meaningless
-    url = URL("file:////path/to/file.txt")
-    url = normalize_local_path_uri(url)
-    assert url.scheme == "file"
-    assert url.host is None
-    assert url.path == "/path/to/file.txt"
-    assert str(url) == "file:///path/to/file.txt"
-
-
 async def test_normalize_storage_path_uri__tilde_in_relative_path(token, client):
     url = URL("storage:~/path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
