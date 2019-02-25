@@ -1,6 +1,6 @@
 import logging
 import os
-from pathlib import PosixPath, PurePosixPath
+from pathlib import Path
 from urllib.parse import ParseResult, urlparse
 
 
@@ -37,22 +37,22 @@ class PlatformStorageOperation:
         if path.scheme != "storage":
             raise ValueError("Path should be targeting platform storage.")
 
-    def _render_platform_path(self, path_str: str) -> PosixPath:
-        target_path: PosixPath = PosixPath(path_str)
+    def _render_platform_path(self, path_str: str) -> Path:
+        target_path: Path = Path(path_str)
         if target_path.is_absolute():
-            target_path = target_path.relative_to(PosixPath("/"))
+            target_path = target_path.relative_to(Path("/"))
         return target_path
 
-    def _render_platform_path_with_principal(self, path: ParseResult) -> PurePosixPath:
-        target_path: PosixPath = self._render_platform_path(path.path)
+    def _render_platform_path_with_principal(self, path: ParseResult) -> Path:
+        target_path: Path = self._render_platform_path(path.path)
         target_principal = self._get_principal(path)
-        posix_path = PurePosixPath(PLATFORM_DELIMITER, target_principal, target_path)
+        posix_path = Path(PLATFORM_DELIMITER, target_principal, target_path)
         return posix_path
 
-    def render_uri_path_with_principal(self, path: str) -> PurePosixPath:
+    def render_uri_path_with_principal(self, path: str) -> Path:
         # Special case that shall be handled here, when path is '//'
         if path == "storage://":
-            return PosixPath(PLATFORM_DELIMITER)
+            return Path(PLATFORM_DELIMITER)
 
         # Normal processing flow
         path_url = urlparse(path, scheme="file")
