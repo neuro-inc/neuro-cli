@@ -15,12 +15,6 @@ install:
 # do not run automatic test discovery
 test: off
 
-build_script:
-  - pip install --user -U pip
-  - pushd python
-  - pip3 install --user -r requirements/ci.txt
-  - popd || true
-
 test_script:
   - '%MAKE% -C python ci'
 
