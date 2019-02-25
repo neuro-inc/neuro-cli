@@ -109,7 +109,7 @@ async def test_normalize_storage_path_uri__4_slashes_relative(token, client):
     assert str(url) == "storage://user/path/to/file.txt"
 
 
-@pytest.mark.skipif(sys.platform != 'posix', reason="Doesn't work on Windows")
+@pytest.mark.skipif(sys.platform != "posix", reason="Doesn't work on Windows")
 async def test_normalize_local_path_uri__4_slashes_relative():
     url = URL("file:////path/to/file.txt")
     url = normalize_local_path_uri(url)
