@@ -30,4 +30,7 @@ def normalize_local_path_uri(uri: URL) -> URL:
     if uri.host:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
     path = Path(uri.path).expanduser().absolute()
-    return URL(path.as_uri())
+    ret = URL(path.as_uri())
+    while ret.path.startswith('//'):
+        ret = ret.with_path(ret.path[1:])
+    return ret
