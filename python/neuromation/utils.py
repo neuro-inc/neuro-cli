@@ -63,7 +63,7 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
                 warnings.simplefilter("ignore", ResourceWarning)
                 loop.close()
                 del loop
-                gc.collect(2)
+                gc.collect()
 
 
 def _cancel_all_tasks(

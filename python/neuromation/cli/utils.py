@@ -43,6 +43,8 @@ async def _run_async_function(
             await task
         await version_checker.close()
 
+        await asyncio.sleep(0.05)
+
 
 def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
     @wraps(callback)
