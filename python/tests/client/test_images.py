@@ -1,4 +1,5 @@
 import os
+import sys
 
 import asynctest
 import pytest
