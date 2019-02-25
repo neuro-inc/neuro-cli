@@ -8,6 +8,7 @@
 		* [neuro job ls](#neuro-job-ls)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job exec](#neuro-job-exec)
+		* [neuro job port-forward](#neuro-job-port-forward)
 		* [neuro job logs](#neuro-job-logs)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job top](#neuro-job-top)
@@ -35,6 +36,7 @@
 	* [neuro ps](#neuro-ps)
 	* [neuro status](#neuro-status)
 	* [neuro exec](#neuro-exec)
+	* [neuro port-forward](#neuro-port-forward)
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
@@ -101,6 +103,7 @@ Name | Description|
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
+| _[neuro port-forward](#neuro-port-forward)_| Forward a port of a running job exposed with -ssh option to a local port |
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
@@ -144,6 +147,7 @@ Name | Description|
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
+| _[neuro job port-forward](#neuro-job-port-forward)_| Forward a port of a running job exposed with -ssh option to a local port |
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
@@ -266,6 +270,26 @@ neuro job exec [OPTIONS] ID CMD...
 Name | Description|
 |----|------------|
 |_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job port-forward
+
+Forward a port of a running job exposed with -ssh option to a local port.
+
+**Usage:**
+
+```bash
+neuro job port-forward [OPTIONS] ID LOCAL_PORT
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--help_|Show this message and exit.|
 
@@ -926,6 +950,26 @@ neuro exec [OPTIONS] ID CMD...
 Name | Description|
 |----|------------|
 |_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro port-forward
+
+Forward a port of a running job exposed with -ssh option to a local port.
+
+**Usage:**
+
+```bash
+neuro port-forward [OPTIONS] ID LOCAL_PORT
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--help_|Show this message and exit.|
 
