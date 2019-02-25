@@ -21,6 +21,7 @@ import click
 from neuromation.client import Volume
 from neuromation.utils import run
 
+from .rc import Config
 from .version_utils import VersionChecker
 
 
@@ -30,13 +31,13 @@ DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 
 
 async def _run_async_function(
-    func: Callable[..., Awaitable[_T]], *args: Any, **kwargs: Any
+    func: Callable[..., Awaitable[_T]], cfg: Config, *args: Any, **kwargs: Any
 ) -> _T:
     loop = asyncio.get_event_loop()
     version_checker = VersionChecker()
     task = loop.create_task(version_checker.run())
     try:
-        return await func(*args, **kwargs)
+        return await func(cfg, *args, **kwargs)
     finally:
         task.cancel()
         with suppress(asyncio.CancelledError):
@@ -48,8 +49,8 @@ async def _run_async_function(
 
 def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
     @wraps(callback)
-    def wrapper(*args: Any, **kwargs: Any) -> _T:
-        return run(_run_async_function(callback, *args, **kwargs))
+    def wrapper(cfg: Config, *args: Any, **kwargs: Any) -> _T:
+        return run(_run_async_function(callback, cfg, *args, **kwargs))
 
     return wrapper
 
