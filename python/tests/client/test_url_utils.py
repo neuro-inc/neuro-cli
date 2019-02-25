@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 import pytest
 from yarl import URL
@@ -242,3 +243,9 @@ async def test_normalize_local_path_uri__3_slashes__double(token, fake_homedir):
     assert url.host is None
     assert url.path == "/path/to/file.txt"
     assert str(url) == "file:///path/to/file.txt"
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='Requires Windows')
+def test_normalized_path():
+    p = URL('file:///Z:/neuromation/platform-api-clients/python/setup.py')
+    assert normalize_local_path_uri(p) == p

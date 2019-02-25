@@ -1,3 +1,5 @@
+import sys
+import re
 from pathlib import Path
 
 from yarl import URL
@@ -29,8 +31,18 @@ def normalize_local_path_uri(uri: URL) -> URL:
         )
     if uri.host:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
-    path = Path(uri.path).expanduser().absolute()
+    path = _extract_path(uri)
+    path = path.expanduser().absolute()
     ret = URL(path.as_uri())
     while ret.path.startswith("//"):
         ret = ret.with_path(ret.path[1:])
     return ret
+
+
+def _extract_path(uri: URL) -> Path:
+    path = Path(uri.path)
+    if sys.platform == 'win32':
+        # result of previous normalization
+        if re.match(r'[/\\][A-Za-z]:[/\\]', str(path)):
+            return Path(str(path)[1:])
+    return path
