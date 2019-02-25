@@ -123,11 +123,8 @@ async def test_normalize_local_path_uri__4_slashes_relative(token, pwd):
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path(token, client):
     url = URL("storage:~/path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username)
-    assert url.scheme == "storage"
-    assert url.host == "user"
-    assert url.path == "/~/path/to/file.txt"
-    assert str(url) == "storage://user/~/path/to/file.txt"
+    with pytest.raises(ValueError, match=".*Cannot expand user.*"):
+        normalize_storage_path_uri(url, client.username)
 
 
 async def test_normalize_local_path_uri__tilde_in_relative_path(token, fake_homedir):
@@ -141,20 +138,14 @@ async def test_normalize_local_path_uri__tilde_in_relative_path(token, fake_home
 
 async def test_normalize_storage_path_uri__tilde_in_absolute_path(token, client):
     url = URL("storage:/~/path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username)
-    assert url.scheme == "storage"
-    assert url.host == "user"
-    assert url.path == "/~/path/to/file.txt"
-    assert str(url) == "storage://user/~/path/to/file.txt"
+    with pytest.raises(ValueError, match=".*Cannot expand user.*"):
+        normalize_storage_path_uri(url, client.username)
 
 
-async def test_normalize_local_path_uri__tilde_in_absolute_path(token):
+async def test_normalize_local_path_uri__tilde_in_absolute_path(token, fake_homedir):
     url = URL("file:/~/path/to/file.txt")
-    url = normalize_local_path_uri(url)
-    assert url.scheme == "file"
-    assert url.host is None
-    assert url.path == "/~/path/to/file.txt"
-    assert str(url) == "file:///~/path/to/file.txt"
+    with pytest.raises(ValueError, match=".*Cannot expand user.*"):
+        normalize_local_path_uri(url)
 
 
 async def test_normalize_storage_path_uri__tilde_in_host(token, client):
@@ -189,7 +180,6 @@ async def test_normalize_local_path_uri__bad_scheme(token):
 async def test_normalize_storage_path_uri__no_slash__double(token, client):
     url = URL("storage:path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
-    url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
     assert url.host == "user"
     assert url.path == "/path/to/file.txt"
@@ -199,26 +189,19 @@ async def test_normalize_storage_path_uri__no_slash__double(token, client):
 async def test_normalize_local_path_uri__no_slash__double(token, pwd):
     url = URL("file:path/to/file.txt")
     url = normalize_local_path_uri(url)
-    url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
-    assert url.path == f"{pwd}/path/to/file.txt"
-    assert str(url) == f"file://{pwd}/path/to/file.txt"
+    assert _extract_path(url) == pwd / "path/to/file.txt"
 
 
 async def test_normalize_storage_path_uri__tilde_slash__double(token, client):
     url = URL("storage:~/path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username)
-    url = normalize_storage_path_uri(url, client.username)
-    assert url.scheme == "storage"
-    assert url.host == "user"
-    assert url.path == "/~/path/to/file.txt"
-    assert str(url) == "storage://user/~/path/to/file.txt"
+    with pytest.raises(ValueError, match=".*Cannot expand user.*"):
+        normalize_storage_path_uri(url, client.username)
 
 
 async def test_normalize_local_path_uri__tilde_slash__double(token, fake_homedir):
     url = URL("file:~/path/to/file.txt")
-    url = normalize_local_path_uri(url)
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
@@ -229,7 +212,6 @@ async def test_normalize_local_path_uri__tilde_slash__double(token, fake_homedir
 async def test_normalize_storage_path_uri__3_slashes__double(token, client):
     url = URL("storage:///path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
-    url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
     assert url.host == "user"
     assert url.path == "/path/to/file.txt"
@@ -238,7 +220,6 @@ async def test_normalize_storage_path_uri__3_slashes__double(token, client):
 
 async def test_normalize_local_path_uri__3_slashes__double(token, pwd):
     url = URL(f"file:///{pwd}/path/to/file.txt")
-    url = normalize_local_path_uri(url)
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
