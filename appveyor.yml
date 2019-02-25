@@ -12,6 +12,8 @@ install:
   # install dev dependencies
   - '%MAKE% -C python init'
 
+build: off
+
 # do not run automatic test discovery
 test: off
 
