@@ -379,6 +379,16 @@ class TestImageParser:
         with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
+    def test_convert_to_docker_image(self):
+        neuro_image = DockerImage(name="ubuntu", tag="latest", owner="artem", registry="reg.com")
+        docker_image = self.parser.convert_to_docker_image(neuro_image)
+        assert docker_image == DockerImage(name="ubuntu", tag="latest", owner=None, registry=None)
+
+    def test_convert_to_neuro_image(self):
+        docker_image = DockerImage(name="ubuntu", tag="latest")
+        neuro_image = self.parser.convert_to_neuro_image(docker_image)
+        assert neuro_image == DockerImage(name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro")
+
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
