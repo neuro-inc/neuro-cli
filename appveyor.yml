@@ -16,9 +16,9 @@ install:
 test: off
 
 build_script:
-  - pip install -U pip
+  - pip install --user -U pip
   - pushd python
-  - pip3 install -r requirements/ci.txt
+  - pip3 install --user -r requirements/ci.txt
   - popd || true
 
 test_script:
