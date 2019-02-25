@@ -38,10 +38,6 @@ job_id_pattern = re.compile(
 )
 
 
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-
-
 class TestRetriesExceeded(Exception):
     pass
 
@@ -51,6 +47,8 @@ SysCap = namedtuple("SysCap", "out err")
 
 def run_async(coro):
     def wrapper(*args, **kwargs):
+        if sys.platform == 'win32':
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
         return run(coro(*args, **kwargs))
 
     return wrapper
