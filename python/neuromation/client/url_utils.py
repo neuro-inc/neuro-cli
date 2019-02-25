@@ -1,10 +1,6 @@
-import logging
 from pathlib import Path
 
 from yarl import URL
-
-
-log = logging.getLogger(__name__)
 
 
 def normalize_storage_path_uri(uri: URL, username: str) -> URL:
@@ -33,10 +29,8 @@ def normalize_local_path_uri(uri: URL) -> URL:
         )
     if uri.host:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
-    path = normalize_local_path(uri.path).lstrip("/")
-    return uri.with_path(path)
-
-
-def normalize_local_path(path: str) -> str:
-    """Normalize local file path."""
-    return str(Path(path).expanduser().absolute())
+    path = Path(uri.path).expanduser().absolute()
+    ret = URL(path.as_uri())
+    while ret.path.startswith("//"):
+        ret = ret.with_path(ret.path[1:])
+    return ret
