@@ -63,7 +63,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     # assert not captured.err
 
     image_full_str = f"image://{helper._config.username}/{image}"
-    assert captured.out.strip() == image_full_str
+    assert captured.out.endswith(image_full_str)
     image_url = URL(image_full_str)
 
     # Check if image available on registry
@@ -85,7 +85,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     captured = run_cli(["image", "pull", f"image://~/{image}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
-    assert image == captured.out.strip()
+    assert captured.out.endswith(image)
 
     # check pulled locally, delete for cleanup
     docker_ls_output = loop.run_until_complete(docker.images.list())
@@ -131,7 +131,7 @@ def test_images_push_with_specified_name(helper, run_cli, image, tag, loop, dock
     # stderr has "Used image ..." lines
     # assert not captured.err
     image_pushed_full_str = f"image://{helper._config.username}/{pushed_no_tag}:{tag}"
-    assert captured.out.strip() == image_pushed_full_str
+    assert captured.out.endswith(image_pushed_full_str)
     image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
 
     # Check if image available on registry
@@ -148,7 +148,7 @@ def test_images_push_with_specified_name(helper, run_cli, image, tag, loop, dock
     captured = run_cli(["image", "pull", f"image:{pushed_no_tag}:{tag}", pulled])
     # stderr has "Used image ..." lines
     # assert not captured.err
-    assert pulled == captured.out.strip()
+    assert captured.out.endswith(pulled)
     # check locally
     docker_ls_output = loop.run_until_complete(docker.images.list())
     local_images = parse_docker_ls_output(docker_ls_output)

@@ -48,8 +48,8 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
     else:
         remote_img = parser.convert_to_neuro_image(local_img)
 
-    log.info(f"Using local image '{local_img.as_local_str()}'")
-    log.info(f"Using remote image '{remote_img.as_url_str()}'")
+    click.echo(f"Using local image '{local_img.as_local_str()}'")
+    click.echo(f"Using remote image '{remote_img.as_url_str()}'")
     log.debug(f"LOCAL: '{local_img}'")
     log.debug(f"REMOTE: '{remote_img}'")
 
@@ -87,8 +87,8 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
     else:
         local_img = parser.convert_to_docker_image(remote_img)
 
-    log.info(f"Using remote image '{remote_img.as_url_str()}'")
-    log.info(f"Using local image '{local_img.as_local_str()}'")
+    click.echo(f"Using remote image '{remote_img.as_url_str()}'")
+    click.echo(f"Using local image '{local_img.as_local_str()}'")
     log.debug(f"REMOTE: '{remote_img}'")
     log.debug(f"LOCAL: '{local_img}'")
 
