@@ -19,7 +19,7 @@ test: off
 
 test_script:
   - '%MAKE% -C python test'
-  - '%MAKE% -C python _e2e'
+  - '%MAKE% -C python _e2e_win'
   - '%MAKE% -C python coverage'
 
 # will start RDP server you can connect to for remote debugging (a-la ssh in circleci)

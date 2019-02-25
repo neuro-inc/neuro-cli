@@ -88,6 +88,16 @@ _e2e:
 		--cov-append \
 		tests
 
+.PHONY: _e2e_win
+_e2e_win:
+	pytest \
+		-m "e2e" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		--cov-append \
+		tests
+
 
 .PHONY: test
 test:
