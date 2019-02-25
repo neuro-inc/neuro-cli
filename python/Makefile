@@ -196,7 +196,7 @@ docs:
 .PHONY: lint-docs
 lint-docs: TMP:=$(shell mktemp $${TMPDIR:-/tmp}/README.XXXXXXXX.md)
 lint-docs:
-	python build-tools/cli-help-generator.py README.in.md ${TMP}
+	build-tools/cli-help-generator.py README.in.md ${TMP}
 	markdown-toc -t github -h 6 ${TMP}
 	diff -q ${TMP} README.md
 
