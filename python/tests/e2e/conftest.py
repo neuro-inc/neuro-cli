@@ -10,6 +10,7 @@ from os.path import join
 from pathlib import Path
 from time import sleep, time
 from uuid import uuid4 as uuid
+import sys
 
 import pytest
 from yarl import URL
@@ -35,6 +36,10 @@ job_id_pattern = re.compile(
     r"(job-[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})",
     re.IGNORECASE,
 )
+
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
 class TestRetriesExceeded(Exception):
