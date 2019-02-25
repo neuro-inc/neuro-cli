@@ -19,7 +19,7 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
         uri = URL("storage://" + username + "/" + uri.path)
     uri = uri.with_path(uri.path.lstrip("/"))
 
-    if '~' in uri.path:
+    if "~" in uri.path:
         raise ValueError(f"Cannot expand user for {uri}")
 
     return uri
@@ -37,7 +37,7 @@ def normalize_local_path_uri(uri: URL) -> URL:
     path = _extract_path(uri)
     path = path.expanduser().absolute()
     ret = URL(path.as_uri())
-    if '~' in ret.path:
+    if "~" in ret.path:
         raise ValueError(f"Cannot expand user for {uri}")
     while ret.path.startswith("//"):
         ret = ret.with_path(ret.path[1:])
