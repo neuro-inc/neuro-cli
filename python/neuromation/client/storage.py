@@ -8,9 +8,9 @@ from typing import Any, AsyncIterator, Dict, List
 from yarl import URL
 
 from neuromation.client.url_utils import (
+    _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,
-    _extract_path,
 )
 
 from .abc import AbstractProgress

@@ -1,5 +1,5 @@
-import sys
 import re
+import sys
 from pathlib import Path
 
 from yarl import URL
@@ -41,8 +41,8 @@ def normalize_local_path_uri(uri: URL) -> URL:
 
 def _extract_path(uri: URL) -> Path:
     path = Path(uri.path)
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         # result of previous normalization
-        if re.match(r'[/\\][A-Za-z]:[/\\]', str(path)):
+        if re.match(r"[/\\][A-Za-z]:[/\\]", str(path)):
             return Path(str(path)[1:])
     return path
