@@ -16,9 +16,10 @@ install:
 test: off
 
 build_script:
+  - pip install -U pip
   - pushd python
   - pip3 install -r requirements/ci.txt
-  - popd
+  - popd || true
 
 test_script:
   - '%MAKE% -C python ci'
