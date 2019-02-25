@@ -12,10 +12,9 @@ with open("README.md") as f:
 with open("neuromation/__init__.py") as f:
     txt = f.read()
     try:
-        version = re.findall(r'^__version__ = "([^"]+)"\r?$',
-                             txt, re.M)[0]
+        version = re.findall(r'^__version__ = "([^"]+)"\r?$', txt, re.M)[0]
     except IndexError:
-        raise RuntimeError('Unable to determine version.')
+        raise RuntimeError("Unable to determine version.")
 
 
 # TODO: Add license

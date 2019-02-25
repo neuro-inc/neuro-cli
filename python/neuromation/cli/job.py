@@ -262,6 +262,28 @@ async def exec(
     sys.exit(retcode)
 
 
+@command(context_settings=dict(ignore_unknown_options=True))
+@click.argument("id")
+@click.argument("local_port")
+@click.option(
+    "--no-key-check",
+    is_flag=True,
+    help="Disable host key checks. Should be used with caution.",
+)
+@click.pass_obj
+@run_async
+async def port_forward(
+    cfg: Config, id: str, no_key_check: bool, local_port: int
+) -> None:
+    """
+    Forward a port of a running job exposed with -ssh option
+    to a local port.
+    """
+    async with cfg.make_client() as client:
+        retcode = await client.jobs.port_forward(id, no_key_check, local_port, 22)
+    sys.exit(retcode)
+
+
 @command(deprecated=True, hidden=True)
 @click.argument("id")
 @click.option(
@@ -407,6 +429,7 @@ job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
 job.add_command(exec)
+job.add_command(port_forward)
 job.add_command(logs)
 job.add_command(kill)
 job.add_command(top)

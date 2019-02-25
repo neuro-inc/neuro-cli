@@ -1,6 +1,7 @@
 import asyncio
 import enum
 import json
+import shlex
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -462,5 +463,58 @@ class Jobs:
         server_url = job_status.ssh_auth_server
         port = server_url.port if server_url.port else 22
         command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
+        proc = await asyncio.create_subprocess_exec(*command)
+        return await proc.wait()
+
+    async def port_forward(
+        self, id: str, no_key_check: bool, local_port: int, job_port: int
+    ) -> int:
+        try:
+            job_status = await self.status(id)
+        except IllegalArgumentError as e:
+            raise ValueError(f"Job not found. Job Id = {id}") from e
+        if job_status.status != "running":
+            raise ValueError(f"Job is not running. Job Id = {id}")
+        payload = json.dumps(
+            {
+                "method": "job_port_forward",
+                "token": self._token,
+                "params": {"job": id, "port": job_port},
+            }
+        )
+        proxy_command = ["ssh"]
+        if no_key_check:  # pragma: no branch
+            proxy_command += [
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+            ]
+        server_url = job_status.ssh_auth_server
+        port = server_url.port if server_url.port else 22
+        proxy_command += [
+            "-p",
+            str(port),
+            f"{server_url.user}@{server_url.host}",
+            payload,
+        ]
+        proxy_command_str = " ".join(shlex.quote(s) for s in proxy_command)
+        command = [
+            "ssh",
+            "-NL",
+            f"{local_port}:{id}:{job_port}",
+            "-o",
+            f"ProxyCommand={proxy_command_str}",
+            "-o",
+            "ExitOnForwardFailure=yes",
+        ]
+        if no_key_check:  # pragma: no branch
+            command += [
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+            ]
+        command += ["nobody@127.0.0.1"]
         proc = await asyncio.create_subprocess_exec(*command)
         return await proc.wait()
