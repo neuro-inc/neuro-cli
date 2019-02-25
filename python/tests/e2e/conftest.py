@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import re
+import sys
 from collections import namedtuple
 from contextlib import suppress
 from hashlib import sha1
@@ -10,7 +11,6 @@ from os.path import join
 from pathlib import Path
 from time import sleep, time
 from uuid import uuid4 as uuid
-import sys
 
 import pytest
 from yarl import URL
@@ -38,7 +38,7 @@ job_id_pattern = re.compile(
 )
 
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
