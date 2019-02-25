@@ -39,7 +39,10 @@ setup(
         "aiodocker>=0.14.0",
         "click>=7.0",
         "colorama>=0.4",
-        "humanize>=0.5"
+        "humanize>=0.5",
+        # should upgrade the version after every certify release.
+        # This is very serious security point
+        "certifi>=2018.11.29",
     ],
     include_package_data=True,
     description="Neuromation Platform API client",

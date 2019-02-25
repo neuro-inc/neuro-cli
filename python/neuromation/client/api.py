@@ -43,11 +43,21 @@ class API:
     Internal class.
     """
 
-    def __init__(self, url: URL, token: str, timeout: aiohttp.ClientTimeout) -> None:
+    def __init__(
+        self,
+        connector: aiohttp.TCPConnector,
+        url: URL,
+        token: str,
+        timeout: aiohttp.ClientTimeout,
+    ) -> None:
+        self._connector = connector
         self._url = url
         self._token = token
         self._session = aiohttp.ClientSession(
-            timeout=timeout, headers=self._auth_headers()
+            connector=connector,
+            connector_owner=False,
+            timeout=timeout,
+            headers=self._auth_headers(),
         )
         self._exception_map = {
             403: AuthorizationError,
@@ -56,6 +66,10 @@ class API:
             404: ResourceNotFound,
             405: ClientError,
         }
+
+    @property
+    def connector(self) -> aiohttp.TCPConnector:
+        return self._connector
 
     async def close(self) -> None:
         await self._session.close()
