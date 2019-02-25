@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from uuid import uuid4 as uuid
 
@@ -44,6 +45,9 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Image operations are not supported on Windows yet"
+)
 def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     # Let`s push image
     captured = run_cli(["image", "push", image])
