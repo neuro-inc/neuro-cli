@@ -84,11 +84,11 @@ def forget() -> None:
 
 @command()
 @click.argument("url", required=False, default=API_URL, type=URL)
-def login(url: URL) -> None:
+async def login(cfg: Config, url: URL) -> None:
     """
     Log into Neuromation Platform.
     """
-    rc.ConfigFactory.refresh_auth_token(url)
+    await rc.ConfigFactory.refresh_auth_token(url)
     click.echo(f"Logged into {url}")
 
 

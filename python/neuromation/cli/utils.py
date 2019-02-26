@@ -1,7 +1,7 @@
 import asyncio
 import re
-import sys
 import shlex
+import sys
 from contextlib import suppress
 from functools import wraps
 from typing import (
@@ -22,7 +22,7 @@ import click
 from neuromation.client import Volume
 from neuromation.utils import run
 
-from .rc import Config
+from .rc import Config, ConfigFactory
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
@@ -45,6 +45,16 @@ async def _run_async_function(
         # as a part of config reimplementation
         version_checker = VersionChecker()  # pragma: no cover
     task = loop.create_task(version_checker.run())
+
+    # Refresh auth0 token if needed
+    # Potentially it can be a parallel operation like PyPI version check
+    config = ConfigFactory._refresh_auth_token(cfg)
+    if config != cfg:
+        nmrc_config_path = ConfigFactory.get_path()
+        save(nmrc_config_path, config)
+        # Use a refreshed config for command callback call
+        cfg = config
+
     try:
         return await func(cfg, *args, **kwargs)
     finally:
@@ -54,7 +64,7 @@ async def _run_async_function(
             await version_checker.close()
 
         # looks ugly but proper fix requires aiohttp changes
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             # Windows need a longer sleep
             await asyncio.sleep(0.2)
         else:
