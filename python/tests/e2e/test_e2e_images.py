@@ -81,7 +81,6 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     image_with_repo = f'{registry_url.host}/{image_url.host}/{path.lstrip("/")}'
     captured = run_cli(
         [
-            "job",
             "submit",
             image_with_repo,
             "--memory",
