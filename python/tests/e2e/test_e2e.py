@@ -54,7 +54,7 @@ def test_e2e_job_top(helper, run_cli):
 
     bash_script = (
         "COUNTER=0; while [[ ! -f /data/dummy ]] && [[ $COUNTER -lt 100 ]]; "
-        "do sleep 1; let COUNTER+=1; done; sleep 15"
+        "do sleep 1; let COUNTER+=1; done; sleep 30"
     )
     command = f"bash -c '{bash_script}'"
     captured = run_cli(
