@@ -45,11 +45,21 @@ class TestRetriesExceeded(Exception):
 SysCap = namedtuple("SysCap", "out err")
 
 
+async def _run_async(coro, *args, **kwargs):
+    try:
+        return await coro(*args, **kwargs)
+    finally:
+        if sys.platform == 'win32':
+            await asyncio.sleep(0.2)
+        else:
+            await asyncio.sleep(0.05)
+
+
 def run_async(coro):
     def wrapper(*args, **kwargs):
         if sys.platform == "win32":
             asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-        return run(coro(*args, **kwargs))
+        return run(_run_async(coro, *args, **kwargs))
 
     return wrapper
 
