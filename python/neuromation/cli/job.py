@@ -10,6 +10,7 @@ import click
 
 from neuromation.client import (
     Image,
+    ImageNameParser,
     JobStatus,
     NetworkPortForwarding,
     Resources,
@@ -198,11 +199,18 @@ async def submit(
     log.debug(f'cmd="{cmd}"')
 
     memory = to_megabytes_str(memory)
-    image_obj = Image(image=image, command=cmd)
+
+    image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+    if image_parser.is_in_neuro_registry(image):
+        parsed_image = image_parser.parse_as_neuro_image(image)
+    else:
+        parsed_image = image_parser.parse_as_docker_image(image)
     # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
     if not quiet:
-        # TODO (ajuszkowski 01-Feb-19) normalize image name to URI (issue 452)
-        log.info(f"Using image '{image_obj.image}'")
+        log.info(f"Using image '{parsed_image.as_url_str()}'")
+        log.debug(f"IMAGE: {parsed_image}")
+    image_obj = Image(image=parsed_image.as_repo_str(), command=cmd)
+
     network = NetworkPortForwarding.from_cli(http, ssh)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
