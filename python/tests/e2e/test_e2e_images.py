@@ -12,6 +12,16 @@ from tests.e2e.utils import attempt
 TEST_IMAGE_NAME = "e2e-banana-image"
 
 
+def parse_docker_ls_output(docker_ls_output):
+    return set(
+        repo_tag
+        for info in docker_ls_output
+        if info["RepoTags"] is not None
+        for repo_tag in info["RepoTags"]
+        if repo_tag
+    )
+
+
 @pytest.fixture()
 async def docker(loop):
     client = aiodocker.Docker()
@@ -51,9 +61,9 @@ def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     # stderr has "Used image ..." lines
     # assert not captured.err
 
-    image_url = URL(captured.out)
-    assert image_url.scheme == "image"
-    assert image_url.path.lstrip("/") == image
+    image_full_str = f"image://{helper._config.username}/{image}"
+    assert captured.out.endswith(image_full_str)
+    image_url = URL(image_full_str)
 
     # Check if image available on registry
     captured = helper.run_cli(["image", "ls"])
@@ -64,28 +74,28 @@ def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     image_url_without_tag = image_url.with_path(image_url.path.replace(f":{tag}", ""))
     assert image_url_without_tag in image_urls
 
-    pulled_image = f"{image}-pull"
+    # delete local
+    loop.run_until_complete(docker.images.delete(image, force=True))
+    docker_ls_output = loop.run_until_complete(docker.images.list())
+    local_images = parse_docker_ls_output(docker_ls_output)
+    assert image not in local_images
 
     # Pull image as with another tag
-    captured = helper.run_cli(["image", "pull", str(image_url), pulled_image])
+    captured = helper.run_cli(["image", "pull", f"image://~/{image}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
-    assert pulled_image == captured.out
-    # Check if image exists and remove, all-in-one swiss knife
-    loop.run_until_complete(docker.images.delete(pulled_image, force=True))
+    assert captured.out.endswith(image)
+
+    # check pulled locally, delete for cleanup
+    docker_ls_output = loop.run_until_complete(docker.images.list())
+    local_images = parse_docker_ls_output(docker_ls_output)
+    assert image in local_images
 
     # Execute image and check result
-    config = helper.config
-    registry_url = URL(config.registry_url)
-    path = image_url.path
-    image_with_repo = f'{registry_url.host}/{image_url.host}/{path.lstrip("/")}'
     captured = helper.run_cli(
         [
-            "job",
             "submit",
-            image_with_repo,
-            "--memory",
-            "100M",
+            str(image_url),
             "-g",
             "0",
             "-q",
@@ -105,3 +115,41 @@ def test_images_complete_lifecycle(helper, image, tag, loop, docker):
         assert captured.out == tag
 
     check_job_output()
+
+
+@pytest.mark.e2e
+def test_images_push_with_specified_name(helper, run_cli, image, tag, loop, docker):
+    # Let`s push image
+    image_no_tag = image.replace(f":{tag}", "")
+    pushed_no_tag = f"{image_no_tag}-pushed"
+    pulled_no_tag = f"{image_no_tag}-pulled"
+    pulled = f"{pulled_no_tag}:{tag}"
+
+    captured = run_cli(["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"])
+    # stderr has "Used image ..." lines
+    # assert not captured.err
+    image_pushed_full_str = f"image://{helper._config.username}/{pushed_no_tag}:{tag}"
+    assert captured.out.endswith(image_pushed_full_str)
+    image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
+
+    # Check if image available on registry
+    captured = run_cli(["image", "ls"])
+    image_urls = captured.out.splitlines()
+    assert image_url_without_tag in image_urls
+
+    # check locally
+    docker_ls_output = loop.run_until_complete(docker.images.list())
+    local_images = parse_docker_ls_output(docker_ls_output)
+    assert pulled not in local_images
+
+    # Pull image as with another name
+    captured = run_cli(["image", "pull", f"image:{pushed_no_tag}:{tag}", pulled])
+    # stderr has "Used image ..." lines
+    # assert not captured.err
+    assert captured.out.endswith(pulled)
+    # check locally
+    docker_ls_output = loop.run_until_complete(docker.images.list())
+    local_images = parse_docker_ls_output(docker_ls_output)
+    assert pulled in local_images
+
+    loop.run_until_complete(docker.images.delete(pulled, force=True))

@@ -362,7 +362,10 @@ class Helper:
             post_out, post_err = self._capfd.readouterr()
             out = post_out[pre_out_size:]
             err = post_err[pre_err_size:]
-            if arguments[0:2] in (["job", "submit"], ["model", "train"]):
+            if any(
+                " ".join(arguments).startswith(start)
+                for start in ("submit", "job submit", "model train")
+            ):
                 match = job_id_pattern.search(out)
                 if match:
                     self._executed_jobs.append(match.group(1))

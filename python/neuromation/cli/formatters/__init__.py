@@ -1,18 +1,18 @@
+from .config import ConfigFormatter
 from .jobs import (
     JobFormatter,
     JobListFormatter,
+    JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    JobStartProgress,
 )
 from .storage import (
     BaseFilesFormatter,
+    FilesSorter,
     LongFilesFormatter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
-    FilesSorter,
 )
-from .config import ConfigFormatter
 
 
 __all__ = [
