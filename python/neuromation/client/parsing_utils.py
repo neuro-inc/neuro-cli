@@ -77,10 +77,7 @@ class ImageNameParser:
         return image, tag
 
     def _get_registry_hostname(self, registry_url: str) -> str:
-        try:
-            url = URL(registry_url)
-        except ValueError as e:
-            raise ValueError(f"Could not parse registry URL: {e}")
+        url = URL(registry_url)
         if not url.host:
             raise ValueError(
                 f"Empty hostname in registry URL '{registry_url}': "

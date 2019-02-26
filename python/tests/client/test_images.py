@@ -45,7 +45,7 @@ class TestImageParser:
         "registry_url",
         ["", "reg.neu.ro", "reg.neu.ro:5000", "https://", "https:///bla/bla"],
     )
-    def test__get_registry_hostname_bad_registry_url(self, registry_url):
+    def test__get_registry_hostname__bad_url_empty_hostname(self, registry_url):
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
             self.parser._get_registry_hostname(registry_url)
 
