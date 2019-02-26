@@ -49,7 +49,7 @@ async def _run_async(coro, *args, **kwargs):
     try:
         return await coro(*args, **kwargs)
     finally:
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             await asyncio.sleep(0.2)
         else:
             await asyncio.sleep(0.05)
