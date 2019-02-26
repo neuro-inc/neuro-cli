@@ -22,7 +22,7 @@ import click
 from neuromation.client import Volume
 from neuromation.utils import run
 
-from .rc import Config, ConfigFactory
+from .rc import Config, ConfigFactory, save
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
@@ -48,7 +48,7 @@ async def _run_async_function(
 
     # Refresh auth0 token if needed
     # Potentially it can be a parallel operation like PyPI version check
-    config = ConfigFactory._refresh_auth_token(cfg)
+    config = await ConfigFactory._refresh_auth_token(cfg)
     if config != cfg:
         nmrc_config_path = ConfigFactory.get_path()
         save(nmrc_config_path, config)
