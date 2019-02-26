@@ -19,7 +19,7 @@ from .defaults import (
 from .formatters import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import group, run_async
+from .utils import async_cmd, group
 
 
 log = logging.getLogger(__name__)
@@ -86,8 +86,7 @@ def model() -> None:
 @click.option(
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
 )
-@click.pass_obj
-@run_async
+@async_cmd
 async def train(
     cfg: Config,
     image: str,
@@ -159,7 +158,6 @@ async def train(
 
 
 @model.command()
-@click.pass_obj
 @click.argument("id")
 @click.option(
     "--localport",
@@ -168,7 +166,7 @@ async def train(
     default=JOB_DEBUG_LOCAL_PORT,
     show_default=True,
 )
-@run_async
+@async_cmd
 async def debug(cfg: Config, id: str, localport: int) -> None:
     """
     Starts ssh terminal connected to running job.

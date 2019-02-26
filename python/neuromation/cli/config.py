@@ -5,7 +5,7 @@ from . import rc
 from .defaults import API_URL
 from .formatters import ConfigFormatter
 from .rc import Config
-from .utils import command, group, run_async
+from .utils import async_cmd, command, group
 
 
 @group()
@@ -15,8 +15,8 @@ def config() -> None:
 
 @command(hidden=True)
 @click.argument("url")
-@run_async
-async def url(url: str) -> None:
+@async_cmd
+async def url(cfg: Config, url: str) -> None:
     """
     Update settings with provided platform URL.
 

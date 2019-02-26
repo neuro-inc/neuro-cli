@@ -7,7 +7,7 @@ from neuromation.client import ImageNameParser
 
 from .command_spinner import SpinnerBase
 from .rc import Config
-from .utils import command, group, run_async
+from .utils import async_cmd, command, group
 
 
 log = logging.getLogger(__name__)
@@ -23,8 +23,7 @@ def image() -> None:
 @command()
 @click.argument("image_name")
 @click.argument("remote_image_name", required=False)
-@click.pass_obj
-@run_async
+@async_cmd
 async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
     """
     Push an image to platform registry.
@@ -63,8 +62,7 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
 @command()
 @click.argument("image_name")
 @click.argument("local_image_name", required=False)
-@click.pass_obj
-@run_async
+@async_cmd
 async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
     """
     Pull an image from platform registry.
@@ -100,8 +98,7 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 
 
 @command()
-@click.pass_obj
-@run_async
+@async_cmd
 async def ls(cfg: Config) -> None:
     """
     List images.

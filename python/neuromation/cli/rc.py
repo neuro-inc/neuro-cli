@@ -76,6 +76,7 @@ class Config:
     color: bool = field(default=False)  # don't save the field in config
     tty: bool = field(default=False)  # don't save the field in config
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
+    disable_pypi_version_check: bool = False  # don't save it in config
 
     @property
     def auth(self) -> Optional[str]:

@@ -35,7 +35,7 @@ from .formatters import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, command, group, run_async, volume_to_verbose_str
+from .utils import alias, async_cmd, command, group, volume_to_verbose_str
 
 
 log = logging.getLogger(__name__)
@@ -136,8 +136,7 @@ def job() -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
-@click.pass_obj
-@run_async
+@async_cmd
 async def submit(
     cfg: Config,
     image: str,
@@ -256,8 +255,7 @@ async def submit(
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@click.pass_obj
-@run_async
+@async_cmd
 async def exec(
     cfg: Config, id: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
@@ -276,8 +274,7 @@ async def exec(
     "--user", help="Container user name", default=JOB_SSH_USER, show_default=True
 )
 @click.option("--key", help="Path to container private key.")
-@click.pass_obj
-@run_async
+@async_cmd
 async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
     """
     Starts ssh terminal connected to running job.
@@ -296,8 +293,7 @@ async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
 
 @command()
 @click.argument("id")
-@click.pass_obj
-@run_async
+@async_cmd
 async def logs(cfg: Config, id: str) -> None:
     """
     Print the logs for a container.
@@ -328,8 +324,7 @@ async def logs(cfg: Config, id: str) -> None:
     help="Filter out job by job description (exact match)",
 )
 @click.option("-q", "--quiet", is_flag=True)
-@click.pass_obj
-@run_async
+@async_cmd
 async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) -> None:
     """
     List all jobs.
@@ -357,8 +352,7 @@ async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) 
 
 @command()
 @click.argument("id")
-@click.pass_obj
-@run_async
+@async_cmd
 async def status(cfg: Config, id: str) -> None:
     """
     Display status of a job.
@@ -370,8 +364,7 @@ async def status(cfg: Config, id: str) -> None:
 
 @command()
 @click.argument("id")
-@click.pass_obj
-@run_async
+@async_cmd
 async def top(cfg: Config, id: str) -> None:
     """
     Display GPU/CPU/Memory usage.
@@ -389,8 +382,7 @@ async def top(cfg: Config, id: str) -> None:
 
 @command()
 @click.argument("id", nargs=-1, required=True)
-@click.pass_obj
-@run_async
+@async_cmd
 async def kill(cfg: Config, id: Sequence[str]) -> None:
     """
     Kill job(s).
