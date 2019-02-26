@@ -410,8 +410,11 @@ class Jobs:
         async with self._api.request(
             "GET", url, headers={"Accept-Encoding": "identity"}
         ) as resp:
-            async for data in resp.content.iter_any():
-                yield data
+            try:
+                async for data in resp.content.iter_any():
+                    yield data
+            except GeneratorExit:
+                pass
 
     async def status(self, id: str) -> JobDescription:
         url = URL(f"jobs/{id}")
