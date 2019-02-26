@@ -13,7 +13,6 @@ import neuromation
 from neuromation.client import Client
 from neuromation.client.config import get_server_config
 from neuromation.client.users import get_token_username
-from neuromation.utils import run
 
 from .defaults import API_URL
 from .login import AuthConfig, AuthNegotiator, AuthToken
@@ -120,11 +119,7 @@ class ConfigFactory:
     @classmethod
     def load(cls) -> Config:
         nmrc_config_path = cls.get_path()
-        old_config = load(nmrc_config_path)
-        config = cls._refresh_auth_token(old_config)
-        if config != old_config:
-            save(nmrc_config_path, config)
-        return config
+        return load(nmrc_config_path)
 
     @classmethod
     def update_auth_token(cls, token: str) -> Config:
@@ -170,11 +165,11 @@ class ConfigFactory:
         return cls._update_config(pypi=pypi)
 
     @classmethod
-    def refresh_auth_token(cls, url: URL) -> Config:
+    async def refresh_auth_token(cls, url: URL) -> Config:
         nmrc_config_path = cls.get_path()
         config = load(nmrc_config_path)
         cls._validate_api_url(str(url))
-        server_config = run(get_server_config(url))
+        server_config = await get_server_config(url)
         config = replace(
             config,
             auth_config=server_config.auth_config,
@@ -182,17 +177,17 @@ class ConfigFactory:
             url=str(url),
             auth_token=None,
         )
-        config = cls._refresh_auth_token(config, force=True)
+        config = await cls._refresh_auth_token(config, force=True)
         save(nmrc_config_path, config)
         return config
 
     @classmethod
-    def _refresh_auth_token(cls, config: Config, force: bool = False) -> Config:
+    async def _refresh_auth_token(cls, config: Config, force: bool = False) -> Config:
         if not config.auth_token and not force:
             return config
 
         auth_negotiator = AuthNegotiator(config=config.auth_config)
-        auth_token = run(auth_negotiator.refresh_token(config.auth_token))
+        auth_token = await auth_negotiator.refresh_token(config.auth_token)
         return replace(config, auth_token=auth_token)
 
     @classmethod
