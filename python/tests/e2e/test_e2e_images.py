@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from uuid import uuid4 as uuid
 
@@ -108,24 +109,18 @@ def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     assert job_id.startswith("job-")
     helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
-    @attempt()
-    def check_job_output():
-        captured = helper.run_cli(["job", "logs", job_id])
-        assert not captured.err
-        assert captured.out == tag
-
-    check_job_output()
+    helper.check_job_output(job_id, re.escape(tag))
 
 
 @pytest.mark.e2e
-def test_images_push_with_specified_name(helper, run_cli, image, tag, loop, docker):
+def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     # Let`s push image
     image_no_tag = image.replace(f":{tag}", "")
     pushed_no_tag = f"{image_no_tag}-pushed"
     pulled_no_tag = f"{image_no_tag}-pulled"
     pulled = f"{pulled_no_tag}:{tag}"
 
-    captured = run_cli(["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"])
+    captured = helper.run_cli(["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
     image_pushed_full_str = f"image://{helper._config.username}/{pushed_no_tag}:{tag}"

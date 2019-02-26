@@ -444,7 +444,7 @@ def config_alt(tmp_path, monkeypatch):
             ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
             config = rc.ConfigFactory.load()
     else:
-        pytest.xfail("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
+        pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
     yield config
 
 
