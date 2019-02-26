@@ -61,55 +61,14 @@ class TestImageParser:
         with pytest.raises(ValueError, match="too many tags"):
             self.parser._split_image_name("ubuntu:v10.04:LTS")
 
-    @pytest.mark.parametrize(
-        "url", ["", "/", "image://", "image:///", "image://bob", "image://bob/"]
-    )
-    def test__check_allowed_uri_elements__no_path(self, url):
-        with pytest.raises(ValueError, match="no image name specified"):
-            self.parser._check_allowed_uri_elements(URL(url))
-
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "image://bob/ubuntu:v10.04?key=value",
-            "image://bob/ubuntu?key=value",
-            "image:///ubuntu?key=value",
-            "image:ubuntu?key=value",
-        ],
-    )
-    def test__check_allowed_uri_elements__with_query(self, url):
-        with pytest.raises(ValueError, match="query is not allowed"):
-            self.parser._check_allowed_uri_elements(URL(url))
-
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "image://bob/ubuntu:v10.04#fragment",
-            "image://bob/ubuntu#fragment",
-            "image:///ubuntu#fragment",
-            "image:ubuntu#fragment",
-        ],
-    )
-    def test__check_allowed_uri_elements__with_fragment(self, url):
-        with pytest.raises(ValueError, match="fragment is not allowed"):
-            self.parser._check_allowed_uri_elements(URL(url))
-
-    def test__check_allowed_uri_elements__with_user(self):
-        url = "image://user@bob/ubuntu"
-        with pytest.raises(ValueError, match="user is not allowed"):
-            self.parser._check_allowed_uri_elements(URL(url))
-
-    def test__check_allowed_uri_elements__with_password(self):
-        url = "image://:password@bob/ubuntu"
-        with pytest.raises(ValueError, match="password is not allowed"):
-            self.parser._check_allowed_uri_elements(URL(url))
-
-    def test__check_allowed_uri_elements__with_port(self):
-        url = "image://bob:443/ubuntu"
-        with pytest.raises(ValueError, match="port is not allowed"):
-            self.parser._check_allowed_uri_elements(URL(url))
-
     # public method: parse_local
+
+    @pytest.mark.parametrize(
+        "url", ["image://", "image:///", "image://bob", "image://bob/"]
+    )
+    def test_parse_as_neuro_image__no_image_name(self, url):
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser.parse_as_neuro_image(url)
 
     def test_parse_as_docker_image_empty_fail(self):
         image = ""
@@ -151,14 +110,76 @@ class TestImageParser:
 
     # public method: parse_remote
 
-    def test_parse_as_neuro_image_empty_fail(self):
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "image://bob/ubuntu:v10.04?key=value",
+            "image://bob/ubuntu?key=value",
+            "image:///ubuntu?key=value",
+            "image:ubuntu?key=value",
+        ],
+    )
+    def test_parse_as_neuro_image__with_query__fail(self, url):
+        with pytest.raises(ValueError, match="query is not allowed"):
+            self.parser.parse_as_neuro_image(url)
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "image://bob/ubuntu:v10.04#fragment",
+            "image://bob/ubuntu#fragment",
+            "image:///ubuntu#fragment",
+            "image:ubuntu#fragment",
+        ],
+    )
+    def test_parse_as_neuro_image__with_fragment__fail(self, url):
+        with pytest.raises(ValueError, match="fragment is not allowed"):
+            self.parser.parse_as_neuro_image(url)
+
+    def test_parse_as_neuro_image__with_user__fail(self):
+        url = "image://user@bob/ubuntu"
+        with pytest.raises(ValueError, match="user is not allowed"):
+            self.parser.parse_as_neuro_image(url)
+
+    def test_parse_as_neuro_image__with_password__fail(self):
+        url = "image://:password@bob/ubuntu"
+        with pytest.raises(ValueError, match="password is not allowed"):
+            self.parser.parse_as_neuro_image(url)
+
+    def test_parse_as_neuro_image__with_port__fail(self):
+        url = "image://bob:443/ubuntu"
+        with pytest.raises(ValueError, match="port is not allowed"):
+            self.parser.parse_as_neuro_image(url)
+
+    def test_parse_as_neuro_image_empty_fail__fail(self):
         image = ""
         with pytest.raises(ValueError, match="empty image name"):
             self.parser.parse_as_neuro_image(image)
 
-    def test_parse_as_neuro_image_none_fail(self):
+    def test_parse_as_neuro_image_none_fail__fail(self):
         image = None
         with pytest.raises(ValueError, match="empty image name"):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_no_scheme_fail(self):
+        image = "ubuntu"
+        with pytest.raises(
+            ValueError, match="scheme 'image://' is required for remote images"
+        ):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_invalid_scheme_1_fail(self):
+        image = "ubuntu:latest"
+        with pytest.raises(
+            ValueError, match="scheme 'image://' is required for remote images"
+        ):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_invalid_scheme_2_fail(self):
+        image = "http://ubuntu"
+        with pytest.raises(
+            ValueError, match="scheme 'image://' is required for remote images"
+        ):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_with_scheme_with_user_with_tag(self):
@@ -380,14 +401,20 @@ class TestImageParser:
             self.parser.parse_as_neuro_image(image)
 
     def test_convert_to_docker_image(self):
-        neuro_image = DockerImage(name="ubuntu", tag="latest", owner="artem", registry="reg.com")
+        neuro_image = DockerImage(
+            name="ubuntu", tag="latest", owner="artem", registry="reg.com"
+        )
         docker_image = self.parser.convert_to_docker_image(neuro_image)
-        assert docker_image == DockerImage(name="ubuntu", tag="latest", owner=None, registry=None)
+        assert docker_image == DockerImage(
+            name="ubuntu", tag="latest", owner=None, registry=None
+        )
 
     def test_convert_to_neuro_image(self):
         docker_image = DockerImage(name="ubuntu", tag="latest")
         neuro_image = self.parser.convert_to_neuro_image(docker_image)
-        assert neuro_image == DockerImage(name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro")
+        assert neuro_image == DockerImage(
+            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
 
 
 @pytest.mark.usefixtures("patch_docker_host")
