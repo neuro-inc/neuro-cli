@@ -294,23 +294,30 @@ class Helper:
         """
             Wait until job output satisfies given regexp
         """
+
+        async def _check_job_output():
+            async with self._config.make_client() as client:
+                async for chunk in client.jobs.monitor(job_id):
+                    yield chunk
+
         started_at = time()
         while time() - started_at < JOB_OUTPUT_TIMEOUT:
             chunks = []
-            async with self._config.make_client() as client:
-                async for chunk in client.jobs.monitor(job_id):
-                    if not chunk:
-                        break
-                    chunks.append(chunk.decode())
-                    if re.search(expected, "".join(chunks), flags):
-                        return
-                    if time() - started_at < JOB_OUTPUT_TIMEOUT:
-                        break
-            await asyncio.sleep(JOB_OUTPUT_SLEEP_SECONDS)
+            async for chunk in _check_job_output():
+                if not chunk:
+                    break
+                chunks.append(chunk.decode())
+                if re.search(expected, "".join(chunks), flags):
+                    return
+                if time() - started_at < JOB_OUTPUT_TIMEOUT:
+                    break
+                await asyncio.sleep(JOB_OUTPUT_SLEEP_SECONDS)
 
         raise AssertionError(
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
+
+        return await _check_job_output()
 
     def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
         def _temp_config():
