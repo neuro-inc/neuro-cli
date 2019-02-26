@@ -22,7 +22,7 @@ from neuromation.client import Volume
 from neuromation.utils import run
 
 from .rc import Config
-from .version_utils import VersionChecker
+from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
 _T = TypeVar("_T")
@@ -34,7 +34,15 @@ async def _run_async_function(
     func: Callable[..., Awaitable[_T]], cfg: Config, *args: Any, **kwargs: Any
 ) -> _T:
     loop = asyncio.get_event_loop()
-    version_checker = VersionChecker()
+    version_checker: AbstractVersionChecker
+    if cfg.disable_pypi_version_check:
+        version_checker = DummyVersionChecker()
+    else:
+        # (ASvetlov) This branch is not tested intentionally
+        # Don't want to fetch PyPI from unit tests
+        # Later the checker initialization code will be refactored
+        # as a part of config reimplementation
+        version_checker = VersionChecker()  # pragma: no cover
     task = loop.create_task(version_checker.run())
     try:
         return await func(cfg, *args, **kwargs)
@@ -42,12 +50,14 @@ async def _run_async_function(
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
-        await version_checker.close()
+            await version_checker.close()
 
         await asyncio.sleep(0.05)
 
 
-def run_async(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
+def async_cmd(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
+    # N.B. the decorator implies @click.pass_obj
+    @click.pass_obj
     @wraps(callback)
     def wrapper(cfg: Config, *args: Any, **kwargs: Any) -> _T:
         return run(_run_async_function(callback, cfg, *args, **kwargs))

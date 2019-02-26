@@ -18,7 +18,7 @@ from .formatters import (
     VerticalColumnsFilesFormatter,
 )
 from .rc import Config
-from .utils import command, group, run_async
+from .utils import async_cmd, command, group
 
 
 log = logging.getLogger(__name__)
@@ -33,8 +33,7 @@ def storage() -> None:
 
 @command()
 @click.argument("path")
-@click.pass_obj
-@run_async
+@async_cmd
 async def rm(cfg: Config, path: str) -> None:
     """
     Remove files or directories.
@@ -67,8 +66,7 @@ async def rm(cfg: Config, path: str) -> None:
     default="name",
     help="sort by given field, default is name",
 )
-@click.pass_obj
-@run_async
+@async_cmd
 async def ls(
     cfg: Config, path: str, human_readable: bool, format_long: bool, sort: str
 ) -> None:
@@ -106,8 +104,7 @@ async def ls(
 @click.argument("destination")
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
-@click.pass_obj
-@run_async
+@async_cmd
 async def cp(
     cfg: Config, source: str, destination: str, recursive: bool, progress: bool
 ) -> None:
@@ -168,8 +165,7 @@ async def cp(
 
 @command()
 @click.argument("path")
-@click.pass_obj
-@run_async
+@async_cmd
 async def mkdir(cfg: Config, path: str) -> None:
     """
     Make directories.
@@ -185,8 +181,7 @@ async def mkdir(cfg: Config, path: str) -> None:
 @command()
 @click.argument("source")
 @click.argument("destination")
-@click.pass_obj
-@run_async
+@async_cmd
 async def mv(cfg: Config, source: str, destination: str) -> None:
     """
     Move or rename files and directories.
