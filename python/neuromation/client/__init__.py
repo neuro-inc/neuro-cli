@@ -32,9 +32,9 @@ from .jobs import (
     Volume,
 )
 from .models import Models, TrainResult
+from .parsing_utils import ImageNameParser
 from .storage import FileStatus, FileStatusType, Storage
 from .users import Action, Permission, Users
-from .parsing_utils import ImageNameParser
 
 
 __all__ = (
