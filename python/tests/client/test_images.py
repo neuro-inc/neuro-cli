@@ -416,6 +416,18 @@ class TestImageParser:
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
+    # corner case 'image:latest'
+
+    def test_parse_as_neuro_image__ambiguous_case__fail(self):
+        url = "image:latest"
+        with pytest.raises(ValueError, match="ambiguous value"):
+            self.parser.parse_as_neuro_image(url)
+
+    def test_parse_as_docker_image__ambiguous_case__fail(self):
+        url = "image:latest"
+        with pytest.raises(ValueError, match="ambiguous value"):
+            self.parser.parse_as_docker_image(url)
+
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:

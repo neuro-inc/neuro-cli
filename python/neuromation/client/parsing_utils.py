@@ -14,12 +14,14 @@ class ImageNameParser:
 
     def parse_as_docker_image(self, image: str) -> DockerImage:
         try:
+            self._check_for_disambiguation(image)
             return self._parse_as_docker_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid docker image '{image}': {e}") from e
 
     def parse_as_neuro_image(self, image: str) -> DockerImage:
         try:
+            self._check_for_disambiguation(image)
             return self._parse_as_neuro_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
@@ -38,6 +40,12 @@ class ImageNameParser:
 
     def convert_to_docker_image(self, image: DockerImage) -> DockerImage:
         return DockerImage(name=image.name, tag=image.tag)
+
+    def _check_for_disambiguation(self, image: str) -> None:
+        if image == "image:latest":
+            raise ValueError(
+                "ambiguous value: valid as both local and remote image name"
+            )
 
     def _parse_as_docker_image(self, image: str) -> DockerImage:
         if not image:
