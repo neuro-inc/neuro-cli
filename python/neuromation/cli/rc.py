@@ -2,6 +2,7 @@ import logging
 import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from time import time
 from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
@@ -27,14 +28,18 @@ class RCException(Exception):
 
 
 NO_VERSION = pkg_resources.parse_version("0.0.0")
+NEW_VERSION_FETCHING_FREQUENCY = 60 * 60 * 24  # 1 day
 
 
 @dataclass
 class PyPIVersion:
     pypi_version: Any
     check_timestamp: int
+    disable_pypi_version_check: bool = False  # don't save it in config
 
     def warn_if_has_newer_version(self) -> None:
+        if self.disable_pypi_version_check:
+            return
         current = pkg_resources.parse_version(neuromation.__version__)
         if current < self.pypi_version:
             update_command = "pip install --upgrade neuromation"
@@ -46,6 +51,11 @@ class PyPIVersion:
                 f"You should consider upgrading via the '{update_command}' command."
             )
             log.warning("")  # tailing endline
+        if (
+            not self.check_timestamp
+            or time() > self.check_timestamp + NEW_VERSION_FETCHING_FREQUENCY
+        ):
+            self.disable_pypi_version_check = True
 
     @classmethod
     def from_config(cls, data: Dict[str, Any]) -> "PyPIVersion":
@@ -76,7 +86,6 @@ class Config:
     color: bool = field(default=False)  # don't save the field in config
     tty: bool = field(default=False)  # don't save the field in config
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
-    disable_pypi_version_check: bool = False  # don't save it in config
 
     @property
     def auth(self) -> Optional[str]:

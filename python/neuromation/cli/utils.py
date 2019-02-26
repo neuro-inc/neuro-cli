@@ -35,7 +35,7 @@ async def _run_async_function(
 ) -> _T:
     loop = asyncio.get_event_loop()
     version_checker: AbstractVersionChecker
-    if cfg.disable_pypi_version_check:
+    if cfg.pypi.disable_pypi_version_check:
         version_checker = DummyVersionChecker()
     else:
         # (ASvetlov) This branch is not tested intentionally
