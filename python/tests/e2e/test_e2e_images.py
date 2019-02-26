@@ -7,7 +7,6 @@ import pytest
 from yarl import URL
 
 from neuromation.client import JobStatus
-from tests.e2e.utils import attempt
 
 
 TEST_IMAGE_NAME = "e2e-banana-image"
@@ -120,7 +119,9 @@ def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     pulled_no_tag = f"{image_no_tag}-pulled"
     pulled = f"{pulled_no_tag}:{tag}"
 
-    captured = helper.run_cli(["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"])
+    captured = helper.run_cli(
+        ["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"]
+    )
     # stderr has "Used image ..." lines
     # assert not captured.err
     image_pushed_full_str = f"image://{helper._config.username}/{pushed_no_tag}:{tag}"
@@ -128,7 +129,7 @@ def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
 
     # Check if image available on registry
-    captured = run_cli(["image", "ls"])
+    captured = helper.run_cli(["image", "ls"])
     image_urls = captured.out.splitlines()
     assert image_url_without_tag in image_urls
 
@@ -138,7 +139,7 @@ def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     assert pulled not in local_images
 
     # Pull image as with another name
-    captured = run_cli(["image", "pull", f"image:{pushed_no_tag}:{tag}", pulled])
+    captured = helper.run_cli(["image", "pull", f"image:{pushed_no_tag}:{tag}", pulled])
     # stderr has "Used image ..." lines
     # assert not captured.err
     assert captured.out.endswith(pulled)
