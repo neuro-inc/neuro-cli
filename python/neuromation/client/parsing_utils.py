@@ -58,7 +58,7 @@ class ImageNameParser:
             )
 
         url = URL(image)
-        assert url.scheme == IMAGE_SCHEME
+        assert url.scheme == IMAGE_SCHEME, f"invalid image scheme: '{url.scheme}'"
         self._check_allowed_uri_elements(url)
 
         registry = self._registry
