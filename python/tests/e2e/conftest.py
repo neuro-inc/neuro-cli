@@ -16,6 +16,7 @@ from yarl import URL
 
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
+from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
 from neuromation.client import FileStatusType, ResourceNotFound
 from neuromation.utils import run
 from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
@@ -61,6 +62,10 @@ class Helper:
             with suppress(Exception):
                 self.rm("")
             self._tmpstorage = None
+
+    @property
+    def config(self):
+        return self._config
 
     @property
     def tmpstorage(self):
@@ -271,15 +276,18 @@ class Helper:
 def config(tmp_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
 
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-    config_path = tmp_path / ".nmrc"
-    config_path.write_text(rc_text)
-    config_path.chmod(0o600)
+    if e2e_test_token:
+        # Make a config on CI
+        # use default user config for local testing
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        config_path = tmp_path / ".nmrc"
+        config_path.write_text(rc_text)
+        config_path.chmod(0o600)
 
-    def _home():
-        return Path(tmp_path)
+        def _home():
+            return Path(tmp_path)
 
-    monkeypatch.setattr(Path, "home", _home)
+        monkeypatch.setattr(Path, "home", _home)
 
     config = rc.ConfigFactory.load()
     yield config
@@ -346,13 +354,13 @@ def run_cli(capfd, config):
                     + arguments
                 )
             except SystemExit as exc:
-                if exc.code == os.EX_IOERR:
+                if exc.code == EX_IOERR:
                     # network problem
                     sleep(delay)
                     delay *= 2
                     continue
                 elif (
-                    exc.code == os.EX_OSFILE
+                    exc.code == EX_OSFILE
                     and arguments
                     and arguments[0] == "storage"
                     and storage_retry
@@ -363,7 +371,7 @@ def run_cli(capfd, config):
                     sleep(delay)
                     delay *= 2
                     continue
-                elif exc.code != os.EX_OK:
+                elif exc.code != EX_OK:
                     raise
             post_out, post_err = capfd.readouterr()
             out = post_out[pre_out_size:]

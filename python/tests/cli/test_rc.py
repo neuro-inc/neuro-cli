@@ -170,9 +170,9 @@ class TestFactoryMethods:
                 client_id="this_is_client_id",
                 audience="https://audience",
                 callback_urls=(
-                    URL("https://0.0.0.0:123"),
-                    URL("https://0.0.0.0:456"),
-                    URL("https://0.0.0.0:789"),
+                    URL("https://127.0.0.1:123"),
+                    URL("https://127.0.0.1:456"),
+                    URL("https://127.0.0.1:789"),
                 ),
                 success_redirect_url=URL("https://success_redirect"),
             ),

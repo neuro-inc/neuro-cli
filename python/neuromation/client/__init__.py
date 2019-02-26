@@ -1,6 +1,8 @@
 from types import TracebackType
 from typing import Union, Type, Optional
 
+import ssl
+import certifi
 import aiohttp
 from yarl import URL
 
@@ -77,7 +79,10 @@ class Client:
         self._registry_url = URL(registry_url)
         assert token
         self._config = Config(url, self._registry_url, token)
-        self._api = API(url, token, timeout)
+        self._ssl_context = ssl.SSLContext()
+        self._ssl_context.load_verify_locations(capath=certifi.where())
+        self._connector = aiohttp.TCPConnector(ssl=self._ssl_context)
+        self._api = API(self._connector, url, token, timeout)
         self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)
         self._storage = Storage(self._api, self._config)
@@ -88,6 +93,7 @@ class Client:
         await self._api.close()
         if self._images is not None:
             await self._images.close()
+        await self._connector.close()
 
     async def __aenter__(self) -> "Client":
         return self

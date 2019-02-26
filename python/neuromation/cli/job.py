@@ -91,6 +91,7 @@ def job() -> None:
     "--extshm/--no-extshm",
     is_flag=True,
     default=True,
+    show_default=True,
     help="Request extended '/dev/shm' space",
 )
 @click.option("--http", type=int, help="Enable HTTP port forwarding to container")
@@ -100,6 +101,7 @@ def job() -> None:
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
     default=True,
+    show_default=True,
 )
 @click.option(
     "-d", "--description", metavar="DESC", help="Add optional description to the job"
@@ -129,7 +131,10 @@ def job() -> None:
     help="File with environment variables to pass",
 )
 @click.option(
-    "--wait-start/--no-wait-start", default=True, help="Wait for a job start or failure"
+    "--wait-start/--no-wait-start",
+    default=True,
+    show_default=True,
+    help="Wait for a job start or failure",
 )
 @click.pass_obj
 @run_async
@@ -155,8 +160,9 @@ async def submit(
     """
     Submit an image to run on the cluster.
 
-    IMAGE container image name
-    COMMANDS list will be passed as commands to model container.
+    IMAGE container image name.
+
+    CMD list will be passed as commands to model container.
 
     Examples:
 
@@ -183,12 +189,12 @@ async def submit(
 
     env_dict = {}
     for line in env:
-        splited = line.split("=", 1)
-        if len(splited) == 1:
-            val = os.environ.get(splited[0], "")
-            env_dict[splited[0]] = val
+        splitted = line.split("=", 1)
+        if len(splitted) == 1:
+            val = os.environ.get(splitted[0], "")
+            env_dict[splitted[0]] = val
         else:
-            env_dict[splited[0]] = splited[1]
+            env_dict[splitted[0]] = splitted[1]
 
     cmd = " ".join(cmd) if cmd is not None else None
     log.debug(f'cmd="{cmd}"')
@@ -228,7 +234,7 @@ async def submit(
         click.echo(JobFormatter(quiet)(job))
         progress = JobStartProgress(cfg.color)
         while wait_start and job.status == JobStatus.PENDING:
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.2)
             job = await client.jobs.status(job.id)
             if not quiet:
                 click.echo(progress(job), nl=False)

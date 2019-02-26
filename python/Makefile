@@ -206,27 +206,11 @@ update-deps:
 
 .PHONY: changelog
 changelog:
-ifndef VERSION
-	@echo VERSION not defined
-	@echo use make changelog VERSION=0.1
-	@exit 10
-endif
-	towncrier --version $(VERSION) --yes
-	$(EDITOR) CHANGELOG.md
-	./build-tools/check-changelog.py CHANGELOG.md
-	git add CHANGELOG.md
-	git add CHANGELOG.D
-	git commit -m "Release $(VERSION)"
+	echo "Read RELEASE.md for release process instructions"
 
 .PHONY: release
-release: changelog
-ifndef VERSION
-	@echo VERSION not defined
-	@echo use make release VERSION=0.1
-	@exit 10
-endif
-	git tag v$(VERSION)
-	@echo Tag v$(VERSION) added. Please push tags via git
+release:
+	echo "Read RELEASE.md for release process instructions"
 
 .PHONY: update-deps-fast
 update-deps-fast: REQUIREMENTS_CHANGED:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(DEPS_REGEXP)") print substr($$NF, 8)}')

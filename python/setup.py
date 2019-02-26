@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 
-# Inspired by: https://github.com/kennethreitz/setup.py
+import re
 
 from setuptools import find_packages, setup
 
 
 with open("README.md") as f:
     readme = f.read()
+
+
+with open("neuromation/__init__.py") as f:
+    txt = f.read()
+    try:
+        version = re.findall(r'^__version__ = "([^"]+)"\r?$',
+                             txt, re.M)[0]
+    except IndexError:
+        raise RuntimeError('Unable to determine version.')
+
 
 # TODO: Add license
 license = None
@@ -15,9 +25,7 @@ license = None
 
 setup(
     name="neuromation",
-    # TODO: decide where take/store versions
-    use_scm_version={"root": "..", "relative_to": __file__},
-    setup_requires=["setuptools_scm"],
+    version=version,
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -31,7 +39,10 @@ setup(
         "aiodocker>=0.14.0",
         "click>=7.0",
         "colorama>=0.4",
-        "humanize>=0.5"
+        "humanize>=0.5",
+        # should upgrade the version after every certify release.
+        # This is very serious security point
+        "certifi>=2018.11.29",
     ],
     include_package_data=True,
     description="Neuromation Platform API client",
