@@ -38,7 +38,11 @@ async def _run_async_function(
     if cfg.disable_pypi_version_check:
         version_checker = DummyVersionChecker()
     else:
-        version_checker = VersionChecker()
+        # (ASvetlov) This branch is not tested intentionally
+        # Don't want to fetch PyPI from unit tests
+        # Later the checker initialization code will be refactored
+        # as a part of config reimplementation
+        version_checker = VersionChecker()  # pragma: no cover
     task = loop.create_task(version_checker.run())
     try:
         return await func(cfg, *args, **kwargs)

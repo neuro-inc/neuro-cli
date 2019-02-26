@@ -37,7 +37,8 @@ class DummyVersionChecker(AbstractVersionChecker):
     async def run(self) -> None:
         pass
 
-    async def update_latest_version(self) -> None:
+    async def update_latest_version(self) -> None:  # pragma: no cover
+        # the method is not used actually but present here for consistency
         pass
 
 
