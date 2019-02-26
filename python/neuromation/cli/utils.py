@@ -1,5 +1,6 @@
 import asyncio
 import re
+import sys
 import shlex
 from contextlib import suppress
 from functools import wraps
@@ -51,6 +52,13 @@ async def _run_async_function(
         with suppress(asyncio.CancelledError):
             await task
             await version_checker.close()
+
+        # looks ugly but proper fix requires aiohttp changes
+        if sys.platform == 'win32':
+            # Windows need a longer sleep
+            await asyncio.sleep(0.2)
+        else:
+            await asyncio.sleep(0.05)
 
 
 def async_cmd(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
