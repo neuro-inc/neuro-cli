@@ -317,8 +317,6 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-        return await _check_job_output()
-
     def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
         def _temp_config():
             config_file = tempfile.NamedTemporaryFile(
