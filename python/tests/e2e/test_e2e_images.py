@@ -95,7 +95,6 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     # Execute image and check result
     captured = run_cli(
         [
-            "job",
             "submit",
             str(image_url),
             "-g",
