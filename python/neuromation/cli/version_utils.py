@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import logging
 import ssl
@@ -15,7 +16,32 @@ from neuromation.cli.rc import NO_VERSION, ConfigFactory
 log = logging.getLogger(__name__)
 
 
-class VersionChecker:
+class AbstractVersionChecker(abc.ABC):
+    @abc.abstractmethod
+    async def close(self) -> None:  # pragma: no cover
+        pass
+
+    @abc.abstractmethod
+    async def run(self) -> None:  # pragma: no cover
+        pass
+
+    @abc.abstractmethod
+    async def update_latest_version(self) -> None:  # pragma: no cover
+        pass
+
+
+class DummyVersionChecker(AbstractVersionChecker):
+    async def close(self) -> None:
+        pass
+
+    async def run(self) -> None:
+        pass
+
+    async def update_latest_version(self) -> None:
+        pass
+
+
+class VersionChecker(AbstractVersionChecker):
     def __init__(
         self,
         connector: Optional[aiohttp.TCPConnector] = None,
