@@ -137,7 +137,6 @@ def cli(
     config.color = real_color
     config.tty = tty
     config.terminal_size = shutil.get_terminal_size()
-    config.disable_pypi_version_check = disable_pypi_version_check
     ctx.obj = config
     if not disable_pypi_version_check:
         config.pypi.warn_if_has_newer_version()

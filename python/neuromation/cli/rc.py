@@ -51,11 +51,10 @@ class PyPIVersion:
                 f"You should consider upgrading via the '{update_command}' command."
             )
             log.warning("")  # tailing endline
-        if (
-            not self.check_timestamp
-            or time() > self.check_timestamp + NEW_VERSION_FETCHING_FREQUENCY
-        ):
-            self.disable_pypi_version_check = True
+        self.disable_pypi_version_check = bool(
+            self.check_timestamp
+            and time() < self.check_timestamp + NEW_VERSION_FETCHING_FREQUENCY
+        )
 
     @classmethod
     def from_config(cls, data: Dict[str, Any]) -> "PyPIVersion":
