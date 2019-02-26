@@ -75,7 +75,7 @@ e2e:
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
-		--verbose
+		--verbose \
 		tests
 
 .PHONY: _e2e
