@@ -110,7 +110,7 @@ async def kill_proc_tree(
     sig: int = signal.SIGTERM,
     include_parent: bool = True,
     timeout: int = None,
-):
+) -> None:
     """Kill a process tree (including grandchildren) with signal
     "sig".
     """
