@@ -22,6 +22,8 @@ file_format_re = (
     r"(?P<name>.+)"
 )
 
+JOB_TINY_CONTAINER_PARAMS = ["-m", "20M", "-c", "0.1", "-g", "0", "--non-preemptible"]
+
 
 def attempt(attempts: int = 4, sleep_time: float = 15.0):
     """
