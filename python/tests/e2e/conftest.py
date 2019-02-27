@@ -349,6 +349,7 @@ class Helper:
                 dir=self._tmp, prefix="run_cli-", suffix=".nmrc", delete=False
             )
             config_path = Path(config_file.name)
+            del config_file  # close file, it prevents unlink() error on Windows
             rc.save(config_path, self._config)
             return config_path
 
