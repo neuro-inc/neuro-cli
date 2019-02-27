@@ -166,6 +166,7 @@ def test_job_description(helper):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_unschedulable_job_lifecycle(helper):
     # Remember original running jobs
     captured = helper.run_cli(
@@ -231,6 +232,7 @@ def test_unschedulable_job_lifecycle(helper):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_two_jobs_at_once(helper):
     # Remember original running jobs
     captured = helper.run_cli(
@@ -396,6 +398,7 @@ def test_model_train_with_http(helper):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_model_without_command(helper):
     loop_sleep = 1
     service_wait_time = 60
@@ -451,6 +454,7 @@ def test_model_without_command(helper):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_e2e_no_env(helper):
     bash_script = 'echo "begin"$VAR"end"  | grep beginend'
     command = f"bash -c '{bash_script}'"
@@ -815,6 +819,7 @@ def test_e2e_ssh_exec_dead_job(helper):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_e2e_job_list_filtered_by_status(helper):
     N_JOBS = 5
 

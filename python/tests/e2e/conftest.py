@@ -345,11 +345,12 @@ class Helper:
 
     def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
         def _temp_config():
-            config_file = tempfile.NamedTemporaryFile(
+            with tempfile.NamedTemporaryFile(
                 dir=self._tmp, prefix="run_cli-", suffix=".nmrc", delete=False
-            )
-            config_path = Path(config_file.name)
-            del config_file  # close file, it prevents unlink() error on Windows
+            ) as config_file:
+                # close tmp file on exit from context manager,
+                # it prevents unlink() error on Windows
+                config_path = Path(config_file.name)
             rc.save(config_path, self._config)
             return config_path
 
