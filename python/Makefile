@@ -92,7 +92,6 @@ _e2e:
 .PHONY: test
 test:
 	pytest \
-	    -n 0 \
 		-m "not e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
