@@ -1,6 +1,5 @@
 import asyncio
 import gc
-import os
 import signal
 import sys
 import warnings
