@@ -120,9 +120,7 @@ class Helper:
                     ):
                         return
                 await asyncio.sleep(1)
-        raise AssertionError(
-            f"File {name} with size {size} not found in {path}"
-        )
+        raise AssertionError(f"File {name} with size {size} not found in {path}")
 
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str):
