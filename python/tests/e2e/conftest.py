@@ -34,6 +34,7 @@ JOB_TIMEOUT = 60 * 5
 JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 60 * 5
 JOB_OUTPUT_SLEEP_SECONDS = 2
+STORAGE_MAX_WAIT = 60 * 3
 
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
@@ -104,19 +105,24 @@ class Helper:
     @run_async
     async def check_file_exists_on_storage(self, name: str, path: str, size: int):
         path = URL(self.tmpstorage + path)
+        t0 = time()
         async with self._config.make_client() as client:
-            files = await client.storage.ls(path)
-            for file in files:
-                if (
-                    file.type == FileStatusType.FILE
-                    and file.name == name
-                    and file.size == size
-                ):
-                    break
-            else:
-                raise AssertionError(
-                    f"File {name} with size {size} not found in {path}"
-                )
+            while time() - t0 < STORAGE_MAX_WAIT:
+                try:
+                    files = await client.storage.ls(path)
+                except ResourceNotFound:
+                    continue
+                for file in files:
+                    if (
+                        file.type == FileStatusType.FILE
+                        and file.name == name
+                        and file.size == size
+                    ):
+                        return
+                await asyncio.sleep(1)
+        raise AssertionError(
+            f"File {name} with size {size} not found in {path}"
+        )
 
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str):
