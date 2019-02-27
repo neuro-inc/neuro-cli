@@ -28,7 +28,9 @@ class ImageNameParser:
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
-        return image.startswith(f"{IMAGE_SCHEME}:")
+        return image.startswith(f"{IMAGE_SCHEME}:") or image.startswith(
+            f"{self._registry}/"
+        )
 
     def convert_to_neuro_image(self, image: DockerImage) -> DockerImage:
         return DockerImage(
@@ -66,7 +68,17 @@ class ImageNameParser:
             )
 
         url = URL(image)
-        assert url.scheme == IMAGE_SCHEME, f"invalid image scheme: '{url.scheme}'"
+        if not url.scheme:
+            parts = url.path.split("/")
+            url = url.build(
+                scheme=IMAGE_SCHEME,
+                host=parts[1],
+                path="/".join([""] + parts[2:]),
+                query=url.query,
+            )
+        else:
+            assert url.scheme == IMAGE_SCHEME, f"invalid image scheme: '{url.scheme}'"
+
         self._check_allowed_uri_elements(url)
 
         registry = self._registry
