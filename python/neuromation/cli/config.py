@@ -5,7 +5,7 @@ from . import rc
 from .defaults import API_URL
 from .formatters import ConfigFormatter
 from .rc import Config
-from .utils import command, group, run_async
+from .utils import async_cmd, command, group
 
 
 @group()
@@ -15,8 +15,8 @@ def config() -> None:
 
 @command(hidden=True)
 @click.argument("url")
-@run_async
-async def url(url: str) -> None:
+@async_cmd
+async def url(cfg: Config, url: str) -> None:
     """
     Update settings with provided platform URL.
 
@@ -84,11 +84,12 @@ def forget() -> None:
 
 @command()
 @click.argument("url", required=False, default=API_URL, type=URL)
-def login(url: URL) -> None:
+@async_cmd
+async def login(cfg: Config, url: URL) -> None:
     """
     Log into Neuromation Platform.
     """
-    rc.ConfigFactory.refresh_auth_token(url)
+    await rc.ConfigFactory.refresh_auth_token(url)
     click.echo(f"Logged into {url}")
 
 

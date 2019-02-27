@@ -48,7 +48,7 @@ def test_copy_local_to_platform_single_file_1(helper, data):
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_2(helper, data, run_cli):
+def test_copy_local_to_platform_single_file_2(helper, data):
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
@@ -69,13 +69,13 @@ def test_copy_local_to_platform_single_file_2(helper, data, run_cli):
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_3(helper, data, run_cli):
+def test_copy_local_to_platform_single_file_3(helper, data):
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
 
     # Upload local file to non existing directory
     with pytest.raises(SystemExit, match=str(EX_OSFILE)):
-        captured = run_cli(
+        captured = helper.run_cli(
             ["storage", "cp", srcfile, helper.tmpstorage + "/non_existing_dir/"],
             storage_retry=False,
         )
@@ -87,12 +87,10 @@ def test_copy_local_to_platform_single_file_3(helper, data, run_cli):
 
 
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_non_existing_local(
-    helper, run_cli, tmp_path
-):
+def test_e2e_copy_non_existing_platform_to_non_existing_local(helper, tmp_path):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(EX_OSFILE)):
-        run_cli(
+        helper.run_cli(
             [
                 "storage",
                 "cp",
@@ -104,12 +102,10 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
 
 
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_____existing_local(
-    helper, run_cli, tmp_path
-):
+def test_e2e_copy_non_existing_platform_to_____existing_local(helper, tmp_path):
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(EX_OSFILE)):
-        run_cli(
+        helper.run_cli(
             ["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)],
             storage_retry=False,
         )

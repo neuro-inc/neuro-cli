@@ -3,27 +3,37 @@ import hashlib
 import logging
 import os
 import re
+import tempfile
 from collections import namedtuple
 from contextlib import suppress
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
 from time import sleep, time
+from typing import List, Sequence, Union
 from uuid import uuid4 as uuid
 
+import aiohttp
 import pytest
 from yarl import URL
 
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
-from neuromation.client import FileStatusType, ResourceNotFound
+from neuromation.client import (
+    FileStatusType,
+    JobDescription,
+    JobStatus,
+    ResourceNotFound,
+)
 from neuromation.utils import run
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, attempt
 
 
 JOB_TIMEOUT = 60 * 5
 JOB_WAIT_SLEEP_SECONDS = 2
+JOB_OUTPUT_TIMEOUT = 60 * 5
+JOB_OUTPUT_SLEEP_SECONDS = 2
 
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
@@ -52,9 +62,13 @@ def run_async(coro):
 
 
 class Helper:
-    def __init__(self, config):
+    def __init__(self, config: rc.Config, capfd, monkeypatch, tmp_path: Path):
         self._config = config
+        self._capfd = capfd
+        self._mp = monkeypatch
+        self._tmp = tmp_path
         self._tmpstorage = "storage:" + str(uuid()) + "/"
+        self._executed_jobs = []
         self.mkdir("")
 
     def close(self):
@@ -62,6 +76,10 @@ class Helper:
             with suppress(Exception):
                 self.rm("")
             self._tmpstorage = None
+        if self._executed_jobs:
+            with suppress(Exception):
+                with suppress(Exception):
+                    self.run_cli(["job", "kill"] + self._executed_jobs)
 
     @property
     def config(self):
@@ -267,9 +285,123 @@ class Helper:
             assert job.status == state
 
     @run_async
-    async def job_info(self, job_id):
+    async def job_info(self, job_id) -> JobDescription:
         async with self._config.make_client() as client:
             return await client.jobs.status(job_id)
+
+    @run_async
+    async def check_job_output(self, job_id, expected, flags=0):
+        """
+            Wait until job output satisfies given regexp
+        """
+
+        async def _check_job_output():
+            async with self._config.make_client() as client:
+                async for chunk in client.jobs.monitor(job_id):
+                    yield chunk
+
+        started_at = time()
+        while time() - started_at < JOB_OUTPUT_TIMEOUT:
+            chunks = []
+            async for chunk in _check_job_output():
+                if not chunk:
+                    break
+                chunks.append(chunk.decode())
+                if re.search(expected, "".join(chunks), flags):
+                    return
+                if time() - started_at < JOB_OUTPUT_TIMEOUT:
+                    break
+                await asyncio.sleep(JOB_OUTPUT_SLEEP_SECONDS)
+
+        raise AssertionError(
+            f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
+        )
+
+    def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
+        def _temp_config():
+            config_file = tempfile.NamedTemporaryFile(
+                dir=self._tmp, prefix="run_cli-", suffix=".nmrc", delete=False
+            )
+            config_path = Path(config_file.name)
+            rc.save(config_path, self._config)
+            return config_path
+
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
+        delay = 0.5
+        for i in range(5):
+            pre_out, pre_err = self._capfd.readouterr()
+            pre_out_size = len(pre_out)
+            pre_err_size = len(pre_err)
+            try:
+                with self._mp.context() as ctx:
+                    ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
+                    main(
+                        [
+                            "--show-traceback",
+                            "--disable-pypi-version-check",
+                            "--color=no",
+                        ]
+                        + arguments
+                    )
+            except SystemExit as exc:
+                if exc.code == EX_IOERR:
+                    # network problem
+                    sleep(delay)
+                    delay *= 2
+                    continue
+                elif (
+                    exc.code == EX_OSFILE
+                    and arguments
+                    and arguments[0] == "storage"
+                    and storage_retry
+                ):
+                    # NFS storage has a lag between pushing data on one storage API node
+                    # and fetching it on other node
+                    # retry is the only way to avoid it
+                    sleep(delay)
+                    delay *= 2
+                    continue
+                elif exc.code != EX_OK:
+                    raise
+            post_out, post_err = self._capfd.readouterr()
+            out = post_out[pre_out_size:]
+            err = post_err[pre_err_size:]
+            if any(
+                " ".join(arguments).startswith(start)
+                for start in ("submit", "job submit", "model train")
+            ):
+                match = job_id_pattern.search(out)
+                if match:
+                    self._executed_jobs.append(match.group(1))
+
+            return SysCap(out.strip(), err.strip())
+        else:
+            raise TestRetriesExceeded(
+                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
+            )
+
+    def run_job(self, image, command="", params=[]) -> str:
+        captured = self.run_cli(
+            ["job", "submit", "-q"]
+            + params
+            + ([image, command] if command else [image])
+        )
+        assert not captured.err
+        return captured.out
+
+    def run_job_and_wait_state(
+        self,
+        image,
+        command="",
+        params=[],
+        wait_state=JobStatus.RUNNING,
+        stop_state=JobStatus.FAILED,
+    ):
+        job_id = self.run_job(image, command, params)
+        self.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
+        self.wait_job_change_state_to(job_id, wait_state, stop_state)
+        return job_id
 
 
 @pytest.fixture
@@ -277,25 +409,55 @@ def config(tmp_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
 
     if e2e_test_token:
-        # Make a config on CI
-        # use default user config for local testing
-        rc_text = RC_TEXT.format(token=e2e_test_token)
-        config_path = tmp_path / ".nmrc"
-        config_path.write_text(rc_text)
-        config_path.chmod(0o600)
 
-        def _home():
-            return Path(tmp_path)
+        def _temp_config():
+            rc_text = RC_TEXT.format(token=e2e_test_token)
+            config_path = tmp_path / ".nmrc"
+            config_path.write_text(rc_text)
+            config_path.chmod(0o600)
+            return config_path
 
-        monkeypatch.setattr(Path, "home", _home)
-
-    config = rc.ConfigFactory.load()
+        with monkeypatch.context() as ctx:
+            ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
+            config = rc.ConfigFactory.load()
+    else:
+        config = rc.ConfigFactory.load()
     yield config
 
 
 @pytest.fixture
-def helper(config):
-    ret = Helper(config)
+def helper(config, capfd, monkeypatch, tmp_path):
+    ret = Helper(config=config, capfd=capfd, monkeypatch=monkeypatch, tmp_path=tmp_path)
+    yield ret
+    ret.close()
+
+
+@pytest.fixture
+def config_alt(tmp_path, monkeypatch):
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
+
+    if e2e_test_token:
+
+        def _temp_config():
+            rc_text = RC_TEXT.format(token=e2e_test_token)
+            config_path = tmp_path / ".alt.nmrc"
+            config_path.write_text(rc_text)
+            config_path.chmod(0o600)
+            return config_path
+
+        with monkeypatch.context() as ctx:
+            ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
+            config = rc.ConfigFactory.load()
+    else:
+        pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
+    yield config
+
+
+@pytest.fixture
+def helper_alt(config_alt, capfd, monkeypatch, tmp_path):
+    ret = Helper(
+        config=config_alt, capfd=capfd, monkeypatch=monkeypatch, tmp_path=tmp_path
+    )
     yield ret
     ret.close()
 
@@ -337,61 +499,26 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def run_cli(capfd, config):
-    executed_jobs_list = []
+def check_http_get():
+    """
+        Try to fetch given url few times.
+    """
 
-    def _run(arguments, *, storage_retry=True):
-        log.info("Run 'neuro %s'", " ".join(arguments))
-
-        delay = 0.5
-        for i in range(5):
-            pre_out, pre_err = capfd.readouterr()
-            pre_out_size = len(pre_out)
-            pre_err_size = len(pre_err)
-            try:
-                main(
-                    ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
-                    + arguments
+    @run_async
+    async def http_get(url, accepted_statuses: List[int] = [200]) -> Union[str, None]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status in accepted_statuses:
+                    return await resp.text()
+                raise aiohttp.ClientResponseError(
+                    status=resp.status,
+                    message=f"Server return {resp.status}",
+                    history=tuple(),
+                    request_info=resp.request_info,
                 )
-            except SystemExit as exc:
-                if exc.code == EX_IOERR:
-                    # network problem
-                    sleep(delay)
-                    delay *= 2
-                    continue
-                elif (
-                    exc.code == EX_OSFILE
-                    and arguments
-                    and arguments[0] == "storage"
-                    and storage_retry
-                ):
-                    # NFS storage has a lag between pushing data on one storage API node
-                    # and fetching it on other node
-                    # retry is the only way to avoid it
-                    sleep(delay)
-                    delay *= 2
-                    continue
-                elif exc.code != EX_OK:
-                    raise
-            post_out, post_err = capfd.readouterr()
-            out = post_out[pre_out_size:]
-            err = post_err[pre_err_size:]
-            if arguments[0:2] in (["job", "submit"], ["model", "train"]):
-                match = job_id_pattern.search(out)
-                if match:
-                    executed_jobs_list.append(match.group(1))
 
-            return SysCap(out.strip(), err.strip())
-        else:
-            raise TestRetriesExceeded(
-                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
-            )
+    @attempt(3, 5)
+    def go(url, accepted_statuses: Sequence[int] = tuple([200])):
+        return http_get(url, accepted_statuses)
 
-    yield _run
-    # try to kill all executed jobs regardless of the status
-    if executed_jobs_list:
-        try:
-            _run(["job", "kill"] + executed_jobs_list)
-        except BaseException:
-            # Just ignore cleanup error here
-            pass
+    return go

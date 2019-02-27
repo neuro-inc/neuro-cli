@@ -1,42 +1,45 @@
-from types import TracebackType
-from typing import Union, Type, Optional
-
 import ssl
-import certifi
+from types import TracebackType
+from typing import Optional, Type, Union
+
 import aiohttp
+import certifi
 from yarl import URL
 
 from .abc import AbstractProgress, AbstractSpinner
 from .api import (
     API,
-    ResourceNotFound,
+    DEFAULT_TIMEOUT,
+    AuthenticationError,
+    AuthError,
+    AuthorizationError,
     ClientError,
     IllegalArgumentError,
-    AuthError,
-    AuthenticationError,
-    AuthorizationError,
-    DEFAULT_TIMEOUT,
+    ResourceNotFound,
 )
+from .config import Config
+from .images import Images
 from .jobs import (
-    Jobs,
+    Container,
     Image,
     JobDescription,
+    Jobs,
     JobStatus,
     JobStatusHistory,
+    JobTelemetry,
     NetworkPortForwarding,
     Resources,
     Volume,
-    Container,
-    JobTelemetry,
 )
 from .models import Models, TrainResult
-from .storage import Storage, FileStatusType, FileStatus
+from .parsing_utils import ImageNameParser
+from .storage import FileStatus, FileStatusType, Storage
 from .users import Action, Permission, Users
-from .images import Images
-from .config import Config
+
 
 __all__ = (
     "Image",
+    "ImageNameParser",
     "JobDescription",
     "JobStatus",
     "JobStatusHistory",

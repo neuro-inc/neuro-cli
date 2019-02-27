@@ -27,6 +27,8 @@ class ConsoleWarningFormatter(logging.Formatter):
 
 class ConsoleHandler(logging.StreamHandler):
     def emit(self, record: logging.LogRecord) -> None:
+        if self.stream.closed:
+            return
         try:
             msg = self.format(record)
             click.echo(msg + self.terminator, err=True)

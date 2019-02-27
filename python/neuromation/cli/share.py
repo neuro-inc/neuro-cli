@@ -6,7 +6,7 @@ from yarl import URL
 from neuromation.client import Action, IllegalArgumentError, Permission
 
 from .rc import Config
-from .utils import command, run_async
+from .utils import async_cmd, command
 
 
 log = logging.getLogger(__name__)
@@ -16,8 +16,7 @@ log = logging.getLogger(__name__)
 @click.argument("uri")
 @click.argument("user")
 @click.argument("permission", type=click.Choice(["read", "write", "manage"]))
-@click.pass_obj
-@run_async
+@async_cmd
 async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
     """
         Shares resource specified by URI to a USER with PERMISSION

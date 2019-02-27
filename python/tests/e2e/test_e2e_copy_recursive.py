@@ -4,12 +4,12 @@ from tests.e2e.utils import FILE_SIZE_B
 
 
 @pytest.mark.e2e
-def test_e2e_copy_recursive_to_platform(helper, nested_data, run_cli, tmp_path):
+def test_e2e_copy_recursive_to_platform(helper, nested_data, tmp_path):
     srcfile, checksum, dir_path = nested_data
     target_file_name = srcfile.split("/")[-1]
 
     # Upload local file
-    captured = run_cli(["storage", "cp", "-r", dir_path, helper.tmpstorage])
+    captured = helper.run_cli(["storage", "cp", "-r", dir_path, helper.tmpstorage])
     # stderr has logs like "Using path ..."
     # assert not captured.err
     assert not captured.out
@@ -22,7 +22,7 @@ def test_e2e_copy_recursive_to_platform(helper, nested_data, run_cli, tmp_path):
 
     targetdir = tmp_path / "bar"
     targetdir.mkdir()
-    run_cli(["storage", "cp", "-r", f"{helper.tmpstorage}", str(targetdir)])
+    helper.run_cli(["storage", "cp", "-r", f"{helper.tmpstorage}", str(targetdir)])
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
     print("target file", targetfile)
