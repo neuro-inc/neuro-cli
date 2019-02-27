@@ -111,6 +111,7 @@ class Helper:
                 try:
                     files = await client.storage.ls(path)
                 except ResourceNotFound:
+                    await asyncio.sleep(1)
                     continue
                 for file in files:
                     if (
@@ -125,13 +126,19 @@ class Helper:
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
+        t0 = time()
         async with self._config.make_client() as client:
-            files = await client.storage.ls(path)
-            for file in files:
-                if file.type == FileStatusType.DIRECTORY and file.path == name:
-                    break
-            else:
-                raise AssertionError(f"Dir {name} not found in {path}")
+            while time() - t0 < STORAGE_MAX_WAIT:
+                try:
+                    files = await client.storage.ls(path)
+                except ResourceNotFound:
+                    await asyncio.sleep(1)
+                    continue
+                for file in files:
+                    if file.type == FileStatusType.DIRECTORY and file.path == name:
+                        return
+                await asyncio.sleep(1)
+        raise AssertionError(f"Dir {name} not found in {path}")
 
     @run_async
     async def check_dir_absent_on_storage(self, name: str, path: str):
