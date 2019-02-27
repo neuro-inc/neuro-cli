@@ -121,7 +121,6 @@ class Helper:
                         and file.size == size
                     ):
                         return
-                break
                 await asyncio.sleep(1)
         raise AssertionError(f"File {name} with size {size} not found in {path}")
 
