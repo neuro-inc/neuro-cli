@@ -121,6 +121,7 @@ class Helper:
                         and file.size == size
                     ):
                         return
+                break
                 await asyncio.sleep(1)
         raise AssertionError(f"File {name} with size {size} not found in {path}")
 
@@ -139,6 +140,7 @@ class Helper:
                 for file in files:
                     if file.type == FileStatusType.DIRECTORY and file.path == name:
                         return
+                break
                 await asyncio.sleep(1)
         raise AssertionError(f"Dir {name} not found in {path}")
 
