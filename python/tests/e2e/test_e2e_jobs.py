@@ -925,8 +925,6 @@ async def test_port_forward(helper, nginx_job):
         return succeeded
 
     async with helper.config.make_client() as client:
-        # Start the job
-
         retries = 5
         sleep_time = 20
         loop = asyncio.get_event_loop()
