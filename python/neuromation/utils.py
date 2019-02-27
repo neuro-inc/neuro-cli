@@ -114,7 +114,7 @@ async def kill_proc_tree(
     "sig".
     """
 
-    def _kill_proc_tree():
+    def _kill_proc_tree() -> None:
         try:
             parent = psutil.Process(pid)
             children = parent.children(recursive=True)
