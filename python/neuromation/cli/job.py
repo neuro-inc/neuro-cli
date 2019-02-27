@@ -277,7 +277,7 @@ async def exec(
     help="Disable host key checks. Should be used with caution.",
 )
 @click.pass_obj
-@run_async
+@async_cmd
 async def port_forward(
     cfg: Config, id: str, no_key_check: bool, local_port: int
 ) -> None:

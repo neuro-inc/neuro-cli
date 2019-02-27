@@ -881,9 +881,9 @@ def test_e2e_job_list_filtered_by_status(helper):
 
 
 @pytest.fixture
-def nginx_job(helper, run_cli):
+def nginx_job(helper):
     command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
-    captured = run_cli(
+    captured = helper.run_cli(
         [
             "job",
             "submit",
@@ -905,7 +905,7 @@ def nginx_job(helper, run_cli):
 
     yield job_id
 
-    run_cli(["job", "kill", job_id])
+    helper.run_cli(["job", "kill", job_id])
 
 
 @pytest.mark.e2e
