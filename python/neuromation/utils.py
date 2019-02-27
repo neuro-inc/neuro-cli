@@ -105,7 +105,7 @@ def _cancel_all_tasks(
             )
 
 
-async def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True, timeout=None):
+async def kill_proc_tree(pid: int, sig: int=signal.SIGTERM, include_parent: bool=True, timeout: int=None):
     """Kill a process tree (including grandchildren) with signal
     "sig".
     """
