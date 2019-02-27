@@ -70,7 +70,7 @@ _init-readme:
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n auto --forked \
+	    -n auto --forked --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
