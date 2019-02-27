@@ -21,6 +21,8 @@ from aiohttp import WSServerHandshakeError
 from multidict import MultiDict
 from yarl import URL
 
+from neuromation.utils import kill_proc_tree
+
 from .api import API, IllegalArgumentError
 
 
@@ -464,7 +466,10 @@ class Jobs:
         port = server_url.port if server_url.port else 22
         command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
         proc = await asyncio.create_subprocess_exec(*command)
-        return await proc.wait()
+        try:
+            return await proc.wait()
+        finally:
+            await kill_proc_tree(proc.pid)
 
     async def port_forward(
         self, id: str, no_key_check: bool, local_port: int, job_port: int
@@ -519,4 +524,7 @@ class Jobs:
         print(f"Port of {id} is forwarded to localhost:{local_port}")
         print(f"Press ^C to stop forwarding")
         proc = await asyncio.create_subprocess_exec(*command)
-        return await proc.wait()
+        try:
+            return await proc.wait()
+        finally:
+            await kill_proc_tree(proc.pid)
