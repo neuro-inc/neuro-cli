@@ -105,9 +105,10 @@ class Helper:
     @run_async
     async def check_file_exists_on_storage(self, name: str, path: str, size: int):
         path = URL(self.tmpstorage + path)
-        t0 = time()
+        loop = asyncio.get_event_loop()
+        t0 = loop.time()
         async with self._config.make_client() as client:
-            while time() - t0 < STORAGE_MAX_WAIT:
+            while loop.time() - t0 < STORAGE_MAX_WAIT:
                 try:
                     files = await client.storage.ls(path)
                 except ResourceNotFound:
@@ -126,9 +127,10 @@ class Helper:
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
-        t0 = time()
+        loop = asyncio.get_event_loop()
+        t0 = loop.time()
         async with self._config.make_client() as client:
-            while time() - t0 < STORAGE_MAX_WAIT:
+            while loop.time() - t0 < STORAGE_MAX_WAIT:
                 try:
                     files = await client.storage.ls(path)
                 except ResourceNotFound:
