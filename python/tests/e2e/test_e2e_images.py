@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from uuid import uuid4 as uuid
 
@@ -6,7 +7,6 @@ import pytest
 from yarl import URL
 
 from neuromation.client import JobStatus
-from tests.e2e.utils import attempt
 
 
 TEST_IMAGE_NAME = "e2e-banana-image"
@@ -54,10 +54,9 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
-def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
-
+def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     # Let`s push image
-    captured = run_cli(["image", "push", image])
+    captured = helper.run_cli(["image", "push", image])
 
     # stderr has "Used image ..." lines
     # assert not captured.err
@@ -67,7 +66,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     image_url = URL(image_full_str)
 
     # Check if image available on registry
-    captured = run_cli(["image", "ls"])
+    captured = helper.run_cli(["image", "ls"])
 
     image_urls = [URL(line) for line in captured.out.splitlines() if line]
     for url in image_urls:
@@ -82,7 +81,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     assert image not in local_images
 
     # Pull image as with another tag
-    captured = run_cli(["image", "pull", f"image://~/{image}"])
+    captured = helper.run_cli(["image", "pull", f"image://~/{image}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
     assert captured.out.endswith(image)
@@ -93,7 +92,7 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
     assert image in local_images
 
     # Execute image and check result
-    captured = run_cli(
+    captured = helper.run_cli(
         [
             "submit",
             str(image_url),
@@ -105,28 +104,24 @@ def test_images_complete_lifecycle(helper, run_cli, image, tag, loop, docker):
         ]
     )
     assert not captured.err
-    job_id = captured.out.strip()
+    job_id = captured.out
     assert job_id.startswith("job-")
     helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
-    @attempt()
-    def check_job_output():
-        captured = run_cli(["job", "logs", job_id])
-        assert not captured.err
-        assert captured.out == tag
-
-    check_job_output()
+    helper.check_job_output(job_id, re.escape(tag))
 
 
 @pytest.mark.e2e
-def test_images_push_with_specified_name(helper, run_cli, image, tag, loop, docker):
+def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     # Let`s push image
     image_no_tag = image.replace(f":{tag}", "")
     pushed_no_tag = f"{image_no_tag}-pushed"
     pulled_no_tag = f"{image_no_tag}-pulled"
     pulled = f"{pulled_no_tag}:{tag}"
 
-    captured = run_cli(["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"])
+    captured = helper.run_cli(
+        ["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"]
+    )
     # stderr has "Used image ..." lines
     # assert not captured.err
     image_pushed_full_str = f"image://{helper._config.username}/{pushed_no_tag}:{tag}"
@@ -134,7 +129,7 @@ def test_images_push_with_specified_name(helper, run_cli, image, tag, loop, dock
     image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
 
     # Check if image available on registry
-    captured = run_cli(["image", "ls"])
+    captured = helper.run_cli(["image", "ls"])
     image_urls = captured.out.splitlines()
     assert image_url_without_tag in image_urls
 
@@ -144,7 +139,7 @@ def test_images_push_with_specified_name(helper, run_cli, image, tag, loop, dock
     assert pulled not in local_images
 
     # Pull image as with another name
-    captured = run_cli(["image", "pull", f"image:{pushed_no_tag}:{tag}", pulled])
+    captured = helper.run_cli(["image", "pull", f"image:{pushed_no_tag}:{tag}", pulled])
     # stderr has "Used image ..." lines
     # assert not captured.err
     assert captured.out.endswith(pulled)
