@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from tests.e2e.utils import FILE_SIZE_B
@@ -6,7 +8,7 @@ from tests.e2e.utils import FILE_SIZE_B
 @pytest.mark.e2e
 def test_e2e_copy_recursive_to_platform(helper, nested_data, tmp_path):
     srcfile, checksum, dir_path = nested_data
-    target_file_name = srcfile.split("/")[-1]
+    target_file_name = Path(srcfile).name
 
     # Upload local file
     captured = helper.run_cli(["storage", "cp", "-r", dir_path, helper.tmpstorage])
