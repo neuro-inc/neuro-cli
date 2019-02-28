@@ -8,6 +8,7 @@ from typing import Any, AsyncIterator, Dict, List
 from yarl import URL
 
 from neuromation.client.url_utils import (
+    _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
@@ -156,7 +157,7 @@ class Storage:
     async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.username)
-        path = Path(src.path)
+        path = _extract_path(src)
         if not path.exists():
             raise FileNotFoundError(f"'{path}' does not exist")
         if path.is_dir():
@@ -188,7 +189,7 @@ class Storage:
             dst = dst / src.name
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.username)
-        path = Path(src.path).resolve()
+        path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist")
         if not path.is_dir():
@@ -215,7 +216,7 @@ class Storage:
     ) -> None:
         src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
-        path = Path(dst.path)
+        path = _extract_path(dst)
         if path.exists():
             if path.is_dir():
                 path = path / src.name
@@ -237,7 +238,7 @@ class Storage:
     ) -> None:
         src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
-        path = Path(dst.path)
+        path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
             if child.is_file():

@@ -1,4 +1,5 @@
 import os
+import sys
 
 import asynctest
 import pytest
@@ -564,6 +565,9 @@ class TestImages:
 
 
 class TestRegistry:
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="aiodocker doens't support Windows pipes yet"
+    )
     async def test_ls(self, aiohttp_server, token):
         JSON = {"repositories": ["image://bob/alpine", "image://jill/bananas"]}
 

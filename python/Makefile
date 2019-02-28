@@ -90,6 +90,16 @@ _e2e:
 		--verbose \
 		tests
 
+.PHONY: _e2e_win
+_e2e_win:
+	pytest \
+		-m "e2e and not no_win32" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		--cov-append \
+		tests
+
 
 .PHONY: test
 test:
@@ -155,7 +165,8 @@ publish: dist publish-lint
 
 .PHONY: coverage
 coverage:
-	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
+	pip install codecov
+	codecov -f coverage.xml -X gcov
 
 .PHONY: format
 format:

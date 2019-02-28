@@ -1,0 +1,29 @@
+image: Visual Studio 2015
+
+environment:
+  # ensure Python 3.6 is first in path
+  PATH: 'C:\Python37;C:\Python37\Scripts;%PATH%'
+  # GNU make
+  MAKE: C:\MinGW\bin\mingw32-make.exe
+  CLIENT_TEST_E2E_USER_NAME:
+    secure: eOtqZJ4yXsPlfNYTZ17U7NFym9KFIq1Cz/zb7dNLR4IAzz4lKtNRPKpGxqgS/BQZ8Kxbsf9EZ2EDKKC74P8kNHwb4oz++CJw6DLnzN+B3x4Nqg9gaMo/VB5yhlbxn90NPdhUl/m8j8pW0kWtwgah6U/Sh/7ZoIHycX2BgcbEONZjyRox2g9x1oKkFUEhVU+yU36EjEwrtu3Imft0yWLcXw==
+
+platform: x64
+
+install:
+  # install dev dependencies
+  - '%MAKE% -C python init'
+
+build: off
+
+# do not run automatic test discovery
+test: off
+
+test_script:
+  - '%MAKE% -C python test'
+  - '%MAKE% -C python _e2e_win'
+  - '%MAKE% -C python coverage'
+
+# will start RDP server you can connect to for remote debugging (a-la ssh in circleci)
+# on_finish:
+#   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

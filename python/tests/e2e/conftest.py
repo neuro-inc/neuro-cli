@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import re
+import sys
 import tempfile
 from collections import namedtuple
 from contextlib import suppress
@@ -55,9 +56,21 @@ class TestRetriesExceeded(Exception):
 SysCap = namedtuple("SysCap", "out err")
 
 
+async def _run_async(coro, *args, **kwargs):
+    try:
+        return await coro(*args, **kwargs)
+    finally:
+        if sys.platform == "win32":
+            await asyncio.sleep(0.2)
+        else:
+            await asyncio.sleep(0.05)
+
+
 def run_async(coro):
     def wrapper(*args, **kwargs):
-        return run(coro(*args, **kwargs))
+        if sys.platform == "win32":
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+        return run(_run_async(coro, *args, **kwargs))
 
     return wrapper
 
@@ -332,10 +345,12 @@ class Helper:
 
     def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
         def _temp_config():
-            config_file = tempfile.NamedTemporaryFile(
+            with tempfile.NamedTemporaryFile(
                 dir=self._tmp, prefix="run_cli-", suffix=".nmrc", delete=False
-            )
-            config_path = Path(config_file.name)
+            ) as config_file:
+                # close tmp file on exit from context manager,
+                # it prevents unlink() error on Windows
+                config_path = Path(config_file.name)
             rc.save(config_path, self._config)
             return config_path
 

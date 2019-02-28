@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import shutil
 import sys
@@ -16,6 +17,10 @@ from . import completion, config, image, job, model, rc, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
+
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
 log = logging.getLogger(__name__)

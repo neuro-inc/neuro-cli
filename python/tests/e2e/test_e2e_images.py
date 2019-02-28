@@ -1,4 +1,5 @@
 import re
+import sys
 from pathlib import Path
 from uuid import uuid4 as uuid
 
@@ -54,6 +55,9 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Image operations are not supported on Windows yet"
+)
 def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     # Let`s push image
     captured = helper.run_cli(["image", "push", image])
@@ -112,6 +116,9 @@ def test_images_complete_lifecycle(helper, image, tag, loop, docker):
 
 
 @pytest.mark.e2e
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Image operations are not supported on Windows yet"
+)
 def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     # Let`s push image
     image_no_tag = image.replace(f":{tag}", "")
