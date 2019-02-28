@@ -166,6 +166,7 @@ publish: dist publish-lint
 .PHONY: coverage
 coverage:
 	pip install codecov
+	coverage combine
 	codecov -f coverage.xml -X gcov
 
 .PHONY: format
