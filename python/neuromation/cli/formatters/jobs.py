@@ -215,15 +215,18 @@ class TabularJobsFormatter(BaseJobsFormatter):
         positions = {}
         position = 0
         for name in self.column_length:
-            sorted_length = sorted(
-                [len(getattr(row, name)) for row in rows], reverse=True
-            )
-            n90 = floor(len(sorted_length) / 10)
-            length = sorted_length[n90]
-            if self.column_length[name][0]:
-                length = max(length, self.column_length[name][0])
-            if self.column_length[name][1]:
-                length = min(length, self.column_length[name][1])
+            if rows:
+                sorted_length = sorted(
+                    [len(getattr(row, name)) for row in rows], reverse=True
+                )
+                n90 = floor(len(sorted_length) / 10)
+                length = sorted_length[n90]
+                if self.column_length[name][0]:
+                    length = max(length, self.column_length[name][0])
+                if self.column_length[name][1]:
+                    length = min(length, self.column_length[name][1])
+            else:
+                length = self.column_length[name][0]
             positions[name] = position
             position += 2 + length
         return positions
