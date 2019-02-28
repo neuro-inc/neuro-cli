@@ -165,7 +165,8 @@ publish: dist publish-lint
 
 .PHONY: coverage
 coverage:
-	$(SHELL) <(curl -s https://codecov.io/bash) -X coveragepy
+	pip install codecov
+	codecov
 
 .PHONY: format
 format:
