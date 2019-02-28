@@ -1,6 +1,7 @@
 import textwrap
 import time
 from dataclasses import replace
+from datetime import datetime
 from typing import Optional
 
 import click
@@ -13,8 +14,10 @@ from neuromation.cli.formatters import (
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
+    SimpleJobsFormatter,
+    TabularJobsFormatter,
 )
-from neuromation.cli.formatters.jobs import ResourcesFormatter
+from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
     BSDPainter,
@@ -27,7 +30,6 @@ from neuromation.cli.formatters.storage import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
-from neuromation.cli.formatters.utils import truncate_string, wrap
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 from neuromation.client import (
@@ -40,6 +42,7 @@ from neuromation.client import (
     JobTelemetry,
     Resources,
 )
+from neuromation.client.parsing_utils import ImageNameParser
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
@@ -397,25 +400,210 @@ class TestJobTelemetryFormatter:
         )
 
 
-class TestUtils:
-    def test_truncate_string(self):
-        assert truncate_string(None, 15) == ""
-        assert truncate_string("", 15) == ""
-        assert truncate_string("not truncated", 15) == "not truncated"
-        assert truncate_string("A" * 10, 1) == "..."
-        assert truncate_string("A" * 10, 3) == "..."
-        assert truncate_string("A" * 10, 5) == "AA..."
-        assert truncate_string("A" * 6, 5) == "AA..."
-        assert truncate_string("A" * 7, 5) == "AA..."
-        assert truncate_string("A" * 10, 10) == "A" * 10
-        assert truncate_string("A" * 15, 10) == "A" * 4 + "..." + "A" * 3
+class TestSimpleJobsFormatter:
+    def test_empty(self):
+        formatter = SimpleJobsFormatter()
+        result = [item for item in formatter([])]
+        assert result == []
 
-    def test_wrap_string(self):
-        assert wrap("123") == "'123'"
-        assert wrap(" ") == "' '"
-        assert wrap("") == "''"
-        assert wrap(None) == "''"
-        assert wrap(r"\0") == "'\\0'"
+    def test_list(self):
+        jobs = [
+            JobDescription(
+                status=JobStatus.PENDING,
+                id="job-42687e7c-6c76-4857-a6a7-1166f8295391",
+                owner="owner",
+                history=JobStatusHistory(
+                    status=JobStatus.PENDING,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at="2018-09-25T12:28:21.298672+00:00",
+                    started_at="2018-09-25T12:28:59.759433+00:00",
+                    finished_at="2018-09-25T12:28:59.759433+00:00",
+                ),
+                container=Container(
+                    image="ubuntu:latest",
+                    resources=Resources.create(0.1, 0, None, None, False),
+                ),
+                ssh_auth_server=URL("ssh-auth"),
+                is_preemptible=True,
+            ),
+            JobDescription(
+                status=JobStatus.PENDING,
+                id="job-cf33bd55-9e3b-4df7-a894-9c148a908a66",
+                owner="owner",
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at="2018-09-25T12:28:21.298672+00:00",
+                    started_at="2018-09-25T12:28:59.759433+00:00",
+                    finished_at="2018-09-25T12:28:59.759433+00:00",
+                ),
+                container=Container(
+                    image="ubuntu:latest",
+                    resources=Resources.create(0.1, 0, None, None, False),
+                ),
+                ssh_auth_server=URL("ssh-auth"),
+                is_preemptible=True,
+            ),
+        ]
+        formatter = SimpleJobsFormatter()
+        result = [item for item in formatter(jobs)]
+        assert result == [
+            "job-42687e7c-6c76-4857-a6a7-1166f8295391",
+            "job-cf33bd55-9e3b-4df7-a894-9c148a908a66",
+        ]
+
+
+class TestTabularJobRow:
+    image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
+
+    def _job_descr_with_status(
+        self, status: JobStatus, image: str = "nginx:apache2"
+    ) -> JobDescription:
+        return JobDescription(
+            status=status,
+            id="job-1f5ab792-e534-4bb4-be56-8af1ce722692",
+            owner="owner",
+            description="some",
+            history=JobStatusHistory(
+                status=status,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at="2017-01-02T12:28:21.298672+00:00",
+                started_at="2017-02-03T12:28:59.759433+00:00",
+                finished_at="2017-03-04T12:28:59.759433+00:00",
+            ),
+            container=Container(
+                image=image,
+                resources=Resources.create(0.1, 0, None, None, False),
+                command="ls",
+            ),
+            ssh_auth_server=URL("ssh-auth"),
+            is_preemptible=True,
+        )
+
+    @pytest.mark.parametrize(
+        "status,date",
+        [
+            (JobStatus.PENDING, "Jan 02 2017"),
+            (JobStatus.RUNNING, "Feb 03 2017"),
+            (JobStatus.FAILED, "Mar 04 2017"),
+            (JobStatus.SUCCEEDED, "Mar 04 2017"),
+        ],
+    )
+    def test_status_date_relation(self, status, date):
+        row = TabularJobRow.from_job(
+            self._job_descr_with_status(status), self.image_parser
+        )
+        assert row.status == f"{status}"
+        assert row.when == date
+
+    def test_image_from_registry_parsing(self):
+        row = TabularJobRow.from_job(
+            self._job_descr_with_status(
+                JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red"
+            ),
+            self.image_parser,
+        )
+        assert row.image == "image://bob/swiss-box:red"
+
+
+class TestTabularJobsFormatter:
+    columns = ["ID", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
+    image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
+
+    def test_empty(self):
+        formatter = TabularJobsFormatter(0, self.image_parser)
+        result = [item for item in formatter([])]
+        assert result == ["  ".join(self.columns)]
+
+    def test_width_cutting(self):
+        formatter = TabularJobsFormatter(10, self.image_parser)
+        result = [item for item in formatter([])]
+        assert result == ["  ".join(self.columns)[:10]]
+
+    def test_short_cells(self):
+        job = JobDescription(
+            status=JobStatus.FAILED,
+            id="j",
+            owner="owner",
+            description="d",
+            history=JobStatusHistory(
+                status=JobStatus.FAILED,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at=datetime.fromtimestamp(time.time() - 1).isoformat(),
+            ),
+            container=Container(
+                image="i:l",
+                resources=Resources.create(0.1, 0, None, None, False),
+                command="c",
+            ),
+            ssh_auth_server=URL("ssh-auth"),
+            is_preemptible=True,
+        )
+        formatter = TabularJobsFormatter(0, self.image_parser)
+        result = [item for item in formatter([job])]
+        assert result == [
+            "ID  STATUS  WHEN   IMAGE  DESCRIPTION  COMMAND",
+            "j   failed  today  i:l    d            c",
+        ]
+
+    def test_wide_cells(self):
+        jobs = [
+            JobDescription(
+                status=JobStatus.FAILED,
+                id="job-7ee153a7-249c-4be9-965a-ba3eafb67c82",
+                owner="owner",
+                description="some description long long long long",
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at="2018-09-25T12:28:21.298672+00:00",
+                    started_at="2018-09-25T12:28:59.759433+00:00",
+                    finished_at="2017-09-25T12:28:59.759433+00:00",
+                ),
+                container=Container(
+                    image="some-image-name:with-long-tag",
+                    resources=Resources.create(0.1, 0, None, None, False),
+                    command="ls -la /some/path",
+                ),
+                ssh_auth_server=URL("ssh-auth"),
+                is_preemptible=True,
+            ),
+            JobDescription(
+                status=JobStatus.PENDING,
+                id="job-7ee153a7-249c-4be9-965a-ba3eafb67c84",
+                owner="owner",
+                description="some description",
+                history=JobStatusHistory(
+                    status=JobStatus.PENDING,
+                    reason="",
+                    description="",
+                    created_at="2017-09-25T12:28:21.298672+00:00",
+                    started_at="2018-09-25T12:28:59.759433+00:00",
+                    finished_at="2017-09-25T12:28:59.759433+00:00",
+                ),
+                container=Container(
+                    image="some-image-name:with-long-tag",
+                    resources=Resources.create(0.1, 0, None, None, False),
+                    command="ls -la /some/path",
+                ),
+                ssh_auth_server=URL("ssh-auth"),
+                is_preemptible=True,
+            ),
+        ]
+        formatter = TabularJobsFormatter(0, self.image_parser)
+        result = [item for item in formatter(jobs)]
+        assert result == [
+            "ID                                        STATUS   WHEN         IMAGE            DESCRIPTION                           COMMAND",  # noqa: E501
+            "job-7ee153a7-249c-4be9-965a-ba3eafb67c82  failed   Sep 25 2017  some-image-name:with-long-tag  some description long long long long  ls -la /some/path",  # noqa: E501
+            "job-7ee153a7-249c-4be9-965a-ba3eafb67c84  pending  Sep 25 2017  some-image-name:with-long-tag  some description        ls -la /some/path",  # noqa: E501
+        ]
 
 
 class TestNonePainter:
