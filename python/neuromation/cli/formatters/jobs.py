@@ -1,11 +1,14 @@
 import abc
+import datetime
 import itertools
 import time
 from dataclasses import dataclass
 from math import floor
 from typing import Iterable, Iterator, List, Mapping
 
+import humanize
 from click import style
+from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.client.parsing_utils import ImageNameParser
@@ -163,6 +166,7 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 class TabularJobRow:
     id: str
     status: str
+    when: str
     image: str
     description: str
     command: str
@@ -176,9 +180,18 @@ class TabularJobRow:
         else:
             parsed_image = image_parser.parse_as_docker_image(job.container.image)
 
+        if job.status == JobStatus.PENDING:
+            when = job.history.created_at
+        elif job.status == JobStatus.RUNNING:
+            when = job.history.started_at
+        else:
+            when = job.history.finished_at
+        when_datetime = datetime.datetime.fromtimestamp(isoparse(when).timestamp())
+
         return cls(
             id=job.id,
             status=job.status,
+            when=humanize.naturaldate(when_datetime),
             image=parsed_image.as_url_str(),
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
@@ -188,12 +201,13 @@ class TabularJobRow:
 class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(self, width: int, image_parser: ImageNameParser):
         self.width = width
-        self.column_length = {
-            "id": 40,
-            "status": 10,
-            "image": 15,
-            "description": 50,
-            "command": 0,
+        self.column_length: Mapping[str, List[int]] = {
+            "id": [2, 40],
+            "status": [6, 10],
+            "when": [4, 10],
+            "image": [5, 15],
+            "description": [11, 50],
+            "command": [7, 0],
         }
         self.image_parser = image_parser
 
@@ -205,9 +219,11 @@ class TabularJobsFormatter(BaseJobsFormatter):
                 [len(getattr(row, name)) for row in rows], reverse=True
             )
             n90 = floor(len(sorted_length) / 10)
-            length = max(sorted_length[n90:])
-            if length > self.column_length[name]:
-                length = self.column_length[name]
+            length = sorted_length[n90]
+            if self.column_length[name][0]:
+                length = max(length, self.column_length[name][0])
+            if self.column_length[name][1]:
+                length = min(length, self.column_length[name][1])
             positions[name] = position
             position += 2 + length
         return positions
@@ -219,11 +235,12 @@ class TabularJobsFormatter(BaseJobsFormatter):
         header = TabularJobRow(
             id="ID",
             status="STATUS",
+            when="WHEN",
             image="IMAGE",
             description="DESCRIPTION",
             command="COMMAND",
         )
-        positions = self._positions([header] + rows)
+        positions = self._positions(rows)
         for row in [header] + rows:
             line = ""
             for name in positions.keys():
