@@ -133,9 +133,9 @@ async def cp(
     progress_obj = ProgressBase.create_progress(progress)
     # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
     if not src.scheme or len(src.scheme) == 1:
-        src = URL(f"file:{src.path}")
+        src = URL(f"file:{source}")
     if not dst.scheme or len(dst.scheme) == 1:
-        dst = URL(f"file:{dst.path}")
+        dst = URL(f"file:{destination}")
     async with cfg.make_client(timeout=timeout) as client:
         if src.scheme == "file" and dst.scheme == "storage":
             src = normalize_local_path_uri(src)
