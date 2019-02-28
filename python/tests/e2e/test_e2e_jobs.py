@@ -550,6 +550,7 @@ def test_e2e_env_from_local(helper):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_e2e_multiple_env(helper):
     bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
     command = f"bash -c '{bash_script}'"
@@ -623,6 +624,7 @@ def test_e2e_multiple_env_from_file(helper, tmp_path):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_e2e_ssh_exec_true(helper):
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
@@ -676,6 +678,7 @@ def test_e2e_ssh_exec_false(helper):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 def test_e2e_ssh_exec_no_cmd(helper):
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
