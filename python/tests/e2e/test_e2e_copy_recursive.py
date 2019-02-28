@@ -21,7 +21,6 @@ def test_e2e_copy_recursive_to_platform(helper, nested_data, tmp_path):
     )
 
     # Download into local directory and confirm checksum
-
     targetdir = tmp_path / "bar"
     targetdir.mkdir()
     helper.run_cli(["storage", "cp", "-r", f"{helper.tmpstorage}", str(targetdir)])
