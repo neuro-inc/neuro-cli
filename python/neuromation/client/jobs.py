@@ -108,8 +108,8 @@ class Volume:
         resp: Dict[str, Any] = {
             "src_storage_uri": self.storage_path,
             "dst_path": self.container_path,
+            "read_only": bool(self.read_only),
         }
-        resp["read_only"] = bool(self.read_only)
         return resp
 
     @classmethod
@@ -170,7 +170,7 @@ class HTTPPort:
         return ret
 
     @classmethod
-    def from_api(self, data: Dict[str, Any]) -> "HTTPPort":
+    def from_api(cls, data: Dict[str, Any]) -> "HTTPPort":
         return HTTPPort(**data)
 
 
@@ -183,7 +183,7 @@ class SSHPort:
         return ret
 
     @classmethod
-    def from_api(self, data: Dict[str, Any]) -> "SSHPort":
+    def from_api(cls, data: Dict[str, Any]) -> "SSHPort":
         return SSHPort(**data)
 
 
