@@ -20,7 +20,7 @@ def test_job_lifecycle(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("\t")[0] for x in store_out_list]
+    jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
     # Run a new job
     command = 'bash -c "sleep 10m; false"'
@@ -55,7 +55,7 @@ def test_job_lifecycle(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    jobs_updated = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs_updated
 
     # Wait until the job is running
@@ -95,7 +95,7 @@ def test_job_description(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("\t")[0] for x in store_out_list]
+    jobs_orig = [x.split("  ")[0] for x in store_out_list]
     description = "Test description for a job"
     # Run a new job
     command = 'bash -c "sleep 10m; false"'
@@ -130,7 +130,7 @@ def test_job_description(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    jobs_updated = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs_updated
 
     # Wait until the job is running
@@ -173,7 +173,7 @@ def test_unschedulable_job_lifecycle(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("\t")[0] for x in store_out_list]
+    jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
     # Run a new job
     command = 'bash -c "sleep 10m; false"'
@@ -206,7 +206,7 @@ def test_unschedulable_job_lifecycle(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    jobs_updated = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs_updated
     for i in range(10):
         job = helper.job_info(job_id)
@@ -239,7 +239,7 @@ def test_two_jobs_at_once(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("\t")[0] for x in store_out_list]
+    jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
     # Run a new job
     command = 'bash -c "sleep 10m; false"'
@@ -292,7 +292,7 @@ def test_two_jobs_at_once(helper):
         ["job", "ls", "--status", "running", "--status", "pending"]
     )
     store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("\t")[0] for x in store_out_list]
+    jobs_updated = [x.split("  ")[0] for x in store_out_list]
     assert first_job_id in jobs_updated
     assert second_job_id in jobs_updated
 

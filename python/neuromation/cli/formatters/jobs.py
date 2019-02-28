@@ -1,13 +1,17 @@
+import abc
+import datetime
 import itertools
 import time
-from typing import Iterable
+from dataclasses import dataclass
+from math import floor
+from typing import Iterable, Iterator, List, Mapping
 
+import humanize
 from click import style
 from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
-
-from .utils import truncate_string, wrap
+from neuromation.client.parsing_utils import ImageNameParser
 
 
 BEFORE_PROGRESS = "\r"
@@ -144,58 +148,117 @@ class JobTelemetryFormatter:
         )
 
 
-class JobListFormatter:
-    def __init__(self, quiet: bool = False):
-        self.quiet = quiet
-        self.tab = "\t"
-        self.column_lengths = {
-            "id": 40,
-            "status": 10,
-            "image": 15,
-            "description": 50,
-            "command": 50,
+class BaseJobsFormatter:
+    @abc.abstractmethod
+    def __call__(
+        self, jobs: Iterable[JobDescription]
+    ) -> Iterator[str]:  # pragma: no cover
+        pass
+
+
+class SimpleJobsFormatter(BaseJobsFormatter):
+    def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
+        for job in jobs:
+            yield job.id
+
+
+@dataclass(frozen=True)
+class TabularJobRow:
+    id: str
+    status: str
+    when: str
+    image: str
+    description: str
+    command: str
+
+    @classmethod
+    def from_job(
+        cls, job: JobDescription, image_parser: ImageNameParser
+    ) -> "TabularJobRow":
+        if image_parser.is_in_neuro_registry(job.container.image):
+            parsed_image = image_parser.parse_as_neuro_image(job.container.image)
+        else:
+            parsed_image = image_parser.parse_as_docker_image(job.container.image)
+
+        if job.status == JobStatus.PENDING:
+            when = job.history.created_at
+        elif job.status == JobStatus.RUNNING:
+            when = job.history.started_at
+        else:
+            when = job.history.finished_at
+        when_datetime = datetime.datetime.fromtimestamp(isoparse(when).timestamp())
+
+        return cls(
+            id=job.id,
+            status=job.status,
+            when=humanize.naturaldate(when_datetime),
+            image=parsed_image.as_url_str(),
+            description=job.description if job.description else "",
+            command=job.container.command if job.container.command else "",
+        )
+
+
+class TabularJobsFormatter(BaseJobsFormatter):
+    def __init__(self, width: int, image_parser: ImageNameParser):
+        self.width = width
+        self.column_length: Mapping[str, List[int]] = {
+            "id": [2, 40],
+            "status": [6, 10],
+            "when": [4, 11],
+            "image": [5, 15],
+            "description": [11, 50],
+            "command": [7, 0],
         }
+        self.image_parser = image_parser
 
-    def __call__(self, jobs: Iterable[JobDescription], description: str = "") -> str:
-        if description:
-            jobs = [j for j in jobs if j.description == description]
+    def _positions(self, rows: Iterable[TabularJobRow]) -> Mapping[str, int]:
+        positions = {}
+        position = 0
+        for name in self.column_length:
+            if rows:
+                sorted_length = sorted(
+                    [len(getattr(row, name)) for row in rows], reverse=True
+                )
+                n90 = floor(len(sorted_length) / 10)
+                length = sorted_length[n90]
+                if self.column_length[name][0]:
+                    length = max(length, self.column_length[name][0])
+                if self.column_length[name][1]:
+                    length = min(length, self.column_length[name][1])
+            else:
+                length = self.column_length[name][0]
+            positions[name] = position
+            position += 2 + length
+        return positions
 
-        jobs = sorted(jobs, key=lambda j: isoparse(j.history.created_at))
-        lines = list()
-        if not self.quiet:
-            lines.append(self._format_header_line())
-        lines.extend(map(self._format_job_line, jobs))
-        return "\n".join(lines)
-
-    def _format_header_line(self) -> str:
-        return self.tab.join(
-            [
-                "ID".ljust(self.column_lengths["id"]),
-                "STATUS".ljust(self.column_lengths["status"]),
-                "IMAGE".ljust(self.column_lengths["image"]),
-                "DESCRIPTION".ljust(self.column_lengths["description"]),
-                "COMMAND".ljust(self.column_lengths["command"]),
-            ]
+    def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
+        rows: List[TabularJobRow] = []
+        for job in jobs:
+            rows.append(TabularJobRow.from_job(job, self.image_parser))
+        header = TabularJobRow(
+            id="ID",
+            status="STATUS",
+            when="WHEN",
+            image="IMAGE",
+            description="DESCRIPTION",
+            command="COMMAND",
         )
-
-    def _format_job_line(self, job: JobDescription) -> str:
-        def truncate_then_wrap(value: str, key: str) -> str:
-            return wrap(truncate_string(value, self.column_lengths[key]))
-
-        if self.quiet:
-            return job.id.ljust(self.column_lengths["id"])
-
-        description = truncate_then_wrap(job.description or "", "description")
-        command = truncate_then_wrap(job.container.command or "", "command")
-        return self.tab.join(
-            [
-                job.id.ljust(self.column_lengths["id"]),
-                job.status.ljust(self.column_lengths["status"]),
-                job.container.image.ljust(self.column_lengths["image"]),
-                description.ljust(self.column_lengths["description"]),
-                command.ljust(self.column_lengths["command"]),
-            ]
-        )
+        positions = self._positions(rows)
+        for row in [header] + rows:
+            line = ""
+            for name in positions.keys():
+                value = getattr(row, name)
+                if line:
+                    position = positions[name]
+                    if len(line) > position - 2:
+                        line += "  " + value
+                    else:
+                        line = line.ljust(position) + value
+                else:
+                    line = value
+            if self.width:
+                line = line[: self.width]
+            yield line
 
 
 class ResourcesFormatter:

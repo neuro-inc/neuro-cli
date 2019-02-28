@@ -27,11 +27,13 @@ from .defaults import (
     JOB_SSH_USER,
 )
 from .formatters import (
+    BaseJobsFormatter,
     JobFormatter,
-    JobListFormatter,
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
+    SimpleJobsFormatter,
+    TabularJobsFormatter,
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
@@ -323,9 +325,14 @@ async def logs(cfg: Config, id: str) -> None:
     metavar="DESCRIPTION",
     help="Filter out job by job description (exact match)",
 )
-@click.option("-q", "--quiet", is_flag=True)
+@click.option("-q", "--quiet", is_flag=True, help="Print only Job ID")
+@click.option(
+    "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
+)
 @async_cmd
-async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) -> None:
+async def ls(
+    cfg: Config, status: Sequence[str], description: str, quiet: bool, wide: bool
+) -> None:
     """
     List all jobs.
 
@@ -346,8 +353,24 @@ async def ls(cfg: Config, status: Sequence[str], description: str, quiet: bool) 
     async with cfg.make_client() as client:
         jobs = await client.jobs.list(statuses)
 
-    formatter = JobListFormatter(quiet=quiet)
-    click.echo(formatter(jobs, description))
+    # client-side filtering
+    if description:
+        jobs = [job for job in jobs if job.description == description]
+
+    jobs.sort(key=lambda job: job.history.created_at)
+
+    if quiet:
+        formatter: BaseJobsFormatter = SimpleJobsFormatter()
+    else:
+        if wide or not cfg.tty:
+            width = 0
+        else:
+            width = cfg.terminal_size[0]
+        image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+        formatter = TabularJobsFormatter(width, image_parser)
+
+    for line in formatter(jobs):
+        click.echo(line)
 
 
 @command()

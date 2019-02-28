@@ -396,6 +396,14 @@ class TestImageParser:
         with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
+    def test_is_neuro_registry_with_registry_prefix(self):
+        assert self.parser.is_in_neuro_registry("reg.neu.ro/user/image:tag")
+        assert not self.parser.is_in_neuro_registry('docker.io/library/ubuntu"')
+
+    def test_parse_as_neuro_image_with_registry_prefix(self):
+        image = self.parser.parse_as_neuro_image("reg.neu.ro/user/image:tag")
+        assert image.as_url_str() == "image://user/image:tag"
+
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self):
         image = "something/docker.io/library/ubuntu:v10.04"
         with pytest.raises(ValueError, match="scheme 'image://' is required"):

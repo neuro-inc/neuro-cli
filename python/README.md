@@ -226,7 +226,8 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
-|_\-q, --quiet_||
+|_\-q, --quiet_|Print only Job ID|
+|_\-w, --wide_|Do not cut long lines for terminal width|
 |_--help_|Show this message and exit.|
 
 
@@ -886,7 +887,8 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
-|_\-q, --quiet_||
+|_\-q, --quiet_|Print only Job ID|
+|_\-w, --wide_|Do not cut long lines for terminal width|
 |_--help_|Show this message and exit.|
 
 
