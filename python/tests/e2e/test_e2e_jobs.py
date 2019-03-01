@@ -953,3 +953,10 @@ async def test_port_forward(helper, nginx_job):
         forwarder.cancel()
         with pytest.raises(asyncio.CancelledError):
             await forwarder
+
+
+@pytest.mark.e2e
+def test_port_forward_no_job(helper, nginx_job):
+    with pytest.raises(SystemExit) as cm:
+        helper.run_cli(["port-forward", "nojob", "0"])
+    assert cm.value.code == 127
