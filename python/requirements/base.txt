@@ -11,5 +11,5 @@ colorama==0.4.1
 humanize==0.5.1
 # upgrade setup.py after pinning certtifi to new version
 certifi==2018.11.29
-psutil==5.5.0
+psutil==5.5.1
 -e .
