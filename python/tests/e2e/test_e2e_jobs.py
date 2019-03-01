@@ -839,7 +839,9 @@ def test_e2e_job_list_filtered_by_status(helper):
             ["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"]
         )
         job_id = captured.out.strip()
-        helper.wait_job_change_state_to(job_id, JobStatus.RUNNING, stop_state="failed")
+        helper.wait_job_change_state_to(
+            job_id, JobStatus.RUNNING, stop_state=JobStatus.FAILED
+        )
         jobs.add(job_id)
 
     # test no status filters (same as pending+running)
@@ -869,6 +871,27 @@ def test_e2e_job_list_filtered_by_status(helper):
     jobs_ls_all = set(out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all >= jobs
+
+    # status "all" is the same as pending+running+failed+succeeded
+    captured = helper.run_cli(
+        [
+            "job",
+            "ls",
+            "-s",
+            "pending",
+            "-s",
+            "running",
+            "-s",
+            "failed",
+            "-s",
+            "succeeded",
+            "-q",
+        ]
+    )
+    out = captured.out.strip()
+    jobs_ls_all_explicit = set(out.split("\n"))
+    # check '>=' (not '==') multiple builds run in parallel can interfere
+    assert jobs_ls_all_explicit >= jobs
 
 
 @pytest.fixture
