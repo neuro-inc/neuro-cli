@@ -520,7 +520,7 @@ class Jobs:
                 "-o",
                 "UserKnownHostsFile=/dev/null",
             ]
-        command += ["nobody@127.0.0.1"]
+        command += [f"{server_url.user}@{server_url.host}"]
         print(f"Port of {id} is forwarded to localhost:{local_port}")
         print(f"Press ^C to stop forwarding")
         proc = await asyncio.create_subprocess_exec(*command)
