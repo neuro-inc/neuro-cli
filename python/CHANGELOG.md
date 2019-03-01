@@ -5,6 +5,38 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.6.0 (2019-03-01)
+==============================
+
+Features
+--------
+
+
+- Extended '/dev/shm' space (`--extshm`) turned on by default ([#449](https://github.com/neuromation/platform-api-clients/issues/449))
+
+- Add support for server-side job list filtering (speedup of the `neuro ps`) ([#474](https://github.com/neuromation/platform-api-clients/issues/474))
+
+- Several UX improvements. ([#486](https://github.com/neuromation/platform-api-clients/issues/486))
+
+- `neuro store ls` now supports colored output, _LS_COLORS_(GNU) or _LSCOLORS_(BSD) environment variable required. ([#487](https://github.com/neuromation/platform-api-clients/issues/487))
+
+- Improve shell completion logic, make shell type argument mandatory. ([#506](https://github.com/neuromation/platform-api-clients/issues/506))
+
+- Add Http URL to neuro job submit output ([#527](https://github.com/neuromation/platform-api-clients/issues/527))
+
+- Added neuro port-forward command to forward a port of a job exposed during job submit to a local one. ([#535](https://github.com/neuromation/platform-api-clients/issues/535))
+
+- Support Windows platform ([#548](https://github.com/neuromation/platform-api-clients/issues/548))
+
+
+Bugfixes
+--------
+
+
+- Fix parsing image URIs. ([#539](https://github.com/neuromation/platform-api-clients/issues/539))
+
+- Don't fetch PyPI if `--disable-pypi-version-check` is on. ([#559](https://github.com/neuromation/platform-api-clients/issues/559))
+
 
 Neuromation 0.4.0 (2019-02-12)
 ==============================

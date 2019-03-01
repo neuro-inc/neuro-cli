@@ -1,1 +1,0 @@
-Improve shell completion logic, make shell type argument mandatory.

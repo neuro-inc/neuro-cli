@@ -39,6 +39,7 @@ setup(
         "click>=7.0",
         "colorama>=0.4",
         "humanize>=0.5",
+        "psutil>=5.5.0",
         # should upgrade the version after every certify release.
         # This is very serious security point
         "certifi>=2018.11.29",

@@ -1,1 +1,0 @@
-`neuro store ls` now supports colored output, _LS_COLORS_(GNU) or _LSCOLORS_(BSD) environment variable required.
