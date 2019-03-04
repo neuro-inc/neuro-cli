@@ -5,6 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.6.1 (2019-03-04)
+==============================
+
+Bugfixes
+--------
+
+
+- Close version checker properly in case of error in a command execution. ([#586](https://github.com/neuromation/platform-api-clients/issues/586))
+
+- Pin aiohttp to 3.5+ to satisfy minimal supported CLI version. ([#587](https://github.com/neuromation/platform-api-clients/issues/587))
+
+
 Neuromation 0.6.0 (2019-03-01)
 ==============================
 

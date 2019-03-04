@@ -1,1 +1,0 @@
-Close version checker properly in case of error in a command execution.
