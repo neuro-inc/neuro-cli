@@ -28,7 +28,7 @@ setup(
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
-        "aiohttp>=3.0",
+        "aiohttp>=3.5",
         'dataclasses>=0.5; python_version<"3.7"',
         "pyyaml>=3.0",
         'async_generator>=1.5; python_version<"3.7"',
