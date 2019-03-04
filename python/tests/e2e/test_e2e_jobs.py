@@ -835,40 +835,30 @@ def test_e2e_job_list_filtered_by_status(helper):
     jobs = set()
     for _ in range(N_JOBS):
         command = "sleep 10m"
-        captured = helper.run_cli(
-            ["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"]
-        )
-        job_id = captured.out.strip()
-        helper.wait_job_change_state_to(
-            job_id, JobStatus.RUNNING, stop_state=JobStatus.FAILED
-        )
+        job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
         jobs.add(job_id)
 
     # test no status filters (same as pending+running)
     captured = helper.run_cli(["job", "ls", "--quiet"])
-    out = captured.out.strip()
-    jobs_ls_no_arg = set(out.split("\n"))
+    jobs_ls_no_arg = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_no_arg >= jobs
 
     # test single status filter
     captured = helper.run_cli(["job", "ls", "--status", "running", "--quiet"])
-    out = captured.out.strip()
-    jobs_ls_running = set(out.split("\n"))
+    jobs_ls_running = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_running >= jobs
 
     # test multiple status filters
     captured = helper.run_cli(["job", "ls", "-s", "running", "-s", "failed", "-q"])
-    out = captured.out.strip()
-    jobs_ls_running = set(out.split("\n"))
+    jobs_ls_running = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_running >= jobs
 
     # test "all" status filter
     captured = helper.run_cli(["job", "ls", "-s", "all", "-q"])
-    out = captured.out.strip()
-    jobs_ls_all = set(out.split("\n"))
+    jobs_ls_all = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all >= jobs
 
@@ -888,8 +878,7 @@ def test_e2e_job_list_filtered_by_status(helper):
             "-q",
         ]
     )
-    out = captured.out.strip()
-    jobs_ls_all_explicit = set(out.split("\n"))
+    jobs_ls_all_explicit = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all_explicit >= jobs
 
