@@ -61,6 +61,7 @@ async def _run_async_function(
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
+        with suppress(asyncio.CancelledError):
             await version_checker.close()
 
         # looks ugly but proper fix requires aiohttp changes
