@@ -943,7 +943,7 @@ async def test_port_forward(helper, nginx_job):
                 if not forwarder.done():
                     break
             else:
-                raise AssertioError("Max tries exceeded")
+                raise AssertionError("Max tries exceeded")
 
             url = f"http://127.0.0.1:{port}"
             probe = await get_(url)
