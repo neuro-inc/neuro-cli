@@ -222,7 +222,8 @@ async def fake_pypi(ssl_ctx: ssl.SSLContext, loop: asyncio.AbstractEventLoop) ->
 @pytest.fixture()
 async def connector(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> aiohttp.TCPConnector:
     resolver = FakeResolver(fake_pypi[1])
-    return aiohttp.TCPConnector(resolver=resolver, ssl=False)
+    async with aiohttp.TCPConnector(resolver=resolver, ssl=False) as connector:
+        yield connector
 
 
 @pytest.fixture
