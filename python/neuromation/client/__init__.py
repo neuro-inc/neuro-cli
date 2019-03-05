@@ -6,7 +6,7 @@ import aiohttp
 import certifi
 from yarl import URL
 
-from .abc import AbstractProgress, AbstractSpinner
+from .abc import AbstractProgress, AbstractTreeProgress
 from .api import (
     API,
     DEFAULT_TIMEOUT,
@@ -61,7 +61,7 @@ __all__ = (
     "AuthenticationError",
     "AuthorizationError",
     "AbstractProgress",
-    "AbstractSpinner",
+    "AbstractTreeProgress",
 )
 
 

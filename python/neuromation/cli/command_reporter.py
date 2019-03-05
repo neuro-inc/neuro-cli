@@ -1,7 +1,9 @@
 import abc
+from time import time
 from typing import Optional
 
 
+TICK_TIMEOUT = 1
 CSI = "\033["
 CURSOR_UP = f"{CSI}{{}}F"
 CURSOR_DOWN = f"{CSI}{{}}E"
@@ -35,56 +37,73 @@ class Reporter:
     def report(self, text: str) -> None:
         pass
 
+    def _escape(self, text: str):
+        return text.translate({10: " ", 13: " "})
+
 
 class MultilineReporter(Reporter):
     def __init__(self) -> None:
         super().__init__()
-        self.lineno = 0
-        self.max_lineno = 0
+        self._total_lines = 0
 
-    def __del__(self) -> None:
-        if self.active:
-            self.close()
-
-    def close(self) -> None:
-        self._goto(self.max_lineno + 1)
-        super().close()
-
-    def report(self, text: str, lineno: Optional[int] = None) -> None:
+    def report(self, text: str, lineno: Optional[int] = None) -> int:
+        assert lineno is None or lineno > 0
         if not self.active:
             raise RuntimeError("Only active Reporter can be used")
-        if lineno is not None:
-            self._goto(lineno)
-        print(text + ERASE_TO_EOL, end="", flush=True)
+
+        if not lineno:
+            lineno = self._total_lines + 1
+
+        commands = []
+        diff = self._total_lines - lineno + 1
+        if diff > 0:
+            commands.append(CURSOR_UP.format(diff))
+        elif diff < 0:
+            for _ in range(diff, 0):
+                print(flush=True)
+            commands.append(CURSOR_UP.format(1))
+        commands.append(self._escape(text) + ERASE_TO_EOL + "\n")
+        if diff > 0:
+            commands.append(CURSOR_DOWN.format(diff - 1))
+        print("".join(commands), end="", flush=True)
+
+        self._total_lines = max(self._total_lines, lineno)
+        return lineno
 
     def _goto(self, lineno: int) -> None:
-        diff = lineno - self.lineno
-        if diff < 0:
-            print(CURSOR_UP.format(-1 * diff), end="", flush=True)
-        elif diff > 0:
-            if lineno > self.max_lineno:
-                self._goto(self.max_lineno)
-                for _ in range(self.max_lineno, lineno):
-                    print(flush=True)
-            else:
-                print(CURSOR_DOWN.format(diff), end="", flush=True)
-        self.lineno = lineno
-        self.max_lineno = max(self.max_lineno, lineno)
+        diff = self._total_lines - lineno + 1
+        if diff > 0:
+            print(CURSOR_UP.format(diff), end="", flush=True)
+        elif diff < 0:
+            for _ in range(diff, 0):
+                print(flush=True)
+            print(CURSOR_UP.format(1), end="", flush=True)
 
 
 class SingleLineReporter(Reporter):
     def close(self) -> None:
-        print(flush=True)
+        print(CURSOR_HOME + ERASE_TO_EOL, end="", flush=True)
 
     def report(self, text: str) -> None:
-        print(CURSOR_HOME + text + ERASE_TO_EOL, end="", flush=True)
-
-
-class QuietReporter(Reporter):
-    def report(self, text: str) -> None:
-        pass
+        print(CURSOR_HOME + self._escape(text) + ERASE_TO_EOL, end="", flush=True)
 
 
 class StreamReporter(Reporter):
+    def __init__(self):
+        super().__init__()
+        self._tick_mode = False
+        self._last_report = 0
+
     def report(self, text: str) -> None:
+        if self._tick_mode:
+            print()
+            self._tick_mode = False
         print(text)
+        self._last_report = time()
+
+    def tick(self):
+        if time() - self._last_report < TICK_TIMEOUT:
+            return
+        print(".", end="", flush=True)
+        self._tick_mode = True
+        self._last_report = time()
