@@ -15,7 +15,6 @@ UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
 MIN_PORT = 49152
 MAX_PORT = 65535
-LOCALHOST = "127.0.0.1"
 
 
 @pytest.mark.e2e
@@ -927,27 +926,35 @@ async def test_port_forward(helper, nginx_job):
                 sleep(loop_sleep)
         return succeeded
 
+    loop = asyncio.get_event_loop()
     async with helper.config.make_client() as client:
         retries = 5
         sleep_time = 20
-        loop = asyncio.get_event_loop()
-        for i in range(retries):
-            port = random.randint(MIN_PORT, MAX_PORT)
-            # We test client instead of run_cli as asyncio subprocesses do
-            # not work if run from thread other than main.
-            forwarder = loop.create_task(
-                client.jobs.port_forward(nginx_job, True, port, 22)
-            )
-            await asyncio.sleep(sleep_time)
-            if not forwarder.done():
-                break
-        assert i != retries - 1
-        url = f"http://{LOCALHOST}:{port}"
-        probe = await get_(url)
-        assert probe
-        forwarder.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await forwarder
+        forwarder = None
+        try:
+            for i in range(retries):
+                port = random.randint(MIN_PORT, MAX_PORT)
+                # We test client instead of run_cli as asyncio subprocesses do
+                # not work if run from thread other than main.
+                forwarder = loop.create_task(
+                    client.jobs.port_forward(nginx_job, True, port, 22)
+                )
+                await asyncio.sleep(sleep_time)
+                if not forwarder.done():
+                    break
+            else:
+                raise AssertionError("Max tries exceeded")
+
+            url = f"http://127.0.0.1:{port}"
+            probe = await get_(url)
+            assert probe
+        finally:
+            forwarder.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await forwarder
+
+            # add a sleep to get process watcher a chance to execute all callbacks
+            await asyncio.sleep(0.1)
 
 
 @pytest.mark.e2e
