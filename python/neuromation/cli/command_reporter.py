@@ -1,7 +1,8 @@
 import abc
+from os import linesep
 from time import time
 from typing import Optional
-from os import linesep
+
 
 TICK_TIMEOUT = 1
 CSI = "\033["
