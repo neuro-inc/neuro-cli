@@ -9,7 +9,7 @@ import webbrowser
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Callable, List, Optional, Sequence, Type, cast
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientResponseError, ClientSession, TCPConnector
 from aiohttp.web import (
     Application,
     AppRunner,
@@ -92,10 +92,13 @@ class AuthCode:
 
 
 class AuthCodeCallbackClient(abc.ABC):
-    def __init__(self, url: URL, client_id: str, audience: str) -> None:
+    def __init__(
+        self, url: URL, client_id: str, audience: str, connector: TCPConnector
+    ) -> None:
         self._url = url
         self._client_id = client_id
         self._audience = audience
+        self._connector = connector
 
     async def request(self, code: AuthCode) -> AuthCode:
         url = self._url.with_query(
@@ -124,7 +127,9 @@ class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
 
 class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
     async def _request(self, url: URL) -> None:
-        async with ClientSession() as client:
+        async with ClientSession(
+            connector=self._connector, connector_owner=False
+        ) as client:
             await client.get(url, allow_redirects=True)
 
 
@@ -248,11 +253,11 @@ class AuthToken:
 
 
 class AuthTokenClient:
-    def __init__(self, url: URL, client_id: str) -> None:
+    def __init__(self, url: URL, client_id: str, connector: TCPConnector) -> None:
         self._url = url
         self._client_id = client_id
 
-        self._client = ClientSession()
+        self._client = ClientSession(connector=connector, connector_owner=False)
 
     async def close(self) -> None:
         await self._client.close()
@@ -366,12 +371,14 @@ class AuthNegotiator:
     def __init__(
         self,
         config: AuthConfig,
+        connector: TCPConnector,
         code_callback_client_factory: Type[
             AuthCodeCallbackClient
         ] = WebBrowserAuthCodeCallbackClient,
     ) -> None:
         self._config = config
         self._code_callback_client_factory = code_callback_client_factory
+        self._connector = connector
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
@@ -385,12 +392,15 @@ class AuthNegotiator:
                 url=self._config.auth_url,
                 client_id=self._config.client_id,
                 audience=self._config.audience,
+                connector=self._connector,
             )
             return await code_callback_client.request(code)
 
     async def refresh_token(self, token: Optional[AuthToken] = None) -> AuthToken:
         async with AuthTokenClient(
-            url=self._config.token_url, client_id=self._config.client_id
+            url=self._config.token_url,
+            client_id=self._config.client_id,
+            connector=self._connector,
         ) as token_client:
             if not token:
                 code = await self.get_code()

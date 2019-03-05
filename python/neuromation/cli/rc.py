@@ -1,10 +1,12 @@
 import logging
 import os
+import ssl
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
+import certifi
 import pkg_resources
 import yaml
 from yarl import URL
@@ -77,6 +79,21 @@ class Config:
     tty: bool = field(default=False)  # don't save the field in config
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
     disable_pypi_version_check: bool = False  # don't save it in config
+    _connector: Optional[aiohttp.TCPConnector] = None
+
+    async def post_init(self) -> None:
+        ssl_context = ssl.SSLContext()
+        ssl_context.load_verify_locations(capath=certifi.where())
+        self._connector = aiohttp.TCPConnector(ssl=ssl_context)
+
+    async def close(self) -> None:
+        if self._connector is not None:
+            self._connector.close()
+
+    @property
+    def connector(self) -> aiohttp.TCPConnector:
+        assert self._connector is not None
+        return self._connector
 
     @property
     def auth(self) -> Optional[str]:
@@ -109,7 +126,7 @@ class Config:
             kwargs["timeout"] = timeout
         if self.registry_url:
             kwargs["registry_url"] = self.registry_url
-        return Client(self.url, token, **kwargs)
+        return Client(self.url, token, connector=self.connector, **kwargs)
 
 
 class ConfigFactory:
@@ -187,7 +204,9 @@ class ConfigFactory:
         if not config.auth_token and not force:
             return config
 
-        auth_negotiator = AuthNegotiator(config=config.auth_config)
+        auth_negotiator = AuthNegotiator(
+            config=config.auth_config, connector=config.connector
+        )
         auth_token = await auth_negotiator.refresh_token(config.auth_token)
         return replace(config, auth_token=auth_token)
 

@@ -1,13 +1,11 @@
 import abc
 import asyncio
 import logging
-import ssl
 import time
 import types
 from typing import Any, Callable, Dict, Optional, Type
 
 import aiohttp
-import certifi
 import pkg_resources
 
 from neuromation.cli.rc import NO_VERSION, ConfigFactory
@@ -48,11 +46,9 @@ class VersionChecker(AbstractVersionChecker):
         connector: Optional[aiohttp.TCPConnector] = None,
         timer: Callable[[], float] = time.time,
     ) -> None:
-        if connector is None:
-            ssl_context = ssl.SSLContext()
-            ssl_context.load_verify_locations(capath=certifi.where())
-            connector = aiohttp.TCPConnector(ssl=ssl_context)
-        self._session = aiohttp.ClientSession(connector=connector)
+        self._session = aiohttp.ClientSession(
+            connector=connector, connector_owner=connector is None
+        )
         self._timer = timer
 
     async def close(self) -> None:

@@ -1,9 +1,7 @@
-import ssl
 from types import TracebackType
 from typing import Optional, Type, Union
 
 import aiohttp
-import certifi
 from yarl import URL
 
 from .abc import AbstractProgress, AbstractSpinner
@@ -73,6 +71,7 @@ class Client:
         *,
         registry_url: str = "",
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
+        connector: Optional[aiohttp.TCPConnector] = None,
     ) -> None:
         if isinstance(url, str):
             url = URL(url)
@@ -80,9 +79,13 @@ class Client:
         self._registry_url = URL(registry_url)
         assert token
         self._config = Config(url, self._registry_url, token)
-        self._ssl_context = ssl.SSLContext()
-        self._ssl_context.load_verify_locations(capath=certifi.where())
-        self._connector = aiohttp.TCPConnector(ssl=self._ssl_context)
+        if connector is None:
+            connector = aiohttp.TCPConnector()
+            close_connector = True
+        else:
+            close_connector = False
+        self._connector = connector
+        self._close_connector = close_connector
         self._api = API(self._connector, url, token, timeout)
         self._jobs = Jobs(self._api, token)
         self._models = Models(self._api)
@@ -94,7 +97,8 @@ class Client:
         await self._api.close()
         if self._images is not None:
             await self._images.close()
-        await self._connector.close()
+        if self._close_connector:
+            await self._connector.close()
 
     async def __aenter__(self) -> "Client":
         return self
