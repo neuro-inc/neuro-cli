@@ -88,7 +88,7 @@ class Config:
 
     async def close(self) -> None:
         if self._connector is not None:
-            self._connector.close()
+            await self._connector.close()
 
     @property
     def connector(self) -> aiohttp.TCPConnector:
@@ -195,9 +195,13 @@ class ConfigFactory:
             url=str(url),
             auth_token=None,
         )
-        config = await cls._refresh_auth_token(config, force=True)
-        save(nmrc_config_path, config)
-        return config
+        await config.post_init()
+        try:
+            new_config = await cls._refresh_auth_token(config, force=True)
+        finally:
+            await config.close()
+        save(nmrc_config_path, new_config)
+        return new_config
 
     @classmethod
     async def _refresh_auth_token(cls, config: Config, force: bool = False) -> Config:
