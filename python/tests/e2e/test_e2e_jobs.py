@@ -1,4 +1,6 @@
+import asyncio
 import os
+import random
 import re
 from time import sleep, time
 
@@ -11,6 +13,9 @@ from neuromation.utils import run as run_async
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
+MIN_PORT = 49152
+MAX_PORT = 65535
+LOCALHOST = "127.0.0.1"
 
 
 @pytest.mark.e2e
@@ -830,46 +835,42 @@ def test_e2e_job_list_filtered_by_status(helper):
     jobs = set()
     for _ in range(N_JOBS):
         command = "sleep 10m"
-        captured = helper.run_cli(
-            ["job", "submit", UBUNTU_IMAGE_NAME, command, "--quiet"]
-        )
-        job_id = captured.out
-        helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+        job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
         jobs.add(job_id)
 
-    # no status filtering (same as running+pending)
+    # test no status filters (same as pending+running)
     captured = helper.run_cli(["job", "ls", "--quiet"])
-    out = captured.out
-    jobs_ls_no_arg = set(out.split("\n"))
+    jobs_ls_no_arg = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_no_arg >= jobs
 
-    # 1 status filter: running
+    # test single status filter
     captured = helper.run_cli(["job", "ls", "--status", "running", "--quiet"])
-    out = captured.out
-    jobs_ls_running = set(out.split("\n"))
+    jobs_ls_running = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_running >= jobs
 
-    # 2 status filters: pending+running is the same as without arguments
-    captured = helper.run_cli(["job", "ls", "-s", "pending", "-s", "running", "-q"])
-    out = captured.out
-    jobs_ls_running = set(out.split("\n"))
+    # test multiple status filters
+    captured = helper.run_cli(["job", "ls", "-s", "running", "-s", "failed", "-q"])
+    jobs_ls_running = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
-    assert jobs_ls_running >= jobs_ls_no_arg
+    assert jobs_ls_running >= jobs
 
-    # "all" status filter is the same as "running+pending+failed+succeeded"
+    # test "all" status filter
     captured = helper.run_cli(["job", "ls", "-s", "all", "-q"])
-    out = captured.out
-    jobs_ls_all = set(out.split("\n"))
+    jobs_ls_all = set(captured.out.split("\n"))
+    # check '>=' (not '==') multiple builds run in parallel can interfere
+    assert jobs_ls_all >= jobs
+
+    # status "all" is the same as pending+running+failed+succeeded
     captured = helper.run_cli(
         [
             "job",
             "ls",
             "-s",
-            "running",
-            "-s",
             "pending",
+            "-s",
+            "running",
             "-s",
             "failed",
             "-s",
@@ -877,7 +878,80 @@ def test_e2e_job_list_filtered_by_status(helper):
             "-q",
         ]
     )
-    out = captured.out
-    jobs_ls_all_explicit = set(out.split("\n"))
+    jobs_ls_all_explicit = set(captured.out.split("\n"))
     # check '>=' (not '==') multiple builds run in parallel can interfere
-    assert jobs_ls_all_explicit >= jobs_ls_all
+    assert jobs_ls_all_explicit >= jobs
+
+
+@pytest.fixture
+def nginx_job(helper):
+    command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
+    captured = helper.run_cli(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "--ssh",
+            "80",
+            "--non-preemptible",
+            NGINX_IMAGE_NAME,
+            command,
+        ]
+    )
+    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
+
+    yield job_id
+
+    helper.run_cli(["job", "kill", job_id])
+
+
+@pytest.mark.e2e
+async def test_port_forward(helper, nginx_job):
+    loop_sleep = 1
+    service_wait_time = 60
+
+    async def get_(url):
+        succeeded = None
+        start_time = time()
+        while not succeeded and (int(time() - start_time) < service_wait_time):
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    succeeded = resp.status == 200
+            if not succeeded:
+                sleep(loop_sleep)
+        return succeeded
+
+    async with helper.config.make_client() as client:
+        retries = 5
+        sleep_time = 20
+        loop = asyncio.get_event_loop()
+        for i in range(retries):
+            port = random.randint(MIN_PORT, MAX_PORT)
+            # We test client instead of run_cli as asyncio subprocesses do
+            # not work if run from thread other than main.
+            forwarder = loop.create_task(
+                client.jobs.port_forward(nginx_job, True, port, 22)
+            )
+            await asyncio.sleep(sleep_time)
+            if not forwarder.done():
+                break
+        assert i != retries - 1
+        url = f"http://{LOCALHOST}:{port}"
+        probe = await get_(url)
+        assert probe
+        forwarder.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await forwarder
+
+
+@pytest.mark.e2e
+def test_port_forward_no_job(helper, nginx_job):
+    with pytest.raises(SystemExit) as cm:
+        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0"])
+    assert cm.value.code == 127

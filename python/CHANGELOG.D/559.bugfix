@@ -1,1 +1,0 @@
-Don't fetch PyPI if `--disable-pypi-version-check` is on.

@@ -12,10 +12,9 @@ with open("README.md") as f:
 with open("neuromation/__init__.py") as f:
     txt = f.read()
     try:
-        version = re.findall(r'^__version__ = "([^"]+)"\r?$',
-                             txt, re.M)[0]
+        version = re.findall(r'^__version__ = "([^"]+)"\r?$', txt, re.M)[0]
     except IndexError:
-        raise RuntimeError('Unable to determine version.')
+        raise RuntimeError("Unable to determine version.")
 
 
 # TODO: Add license
@@ -29,7 +28,7 @@ setup(
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
-        "aiohttp>=3.0",
+        "aiohttp>=3.5",
         'dataclasses>=0.5; python_version<"3.7"',
         "pyyaml>=3.0",
         'async_generator>=1.5; python_version<"3.7"',
@@ -40,6 +39,7 @@ setup(
         "click>=7.0",
         "colorama>=0.4",
         "humanize>=0.5",
+        "psutil>=5.5.0",
         # should upgrade the version after every certify release.
         # This is very serious security point
         "certifi>=2018.11.29",
