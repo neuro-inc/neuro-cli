@@ -912,7 +912,7 @@ def nginx_job(helper):
 
 
 @pytest.mark.e2e
-async def test_port_forward(helper, nginx_job):
+async def test_port_forward(async_config, nginx_job):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -927,7 +927,7 @@ async def test_port_forward(helper, nginx_job):
                 sleep(loop_sleep)
         return succeeded
 
-    async with helper.config.make_client() as client:
+    async with async_config.make_client() as client:
         retries = 5
         sleep_time = 20
         loop = asyncio.get_event_loop()

@@ -56,10 +56,12 @@ class TestRetriesExceeded(Exception):
 SysCap = namedtuple("SysCap", "out err")
 
 
-async def _run_async(coro, *args, **kwargs):
+async def _run_async(coro, helper, *args, **kwargs):
+    await helper._config.post_init()
     try:
-        return await coro(*args, **kwargs)
+        return await coro(helper, *args, **kwargs)
     finally:
+        await helper._config.close()
         if sys.platform == "win32":
             await asyncio.sleep(0.2)
         else:
@@ -67,16 +69,21 @@ async def _run_async(coro, *args, **kwargs):
 
 
 def run_async(coro):
-    def wrapper(*args, **kwargs):
+    def wrapper(helper, *args, **kwargs):
         if sys.platform == "win32":
             asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-        return run(_run_async(coro, *args, **kwargs))
+        return run(_run_async(coro, helper, *args, **kwargs))
 
     return wrapper
 
 
 class Helper:
     def __init__(self, config: rc.Config, capfd, monkeypatch, tmp_path: Path):
+        try:
+            loop = asyncio.get_event_loop()
+            assert not loop.is_running()
+        except RuntimeError:
+            pass  # loop is None
         self._config = config
         self._capfd = capfd
         self._mp = monkeypatch
@@ -451,6 +458,13 @@ def config(tmp_path, monkeypatch):
     else:
         config = rc.ConfigFactory.load()
     yield config
+
+
+@pytest.fixture
+async def async_config(config, loop):
+    await config.post_init()
+    yield config
+    await config.close()
 
 
 @pytest.fixture

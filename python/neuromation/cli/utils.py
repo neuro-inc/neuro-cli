@@ -48,12 +48,16 @@ async def _run_async_function(
 
     # Refresh auth0 token if needed
     # Potentially it can be a parallel operation like PyPI version check
+    await cfg.post_init()
+
     config = await ConfigFactory._refresh_auth_token(cfg)
     if config != cfg:
         nmrc_config_path = ConfigFactory.get_path()
         save(nmrc_config_path, config)
         # Use a refreshed config for command callback call
+        await cfg.close()
         cfg = config
+        await cfg.post_init()
 
     try:
         return await func(cfg, *args, **kwargs)
@@ -63,6 +67,8 @@ async def _run_async_function(
             await task
         with suppress(asyncio.CancelledError):
             await version_checker.close()
+
+        await cfg.close()
 
         # looks ugly but proper fix requires aiohttp changes
         if sys.platform == "win32":
