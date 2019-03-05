@@ -1,7 +1,7 @@
 import abc
 from time import time
 from typing import Optional
-
+from os import linesep
 
 TICK_TIMEOUT = 1
 CSI = "\033["
@@ -80,8 +80,7 @@ class MultilineReporter(Reporter):
         if diff > 0:
             commands.append(CURSOR_UP.format(diff))
         elif diff < 0:
-            for _ in range(diff, 0):
-                print(flush=True)
+            commands.append(linesep * (-1 * diff))
             commands.append(CURSOR_UP.format(1))
         commands.append(self._escape(text) + ERASE_TO_EOL + "\n")
         if diff > 0:
