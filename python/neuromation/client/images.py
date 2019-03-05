@@ -97,7 +97,6 @@ class Images:
         try:
             await self._docker.images.tag(local_image.as_local_str(), repo)
         except DockerError as error:
-            progress.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
                     f"Image {local_image.as_local_str()} was not found "
