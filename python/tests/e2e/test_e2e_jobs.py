@@ -926,10 +926,10 @@ async def test_port_forward(helper, nginx_job):
                 sleep(loop_sleep)
         return succeeded
 
+    loop = asyncio.get_event_loop()
     async with helper.config.make_client() as client:
         retries = 5
         sleep_time = 20
-        loop = asyncio.get_event_loop()
         forwarder = None
         try:
             for i in range(retries):
@@ -943,7 +943,7 @@ async def test_port_forward(helper, nginx_job):
                 if not forwarder.done():
                     break
             else:
-                assert False, "Max tries exceeded"
+                raise AssertioError("Max tries exceeded")
 
             url = f"http://127.0.0.1:{port}"
             probe = await get_(url)
