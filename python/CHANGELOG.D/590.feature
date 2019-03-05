@@ -1,0 +1,1 @@
+Use `certifi` as a Root Certification Authority everywhere in CLI tool.
