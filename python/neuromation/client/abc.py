@@ -32,8 +32,8 @@ class AbstractSpinner(abc.ABC):
 
 class AbstractTreeProgress(abc.ABC):
     @abc.abstractmethod
-    def message(self, message: str, branch: Optional["str"] = None):
+    def message(self, message: str, branch: Optional["str"] = None) -> None:
         pass
 
-    def close(self):
+    def close(self) -> None:
         pass

@@ -14,6 +14,11 @@ _ACTIVE_REPORTER_INSTANCE: Optional["Reporter"] = None
 
 
 class Reporter:
+    """
+        Reporter allow to print some text
+        Only one Reporter can be active at one moment
+    """
+
     def __init__(self) -> None:
         global _ACTIVE_REPORTER_INSTANCE
         if _ACTIVE_REPORTER_INSTANCE:
@@ -37,16 +42,32 @@ class Reporter:
     def report(self, text: str) -> None:
         pass
 
-    def _escape(self, text: str):
+    def _escape(self, text: str) -> str:
         return text.translate({10: " ", 13: " "})
 
 
 class MultilineReporter(Reporter):
+    """
+        MultilineReporter allow to output texts in specified by nymber lines
+        Cursor will be keeped after latest line. Then if exception raised
+        error message will be printed after reported before lines
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self._total_lines = 0
 
-    def report(self, text: str, lineno: Optional[int] = None) -> int:
+    @property
+    def total_lines(self) -> int:
+        return self._total_lines
+
+    def report(self, text: str, lineno: Optional[int] = None) -> None:
+        """
+        Print given text on specified line
+        If lineno is not passed then  text will be printed on latest line
+
+        """
+
         assert lineno is None or lineno > 0
         if not self.active:
             raise RuntimeError("Only active Reporter can be used")
@@ -68,19 +89,13 @@ class MultilineReporter(Reporter):
         print("".join(commands), end="", flush=True)
 
         self._total_lines = max(self._total_lines, lineno)
-        return lineno
-
-    def _goto(self, lineno: int) -> None:
-        diff = self._total_lines - lineno + 1
-        if diff > 0:
-            print(CURSOR_UP.format(diff), end="", flush=True)
-        elif diff < 0:
-            for _ in range(diff, 0):
-                print(flush=True)
-            print(CURSOR_UP.format(1), end="", flush=True)
 
 
 class SingleLineReporter(Reporter):
+    """
+    All messages will be printed on one line
+    """
+
     def close(self) -> None:
         print(CURSOR_HOME + ERASE_TO_EOL, end="", flush=True)
 
@@ -89,10 +104,16 @@ class SingleLineReporter(Reporter):
 
 
 class StreamReporter(Reporter):
-    def __init__(self):
+    """
+    Print lines ony by one
+    Additional tick method for printing simple progress(dots) with spam
+    control.
+    """
+
+    def __init__(self) -> None:
         super().__init__()
         self._tick_mode = False
-        self._last_report = 0
+        self._last_report = 0.0
 
     def report(self, text: str) -> None:
         if self._tick_mode:
@@ -101,7 +122,7 @@ class StreamReporter(Reporter):
         print(text)
         self._last_report = time()
 
-    def tick(self):
+    def tick(self) -> None:
         if time() - self._last_report < TICK_TIMEOUT:
             return
         print(".", end="", flush=True)
