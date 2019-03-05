@@ -11,7 +11,7 @@ from hashlib import sha1
 from os.path import join
 from pathlib import Path
 from time import sleep, time
-from typing import List, Sequence, Union
+from typing import List
 from uuid import uuid4 as uuid
 
 import aiohttp
@@ -28,7 +28,7 @@ from neuromation.client import (
     ResourceNotFound,
 )
 from neuromation.utils import run
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, attempt
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
 
 
 JOB_TIMEOUT = 60 * 5
