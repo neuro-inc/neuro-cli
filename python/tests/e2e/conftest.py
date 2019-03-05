@@ -438,6 +438,27 @@ class Helper:
         self.wait_job_change_state_to(job_id, wait_state, stop_state)
         return job_id
 
+    @run_async
+    async def check_http_get(self, url):
+        """
+            Try to fetch given url few times.
+        """
+        async with aiohttp.ClientSession(
+            connector=self._config.connector, connector_owner=False
+        ) as session:
+            for i in range(3):
+                async with session.get(url) as resp:
+                    if resp.status == 200:
+                        return await resp.text()
+                await asyncio.sleep(5)
+            else:
+                raise aiohttp.ClientResponseError(
+                    status=resp.status,
+                    message=f"Server return {resp.status}",
+                    history=tuple(),
+                    request_info=resp.request_info,
+                )
+
 
 @pytest.fixture
 def config(tmp_path, monkeypatch):
@@ -538,29 +559,3 @@ def nested_data(static_path):
     nested_dir.mkdir(parents=True, exist_ok=True)
     generated_file, hash = generate_random_file(nested_dir, FILE_SIZE_B)
     return generated_file, hash, str(root_dir)
-
-
-@pytest.fixture
-def check_http_get():
-    """
-        Try to fetch given url few times.
-    """
-
-    @run_async
-    async def http_get(url, accepted_statuses: List[int] = [200]) -> Union[str, None]:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status in accepted_statuses:
-                    return await resp.text()
-                raise aiohttp.ClientResponseError(
-                    status=resp.status,
-                    message=f"Server return {resp.status}",
-                    history=tuple(),
-                    request_info=resp.request_info,
-                )
-
-    @attempt(3, 5)
-    def go(url, accepted_statuses: Sequence[int] = tuple([200])):
-        return http_get(url, accepted_statuses)
-
-    return go
