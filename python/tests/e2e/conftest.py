@@ -493,7 +493,9 @@ async def async_config(config, loop):
 @pytest.fixture
 def helper(config, capfd, monkeypatch, tmp_path):
     new_config = replace(config, _connector=None)
-    ret = Helper(config=config, capfd=capfd, monkeypatch=monkeypatch, tmp_path=tmp_path)
+    ret = Helper(
+        config=new_config, capfd=capfd, monkeypatch=monkeypatch, tmp_path=tmp_path
+    )
     yield ret
     ret.close()
 
