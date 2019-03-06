@@ -954,7 +954,6 @@ async def test_port_forward(helper, nginx_job):
                 await forwarder
 
 
-
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):
     with pytest.raises(SystemExit) as cm:
