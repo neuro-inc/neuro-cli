@@ -1,6 +1,5 @@
 import asyncio
 import os
-import random
 import re
 from time import sleep, time
 
