@@ -7,6 +7,7 @@ import sys
 import tempfile
 from collections import namedtuple
 from contextlib import suppress
+from dataclasses import replace
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -483,13 +484,15 @@ def config(tmp_path, monkeypatch):
 
 @pytest.fixture
 async def async_config(config, loop):
-    await config.post_init()
-    yield config
-    await config.close()
+    new_config = replace(config, _connector=None)
+    await new_config.post_init()
+    yield new_config
+    await new_config.close()
 
 
 @pytest.fixture
 def helper(config, capfd, monkeypatch, tmp_path):
+    new_config = replace(config, _connector=None)
     ret = Helper(config=config, capfd=capfd, monkeypatch=monkeypatch, tmp_path=tmp_path)
     yield ret
     ret.close()
