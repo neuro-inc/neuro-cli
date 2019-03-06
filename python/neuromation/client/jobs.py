@@ -469,7 +469,7 @@ class Jobs:
         try:
             return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid, timeout=60)
+            await kill_proc_tree(proc.pid, timeout=1)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
@@ -529,6 +529,6 @@ class Jobs:
         try:
             return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid, timeout=60)
+            await kill_proc_tree(proc.pid, timeout=1)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
