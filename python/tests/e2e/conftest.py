@@ -57,6 +57,15 @@ class TestRetriesExceeded(Exception):
 SysCap = namedtuple("SysCap", "out err")
 
 
+@pytest.fixture
+def loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+    loop.run_until_complete(loop.shutdown_asyncgens())
+    loop.close()
+
+
 async def _run_async(coro, helper, *args, **kwargs):
     await helper._config.post_init()
     try:
