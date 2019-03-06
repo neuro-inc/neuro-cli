@@ -966,9 +966,7 @@ async def test_port_forward(async_config, nginx_job_async):
             # We test client instead of run_cli as asyncio subprocesses do
             # not work if run from thread other than main.
             forwarder = loop.create_task(
-                client.jobs.port_forward(
-                    nginx_job_async, True, port, 22
-                )
+                client.jobs.port_forward(nginx_job_async, True, port, 22)
             )
 
             url = f"http://127.0.0.1:{port}"
