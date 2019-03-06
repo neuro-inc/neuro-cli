@@ -958,8 +958,6 @@ async def test_port_forward(async_config, nginx_job_async):
 
     loop = asyncio.get_event_loop()
     async with async_config.make_client() as client:
-        retries = 5
-        sleep_time = 20
         forwarder = None
         try:
             port = unused_port()
