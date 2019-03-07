@@ -293,10 +293,6 @@ class Helper:
 
     @run_async
     async def wait_job_change_state_to(self, job_id, target_state, stop_state=None):
-        if stop_state == JobStatus.SUCCEEDED:
-            raise JobWaitStateStopReached(
-                f"failed running job {job_id}: '{stop_state}'"
-            )
         start_time = time()
         async with self._config.make_client() as client:
             job = await client.jobs.status(job_id)
