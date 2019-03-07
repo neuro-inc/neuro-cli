@@ -928,7 +928,7 @@ async def nginx_job_async(config, loop):
                 status = await client.jobs.status(job.id)
                 if status.status == JobStatus.RUNNING:
                     break
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
             else:
                 raise AssertionError("Cannot start NGINX job")
             yield job.id
