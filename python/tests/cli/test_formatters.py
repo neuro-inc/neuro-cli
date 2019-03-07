@@ -548,8 +548,8 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(0, self.image_parser)
         result = [item for item in formatter([job])]
         assert result == [
-            "ID  STATUS  WHEN   IMAGE  DESCRIPTION  COMMAND",
-            "j   failed  today  i:l    d            c",
+            "ID  STATUS  WHEN          IMAGE  DESCRIPTION  COMMAND",
+            "j   failed  a second ago  i:l    d            c",
         ]
 
     def test_wide_cells(self):

@@ -207,7 +207,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
             "status": [6, 10],
-            "when": [4, 11],
+            "when": [4, 15],
             "image": [5, 15],
             "description": [11, 50],
             "command": [7, 0],
