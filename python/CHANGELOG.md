@@ -5,6 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.6.2 (2019-03-07)
+==============================
+
+Bugfixes
+--------
+
+
+- Increase wait time to finish on POSIX platforms. It dignificantly decreases a chance of error report after CLI command executions. ([#597](https://github.com/neuromation/platform-api-clients/issues/597))
+
+- Fix forward compatibility with platform server. ([#599](https://github.com/neuromation/platform-api-clients/issues/599))
+
+
 Neuromation 0.6.1 (2019-03-04)
 ==============================
 
