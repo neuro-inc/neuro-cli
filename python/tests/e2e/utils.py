@@ -25,6 +25,10 @@ file_format_re = (
 JOB_TINY_CONTAINER_PARAMS = ["-m", "20M", "-c", "0.1", "-g", "0", "--non-preemptible"]
 
 
+class JobWaitStateStopReached(AssertionError):
+    pass
+
+
 def attempt(attempts: int = 4, sleep_time: float = 15.0):
     """
     This decorator allow function fail up to _attempts_ times with

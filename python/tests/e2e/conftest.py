@@ -28,7 +28,7 @@ from neuromation.client import (
     ResourceNotFound,
 )
 from neuromation.utils import run
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, attempt
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, JobWaitStateStopReached, attempt
 
 
 JOB_TIMEOUT = 60 * 5
@@ -285,18 +285,26 @@ class Helper:
             job = await client.jobs.status(job_id)
             while job.status == wait_state and (int(time() - start_time) < JOB_TIMEOUT):
                 if stop_state == job.status:
-                    raise AssertionError(f"failed running job {job_id}: {stop_state}")
+                    raise JobWaitStateStopReached(
+                        f"failed running job {job_id}: {stop_state}"
+                    )
                 await asyncio.sleep(JOB_WAIT_SLEEP_SECONDS)
                 job = await client.jobs.status(job_id)
 
     @run_async
     async def wait_job_change_state_to(self, job_id, target_state, stop_state=None):
+        if stop_state == JobStatus.SUCCEEDED:
+            raise JobWaitStateStopReached(
+                f"failed running job {job_id}: '{stop_state}'"
+            )
         start_time = time()
         async with self._config.make_client() as client:
             job = await client.jobs.status(job_id)
             while target_state != job.status:
                 if stop_state == job.status:
-                    raise AssertionError(f"failed running job {job_id}: '{stop_state}'")
+                    raise JobWaitStateStopReached(
+                        f"failed running job {job_id}: '{stop_state}'"
+                    )
                 if int(time() - start_time) > JOB_TIMEOUT:
                     raise AssertionError(
                         f"timeout exceeded, last output: '{job.status}'"
