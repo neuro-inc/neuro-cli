@@ -6,8 +6,9 @@ from time import sleep, time
 
 import aiohttp
 import pytest
+from aiohttp.test_utils import unused_port
 
-from neuromation.client import JobStatus
+from neuromation.client import JobStatus, Image, NetworkPortForwarding, Resources
 from neuromation.utils import run as run_async
 
 
@@ -910,40 +911,61 @@ def nginx_job(helper):
     helper.run_cli(["job", "kill", job_id])
 
 
+@pytest.fixture
+async def nginx_job_async(config, loop):
+    async with config.make_client() as client:
+        command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
+        job = await client.jobs.submit(
+            image=Image("nginx:latest", command=command),
+            resources=Resources.create(0.1, None, None, "20", True),
+            network=NetworkPortForwarding.from_cli(None, 80),
+            is_preemptible=False,
+            volumes=None,
+            description="test NGINX job",
+            env=[],
+        )
+        try:
+            for i in range(60):
+                status = await client.jobs.status(job.id)
+                if status.status == JobStatus.RUNNING:
+                    break
+                asyncio.sleep(1)
+            else:
+                raise AssertionError("Cannot start NGINX job")
+            yield job.id
+        finally:
+            await client.jobs.kill(job.id)
+
+
 @pytest.mark.e2e
-async def test_port_forward(helper, nginx_job):
+async def test_port_forward(config, nginx_job_async):
     loop_sleep = 1
     service_wait_time = 60
 
     async def get_(url):
         succeeded = None
         start_time = time()
-        while not succeeded and (int(time() - start_time) < service_wait_time):
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    succeeded = resp.status == 200
-            if not succeeded:
-                sleep(loop_sleep)
+        async with aiohttp.ClientSession() as session:
+            while not succeeded and (int(time() - start_time) < service_wait_time):
+                try:
+                    async with session.get(url) as resp:
+                        succeeded = resp.status == 200
+                except aiohttp.ClientConnectionError:
+                    succeeded = False
+                if not succeeded:
+                    sleep(loop_sleep)
         return succeeded
 
     loop = asyncio.get_event_loop()
-    async with helper.config.make_client() as client:
-        retries = 5
-        sleep_time = 20
+    async with config.make_client() as client:
         forwarder = None
         try:
-            for i in range(retries):
-                port = random.randint(MIN_PORT, MAX_PORT)
-                # We test client instead of run_cli as asyncio subprocesses do
-                # not work if run from thread other than main.
-                forwarder = loop.create_task(
-                    client.jobs.port_forward(nginx_job, True, port, 22)
-                )
-                await asyncio.sleep(sleep_time)
-                if not forwarder.done():
-                    break
-            else:
-                raise AssertionError("Max tries exceeded")
+            port = unused_port()
+            # We test client instead of run_cli as asyncio subprocesses do
+            # not work if run from thread other than main.
+            forwarder = loop.create_task(
+                client.jobs.port_forward(nginx_job_async, True, port, 22)
+            )
 
             url = f"http://127.0.0.1:{port}"
             probe = await get_(url)
