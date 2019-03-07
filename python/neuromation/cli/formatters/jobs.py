@@ -187,11 +187,14 @@ class TabularJobRow:
         else:
             when = job.history.finished_at
         when_datetime = datetime.datetime.fromtimestamp(isoparse(when).timestamp())
-
+        if time.time() - when_datetime.timestamp() < 60 * 60 * 24:
+            when_humanized = humanize.naturaltime(when_datetime)
+        else:
+            when_humanized = humanize.naturaldate(when_datetime)
         return cls(
             id=job.id,
             status=job.status,
-            when=humanize.naturaldate(when_datetime),
+            when=when_humanized,
             image=parsed_image.as_url_str(),
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
