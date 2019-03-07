@@ -144,9 +144,7 @@ def test_check_isolation(secret_job, helper_alt):
     )
     try:
         helper_alt.wait_job_change_state_to(
-            job_id,
-            target_state=JobStatus.FAILED,
-            stop_state=JobStatus.SUCCEEDED
+            job_id, target_state=JobStatus.FAILED, stop_state=JobStatus.SUCCEEDED
         )
     except JobWaitStateStopReached:
         pytest.fail(
