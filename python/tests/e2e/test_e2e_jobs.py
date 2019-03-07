@@ -8,7 +8,7 @@ import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
 
-from neuromation.client import JobStatus, Image, NetworkPortForwarding, Resources
+from neuromation.client import Image, JobStatus, NetworkPortForwarding, Resources
 from neuromation.utils import run as run_async
 
 

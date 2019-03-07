@@ -445,8 +445,7 @@ class Helper:
         """
             Try to fetch given url few times.
         """
-        async with aiohttp.ClientSession(
-        ) as session:
+        async with aiohttp.ClientSession() as session:
             for i in range(3):
                 async with session.get(url) as resp:
                     if resp.status == 200:
