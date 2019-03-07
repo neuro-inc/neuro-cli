@@ -1,1 +1,0 @@
-Increase wait time to finish on POSIX platforms. It dignificantly decreases a chance of error report after CLI command executions.
