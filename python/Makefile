@@ -81,7 +81,7 @@ e2e:
 .PHONY: _e2e
 _e2e:
 	pytest \
-	    -n auto --forked \
+	    -n auto --forked --timeout=570 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -93,7 +93,7 @@ _e2e:
 .PHONY: _e2e_win
 _e2e_win:
 	pytest \
-		-m "e2e and not no_win32" \
+		-m "e2e and not no_win32" --timeout=570 \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
