@@ -942,18 +942,18 @@ async def test_port_forward(config, nginx_job_async):
     service_wait_time = 60
 
     async def get_(url):
-        succeeded = None
+        status = 999
         start_time = time()
         async with aiohttp.ClientSession() as session:
-            while not succeeded and (int(time() - start_time) < service_wait_time):
+            while status != 200 and (int(time() - start_time) < service_wait_time):
                 try:
                     async with session.get(url) as resp:
-                        succeeded = resp.status == 200
+                        status = resp.status
                 except aiohttp.ClientConnectionError:
-                    succeeded = False
-                if not succeeded:
+                    status = 599
+                if status != 200:
                     sleep(loop_sleep)
-        return succeeded
+        return status
 
     loop = asyncio.get_event_loop()
     async with config.make_client() as client:
@@ -968,7 +968,7 @@ async def test_port_forward(config, nginx_job_async):
 
             url = f"http://127.0.0.1:{port}"
             probe = await get_(url)
-            assert probe
+            assert probe == 200
         finally:
             forwarder.cancel()
             with pytest.raises(asyncio.CancelledError):
