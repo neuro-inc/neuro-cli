@@ -188,7 +188,4 @@ def test_job_storage_interaction(helper, data, tmp_path):
     )
 
     # Download into local dir and confirm checksum
-    helper.check_file_on_storage_checksum(
-        "foo", "result", checksum, tmp_path, "bar"
-    )
-
+    helper.check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")
