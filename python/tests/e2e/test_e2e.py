@@ -171,34 +171,24 @@ def test_job_storage_interaction(helper, data, tmp_path):
     # Upload local file
     helper.check_upload_file_to_storage("foo", "data", str(srcfile))
 
-    delay = 0.5
     command = "cp /data/foo /res/foo"
-    for i in range(5):
-        # Run a job to copy file
-        try:
-            helper.run_job_and_wait_state(
-                UBUNTU_IMAGE_NAME,
-                command,
-                JOB_TINY_CONTAINER_PARAMS
-                + [
-                    "--http",
-                    "80",
-                    "--volume",
-                    f"{helper.tmpstorage}data:/data:ro",
-                    "--volume",
-                    f"{helper.tmpstorage}result:/res:rw",
-                ],
-                JobStatus.SUCCEEDED,
-                JobStatus.FAILED,
-            )
-            # Confirm file has been copied
-            helper.check_file_exists_on_storage("foo", "", FILE_SIZE_B)
 
-            # Download into local dir and confirm checksum
-            helper.check_file_on_storage_checksum(
-                "foo", "result", checksum, tmp_path, "bar"
-            )
-            break
-        except AssertionError:
-            sleep(delay)
-            delay *= 2
+    helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME,
+        command,
+        JOB_TINY_CONTAINER_PARAMS
+        + [
+            "--volume",
+            f"{helper.tmpstorage}data:/data:ro",
+            "--volume",
+            f"{helper.tmpstorage}result:/res:rw",
+        ],
+        JobStatus.SUCCEEDED,
+        JobStatus.FAILED,
+    )
+
+    # Download into local dir and confirm checksum
+    helper.check_file_on_storage_checksum(
+        "foo", "result", checksum, tmp_path, "bar"
+    )
+
