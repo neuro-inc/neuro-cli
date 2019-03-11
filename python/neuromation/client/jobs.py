@@ -174,7 +174,9 @@ class HTTPPort:
 
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "HTTPPort":
-        return HTTPPort(**data)
+        return HTTPPort(
+            port=data.get("port", -1), health_check_path=data.get("health_check_path")
+        )
 
 
 @dataclass(frozen=True)
@@ -187,7 +189,7 @@ class SSHPort:
 
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "SSHPort":
-        return SSHPort(**data)
+        return SSHPort(port=data.get("port", -1))
 
 
 def network_to_api(
