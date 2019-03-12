@@ -28,7 +28,7 @@ from neuromation.client import (
     ResourceNotFound,
 )
 from neuromation.utils import run
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, JobWaitStateStopReached, attempt
+from tests.e2e.utils import FILE_SIZE_B, RC_TEXT, JobWaitStateStopReached
 
 
 JOB_TIMEOUT = 60 * 5
