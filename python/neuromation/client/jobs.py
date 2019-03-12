@@ -61,7 +61,7 @@ class Resources:
 @dataclass(frozen=True)
 class NetworkPortForwarding:
     ports: Mapping[str, int]
-    http_auth: bool
+    http_auth: bool = True
 
     @classmethod
     def from_cli(
@@ -74,7 +74,7 @@ class NetworkPortForwarding:
         if ssh:
             ports["ssh"] = int(ssh)
         if ports:
-            net = NetworkPortForwarding(ports, http_auth)
+            net = NetworkPortForwarding(ports=ports, http_auth=http_auth)
         return net
 
 
