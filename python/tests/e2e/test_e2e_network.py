@@ -43,14 +43,14 @@ def secret_job(helper):
 
 @pytest.mark.e2e
 @pytest.mark.no_win32
-def test_connectivity_job_with_http_port(secret_job, check_http_get, helper):
+def test_connectivity_job_with_http_port(secret_job, helper):
 
     http_job = secret_job(True)
 
     ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
 
     # external ingress test
-    probe = check_http_get(ingress_secret_url)
+    probe = helper.check_http_get(ingress_secret_url)
     assert probe
     assert probe.strip() == http_job["secret"]
 
@@ -78,7 +78,7 @@ def test_connectivity_job_with_http_port(secret_job, check_http_get, helper):
 
 @pytest.mark.e2e
 @pytest.mark.no_win32
-def test_connectivity_job_without_http_port(secret_job, check_http_get, helper):
+def test_connectivity_job_without_http_port(secret_job, helper):
     # run http job for getting url
     http_job = secret_job(True)
     helper.run_cli(["job", "kill", http_job["id"]])
@@ -95,7 +95,7 @@ def test_connectivity_job_without_http_port(secret_job, check_http_get, helper):
     # external ingress test
     # it will take ~1 min, because we need to wait while nginx started
     with pytest.raises(aiohttp.ClientResponseError):
-        check_http_get(ingress_secret_url)
+        helper.check_http_get(ingress_secret_url)
 
     # internal ingress test
     command = f"wget -q -T 15 {ingress_secret_url} -O -"
