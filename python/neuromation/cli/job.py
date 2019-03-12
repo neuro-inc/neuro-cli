@@ -101,7 +101,7 @@ def job() -> None:
     "--http-auth/--no-http-auth",
     is_flag=True,
     help="Enable HTTP authentication for forwarded HTTP port",
-    default=True,
+    default=False,
     show_default=True,
 )
 @click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
