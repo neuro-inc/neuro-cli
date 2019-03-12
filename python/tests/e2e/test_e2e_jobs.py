@@ -7,8 +7,15 @@ import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
 
-from neuromation.client import Image, JobStatus, NetworkPortForwarding, Resources
+from neuromation.client import (
+    Image,
+    JobDescription,
+    JobStatus,
+    NetworkPortForwarding,
+    Resources,
+)
 from neuromation.utils import run as run_async
+from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
@@ -983,3 +990,34 @@ def test_port_forward_no_job(helper, nginx_job):
     with pytest.raises(SystemExit) as cm:
         helper.run_cli(["port-forward", "--no-key-check", "nojob", "0"])
     assert cm.value.code == 127
+
+
+@pytest.mark.e2e
+def test_job_submit_http_auth(helper):
+    loop_sleep = 1
+    service_wait_time = 60
+
+    async def _test_http_auth(url):
+        start_time = time()
+        async with aiohttp.ClientSession() as session:
+            while time() - start_time < service_wait_time:
+                try:
+                    async with session.get(url, allow_redirects=True) as resp:
+                        if resp.status == 200 and re.match(
+                            r".+\.auth0\.com$", resp.url.host
+                        ):
+                            break
+                except aiohttp.ClientConnectionError:
+                    pass
+                sleep(loop_sleep)
+            else:
+                raise AssertionError("HTTP Auth not detected")
+
+    job_id = helper.run_job_and_wait_state(
+        NGINX_IMAGE_NAME,
+        "timeout 15m /usr/sbin/nginx -g 'daemon off;'",
+        JOB_TINY_CONTAINER_PARAMS
+        + ["--http", "80", "-d", "nginx with http-auth", "--http-auth"],
+    )
+    status: JobDescription = helper.job_info(job_id)
+    run_async(_test_http_auth(status.http_url))
