@@ -191,7 +191,7 @@ Name | Description|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
-|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: False]|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-d, --description DESC_|Add optional description to the job|
@@ -873,7 +873,7 @@ Name | Description|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
-|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: False]|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-d, --description DESC_|Add optional description to the job|
