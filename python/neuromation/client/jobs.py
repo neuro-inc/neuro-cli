@@ -61,10 +61,11 @@ class Resources:
 @dataclass(frozen=True)
 class NetworkPortForwarding:
     ports: Mapping[str, int]
+    http_auth: bool
 
     @classmethod
     def from_cli(
-        cls, http: SupportsInt, ssh: SupportsInt
+        cls, http: SupportsInt, http_auth: bool, ssh: SupportsInt
     ) -> Optional["NetworkPortForwarding"]:
         net = None
         ports: Dict[str, int] = {}
@@ -73,7 +74,7 @@ class NetworkPortForwarding:
         if ssh:
             ports["ssh"] = int(ssh)
         if ports:
-            net = NetworkPortForwarding(ports)
+            net = NetworkPortForwarding(ports, http_auth)
         return net
 
 
@@ -165,9 +166,10 @@ class Volume:
 class HTTPPort:
     port: int
     health_check_path: Optional[str] = None
+    requires_auth: Optional[bool] = False
 
     def to_api(self) -> Dict[str, Any]:
-        ret: Dict[str, Any] = {"port": self.port}
+        ret: Dict[str, Any] = {"port": self.port, "requires_auth": self.requires_auth}
         if self.health_check_path is not None:
             ret["health_check_path"] = self.health_check_path
         return ret
@@ -175,7 +177,9 @@ class HTTPPort:
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "HTTPPort":
         return HTTPPort(
-            port=data.get("port", -1), health_check_path=data.get("health_check_path")
+            port=data.get("port", -1),
+            health_check_path=data.get("health_check_path"),
+            requires_auth=data.get("requires_auth", None),
         )
 
 
@@ -199,7 +203,9 @@ def network_to_api(
     ssh = None
     if network:
         if "http" in network.ports:
-            http = HTTPPort.from_api({"port": network.ports["http"]})
+            http = HTTPPort.from_api(
+                {"port": network.ports["http"], "requires_auth": network.http_auth}
+            )
         if "ssh" in network.ports:
             ssh = SSHPort.from_api({"port": network.ports["ssh"]})
     return http, ssh
