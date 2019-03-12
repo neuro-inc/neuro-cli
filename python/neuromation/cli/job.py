@@ -221,7 +221,7 @@ async def submit(
         log.debug(f"IMAGE: {parsed_image}")
     image_obj = Image(image=parsed_image.as_repo_str(), command=cmd)
 
-    network = NetworkPortForwarding.from_cli(http, http_auth, ssh)
+    network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
     if volumes and not quiet:

@@ -136,7 +136,7 @@ async def train(
                 f"Results path should be on platform. " f"Current value {results}"
             )
 
-        network = NetworkPortForwarding.from_cli(http, http_auth, ssh)
+        network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
         memory = to_megabytes_str(memory)
         resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
