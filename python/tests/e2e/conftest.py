@@ -565,7 +565,7 @@ def secret_job(helper):
         secret = str(uuid())
         # Run http job
         command = (
-            f"bash -c \"echo '{secret}' > /usr/share/nginx/html/secret.txt; "
+            f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
             f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         args = []
