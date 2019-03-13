@@ -7,15 +7,8 @@ import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
 
-from neuromation.client import (
-    Image,
-    JobDescription,
-    JobStatus,
-    NetworkPortForwarding,
-    Resources,
-)
+from neuromation.client import Image, JobStatus, NetworkPortForwarding, Resources
 from neuromation.utils import run as run_async
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
@@ -388,6 +381,7 @@ def test_model_train_with_http(helper):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-http-auth",
             NGINX_IMAGE_NAME,
             f"{helper.tmpstorage}/model",
             f"{helper.tmpstorage}/result",
@@ -443,6 +437,7 @@ def test_model_without_command(helper):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-http-auth",
             NGINX_IMAGE_NAME,
             f"{helper.tmpstorage}/model",
             f"{helper.tmpstorage}/result",
@@ -993,11 +988,11 @@ def test_port_forward_no_job(helper, nginx_job):
 
 
 @pytest.mark.e2e
-def test_job_submit_http_auth(helper):
+def test_job_submit_http_auth(helper, secret_job):
     loop_sleep = 1
     service_wait_time = 60
 
-    async def _test_http_auth(url):
+    async def _test_http_auth_redirect(url):
         start_time = time()
         async with aiohttp.ClientSession() as session:
             while time() - start_time < service_wait_time:
@@ -1013,11 +1008,29 @@ def test_job_submit_http_auth(helper):
             else:
                 raise AssertionError("HTTP Auth not detected")
 
-    job_id = helper.run_job_and_wait_state(
-        NGINX_IMAGE_NAME,
-        "timeout 15m /usr/sbin/nginx -g 'daemon off;'",
-        JOB_TINY_CONTAINER_PARAMS
-        + ["--http", "80", "-d", "nginx with http-auth", "--http-auth"],
+    async def _test_http_auth_with_cookie(url, cookies, secret):
+        start_time = time()
+        async with aiohttp.ClientSession(cookies=cookies) as session:
+            while time() - start_time < service_wait_time:
+                try:
+                    async with session.get(url, allow_redirects=False) as resp:
+                        if resp.status == 200:
+                            body = await resp.text()
+                            if secret == body.strip():
+                                break
+                        raise AssertionError("Secret not match")
+                except aiohttp.ClientConnectionError:
+                    pass
+                sleep(loop_sleep)
+            else:
+                raise AssertionError("Cannot fetch secret via forwarded http")
+
+    http_job = secret_job(http_port=True, http_auth=True)
+    ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
+
+    run_async(_test_http_auth_redirect(ingress_secret_url))
+
+    cookies = {"dat": helper.config.auth_token.token}
+    run_async(
+        _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
     )
-    status: JobDescription = helper.job_info(job_id)
-    run_async(_test_http_auth(status.http_url))

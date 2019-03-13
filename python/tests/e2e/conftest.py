@@ -11,7 +11,7 @@ from hashlib import sha1
 from os.path import join
 from pathlib import Path
 from time import sleep, time
-from typing import List
+from typing import List, Optional
 from uuid import uuid4 as uuid
 
 import aiohttp
@@ -28,7 +28,12 @@ from neuromation.client import (
     ResourceNotFound,
 )
 from neuromation.utils import run
-from tests.e2e.utils import FILE_SIZE_B, RC_TEXT
+from tests.e2e.utils import (
+    FILE_SIZE_B,
+    JOB_TINY_CONTAINER_PARAMS,
+    NGINX_IMAGE_NAME,
+    RC_TEXT,
+)
 
 
 JOB_TIMEOUT = 60 * 5
@@ -552,3 +557,40 @@ def nested_data(static_path):
     nested_dir.mkdir(parents=True, exist_ok=True)
     generated_file, hash = generate_random_file(nested_dir, FILE_SIZE_B)
     return generated_file, hash, str(root_dir)
+
+
+@pytest.fixture
+def secret_job(helper):
+    def go(http_port: bool, http_auth: bool = False, description: Optional[str] = None):
+        secret = str(uuid())
+        # Run http job
+        command = (
+            f"bash -c \"echo '{secret}' > /usr/share/nginx/html/secret.txt; "
+            f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+        )
+        args = []
+        if http_port:
+            args += ["--http", "80"]
+            if http_auth:
+                args += ["--http-auth"]
+            else:
+                args += ["--no-http-auth"]
+        if not description:
+            description = "nginx with secret file"
+            if http_port:
+                description += " and forwarded http port"
+                if http_auth:
+                    description += " with authentication"
+        args += ["-d", description]
+        http_job_id = helper.run_job_and_wait_state(
+            NGINX_IMAGE_NAME, command, JOB_TINY_CONTAINER_PARAMS + args
+        )
+        status: JobDescription = helper.job_info(http_job_id)
+        return {
+            "id": http_job_id,
+            "secret": secret,
+            "ingress_url": status.http_url,
+            "internal_hostname": status.internal_hostname,
+        }
+
+    return go

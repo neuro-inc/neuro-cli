@@ -11,6 +11,9 @@ RC_TEXT = (
     "auth: {token}"
 )
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
+NGINX_IMAGE_NAME = "nginx:latest"
+ALPINE_IMAGE_NAME = "alpine:latest"
+
 format_list = "{type:<15}{size:<15,}{name:<}".format
 format_list_pattern = "(file|directory)\\s*\\d+\\s*{name}".format
 

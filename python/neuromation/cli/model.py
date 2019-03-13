@@ -78,7 +78,7 @@ def model() -> None:
     "--http-auth/--no-http-auth",
     is_flag=True,
     help="Enable HTTP authentication for forwarded HTTP port",
-    default=False,
+    default=True,
     show_default=True,
 )
 @click.option("--ssh", type=int, help="Enable SSH port forwarding to container")

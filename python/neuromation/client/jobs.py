@@ -166,7 +166,7 @@ class Volume:
 class HTTPPort:
     port: int
     health_check_path: Optional[str] = None
-    requires_auth: Optional[bool] = False
+    requires_auth: bool = False
 
     def to_api(self) -> Dict[str, Any]:
         ret: Dict[str, Any] = {"port": self.port, "requires_auth": self.requires_auth}
@@ -179,7 +179,7 @@ class HTTPPort:
         return HTTPPort(
             port=data.get("port", -1),
             health_check_path=data.get("health_check_path"),
-            requires_auth=data.get("requires_auth", None),
+            requires_auth=data.get("requires_auth", False),
         )
 
 
