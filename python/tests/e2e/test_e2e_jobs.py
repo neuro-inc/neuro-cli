@@ -381,6 +381,7 @@ def test_model_train_with_http(helper):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-http-auth",
             NGINX_IMAGE_NAME,
             f"{helper.tmpstorage}/model",
             f"{helper.tmpstorage}/result",
@@ -436,6 +437,7 @@ def test_model_without_command(helper):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-http-auth",
             NGINX_IMAGE_NAME,
             f"{helper.tmpstorage}/model",
             f"{helper.tmpstorage}/result",
@@ -913,11 +915,11 @@ def nginx_job(helper):
 @pytest.fixture
 async def nginx_job_async(config, loop):
     async with config.make_client() as client:
-        command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
+        command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
-            image=Image("nginx:latest", command=command),
+            image=Image("python:latest", command=command),
             resources=Resources.create(0.1, None, None, "20", True),
-            network=NetworkPortForwarding.from_cli(None, 80),
+            network=NetworkPortForwarding.from_cli(None, 22),
             is_preemptible=False,
             volumes=None,
             description="test NGINX job",
@@ -982,5 +984,54 @@ async def test_port_forward(config, nginx_job_async):
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0"])
+        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0", "0"])
     assert cm.value.code == 127
+
+
+@pytest.mark.e2e
+def test_job_submit_http_auth(helper, secret_job):
+    loop_sleep = 1
+    service_wait_time = 60
+
+    async def _test_http_auth_redirect(url):
+        start_time = time()
+        async with aiohttp.ClientSession() as session:
+            while time() - start_time < service_wait_time:
+                try:
+                    async with session.get(url, allow_redirects=True) as resp:
+                        if resp.status == 200 and re.match(
+                            r".+\.auth0\.com$", resp.url.host
+                        ):
+                            break
+                except aiohttp.ClientConnectionError:
+                    pass
+                sleep(loop_sleep)
+            else:
+                raise AssertionError("HTTP Auth not detected")
+
+    async def _test_http_auth_with_cookie(url, cookies, secret):
+        start_time = time()
+        async with aiohttp.ClientSession(cookies=cookies) as session:
+            while time() - start_time < service_wait_time:
+                try:
+                    async with session.get(url, allow_redirects=False) as resp:
+                        if resp.status == 200:
+                            body = await resp.text()
+                            if secret == body.strip():
+                                break
+                        raise AssertionError("Secret not match")
+                except aiohttp.ClientConnectionError:
+                    pass
+                sleep(loop_sleep)
+            else:
+                raise AssertionError("Cannot fetch secret via forwarded http")
+
+    http_job = secret_job(http_port=True, http_auth=True)
+    ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
+
+    run_async(_test_http_auth_redirect(ingress_secret_url))
+
+    cookies = {"dat": helper.config.auth_token.token}
+    run_async(
+        _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
+    )
