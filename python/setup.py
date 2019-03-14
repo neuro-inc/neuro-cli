@@ -53,7 +53,10 @@ setup(
     license=license,
     url="https://neuromation.io/",
     packages=find_packages(include=("neuromation", "neuromation.*")),
-    entry_points={"console_scripts": ["neuro=neuromation.cli:main"]},
+    entry_points={"console_scripts": [
+        "neuro=neuromation.cli:main",
+        "docker-credential-neuro=neuromation.cli:dch"
+    ]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Other/Proprietary License",
