@@ -33,7 +33,7 @@ from tests.e2e.utils import (
     JOB_TINY_CONTAINER_PARAMS,
     NGINX_IMAGE_NAME,
     RC_TEXT,
-    JobWaitStateStopReached
+    JobWaitStateStopReached,
 )
 
 

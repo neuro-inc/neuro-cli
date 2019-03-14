@@ -1,11 +1,14 @@
 import re
-from uuid import uuid4 as uuid
 
 import aiohttp
 import pytest
 
 from neuromation.client import JobStatus
-from tests.e2e.utils import ALPINE_IMAGE_NAME, JOB_TINY_CONTAINER_PARAMS
+from tests.e2e.utils import (
+    ALPINE_IMAGE_NAME,
+    JOB_TINY_CONTAINER_PARAMS,
+    JobWaitStateStopReached,
+)
 
 
 @pytest.mark.e2e
