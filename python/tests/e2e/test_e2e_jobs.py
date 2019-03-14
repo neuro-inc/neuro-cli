@@ -913,11 +913,11 @@ def nginx_job(helper):
 @pytest.fixture
 async def nginx_job_async(config, loop):
     async with config.make_client() as client:
-        command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
+        command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
-            image=Image("nginx:latest", command=command),
+            image=Image("python:latest", command=command),
             resources=Resources.create(0.1, None, None, "20", True),
-            network=NetworkPortForwarding.from_cli(None, 80),
+            network=NetworkPortForwarding.from_cli(None, 22),
             is_preemptible=False,
             volumes=None,
             description="test NGINX job",
@@ -937,6 +937,7 @@ async def nginx_job_async(config, loop):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 async def test_port_forward(config, nginx_job_async):
     loop_sleep = 1
     service_wait_time = 60
@@ -978,5 +979,5 @@ async def test_port_forward(config, nginx_job_async):
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0"])
+        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0", "0"])
     assert cm.value.code == 127
