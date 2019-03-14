@@ -148,7 +148,7 @@ class Volume:
         pso = PlatformStorageOperation(username)
         pso._is_storage_path_url(urlparse(storage_path, scheme="file"))
         storage_path_with_principal = (
-            f"storage:/{str(pso.render_uri_path_with_principal(storage_path))}"
+            f"{str(storage_path).replace('~', username)}"
         )
 
         return Volume(storage_path_with_principal, container_path, read_only)
