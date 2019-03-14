@@ -85,6 +85,11 @@ class JobStatusFormatter:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
             result = f"{result}Http URL: {job_status.http_url}\n"
+        if job_status.container.http:
+            result = (
+                f"{result}Http authentication: "
+                f"{job_status.container.http.requires_auth}\n"
+            )
         if job_status.container.env:
             result += f"Environment:\n"
             for key, value in job_status.container.env.items():
