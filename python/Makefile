@@ -100,6 +100,7 @@ _e2e_win:
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--cov-append \
+		--durations 10 \
 		tests
 
 
