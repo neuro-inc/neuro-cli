@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.7.0 (2019-03-14)
+==============================
+
+Features
+--------
+
+
+- New flag `--http-auth/--no-http-auth` which controls authentication for forwarded HTTP port. Enabled by default. ([#604](https://github.com/neuromation/platform-api-clients/issues/604))
+
+
 Neuromation 0.6.2 (2019-03-07)
 ==============================
 
