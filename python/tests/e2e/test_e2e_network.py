@@ -4,7 +4,11 @@ import aiohttp
 import pytest
 
 from neuromation.client import JobStatus
-from tests.e2e.utils import ALPINE_IMAGE_NAME, JOB_TINY_CONTAINER_PARAMS
+from tests.e2e.utils import (
+    ALPINE_IMAGE_NAME,
+    JOB_TINY_CONTAINER_PARAMS,
+    JobWaitStateStopReached,
+)
 
 
 @pytest.mark.e2e
@@ -103,11 +107,19 @@ def test_check_isolation(secret_job, helper_alt):
     internal_secret_url = f"http://{http_job['internal_hostname']}/secret.txt"
     command = f"wget -q -T 15 {internal_secret_url} -O -"
     # This job must be failed,
-    job_id = helper_alt.run_job_and_wait_state(
+    job_id = helper_alt.run_job(
         ALPINE_IMAGE_NAME,
         command,
         JOB_TINY_CONTAINER_PARAMS + ["-d", "secret internal network fetcher "],
-        wait_state=JobStatus.FAILED,
-        stop_state=JobStatus.SUCCEEDED,
     )
+    try:
+        helper_alt.wait_job_change_state_to(
+            job_id, target_state=JobStatus.FAILED, stop_state=JobStatus.SUCCEEDED
+        )
+    except JobWaitStateStopReached:
+        pytest.fail(
+            "One container can connect to a port of container with another owner.",
+            False,  # Do not show long and unusable trace here
+        )
+
     helper_alt.check_job_output(job_id, r"timed out")
