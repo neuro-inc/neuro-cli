@@ -326,7 +326,7 @@ async def test_job_submit(aiohttp_server, token):
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "http": {"port": 8181},
+                "http": {"port": 8181, "requires_auth": True},
                 "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
@@ -419,7 +419,7 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "http": {"port": 8181},
+                "http": {"port": 8181, "requires_auth": True},
                 "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
@@ -492,7 +492,7 @@ async def test_job_submit_preemptible(aiohttp_server, token):
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "http": {"port": 8181},
+                "http": {"port": 8181, "requires_auth": True},
                 "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",

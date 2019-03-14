@@ -74,6 +74,13 @@ def model() -> None:
 )
 @click.option("-x", "--extshm", is_flag=True, help="Request extended '/dev/shm' space")
 @click.option("--http", type=int, help="Enable HTTP port forwarding to container")
+@click.option(
+    "--http-auth/--no-http-auth",
+    is_flag=True,
+    help="Enable HTTP authentication for forwarded HTTP port",
+    default=True,
+    show_default=True,
+)
 @click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
 @click.option(
     "--preemptible/--non-preemptible",
@@ -98,6 +105,7 @@ async def train(
     memory: str,
     extshm: bool,
     http: int,
+    http_auth: bool,
     ssh: int,
     cmd: List[str],
     preemptible: bool,
@@ -128,7 +136,7 @@ async def train(
                 f"Results path should be on platform. " f"Current value {results}"
             )
 
-        network = NetworkPortForwarding.from_cli(http, ssh)
+        network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
         memory = to_megabytes_str(memory)
         resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
