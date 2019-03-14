@@ -76,6 +76,7 @@ e2e:
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--durations 10 \
 		tests
 
 .PHONY: _e2e
@@ -88,6 +89,7 @@ _e2e:
 		--cov-report xml:coverage.xml \
 		--cov-append \
 		--verbose \
+		--durations 10 \
 		tests
 
 .PHONY: _e2e_win
@@ -98,6 +100,7 @@ _e2e_win:
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--cov-append \
+		--durations 10 \
 		tests
 
 
