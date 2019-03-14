@@ -981,5 +981,5 @@ async def test_port_forward(config, nginx_job_async):
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0"])
+        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0", "0"])
     assert cm.value.code == 127
