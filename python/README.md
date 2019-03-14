@@ -284,7 +284,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] ID LOCAL_PORT
+neuro job port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
@@ -965,7 +965,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] ID LOCAL_PORT
+neuro port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
