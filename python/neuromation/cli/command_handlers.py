@@ -1,6 +1,6 @@
 import logging
 import os
-from pathlib import PosixPath as Path
+from pathlib import PurePosixPath as Path
 from urllib.parse import ParseResult, urlparse
 
 
