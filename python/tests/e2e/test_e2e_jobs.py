@@ -939,6 +939,7 @@ async def nginx_job_async(config, loop):
 
 
 @pytest.mark.e2e
+@pytest.mark.no_win32
 async def test_port_forward(config, nginx_job_async):
     loop_sleep = 1
     service_wait_time = 60
