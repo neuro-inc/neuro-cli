@@ -913,11 +913,11 @@ def nginx_job(helper):
 @pytest.fixture
 async def nginx_job_async(config, loop):
     async with config.make_client() as client:
-        command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
+        command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
-            image=Image("nginx:latest", command=command),
+            image=Image("python:latest", command=command),
             resources=Resources.create(0.1, None, None, "20", True),
-            network=NetworkPortForwarding.from_cli(None, 80),
+            network=NetworkPortForwarding.from_cli(None, 22),
             is_preemptible=False,
             volumes=None,
             description="test NGINX job",
