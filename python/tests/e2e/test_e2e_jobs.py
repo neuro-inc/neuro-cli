@@ -841,25 +841,25 @@ def test_e2e_job_list_filtered_by_status(helper):
 
     # test no status filters (same as pending+running)
     captured = helper.run_cli(["job", "ls", "--quiet"])
-    jobs_ls_no_arg = set(captured.out.split("\n"))
+    jobs_ls_no_arg = set(captured.out.split())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_no_arg >= jobs
 
     # test single status filter
     captured = helper.run_cli(["job", "ls", "--status", "running", "--quiet"])
-    jobs_ls_running = set(captured.out.split("\n"))
+    jobs_ls_running = set(captured.out.split())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_running >= jobs
 
     # test multiple status filters
     captured = helper.run_cli(["job", "ls", "-s", "running", "-s", "failed", "-q"])
-    jobs_ls_running = set(captured.out.split("\n"))
+    jobs_ls_running = set(captured.out.split())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_running >= jobs
 
     # test "all" status filter
     captured = helper.run_cli(["job", "ls", "-s", "all", "-q"])
-    jobs_ls_all = set(captured.out.split("\n"))
+    jobs_ls_all = set(captured.out.split())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all >= jobs
 
