@@ -42,7 +42,7 @@ JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 60 * 5
 JOB_OUTPUT_SLEEP_SECONDS = 2
 STORAGE_MAX_WAIT = 60
-
+WHITESPACES = " \n\r\t"  # TODO use OS-specific list here
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
@@ -422,7 +422,7 @@ class Helper:
                 if match:
                     self._executed_jobs.append(match.group(1))
 
-            return SysCap(out.strip(), err.strip())
+            return SysCap(out.strip(WHITESPACES), err.strip(WHITESPACES))
         else:
             raise TestRetriesExceeded(
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
