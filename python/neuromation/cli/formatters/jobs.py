@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass
 from math import floor
 from typing import Iterable, Iterator, List, Mapping
-
+from sys import platform
 import humanize
 from click import style
 from dateutil.parser import isoparse  # type: ignore
@@ -17,7 +17,7 @@ from neuromation.client.parsing_utils import ImageNameParser
 BEFORE_PROGRESS = "\r"
 AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
-LINE_UP = "\033[1F"
+LINE_UP = "\033[1A"
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -289,7 +289,10 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
-    SPINNER = ("◢", "◣", "◤", "◥")
+    if platform == "win32":
+        SPINNER = ("-", "\\", "|", "/")
+    else:
+        SPINNER = ("◢", "◣", "◤", "◥")
     LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
 
     def __init__(self, color: bool) -> None:
