@@ -95,7 +95,7 @@ _e2e:
 .PHONY: _e2e_win
 _e2e_win:
 	pytest \
-		-n auto \
+		-n 4 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
