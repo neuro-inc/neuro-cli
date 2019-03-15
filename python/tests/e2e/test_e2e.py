@@ -98,7 +98,6 @@ def test_e2e_job_top(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 @pytest.mark.parametrize(
     "switch,expected",
     [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
