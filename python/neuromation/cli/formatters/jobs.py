@@ -4,8 +4,9 @@ import itertools
 import time
 from dataclasses import dataclass
 from math import floor
-from typing import Iterable, Iterator, List, Mapping
 from sys import platform
+from typing import Iterable, Iterator, List, Mapping
+
 import humanize
 from click import style
 from dateutil.parser import isoparse  # type: ignore
