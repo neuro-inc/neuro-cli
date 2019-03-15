@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.7.1 (2019-03-15)
+==============================
+
+Bugfixes
+--------
+
+
+- Fix incorrect `--volume` parsing under windows ([#635](https://github.com/neuromation/platform-api-clients/issues/635))
+
+
 Neuromation 0.7.0 (2019-03-14)
 ==============================
 
