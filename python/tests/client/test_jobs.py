@@ -655,6 +655,22 @@ class TestVolumeParsing:
                     read_only=True,
                 ),
             ),
+            (
+                    "storage:dir:/var/www:ro",
+                    Volume(
+                        storage_path="storage://bob/dir",
+                        container_path="/var/www",
+                        read_only=True,
+                    ),
+            ),
+            (
+                    "storage::/var/www:ro",
+                    Volume(
+                        storage_path="storage://bob",
+                        container_path="/var/www",
+                        read_only=True,
+                    ),
+            ),
         ],
     )
     def test_positive(self, volume_param, volume):
