@@ -12,7 +12,6 @@ from tests.e2e.utils import (
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_connectivity_job_with_http_port(secret_job, helper):
 
     http_job = secret_job(True)
@@ -47,7 +46,6 @@ def test_connectivity_job_with_http_port(secret_job, helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_connectivity_job_without_http_port(secret_job, helper):
     # run http job for getting url
     http_job = secret_job(True)
@@ -86,7 +84,6 @@ def test_connectivity_job_without_http_port(secret_job, helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_check_isolation(secret_job, helper_alt):
     http_job = secret_job(True)
 

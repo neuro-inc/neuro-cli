@@ -43,7 +43,6 @@ JOB_OUTPUT_TIMEOUT = 60 * 5
 JOB_OUTPUT_SLEEP_SECONDS = 2
 STORAGE_MAX_WAIT = 60
 
-
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
 log = logging.getLogger(__name__)
