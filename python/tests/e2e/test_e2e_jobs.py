@@ -977,9 +977,6 @@ async def test_port_forward(config, nginx_job_async):
             with pytest.raises(asyncio.CancelledError):
                 await forwarder
 
-            # add a sleep to get process watcher a chance to execute all callbacks
-            await asyncio.sleep(0.1)
-
 
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):

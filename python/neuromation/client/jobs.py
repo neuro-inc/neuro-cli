@@ -472,7 +472,9 @@ class Jobs:
         try:
             return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid)
+            await kill_proc_tree(proc.pid, timeout=10)
+            # add a sleep to get process watcher a chance to execute all callbacks
+            await asyncio.sleep(0.1)
 
     async def port_forward(
         self, id: str, no_key_check: bool, local_port: int, job_port: int
@@ -530,4 +532,6 @@ class Jobs:
         try:
             return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid)
+            await kill_proc_tree(proc.pid, timeout=10)
+            # add a sleep to get process watcher a chance to execute all callbacks
+            await asyncio.sleep(0.1)
