@@ -45,7 +45,6 @@ def test_empty_directory_ls_output(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_e2e_job_top(helper):
     def split_non_empty_parts(line, separator=None):
         return [part.strip() for part in line.split(separator) if part.strip()]
@@ -161,7 +160,6 @@ def test_e2e_storage(data, tmp_path, helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_job_storage_interaction(helper, data, tmp_path):
     srcfile, checksum = data
     # Create directory for the test
