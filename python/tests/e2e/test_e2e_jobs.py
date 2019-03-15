@@ -17,7 +17,6 @@ MIN_PORT = 49152
 MAX_PORT = 65535
 
 
-
 @pytest.mark.e2e
 def test_job_lifecycle(helper):
     # Remember original running jobs
