@@ -15,7 +15,6 @@ from typing import (
     SupportsInt,
     Tuple,
 )
-from urllib.parse import urlparse
 
 from aiohttp import WSServerHandshakeError
 from multidict import MultiDict
@@ -24,6 +23,7 @@ from yarl import URL
 from neuromation.utils import kill_proc_tree
 
 from .api import API, IllegalArgumentError
+from .url_utils import normalize_storage_path_uri
 
 
 @dataclass(frozen=True)
@@ -129,29 +129,24 @@ class Volume:
 
     @classmethod
     def from_cli(cls, username: str, volume: str) -> "Volume":
-        volume_desc_parts = volume.split(":")
-        if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
+        parts = volume.split(":")
+
+        read_only = False
+        if len(parts) == 4:
+            if parts[-1] not in ["ro", "rw"]:
+                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
+            read_only = parts.pop() == "ro"
+        elif len(parts) != 3:
             raise ValueError(f"Invalid volume specification '{volume}'")
 
-        storage_path = ":".join(volume_desc_parts[:-1])
-        container_path = volume_desc_parts[2]
-        read_only = False
-        if len(volume_desc_parts) == 4:
-            if not volume_desc_parts[-1] in ["ro", "rw"]:
-                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
-            read_only = volume_desc_parts[-1] == "ro"
-            storage_path = ":".join(volume_desc_parts[:-2])
+        container_path = parts.pop()
+        storage_path = normalize_storage_path_uri(URL(":".join(parts)), username)
 
-        # TODO: Refactor PlatformStorageOperation tight coupling
-        from neuromation.cli.command_handlers import PlatformStorageOperation
-
-        pso = PlatformStorageOperation(username)
-        pso._is_storage_path_url(urlparse(storage_path, scheme="file"))
-        storage_path_with_principal = (
-            f"storage:/{str(pso.render_uri_path_with_principal(storage_path))}"
+        return Volume(
+            storage_path=str(storage_path),
+            container_path=container_path,
+            read_only=read_only,
         )
-
-        return Volume(storage_path_with_principal, container_path, read_only)
 
     @classmethod
     def from_cli_list(

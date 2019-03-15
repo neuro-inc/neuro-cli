@@ -603,3 +603,75 @@ async def test_list(aiohttp_server, token):
         ret = await client.jobs.list(statuses)
 
     assert ret == [JobDescription.from_api(j) for j in JSON["jobs"]]
+
+
+class TestVolumeParsing:
+    @pytest.mark.parametrize(
+        "volume_param", ["dir", "storage://dir", "storage://dir:/var/www:rw:ro"]
+    )
+    def test_incorrect_params_count(self, volume_param):
+        with pytest.raises(ValueError, match=r"Invalid volume specification"):
+            Volume.from_cli("bob", volume_param)
+
+    @pytest.mark.parametrize(
+        "volume_param", ["storage://dir:/var/www:write", "storage://dir:/var/www:"]
+    )
+    def test_incorrect_mode(self, volume_param):
+        with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
+            Volume.from_cli("bob", volume_param)
+
+    @pytest.mark.parametrize(
+        "volume_param,volume",
+        [
+            (
+                "storage://bob/dir:/var/www",
+                Volume(
+                    storage_path="storage://bob/dir",
+                    container_path="/var/www",
+                    read_only=False,
+                ),
+            ),
+            (
+                "storage://bob/dir:/var/www:rw",
+                Volume(
+                    storage_path="storage://bob/dir",
+                    container_path="/var/www",
+                    read_only=False,
+                ),
+            ),
+            (
+                "storage://bob:/var/www:ro",
+                Volume(
+                    storage_path="storage://bob",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage://~/:/var/www:ro",
+                Volume(
+                    storage_path="storage://bob",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage:dir:/var/www:ro",
+                Volume(
+                    storage_path="storage://bob/dir",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage::/var/www:ro",
+                Volume(
+                    storage_path="storage://bob",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+        ],
+    )
+    def test_positive(self, volume_param, volume):
+        assert Volume.from_cli("bob", volume_param) == volume
