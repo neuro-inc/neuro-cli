@@ -1,5 +1,6 @@
 .env
-.coverage
+.coverage*
+pip-wheel-metadata
 .pytest_cache
 *.swo
 *.egg-info
