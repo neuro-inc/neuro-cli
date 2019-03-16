@@ -15,7 +15,6 @@ from typing import (
     SupportsInt,
     Tuple,
 )
-from urllib.parse import urlparse
 
 from aiohttp import WSServerHandshakeError
 from multidict import MultiDict
@@ -24,6 +23,7 @@ from yarl import URL
 from neuromation.utils import kill_proc_tree
 
 from .api import API, IllegalArgumentError
+from .url_utils import normalize_storage_path_uri
 
 
 @dataclass(frozen=True)
@@ -61,10 +61,11 @@ class Resources:
 @dataclass(frozen=True)
 class NetworkPortForwarding:
     ports: Mapping[str, int]
+    http_auth: bool = True
 
     @classmethod
     def from_cli(
-        cls, http: SupportsInt, ssh: SupportsInt
+        cls, http: SupportsInt, ssh: SupportsInt, http_auth: bool = False
     ) -> Optional["NetworkPortForwarding"]:
         net = None
         ports: Dict[str, int] = {}
@@ -73,7 +74,7 @@ class NetworkPortForwarding:
         if ssh:
             ports["ssh"] = int(ssh)
         if ports:
-            net = NetworkPortForwarding(ports)
+            net = NetworkPortForwarding(ports=ports, http_auth=http_auth)
         return net
 
 
@@ -128,29 +129,24 @@ class Volume:
 
     @classmethod
     def from_cli(cls, username: str, volume: str) -> "Volume":
-        volume_desc_parts = volume.split(":")
-        if len(volume_desc_parts) != 3 and len(volume_desc_parts) != 4:
+        parts = volume.split(":")
+
+        read_only = False
+        if len(parts) == 4:
+            if parts[-1] not in ["ro", "rw"]:
+                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
+            read_only = parts.pop() == "ro"
+        elif len(parts) != 3:
             raise ValueError(f"Invalid volume specification '{volume}'")
 
-        storage_path = ":".join(volume_desc_parts[:-1])
-        container_path = volume_desc_parts[2]
-        read_only = False
-        if len(volume_desc_parts) == 4:
-            if not volume_desc_parts[-1] in ["ro", "rw"]:
-                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
-            read_only = volume_desc_parts[-1] == "ro"
-            storage_path = ":".join(volume_desc_parts[:-2])
+        container_path = parts.pop()
+        storage_path = normalize_storage_path_uri(URL(":".join(parts)), username)
 
-        # TODO: Refactor PlatformStorageOperation tight coupling
-        from neuromation.cli.command_handlers import PlatformStorageOperation
-
-        pso = PlatformStorageOperation(username)
-        pso._is_storage_path_url(urlparse(storage_path, scheme="file"))
-        storage_path_with_principal = (
-            f"storage:/{str(pso.render_uri_path_with_principal(storage_path))}"
+        return Volume(
+            storage_path=str(storage_path),
+            container_path=container_path,
+            read_only=read_only,
         )
-
-        return Volume(storage_path_with_principal, container_path, read_only)
 
     @classmethod
     def from_cli_list(
@@ -165,9 +161,10 @@ class Volume:
 class HTTPPort:
     port: int
     health_check_path: Optional[str] = None
+    requires_auth: bool = False
 
     def to_api(self) -> Dict[str, Any]:
-        ret: Dict[str, Any] = {"port": self.port}
+        ret: Dict[str, Any] = {"port": self.port, "requires_auth": self.requires_auth}
         if self.health_check_path is not None:
             ret["health_check_path"] = self.health_check_path
         return ret
@@ -175,7 +172,9 @@ class HTTPPort:
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "HTTPPort":
         return HTTPPort(
-            port=data.get("port", -1), health_check_path=data.get("health_check_path")
+            port=data.get("port", -1),
+            health_check_path=data.get("health_check_path"),
+            requires_auth=data.get("requires_auth", False),
         )
 
 
@@ -199,7 +198,9 @@ def network_to_api(
     ssh = None
     if network:
         if "http" in network.ports:
-            http = HTTPPort.from_api({"port": network.ports["http"]})
+            http = HTTPPort.from_api(
+                {"port": network.ports["http"], "requires_auth": network.http_auth}
+            )
         if "ssh" in network.ports:
             ssh = SSHPort.from_api({"port": network.ports["ssh"]})
     return http, ssh
@@ -471,7 +472,9 @@ class Jobs:
         try:
             return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid)
+            await kill_proc_tree(proc.pid, timeout=10)
+            # add a sleep to get process watcher a chance to execute all callbacks
+            await asyncio.sleep(0.1)
 
     async def port_forward(
         self, id: str, no_key_check: bool, local_port: int, job_port: int
@@ -529,4 +532,6 @@ class Jobs:
         try:
             return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid)
+            await kill_proc_tree(proc.pid, timeout=10)
+            # add a sleep to get process watcher a chance to execute all callbacks
+            await asyncio.sleep(0.1)

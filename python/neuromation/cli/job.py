@@ -97,6 +97,13 @@ def job() -> None:
     help="Request extended '/dev/shm' space",
 )
 @click.option("--http", type=int, help="Enable HTTP port forwarding to container")
+@click.option(
+    "--http-auth/--no-http-auth",
+    is_flag=True,
+    help="Enable HTTP authentication for forwarded HTTP port",
+    default=True,
+    show_default=True,
+)
 @click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
 @click.option(
     "--preemptible/--non-preemptible",
@@ -148,6 +155,7 @@ async def submit(
     memory: str,
     extshm: bool,
     http: int,
+    http_auth: bool,
     ssh: int,
     cmd: Sequence[str],
     volume: Sequence[str],
@@ -213,7 +221,7 @@ async def submit(
         log.debug(f"IMAGE: {parsed_image}")
     image_obj = Image(image=parsed_image.as_repo_str(), command=cmd)
 
-    network = NetworkPortForwarding.from_cli(http, ssh)
+    network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
     if volumes and not quiet:
@@ -272,7 +280,8 @@ async def exec(
 
 @command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("id")
-@click.argument("local_port")
+@click.argument("local_port", type=int)
+@click.argument("remote_port", type=int)
 @click.option(
     "--no-key-check",
     is_flag=True,
@@ -280,14 +289,16 @@ async def exec(
 )
 @async_cmd
 async def port_forward(
-    cfg: Config, id: str, no_key_check: bool, local_port: int
+    cfg: Config, id: str, no_key_check: bool, local_port: int, remote_port: int
 ) -> None:
     """
     Forward a port of a running job exposed with -ssh option
     to a local port.
     """
     async with cfg.make_client() as client:
-        retcode = await client.jobs.port_forward(id, no_key_check, local_port, 22)
+        retcode = await client.jobs.port_forward(
+            id, no_key_check, local_port, remote_port
+        )
     sys.exit(retcode)
 
 

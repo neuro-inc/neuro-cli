@@ -42,6 +42,7 @@ from neuromation.client import (
     JobTelemetry,
     Resources,
 )
+from neuromation.client.jobs import HTTPPort
 from neuromation.client.parsing_utils import ImageNameParser
 
 
@@ -167,6 +168,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 image="test-image",
                 resources=Resources.create(0.1, 0, None, None, False),
+                http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_auth_server="ssh-auth",
             is_preemptible=False,
@@ -184,6 +186,7 @@ class TestJobOutputFormatter:
             f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
@@ -547,9 +550,19 @@ class TestTabularJobsFormatter:
         )
         formatter = TabularJobsFormatter(0, self.image_parser)
         result = [item for item in formatter([job])]
-        assert result == [
-            "ID  STATUS  WHEN   IMAGE  DESCRIPTION  COMMAND",
-            "j   failed  today  i:l    d            c",
+        assert result in [
+            [
+                "ID  STATUS  WHEN  IMAGE  DESCRIPTION  COMMAND",
+                "j   failed  now   i:l    d            c",
+            ],
+            [
+                "ID  STATUS  WHEN          IMAGE  DESCRIPTION  COMMAND",
+                "j   failed  a second ago  i:l    d            c",
+            ],
+            [
+                "ID  STATUS  WHEN           IMAGE  DESCRIPTION  COMMAND",
+                "j   failed  2 seconds ago  i:l    d            c",
+            ],
         ]
 
     def test_wide_cells(self):

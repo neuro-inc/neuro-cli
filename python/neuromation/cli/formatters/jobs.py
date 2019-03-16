@@ -4,6 +4,7 @@ import itertools
 import time
 from dataclasses import dataclass
 from math import floor
+from sys import platform
 from typing import Iterable, Iterator, List, Mapping
 
 import humanize
@@ -17,7 +18,7 @@ from neuromation.client.parsing_utils import ImageNameParser
 BEFORE_PROGRESS = "\r"
 AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
-LINE_UP = "\033[1F"
+LINE_UP = "\033[1A"
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -85,6 +86,11 @@ class JobStatusFormatter:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
             result = f"{result}Http URL: {job_status.http_url}\n"
+        if job_status.container.http:
+            result = (
+                f"{result}Http authentication: "
+                f"{job_status.container.http.requires_auth}\n"
+            )
         if job_status.container.env:
             result += f"Environment:\n"
             for key, value in job_status.container.env.items():
@@ -187,11 +193,14 @@ class TabularJobRow:
         else:
             when = job.history.finished_at
         when_datetime = datetime.datetime.fromtimestamp(isoparse(when).timestamp())
-
+        if time.time() - when_datetime.timestamp() < 60 * 60 * 24:
+            when_humanized = humanize.naturaltime(when_datetime)
+        else:
+            when_humanized = humanize.naturaldate(when_datetime)
         return cls(
             id=job.id,
             status=job.status,
-            when=humanize.naturaldate(when_datetime),
+            when=when_humanized,
             image=parsed_image.as_url_str(),
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
@@ -204,7 +213,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
             "status": [6, 10],
-            "when": [4, 11],
+            "when": [4, 15],
             "image": [5, 15],
             "description": [11, 50],
             "command": [7, 0],
@@ -281,7 +290,10 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
-    SPINNER = ("◢", "◣", "◤", "◥")
+    if platform == "win32":
+        SPINNER = ("-", "\\", "|", "/")
+    else:
+        SPINNER = ("◢", "◣", "◤", "◥")
     LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
 
     def __init__(self, color: bool) -> None:

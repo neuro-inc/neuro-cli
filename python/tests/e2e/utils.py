@@ -11,6 +11,9 @@ RC_TEXT = (
     "auth: {token}"
 )
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
+NGINX_IMAGE_NAME = "nginx:latest"
+ALPINE_IMAGE_NAME = "alpine:latest"
+
 format_list = "{type:<15}{size:<15,}{name:<}".format
 format_list_pattern = "(file|directory)\\s*\\d+\\s*{name}".format
 
@@ -23,6 +26,10 @@ file_format_re = (
 )
 
 JOB_TINY_CONTAINER_PARAMS = ["-m", "20M", "-c", "0.1", "-g", "0", "--non-preemptible"]
+
+
+class JobWaitStateStopReached(AssertionError):
+    pass
 
 
 def attempt(attempts: int = 4, sleep_time: float = 15.0):
