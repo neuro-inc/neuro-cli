@@ -131,7 +131,7 @@ def docker(cfg: Config, config: str) -> None:
     if json_path.exists():
         with json_path.open("r") as file:
             payload = json.load(file)
-    if not payload.get("credHelpers", None):
+    if "credHelpers" not in payload:
         payload["credHelpers"] = {}
 
     registry = URL(cfg.registry_url).host
