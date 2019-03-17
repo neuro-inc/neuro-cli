@@ -124,7 +124,7 @@ def docker(cfg: Config, config: str) -> None:
     if not config_path.exists():
         config_path.mkdir(parents=True)
     elif not config_path.is_dir():
-        raise ValueError(f"Specified path is not a dir: {config}")
+        raise ValueError(f"Specified path is not a directory: {config}")
 
     json_path = config_path / "config.json"
     payload: Dict[str, Any] = {}
