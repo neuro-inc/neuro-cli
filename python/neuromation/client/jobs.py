@@ -288,6 +288,7 @@ class JobDescription:
     container: Container
     is_preemptible: bool
     ssh_auth_server: URL
+    name: Optional[str] = None
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
@@ -304,6 +305,7 @@ class JobDescription:
     def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
         container = Container.from_api(res["container"])
         owner = res["owner"]
+        name = res.get("name", None)
         description = res.get("description", None)
         history = JobStatusHistory(
             status=JobStatus(res["history"].get("status", "unknown")),
@@ -323,6 +325,7 @@ class JobDescription:
             history=history,
             container=container,
             is_preemptible=res["is_preemptible"],
+            name=name,
             description=description,
             http_url=http_url,
             ssh_server=ssh_server,
@@ -362,7 +365,8 @@ class Jobs:
         resources: Resources,
         network: Optional[NetworkPortForwarding],
         volumes: Optional[List[Volume]],
-        description: Optional[str],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
         is_preemptible: bool = False,
         env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
@@ -390,6 +394,8 @@ class Jobs:
             "container": container.to_api(),
             "is_preemptible": is_preemptible,
         }
+        if name:
+            payload["name"] = name
         if description:
             payload["description"] = description
         async with self._api.request("POST", url, json=payload) as resp:
