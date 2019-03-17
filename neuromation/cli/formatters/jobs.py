@@ -175,6 +175,7 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 @dataclass(frozen=True)
 class TabularJobRow:
     id: str
+    name: str
     status: str
     when: str
     image: str
@@ -199,6 +200,7 @@ class TabularJobRow:
             when_humanized = humanize.naturaldate(when_datetime)
         return cls(
             id=job.id,
+            name=job.name if job.name else "",
             status=job.status,
             when=when_humanized,
             image=image_normalized,
@@ -212,6 +214,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
         self.width = width
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
+            "name": [2, 40],
             "status": [6, 10],
             "when": [4, 15],
             "image": [5, 15],
@@ -246,6 +249,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
             rows.append(TabularJobRow.from_job(job, self.image_parser))
         header = TabularJobRow(
             id="ID",
+            name="NAME",
             status="STATUS",
             when="WHEN",
             image="IMAGE",

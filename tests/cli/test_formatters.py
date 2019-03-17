@@ -97,10 +97,10 @@ def job_descr():
 
 class TestJobFormatter:
     def test_quiet_no_name(self, job_descr_no_name):
-        assert click.unstyle(JobFormatter(quiet=True)(job_descr_no_name)) == TEST_JOB_ID
+        assert JobFormatter(quiet=True)(job_descr_no_name) == TEST_JOB_ID
 
     def test_quiet(self, job_descr):
-        assert click.unstyle(JobFormatter(quiet=True)(job_descr)) == TEST_JOB_ID
+        assert JobFormatter(quiet=True)(job_descr) == TEST_JOB_ID
 
     def test_non_quiet_no_name(self, job_descr_no_name) -> None:
         expected = (
@@ -534,6 +534,7 @@ class TestSimpleJobsFormatter:
             JobDescription(
                 status=JobStatus.PENDING,
                 id="job-cf33bd55-9e3b-4df7-a894-9c148a908a66",
+                name="this-job-has-a-name",
                 owner="owner",
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
@@ -563,11 +564,15 @@ class TestTabularJobRow:
     image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
 
     def _job_descr_with_status(
-        self, status: JobStatus, image: str = "nginx:apache2"
+        self,
+        status: JobStatus,
+        image: str = "nginx:apache2",
+        name: Optional[str] = None,
     ) -> JobDescription:
         return JobDescription(
             status=status,
             id="job-1f5ab792-e534-4bb4-be56-8af1ce722692",
+            name=name,
             owner="owner",
             description="some",
             history=JobStatusHistory(
@@ -586,6 +591,19 @@ class TestTabularJobRow:
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
         )
+
+    def test_with_job_name(self):
+        row = TabularJobRow.from_job(
+            self._job_descr_with_status(JobStatus.RUNNING, name="job-name"),
+            self.image_parser,
+        )
+        assert row.name == "job-name"
+
+    def test_without_job_name(self):
+        row = TabularJobRow.from_job(
+            self._job_descr_with_status(JobStatus.RUNNING, name=None), self.image_parser
+        )
+        assert row.name == ""
 
     @pytest.mark.parametrize(
         "status,date",
@@ -611,10 +629,11 @@ class TestTabularJobRow:
             self.image_parser,
         )
         assert row.image == "image://bob/swiss-box:red"
+        assert row.name == ""
 
 
 class TestTabularJobsFormatter:
-    columns = ["ID", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
+    columns = ["ID", "NAME", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
     image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
 
     def test_empty(self):
@@ -632,6 +651,7 @@ class TestTabularJobsFormatter:
             status=JobStatus.FAILED,
             id="j",
             owner="owner",
+            name="name",
             description="d",
             history=JobStatusHistory(
                 status=JobStatus.FAILED,
@@ -653,16 +673,16 @@ class TestTabularJobsFormatter:
         result = [item for item in formatter([job])]
         assert result in [
             [
-                "ID  STATUS  WHEN  IMAGE  DESCRIPTION  COMMAND",
-                "j   failed  now   i:l    d            c",
+                "ID  NAME  STATUS  WHEN  IMAGE  DESCRIPTION  COMMAND",
+                "j   name  failed  now   i:l    d            c",
             ],
             [
-                "ID  STATUS  WHEN          IMAGE  DESCRIPTION  COMMAND",
-                "j   failed  a second ago  i:l    d            c",
+                "ID  NAME  STATUS  WHEN          IMAGE  DESCRIPTION  COMMAND",
+                "j   name  failed  a second ago  i:l    d            c",
             ],
             [
-                "ID  STATUS  WHEN           IMAGE  DESCRIPTION  COMMAND",
-                "j   failed  2 seconds ago  i:l    d            c",
+                "ID  NAME  STATUS  WHEN           IMAGE  DESCRIPTION  COMMAND",
+                "j   name  failed  2 seconds ago  i:l    d            c",
             ],
         ]
 
@@ -671,6 +691,7 @@ class TestTabularJobsFormatter:
             JobDescription(
                 status=JobStatus.FAILED,
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c82",
+                name="name1",
                 owner="owner",
                 description="some description long long long long",
                 history=JobStatusHistory(
@@ -692,6 +713,7 @@ class TestTabularJobsFormatter:
             JobDescription(
                 status=JobStatus.PENDING,
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c84",
+                name="name2",
                 owner="owner",
                 description="some description",
                 history=JobStatusHistory(
@@ -714,9 +736,9 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(0, self.image_parser)
         result = [item for item in formatter(jobs)]
         assert result == [
-            "ID                                        STATUS   WHEN         IMAGE            DESCRIPTION                           COMMAND",  # noqa: E501
-            "job-7ee153a7-249c-4be9-965a-ba3eafb67c82  failed   Sep 25 2017  some-image-name:with-long-tag  some description long long long long  ls -la /some/path",  # noqa: E501
-            "job-7ee153a7-249c-4be9-965a-ba3eafb67c84  pending  Sep 25 2017  some-image-name:with-long-tag  some description        ls -la /some/path",  # noqa: E501
+            "ID                                        NAME   STATUS   WHEN         IMAGE            DESCRIPTION                           COMMAND",  # noqa: E501
+            "job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag  some description long long long long  ls -la /some/path",  # noqa: E501
+            "job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  some-image-name:with-long-tag  some description        ls -la /some/path",  # noqa: E501
         ]
 
 
