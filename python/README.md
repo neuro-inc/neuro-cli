@@ -26,6 +26,7 @@
 		* [neuro config login](#neuro-config-login)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
+		* [neuro config docker](#neuro-config-docker)
 		* [neuro config auth](#neuro-config-auth)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
@@ -651,6 +652,7 @@ Name | Description|
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
+| _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
 | _[neuro config auth](#neuro-config-auth)_| Update authorization token |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
@@ -709,6 +711,26 @@ neuro config show-token [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config docker
+
+Configure docker client for working with platform registry
+
+**Usage:**
+
+```bash
+neuro config docker [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--config PATH_|Specifies the location of the Docker client configuration files  \[default: /home/shagren/.docker]|
 |_--help_|Show this message and exit.|
 
 

@@ -1,5 +1,6 @@
 from . import rc
-from .main import main
 from .docker_credential_helper import main as dch
+from .main import main
 
-__all__ = ["main", "rc", 'dch']
+
+__all__ = ["main", "rc", "dch"]
