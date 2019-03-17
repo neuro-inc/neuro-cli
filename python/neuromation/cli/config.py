@@ -113,7 +113,7 @@ def logout() -> None:
     type=str,
     help="Specifies the location of the Docker client configuration files",
     default=Path.home() / ".docker",
-    show_default=True,
+    show_default=False,
 )
 @click.pass_obj
 def docker(cfg: Config, config: str) -> None:

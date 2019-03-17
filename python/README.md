@@ -731,7 +731,7 @@ neuro config docker [OPTIONS]
 
 Name | Description|
 |----|------------|
-|_--config PATH_|Specifies the location of the Docker client configuration files  \[default: /home/shagren/.docker]|
+|_--config PATH_|Specifies the location of the Docker client configuration files|
 |_--help_|Show this message and exit.|
 
 
