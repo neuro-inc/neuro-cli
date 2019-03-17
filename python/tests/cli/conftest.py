@@ -6,6 +6,7 @@ import pytest
 
 from neuromation.cli import main, rc
 
+
 SysCap = namedtuple("SysCap", "out err")
 log = logging.getLogger(__name__)
 
