@@ -138,7 +138,7 @@ class ConfigFactory:
         server_config = await get_server_config(URL(url))
         return cls._update_config(
             auth_config=server_config.auth_config,
-            registry_url=server_config.registry_url,
+            registry_url=str(server_config.registry_url),
             url=url,
         )
 
@@ -284,7 +284,7 @@ def _load(path: Path) -> Config:
             f"run 'chmod 600 {path}' before usage"
         )
     with path.open("r") as f:
-        payload = yaml.load(f)
+        payload = yaml.load(f, Loader=yaml.SafeLoader)
 
     api_url = payload["url"]
 
