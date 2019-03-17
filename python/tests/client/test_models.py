@@ -25,7 +25,7 @@ async def test_model_train(aiohttp_server, token):
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "http": {"port": 8181},
+                "http": {"port": 8181, "requires_auth": True},
                 "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",

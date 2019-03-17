@@ -192,6 +192,7 @@ Name | Description|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-d, --description DESC_|Add optional description to the job|
@@ -285,7 +286,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] ID LOCAL_PORT
+neuro job port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
@@ -894,6 +895,7 @@ Name | Description|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-d, --description DESC_|Add optional description to the job|
@@ -987,7 +989,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] ID LOCAL_PORT
+neuro port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**

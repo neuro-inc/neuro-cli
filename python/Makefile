@@ -76,28 +76,34 @@ e2e:
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--durations 10 \
 		tests
 
 .PHONY: _e2e
 _e2e:
 	pytest \
 	    -n auto --forked \
+	    --timeout=570 --timeout_method=thread\
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--cov-append \
 		--verbose \
+		--durations 10 \
 		tests
 
 .PHONY: _e2e_win
 _e2e_win:
 	pytest \
-		-m "e2e and not no_win32" \
+		-n 4 \
+		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--cov-append \
+		--verbose \
+		--durations 10 \
 		tests
 
 
