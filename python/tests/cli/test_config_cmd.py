@@ -46,7 +46,7 @@ class TestDocker:
         assert payload["credHelpers"] == {registry: "neuro"}
         assert payload["test"] == "value"
 
-    def test_merge_file_without_helpers(self, run_cli, tmp_path: Path, config):
+    def test_merge_file_with_existing_helpers(self, run_cli, tmp_path: Path, config):
         path = tmp_path / ".docker"
         path.mkdir()
         json_path = path / "config.json"
