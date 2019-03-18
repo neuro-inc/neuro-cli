@@ -3,7 +3,6 @@ from collections import namedtuple
 from typing import List
 
 import pytest
-from jose import jwt
 
 from neuromation.cli import main, rc
 from neuromation.cli.const import EX_OK
