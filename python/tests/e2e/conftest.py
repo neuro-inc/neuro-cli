@@ -445,6 +445,7 @@ class Helper:
         stop_state=JobStatus.FAILED,
     ):
         job_id = self.run_job(image, command, params)
+        assert job_id
         self.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
         self.wait_job_change_state_to(job_id, wait_state, stop_state)
         return job_id

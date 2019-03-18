@@ -1,4 +1,5 @@
 import re
+import subprocess
 import sys
 from pathlib import Path
 from uuid import uuid4 as uuid
@@ -8,6 +9,7 @@ import pytest
 from yarl import URL
 
 from neuromation.client import JobStatus
+from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 
 TEST_IMAGE_NAME = "e2e-banana-image"
@@ -156,3 +158,22 @@ def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     assert pulled in local_images
 
     loop.run_until_complete(docker.images.delete(pulled, force=True))
+
+
+@pytest.mark.e2e
+def test_docker_helper(helper, image, tag):
+    helper.run_cli(["config", "docker"])
+    registry = URL(helper.config.registry_url).host
+    username = helper.config.username
+    full_tag = f"{registry}/{username}/{image}"
+    tag_cmd = f"docker tag {image} {full_tag}"
+    subprocess.run(tag_cmd, shell=True, check=True, capture_output=True)
+    push_cmd = f"docker push {full_tag}"
+    subprocess.run(push_cmd, shell=True, check=True, capture_output=True)
+
+    # Run image and check aoutput
+    image_url = f"image://{username}/{image}"
+    job_id = helper.run_job_and_wait_state(
+        image_url, "", JOB_TINY_CONTAINER_PARAMS, JobStatus.SUCCEEDED, JobStatus.FAILED
+    )
+    helper.check_job_output(job_id, re.escape(tag))
