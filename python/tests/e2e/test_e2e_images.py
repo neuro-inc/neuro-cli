@@ -167,11 +167,20 @@ def test_docker_helper(helper, image, tag):
     username = helper.config.username
     full_tag = f"{registry}/{username}/{image}"
     tag_cmd = f"docker tag {image} {full_tag}"
-    subprocess.run(tag_cmd, shell=True, check=True, capture_output=True)
+    result = subprocess.run(
+        tag_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
+    assert (
+        not result.returncode
+    ), f"Command {tag_cmd} failed: {result.stdout} {result.stderr} "
     push_cmd = f"docker push {full_tag}"
-    subprocess.run(push_cmd, shell=True, check=True, capture_output=True)
-
-    # Run image and check aoutput
+    result = subprocess.run(
+        push_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
+    assert (
+        not result.returncode
+    ), f"Command {push_cmd} failed: {result.stdout} {result.stderr} "
+    # Run image and check output
     image_url = f"image://{username}/{image}"
     job_id = helper.run_job_and_wait_state(
         image_url, "", JOB_TINY_CONTAINER_PARAMS, JobStatus.SUCCEEDED, JobStatus.FAILED
