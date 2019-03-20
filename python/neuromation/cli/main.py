@@ -85,7 +85,7 @@ def print_options(
 @click.option(
     "--config",
     type=str,
-    required=True,
+    required=False,
     help="Path to config file.",
     default=lambda: rc.ConfigFactory.get_path(),
 )
