@@ -46,23 +46,23 @@ log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class RunProfile:
+class RunPreset:
     cpu: float
     memory: str
     gpu: Optional[int]
     gpu_model: Optional[str]
 
 
-RUN_PROFILE = MappingProxyType(
+RUN_PRESET = MappingProxyType(
     {
-        "gpu-small": RunProfile(
+        "gpu-small": RunPreset(
             gpu=1, cpu=7, memory="30", gpu_model="nvidia-tesla-k80"
         ),
-        "gpu-large": RunProfile(
+        "gpu-large": RunPreset(
             gpu=1, cpu=7, memory="60", gpu_model="nvidia-tesla-v100"
         ),
-        "cpu-small": RunProfile(gpu=None, cpu=7, memory="30", gpu_model=None),
-        "cpu-large": RunProfile(gpu=None, cpu=7, memory="60", gpu_model=None),
+        "cpu-small": RunPreset(gpu=None, cpu=1, memory="30", gpu_model=None),
+        "cpu-large": RunPreset(gpu=None, cpu=7, memory="60", gpu_model=None),
     }
 )
 
@@ -490,10 +490,10 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
 @click.argument("image")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
-    "-p",
-    "--profile",
-    metavar="PROFILE",
-    type=click.Choice(list(RUN_PROFILE)),
+    "-s",
+    "--preset",
+    metavar="PRESET",
+    type=click.Choice(list(RUN_PRESET)),
     help="Predefined job profile",
     default="gpu-small",
     show_default=True,
@@ -557,7 +557,7 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
 async def run(
     cfg: Config,
     image: str,
-    profile: str,
+    preset: str,
     extshm: bool,
     http: int,
     http_auth: bool,
@@ -610,12 +610,12 @@ async def run(
 
     network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
 
-    job_profile = RUN_PROFILE[profile]
+    job_preset = RUN_PRESET[preset]
     resources = Resources.create(
-        job_profile.cpu,
-        job_profile.gpu,
-        job_profile.gpu_model,
-        job_profile.memory,
+        job_preset.cpu,
+        job_preset.gpu,
+        job_preset.gpu_model,
+        job_preset.memory,
         extshm,
     )
     volumes = Volume.from_cli_list(

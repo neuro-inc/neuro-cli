@@ -1033,7 +1033,7 @@ def test_job_run(helper):
         [
             "job",
             "run",
-            "-C",
+            "-p",
             "cpu-small",
             "--non-preemptible",
             "--no-wait-start",
