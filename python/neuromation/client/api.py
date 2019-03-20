@@ -95,11 +95,12 @@ class API:
         async with self._session.request(
             method, url, headers=headers, params=params, json=json, data=data
         ) as resp:
+            text = await resp.text()
             try:
                 resp.raise_for_status()
             except aiohttp.ClientResponseError as exc:
                 code = exc.status
-                message = exc.message
+                message = text
                 try:
                     error_response = await resp.json()
                     message = error_response["error"]
