@@ -36,7 +36,12 @@ class Resources:
 
     @classmethod
     def create(
-        cls, cpu: float, gpu: int, gpu_model: str, memory: str, extshm: bool
+        cls,
+        cpu: float,
+        gpu: Optional[int],
+        gpu_model: Optional[str],
+        memory: str,
+        extshm: bool,
     ) -> "Resources":
         return cls(memory, cpu, gpu, extshm, gpu_model)
 

@@ -46,21 +46,23 @@ log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class RunConfig:
+class RunProfile:
     cpu: float
     memory: str
     gpu: Optional[int]
     gpu_model: Optional[str]
 
 
-RUN_CONFIGURATION = MappingProxyType(
+RUN_PROFILE = MappingProxyType(
     {
-        "gpu-small": RunConfig(gpu=1, cpu=7, memory="30", gpu_model="nvidia-tesla-k80"),
-        "gpu-large": RunConfig(
+        "gpu-small": RunProfile(
+            gpu=1, cpu=7, memory="30", gpu_model="nvidia-tesla-k80"
+        ),
+        "gpu-large": RunProfile(
             gpu=1, cpu=7, memory="60", gpu_model="nvidia-tesla-v100"
         ),
-        "cpu-small": RunConfig(gpu=None, cpu=7, memory="30", gpu_model=None),
-        "cpu-large": RunConfig(gpu=None, cpu=7, memory="60", gpu_model=None),
+        "cpu-small": RunProfile(gpu=None, cpu=7, memory="30", gpu_model=None),
+        "cpu-large": RunProfile(gpu=None, cpu=7, memory="60", gpu_model=None),
     }
 )
 
@@ -488,11 +490,11 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
 @click.argument("image")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
-    "-C",
-    "--configuration",
-    metavar="CONFIGURATION",
-    type=click.Choice(list(RUN_CONFIGURATION)),
-    help="Predefined configurations",
+    "-p",
+    "--profile",
+    metavar="PROFILE",
+    type=click.Choice(list(RUN_PROFILE)),
+    help="Predefined job profile",
     default="gpu-small",
     show_default=True,
 )
@@ -555,7 +557,7 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
 async def run(
     cfg: Config,
     image: str,
-    configuration: str,
+    profile: str,
     extshm: bool,
     http: int,
     http_auth: bool,
@@ -608,9 +610,13 @@ async def run(
 
     network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
 
-    job_config = RUN_CONFIGURATION[configuration]
+    job_profile = RUN_PROFILE[profile]
     resources = Resources.create(
-        job_config.cpu, job_config.gpu, job_config.gpu_model, job_config.memory, extshm
+        job_profile.cpu,
+        job_profile.gpu,
+        job_profile.gpu_model,
+        job_profile.memory,
+        extshm,
     )
     volumes = Volume.from_cli_list(
         username,
@@ -619,7 +625,7 @@ async def run(
             "storage://neuromation:/var/storage/neuromation:ro",
         ],
     )
-    if not quiet:
+    if volumes and not quiet:
         log.info(
             "Using volumes: \n"
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)

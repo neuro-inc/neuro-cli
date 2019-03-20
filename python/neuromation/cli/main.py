@@ -179,6 +179,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
     for ctx in reversed(ctx_stack[1:]):
         ctx.close()
 
+
 # groups
 cli.add_command(job.job)
 cli.add_command(storage.storage)

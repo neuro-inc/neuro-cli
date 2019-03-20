@@ -4,6 +4,7 @@
 * [Preface](#Preface)
 * [neuro](#neuro)
 	* [neuro job](#neuro-job)
+		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job ls](#neuro-job-ls)
 		* [neuro job status](#neuro-job-status)
@@ -32,6 +33,7 @@
 		* [neuro completion generate](#neuro-completion-generate)
 		* [neuro completion patch](#neuro-completion-patch)
 	* [neuro help](#neuro-help)
+	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
 	* [neuro ps](#neuro-ps)
 	* [neuro status](#neuro-status)
@@ -99,6 +101,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
+| _[neuro run](#neuro-run)_| Run an image with predefined configuration |
 | _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
@@ -143,6 +146,7 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
+| _[neuro job run](#neuro-job-run)_| Run an image with predefined configuration |
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
@@ -151,6 +155,52 @@ Name | Description|
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
+
+
+
+
+### neuro job run
+
+Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+
+**Usage:**
+
+```bash
+neuro job run [OPTIONS] IMAGE [CMD]...
+```
+
+**Examples:**
+
+```bash
+
+# Starts a container pytorch:latest with two paths mounted. Directory /q1/
+# is mounted in read only mode to /qm directory within container.
+# Directory /mod mounted to /mod directory in read-write mode.
+neuro run pytorch:latest
+
+# Starts a container pytorch:latest with connection enabled to port 22 and
+# sets PYTHONPATH environment value to /python.
+# Please note that SSH server should be provided by container.
+neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-p, --profile PROFILE_|Predefined job profile  \[default: gpu-small]|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
+|_--http INTEGER_|Enable HTTP port forwarding to container  \[default: 80]|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
+|_--ssh INTEGER_|Enable SSH port forwarding to container|
+|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
+|_\-d, --description DESC_|Add optional description to the job|
+|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
+|_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
+|_\--env-file PATH_|File with environment variables to pass|
+|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_--help_|Show this message and exit.|
 
 
 
@@ -832,6 +882,52 @@ neuro help [OPTIONS] [COMMAND]...
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro run
+
+Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+
+**Usage:**
+
+```bash
+neuro run [OPTIONS] IMAGE [CMD]...
+```
+
+**Examples:**
+
+```bash
+
+# Starts a container pytorch:latest with two paths mounted. Directory /q1/
+# is mounted in read only mode to /qm directory within container.
+# Directory /mod mounted to /mod directory in read-write mode.
+neuro run pytorch:latest
+
+# Starts a container pytorch:latest with connection enabled to port 22 and
+# sets PYTHONPATH environment value to /python.
+# Please note that SSH server should be provided by container.
+neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-p, --profile PROFILE_|Predefined job profile  \[default: gpu-small]|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
+|_--http INTEGER_|Enable HTTP port forwarding to container  \[default: 80]|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
+|_--ssh INTEGER_|Enable SSH port forwarding to container|
+|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
+|_\-d, --description DESC_|Add optional description to the job|
+|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
+|_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
+|_\--env-file PATH_|File with environment variables to pass|
+|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
