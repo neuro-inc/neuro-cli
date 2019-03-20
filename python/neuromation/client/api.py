@@ -2,7 +2,7 @@ import logging
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
-from aiohttp import WSMessage
+from aiohttp import ClientResponseError, WSMessage
 from yarl import URL
 
 from .utils import asynccontextmanager
@@ -95,19 +95,12 @@ class API:
         async with self._session.request(
             method, url, headers=headers, params=params, json=json, data=data
         ) as resp:
-            text = await resp.text()
             try:
-                resp.raise_for_status()
+                self._raise_for_status(resp)
             except aiohttp.ClientResponseError as exc:
-                code = exc.status
-                message = text
-                try:
-                    error_response = await resp.json()
-                    message = error_response["error"]
-                except Exception:
-                    pass
-                err_cls = self._exception_map.get(code, IllegalArgumentError)
-                raise err_cls(message)
+                err_text = await resp.text()
+                err_cls = self._exception_map.get(exc.status, IllegalArgumentError)
+                raise err_cls(err_text)
             else:
                 yield resp
 
@@ -123,3 +116,15 @@ class API:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg
+
+    def _raise_for_status(self, resp) -> None:
+        if 400 <= resp.status:
+            # reason is always not None for started response
+            assert resp.reason
+            raise ClientResponseError(
+                resp.request_info,
+                resp.history,
+                status=resp.status,
+                message=resp.reason,
+                headers=resp.headers,
+            )
