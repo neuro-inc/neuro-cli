@@ -55,9 +55,7 @@ class RunPreset:
 
 RUN_PRESET = MappingProxyType(
     {
-        "gpu-small": RunPreset(
-            gpu=1, cpu=7, memory="30", gpu_model="nvidia-tesla-k80"
-        ),
+        "gpu-small": RunPreset(gpu=1, cpu=7, memory="30", gpu_model="nvidia-tesla-k80"),
         "gpu-large": RunPreset(
             gpu=1, cpu=7, memory="60", gpu_model="nvidia-tesla-v100"
         ),
@@ -612,11 +610,7 @@ async def run(
 
     job_preset = RUN_PRESET[preset]
     resources = Resources.create(
-        job_preset.cpu,
-        job_preset.gpu,
-        job_preset.gpu_model,
-        job_preset.memory,
-        extshm,
+        job_preset.cpu, job_preset.gpu, job_preset.gpu_model, job_preset.memory, extshm
     )
     volumes = Volume.from_cli_list(
         username,

@@ -189,7 +189,7 @@ neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
 
 Name | Description|
 |----|------------|
-|_\-p, --profile PROFILE_|Predefined job profile  \[default: gpu-small]|
+|_\-s, --preset PRESET_|Predefined job profile  \[default: gpu-small]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
@@ -917,7 +917,7 @@ neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
 
 Name | Description|
 |----|------------|
-|_\-p, --profile PROFILE_|Predefined job profile  \[default: gpu-small]|
+|_\-s, --preset PRESET_|Predefined job profile  \[default: gpu-small]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
