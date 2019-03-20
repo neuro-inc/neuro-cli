@@ -179,7 +179,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
     for ctx in reversed(ctx_stack[1:]):
         ctx.close()
 
-
+# groups
 cli.add_command(job.job)
 cli.add_command(storage.storage)
 cli.add_command(image.image)
@@ -189,6 +189,8 @@ cli.add_command(completion.completion)
 cli.add_command(model.model)
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 
+# shortcuts
+cli.add_command(job.run)
 cli.add_command(job.submit)
 cli.add_command(alias(job.ls, "ps", help=job.ls.help, deprecated=False))
 cli.add_command(job.status)

@@ -3,7 +3,9 @@ import logging
 import os
 import shlex
 import sys
-from typing import Sequence
+from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Dict, Optional, Sequence
 
 import aiohttp
 import click
@@ -41,6 +43,43 @@ from .utils import alias, async_cmd, command, group, volume_to_verbose_str
 
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class RunConfig:
+    cpu: float
+    memory: str
+    gpu: Optional[int]
+    gpu_model: Optional[str]
+
+
+RUN_CONFIGURATION = MappingProxyType(
+    {
+        "gpu-small": RunConfig(gpu=1, cpu=7, memory="30", gpu_model="nvidia-tesla-k80"),
+        "gpu-large": RunConfig(
+            gpu=1, cpu=7, memory="60", gpu_model="nvidia-tesla-v100"
+        ),
+        "cpu-small": RunConfig(gpu=None, cpu=7, memory="30", gpu_model=None),
+        "cpu-large": RunConfig(gpu=None, cpu=7, memory="60", gpu_model=None),
+    }
+)
+
+
+def build_env(env: Sequence[str], env_file: str) -> Dict[str, str]:
+    if env_file:
+        with open(env_file, "r") as ef:
+            env = ef.read().splitlines() + list(env)
+
+    env_dict = {}
+    for line in env:
+        splitted = line.split("=", 1)
+        if len(splitted) == 1:
+            val = os.environ.get(splitted[0], "")
+            env_dict[splitted[0]] = val
+        else:
+            env_dict[splitted[0]] = splitted[1]
+
+    return env_dict
 
 
 @group()
@@ -190,20 +229,7 @@ async def submit(
 
     username = cfg.username
 
-    # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
-    # separate function.
-    if env_file:
-        with open(env_file, "r") as ef:
-            env = ef.read().splitlines() + list(env)
-
-    env_dict = {}
-    for line in env:
-        splitted = line.split("=", 1)
-        if len(splitted) == 1:
-            val = os.environ.get(splitted[0], "")
-            env_dict[splitted[0]] = val
-        else:
-            env_dict[splitted[0]] = splitted[1]
+    env_dict = build_env(env, env_file)
 
     cmd = " ".join(cmd) if cmd is not None else None
     log.debug(f'cmd="{cmd}"')
@@ -458,6 +484,169 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
         click.echo(format_fail(job, error))
 
 
+@command(context_settings=dict(ignore_unknown_options=True))
+@click.argument("image")
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@click.option(
+    "-C",
+    "--configuration",
+    metavar="CONFIGURATION",
+    type=click.Choice(list(RUN_CONFIGURATION)),
+    help="Predefined configurations",
+    default="gpu-small",
+    show_default=True,
+)
+@click.option(
+    "-x/-X",
+    "--extshm/--no-extshm",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Request extended '/dev/shm' space",
+)
+@click.option(
+    "--http",
+    type=int,
+    default=80,
+    show_default=True,
+    help="Enable HTTP port forwarding to container",
+)
+@click.option(
+    "--http-auth/--no-http-auth",
+    is_flag=True,
+    help="Enable HTTP authentication for forwarded HTTP port",
+    default=True,
+    show_default=True,
+)
+@click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
+@click.option(
+    "--preemptible/--non-preemptible",
+    "-p/-P",
+    help="Run job on a lower-cost preemptible instance",
+    default=True,
+    show_default=True,
+)
+@click.option(
+    "-d", "--description", metavar="DESC", help="Add optional description to the job"
+)
+@click.option(
+    "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
+)
+@click.option(
+    "-e",
+    "--env",
+    metavar="VAR=VAL",
+    multiple=True,
+    help="Set environment variable in container "
+    "Use multiple options to define more than one variable",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="File with environment variables to pass",
+)
+@click.option(
+    "--wait-start/--no-wait-start",
+    default=True,
+    show_default=True,
+    help="Wait for a job start or failure",
+)
+@async_cmd
+async def run(
+    cfg: Config,
+    image: str,
+    configuration: str,
+    extshm: bool,
+    http: int,
+    http_auth: bool,
+    ssh: int,
+    cmd: Sequence[str],
+    env: Sequence[str],
+    env_file: str,
+    preemptible: bool,
+    description: str,
+    quiet: bool,
+    wait_start: bool,
+) -> None:
+    """
+    Run an image with predefined configuration.
+
+    IMAGE container image name.
+
+    CMD list will be passed as commands to model container.
+
+    Examples:
+
+    # Starts a container pytorch:latest with two paths mounted. Directory /q1/
+    # is mounted in read only mode to /qm directory within container.
+    # Directory /mod mounted to /mod directory in read-write mode.
+    neuro run pytorch:latest
+
+    # Starts a container pytorch:latest with connection enabled to port 22 and
+    # sets PYTHONPATH environment value to /python.
+    # Please note that SSH server should be provided by container.
+    neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
+    """
+
+    username = cfg.username
+
+    env_dict = build_env(env, env_file)
+
+    cmd = " ".join(cmd) if cmd is not None else None
+    log.debug(f'cmd="{cmd}"')
+
+    image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+    if image_parser.is_in_neuro_registry(image):
+        parsed_image = image_parser.parse_as_neuro_image(image)
+    else:
+        parsed_image = image_parser.parse_as_docker_image(image)
+    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
+    if not quiet:
+        log.info(f"Using image '{parsed_image.as_url_str()}'")
+        log.debug(f"IMAGE: {parsed_image}")
+    image_obj = Image(image=parsed_image.as_repo_str(), command=cmd)
+
+    network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
+
+    job_config = RUN_CONFIGURATION[configuration]
+    resources = Resources.create(
+        job_config.cpu, job_config.gpu, job_config.gpu_model, job_config.memory, extshm
+    )
+    volumes = Volume.from_cli_list(
+        username,
+        [
+            "storage://~:/var/storage/home:rw",
+            "storage://neuromation:/var/storage/neuromation:ro",
+        ],
+    )
+    if not quiet:
+        log.info(
+            "Using volumes: \n"
+            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
+        )
+
+    async with cfg.make_client() as client:
+        job = await client.jobs.submit(
+            image=image_obj,
+            resources=resources,
+            network=network,
+            volumes=volumes,
+            is_preemptible=preemptible,
+            description=description,
+            env=env_dict,
+        )
+        click.echo(JobFormatter(quiet)(job))
+        progress = JobStartProgress(cfg.color)
+        while wait_start and job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.2)
+            job = await client.jobs.status(job.id)
+            if not quiet:
+                click.echo(progress(job), nl=False)
+        if not quiet and wait_start:
+            click.echo(progress(job, finish=True), nl=False)
+
+
+job.add_command(run)
 job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
