@@ -26,6 +26,7 @@ class RCException(Exception):
     pass
 
 
+ENV_NAME = "NEURO_CONFIG"
 NO_VERSION = pkg_resources.parse_version("0.0.0")
 
 
@@ -113,9 +114,15 @@ class Config:
 
 
 class ConfigFactory:
+    _path: Path = Path(os.environ.get(ENV_NAME, Path.home() / ".nmrc"))
+
     @classmethod
     def get_path(cls) -> Path:
-        return Path.home().joinpath(".nmrc")
+        return cls._path
+
+    @classmethod
+    def set_path(cls, path: Path) -> None:
+        cls._path = path
 
     @classmethod
     def load(cls) -> Config:

@@ -13,6 +13,7 @@ from yarl import URL
 from neuromation.cli import rc
 from neuromation.cli.const import EX_OK
 from neuromation.cli.docker_credential_helper import main as dch
+from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME, save as save_config
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
@@ -20,34 +21,44 @@ log = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def config_anon():
-    return rc.Config(
-        url="https://dev.neu.ro/api/v1", registry_url="https://registry-dev.neu.ro"
-    )
+def nmrc_anon_path(tmp_path, monkeypatch):
+    nmrc_path = tmp_path / "anon.nmrc"
+    monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
+    return nmrc_path
 
 
 @pytest.fixture()
-def run_dch(config, config_anon, capfd, monkeypatch, tmp_path) -> SysCapWithCode:
+def config_anon(token, nmrc_anon_path):
+    cfg = rc.Config(
+        url="https://dev.neu.ro/api/v1", registry_url="https://registry-dev.neu.ro"
+    )
+    save_config(nmrc_anon_path, cfg)
+    return cfg
+
+
+@pytest.fixture()
+def run_dch(
+    capfd, monkeypatch, tmp_path, config_anon, config, nmrc_anon_path, nmrc_path
+) -> SysCapWithCode:
     def _run_dch(arguments: List[str], anon=False):
-        def _temp_config():
-            config_path = tmp_path / ".nmrc"
-            if anon:
-                rc.save(config_path, config_anon)
-            else:
-                rc.save(config_path, config)
-            return config_path
 
         log.info("Run 'docker-helper-neuro %s'", " ".join(arguments))
         code = EX_OK
         try:
-
+            old_config_path = rc.ConfigFactory.get_path()
             with monkeypatch.context() as ctx:
-                ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
                 ctx.setattr(sys, "argv", ["docker-credential-helper"] + arguments)
+                if anon:
+                    rc.ConfigFactory.set_path(nmrc_anon_path)
+                else:
+                    rc.ConfigFactory.set_path(nmrc_path)
+
                 dch()
         except SystemExit as e:
             code = e.code
             pass
+        finally:
+            rc.ConfigFactory.set_path(old_config_path)
         out, err = capfd.readouterr()
         return SysCapWithCode(out.strip(), err.strip(), code)
 
@@ -68,6 +79,19 @@ class TestCli:
             file.write("text")
         captured = run_cli(["config", "docker", "--config", str(path)])
         assert re.match(r"Specified path is not a directory", captured.out)
+
+    def test_path_from_env(self, run_cli, tmp_path, config, monkeypatch):
+        json_path = tmp_path / "config.json"
+        with json_path.open("w") as file:
+            file.write("{}")
+        monkeypatch.setenv("DOCKER_CONFIG", str(tmp_path))
+        capture = run_cli(["config", "docker"])
+        assert not capture.err
+        assert json_path.is_file()
+        with json_path.open() as fp:
+            payload = json.load(fp)
+        registry = URL(config.registry_url).host
+        assert payload["credHelpers"] == {registry: "neuro"}
 
     def test_new_file(self, run_cli, tmp_path: Path, config):
         path = tmp_path / ".docker"
@@ -128,8 +152,8 @@ class TestHelper:
         capture = run_dch(["store"])
         assert capture.code != EX_OK
 
-    def test_anon_get_operation(self, run_dch, monkeypatch, config):
-        registry = URL(config.registry_url).host
+    def test_anon_get_operation(self, run_dch, monkeypatch, config_anon):
+        registry = URL(config_anon.registry_url).host
         monkeypatch.setattr("sys.stdin", io.StringIO(registry))
         capture = run_dch(["get"], True)
         assert capture.code != EX_OK

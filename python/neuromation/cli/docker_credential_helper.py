@@ -28,7 +28,7 @@ def main() -> None:
         neuro_registry = URL(config.registry_url).host
         if registry != neuro_registry:
             error(
-                f"Unknown registry: {registry}. "
+                f"Unknown registry {registry}. "
                 "neuro configured with {neuro_registry}.",
                 EX_DATAERR,
             )

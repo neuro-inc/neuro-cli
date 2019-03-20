@@ -21,6 +21,7 @@ from yarl import URL
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
+from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME
 from neuromation.client import (
     FileStatusType,
     JobDescription,
@@ -470,24 +471,23 @@ class Helper:
                 )
 
 
+@pytest.fixture()
+def nmrc_path(tmp_path, monkeypatch):
+    nmrc_path = tmp_path / "conftest.nmrc"
+    monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
+    rc.ConfigFactory.set_path(nmrc_path)
+    return nmrc_path
+
+
 @pytest.fixture
-def config(tmp_path, monkeypatch):
+def config(nmrc_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
 
     if e2e_test_token:
-
-        def _temp_config():
-            rc_text = RC_TEXT.format(token=e2e_test_token)
-            config_path = tmp_path / ".nmrc"
-            config_path.write_text(rc_text)
-            config_path.chmod(0o600)
-            return config_path
-
-        with monkeypatch.context() as ctx:
-            ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
-            config = rc.ConfigFactory.load()
-    else:
-        config = rc.ConfigFactory.load()
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        nmrc_path.write_text(rc_text)
+        nmrc_path.chmod(0o600)
+    config = rc.ConfigFactory.load()
     yield config
 
 
@@ -498,24 +498,25 @@ def helper(config, capfd, monkeypatch, tmp_path):
     ret.close()
 
 
+@pytest.fixture()
+def nmrc_alt_path(tmp_path, monkeypatch):
+    nmrc_path = tmp_path / "conftest-alt.nmrc"
+    monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
+    rc.ConfigFactory.set_path(nmrc_path)
+    return nmrc_path
+
+
 @pytest.fixture
 def config_alt(tmp_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
-
     if e2e_test_token:
-
-        def _temp_config():
-            rc_text = RC_TEXT.format(token=e2e_test_token)
-            config_path = tmp_path / ".alt.nmrc"
-            config_path.write_text(rc_text)
-            config_path.chmod(0o600)
-            return config_path
-
-        with monkeypatch.context() as ctx:
-            ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
-            config = rc.ConfigFactory.load()
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        nmrc_path.write_text(rc_text)
+        nmrc_path.chmod(0o600)
     else:
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
+
+    config = rc.ConfigFactory.load()
     yield config
 
 

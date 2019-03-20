@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -112,7 +113,7 @@ def logout() -> None:
     metavar="PATH",
     type=str,
     help="Specifies the location of the Docker client configuration files",
-    default=Path.home() / ".docker",
+    default=lambda: os.environ.get("DOCKER_CONFIG", Path.home() / ".docker"),
     show_default=False,
 )
 @click.pass_obj

@@ -97,14 +97,14 @@ def test_create__filled(nmrc):
 
 @pytest.mark.usefixtures("patch_home_for_test")
 class TestFactoryMethods:
-    def test_factory(self):
+    def test_factory(self, nmrc_path):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         rc.ConfigFactory._update_config(url="http://abc.def", auth_token=auth_token)
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_id_rsa(self):
+    def test_factory_update_id_rsa(self, nmrc_path):
         config: Config = Config(
             url=DEFAULTS.url,
             auth_token=DEFAULTS.auth_token,
@@ -114,11 +114,11 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
-    def test_factory_update_token_invalid(self):
+    def test_factory_update_token_invalid(self, nmrc_path):
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token="not-a-token")
 
-    def test_factory_update_token_no_identity(self):
+    def test_factory_update_token_no_identity(self, nmrc_path):
         jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
         jwt_claims = """eyJub3QtaWRlbnRpdHkiOiJub3QtaWRlbnRpdHkifQ"""
         jwt_sig = """ag9NbxxOvp2ufMCUXk2pU3MMf2zYftXHQdOZDJajlvE"""
@@ -126,7 +126,7 @@ class TestFactoryMethods:
         with pytest.raises(ValueError):
             rc.ConfigFactory.update_auth_token(token=no_identity)
 
-    def test_factory_update_last_checked_version(self):
+    def test_factory_update_last_checked_version(self, nmrc_path):
         config = rc.ConfigFactory.load()
         assert config.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
         newer_version = pkg_resources.parse_version("1.2.3b4")
@@ -135,11 +135,7 @@ class TestFactoryMethods:
         assert config2.pypi.pypi_version == newer_version
         assert config2.pypi.check_timestamp == 1234
 
-    def test_factory_forget_token(self, monkeypatch, nmrc):
-        def home():
-            return nmrc.parent
-
-        monkeypatch.setattr(Path, "home", home)
+    def test_factory_forget_token(self, nmrc_path):
         jwt_hdr = """eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"""
         jwt_claims = """eyJpZGVudGl0eSI6Im1lIn0"""
         jwt_sig = """mhRDoWlNw5J2cAU6LZCVlM20oRF64MtIfzquso2eAqU"""
@@ -162,7 +158,7 @@ class TestFactoryMethods:
         assert config3 == default_config
 
     @pytest.fixture
-    def server_config(self):
+    def server_config(self, nmrc_path):
         return ServerConfig(
             registry_url=URL("registry_url"),
             auth_config=AuthConfig(
@@ -181,7 +177,7 @@ class TestFactoryMethods:
 
     @pytest.fixture
     @pytest.mark.asyncio
-    async def server_config_url(self, server_config, aiohttp_server):
+    async def server_config_url(self, server_config, aiohttp_server, nmrc_path):
         registry_url: URL = server_config.registry_url
         auth_config: AuthConfig = server_config.auth_config
         JSON = {
@@ -205,15 +201,17 @@ class TestFactoryMethods:
 
         await app.cleanup()
 
-    async def test_factory_update_url(self, server_config_url, server_config, nmrc):
+    async def test_factory_update_url(
+        self, server_config_url, server_config, nmrc_path
+    ):
         uninit_auth_config = AuthConfig.create_uninitialized()
         uninit_config = Config()
         auth_token = AuthToken.create_non_expiring("token1")
 
         config = Config(url="http://url", auth_token=auth_token, github_rsa_path="path")
-        save(nmrc, config)
+        save(nmrc_path, config)
         await rc.ConfigFactory.update_api_url(url=str(server_config_url))
-        config2 = load(nmrc)
+        config2 = load(nmrc_path)
 
         assert config.url == "http://url"
         assert config.registry_url == ""
@@ -235,7 +233,7 @@ class TestFactoryMethods:
         assert config2.tty == uninit_config.tty
         assert config2.terminal_size == uninit_config.terminal_size
 
-    async def test_factory_update_url_malformed(self):
+    async def test_factory_update_url_malformed(self, nmrc_path):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
@@ -243,7 +241,7 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
-    async def test_factory_update_url_malformed_trailing_slash(self):
+    async def test_factory_update_url_malformed_trailing_slash(self, nmrc_path):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
@@ -251,7 +249,7 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
-    async def test_factory_update_url_malformed_with_fragment(self):
+    async def test_factory_update_url_malformed_with_fragment(self, nmrc_path):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
@@ -259,7 +257,7 @@ class TestFactoryMethods:
         config2: Config = rc.ConfigFactory.load()
         assert config.url != config2.url
 
-    async def test_factory_update_url_malformed_with_anchor(self):
+    async def test_factory_update_url_malformed_with_anchor(self, nmrc_path):
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):

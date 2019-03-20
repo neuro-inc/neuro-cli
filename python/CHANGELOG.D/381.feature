@@ -1,0 +1,1 @@
+New option `--config` for using alternative config file location. Environment variable `NEURO_CONFIG` can be used as option.
