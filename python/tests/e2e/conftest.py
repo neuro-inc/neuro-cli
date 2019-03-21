@@ -492,7 +492,7 @@ def helper(config, capfd, monkeypatch, tmp_path, nmrc_path):
 
 
 @pytest.fixture()
-def nmrc_alt_path(tmp_path, monkeypatch):
+def nmrc_path_alt(tmp_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
     if not e2e_test_token:
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
@@ -503,12 +503,12 @@ def nmrc_alt_path(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def config_alt(tmp_path, nmrc_alt_path):
+def config_alt(tmp_path, nmrc_path_alt):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
     if e2e_test_token:
         rc_text = RC_TEXT.format(token=e2e_test_token)
-        nmrc_alt_path.write_text(rc_text)
-        nmrc_alt_path.chmod(0o600)
+        nmrc_path_alt.write_text(rc_text)
+        nmrc_path_alt.chmod(0o600)
     else:
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
 
