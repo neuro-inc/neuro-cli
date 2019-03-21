@@ -50,7 +50,7 @@ class ImageNameParser:
             else:
                 parsed_image = self.parse_as_docker_image(image)
             image_normalized = parsed_image.as_url_str()
-        except:
+        except Exception:
             image_normalized = image
         return image_normalized
 
