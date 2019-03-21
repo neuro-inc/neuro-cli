@@ -117,7 +117,7 @@ class API:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg
 
-    def _raise_for_status(self, resp) -> None:
+    def _raise_for_status(self, resp: aiohttp.ClientResponse) -> None:
         if 400 <= resp.status:
             # reason is always not None for started response
             assert resp.reason

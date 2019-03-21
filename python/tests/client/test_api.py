@@ -7,7 +7,6 @@ from aiohttp import web
 from async_generator import asynccontextmanager
 from yarl import URL
 
-from neuromation.cli.rc import Client
 from neuromation.client import API, DEFAULT_TIMEOUT, IllegalArgumentError
 
 
@@ -36,7 +35,7 @@ async def test_raise_for_status_no_error_message(aiohttp_server, api_factory):
 
     async with api_factory(srv.make_url("/")) as api:
         with pytest.raises(IllegalArgumentError, match="^400: Bad Request$"):
-            async with api.request(method="GET", rel_url=URL("test")) as resp:
+            async with api.request(method="GET", rel_url=URL("test")):
                 pass
 
 
@@ -52,5 +51,5 @@ async def test_raise_for_status_contains_error_message(aiohttp_server, api_facto
 
     async with api_factory(srv.make_url("/")) as api:
         with pytest.raises(IllegalArgumentError, match=f"^{ERROR_MSG}$"):
-            async with api.request(method="GET", rel_url=URL("test")) as resp:
+            async with api.request(method="GET", rel_url=URL("test")):
                 pass
