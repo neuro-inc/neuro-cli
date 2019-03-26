@@ -93,6 +93,11 @@ def test_job_lifecycle(helper):
     store_out = captured.out
     assert job_id not in store_out
 
+    # Check job ls by name
+    captured = helper.run_cli(["job", "ls", "-n", job_name, "-s", "succeeded"])
+    store_out = captured.out
+    assert job_id in store_out
+    assert job_name in store_out
 
 @pytest.mark.e2e
 def test_job_description(helper):
