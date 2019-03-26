@@ -250,7 +250,7 @@ Display status of a job.
 **Usage:**
 
 ```bash
-neuro job status [OPTIONS] ID
+neuro job status [OPTIONS] JOB
 ```
 
 **Options:**
@@ -269,7 +269,7 @@ Execute command in a running job.
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] ID CMD...
+neuro job exec [OPTIONS] JOB CMD...
 ```
 
 **Options:**
@@ -290,7 +290,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
+neuro job port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
@@ -310,7 +310,7 @@ Print the logs for a container.
 **Usage:**
 
 ```bash
-neuro job logs [OPTIONS] ID
+neuro job logs [OPTIONS] JOB
 ```
 
 **Options:**
@@ -329,7 +329,7 @@ Kill job\(s).
 **Usage:**
 
 ```bash
-neuro job kill [OPTIONS] ID...
+neuro job kill [OPTIONS] JOB_LIST...
 ```
 
 **Options:**
@@ -348,7 +348,7 @@ Display GPU/CPU/Memory usage.
 **Usage:**
 
 ```bash
-neuro job top [OPTIONS] ID
+neuro job top [OPTIONS] JOB
 ```
 
 **Options:**
@@ -955,7 +955,7 @@ Display status of a job.
 **Usage:**
 
 ```bash
-neuro status [OPTIONS] ID
+neuro status [OPTIONS] JOB
 ```
 
 **Options:**
@@ -974,7 +974,7 @@ Execute command in a running job.
 **Usage:**
 
 ```bash
-neuro exec [OPTIONS] ID CMD...
+neuro exec [OPTIONS] JOB CMD...
 ```
 
 **Options:**
@@ -995,7 +995,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
+neuro port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
@@ -1015,7 +1015,7 @@ Print the logs for a container.
 **Usage:**
 
 ```bash
-neuro logs [OPTIONS] ID
+neuro logs [OPTIONS] JOB
 ```
 
 **Options:**
@@ -1034,7 +1034,7 @@ Kill job\(s).
 **Usage:**
 
 ```bash
-neuro kill [OPTIONS] ID...
+neuro kill [OPTIONS] JOB_LIST...
 ```
 
 **Options:**
@@ -1053,7 +1053,7 @@ Display GPU/CPU/Memory usage.
 **Usage:**
 
 ```bash
-neuro top [OPTIONS] ID
+neuro top [OPTIONS] JOB
 ```
 
 **Options:**

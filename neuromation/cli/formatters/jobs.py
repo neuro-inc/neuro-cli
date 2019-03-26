@@ -49,19 +49,23 @@ class JobFormatter:
             + f": {format_job_status(job.status)}"
         )
         if job.name:
-            out.append(style("Name", bold=True) + f": {job.name}")
+            out.append(style("Job name", bold=True) + f": {job.name}")
+            job_alias = job.name
+        else:
+            job_alias = job.id
         if job.http_url:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
-        out.append(f"  neuro status {job.id}  " + style("# check job status", dim=True))
+
+        out.append(f"  neuro status {job_alias}  " + style("# check job status", dim=True))
         out.append(
-            f"  neuro logs {job.id}    " + style("# monitor job stdout", dim=True)
+            f"  neuro logs {job_alias}    " + style("# monitor job stdout", dim=True)
         )
         out.append(
-            f"  neuro top {job.id}     "
+            f"  neuro top {job_alias}     "
             + style("# display real-time job telemetry", dim=True)
         )
-        out.append(f"  neuro kill {job.id}    " + style("# kill job", dim=True))
+        out.append(f"  neuro kill {job_alias}    " + style("# kill job", dim=True))
         return "\n".join(out)
 
 

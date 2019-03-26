@@ -37,7 +37,7 @@ from .formatters import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, async_cmd, command, group, volume_to_verbose_str
+from .utils import alias, async_cmd, command, group, resolve_job, volume_to_verbose_str
 
 
 log = logging.getLogger(__name__)
@@ -266,7 +266,7 @@ async def submit(
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("id")
+@click.argument("job")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
     "-t",
@@ -281,19 +281,20 @@ async def submit(
 )
 @async_cmd
 async def exec(
-    cfg: Config, id: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
+    cfg: Config, job: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
     """
     Execute command in a running job.
     """
     cmd = shlex.split(" ".join(cmd))
     async with cfg.make_client() as client:
+        id = await resolve_job(client, job)
         retcode = await client.jobs.exec(id, tty, no_key_check, cmd)
     sys.exit(retcode)
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("id")
+@click.argument("job")
 @click.argument("local_port", type=int)
 @click.argument("remote_port", type=int)
 @click.option(
@@ -303,13 +304,14 @@ async def exec(
 )
 @async_cmd
 async def port_forward(
-    cfg: Config, id: str, no_key_check: bool, local_port: int, remote_port: int
+    cfg: Config, job: str, no_key_check: bool, local_port: int, remote_port: int
 ) -> None:
     """
     Forward a port of a running job exposed with -ssh option
     to a local port.
     """
     async with cfg.make_client() as client:
+        id = await resolve_job(client, job)
         retcode = await client.jobs.port_forward(
             id, no_key_check, local_port, remote_port
         )
@@ -317,13 +319,13 @@ async def port_forward(
 
 
 @command(deprecated=True, hidden=True)
-@click.argument("id")
+@click.argument("job")
 @click.option(
     "--user", help="Container user name", default=JOB_SSH_USER, show_default=True
 )
 @click.option("--key", help="Path to container private key.")
 @async_cmd
-async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
+async def ssh(cfg: Config, job: str, user: str, key: str) -> None:
     """
     Starts ssh terminal connected to running job.
 
@@ -336,13 +338,14 @@ async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
     git_key = cfg.github_rsa_path
 
     async with cfg.make_client() as client:
+        id = await resolve_job(client, job)
         await connect_ssh(client, id, git_key, user, key)
 
 
 @command()
-@click.argument("id")
+@click.argument("job")
 @async_cmd
-async def logs(cfg: Config, id: str) -> None:
+async def logs(cfg: Config, job: str) -> None:
     """
     Print the logs for a container.
     """
@@ -351,6 +354,7 @@ async def logs(cfg: Config, id: str) -> None:
     )
 
     async with cfg.make_client(timeout=timeout) as client:
+        id = await resolve_job(client, job)
         async for chunk in client.jobs.monitor(id):
             if not chunk:
                 break
@@ -426,26 +430,28 @@ async def ls(
 
 
 @command()
-@click.argument("id")
+@click.argument("job")
 @async_cmd
-async def status(cfg: Config, id: str) -> None:
+async def status(cfg: Config, job: str) -> None:
     """
     Display status of a job.
     """
     async with cfg.make_client() as client:
+        id = await resolve_job(client, job)
         res = await client.jobs.status(id)
         click.echo(JobStatusFormatter()(res))
 
 
 @command()
-@click.argument("id")
+@click.argument("job")
 @async_cmd
-async def top(cfg: Config, id: str) -> None:
+async def top(cfg: Config, job: str) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
     async with cfg.make_client() as client:
+        id = await resolve_job(client, job)
         print_header = True
         async for res in client.jobs.top(id):
             if print_header:
@@ -456,17 +462,19 @@ async def top(cfg: Config, id: str) -> None:
 
 
 @command()
-@click.argument("id", nargs=-1, required=True)
+@click.argument("job_list", nargs=-1, required=True)
 @async_cmd
-async def kill(cfg: Config, id: Sequence[str]) -> None:
+async def kill(cfg: Config, job_list: Sequence[str]) -> None:
     """
     Kill job(s).
     """
     errors = []
     async with cfg.make_client() as client:
-        for job in id:
+        for job in job_list:
+            job = await resolve_job(client, job)
             try:
                 await client.jobs.kill(job)
+                # TODO (ajuszkowski) printing should be on the cli level
                 print(job)
             except ValueError as e:
                 errors.append((job, e))
