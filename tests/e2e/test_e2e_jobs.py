@@ -99,7 +99,6 @@ def test_job_lifecycle(helper):
     assert job_id in store_out
     assert job_name in store_out
 
-
     # Check job status by id
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out

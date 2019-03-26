@@ -58,7 +58,7 @@ def test_e2e_job_top(helper):
     job_name = f"test-job-{uuid4()}"
     aux_params = ["--volume", f"{helper.tmpstorage}:/data:ro", "--name", job_name]
 
-    job_id = helper.run_job_and_wait_state(
+    helper.run_job_and_wait_state(
         image=UBUNTU_IMAGE_NAME,
         command=command,
         params=JOB_TINY_CONTAINER_PARAMS + aux_params,
