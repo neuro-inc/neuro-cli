@@ -80,8 +80,8 @@ def test_job_lifecycle(helper):
     assert job_id in store_out
     assert command not in store_out
 
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
+    # Kill the job by name
+    captured = helper.run_cli(["job", "kill", job_name])
 
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
@@ -98,6 +98,17 @@ def test_job_lifecycle(helper):
     store_out = captured.out
     assert job_id in store_out
     assert job_name in store_out
+
+
+    # Check job status by id
+    captured = helper.run_cli(["job", "status", job_id])
+    store_out = captured.out
+    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
+
+    # Check job status by name
+    captured = helper.run_cli(["job", "status", job_name])
+    store_out = captured.out
+    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
 
 
 @pytest.mark.e2e
@@ -634,6 +645,7 @@ def test_e2e_multiple_env_from_file(helper, tmp_path):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_true(helper):
+    job_name = f"test-job-{uuid4()}"
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
@@ -645,6 +657,8 @@ def test_e2e_ssh_exec_true(helper):
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "-n",
+            job_name,
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -655,6 +669,9 @@ def test_e2e_ssh_exec_true(helper):
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = helper.run_cli(["job", "exec", "--no-key-check", job_id, "true"])
+    assert captured.out == ""
+
+    captured = helper.run_cli(["job", "exec", "--no-key-check", job_name, "true"])
     assert captured.out == ""
 
 
@@ -1017,8 +1034,17 @@ async def test_port_forward(config, nginx_job_async):
 
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):
+    job_name = f"non-existing-job-{uuid4()}"
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0", "0"])
+        helper.run_cli(["port-forward", "--no-key-check", job_name, "0", "0"])
+    assert cm.value.code == 127
+
+
+@pytest.mark.e2e
+def test_exec_no_job(helper, nginx_job):
+    job_name = f"non-existing-job-{uuid4()}"
+    with pytest.raises(SystemExit) as cm:
+        helper.run_cli(["exec", "--no-key-check", job_name, "true"])
     assert cm.value.code == 127
 
 

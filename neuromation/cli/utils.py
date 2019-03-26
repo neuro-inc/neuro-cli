@@ -332,10 +332,7 @@ async def resolve_job(client: Client, id_or_name: str) -> str:
     try:
         jobs = await client.jobs.list(name=id_or_name)
     except Exception as e:
-        log.error(
-            f"Failed to resolve job-name '{id_or_name} to job-ID': {e}. "
-            f"Using '{id_or_name}' as job-ID"
-        )
+        log.error(f"Failed to resolve job-name '{id_or_name}' to a job-ID: {e}")
     if jobs:
         job_id = jobs[-1].id
         log.debug(f"Job name '{id_or_name}' resolved to job ID '{job_id}'")
