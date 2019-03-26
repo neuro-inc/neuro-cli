@@ -99,6 +99,7 @@ def test_job_lifecycle(helper):
     assert job_id in store_out
     assert job_name in store_out
 
+
 @pytest.mark.e2e
 def test_job_description(helper):
     # Remember original running jobs
