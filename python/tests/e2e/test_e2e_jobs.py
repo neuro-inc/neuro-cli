@@ -53,7 +53,7 @@ def test_job_lifecycle(helper):
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
-    assert f"Job name: {job_name}" in captured.out
+    assert f"Name: {job_name}" in captured.out
     assert re.search("Http URL: http", captured.out), captured.out
 
     # Check it is in a running,pending job list now

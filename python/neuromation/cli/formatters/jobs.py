@@ -49,7 +49,7 @@ class JobFormatter:
             + f": {format_job_status(job.status)}"
         )
         if job.name:
-            out.append(style("Job name", bold=True) + f": {job.name}")
+            out.append(style("Name", bold=True) + f": {job.name}")
         if job.http_url:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")

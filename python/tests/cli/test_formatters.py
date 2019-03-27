@@ -116,7 +116,7 @@ class TestJobFormatter:
     def test_non_quiet(self, job_descr) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Job name: {TEST_JOB_NAME}\n"
+            + f"Name: {TEST_JOB_NAME}\n"
             + f"Shortcuts:\n"
             + f"  neuro status {TEST_JOB_ID}  # check job status\n"
             + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
@@ -142,7 +142,7 @@ class TestJobFormatter:
         job_descr = replace(job_descr, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Job name: {TEST_JOB_NAME}\n"
+            + f"Name: {TEST_JOB_NAME}\n"
             + f"Http URL: https://job.dev\n"
             + f"Shortcuts:\n"
             + f"  neuro status {TEST_JOB_ID}  # check job status\n"
