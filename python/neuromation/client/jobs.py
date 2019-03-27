@@ -305,8 +305,8 @@ class JobDescription:
     def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
         container = Container.from_api(res["container"])
         owner = res["owner"]
-        name = res.get("name", None)
-        description = res.get("description", None)
+        name = res.get("name")
+        description = res.get("description")
         history = JobStatusHistory(
             status=JobStatus(res["history"].get("status", "unknown")),
             reason=res["history"].get("reason", ""),
