@@ -49,7 +49,7 @@ class JobFormatter:
             + f": {format_job_status(job.status)}"
         )
         if job.name:
-            out.append(style("Job name", bold=True) + f": {job.name}")
+            out.append(style("Name", bold=True) + f": {job.name}")
             job_alias = job.name
         else:
             job_alias = job.id
