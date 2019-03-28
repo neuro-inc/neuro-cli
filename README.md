@@ -223,9 +223,9 @@ neuro job ls [OPTIONS]
 
 ```bash
 
-neuro job ls --name=my-experiments-v1 --status=all
-neuro job ls --description=my favourite job
-neuro job ls -s failed -s succeeded -q
+neuro ps --name my-experiments-v1 --status all
+neuro ps --description=my favourite job
+neuro ps -s failed -s succeeded -q
 
 ```
 
@@ -234,7 +234,7 @@ neuro job ls -s failed -s succeeded -q
 Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
-|_\-n, --name NAME_|Filter out jobs name|
+|_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
 |_\-q, --quiet_|Print only Job ID|
 |_\-w, --wide_|Do not cut long lines for terminal width|
@@ -928,9 +928,9 @@ neuro ps [OPTIONS]
 
 ```bash
 
-neuro job ls --name=my-experiments-v1 --status=all
-neuro job ls --description=my favourite job
-neuro job ls -s failed -s succeeded -q
+neuro ps --name my-experiments-v1 --status all
+neuro ps --description=my favourite job
+neuro ps -s failed -s succeeded -q
 
 ```
 
@@ -939,7 +939,7 @@ neuro job ls -s failed -s succeeded -q
 Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
-|_\-n, --name NAME_|Filter out jobs name|
+|_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
 |_\-q, --quiet_|Print only Job ID|
 |_\-w, --wide_|Do not cut long lines for terminal width|

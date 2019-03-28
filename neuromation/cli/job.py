@@ -365,7 +365,7 @@ async def logs(cfg: Config, id: str) -> None:
     type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
     help="Filter out job by status (multiple option)",
 )
-@click.option("-n", "--name", metavar="NAME", help="Filter out jobs name")
+@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
 @click.option(
     "-d",
     "--description",
@@ -390,9 +390,9 @@ async def ls(
 
     Examples:
 
-    neuro job ls --name=my-experiments-v1 --status=all
-    neuro job ls --description="my favourite job"
-    neuro job ls -s failed -s succeeded -q
+    neuro ps --name my-experiments-v1 --status all
+    neuro ps --description="my favourite job"
+    neuro ps -s failed -s succeeded -q
     """
 
     status = status or ["running", "pending"]

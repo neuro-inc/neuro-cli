@@ -564,10 +564,7 @@ class TestTabularJobRow:
     image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
 
     def _job_descr_with_status(
-        self,
-        status: JobStatus,
-        image: str = "nginx:apache2",
-        name: Optional[str] = None,
+        self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
     ) -> JobDescription:
         return JobDescription(
             status=status,
