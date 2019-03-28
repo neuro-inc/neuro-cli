@@ -48,6 +48,8 @@ class JobFormatter:
             + style("Status", bold=True)
             + f": {format_job_status(job.status)}"
         )
+        if job.name:
+            out.append(style("Name", bold=True) + f": {job.name}")
         if job.http_url:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
@@ -66,6 +68,8 @@ class JobFormatter:
 class JobStatusFormatter:
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
+        if job_status.name:
+            result += f"Name: {job_status.name}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         if job_status.description:
             result += f"Description: {job_status.description}\n"
