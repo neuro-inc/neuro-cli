@@ -95,11 +95,9 @@ class API:
         async with self._session.request(
             method, url, headers=headers, params=params, json=json, data=data
         ) as resp:
-            try:
-                self._raise_for_status(resp)
-            except aiohttp.ClientResponseError as exc:
+            if 400 <= resp.status:
                 err_text = await resp.text()
-                err_cls = self._exception_map.get(exc.status, IllegalArgumentError)
+                err_cls = self._exception_map.get(resp.status, IllegalArgumentError)
                 raise err_cls(err_text)
             else:
                 yield resp
@@ -116,15 +114,3 @@ class API:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg
-
-    def _raise_for_status(self, resp: aiohttp.ClientResponse) -> None:
-        if 400 <= resp.status:
-            # reason is always not None for started response
-            assert resp.reason
-            raise ClientResponseError(
-                resp.request_info,
-                resp.history,
-                status=resp.status,
-                message=resp.reason,
-                headers=resp.headers,
-            )
