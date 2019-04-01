@@ -42,6 +42,7 @@ JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 60 * 5
 JOB_OUTPUT_SLEEP_SECONDS = 2
 STORAGE_MAX_WAIT = 60
+NETWORK_TIMEOUT = 60.0 * 3
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
@@ -374,7 +375,12 @@ class Helper:
             try:
                 rc.ConfigFactory.set_path(self._nmrc_path)
                 main(
-                    ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
+                    [
+                        "--show-traceback",
+                        "--disable-pypi-version-check",
+                        "--color=no",
+                        f"--network-timeout={self.config.network_timeout}",
+                    ]
                     + arguments
                 )
             except SystemExit as exc:
@@ -480,6 +486,7 @@ def config(nmrc_path, monkeypatch):
         nmrc_path.write_text(rc_text)
         nmrc_path.chmod(0o600)
 
+    config.network_timeout = NETWORK_TIMEOUT
     config = rc.ConfigFactory.load()
     yield config
 
@@ -513,6 +520,8 @@ def config_alt(tmp_path, nmrc_path_alt):
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
 
     config = rc.ConfigFactory.load()
+
+    config.network_timeout = NETWORK_TIMEOUT
     yield config
 
 

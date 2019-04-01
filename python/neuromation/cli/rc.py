@@ -78,6 +78,7 @@ class Config:
     tty: bool = field(default=False)  # don't save the field in config
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
     disable_pypi_version_check: bool = False  # don't save it in config
+    network_timeout: float = 30.0
 
     @property
     def auth(self) -> Optional[str]:
@@ -108,6 +109,10 @@ class Config:
         kwargs: Dict[str, Any] = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
+        else:
+            kwargs["timeout"] = aiohttp.ClientTimeout(
+                None, None, self.network_timeout, self.network_timeout
+            )
         if self.registry_url:
             kwargs["registry_url"] = self.registry_url
         return Client(self.url, token, **kwargs)

@@ -107,6 +107,9 @@ def print_options(
     help="Don't periodically check PyPI to determine whether a new version of "
     "Neuromation CLI is available for download.",
 )
+@click.option(
+    "--network-timeout", type=float, help="Network read timeout, seconds.", default=60.0
+)
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
 )
@@ -127,6 +130,7 @@ def cli(
     show_traceback: bool,
     color: str,
     disable_pypi_version_check: bool,
+    network_timeout: float,
 ) -> None:
     #   ▇ ◣
     #   ▇ ◥ ◣
@@ -154,6 +158,7 @@ def cli(
     cfg.tty = tty
     cfg.terminal_size = shutil.get_terminal_size()
     cfg.disable_pypi_version_check = disable_pypi_version_check
+    config.network_timeout = network_timeout
     ctx.obj = cfg
     if not disable_pypi_version_check:
         cfg.pypi.warn_if_has_newer_version()
