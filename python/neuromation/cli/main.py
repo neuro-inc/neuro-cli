@@ -99,11 +99,7 @@ def print_options(
     "Neuromation CLI is available for download.",
 )
 @click.option(
-    "--network-timeout",
-    type=float,
-    help="Network read timeout, seconds.",
-    default=30.0,
-    required=True,
+    "--network-timeout", type=float, help="Network read timeout, seconds.", default=30.0
 )
 @click.version_option(
     version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
