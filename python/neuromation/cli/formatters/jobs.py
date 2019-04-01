@@ -185,11 +185,7 @@ class TabularJobRow:
     def from_job(
         cls, job: JobDescription, image_parser: ImageNameParser
     ) -> "TabularJobRow":
-        if image_parser.is_in_neuro_registry(job.container.image):
-            parsed_image = image_parser.parse_as_neuro_image(job.container.image)
-        else:
-            parsed_image = image_parser.parse_as_docker_image(job.container.image)
-
+        image_normalized = image_parser.normalize(job.container.image)
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -205,7 +201,7 @@ class TabularJobRow:
             id=job.id,
             status=job.status,
             when=when_humanized,
-            image=parsed_image.as_url_str(),
+            image=image_normalized,
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
         )
