@@ -27,6 +27,8 @@ def parse_docker_ls_output(docker_ls_output):
 
 @pytest.fixture()
 async def docker(loop):
+    if sys.platform == "win32":
+        pytest.skip("aiodocker not supported on windows at this moment")
     client = aiodocker.Docker()
     yield client
     await client.close()
@@ -57,9 +59,6 @@ async def image(loop, docker, tag):
 
 
 @pytest.mark.e2e
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="Image operations are not supported on Windows yet"
-)
 def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     # Let`s push image
     captured = helper.run_cli(["image", "push", image])
@@ -118,9 +117,6 @@ def test_images_complete_lifecycle(helper, image, tag, loop, docker):
 
 
 @pytest.mark.e2e
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="Image operations are not supported on Windows yet"
-)
 def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     # Let`s push image
     image_no_tag = image.replace(f":{tag}", "")
