@@ -158,7 +158,7 @@ def cli(
     cfg.tty = tty
     cfg.terminal_size = shutil.get_terminal_size()
     cfg.disable_pypi_version_check = disable_pypi_version_check
-    config.network_timeout = network_timeout
+    cfg.network_timeout = network_timeout
     ctx.obj = cfg
     if not disable_pypi_version_check:
         cfg.pypi.warn_if_has_newer_version()

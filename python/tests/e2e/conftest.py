@@ -486,8 +486,8 @@ def config(nmrc_path, monkeypatch):
         nmrc_path.write_text(rc_text)
         nmrc_path.chmod(0o600)
 
-    config.network_timeout = NETWORK_TIMEOUT
     config = rc.ConfigFactory.load()
+    config.network_timeout = NETWORK_TIMEOUT
     yield config
 
 
@@ -520,7 +520,6 @@ def config_alt(tmp_path, nmrc_path_alt):
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
 
     config = rc.ConfigFactory.load()
-
     config.network_timeout = NETWORK_TIMEOUT
     yield config
 

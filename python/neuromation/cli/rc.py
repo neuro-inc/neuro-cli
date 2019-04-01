@@ -78,7 +78,7 @@ class Config:
     tty: bool = field(default=False)  # don't save the field in config
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
     disable_pypi_version_check: bool = False  # don't save it in config
-    network_timeout: float = 30.0
+    network_timeout: float = 60.0
 
     @property
     def auth(self) -> Optional[str]:
