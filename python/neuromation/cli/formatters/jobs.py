@@ -48,6 +48,8 @@ class JobFormatter:
             + style("Status", bold=True)
             + f": {format_job_status(job.status)}"
         )
+        if job.name:
+            out.append(style("Name", bold=True) + f": {job.name}")
         if job.http_url:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
@@ -66,6 +68,8 @@ class JobFormatter:
 class JobStatusFormatter:
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
+        if job_status.name:
+            result += f"Name: {job_status.name}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         if job_status.description:
             result += f"Description: {job_status.description}\n"
@@ -181,11 +185,7 @@ class TabularJobRow:
     def from_job(
         cls, job: JobDescription, image_parser: ImageNameParser
     ) -> "TabularJobRow":
-        if image_parser.is_in_neuro_registry(job.container.image):
-            parsed_image = image_parser.parse_as_neuro_image(job.container.image)
-        else:
-            parsed_image = image_parser.parse_as_docker_image(job.container.image)
-
+        image_normalized = image_parser.normalize(job.container.image)
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -201,7 +201,7 @@ class TabularJobRow:
             id=job.id,
             status=job.status,
             when=when_humanized,
-            image=parsed_image.as_url_str(),
+            image=image_normalized,
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
         )

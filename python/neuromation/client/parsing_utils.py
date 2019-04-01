@@ -43,6 +43,17 @@ class ImageNameParser:
     def convert_to_docker_image(self, image: DockerImage) -> DockerImage:
         return DockerImage(name=image.name, tag=image.tag)
 
+    def normalize(self, image: str) -> str:
+        try:
+            if self.is_in_neuro_registry(image):
+                parsed_image = self.parse_as_neuro_image(image)
+            else:
+                parsed_image = self.parse_as_docker_image(image)
+            image_normalized = parsed_image.as_url_str()
+        except ValueError:
+            image_normalized = image
+        return image_normalized
+
     def _check_for_disambiguation(self, image: str) -> None:
         if image == "image:latest":
             raise ValueError(
