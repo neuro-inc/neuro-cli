@@ -42,6 +42,7 @@ JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 60 * 5
 JOB_OUTPUT_SLEEP_SECONDS = 2
 STORAGE_MAX_WAIT = 60
+CLI_MAX_WAIT = 180
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
@@ -376,7 +377,7 @@ class Helper:
 
         t0 = time()
         delay = 0.5
-        while time() - t0 < 180:  # wait up to 3 min
+        while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
             pre_out, pre_err = self._capfd.readouterr()
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
