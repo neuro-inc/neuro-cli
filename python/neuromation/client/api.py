@@ -95,18 +95,10 @@ class API:
         async with self._session.request(
             method, url, headers=headers, params=params, json=json, data=data
         ) as resp:
-            try:
-                resp.raise_for_status()
-            except aiohttp.ClientResponseError as exc:
-                code = exc.status
-                message = exc.message
-                try:
-                    error_response = await resp.json()
-                    message = error_response["error"]
-                except Exception:
-                    pass
-                err_cls = self._exception_map.get(code, IllegalArgumentError)
-                raise err_cls(message)
+            if 400 <= resp.status:
+                err_text = await resp.text()
+                err_cls = self._exception_map.get(resp.status, IllegalArgumentError)
+                raise err_cls(err_text)
             else:
                 yield resp
 
