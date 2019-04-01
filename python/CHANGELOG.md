@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.7.2 (2019-03-25)
+==============================
+
+Features
+--------
+
+
+- Change the default API endpoint to `https://staging.neu.ro/api/v1` ([#666](https://github.com/neuromation/platform-api-clients/issues/666))
+
+
 Neuromation 0.7.1 (2019-03-15)
 ==============================
 

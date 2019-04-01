@@ -425,6 +425,18 @@ class TestImageParser:
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
+    def test_normalize_is_neuro_image(self):
+        image = "image://~/ubuntu"
+        assert self.parser.normalize(image) == "image://alice/ubuntu:latest"
+
+    def test_normalize_is_docker_image(self):
+        image = "docker.io/library/ubuntu"
+        assert self.parser.normalize(image) == "docker.io/library/ubuntu:latest"
+
+    def test_normalize_invalid_image_name_left_as_is(self):
+        image = "image://ubuntu"
+        assert self.parser.normalize(image) == "image://ubuntu"
+
     # corner case 'image:latest'
 
     def test_parse_as_neuro_image__ambiguous_case__fail(self):

@@ -42,6 +42,8 @@ JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 60 * 5
 JOB_OUTPUT_SLEEP_SECONDS = 2
 STORAGE_MAX_WAIT = 60
+CLI_MAX_WAIT = 180
+NETWORK_TIMEOUT = 60.0 * 3
 
 DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
@@ -374,8 +376,9 @@ class Helper:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
+        t0 = time()
         delay = 0.5
-        for i in range(5):
+        while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
             pre_out, pre_err = self._capfd.readouterr()
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
@@ -387,6 +390,7 @@ class Helper:
                             "--show-traceback",
                             "--disable-pypi-version-check",
                             "--color=no",
+                            f"--network-timeout={self.config.network_timeout}",
                         ]
                         + arguments
                     )
@@ -487,6 +491,8 @@ def config(tmp_path, monkeypatch):
             config = rc.ConfigFactory.load()
     else:
         config = rc.ConfigFactory.load()
+
+    config.network_timeout = NETWORK_TIMEOUT
     yield config
 
 
@@ -515,6 +521,8 @@ def config_alt(tmp_path, monkeypatch):
             config = rc.ConfigFactory.load()
     else:
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
+
+    config.network_timeout = NETWORK_TIMEOUT
     yield config
 
 

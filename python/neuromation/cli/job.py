@@ -152,7 +152,19 @@ def job() -> None:
     show_default=True,
 )
 @click.option(
-    "-d", "--description", metavar="DESC", help="Add optional description to the job"
+    "-n",
+    "--name",
+    metavar="NAME",
+    type=str,
+    help="Optional job name",
+    default=None,
+    show_default=True,
+)
+@click.option(
+    "-d",
+    "--description",
+    metavar="DESC",
+    help="Optional job description in free format",
 )
 @click.option(
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
@@ -201,6 +213,7 @@ async def submit(
     env: Sequence[str],
     env_file: str,
     preemptible: bool,
+    name: str,
     description: str,
     quiet: bool,
     wait_start: bool,
@@ -263,6 +276,7 @@ async def submit(
             network=network,
             volumes=volumes,
             is_preemptible=preemptible,
+            name=name,
             description=description,
             env=env_dict,
         )

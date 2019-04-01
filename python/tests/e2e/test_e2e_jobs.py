@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 from time import sleep, time
+from uuid import uuid4
 
 import aiohttp
 import pytest
@@ -27,6 +28,7 @@ def test_job_lifecycle(helper):
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
     # Run a new job
+    job_name = f"test-job-name-{uuid4()}"
     command = 'bash -c "sleep 10m; false"'
     captured = helper.run_cli(
         [
@@ -42,16 +44,16 @@ def test_job_lifecycle(helper):
             "80",
             "--non-preemptible",
             "--no-wait-start",
+            "--name",
+            job_name,
             UBUNTU_IMAGE_NAME,
             command,
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-
-    # Check it was not running before
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
-
+    assert f"Name: {job_name}" in captured.out
     assert re.search("Http URL: http", captured.out), captured.out
 
     # Check it is in a running,pending job list now
@@ -820,6 +822,7 @@ def test_e2e_ssh_exec_dead_job(helper):
     assert cm.value.code == 127
 
 
+@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_job_list_filtered_by_status(helper):
     N_JOBS = 5
