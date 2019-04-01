@@ -10,7 +10,7 @@ from .utils import asynccontextmanager
 
 log = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
+DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 60, 60)
 
 
 class ClientError(Exception):
