@@ -374,8 +374,9 @@ class Helper:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
+        t0 = time()
         delay = 0.5
-        for i in range(5):
+        while time() - t0 < 180:  # wait up to 3 min
             pre_out, pre_err = self._capfd.readouterr()
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
