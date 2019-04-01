@@ -373,11 +373,10 @@ class Helper:
             pre_out, pre_err = self._capfd.readouterr()
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
-            stored_nmrc_path = rc.ConfigFactory.get_path()
             try:
-                rc.ConfigFactory.set_path(self._nmrc_path)
                 main(
                     [
+                        f"--nmrc={self._nmrc_path}",
                         "--show-traceback",
                         "--disable-pypi-version-check",
                         "--color=no",
@@ -405,8 +404,6 @@ class Helper:
                     continue
                 elif exc.code != EX_OK:
                     raise
-            finally:
-                rc.ConfigFactory.set_path(stored_nmrc_path)
             post_out, post_err = self._capfd.readouterr()
             out = post_out[pre_out_size:]
             err = post_err[pre_err_size:]
