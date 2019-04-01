@@ -1,13 +1,19 @@
 import ssl
+import sys
 
 import aiohttp
 import certifi
 import pytest
 from aiohttp import web
-from async_generator import asynccontextmanager
 from yarl import URL
 
 from neuromation.client import API, DEFAULT_TIMEOUT, IllegalArgumentError
+
+
+if sys.version_info >= (3, 7):
+    from contextlib import asynccontextmanager
+else:
+    from async_generator import asynccontextmanager
 
 
 @pytest.fixture
