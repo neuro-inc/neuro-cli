@@ -2,7 +2,7 @@ import logging
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
-from aiohttp import ClientResponseError, WSMessage
+from aiohttp import WSMessage
 from yarl import URL
 
 from .utils import asynccontextmanager
