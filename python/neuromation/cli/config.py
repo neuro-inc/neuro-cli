@@ -107,7 +107,7 @@ def logout() -> None:
     click.echo("Logged out")
 
 
-@command()
+@command(name="docker")
 @click.option(
     "--config",
     metavar="PATH",
@@ -117,7 +117,7 @@ def logout() -> None:
     show_default=False,
 )
 @click.pass_obj
-def docker(cfg: Config, config: str) -> None:
+def docker_config_path(cfg: Config, config: str) -> None:
     """
     Configure docker client for working with platform registry
     """
@@ -145,7 +145,7 @@ config.add_command(login)
 config.add_command(show)
 config.add_command(show_token)
 
-config.add_command(docker)
+config.add_command(docker_config_path)
 
 config.add_command(auth)
 config.add_command(logout)
