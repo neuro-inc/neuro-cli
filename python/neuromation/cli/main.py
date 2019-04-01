@@ -88,6 +88,7 @@ def print_options(
     required=False,
     help="Path to config file.",
     default=lambda: rc.ConfigFactory.get_path(),
+    metavar='PATH'
 )
 @click.option(
     "--show-traceback",
