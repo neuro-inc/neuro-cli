@@ -83,7 +83,7 @@ def print_options(
 @click.group(cls=MainGroup, invoke_without_command=True)
 @click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
 @click.option(
-    "--config",
+    "--nmrc",
     type=str,
     required=False,
     help="Path to config file.",
@@ -122,7 +122,7 @@ def print_options(
 def cli(
     ctx: click.Context,
     verbose: int,
-    config: str,
+    nmrc: str,
     show_traceback: bool,
     color: str,
     disable_pypi_version_check: bool,
@@ -147,7 +147,7 @@ def cli(
         real_color = tty
     ctx.color = real_color
     setup_logging(verbose=verbose, color=real_color)
-    rc.ConfigFactory.set_path(Path(config))
+    rc.ConfigFactory.set_path(Path(nmrc))
     cfg = rc.ConfigFactory.load()
     cfg.color = real_color
     cfg.tty = tty
