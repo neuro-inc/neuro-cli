@@ -42,14 +42,16 @@ from neuromation.client import (
     JobTelemetry,
     Resources,
 )
+from neuromation.client.jobs import HTTPPort
 from neuromation.client.parsing_utils import ImageNameParser
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
+TEST_JOB_NAME = "test-job-name"
 
 
 @pytest.fixture
-def job_descr():
+def job_descr_no_name():
     return JobDescription(
         status=JobStatus.PENDING,
         id=TEST_JOB_ID,
@@ -70,11 +72,37 @@ def job_descr():
     )
 
 
+@pytest.fixture
+def job_descr():
+    return JobDescription(
+        status=JobStatus.PENDING,
+        id=TEST_JOB_ID,
+        name=TEST_JOB_NAME,
+        owner="owner",
+        history=JobStatusHistory(
+            status=JobStatus.PENDING,
+            reason="ErrorReason",
+            description="ErrorDesc",
+            created_at="2018-09-25T12:28:21.298672+00:00",
+            started_at="2018-09-25T12:28:59.759433+00:00",
+            finished_at="2018-09-25T12:28:59.759433+00:00",
+        ),
+        container=Container(
+            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, None, False)
+        ),
+        ssh_auth_server="ssh-auth",
+        is_preemptible=True,
+    )
+
+
 class TestJobFormatter:
+    def test_quiet_no_name(self, job_descr_no_name):
+        assert click.unstyle(JobFormatter(quiet=True)(job_descr_no_name)) == TEST_JOB_ID
+
     def test_quiet(self, job_descr):
         assert click.unstyle(JobFormatter(quiet=True)(job_descr)) == TEST_JOB_ID
 
-    def test_non_quiet(self, job_descr) -> None:
+    def test_non_quiet_no_name(self, job_descr_no_name) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Shortcuts:\n"
@@ -83,12 +111,38 @@ class TestJobFormatter:
             + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
             + f"  neuro kill {TEST_JOB_ID}    # kill job"
         )
+        assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
+
+    def test_non_quiet(self, job_descr) -> None:
+        expected = (
+            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
+            + f"Name: {TEST_JOB_NAME}\n"
+            + f"Shortcuts:\n"
+            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
+            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
+            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
+            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+        )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
+
+    def test_non_quiet_http_url_no_name(self, job_descr_no_name) -> None:
+        job_descr_no_name = replace(job_descr_no_name, http_url=URL("https://job.dev"))
+        expected = (
+            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
+            + f"Http URL: https://job.dev\n"
+            + f"Shortcuts:\n"
+            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
+            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
+            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
+            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+        )
+        assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
     def test_non_quiet_http_url(self, job_descr) -> None:
         job_descr = replace(job_descr, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
+            + f"Name: {TEST_JOB_NAME}\n"
             + f"Http URL: https://job.dev\n"
             + f"Shortcuts:\n"
             + f"  neuro status {TEST_JOB_ID}  # check job status\n"
@@ -147,6 +201,54 @@ class TestJobStartProgress:
 
 
 class TestJobOutputFormatter:
+    def test_job_with_name(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            id="test-job",
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            ssh_server=URL("ssh://local.host.test:22/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at="2018-09-25T12:28:21.298672+00:00",
+                started_at="2018-09-25T12:28:59.759433+00:00",
+                finished_at="2018-09-25T12:28:59.759433+00:00",
+            ),
+            container=Container(
+                command="test-command",
+                image="test-image",
+                resources=Resources.create(0.1, 0, None, None, False),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_auth_server="ssh-auth",
+            is_preemptible=False,
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
     def test_pending_job(self) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
@@ -167,6 +269,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 image="test-image",
                 resources=Resources.create(0.1, 0, None, None, False),
+                http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_auth_server="ssh-auth",
             is_preemptible=False,
@@ -184,6 +287,7 @@ class TestJobOutputFormatter:
             f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
@@ -547,9 +651,19 @@ class TestTabularJobsFormatter:
         )
         formatter = TabularJobsFormatter(0, self.image_parser)
         result = [item for item in formatter([job])]
-        assert result == [
-            "ID  STATUS  WHEN   IMAGE  DESCRIPTION  COMMAND",
-            "j   failed  today  i:l    d            c",
+        assert result in [
+            [
+                "ID  STATUS  WHEN  IMAGE  DESCRIPTION  COMMAND",
+                "j   failed  now   i:l    d            c",
+            ],
+            [
+                "ID  STATUS  WHEN          IMAGE  DESCRIPTION  COMMAND",
+                "j   failed  a second ago  i:l    d            c",
+            ],
+            [
+                "ID  STATUS  WHEN           IMAGE  DESCRIPTION  COMMAND",
+                "j   failed  2 seconds ago  i:l    d            c",
+            ],
         ]
 
     def test_wide_cells(self):

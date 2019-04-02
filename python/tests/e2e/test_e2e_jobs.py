@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 from time import sleep, time
+from uuid import uuid4
 
 import aiohttp
 import pytest
@@ -27,6 +28,7 @@ def test_job_lifecycle(helper):
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
     # Run a new job
+    job_name = f"test-job-name-{uuid4()}"
     command = 'bash -c "sleep 10m; false"'
     captured = helper.run_cli(
         [
@@ -42,16 +44,16 @@ def test_job_lifecycle(helper):
             "80",
             "--non-preemptible",
             "--no-wait-start",
+            "--name",
+            job_name,
             UBUNTU_IMAGE_NAME,
             command,
         ]
     )
     job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
-
-    # Check it was not running before
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
-
+    assert f"Name: {job_name}" in captured.out
     assert re.search("Http URL: http", captured.out), captured.out
 
     # Check it is in a running,pending job list now
@@ -170,7 +172,6 @@ def test_job_description(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_unschedulable_job_lifecycle(helper):
     # Remember original running jobs
     captured = helper.run_cli(
@@ -236,7 +237,6 @@ def test_unschedulable_job_lifecycle(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_two_jobs_at_once(helper):
     # Remember original running jobs
     captured = helper.run_cli(
@@ -381,6 +381,7 @@ def test_model_train_with_http(helper):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-http-auth",
             NGINX_IMAGE_NAME,
             f"{helper.tmpstorage}/model",
             f"{helper.tmpstorage}/result",
@@ -402,7 +403,6 @@ def test_model_train_with_http(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_model_without_command(helper):
     loop_sleep = 1
     service_wait_time = 60
@@ -436,6 +436,7 @@ def test_model_without_command(helper):
             "--http",
             "80",
             "--non-preemptible",
+            "--no-http-auth",
             NGINX_IMAGE_NAME,
             f"{helper.tmpstorage}/model",
             f"{helper.tmpstorage}/result",
@@ -458,7 +459,6 @@ def test_model_without_command(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_e2e_no_env(helper):
     bash_script = 'echo "begin"$VAR"end"  | grep beginend'
     command = f"bash -c '{bash_script}'"
@@ -554,7 +554,6 @@ def test_e2e_env_from_local(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_e2e_multiple_env(helper):
     bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
     command = f"bash -c '{bash_script}'"
@@ -628,7 +627,6 @@ def test_e2e_multiple_env_from_file(helper, tmp_path):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_e2e_ssh_exec_true(helper):
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
@@ -682,7 +680,6 @@ def test_e2e_ssh_exec_false(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_e2e_ssh_exec_no_cmd(helper):
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
@@ -825,8 +822,8 @@ def test_e2e_ssh_exec_dead_job(helper):
     assert cm.value.code == 127
 
 
+@pytest.mark.xfail
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_e2e_job_list_filtered_by_status(helper):
     N_JOBS = 5
 
@@ -839,25 +836,25 @@ def test_e2e_job_list_filtered_by_status(helper):
 
     # test no status filters (same as pending+running)
     captured = helper.run_cli(["job", "ls", "--quiet"])
-    jobs_ls_no_arg = set(captured.out.split("\n"))
+    jobs_ls_no_arg = set(captured.out.splitlines())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_no_arg >= jobs
 
     # test single status filter
     captured = helper.run_cli(["job", "ls", "--status", "running", "--quiet"])
-    jobs_ls_running = set(captured.out.split("\n"))
+    jobs_ls_running = set(captured.out.splitlines())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_running >= jobs
 
     # test multiple status filters
     captured = helper.run_cli(["job", "ls", "-s", "running", "-s", "failed", "-q"])
-    jobs_ls_running = set(captured.out.split("\n"))
+    jobs_ls_running = set(captured.out.splitlines())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_running >= jobs
 
     # test "all" status filter
     captured = helper.run_cli(["job", "ls", "-s", "all", "-q"])
-    jobs_ls_all = set(captured.out.split("\n"))
+    jobs_ls_all = set(captured.out.splitlines())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all >= jobs
 
@@ -877,7 +874,7 @@ def test_e2e_job_list_filtered_by_status(helper):
             "-q",
         ]
     )
-    jobs_ls_all_explicit = set(captured.out.split("\n"))
+    jobs_ls_all_explicit = set(captured.out.splitlines())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all_explicit >= jobs
 
@@ -912,12 +909,12 @@ def nginx_job(helper):
 
 @pytest.fixture
 async def nginx_job_async(async_config, loop):
-    async with async_config.make_client() as client:
-        command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
+    async with config.make_client() as client:
+        command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
-            image=Image("nginx:latest", command=command),
+            image=Image("python:latest", command=command),
             resources=Resources.create(0.1, None, None, "20", True),
-            network=NetworkPortForwarding.from_cli(None, 80),
+            network=NetworkPortForwarding.from_cli(None, 22),
             is_preemptible=False,
             volumes=None,
             description="test NGINX job",
@@ -928,7 +925,7 @@ async def nginx_job_async(async_config, loop):
                 status = await client.jobs.status(job.id)
                 if status.status == JobStatus.RUNNING:
                     break
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
             else:
                 raise AssertionError("Cannot start NGINX job")
             yield job.id
@@ -942,21 +939,21 @@ async def test_port_forward(async_config, nginx_job_async):
     service_wait_time = 60
 
     async def get_(url):
-        succeeded = None
+        status = 999
         start_time = time()
         async with aiohttp.ClientSession() as session:
-            while not succeeded and (int(time() - start_time) < service_wait_time):
+            while status != 200 and (int(time() - start_time) < service_wait_time):
                 try:
                     async with session.get(url) as resp:
-                        succeeded = resp.status == 200
+                        status = resp.status
                 except aiohttp.ClientConnectionError:
-                    succeeded = False
-                if not succeeded:
+                    status = 599
+                if status != 200:
                     sleep(loop_sleep)
-        return succeeded
+        return status
 
     loop = asyncio.get_event_loop()
-    async with async_config.make_client() as client:
+    async with config.make_client() as client:
         forwarder = None
         try:
             port = unused_port()
@@ -968,18 +965,64 @@ async def test_port_forward(async_config, nginx_job_async):
 
             url = f"http://127.0.0.1:{port}"
             probe = await get_(url)
-            assert probe
+            assert probe == 200
         finally:
             forwarder.cancel()
             with pytest.raises(asyncio.CancelledError):
                 await forwarder
 
-            # add a sleep to get process watcher a chance to execute all callbacks
-            await asyncio.sleep(0.1)
-
 
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0"])
+        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0", "0"])
     assert cm.value.code == 127
+
+
+@pytest.mark.e2e
+def test_job_submit_http_auth(helper, secret_job):
+    loop_sleep = 1
+    service_wait_time = 60
+
+    async def _test_http_auth_redirect(url):
+        start_time = time()
+        async with aiohttp.ClientSession() as session:
+            while time() - start_time < service_wait_time:
+                try:
+                    async with session.get(url, allow_redirects=True) as resp:
+                        if resp.status == 200 and re.match(
+                            r".+\.auth0\.com$", resp.url.host
+                        ):
+                            break
+                except aiohttp.ClientConnectionError:
+                    pass
+                sleep(loop_sleep)
+            else:
+                raise AssertionError("HTTP Auth not detected")
+
+    async def _test_http_auth_with_cookie(url, cookies, secret):
+        start_time = time()
+        async with aiohttp.ClientSession(cookies=cookies) as session:
+            while time() - start_time < service_wait_time:
+                try:
+                    async with session.get(url, allow_redirects=False) as resp:
+                        if resp.status == 200:
+                            body = await resp.text()
+                            if secret == body.strip():
+                                break
+                        raise AssertionError("Secret not match")
+                except aiohttp.ClientConnectionError:
+                    pass
+                sleep(loop_sleep)
+            else:
+                raise AssertionError("Cannot fetch secret via forwarded http")
+
+    http_job = secret_job(http_port=True, http_auth=True)
+    ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
+
+    run_async(_test_http_auth_redirect(ingress_secret_url))
+
+    cookies = {"dat": helper.config.auth_token.token}
+    run_async(
+        _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
+    )

@@ -80,6 +80,7 @@ class Config:
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
     disable_pypi_version_check: bool = False  # don't save it in config
     _connector: Optional[aiohttp.TCPConnector] = None
+    network_timeout: float = 30.0
 
     async def post_init(self) -> None:
         ssl_context = ssl.SSLContext()
@@ -124,6 +125,10 @@ class Config:
         kwargs: Dict[str, Any] = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
+        else:
+            kwargs["timeout"] = aiohttp.ClientTimeout(
+                None, None, self.network_timeout, self.network_timeout
+            )
         if self.registry_url:
             kwargs["registry_url"] = self.registry_url
         return Client(self.url, token, connector=self.connector, **kwargs)
@@ -155,7 +160,7 @@ class ConfigFactory:
         server_config = await get_server_config(URL(url))
         return cls._update_config(
             auth_config=server_config.auth_config,
-            registry_url=server_config.registry_url,
+            registry_url=str(server_config.registry_url),
             url=url,
         )
 
@@ -307,7 +312,7 @@ def _load(path: Path) -> Config:
             f"run 'chmod 600 {path}' before usage"
         )
     with path.open("r") as f:
-        payload = yaml.load(f)
+        payload = yaml.load(f, Loader=yaml.SafeLoader)
 
     api_url = payload["url"]
 

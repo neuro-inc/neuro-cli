@@ -4,6 +4,7 @@ import itertools
 import time
 from dataclasses import dataclass
 from math import floor
+from sys import platform
 from typing import Iterable, Iterator, List, Mapping
 
 import humanize
@@ -17,7 +18,7 @@ from neuromation.client.parsing_utils import ImageNameParser
 BEFORE_PROGRESS = "\r"
 AFTER_PROGRESS = "\n"
 CLEAR_LINE_TAIL = "\033[0K"
-LINE_UP = "\033[1F"
+LINE_UP = "\033[1A"
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -47,6 +48,8 @@ class JobFormatter:
             + style("Status", bold=True)
             + f": {format_job_status(job.status)}"
         )
+        if job.name:
+            out.append(style("Name", bold=True) + f": {job.name}")
         if job.http_url:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
@@ -65,6 +68,8 @@ class JobFormatter:
 class JobStatusFormatter:
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
+        if job_status.name:
+            result += f"Name: {job_status.name}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         if job_status.description:
             result += f"Description: {job_status.description}\n"
@@ -85,6 +90,11 @@ class JobStatusFormatter:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
             result = f"{result}Http URL: {job_status.http_url}\n"
+        if job_status.container.http:
+            result = (
+                f"{result}Http authentication: "
+                f"{job_status.container.http.requires_auth}\n"
+            )
         if job_status.container.env:
             result += f"Environment:\n"
             for key, value in job_status.container.env.items():
@@ -175,11 +185,7 @@ class TabularJobRow:
     def from_job(
         cls, job: JobDescription, image_parser: ImageNameParser
     ) -> "TabularJobRow":
-        if image_parser.is_in_neuro_registry(job.container.image):
-            parsed_image = image_parser.parse_as_neuro_image(job.container.image)
-        else:
-            parsed_image = image_parser.parse_as_docker_image(job.container.image)
-
+        image_normalized = image_parser.normalize(job.container.image)
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -187,12 +193,15 @@ class TabularJobRow:
         else:
             when = job.history.finished_at
         when_datetime = datetime.datetime.fromtimestamp(isoparse(when).timestamp())
-
+        if time.time() - when_datetime.timestamp() < 60 * 60 * 24:
+            when_humanized = humanize.naturaltime(when_datetime)
+        else:
+            when_humanized = humanize.naturaldate(when_datetime)
         return cls(
             id=job.id,
             status=job.status,
-            when=humanize.naturaldate(when_datetime),
-            image=parsed_image.as_url_str(),
+            when=when_humanized,
+            image=image_normalized,
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
         )
@@ -204,7 +213,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
             "status": [6, 10],
-            "when": [4, 11],
+            "when": [4, 15],
             "image": [5, 15],
             "description": [11, 50],
             "command": [7, 0],
@@ -281,7 +290,10 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
-    SPINNER = ("◢", "◣", "◤", "◥")
+    if platform == "win32":
+        SPINNER = ("-", "\\", "|", "/")
+    else:
+        SPINNER = ("◢", "◣", "◤", "◥")
     LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
 
     def __init__(self, color: bool) -> None:

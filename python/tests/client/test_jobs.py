@@ -326,7 +326,7 @@ async def test_job_submit(aiohttp_server, token):
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "http": {"port": 8181},
+                "http": {"port": 8181, "requires_auth": True},
                 "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
@@ -349,7 +349,6 @@ async def test_job_submit(aiohttp_server, token):
                 ],
             },
             "is_preemptible": False,
-            "description": "job description",
         }
 
         return web.json_response(JSON)
@@ -377,15 +376,16 @@ async def test_job_submit(aiohttp_server, token):
             network=network,
             volumes=volumes,
             is_preemptible=False,
-            description="job description",
         )
 
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit_no_volumes(aiohttp_server, token):
+async def test_job_submit_with_name_and_description(aiohttp_server, token):
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "name": "test-job-name",
+        "description": "job description",
         "status": "failed",
         "history": {
             "status": "failed",
@@ -419,7 +419,102 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "http": {"port": 8181},
+                "http": {"port": 8181, "requires_auth": True},
+                "ssh": {"port": 22},
+                "resources": {
+                    "memory_mb": "4G",
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "volumes": [
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_only",
+                        "dst_path": "/container/read_only",
+                        "read_only": True,
+                    },
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_write",
+                        "dst_path": "/container/path_read_write",
+                        "read_only": False,
+                    },
+                ],
+            },
+            "is_preemptible": False,
+            "name": "test-job-name",
+            "description": "job description",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with Client(srv.make_url("/"), token) as client:
+        image = Image(image="submit-image-name", command="submit-command")
+        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
+        volumes: List[Volume] = [
+            Volume("storage://test-user/path_read_only", "/container/read_only", True),
+            Volume(
+                "storage://test-user/path_read_write",
+                "/container/path_read_write",
+                False,
+            ),
+        ]
+        ret = await client.jobs.submit(
+            image=image,
+            resources=resources,
+            network=network,
+            volumes=volumes,
+            is_preemptible=False,
+            name="test-job-name",
+            description="job description",
+        )
+    assert ret == JobDescription.from_api(JSON)
+
+
+async def test_job_submit_no_volumes(aiohttp_server, token):
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "name": "test-job-name",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
+    async def handler(request):
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181, "requires_auth": True},
                 "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
@@ -430,6 +525,7 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
                 },
             },
             "is_preemptible": False,
+            "name": "test-job-name",
             "description": "job description",
         }
 
@@ -450,6 +546,7 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
             network=network,
             volumes=None,
             is_preemptible=False,
+            name="test-job-name",
             description="job description",
         )
 
@@ -459,6 +556,7 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
 async def test_job_submit_preemptible(aiohttp_server, token):
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "name": "test-job-name",
         "status": "failed",
         "history": {
             "status": "failed",
@@ -492,7 +590,7 @@ async def test_job_submit_preemptible(aiohttp_server, token):
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "http": {"port": 8181},
+                "http": {"port": 8181, "requires_auth": True},
                 "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
@@ -515,6 +613,7 @@ async def test_job_submit_preemptible(aiohttp_server, token):
                 ],
             },
             "is_preemptible": True,
+            "name": "test-job-name",
             "description": "job description",
         }
 
@@ -543,6 +642,7 @@ async def test_job_submit_preemptible(aiohttp_server, token):
             network=network,
             volumes=volumes,
             is_preemptible=True,
+            name="test-job-name",
             description="job description",
         )
 
@@ -603,3 +703,75 @@ async def test_list(aiohttp_server, token):
         ret = await client.jobs.list(statuses)
 
     assert ret == [JobDescription.from_api(j) for j in JSON["jobs"]]
+
+
+class TestVolumeParsing:
+    @pytest.mark.parametrize(
+        "volume_param", ["dir", "storage://dir", "storage://dir:/var/www:rw:ro"]
+    )
+    def test_incorrect_params_count(self, volume_param):
+        with pytest.raises(ValueError, match=r"Invalid volume specification"):
+            Volume.from_cli("bob", volume_param)
+
+    @pytest.mark.parametrize(
+        "volume_param", ["storage://dir:/var/www:write", "storage://dir:/var/www:"]
+    )
+    def test_incorrect_mode(self, volume_param):
+        with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
+            Volume.from_cli("bob", volume_param)
+
+    @pytest.mark.parametrize(
+        "volume_param,volume",
+        [
+            (
+                "storage://bob/dir:/var/www",
+                Volume(
+                    storage_path="storage://bob/dir",
+                    container_path="/var/www",
+                    read_only=False,
+                ),
+            ),
+            (
+                "storage://bob/dir:/var/www:rw",
+                Volume(
+                    storage_path="storage://bob/dir",
+                    container_path="/var/www",
+                    read_only=False,
+                ),
+            ),
+            (
+                "storage://bob:/var/www:ro",
+                Volume(
+                    storage_path="storage://bob",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage://~/:/var/www:ro",
+                Volume(
+                    storage_path="storage://bob",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage:dir:/var/www:ro",
+                Volume(
+                    storage_path="storage://bob/dir",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage::/var/www:ro",
+                Volume(
+                    storage_path="storage://bob",
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+        ],
+    )
+    def test_positive(self, volume_param, volume):
+        assert Volume.from_cli("bob", volume_param) == volume

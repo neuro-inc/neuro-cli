@@ -5,6 +5,48 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 0.7.2 (2019-03-25)
+==============================
+
+Features
+--------
+
+
+- Change the default API endpoint to `https://staging.neu.ro/api/v1` ([#666](https://github.com/neuromation/platform-api-clients/issues/666))
+
+
+Neuromation 0.7.1 (2019-03-15)
+==============================
+
+Bugfixes
+--------
+
+
+- Fix incorrect `--volume` parsing under windows ([#635](https://github.com/neuromation/platform-api-clients/issues/635))
+
+
+Neuromation 0.7.0 (2019-03-14)
+==============================
+
+Features
+--------
+
+
+- New flag `--http-auth/--no-http-auth` which controls authentication for forwarded HTTP port. Enabled by default. ([#604](https://github.com/neuromation/platform-api-clients/issues/604))
+
+
+Neuromation 0.6.2 (2019-03-07)
+==============================
+
+Bugfixes
+--------
+
+
+- Increase wait time to finish on POSIX platforms. It dignificantly decreases a chance of error report after CLI command executions. ([#597](https://github.com/neuromation/platform-api-clients/issues/597))
+
+- Fix forward compatibility with platform server. ([#599](https://github.com/neuromation/platform-api-clients/issues/599))
+
+
 Neuromation 0.6.1 (2019-03-04)
 ==============================
 

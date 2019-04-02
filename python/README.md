@@ -79,6 +79,7 @@ Name | Description|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
 |_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
+|_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_--version_|Show the version and exit.|
 |_--help_|Show this message and exit.|
 
@@ -191,9 +192,11 @@ Name | Description|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
-|_\-d, --description DESC_|Add optional description to the job|
+|_\-n, --name NAME_|Optional job name|
+|_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
@@ -284,7 +287,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] ID LOCAL_PORT
+neuro job port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
@@ -872,9 +875,11 @@ Name | Description|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
+|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
-|_\-d, --description DESC_|Add optional description to the job|
+|_\-n, --name NAME_|Optional job name|
+|_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
@@ -965,7 +970,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] ID LOCAL_PORT
+neuro port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**

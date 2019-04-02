@@ -75,7 +75,7 @@ async def _run_async_function(
             # Windows need a longer sleep
             await asyncio.sleep(0.2)
         else:
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.1)
 
 
 def async_cmd(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
