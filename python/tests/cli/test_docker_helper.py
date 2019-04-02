@@ -78,7 +78,8 @@ class TestCli:
         with path.open("w") as file:
             file.write("text")
         captured = run_cli(["config", "docker", "--config", str(path)])
-        assert re.match(r"Specified path is not a directory", captured.out)
+        assert captured.code
+        assert captured.err
 
     def test_path_from_env(self, run_cli, tmp_path, config, monkeypatch):
         json_path = tmp_path / "config.json"
