@@ -6,15 +6,15 @@ BRANCH := $(shell git branch | grep \* | cut -d ' ' -f2)
 MYPY_CACHE_DIR=.mypy_cache/$(shell md5sum setup.py | awk '{print $$1}')-$(shell find requirements -type f -exec md5sum {} \; | sort -k 2 | md5sum | awk '{print $$1}')
 
 ISORT_DIRS := neuromation tests build-tools
-ISORT_REGEXP := ^python/(neuromation|tests|build-tools)/.+\\.py
+ISORT_REGEXP := ^(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
 MYPY_DIRS :=  neuromation
-MYPY_REGEXP := ^python/+.\\py
+MYPY_REGEXP := ^+.\\py
 FLAKE8_DIRS := .
-FLAKE8_REGEXP := ^python/.+\\.py
+FLAKE8_REGEXP := ^.+\\.py
 
-DEPS_REGEXP := ^python/(requirements/.+|setup.py+)
+DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
 .PHONY: help
 .SILENT: help
@@ -60,8 +60,8 @@ help:
 
 .PHONY: init
 init: _init-readme update-deps
-	cp .hooks/* ../.git/hooks
-	chmod a+x ../.git/hooks/*
+	cp .hooks/* .git/hooks
+	chmod a+x .git/hooks/*
 	rm -rf .mypy_cache
 
 _init-readme:

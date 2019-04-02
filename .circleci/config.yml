@@ -17,7 +17,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
+          - v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
       - run:
@@ -30,13 +30,13 @@ jobs:
       - save_cache:
           paths:
             - ./.env
-          key: v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
+          key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
       - setup_remote_docker
       - run:
           name: run CI target
           command: |
             . .env/bin/activate
-            make -C python ci
+            make ci
 
   devpi_deploy:
     <<: *defaults
@@ -48,13 +48,13 @@ jobs:
           command: |
             python3 -m venv .env
             . .env/bin/activate
-            make -C python -s devpi_setup
+            make -s devpi_setup
 
       - run:
           name: devpi upload
           command: |
             . .env/bin/activate
-            make -C python devpi_upload
+            make devpi_upload
 
   pypi_deploy:
     <<: *defaults
@@ -64,7 +64,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
+          - v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
@@ -73,18 +73,18 @@ jobs:
           command: |
             python3 -m venv .env
             . .env/bin/activate
-            make -C python init
+            make init
 
       - run:
           name: pypi upload
           command: |
             . .env/bin/activate
-            make -C python publish
+            make publish
 
       - save_cache:
           paths:
             - ./.env
-          key: v1-dependencies-{{ checksum "python/requirements/ci.txt" }}-{{ checksum "python/requirements/base.txt" }}
+          key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
 workflows:
   version: 2
