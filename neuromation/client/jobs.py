@@ -406,7 +406,7 @@ class Jobs:
         self, statuses: Optional[Set[str]] = None, name: Optional[str] = None
     ) -> List[JobDescription]:
         url = URL(f"jobs")
-        params = MultiDict()
+        params: MultiDict[str] = MultiDict()
         if statuses:
             for status in statuses:
                 params.add("status", status)
