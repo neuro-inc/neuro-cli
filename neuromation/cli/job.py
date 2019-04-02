@@ -591,13 +591,14 @@ async def run(
 
     Examples:
 
-    # Starts a container pytorch:latest with two paths mounted. Directory /q1/
-    # is mounted in read only mode to /qm directory within container.
-    # Directory /mod mounted to /mod directory in read-write mode.
+    # Starts a container pytorch:latest with two paths mounted.
+    # Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
+    # storage://neuromation is mounted as :/var/storage/neuromation as read-only.
     neuro run pytorch:latest
 
     # Starts a container pytorch:latest with connection enabled to port 22 and
     # sets PYTHONPATH environment value to /python.
+    # Directories as mounted as in previous example.
     # Please note that SSH server should be provided by container.
     neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
     """
