@@ -6,9 +6,9 @@ from typing import Optional
 
 TICK_TIMEOUT = 1
 CSI = "\033["
-CURSOR_UP = f"{CSI}{{}}F"
-CURSOR_DOWN = f"{CSI}{{}}E"
-ERASE_TO_EOL = f"{CSI}K"
+CURSOR_UP = f"{CSI}{{}}A"
+CURSOR_DOWN = f"{CSI}{{}}B"
+CLEAR_LINE_TAIL = f"{CSI}0K"
 CURSOR_HOME = f"{CSI}1G"
 
 _ACTIVE_REPORTER_INSTANCE: Optional["Reporter"] = None
@@ -83,7 +83,7 @@ class MultilineReporter(Reporter):
         elif diff < 0:
             commands.append(linesep * (-1 * diff))
             commands.append(CURSOR_UP.format(1))
-        commands.append(self._escape(text) + ERASE_TO_EOL + "\n")
+        commands.append(self._escape(text) + CLEAR_LINE_TAIL + "\n")
         if diff > 0:
             commands.append(CURSOR_DOWN.format(diff - 1))
         print("".join(commands), end="", flush=True)
@@ -97,10 +97,10 @@ class SingleLineReporter(Reporter):
     """
 
     def close(self) -> None:
-        print(CURSOR_HOME + ERASE_TO_EOL, end="", flush=True)
+        print(CURSOR_UP.format(1) + CLEAR_LINE_TAIL, flush=True)
 
     def report(self, text: str) -> None:
-        print(CURSOR_HOME + self._escape(text) + ERASE_TO_EOL, end="", flush=True)
+        print(CURSOR_UP.format(1) + self._escape(text) + CLEAR_LINE_TAIL, flush=True)
 
 
 class StreamReporter(Reporter):

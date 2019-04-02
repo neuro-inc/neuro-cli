@@ -596,6 +596,7 @@ neuro image push alpine image://myfriend/alpine:shared
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -625,6 +626,7 @@ neuro image pull image://username/my-alpine:production alpine:from-registry
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -1259,6 +1261,7 @@ neuro image push alpine image://myfriend/alpine:shared
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -1288,6 +1291,7 @@ neuro image pull image://username/my-alpine:production alpine:from-registry
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
