@@ -84,7 +84,7 @@ def print_options(
 @click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
 @click.option(
     "--nmrc",
-    type=str,
+    type=click.Path(dir_okay=False),
     required=False,
     help="Path to config file.",
     default=lambda: rc.ConfigFactory.get_path(),

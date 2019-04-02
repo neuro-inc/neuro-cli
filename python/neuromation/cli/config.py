@@ -111,7 +111,7 @@ def logout() -> None:
 @click.option(
     "--config",
     metavar="PATH",
-    type=str,
+    type=click.Path(file_okay=False),
     help="Specifies the location of the Docker client configuration files",
     default=lambda: os.environ.get("DOCKER_CONFIG", Path.home() / ".docker"),
     show_default=False,
