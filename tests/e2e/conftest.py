@@ -419,7 +419,7 @@ class Helper:
             err = post_err[pre_err_size:]
             if any(
                 " ".join(arguments).startswith(start)
-                for start in ("submit", "job submit", "model train")
+                for start in ("submit", "job submit", "model train", "run", "job run")
             ):
                 match = job_id_pattern.search(out)
                 if match:

@@ -1035,7 +1035,8 @@ def test_job_run(helper):
     captured = helper.run_cli(
         [
             "job",
-            "run",
+            "run"
+            "-q",
             "-s",
             "cpu-small",
             "--non-preemptible",
@@ -1044,7 +1045,7 @@ def test_job_run(helper):
             command,
         ]
     )
-    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+    job_id = captured.out
 
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
