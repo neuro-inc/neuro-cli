@@ -29,6 +29,33 @@ class TestImageParser:
     parser = ImageNameParser(default_user="alice", registry_url="https://reg.neu.ro")
 
     @pytest.mark.parametrize(
+        "image",
+        [
+            "image://me/ubuntu:v10.04",
+            "image://~/ubuntu:v10.04",
+            "image:///ubuntu:v10.04",
+            "image:ubuntu:v10.04",
+            "ubuntu:v10.04",
+        ],
+    )
+    def test_has_tag_ok(self, image):
+        assert self.parser.has_tag(image)
+
+    def test_has_tag_no_tag(self):
+        image = "ubuntu"
+        assert not self.parser.has_tag(image)
+
+    def test_has_tag_empty_tag(self):
+        image = "ubuntu:"
+        with pytest.raises(ValueError, match="empty tag is not allowed"):
+            self.parser.has_tag(image)
+
+    def test_has_tag_too_many_tags(self):
+        image = "ubuntu:v10.04:latest"
+        with pytest.raises(ValueError, match="too many tags"):
+            self.parser.has_tag(image)
+
+    @pytest.mark.parametrize(
         "registry_url",
         [
             "http://reg.neu.ro",
@@ -51,16 +78,22 @@ class TestImageParser:
             self.parser._get_registry_hostname(registry_url)
 
     def test__split_image_name_no_colon(self):
-        splitted = self.parser._split_image_name("ubuntu")
+        splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
         assert splitted == ("ubuntu", "latest")
 
     def test__split_image_name_1_colon(self):
-        splitted = self.parser._split_image_name("ubuntu:v10.04")
+        splitted = self.parser._split_image_name(
+            "ubuntu:v10.04", self.parser.default_tag
+        )
         assert splitted == ("ubuntu", "v10.04")
+
+    def test__split_image_name_1_colon_empty_tag(self):
+        with pytest.raises(ValueError, match="empty tag is not allowed"):
+            self.parser._split_image_name("ubuntu:", self.parser.default_tag)
 
     def test__split_image_name_2_colon(self):
         with pytest.raises(ValueError, match="too many tags"):
-            self.parser._split_image_name("ubuntu:v10.04:LTS")
+            self.parser._split_image_name("ubuntu:v10.04:LTS", self.parser.default_tag)
 
     # public method: parse_local
 
