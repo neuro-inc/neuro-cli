@@ -909,7 +909,7 @@ def nginx_job(helper):
 
 @pytest.fixture
 async def nginx_job_async(async_config, loop):
-    async with config.make_client() as client:
+    async with async_config.make_client() as client:
         command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
             image=Image("python:latest", command=command),
@@ -953,7 +953,7 @@ async def test_port_forward(async_config, nginx_job_async):
         return status
 
     loop = asyncio.get_event_loop()
-    async with config.make_client() as client:
+    async with async_config.make_client() as client:
         forwarder = None
         try:
             port = unused_port()
