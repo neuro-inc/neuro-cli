@@ -406,7 +406,10 @@ class Jobs:
         self, statuses: Optional[Set[str]] = None, name: Optional[str] = None
     ) -> List[JobDescription]:
         url = URL(f"jobs")
-        params = MultiDict([("status", s) for s in (statuses or set())])
+        params = MultiDict()
+        if statuses:
+            for status in statuses:
+                params.add("status", status)
         if name:
             params.add("name", name)
         async with self._api.request("GET", url, params=params) as resp:
