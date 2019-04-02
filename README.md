@@ -26,6 +26,7 @@
 		* [neuro config login](#neuro-config-login)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
+		* [neuro config docker](#neuro-config-docker)
 		* [neuro config auth](#neuro-config-auth)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
@@ -76,6 +77,7 @@ neuro [OPTIONS] COMMAND [ARGS]...
 Name | Description|
 |----|------------|
 |_\-v, --verbose_|Enable verbose mode.|
+|_\--neuromation-config PATH_|Path to config file.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
 |_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
@@ -654,6 +656,7 @@ Name | Description|
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
+| _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
 | _[neuro config auth](#neuro-config-auth)_| Update authorization token |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
@@ -712,6 +715,26 @@ neuro config show-token [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config docker
+
+Configure docker client for working with platform registry
+
+**Usage:**
+
+```bash
+neuro config docker [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\--docker-config PATH_|Specifies the location of the Docker client configuration files|
 |_--help_|Show this message and exit.|
 
 
