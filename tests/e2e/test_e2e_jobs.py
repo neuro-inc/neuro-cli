@@ -886,7 +886,6 @@ def test_e2e_job_list_filtered_by_status(helper):
 
 
 @pytest.mark.e2e
-@pytest.mark.no_win32
 def test_e2e_job_list_filtered_by_status_and_name(helper):
     N_JOBS = 5
     jobs_name_map = dict()
@@ -903,17 +902,17 @@ def test_e2e_job_list_filtered_by_status_and_name(helper):
 
     # test filtering by name only (quiet)
     captured = helper.run_cli(["job", "ls", "--name", name_0, "-q"])
-    jobs_ls = set(captured.out.split("\n"))
+    jobs_ls = set(captured.out.splitlines())
     assert jobs_ls == {jobs_name_map[name_0]}
 
     # test filtering by name only
     captured = helper.run_cli(["job", "ls", "--name", name_0])
-    jobs_ls = set([line.split()[0] for line in captured.out.split("\n")[1:]])
+    jobs_ls = set([line.split()[0] for line in captured.out.splitlines()[1:]])
     assert jobs_ls == {jobs_name_map[name_0]}
 
     # test filtering by name and single status
     captured = helper.run_cli(["job", "ls", "-n", name_0, "-s", "running", "-q"])
-    jobs_ls = set(captured.out.split("\n"))
+    jobs_ls = set(captured.out.splitlines())
     assert jobs_ls == {jobs_name_map[name_0]}
 
     # test filtering by name and 2 statuses - no jobs found
