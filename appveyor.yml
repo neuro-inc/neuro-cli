@@ -14,7 +14,7 @@ platform: x64
 
 install:
   # install dev dependencies
-  - '%MAKE% -C python init'
+  - '%MAKE% init'
 
 build: off
 
@@ -22,9 +22,9 @@ build: off
 test: off
 
 test_script:
-  - '%MAKE% -C python test'
-  - '%MAKE% -C python _e2e_win'
-  - '%MAKE% -C python coverage'
+  - '%MAKE% test'
+  - '%MAKE% _e2e_win'
+  - '%MAKE% coverage'
 
 # will start RDP server you can connect to for remote debugging (a-la ssh in circleci)
 # on_finish:
