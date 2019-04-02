@@ -77,7 +77,7 @@ neuro [OPTIONS] COMMAND [ARGS]...
 Name | Description|
 |----|------------|
 |_\-v, --verbose_|Enable verbose mode.|
-|_--nmrc PATH_|Path to config file.|
+|_\--neuromation-config PATH_|Path to config file.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
 |_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
@@ -734,7 +734,7 @@ neuro config docker [OPTIONS]
 
 Name | Description|
 |----|------------|
-|_--config PATH_|Specifies the location of the Docker client configuration files|
+|_\--docker-config PATH_|Specifies the location of the Docker client configuration files|
 |_--help_|Show this message and exit.|
 
 
