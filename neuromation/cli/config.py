@@ -117,7 +117,7 @@ def logout() -> None:
     show_default=False,
 )
 @click.pass_obj
-def docker_config_path(cfg: Config, docker_config: str) -> None:
+def docker(cfg: Config, docker_config: str) -> None:
     """
     Configure docker client for working with platform registry
     """
@@ -145,7 +145,7 @@ config.add_command(login)
 config.add_command(show)
 config.add_command(show_token)
 
-config.add_command(docker_config_path)
+config.add_command(docker)
 
 config.add_command(auth)
 config.add_command(logout)
