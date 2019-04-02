@@ -10,9 +10,9 @@ ISORT_REGEXP := ^(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
 MYPY_DIRS :=  neuromation
-MYPY_REGEXP := ^.+.\\py
+MYPY_REGEXP := ^neuromation/.+\\.py
 FLAKE8_DIRS := .
-FLAKE8_REGEXP := ^.+\\.py
+FLAKE8_REGEXP := .+\\.py$
 
 DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
@@ -140,10 +140,10 @@ lint: lint-docs
 	flake8 $(FLAKE8_DIRS)
 
 .PHONY: lint-diff
-lint-diff: ISORT_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(ISORT_REGEXP)") print substr($$NF, 8)}')
-lint-diff: BLACK_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(BLACK_REGEXP)") print substr($$NF, 8)}')
-lint-diff: MYPY_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(MYPY_REGEXP)") print substr($$NF, 8)}')
-lint-diff: FLAKE8_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(FLAKE8_REGEXP)") print substr($$NF, 8)}')
+lint-diff: ISORT_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(ISORT_REGEXP)") print $$NF}')
+lint-diff: BLACK_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(BLACK_REGEXP)") print $$NF}')
+lint-diff: MYPY_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(MYPY_REGEXP)") print $$NF}')
+lint-diff: FLAKE8_TARGETS:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(FLAKE8_REGEXP)") print $$NF}')
 lint-diff:
 	@ [ -z "${ISORT_TARGETS}" ] || (echo "Lint isort:"; echo "   ${ISORT_TARGETS}" && isort -c -rc ${ISORT_TARGETS})
 	@ [ -z "${BLACK_TARGETS}" ] || (echo "Lint black:"; echo "   ${BLACK_TARGETS}" && black -q --check ${BLACK_TARGETS})
