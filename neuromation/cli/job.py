@@ -55,9 +55,9 @@ class RunPreset:
 
 RUN_PRESET = MappingProxyType(
     {
-        "gpu-small": RunPreset(gpu=1, cpu=7, memory="30", gpu_model="nvidia-tesla-k80"),
+        "gpu-small": RunPreset(gpu=1, cpu=7, memory="30", gpu_model=GPU_MODELS[0]),
         "gpu-large": RunPreset(
-            gpu=1, cpu=7, memory="60", gpu_model="nvidia-tesla-v100"
+            gpu=1, cpu=7, memory="60", gpu_model=GPU_MODELS[-1]
         ),
         "cpu-small": RunPreset(gpu=None, cpu=1, memory="30", gpu_model=None),
         "cpu-large": RunPreset(gpu=None, cpu=7, memory="60", gpu_model=None),
