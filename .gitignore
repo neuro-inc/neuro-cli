@@ -1,0 +1,14 @@
+.env
+.coverage*
+pip-wheel-metadata
+.pytest_cache
+*.swo
+*.egg-info
+**/__pycache__
+coverage.xml
+build
+dist
+.eggs
+.mypy_cache
+.tmontmp
+.testmondata

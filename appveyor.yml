@@ -7,12 +7,14 @@ environment:
   MAKE: C:\MinGW\bin\mingw32-make.exe
   CLIENT_TEST_E2E_USER_NAME:
     secure: eOtqZJ4yXsPlfNYTZ17U7NFym9KFIq1Cz/zb7dNLR4IAzz4lKtNRPKpGxqgS/BQZ8Kxbsf9EZ2EDKKC74P8kNHwb4oz++CJw6DLnzN+B3x4Nqg9gaMo/VB5yhlbxn90NPdhUl/m8j8pW0kWtwgah6U/Sh/7ZoIHycX2BgcbEONZjyRox2g9x1oKkFUEhVU+yU36EjEwrtu3Imft0yWLcXw==
+  CLIENT_TEST_E2E_USER_NAME_ALT:
+    secure: Ezk747oC7HgZ4TJCSDuYqpXzIqW81gQLHGMWyr2T6B4+DTwY+BQqwSQI1P+JwwKFPXVVFgzIK4bbqaTB5jui/tx8baXc/mo2fb3z5W+rXDaJHAMNKRaz7GZjvjGhYi3er3/bGNxtT4jAAUfJl3JNPDLP8d2Ah5pDOAFL9/G5Mmn6bMpVEbHD6RKq7fvztWkV12Meb+DBBBaELxmPCFsf3KasMBxeFOo8c6qDUiiV01JdweXpHskb2B4LdnQnq5+LnIHvAT1pAZM9XAwe3GN68wYCFdJcFLZJaq+rC266tyk=
 
 platform: x64
 
 install:
   # install dev dependencies
-  - '%MAKE% -C python init'
+  - '%MAKE% init'
 
 build: off
 
@@ -20,9 +22,9 @@ build: off
 test: off
 
 test_script:
-  - '%MAKE% -C python test'
-  - '%MAKE% -C python _e2e_win'
-  - '%MAKE% -C python coverage'
+  - '%MAKE% test'
+  - '%MAKE% _e2e_win'
+  - '%MAKE% coverage'
 
 # will start RDP server you can connect to for remote debugging (a-la ssh in circleci)
 # on_finish:
