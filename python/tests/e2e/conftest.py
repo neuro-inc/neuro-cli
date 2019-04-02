@@ -376,7 +376,7 @@ class Helper:
             try:
                 main(
                     [
-                        f"--nmrc={self._nmrc_path}",
+                        f"--neuromation-config={self._nmrc_path}",
                         "--show-traceback",
                         "--disable-pypi-version-check",
                         "--color=no",

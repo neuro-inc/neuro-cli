@@ -83,12 +83,13 @@ def print_options(
 @click.group(cls=MainGroup, invoke_without_command=True)
 @click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
 @click.option(
-    "--nmrc",
+    "--neuromation-config",
     type=click.Path(dir_okay=False),
     required=False,
     help="Path to config file.",
     default=lambda: rc.ConfigFactory.get_path(),
     metavar="PATH",
+    envvar=rc.ENV_NAME
 )
 @click.option(
     "--show-traceback",
@@ -126,7 +127,7 @@ def print_options(
 def cli(
     ctx: click.Context,
     verbose: int,
-    nmrc: str,
+    neuromation_config: str,
     show_traceback: bool,
     color: str,
     disable_pypi_version_check: bool,
@@ -152,7 +153,7 @@ def cli(
         real_color = tty
     ctx.color = real_color
     setup_logging(verbose=verbose, color=real_color)
-    rc.ConfigFactory.set_path(Path(nmrc))
+    rc.ConfigFactory.set_path(Path(neuromation_config))
     cfg = rc.ConfigFactory.load()
     cfg.color = real_color
     cfg.tty = tty

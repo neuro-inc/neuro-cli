@@ -109,7 +109,7 @@ def logout() -> None:
 
 @command(name="docker")
 @click.option(
-    "--config",
+    "--docker-config",
     metavar="PATH",
     type=click.Path(file_okay=False),
     help="Specifies the location of the Docker client configuration files",
@@ -117,11 +117,11 @@ def logout() -> None:
     show_default=False,
 )
 @click.pass_obj
-def docker_config_path(cfg: Config, config: str) -> None:
+def docker_config_path(cfg: Config, docker_config: str) -> None:
     """
     Configure docker client for working with platform registry
     """
-    config_path = Path(config)
+    config_path = Path(docker_config)
     if not config_path.exists():
         config_path.mkdir(parents=True)
     elif not config_path.is_dir():

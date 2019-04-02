@@ -26,7 +26,7 @@ class RCException(Exception):
     pass
 
 
-ENV_NAME = "NEURO_NMRC"
+ENV_NAME = "NEUROMATION_CONFIG"
 NO_VERSION = pkg_resources.parse_version("0.0.0")
 
 
