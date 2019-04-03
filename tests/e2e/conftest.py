@@ -95,7 +95,9 @@ def run_async(coro):
 
 
 class Helper:
-    def __init__(self, config: rc.Config, capfd, monkeypatch, tmp_path: Path):
+    def __init__(
+        self, config: rc.Config, nmrc_path, capfd, monkeypatch, tmp_path: Path
+    ):
         try:
             loop = asyncio.get_event_loop()
             assert not loop.is_running()
