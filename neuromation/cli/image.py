@@ -3,7 +3,7 @@ import logging
 import click
 
 from neuromation.cli.formatters import ImageProgress
-from neuromation.client import ImageNameParser
+from neuromation.client import ImageNameParser, ImageOperation
 
 from .rc import Config
 from .utils import async_cmd, command, group
@@ -42,23 +42,27 @@ async def push(
 
     """
 
-    progress = ImageProgress.create(tty=cfg.tty, quiet=quiet)
-
     parser = ImageNameParser(cfg.username, cfg.registry_url)
     local_img = parser.parse_as_docker_image(image_name)
     if remote_image_name:
         remote_img = parser.parse_as_neuro_image(remote_image_name)
     else:
         remote_img = parser.convert_to_neuro_image(local_img)
-    progress.message(f"Using local image '{local_img.as_local_str()}'")
-    progress.message(f"Using remote image '{remote_img.as_url_str()}'")
     log.debug(f"LOCAL: '{local_img}'")
     log.debug(f"REMOTE: '{remote_img}'")
 
+    progress = ImageProgress.create(
+        type=ImageOperation.PUSH,
+        input_image=local_img.as_local_str(),
+        output_image=remote_img.as_url_str(),
+        tty=cfg.tty,
+        quiet=quiet,
+    )
+
     async with cfg.make_client() as client:
         result_remote_image = await client.images.push(local_img, remote_img, progress)
+    progress.message(result_remote_image.as_local_str())
     progress.close()
-    click.echo(result_remote_image.as_url_str())
 
 
 @command()
@@ -82,7 +86,6 @@ async def pull(
     neuro image pull image://username/my-alpine:production alpine:from-registry
 
     """
-    progress = ImageProgress.create(tty=cfg.tty, quiet=quiet)
 
     parser = ImageNameParser(cfg.username, cfg.registry_url)
     remote_img = parser.parse_as_neuro_image(image_name)
@@ -90,10 +93,16 @@ async def pull(
         local_img = parser.parse_as_docker_image(local_image_name)
     else:
         local_img = parser.convert_to_docker_image(remote_img)
-    progress.message(f"Using remote image '{remote_img.as_url_str()}'")
-    progress.message(f"Using local image '{local_img.as_local_str()}'")
     log.debug(f"REMOTE: '{remote_img}'")
     log.debug(f"LOCAL: '{local_img}'")
+
+    progress = ImageProgress.create(
+        type=ImageOperation.PUSH,
+        input_image=remote_img.as_url_str(),
+        output_image=local_img.as_local_str(),
+        tty=cfg.tty,
+        quiet=quiet,
+    )
 
     async with cfg.make_client() as client:
         result_local_image = await client.images.pull(remote_img, local_img, progress)

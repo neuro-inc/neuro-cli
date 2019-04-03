@@ -2,6 +2,7 @@ import logging
 import re
 from contextlib import suppress
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, List, Optional
 
 import aiodocker
@@ -9,7 +10,7 @@ import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from .abc import AbstractTreeProgress
+from .abc import AbstractImageProgress
 from .api import API, AuthorizationError
 from .config import Config
 from .registry import Registry
@@ -22,6 +23,11 @@ STATUS_CUSTOM_ERROR = 900
 log = logging.getLogger(__name__)
 
 IMAGE_SCHEME = "image"
+
+
+class ImageOperation(str, Enum):
+    PUSH = "push"
+    PULL = "pull"
 
 
 @dataclass(frozen=True)
@@ -90,10 +96,9 @@ class Images:
         self,
         local_image: DockerImage,
         remote_image: DockerImage,
-        progress: AbstractTreeProgress,
+        progress: AbstractImageProgress,
     ) -> DockerImage:
         repo = remote_image.as_repo_str()
-        progress.message("Pushing image ...")
         try:
             await self._docker.images.tag(local_image.as_local_str(), repo)
         except DockerError as error:
@@ -123,17 +128,15 @@ class Images:
                 else:
                     message = f"{obj['id']}: {obj['status']}"
                 progress.message(message, obj["id"])
-        progress.message("Done")
         return remote_image
 
     async def pull(
         self,
         remote_image: DockerImage,
         local_image: DockerImage,
-        progress: AbstractTreeProgress,
+        progress: AbstractImageProgress,
     ) -> DockerImage:
         repo = remote_image.as_repo_str()
-        progress.message("Pulling image...")
         try:
             stream = await self._docker.pull(
                 repo, auth=self._auth(), repo=repo, stream=True

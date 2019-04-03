@@ -6,7 +6,7 @@ import aiohttp
 import certifi
 from yarl import URL
 
-from .abc import AbstractProgress, AbstractTreeProgress
+from .abc import AbstractImageProgress, AbstractProgress
 from .api import (
     API,
     DEFAULT_TIMEOUT,
@@ -18,7 +18,7 @@ from .api import (
     ResourceNotFound,
 )
 from .config import Config
-from .images import Images
+from .images import ImageOperation, Images
 from .jobs import (
     Container,
     Image,
@@ -39,6 +39,7 @@ from .users import Action, Permission, Users
 
 __all__ = (
     "Image",
+    "ImageOperation",
     "ImageNameParser",
     "JobDescription",
     "JobStatus",
@@ -61,7 +62,7 @@ __all__ = (
     "AuthenticationError",
     "AuthorizationError",
     "AbstractProgress",
-    "AbstractTreeProgress",
+    "AbstractImageProgress",
 )
 
 

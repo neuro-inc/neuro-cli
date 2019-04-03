@@ -3,6 +3,8 @@ from os import linesep
 from time import time
 from typing import Optional
 
+import click
+
 
 TICK_TIMEOUT = 1
 CSI = "\033["
@@ -20,31 +22,36 @@ class Reporter:
         Only one Reporter can be active at one moment
     """
 
-    def __init__(self) -> None:
+    def __init__(self, print: bool = False) -> None:
         global _ACTIVE_REPORTER_INSTANCE
         if _ACTIVE_REPORTER_INSTANCE:
             raise RuntimeError("Only one Reporter can be active")
         _ACTIVE_REPORTER_INSTANCE = self
-        pass
+        self._print = print
 
     @property
     def active(self) -> bool:
         global _ACTIVE_REPORTER_INSTANCE
         return _ACTIVE_REPORTER_INSTANCE == self
 
-    def close(self) -> None:
+    def close(self) -> str:
         global _ACTIVE_REPORTER_INSTANCE
         if not self.active:
             raise RuntimeError("Only active Reporter can be closed")
         _ACTIVE_REPORTER_INSTANCE = None
-        pass
+        return ""
 
     @abc.abstractmethod
-    def report(self, text: str) -> None:
+    def report(self, text: str) -> str:
         pass
 
     def _escape(self, text: str) -> str:
         return text.translate({10: " ", 13: " "})
+
+    def _process(self, message: str) -> str:
+        if self._print:
+            click.echo(message, nl=False)
+        return message
 
 
 class MultilineReporter(Reporter):
@@ -54,15 +61,15 @@ class MultilineReporter(Reporter):
         error message will be printed after reported before lines
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, print: bool = False) -> None:
+        super().__init__(print)
         self._total_lines = 0
 
     @property
     def total_lines(self) -> int:
         return self._total_lines
 
-    def report(self, text: str, lineno: Optional[int] = None) -> None:
+    def report(self, text: str, lineno: Optional[int] = None) -> str:
         """
         Print given text on specified line
         If lineno is not passed then  text will be printed on latest line
@@ -83,12 +90,13 @@ class MultilineReporter(Reporter):
         elif diff < 0:
             commands.append(linesep * (-1 * diff))
             commands.append(CURSOR_UP.format(1))
-        commands.append(self._escape(text) + CLEAR_LINE_TAIL + "\n")
+        commands.append(self._escape(text) + CLEAR_LINE_TAIL + linesep)
         if diff > 0:
             commands.append(CURSOR_DOWN.format(diff - 1))
-        print("".join(commands), end="", flush=True)
+        message = "".join(commands)
 
         self._total_lines = max(self._total_lines, lineno)
+        return self._process(message)
 
 
 class SingleLineReporter(Reporter):
@@ -96,11 +104,14 @@ class SingleLineReporter(Reporter):
     All messages will be printed on one line
     """
 
-    def close(self) -> None:
-        print(CURSOR_UP.format(1) + CLEAR_LINE_TAIL, flush=True)
+    def close(self) -> str:
+        message = CURSOR_UP.format(1) + CLEAR_LINE_TAIL
+        super().close()
+        return self._process(message)
 
-    def report(self, text: str) -> None:
-        print(CURSOR_UP.format(1) + self._escape(text) + CLEAR_LINE_TAIL, flush=True)
+    def report(self, text: str) -> str:
+        message = CURSOR_UP.format(1) + self._escape(text) + CLEAR_LINE_TAIL
+        return self._process(message)
 
 
 class StreamReporter(Reporter):
@@ -110,21 +121,29 @@ class StreamReporter(Reporter):
     control.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self._tick_mode = False
+    def __init__(self, print: bool = False) -> None:
+        super().__init__(print)
+        self._first = True
         self._last_report = 0.0
 
-    def report(self, text: str) -> None:
-        if self._tick_mode:
-            print()
-            self._tick_mode = False
-        print(text)
+    def report(self, text: str) -> str:
+        message = ""
+        if self._first:
+            self._first = False
+        else:
+            message += linesep
+        message += text
         self._last_report = time()
+        return self._process(message)
 
-    def tick(self) -> None:
+    def tick(self) -> str:
+        self._first = False
         if time() - self._last_report < TICK_TIMEOUT:
-            return
-        print(".", end="", flush=True)
-        self._tick_mode = True
+            return ""
+        message = "."
         self._last_report = time()
+        return self._process(message)
+
+    def close(self) -> str:
+        message = linesep
+        return self._process(message)

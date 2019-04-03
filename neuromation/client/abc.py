@@ -16,23 +16,9 @@ class AbstractProgress(abc.ABC):
         pass
 
 
-class AbstractSpinner(abc.ABC):
+class AbstractImageProgress(abc.ABC):
     @abc.abstractmethod
-    def start(self, message: str = None) -> None:  # pragma: no cover
-        pass
-
-    @abc.abstractmethod
-    def complete(self, message: str = None) -> None:  # pragma: no cover
-        pass
-
-    @abc.abstractmethod
-    def tick(self) -> None:  # pragma: no cover
-        pass
-
-
-class AbstractTreeProgress(abc.ABC):
-    @abc.abstractmethod
-    def message(self, message: str, branch: Optional["str"] = None) -> None:
+    def message(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 
     def close(self) -> None:

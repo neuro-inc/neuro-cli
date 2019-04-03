@@ -1,52 +1,72 @@
 from typing import Dict, Optional
 
 from neuromation.cli.command_reporter import MultilineReporter, StreamReporter
-from neuromation.client import AbstractTreeProgress
+from neuromation.client import AbstractImageProgress, ImageOperation
 
 
-class ImageProgress(AbstractTreeProgress):
-    def message(self, message: str, branch: Optional["str"] = None) -> None:
+class ImageProgress(AbstractImageProgress):
+    def message(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 
     @classmethod
-    def create(cls, tty: bool, quiet: bool) -> "ImageProgress":
+    def create(
+        cls,
+        type: ImageOperation,
+        input_image: str,
+        output_image: str,
+        tty: bool,
+        quiet: bool,
+    ) -> "ImageProgress":
         if quiet:
-            return ImageProgress()
+            progress = ImageProgress()
         elif tty:
-            return DetailedImageProgress()
-        return StreamImageProgress()
+            progress = DetailedImageProgress()
+        else:
+            progress = StreamImageProgress()
+
+        if type == ImageOperation.PUSH:
+            progress.message(f"Using local image '{input_image}'")
+            progress.message(f"Using remote image '{output_image}'")
+            progress.message("Pushing image...")
+        elif type == ImageOperation.PULL:
+            progress.message(f"Using remote image '{input_image}'")
+            progress.message(f"Using local image '{output_image}'")
+            progress.message("Pulling image...")
+        return progress
 
 
 class DetailedImageProgress(ImageProgress):
     def __init__(self) -> None:
         self._mapping: Dict[str, int] = {}
-        self._reporter = MultilineReporter()
+        self._reporter = MultilineReporter(print=True)
 
-    def message(self, message: str, branch: Optional[str] = None) -> None:
-        if branch:
-            if branch in self._mapping.keys():
-                lineno = self._mapping[branch]
+    def message(self, message: str, layer_id: Optional[str] = None) -> None:
+        if layer_id:
+            if layer_id in self._mapping.keys():
+                lineno = self._mapping[layer_id]
                 self._reporter.report(message, lineno)
             else:
                 self._reporter.report(message)
-                self._mapping[branch] = self._reporter.total_lines
+                self._mapping[layer_id] = self._reporter.total_lines
         else:
             self._reporter.report(message)
 
     def close(self) -> None:
+        super().close()
         self._reporter.close()
 
 
 class StreamImageProgress(ImageProgress):
     def __init__(self) -> None:
-        self._reporter = StreamReporter()
+        self._reporter = StreamReporter(print=True)
         pass
 
-    def message(self, message: str, branch: Optional["str"] = None) -> None:
-        if branch:
+    def message(self, message: str, layer_id: Optional["str"] = None) -> None:
+        if layer_id:
             self._reporter.tick()
         else:
             self._reporter.report(message)
 
     def close(self) -> None:
+        super().close()
         self._reporter.close()
