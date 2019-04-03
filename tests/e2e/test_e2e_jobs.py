@@ -1078,7 +1078,8 @@ def test_job_run(helper):
     captured = helper.run_cli(
         [
             "job",
-            "run", "-q",
+            "run",
+            "-q",
             "-s",
             "cpu-small",
             "--non-preemptible",
