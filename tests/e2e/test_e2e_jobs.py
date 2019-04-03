@@ -93,6 +93,12 @@ def test_job_lifecycle(helper):
     store_out = captured.out
     assert job_id not in store_out
 
+    # Check job ls by name
+    captured = helper.run_cli(["job", "ls", "-n", job_name, "-s", "succeeded"])
+    store_out = captured.out
+    assert job_id in store_out
+    assert job_name in store_out
+
 
 @pytest.mark.e2e
 def test_job_description(helper):
@@ -877,6 +883,43 @@ def test_e2e_job_list_filtered_by_status(helper):
     jobs_ls_all_explicit = set(captured.out.splitlines())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all_explicit >= jobs
+
+
+@pytest.mark.e2e
+def test_e2e_job_list_filtered_by_status_and_name(helper):
+    N_JOBS = 5
+    jobs_name_map = dict()
+    name_0 = None
+    command = "sleep 10m"
+    for i in range(N_JOBS):
+        name = f"my-job-{uuid4()}"
+        if not name_0:
+            name_0 = name
+        job_id = helper.run_job_and_wait_state(
+            UBUNTU_IMAGE_NAME, command, params=["--name", name]
+        )
+        jobs_name_map[name] = job_id
+
+    # test filtering by name only (quiet)
+    captured = helper.run_cli(["job", "ls", "--name", name_0, "-q"])
+    jobs_ls = set(captured.out.splitlines())
+    assert jobs_ls == {jobs_name_map[name_0]}
+
+    # test filtering by name only
+    captured = helper.run_cli(["job", "ls", "--name", name_0])
+    jobs_ls = set([line.split()[0] for line in captured.out.splitlines()[1:]])
+    assert jobs_ls == {jobs_name_map[name_0]}
+
+    # test filtering by name and single status
+    captured = helper.run_cli(["job", "ls", "-n", name_0, "-s", "running", "-q"])
+    jobs_ls = set(captured.out.splitlines())
+    assert jobs_ls == {jobs_name_map[name_0]}
+
+    # test filtering by name and 2 statuses - no jobs found
+    captured = helper.run_cli(
+        ["job", "ls", "-n", name_0, "-s", "failed", "-s", "succeeded", "-q"]
+    )
+    assert not captured.out
 
 
 @pytest.fixture
