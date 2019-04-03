@@ -11,8 +11,10 @@ import aiohttp
 import click
 
 from neuromation.client import (
+    Client,
     Image,
     ImageNameParser,
+    JobDescription,
     JobStatus,
     NetworkPortForwarding,
     Resources,
@@ -278,15 +280,7 @@ async def submit(
             description=description,
             env=env_dict,
         )
-        click.echo(JobFormatter(quiet)(job))
-        progress = JobStartProgress(cfg.color)
-        while wait_start and job.status == JobStatus.PENDING:
-            await asyncio.sleep(0.2)
-            job = await client.jobs.status(job.id)
-            if not quiet:
-                click.echo(progress(job), nl=False)
-        if not quiet and wait_start:
-            click.echo(progress(job, finish=True), nl=False)
+        await show_job_start_helper(cfg, client, job, quiet, wait_start)
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
@@ -638,7 +632,8 @@ async def run(
             "storage://neuromation:/var/storage/neuromation:ro",
         ],
     )
-    if volumes and not quiet:
+    assert volumes
+    if not quiet:
         log.info(
             "Using volumes: \n"
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
@@ -654,15 +649,7 @@ async def run(
             description=description,
             env=env_dict,
         )
-        click.echo(JobFormatter(quiet)(job))
-        progress = JobStartProgress(cfg.color)
-        while wait_start and job.status == JobStatus.PENDING:
-            await asyncio.sleep(0.2)
-            job = await client.jobs.status(job.id)
-            if not quiet:
-                click.echo(progress(job), nl=False)
-        if not quiet and wait_start:
-            click.echo(progress(job, finish=True), nl=False)
+        await show_job_start_helper(cfg, client, job, quiet, wait_start)
 
 
 job.add_command(run)
@@ -680,3 +667,17 @@ job.add_command(alias(ls, "list", hidden=True))
 job.add_command(alias(logs, "monitor", hidden=True))
 
 job.add_command(ssh)
+
+
+async def show_job_start_helper(
+    cfg: Config, client: Client, job: JobDescription, quiet: bool, wait_start: bool
+) -> None:
+    click.echo(JobFormatter(quiet)(job))
+    progress = JobStartProgress(cfg.color)
+    while wait_start and job.status == JobStatus.PENDING:
+        await asyncio.sleep(0.2)
+        job = await client.jobs.status(job.id)
+        if not quiet:
+            click.echo(progress(job), nl=False)
+    if not quiet and wait_start:
+        click.echo(progress(job, finish=True), nl=False)
