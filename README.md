@@ -329,7 +329,7 @@ Kill job\(s).
 **Usage:**
 
 ```bash
-neuro job kill [OPTIONS] JOB_LIST...
+neuro job kill [OPTIONS] JOBS...
 ```
 
 **Options:**
@@ -1034,7 +1034,7 @@ Kill job\(s).
 **Usage:**
 
 ```bash
-neuro kill [OPTIONS] JOB_LIST...
+neuro kill [OPTIONS] JOBS...
 ```
 
 **Options:**
