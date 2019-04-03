@@ -23,22 +23,9 @@ class Reporter:
     """
 
     def __init__(self, print: bool = False) -> None:
-        global _ACTIVE_REPORTER_INSTANCE
-        if _ACTIVE_REPORTER_INSTANCE:
-            raise RuntimeError("Only one Reporter can be active")
-        _ACTIVE_REPORTER_INSTANCE = self
         self._print = print
 
-    @property
-    def active(self) -> bool:
-        global _ACTIVE_REPORTER_INSTANCE
-        return _ACTIVE_REPORTER_INSTANCE == self
-
     def close(self) -> str:
-        global _ACTIVE_REPORTER_INSTANCE
-        if not self.active:
-            raise RuntimeError("Only active Reporter can be closed")
-        _ACTIVE_REPORTER_INSTANCE = None
         return ""
 
     @abc.abstractmethod
@@ -75,11 +62,7 @@ class MultilineReporter(Reporter):
         If lineno is not passed then  text will be printed on latest line
 
         """
-
         assert lineno is None or lineno > 0
-        if not self.active:
-            raise RuntimeError("Only active Reporter can be used")
-
         if not lineno:
             lineno = self._total_lines + 1
 
