@@ -389,11 +389,12 @@ async def logs(cfg: Config, id: str) -> None:
     type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
     help="Filter out job by status (multiple option)",
 )
+@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
 @click.option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
-    help="Filter out job by job description (exact match)",
+    help="Filter out jobs by description (exact match)",
 )
 @click.option("-q", "--quiet", is_flag=True, help="Print only Job ID")
 @click.option(
@@ -401,16 +402,21 @@ async def logs(cfg: Config, id: str) -> None:
 )
 @async_cmd
 async def ls(
-    cfg: Config, status: Sequence[str], description: str, quiet: bool, wide: bool
+    cfg: Config,
+    status: Sequence[str],
+    name: str,
+    description: str,
+    quiet: bool,
+    wide: bool,
 ) -> None:
     """
     List all jobs.
 
     Examples:
 
-    neuro job ls --description="my favourite job"
-    neuro job ls --status=all
-    neuro job ls -s pending -s running -q
+    neuro ps --name my-experiments-v1 --status all
+    neuro ps --description="my favourite job"
+    neuro ps -s failed -s succeeded -q
     """
 
     status = status or ["running", "pending"]
@@ -421,7 +427,7 @@ async def ls(
         statuses = set()
 
     async with cfg.make_client() as client:
-        jobs = await client.jobs.list(statuses)
+        jobs = await client.jobs.list(statuses, name)
 
     # client-side filtering
     if description:

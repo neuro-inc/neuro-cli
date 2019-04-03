@@ -407,9 +407,16 @@ class Jobs:
             res = await resp.json()
             return JobDescription.from_api(res)
 
-    async def list(self, statuses: Set[str]) -> List[JobDescription]:
+    async def list(
+        self, statuses: Optional[Set[str]] = None, name: Optional[str] = None
+    ) -> List[JobDescription]:
         url = URL(f"jobs")
-        params = MultiDict([("status", s) for s in statuses])
+        params: MultiDict[str] = MultiDict()
+        if statuses:
+            for status in statuses:
+                params.add("status", status)
+        if name:
+            params.add("name", name)
         async with self._api.request("GET", url, params=params) as resp:
             ret = await resp.json()
             return [JobDescription.from_api(j) for j in ret["jobs"]]

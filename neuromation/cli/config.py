@@ -1,3 +1,8 @@
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict
+
 import click
 from yarl import URL
 
@@ -102,9 +107,45 @@ def logout() -> None:
     click.echo("Logged out")
 
 
+@command(name="docker")
+@click.option(
+    "--docker-config",
+    metavar="PATH",
+    type=click.Path(file_okay=False),
+    help="Specifies the location of the Docker client configuration files",
+    default=lambda: os.environ.get("DOCKER_CONFIG", Path.home() / ".docker"),
+    show_default=False,
+)
+@click.pass_obj
+def docker(cfg: Config, docker_config: str) -> None:
+    """
+    Configure docker client for working with platform registry
+    """
+    config_path = Path(docker_config)
+    if not config_path.exists():
+        config_path.mkdir(parents=True)
+    elif not config_path.is_dir():
+        raise ValueError(f"Specified path is not a directory: {config}")
+
+    json_path = config_path / "config.json"
+    payload: Dict[str, Any] = {}
+    if json_path.exists():
+        with json_path.open("r") as file:
+            payload = json.load(file)
+    if "credHelpers" not in payload:
+        payload["credHelpers"] = {}
+
+    registry = URL(cfg.registry_url).host
+    payload["credHelpers"][registry] = "neuro"
+    with json_path.open("w") as file:
+        json.dump(payload, file, indent=2)
+
+
 config.add_command(login)
 config.add_command(show)
 config.add_command(show_token)
+
+config.add_command(docker)
 
 config.add_command(auth)
 config.add_command(logout)

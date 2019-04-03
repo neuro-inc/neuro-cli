@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import sys
-import tempfile
 from collections import namedtuple
 from contextlib import suppress
 from hashlib import sha1
@@ -21,6 +20,7 @@ from yarl import URL
 from neuromation.cli import main, rc
 from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
+from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME
 from neuromation.client import (
     FileStatusType,
     JobDescription,
@@ -92,10 +92,10 @@ def run_async(coro):
 
 
 class Helper:
-    def __init__(self, config: rc.Config, capfd, monkeypatch, tmp_path: Path):
+    def __init__(self, config: rc.Config, nmrc_path, capfd, tmp_path: Path):
         self._config = config
+        self._nmrc_path = nmrc_path
         self._capfd = capfd
-        self._mp = monkeypatch
         self._tmp = tmp_path
         self._tmpstorage = "storage:" + str(uuid()) + "/"
         self._executed_jobs = []
@@ -364,15 +364,6 @@ class Helper:
         )
 
     def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
-        def _temp_config():
-            with tempfile.NamedTemporaryFile(
-                dir=self._tmp, prefix="run_cli-", suffix=".nmrc", delete=False
-            ) as config_file:
-                # close tmp file on exit from context manager,
-                # it prevents unlink() error on Windows
-                config_path = Path(config_file.name)
-            rc.save(config_path, self._config)
-            return config_path
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
@@ -383,17 +374,16 @@ class Helper:
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
-                with self._mp.context() as ctx:
-                    ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
-                    main(
-                        [
-                            "--show-traceback",
-                            "--disable-pypi-version-check",
-                            "--color=no",
-                            f"--network-timeout={self.config.network_timeout}",
-                        ]
-                        + arguments
-                    )
+                main(
+                    [
+                        f"--neuromation-config={self._nmrc_path}",
+                        "--show-traceback",
+                        "--disable-pypi-version-check",
+                        "--color=no",
+                        f"--network-timeout={self.config.network_timeout}",
+                    ]
+                    + arguments
+                )
             except SystemExit as exc:
                 if exc.code == EX_IOERR:
                     # network problem
@@ -449,6 +439,7 @@ class Helper:
         stop_state=JobStatus.FAILED,
     ):
         job_id = self.run_job(image, command, params)
+        assert job_id
         self.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
         self.wait_job_change_state_to(job_id, wait_state, stop_state)
         return job_id
@@ -473,63 +464,69 @@ class Helper:
                 )
 
 
+@pytest.fixture()
+def nmrc_path(tmp_path, monkeypatch):
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
+    if e2e_test_token:
+        nmrc_path = tmp_path / "conftest.nmrc"
+        monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
+        rc.ConfigFactory.set_path(nmrc_path)
+    else:
+        nmrc_path = rc.ConfigFactory.get_path()
+    return nmrc_path
+
+
 @pytest.fixture
-def config(tmp_path, monkeypatch):
+def config(nmrc_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
 
     if e2e_test_token:
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        nmrc_path.write_text(rc_text)
+        nmrc_path.chmod(0o600)
 
-        def _temp_config():
-            rc_text = RC_TEXT.format(token=e2e_test_token)
-            config_path = tmp_path / ".nmrc"
-            config_path.write_text(rc_text)
-            config_path.chmod(0o600)
-            return config_path
-
-        with monkeypatch.context() as ctx:
-            ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
-            config = rc.ConfigFactory.load()
-    else:
-        config = rc.ConfigFactory.load()
-
+    config = rc.ConfigFactory.load()
     config.network_timeout = NETWORK_TIMEOUT
     yield config
 
 
 @pytest.fixture
-def helper(config, capfd, monkeypatch, tmp_path):
-    ret = Helper(config=config, capfd=capfd, monkeypatch=monkeypatch, tmp_path=tmp_path)
+def helper(config, capfd, monkeypatch, tmp_path, nmrc_path):
+    ret = Helper(config=config, nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
     yield ret
     ret.close()
 
 
-@pytest.fixture
-def config_alt(tmp_path, monkeypatch):
+@pytest.fixture()
+def nmrc_path_alt(tmp_path, monkeypatch):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
+    if not e2e_test_token:
+        pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
+    nmrc_path = tmp_path / "conftest-alt.nmrc"
+    monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
+    rc.ConfigFactory.set_path(nmrc_path)
+    return nmrc_path
 
+
+@pytest.fixture
+def config_alt(tmp_path, nmrc_path_alt):
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
     if e2e_test_token:
-
-        def _temp_config():
-            rc_text = RC_TEXT.format(token=e2e_test_token)
-            config_path = tmp_path / ".alt.nmrc"
-            config_path.write_text(rc_text)
-            config_path.chmod(0o600)
-            return config_path
-
-        with monkeypatch.context() as ctx:
-            ctx.setattr(rc.ConfigFactory, "get_path", _temp_config)
-            config = rc.ConfigFactory.load()
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        nmrc_path_alt.write_text(rc_text)
+        nmrc_path_alt.chmod(0o600)
     else:
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
 
+    config = rc.ConfigFactory.load()
     config.network_timeout = NETWORK_TIMEOUT
     yield config
 
 
 @pytest.fixture
-def helper_alt(config_alt, capfd, monkeypatch, tmp_path):
+def helper_alt(config_alt, nmrc_path_alt, capfd, tmp_path):
     ret = Helper(
-        config=config_alt, capfd=capfd, monkeypatch=monkeypatch, tmp_path=tmp_path
+        config=config_alt, nmrc_path=nmrc_path_alt, capfd=capfd, tmp_path=tmp_path
     )
     yield ret
     ret.close()
