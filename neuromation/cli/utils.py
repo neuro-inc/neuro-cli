@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 import shlex
 import sys
@@ -19,12 +20,14 @@ from typing import (
 
 import click
 
-from neuromation.client import Volume
+from neuromation.client import Client, JobDescription, Volume
 from neuromation.utils import run
 
 from .rc import Config, ConfigFactory, save
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
+
+log = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 
@@ -322,3 +325,18 @@ def volume_to_verbose_str(volume: Volume) -> str:
         f"'{volume.storage_path}' mounted to '{volume.container_path}' "
         f"in {('ro' if volume.read_only else 'rw')} mode"
     )
+
+
+async def resolve_job(client: Client, id_or_name: str) -> str:
+    jobs: List[JobDescription] = []
+    try:
+        jobs = await client.jobs.list(name=id_or_name)
+    except Exception as e:
+        log.error(f"Failed to resolve job-name '{id_or_name}' to a job-ID: {e}")
+    if jobs:
+        job_id = jobs[-1].id
+        log.debug(f"Job name '{id_or_name}' resolved to job ID '{job_id}'")
+    else:
+        job_id = id_or_name
+
+    return job_id

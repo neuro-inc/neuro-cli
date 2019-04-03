@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional
 import pytest
 from aiohttp import web
 
+from neuromation.cli.rc import Client
 from neuromation.client import (
-    Client,
     Image,
     JobDescription,
     NetworkPortForwarding,
