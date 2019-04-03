@@ -61,8 +61,8 @@ async def push(
 
     async with cfg.make_client() as client:
         result_remote_image = await client.images.push(local_img, remote_img, progress)
-    progress.message(result_remote_image.as_local_str())
     progress.close()
+    click.echo(result_remote_image.as_local_str())
 
 
 @command()
