@@ -462,20 +462,20 @@ async def top(cfg: Config, job: str) -> None:
 
 
 @command()
-@click.argument("job_list", nargs=-1, required=True)
+@click.argument("jobs", nargs=-1, required=True)
 @async_cmd
-async def kill(cfg: Config, job_list: Sequence[str]) -> None:
+async def kill(cfg: Config, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
     """
     errors = []
     async with cfg.make_client() as client:
-        for job in job_list:
-            job = await resolve_job(client, job)
+        for job in jobs:
+            job_resolved = await resolve_job(client, job)
             try:
-                await client.jobs.kill(job)
+                await client.jobs.kill(job_resolved)
                 # TODO (ajuszkowski) printing should be on the cli level
-                print(job)
+                print(job_resolved)
             except ValueError as e:
                 errors.append((job, e))
 
