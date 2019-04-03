@@ -28,6 +28,7 @@ class RCException(Exception):
     pass
 
 
+ENV_NAME = "NEUROMATION_CONFIG"
 NO_VERSION = pkg_resources.parse_version("0.0.0")
 
 
@@ -80,7 +81,7 @@ class Config:
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
     disable_pypi_version_check: bool = False  # don't save it in config
     _connector: Optional[aiohttp.TCPConnector] = None
-    network_timeout: float = 30.0
+    network_timeout: float = 60.0
 
     async def post_init(self) -> None:
         ssl_context = ssl.SSLContext()
@@ -135,9 +136,15 @@ class Config:
 
 
 class ConfigFactory:
+    _path: Path = Path(os.environ.get(ENV_NAME, Path.home() / ".nmrc"))
+
     @classmethod
     def get_path(cls) -> Path:
-        return Path.home().joinpath(".nmrc")
+        return cls._path
+
+    @classmethod
+    def set_path(cls, path: Path) -> None:
+        cls._path = path
 
     @classmethod
     def load(cls) -> Config:

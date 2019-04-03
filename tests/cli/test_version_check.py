@@ -1,7 +1,6 @@
 import asyncio
 import socket
 import ssl
-from pathlib import Path
 from typing import Dict, Tuple
 
 import aiohttp
@@ -14,19 +13,6 @@ from aiohttp.test_utils import unused_port
 
 from neuromation.cli.rc import ConfigFactory
 from neuromation.cli.version_utils import VersionChecker
-
-
-@pytest.fixture
-def nmrc(tmp_path):
-    return tmp_path / ".nmrc"
-
-
-@pytest.fixture
-def patch_home_for_test(monkeypatch, nmrc):
-    def home():
-        return nmrc.parent
-
-    monkeypatch.setattr(Path, "home", home)
 
 
 PYPI_JSON = {
@@ -260,7 +246,7 @@ async def test__fetch_pypi_non_200(
 
 
 async def test_update_latest_version(
-    pypi_server, connector: aiohttp.TCPConnector, patch_home_for_test
+    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
 ) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
@@ -271,9 +257,7 @@ async def test_update_latest_version(
     assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.2.1")
 
 
-async def test_run(
-    pypi_server, connector: aiohttp.TCPConnector, patch_home_for_test
-) -> None:
+async def test_run(pypi_server, connector: aiohttp.TCPConnector, nmrc_path) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
     checker = VersionChecker(connector=connector)
@@ -284,7 +268,7 @@ async def test_run(
 
 
 async def test_run_cancelled(
-    pypi_server, connector: aiohttp.TCPConnector, patch_home_for_test
+    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
 ) -> None:
     loop = asyncio.get_event_loop()
     pypi_server.response = (200, PYPI_JSON)
@@ -300,7 +284,7 @@ async def test_run_cancelled(
 
 
 async def test_run_cancelled_with_delay(
-    pypi_server, connector: aiohttp.TCPConnector, patch_home_for_test
+    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
 ) -> None:
     loop = asyncio.get_event_loop()
     pypi_server.response = (200, PYPI_JSON)
@@ -316,7 +300,7 @@ async def test_run_cancelled_with_delay(
     assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
 
 
-async def test_run_no_server(patch_home_for_test) -> None:
+async def test_run_no_server(nmrc_path) -> None:
     port = unused_port()
     resolver = FakeResolver({"pypi.org": port})
     connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)

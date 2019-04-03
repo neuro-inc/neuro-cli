@@ -2,6 +2,7 @@ import asyncio
 import logging
 import shutil
 import sys
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, List, Optional, Sequence, Type, Union
 
@@ -82,6 +83,15 @@ def print_options(
 @click.group(cls=MainGroup, invoke_without_command=True)
 @click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
 @click.option(
+    "--neuromation-config",
+    type=click.Path(dir_okay=False),
+    required=False,
+    help="Path to config file.",
+    default=lambda: rc.ConfigFactory.get_path(),
+    metavar="PATH",
+    envvar=rc.ENV_NAME,
+)
+@click.option(
     "--show-traceback",
     is_flag=True,
     help="Show python traceback on error, useful for debugging the tool.",
@@ -117,6 +127,7 @@ def print_options(
 def cli(
     ctx: click.Context,
     verbose: int,
+    neuromation_config: str,
     show_traceback: bool,
     color: str,
     disable_pypi_version_check: bool,
@@ -142,15 +153,16 @@ def cli(
         real_color = tty
     ctx.color = real_color
     setup_logging(verbose=verbose, color=real_color)
-    config = rc.ConfigFactory.load()
-    config.color = real_color
-    config.tty = tty
-    config.terminal_size = shutil.get_terminal_size()
-    config.disable_pypi_version_check = disable_pypi_version_check
-    config.network_timeout = network_timeout
-    ctx.obj = config
+    rc.ConfigFactory.set_path(Path(neuromation_config))
+    cfg = rc.ConfigFactory.load()
+    cfg.color = real_color
+    cfg.tty = tty
+    cfg.terminal_size = shutil.get_terminal_size()
+    cfg.disable_pypi_version_check = disable_pypi_version_check
+    cfg.network_timeout = network_timeout
+    ctx.obj = cfg
     if not disable_pypi_version_check:
-        config.pypi.warn_if_has_newer_version()
+        cfg.pypi.warn_if_has_newer_version()
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help())
 
