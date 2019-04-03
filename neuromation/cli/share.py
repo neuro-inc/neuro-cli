@@ -27,7 +27,6 @@ async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
         neuro share job:///my_job_id alice write
     """
     try:
-
         # parse images by ImageNameParser, all other resources -- by yaml.URL
         if uri.startswith("image:"):
             parser = ImageNameParser(cfg.username, cfg.registry_url)
