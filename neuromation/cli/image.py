@@ -97,7 +97,7 @@ async def pull(
     log.debug(f"LOCAL: '{local_img}'")
 
     progress = ImageProgress.create(
-        type=ImageOperation.PUSH,
+        type=ImageOperation.PULL,
         input_image=remote_img.as_url_str(),
         output_image=local_img.as_local_str(),
         tty=cfg.tty,
