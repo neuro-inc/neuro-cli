@@ -3,7 +3,7 @@ import logging
 import click
 from yarl import URL
 
-from neuromation.client import Action, IllegalArgumentError, ImageNameParser, Permission
+from neuromation.client import Action, ImageNameParser, Permission
 
 from .rc import Config
 from .utils import async_cmd, command
@@ -32,14 +32,17 @@ async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
             uri_obj = URL(uri)
         else:
             parser = ImageNameParser(cfg.username, cfg.registry_url)
-            parser.raise_if_has_tag(uri)
+            if parser.has_tag(uri):
+                raise ValueError(
+                    f"Invalid image '{uri}': tags are not allowed for resource sharing"
+                )
             image = parser.parse_as_docker_image(uri)
             uri_obj = URL(image.as_url_str())
 
         try:
             action = Action[permission.upper()]
         except KeyError:
-            valid_actions = ', '.join([a.value for a in Action])
+            valid_actions = ", ".join([a.value for a in Action])
             raise ValueError(
                 f"invalid permission '{permission}', allowed values: {valid_actions}"
             )

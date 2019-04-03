@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Tuple
 
 from yarl import URL
 
@@ -58,7 +58,7 @@ class ImageNameParser:
         prefix = f"{IMAGE_SCHEME}:"
         if image.startswith(prefix):
             image = image.lstrip(prefix).lstrip("/")
-        name, tag = self._split_image_name(image, append_default_tag=False)
+        name, tag = self._split_image_name(image, default_tag="")
         return bool(tag)
 
     def _check_for_disambiguation(self, image: str) -> None:
@@ -74,7 +74,7 @@ class ImageNameParser:
             raise ValueError(
                 f"scheme '{IMAGE_SCHEME}://' is not allowed for docker images"
             )
-        name, tag = self._split_image_name(image)
+        name, tag = self._split_image_name(image, self.default_tag)
         return DockerImage(name=name, tag=tag)
 
     def _parse_as_neuro_image(self, image: str) -> DockerImage:
@@ -101,13 +101,12 @@ class ImageNameParser:
 
         registry = self._registry
         owner = self._default_user if not url.host or url.host == "~" else url.host
-        name, tag = self._split_image_name(url.path.lstrip("/"))
+        name, tag = self._split_image_name(url.path.lstrip("/"), self.default_tag)
         return DockerImage(name=name, tag=tag, registry=registry, owner=owner)
 
-    def _split_image_name(self, image: str, append_default_tag: bool = True) -> Tuple[str, str]:
+    def _split_image_name(self, image: str, default_tag: str) -> Tuple[str, str]:
         colon_count = image.count(":")
         if colon_count == 0:
-            default_tag = self.default_tag if append_default_tag else None
             image, tag = image, default_tag
         elif colon_count == 1:
             image, tag = image.split(":")
