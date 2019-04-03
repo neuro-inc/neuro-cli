@@ -508,6 +508,7 @@ async def async_config(config, loop):
     await new_config.close()
 
 
+@pytest.fixture
 def helper(config, capfd, monkeypatch, tmp_path, nmrc_path):
     ret = Helper(config=config, nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
     yield ret
