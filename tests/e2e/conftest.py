@@ -95,9 +95,7 @@ def run_async(coro):
 
 
 class Helper:
-    def __init__(
-        self, config: rc.Config, nmrc_path, capfd, monkeypatch, tmp_path: Path
-    ):
+    def __init__(self, config: rc.Config, nmrc_path, capfd, tmp_path: Path):
         try:
             loop = asyncio.get_event_loop()
             assert not loop.is_running()
@@ -511,7 +509,7 @@ async def async_config(config, loop):
 
 
 @pytest.fixture
-def helper(config, capfd, monkeypatch, tmp_path, nmrc_path):
+def helper(config, capfd, tmp_path, nmrc_path):
     ret = Helper(config=config, nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
     yield ret
     ret.close()
