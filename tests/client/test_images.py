@@ -8,7 +8,12 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.cli.formatters import ImageProgress
-from neuromation.client import AuthorizationError, Client, ImageNameParser, ImageOperation
+from neuromation.client import (
+    AuthorizationError,
+    Client,
+    ImageNameParser,
+    ImageOperation,
+)
 from neuromation.client.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
@@ -456,7 +461,13 @@ class TestImages:
 
     @pytest.fixture()
     def progress(self) -> ImageProgress:
-        return ImageProgress.create(type=ImageOperation.PULL, input_image="inp", output_image="outp", tty=False, quiet=True)
+        return ImageProgress.create(
+            type=ImageOperation.PULL,
+            input_image="inp",
+            output_image="outp",
+            tty=False,
+            quiet=True,
+        )
 
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__",
