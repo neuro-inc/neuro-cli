@@ -28,9 +28,8 @@ async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
     """
     try:
 
-        if not uri.startswith("image:"):
-            uri_obj = URL(uri)
-        else:
+        # parse images by ImageNameParser, all other resources -- by yaml.URL
+        if uri.startswith("image:"):
             parser = ImageNameParser(cfg.username, cfg.registry_url)
             if parser.has_tag(uri):
                 raise ValueError(
@@ -38,6 +37,8 @@ async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
                 )
             image = parser.parse_as_docker_image(uri)
             uri_obj = URL(image.as_url_str())
+        else:
+            uri_obj = URL(uri)
 
         try:
             action = Action[permission.upper()]
