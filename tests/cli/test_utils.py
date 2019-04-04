@@ -1,7 +1,7 @@
 from aiohttp import web
 
 from neuromation.cli.utils import resolve_job
-from neuromation.client import Client
+from neuromation.api import Client
 
 
 async def test_resolve_job_id__no_jobs_found(aiohttp_server, token):

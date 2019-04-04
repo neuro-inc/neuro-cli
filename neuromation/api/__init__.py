@@ -7,20 +7,21 @@ import certifi
 from yarl import URL
 
 from .abc import AbstractProgress, AbstractSpinner
-from .api import (
-    API,
+from .config import Config
+from .core import (
     DEFAULT_TIMEOUT,
     AuthenticationError,
     AuthError,
     AuthorizationError,
     ClientError,
+    Core,
     IllegalArgumentError,
     ResourceNotFound,
 )
-from .config import Config
 from .images import Images
 from .jobs import (
     Container,
+    HTTPPort,
     Image,
     JobDescription,
     Jobs,
@@ -47,6 +48,7 @@ __all__ = (
     "NetworkPortForwarding",
     "Resources",
     "Volume",
+    "HTTPPort",
     "TrainResult",
     "Action",
     "Permission",
@@ -62,6 +64,7 @@ __all__ = (
     "AuthorizationError",
     "AbstractProgress",
     "AbstractSpinner",
+    "ImageNameParser",
 )
 
 
@@ -83,15 +86,15 @@ class Client:
         self._ssl_context = ssl.SSLContext()
         self._ssl_context.load_verify_locations(capath=certifi.where())
         self._connector = aiohttp.TCPConnector(ssl=self._ssl_context)
-        self._api = API(self._connector, url, token, timeout)
-        self._jobs = Jobs(self._api, token)
-        self._models = Models(self._api)
-        self._storage = Storage(self._api, self._config)
-        self._users = Users(self._api)
+        self._core = Core(self._connector, url, token, timeout)
+        self._jobs = Jobs(self._core, token)
+        self._models = Models(self._core)
+        self._storage = Storage(self._core, self._config)
+        self._users = Users(self._core)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
-        await self._api.close()
+        await self._core.close()
         if self._images is not None:
             await self._images.close()
         await self._connector.close()
@@ -134,5 +137,5 @@ class Client:
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images(self._api, self._config)
+            self._images = Images(self._core, self._config)
         return self._images

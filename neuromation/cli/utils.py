@@ -20,7 +20,7 @@ from typing import (
 
 import click
 
-from neuromation.client import Client, JobDescription, Volume
+from neuromation.api import Client, JobDescription, Volume
 from neuromation.utils import run
 
 from .rc import Config, ConfigFactory, save

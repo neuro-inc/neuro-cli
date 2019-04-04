@@ -3,7 +3,7 @@ import logging
 import click
 from yarl import URL
 
-from neuromation.client import Action, IllegalArgumentError, Permission
+from neuromation.api import Action, IllegalArgumentError, Permission
 
 from .rc import Config
 from .utils import async_cmd, command

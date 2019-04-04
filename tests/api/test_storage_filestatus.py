@@ -1,4 +1,4 @@
-from neuromation.client import FileStatus, FileStatusType
+from neuromation.api import FileStatus, FileStatusType
 
 
 def test_from_api():

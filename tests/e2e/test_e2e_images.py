@@ -8,7 +8,7 @@ import aiodocker
 import pytest
 from yarl import URL
 
-from neuromation.client import JobStatus
+from neuromation.api import JobStatus
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 

@@ -2,7 +2,7 @@ import asyncio
 
 import aiohttp
 
-from neuromation.client import Client, JobDescription
+from neuromation.api import Client, JobDescription
 
 
 def _validate_args_for_ssh_session(

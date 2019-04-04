@@ -3,7 +3,7 @@ import sys
 
 import click
 
-from neuromation.client import ImageNameParser
+from neuromation.api import ImageNameParser
 
 from .command_spinner import SpinnerBase
 from .rc import Config

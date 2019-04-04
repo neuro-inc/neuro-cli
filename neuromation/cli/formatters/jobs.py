@@ -11,8 +11,13 @@ import humanize
 from click import style
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
-from neuromation.client.parsing_utils import ImageNameParser
+from neuromation.api import (
+    ImageNameParser,
+    JobDescription,
+    JobStatus,
+    JobTelemetry,
+    Resources,
+)
 
 
 BEFORE_PROGRESS = "\r"

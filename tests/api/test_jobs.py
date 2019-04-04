@@ -3,16 +3,16 @@ from typing import Any, Dict, List, Optional
 import pytest
 from aiohttp import web
 
-from neuromation.cli.rc import Client
-from neuromation.client import (
+from neuromation.api import (
     Image,
     JobDescription,
+    JobTelemetry,
     NetworkPortForwarding,
     ResourceNotFound,
     Resources,
     Volume,
 )
-from neuromation.client.jobs import JobTelemetry
+from neuromation.cli.rc import Client
 
 
 async def test_jobs_monitor(aiohttp_server, token):
