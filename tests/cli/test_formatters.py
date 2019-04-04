@@ -15,7 +15,6 @@ from neuromation.cli.formatters import (
     JobTelemetryFormatter,
     SimpleJobsFormatter,
     TabularJobsFormatter,
-    AbstractJobStartProgress
 )
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
