@@ -11,12 +11,11 @@ from yarl import URL
 
 import neuromation
 from neuromation.api import Client
-from neuromation.api.config import get_server_config
 from neuromation.api.users import get_token_username
 
 from .const import WIN32
 from .defaults import API_URL
-from .login import AuthConfig, AuthNegotiator, AuthToken
+from .login import AuthConfig, AuthNegotiator, AuthToken, get_server_config
 
 
 log = logging.getLogger(__name__)
