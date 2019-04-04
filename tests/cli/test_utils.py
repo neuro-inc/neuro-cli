@@ -1,6 +1,8 @@
+import pytest
 from aiohttp import web
+from yarl import URL
 
-from neuromation.cli.utils import resolve_job
+from neuromation.cli.utils import parse_resource_for_sharing, resolve_job
 from neuromation.client import Client
 
 
@@ -154,3 +156,15 @@ async def test_resolve_job_id__server_error(aiohttp_server, token):
     async with Client(srv.make_url("/"), token) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
+
+
+def test_parse_resource_for_sharing_image_no_tag(config):
+    uri = "image://~/ubuntu"
+    parsed = parse_resource_for_sharing(uri, config)
+    assert parsed == URL("image://user/ubuntu:latest")
+
+
+def test_parse_resource_for_sharing_image_with_tag_fail(config):
+    uri = "image://~/ubuntu:latest"
+    with pytest.raises(ValueError, match="tag is not allowed"):
+        parse_resource_for_sharing(uri, config)

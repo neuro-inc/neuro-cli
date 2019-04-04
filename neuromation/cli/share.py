@@ -1,12 +1,16 @@
 import logging
 
 import click
-from yarl import URL
 
-from neuromation.client import Action, ImageNameParser, Permission
+from neuromation.client import Permission
 
 from .rc import Config
-from .utils import async_cmd, command
+from .utils import (
+    async_cmd,
+    command,
+    parse_permission_action,
+    parse_resource_for_sharing,
+)
 
 
 log = logging.getLogger(__name__)
@@ -27,29 +31,11 @@ async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
         neuro share job:///my_job_id alice write
     """
     try:
-        # parse images by ImageNameParser, all other resources -- by yaml.URL
-        if uri.startswith("image:"):
-            parser = ImageNameParser(cfg.username, cfg.registry_url)
-            if parser.has_tag(uri):
-                raise ValueError(
-                    f"Invalid image '{uri}': tags are not allowed for resource sharing"
-                )
-            image = parser.parse_as_docker_image(uri)
-            uri_obj = URL(image.as_url_str())
-        else:
-            uri_obj = URL(uri)
-
-        try:
-            action = Action[permission.upper()]
-        except KeyError:
-            valid_actions = ", ".join([a.value for a in Action])
-            raise ValueError(
-                f"invalid permission '{permission}', allowed values: {valid_actions}"
-            )
+        uri_obj = parse_resource_for_sharing(uri, cfg)
+        action_obj = parse_permission_action(permission)
         permission_obj = Permission.from_cli(
-            username=cfg.username, uri=uri_obj, action=action
+            username=cfg.username, uri=uri_obj, action=action_obj
         )
-
         log.info(f"Using resource '{permission_obj.uri}'")
 
         async with cfg.make_client() as client:

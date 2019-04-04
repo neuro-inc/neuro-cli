@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 from yarl import URL
 
@@ -19,9 +19,13 @@ class ImageNameParser:
         except ValueError as e:
             raise ValueError(f"Invalid docker image '{image}': {e}") from e
 
-    def parse_as_neuro_image(self, image: str) -> DockerImage:
+    def parse_as_neuro_image(
+        self, image: str, raise_if_has_tag: bool = False
+    ) -> DockerImage:
         try:
             self._check_for_disambiguation(image)
+            if raise_if_has_tag and self.has_tag(image):
+                raise ValueError("tag is not allowed")
             return self._parse_as_neuro_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
@@ -58,7 +62,7 @@ class ImageNameParser:
         prefix = f"{IMAGE_SCHEME}:"
         if image.startswith(prefix):
             image = image.lstrip(prefix).lstrip("/")
-        name, tag = self._split_image_name(image, default_tag="")
+        name, tag = self._split_image_name(image, default_tag=None)
         return bool(tag)
 
     def _check_for_disambiguation(self, image: str) -> None:
@@ -104,7 +108,9 @@ class ImageNameParser:
         name, tag = self._split_image_name(url.path.lstrip("/"), self.default_tag)
         return DockerImage(name=name, tag=tag, registry=registry, owner=owner)
 
-    def _split_image_name(self, image: str, default_tag: str) -> Tuple[str, str]:
+    def _split_image_name(
+        self, image: str, default_tag: Optional[str] = None
+    ) -> Tuple[str, Optional[str]]:
         colon_count = image.count(":")
         if colon_count == 0:
             image, tag = image, default_tag
