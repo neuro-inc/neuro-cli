@@ -1,6 +1,6 @@
 -r base.txt
 
-mypy==0.670
+mypy==0.700
 pytest==4.4.0
 pytest-cov==2.6.1
 flake8==3.7.7
