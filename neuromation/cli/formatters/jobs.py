@@ -320,7 +320,7 @@ class DetailedJobStartProgress(AbstractJobStartProgress):
     def __call__(self, job: JobDescription) -> None:
         new_time = time.time()
         dt = new_time - self._time
-        msg = format_job_status(job.status)
+        msg = "Status: " + format_job_status(job.status)
         if job.history.reason:
             reason = job.history.reason
         elif job.status == JobStatus.PENDING:
@@ -353,7 +353,7 @@ class StreamJobStartProgress(AbstractJobStartProgress):
         self._prev = ""
 
     def __call__(self, job: JobDescription) -> None:
-        msg = str(job.status)
+        msg = f"Status: {job.status}"
         if job.history.reason:
             reason = job.history.reason
         elif job.status == JobStatus.PENDING:

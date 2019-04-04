@@ -11,11 +11,11 @@ from yarl import URL
 from neuromation.cli.formatters import (
     ConfigFormatter,
     JobFormatter,
-    JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
     SimpleJobsFormatter,
     TabularJobsFormatter,
+    AbstractJobStartProgress
 )
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
@@ -181,23 +181,6 @@ class TestJobStartProgress:
 
     def strip(self, text: str) -> str:
         return click.unstyle(text).strip()
-
-    def test_progress(self) -> None:
-        progress = JobStartProgress(True)
-
-        assert "Status: pending Initializing" in self.strip(
-            progress(self.make_job(JobStatus.PENDING, None))
-        )
-        assert "Status: pending ContainerCreating" in self.strip(
-            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-        )
-        assert "Status: pending ContainerCreating" in self.strip(
-            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-        )
-
-        assert "Status: succeeded" in self.strip(
-            progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
-        )
 
 
 class TestJobOutputFormatter:
