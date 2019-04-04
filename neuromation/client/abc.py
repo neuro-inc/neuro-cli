@@ -18,7 +18,7 @@ class AbstractProgress(abc.ABC):
 
 class AbstractImageProgress(abc.ABC):
     @abc.abstractmethod
-    def message(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 
     def close(self) -> None:

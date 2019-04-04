@@ -5,7 +5,7 @@ from neuromation.client import AbstractImageProgress, ImageOperation
 
 
 class ImageProgress(AbstractImageProgress):
-    def message(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 
     @classmethod
@@ -25,13 +25,13 @@ class ImageProgress(AbstractImageProgress):
             progress = StreamImageProgress()
 
         if type == ImageOperation.PUSH:
-            progress.message(f"Using local image '{input_image}'")
-            progress.message(f"Using remote image '{output_image}'")
-            progress.message("Pushing image...")
+            progress(f"Using local image '{input_image}'")
+            progress(f"Using remote image '{output_image}'")
+            progress("Pushing image...")
         elif type == ImageOperation.PULL:
-            progress.message(f"Using remote image '{input_image}'")
-            progress.message(f"Using local image '{output_image}'")
-            progress.message("Pulling image...")
+            progress(f"Using remote image '{input_image}'")
+            progress(f"Using local image '{output_image}'")
+            progress("Pulling image...")
         return progress
 
 
@@ -40,7 +40,7 @@ class DetailedImageProgress(ImageProgress):
         self._mapping: Dict[str, int] = {}
         self._reporter = MultilineReporter(print=True)
 
-    def message(self, message: str, layer_id: Optional[str] = None) -> None:
+    def __call__(self, message: str, layer_id: Optional[str] = None) -> None:
         if layer_id:
             if layer_id in self._mapping.keys():
                 lineno = self._mapping[layer_id]
@@ -61,7 +61,7 @@ class StreamImageProgress(ImageProgress):
         self._reporter = StreamReporter(print=True)
         pass
 
-    def message(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
         if layer_id:
             self._reporter.tick()
         else:

@@ -127,7 +127,7 @@ class Images:
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress.message(message, obj["id"])
+                progress(message, obj["id"])
         return remote_image
 
     async def pull(
@@ -162,7 +162,7 @@ class Images:
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress.message(message, obj["id"])
+                progress(message, obj["id"])
 
         await self._docker.images.tag(repo, local_image.as_local_str())
 
