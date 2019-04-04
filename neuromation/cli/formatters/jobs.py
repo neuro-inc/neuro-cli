@@ -8,9 +8,10 @@ from sys import platform
 from typing import Iterable, Iterator, List, Mapping
 
 import humanize
-from click import style
+from click import style, unstyle
 from dateutil.parser import isoparse  # type: ignore
 
+from neuromation.cli.command_reporter import SingleLineReporter, StreamReporter
 from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.client.parsing_utils import ImageNameParser
 
@@ -289,49 +290,80 @@ class ResourcesFormatter:
         return "Resources:\n" + indent + f"\n{indent}".join(lines)
 
 
-class JobStartProgress:
-    if platform == "win32":
-        SPINNER = ("-", "\\", "|", "/")
-    else:
-        SPINNER = ("◢", "◣", "◤", "◥")
-    LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
+class AbstractJobStartProgress:
+    @classmethod
+    def create(cls, tty: bool, color: bool, quiet: bool) -> "AbstractJobStartProgress":
+        if quiet:
+            return AbstractJobStartProgress()
+        elif tty:
+            return DetailedJobStartProgress(color)
+        return StreamJobStartProgress()
 
-    def __init__(self, color: bool) -> None:
-        self._color = color
+    def __call__(self, job: JobDescription) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+
+class DetailedJobStartProgress(AbstractJobStartProgress):
+    def __init__(self, color: bool):
         self._time = time.time()
-        self._spinner = itertools.cycle(self.SPINNER)
+        self._color = color
         self._prev = ""
-        self._prev_reason = ""
+        if platform == "win32":
+            self._spinner = itertools.cycle("-\\|/")
+        else:
+            self._spinner = itertools.cycle(("◢◣◤◥"))
+        self._reporter = SingleLineReporter(print=True)
 
-    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
-        if not self._color:
-            return ""
+    def __call__(self, job: JobDescription) -> None:
         new_time = time.time()
         dt = new_time - self._time
         msg = format_job_status(job.status)
         if job.history.reason:
             reason = job.history.reason
-            self._prev_reason = reason
-        elif not self._prev_reason:
+        elif job.status == JobStatus.PENDING:
             reason = "Initializing"
         else:
             reason = ""
         if reason:
             msg += " " + style(reason, bold=True)
-        if self._prev:
-            ret = LINE_UP
-        else:
-            ret = ""
-        # ret = LINE_UP
-        # ret = ""
+        if not self._color:
+            msg = unstyle(msg)
         if msg != self._prev:
             if self._prev:
-                ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
+                self._reporter.report(self._prev)
+                self._reporter.close()
+            self._reporter = SingleLineReporter(print=True)
             self._prev = msg
-        ret += self.LINE_PRE + msg + f" [{dt:.1f} sec]"
-        if not finish:
-            ret += " " + next(self._spinner)
-        ret += CLEAR_LINE_TAIL + "\n"
-        if finish:
-            ret += AFTER_PROGRESS
-        return ret
+            self._reporter.report(msg)
+        else:
+            self._reporter.report(f"{msg} {next(self._spinner)} [{dt:.1f} sec]")
+
+    def close(self) -> None:
+        if self._reporter:
+            self._reporter.report(self._prev)
+            self._reporter.close()
+
+
+class StreamJobStartProgress(AbstractJobStartProgress):
+    def __init__(self) -> None:
+        self._reporter = StreamReporter(print=True)
+        self._prev = ""
+
+    def __call__(self, job: JobDescription) -> None:
+        msg = str(job.status)
+        if job.history.reason:
+            reason = job.history.reason
+        elif job.status == JobStatus.PENDING:
+            reason = "Initializing"
+        else:
+            reason = ""
+        if reason:
+            msg += " " + reason
+        if msg != self._prev:
+            self._reporter.report(msg)
+            self._prev = msg
+        else:
+            self._reporter.tick()

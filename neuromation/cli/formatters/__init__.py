@@ -1,9 +1,9 @@
 from .config import ConfigFormatter
 from .images import ImageProgress
 from .jobs import (
+    AbstractJobStartProgress,
     BaseJobsFormatter,
     JobFormatter,
-    JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
     SimpleJobsFormatter,
@@ -25,7 +25,6 @@ __all__ = [
     "SimpleJobsFormatter",
     "TabularJobsFormatter",
     "JobTelemetryFormatter",
-    "JobStartProgress",
     "ConfigFormatter",
     "BaseFilesFormatter",
     "LongFilesFormatter",
@@ -33,4 +32,5 @@ __all__ = [
     "VerticalColumnsFilesFormatter",
     "FilesSorter",
     "ImageProgress",
+    "AbstractJobStartProgress",
 ]

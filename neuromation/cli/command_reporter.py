@@ -13,16 +13,14 @@ CURSOR_DOWN = f"{CSI}{{}}B"
 CLEAR_LINE_TAIL = f"{CSI}0K"
 CURSOR_HOME = f"{CSI}1G"
 
-_ACTIVE_REPORTER_INSTANCE: Optional["Reporter"] = None
 
-
-class Reporter:
+class AbstractReporter:
     """
         Reporter allow to print some text
         Only one Reporter can be active at one moment
     """
 
-    def __init__(self, print: bool = False) -> None:
+    def __init__(self, print: bool = False):
         self._print = print
 
     def close(self) -> str:
@@ -41,14 +39,14 @@ class Reporter:
         return message
 
 
-class MultilineReporter(Reporter):
+class MultilineReporter(AbstractReporter):
     """
         MultilineReporter allow to output texts in specified by nymber lines
         Cursor will be keeped after latest line. Then if exception raised
         error message will be printed after reported before lines
     """
 
-    def __init__(self, print: bool = False) -> None:
+    def __init__(self, print: bool = False):
         super().__init__(print)
         self._total_lines = 0
 
@@ -82,22 +80,27 @@ class MultilineReporter(Reporter):
         return self._process(message)
 
 
-class SingleLineReporter(Reporter):
+class SingleLineReporter(AbstractReporter):
     """
     All messages will be printed on one line
     """
 
-    def close(self) -> str:
-        message = CURSOR_UP.format(1) + CLEAR_LINE_TAIL
-        super().close()
-        return self._process(message)
+    def __init__(self, print: bool = False):
+        super().__init__(print)
+        self._called = False
 
     def report(self, text: str) -> str:
-        message = CURSOR_UP.format(1) + self._escape(text) + CLEAR_LINE_TAIL
+        if self._called:
+            message = (
+                CURSOR_UP.format(1) + self._escape(text) + CLEAR_LINE_TAIL + linesep
+            )
+        else:
+            self._called = True
+            message = self._escape(text) + linesep
         return self._process(message)
 
 
-class StreamReporter(Reporter):
+class StreamReporter(AbstractReporter):
     """
     Print lines ony by one
     Additional tick method for printing simple progress(dots) with spam
