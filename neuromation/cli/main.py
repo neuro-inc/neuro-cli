@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Sequence, Type, Union
 import aiohttp
 import click
 from aiodocker.exceptions import DockerError
-from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ignore
+from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
 from neuromation.cli.rc import RCException
@@ -181,7 +181,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         current_cmd = ctx_stack[-1].command
         if isinstance(current_cmd, click.MultiCommand):
             sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
-            if sub_cmd is None or sub_cmd.hidden:  # type: ignore
+            if sub_cmd is None or sub_cmd.hidden:
                 click.echo(not_found)
                 break
             sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
@@ -237,7 +237,7 @@ def main(args: Optional[List[str]] = None) -> None:
         e.show()
         sys.exit(e.exit_code)
     except ClickExit as e:
-        sys.exit(e.exit_code)
+        sys.exit(e.exit_code)  # type: ignore
     except neuromation.api.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
         sys.exit(EX_DATAERR)
