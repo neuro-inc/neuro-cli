@@ -267,7 +267,7 @@ class MainGroup(Group):
             # What is this, the tool lied about a command.  Ignore it
             if cmd is None:
                 continue
-            if cmd.hidden:  # type: ignore
+            if cmd.hidden:
                 continue
 
             if isinstance(cmd, click.MultiCommand):
@@ -303,9 +303,9 @@ def alias(
     if help is None:
         help = f"Alias for {origin.name}."
     if hidden is None:
-        hidden = origin.hidden  # type: ignore
+        hidden = origin.hidden
 
-    return Command(  # type: ignore
+    return Command(
         name=name,
         context_settings=origin.context_settings,
         callback=origin.callback,
