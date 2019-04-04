@@ -3,8 +3,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.cli.login import ServerConfig, get_server_config
-from neuromation.cli.login import AuthConfig
+from neuromation.cli.login import AuthConfig, ServerConfig, get_server_config
 
 
 async def test_get_server_config(aiohttp_server):
