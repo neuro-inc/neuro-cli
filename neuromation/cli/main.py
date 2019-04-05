@@ -28,7 +28,10 @@ if sys.platform == "win32":
         class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
             _loop_factory = asyncio.ProactorEventLoop
 
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    else:
+        WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
+
+    asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
 
 
 log = logging.getLogger(__name__)
