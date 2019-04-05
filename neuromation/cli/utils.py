@@ -19,8 +19,9 @@ from typing import (
 )
 
 import click
+from yarl import URL
 
-from neuromation.api import Client, JobDescription, Volume
+from neuromation.api import Action, Client, ImageNameParser, JobDescription, Volume
 from neuromation.utils import run
 
 from .rc import Config, ConfigFactory, save
@@ -340,3 +341,24 @@ async def resolve_job(client: Client, id_or_name: str) -> str:
         job_id = id_or_name
 
     return job_id
+
+
+def parse_resource_for_sharing(uri: str, cfg: Config) -> URL:
+    """ Parses the neuromation resource URI string.
+    Available schemes: storage, image, job. For image URIs, tags are not allowed.
+    """
+    if uri.startswith("image:"):
+        parser = ImageNameParser(cfg.username, cfg.registry_url)
+        image = parser.parse_as_neuro_image(uri, raise_if_has_tag=True)
+        uri = image.as_url_str()
+    return URL(uri)
+
+
+def parse_permission_action(action: str) -> Action:
+    try:
+        return Action[action.upper()]
+    except KeyError:
+        valid_actions = ", ".join([a.value for a in Action])
+        raise ValueError(
+            f"invalid permission action '{action}', allowed values: {valid_actions}"
+        )
