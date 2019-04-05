@@ -29,7 +29,7 @@ IMAGE_SCHEME = "image"
 # images and images in docker hub, and neuro-images refer to an image in neuro registry
 class DockerImage:
     name: str
-    tag: str = "latest"
+    tag: Optional[str] = None
     owner: Optional[str] = None
     registry: Optional[str] = None
 
@@ -38,7 +38,8 @@ class DockerImage:
 
     def as_url_str(self) -> str:
         pre = f"{IMAGE_SCHEME}://{self.owner}/" if self.is_in_neuro_registry() else ""
-        return f"{pre}{self.name}:{self.tag}"
+        post = f":{self.tag}" if self.tag else ""
+        return pre + self.name + post
 
     def as_repo_str(self) -> str:
         # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
@@ -46,7 +47,8 @@ class DockerImage:
         return pre + self.as_local_str()
 
     def as_local_str(self) -> str:
-        return f"{self.name}:{self.tag}"
+        post = f":{self.tag}" if self.tag else ""
+        return self.name + post
 
 
 class Images:

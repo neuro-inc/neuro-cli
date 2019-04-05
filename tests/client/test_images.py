@@ -29,6 +29,33 @@ class TestImageParser:
     parser = ImageNameParser(default_user="alice", registry_url="https://reg.neu.ro")
 
     @pytest.mark.parametrize(
+        "image",
+        [
+            "image://me/ubuntu:v10.04",
+            "image://~/ubuntu:v10.04",
+            "image:///ubuntu:v10.04",
+            "image:ubuntu:v10.04",
+            "ubuntu:v10.04",
+        ],
+    )
+    def test_has_tag_ok(self, image):
+        assert self.parser.has_tag(image)
+
+    def test_has_tag_no_tag(self):
+        image = "ubuntu"
+        assert not self.parser.has_tag(image)
+
+    def test_has_tag_empty_tag(self):
+        image = "ubuntu:"
+        with pytest.raises(ValueError, match="empty tag is not allowed"):
+            self.parser.has_tag(image)
+
+    def test_has_tag_too_many_tags(self):
+        image = "ubuntu:v10.04:latest"
+        with pytest.raises(ValueError, match="too many tags"):
+            self.parser.has_tag(image)
+
+    @pytest.mark.parametrize(
         "registry_url",
         [
             "http://reg.neu.ro",
@@ -38,7 +65,7 @@ class TestImageParser:
             "http://reg.neu.ro:5000/bla/bla",
         ],
     )
-    def test__get_registry_hostname(self, registry_url):
+    def test_get_registry_hostname(self, registry_url):
         registry = self.parser._get_registry_hostname(registry_url)
         assert registry == "reg.neu.ro"
 
@@ -46,21 +73,27 @@ class TestImageParser:
         "registry_url",
         ["", "reg.neu.ro", "reg.neu.ro:5000", "https://", "https:///bla/bla"],
     )
-    def test__get_registry_hostname__bad_url_empty_hostname(self, registry_url):
+    def test_get_registry_hostname__bad_url_empty_hostname(self, registry_url):
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
             self.parser._get_registry_hostname(registry_url)
 
-    def test__split_image_name_no_colon(self):
-        splitted = self.parser._split_image_name("ubuntu")
+    def test_split_image_name_no_colon(self):
+        splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
         assert splitted == ("ubuntu", "latest")
 
-    def test__split_image_name_1_colon(self):
-        splitted = self.parser._split_image_name("ubuntu:v10.04")
+    def test_split_image_name_1_colon(self):
+        splitted = self.parser._split_image_name(
+            "ubuntu:v10.04", self.parser.default_tag
+        )
         assert splitted == ("ubuntu", "v10.04")
 
-    def test__split_image_name_2_colon(self):
+    def test_split_image_name_1_colon_empty_tag(self):
+        with pytest.raises(ValueError, match="empty tag is not allowed"):
+            self.parser._split_image_name("ubuntu:", self.parser.default_tag)
+
+    def test_split_image_name_2_colon(self):
         with pytest.raises(ValueError, match="too many tags"):
-            self.parser._split_image_name("ubuntu:v10.04:LTS")
+            self.parser._split_image_name("ubuntu:v10.04:LTS", self.parser.default_tag)
 
     # public method: parse_local
 
@@ -409,6 +442,23 @@ class TestImageParser:
         with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
+    def test_parse_as_neuro_image_raise_if_has_tag_true_with_scheme_no_tag(self):
+        image = "image:ubuntu"
+        parsed = self.parser.parse_as_neuro_image(image, raise_if_has_tag=True)
+        assert parsed == DockerImage(
+            name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
+        )
+
+    def test_parse_as_neuro_image_raise_if_has_tag_true_no_scheme_with_tag(self):
+        image = "ubuntu"
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+            self.parser.parse_as_neuro_image(image, raise_if_has_tag=True)
+
+    def test_parse_as_neuro_image_raise_if_has_tag_true_with_scheme_with_tag(self):
+        image = "ubuntu:latest"
+        with pytest.raises(ValueError, match="tag is not allowed"):
+            self.parser.parse_as_neuro_image(image, raise_if_has_tag=True)
+
     def test_convert_to_docker_image(self):
         neuro_image = DockerImage(
             name="ubuntu", tag="latest", owner="artem", registry="reg.com"
@@ -448,6 +498,34 @@ class TestImageParser:
         url = "image:latest"
         with pytest.raises(ValueError, match="ambiguous value"):
             self.parser.parse_as_docker_image(url)
+
+
+class TestDockerImage:
+    def test_as_str_in_neuro_registry_tag_none(self):
+        image = DockerImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
+        assert image.as_url_str() == "image://me/ubuntu"
+        assert image.as_repo_str() == "registry.io/me/ubuntu"
+        assert image.as_local_str() == "ubuntu"
+
+    def test_as_str_in_neuro_registry_tag_yes(self):
+        image = DockerImage(
+            name="ubuntu", tag="v10.04", owner="me", registry="registry.io"
+        )
+        assert image.as_url_str() == "image://me/ubuntu:v10.04"
+        assert image.as_repo_str() == "registry.io/me/ubuntu:v10.04"
+        assert image.as_local_str() == "ubuntu:v10.04"
+
+    def test_as_str_not_in_neuro_registry_tag_none(self):
+        image = DockerImage(name="ubuntu", tag=None, owner=None, registry=None)
+        assert image.as_url_str() == "ubuntu"
+        assert image.as_repo_str() == "ubuntu"
+        assert image.as_local_str() == "ubuntu"
+
+    def test_as_str_not_in_neuro_registry_tag_yes(self):
+        image = DockerImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
+        assert image.as_url_str() == "ubuntu:v10.04"
+        assert image.as_repo_str() == "ubuntu:v10.04"
+        assert image.as_local_str() == "ubuntu:v10.04"
 
 
 @pytest.mark.usefixtures("patch_docker_host")
