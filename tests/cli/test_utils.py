@@ -2,8 +2,12 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.cli.utils import parse_resource_for_sharing, resolve_job
-from neuromation.client import Client
+from neuromation.cli.utils import (
+    parse_permission_action,
+    parse_resource_for_sharing,
+    resolve_job,
+)
+from neuromation.client import Action, Client
 
 
 async def test_resolve_job_id__no_jobs_found(aiohttp_server, token):
@@ -168,3 +172,47 @@ def test_parse_resource_for_sharing_image_with_tag_fail(config):
     uri = "image://~/ubuntu:latest"
     with pytest.raises(ValueError, match="tag is not allowed"):
         parse_resource_for_sharing(uri, config)
+
+
+def test_parse_permission_action_read_lowercase(config):
+    action = "read"
+    assert parse_permission_action(action) == Action.READ
+
+
+def test_parse_permission_action_read(config):
+    action = "READ"
+    assert parse_permission_action(action) == Action.READ
+
+
+def test_parse_permission_action_write_lowercase(config):
+    action = "write"
+    assert parse_permission_action(action) == Action.WRITE
+
+
+def test_parse_permission_action_write(config):
+    action = "WRITE"
+    assert parse_permission_action(action) == Action.WRITE
+
+
+def test_parse_permission_action_manage_lowercase(config):
+    action = "manage"
+    assert parse_permission_action(action) == Action.MANAGE
+
+
+def test_parse_permission_action_manage(config):
+    action = "MANAGE"
+    assert parse_permission_action(action) == Action.MANAGE
+
+
+def test_parse_permission_action_wrong_string(config):
+    action = "tosh"
+    err = "invalid permission action 'tosh', allowed values: read, write, manage"
+    with pytest.raises(ValueError, match=err):
+        parse_permission_action(action)
+
+
+def test_parse_permission_action_wrong_empty(config):
+    action = ""
+    err = "invalid permission action '', allowed values: read, write, manage"
+    with pytest.raises(ValueError, match=err):
+        parse_permission_action(action)
