@@ -21,7 +21,7 @@ from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
 if sys.platform == "win32":
-    if sys.version < (3, 7):
+    if sys.version_info < (3, 7):
         # Python 3.6 has no WindowsProactorEventLoopPolicy class
         from asyncio import events
 
