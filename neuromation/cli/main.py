@@ -26,7 +26,7 @@ if sys.platform == "win32":
         from asyncio import events
 
         class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
-            _loop_factory = ProactorEventLoop
+            _loop_factory = asyncio.ProactorEventLoop
 
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
