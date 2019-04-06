@@ -1,0 +1,1 @@
+Rename neuromation.client to neuromation.api

@@ -21,7 +21,7 @@ from typing import (
 import click
 from yarl import URL
 
-from neuromation.client import Action, Client, ImageNameParser, JobDescription, Volume
+from neuromation.api import Action, Client, ImageNameParser, JobDescription, Volume
 from neuromation.utils import run
 
 from .rc import Config, ConfigFactory, save

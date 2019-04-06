@@ -1,13 +1,7 @@
 from aiohttp import web
 from yarl import URL
 
-from neuromation.client import (
-    Client,
-    Image,
-    NetworkPortForwarding,
-    Resources,
-    TrainResult,
-)
+from neuromation.api import Client, Image, NetworkPortForwarding, Resources, TrainResult
 
 
 async def test_model_train(aiohttp_server, token):

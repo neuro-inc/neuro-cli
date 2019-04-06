@@ -7,14 +7,14 @@ from aiodocker.exceptions import DockerError
 from aiohttp import web
 from yarl import URL
 
-from neuromation.cli.command_spinner import SpinnerBase
-from neuromation.client import AuthorizationError, Client, ImageNameParser
-from neuromation.client.images import (
+from neuromation.api import AuthorizationError, Client, ImageNameParser
+from neuromation.api.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
     STATUS_NOT_FOUND,
     DockerImage,
 )
+from neuromation.cli.command_spinner import SpinnerBase
 
 
 @pytest.fixture()

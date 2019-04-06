@@ -3,7 +3,7 @@ import re
 import aiohttp
 import pytest
 
-from neuromation.client import JobStatus
+from neuromation.api import JobStatus
 from tests.e2e.utils import (
     ALPINE_IMAGE_NAME,
     JOB_TINY_CONTAINER_PARAMS,

@@ -7,15 +7,14 @@ from typing import Any, AsyncIterator, Dict, List
 
 from yarl import URL
 
-from neuromation.client.url_utils import (
+from .abc import AbstractProgress
+from .config import Config
+from .core import Core, ResourceNotFound
+from .url_utils import (
     _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
-
-from .abc import AbstractProgress
-from .api import API, ResourceNotFound
-from .config import Config
 
 
 log = logging.getLogger(__name__)
@@ -56,8 +55,8 @@ class FileStatus:
 
 
 class Storage:
-    def __init__(self, api: API, config: Config) -> None:
-        self._api = api
+    def __init__(self, core: Core, config: Config) -> None:
+        self._core = core
         self._config = config
 
     def _uri_to_path(self, uri: URL) -> str:
@@ -69,7 +68,7 @@ class Storage:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
-        async with self._api.request("GET", url) as resp:
+        async with self._core.request("GET", url) as resp:
             res = await resp.json()
             return [
                 FileStatus.from_api(status)
@@ -80,7 +79,7 @@ class Storage:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
 
-        async with self._api.request("PUT", url) as resp:
+        async with self._core.request("PUT", url) as resp:
             resp  # resp.status == 201
 
     async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
@@ -89,14 +88,14 @@ class Storage:
         url = URL("storage") / path
         url = url.with_query(op="CREATE")
 
-        async with self._api.request("PUT", url, data=data) as resp:
+        async with self._core.request("PUT", url, data=data) as resp:
             resp  # resp.status == 201
 
     async def stats(self, uri: URL) -> FileStatus:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
-        async with self._api.request("GET", url) as resp:
+        async with self._core.request("GET", url) as resp:
             res = await resp.json()
             return FileStatus.from_api(res["FileStatus"])
 
@@ -107,7 +106,7 @@ class Storage:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
 
-        async with self._api.request("GET", url) as resp:
+        async with self._core.request("GET", url) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
@@ -127,14 +126,14 @@ class Storage:
         url = URL("storage") / path
         url = url.with_query(op="DELETE")
 
-        async with self._api.request("DELETE", url) as resp:
+        async with self._core.request("DELETE", url) as resp:
             resp  # resp.status == 204
 
     async def mv(self, src: URL, dst: URL) -> None:
         url = URL("storage") / self._uri_to_path(src)
         url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
 
-        async with self._api.request("POST", url) as resp:
+        async with self._core.request("POST", url) as resp:
             resp  # resp.status == 204
 
     # high-level helpers

@@ -6,7 +6,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.client import AbstractProgress, Client, FileStatus, FileStatusType
+from neuromation.api import AbstractProgress, Client, FileStatus, FileStatusType
 
 
 FOLDER = Path(__file__).parent

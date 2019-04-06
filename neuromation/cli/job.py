@@ -8,7 +8,7 @@ from typing import Sequence
 import aiohttp
 import click
 
-from neuromation.client import (
+from neuromation.api import (
     Image,
     ImageNameParser,
     JobStatus,

@@ -4,7 +4,7 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.client.url_utils import (
+from neuromation.api.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )

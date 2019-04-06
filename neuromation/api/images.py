@@ -10,8 +10,8 @@ from aiodocker.exceptions import DockerError
 from yarl import URL
 
 from .abc import AbstractSpinner
-from .api import API, AuthorizationError
 from .config import Config
+from .core import AuthorizationError, Core
 from .registry import Registry
 
 
@@ -52,8 +52,8 @@ class DockerImage:
 
 
 class Images:
-    def __init__(self, api: API, config: Config) -> None:
-        self._api = api
+    def __init__(self, core: Core, config: Config) -> None:
+        self._core = core
         self._config = config
         self._temporary_images: List[str] = list()
         try:
@@ -72,7 +72,7 @@ class Images:
                 )
             raise
         self._registry = Registry(
-            self._api.connector,
+            self._core.connector,
             self._config.registry_url.with_path("/v2/"),
             self._config.token,
             self._config.username,

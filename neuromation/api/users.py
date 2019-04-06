@@ -6,8 +6,7 @@ from aiohttp.web import HTTPCreated
 from jose import JWTError, jwt
 from yarl import URL
 
-from . import ClientError
-from .api import API
+from .core import ClientError, Core
 
 
 JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
@@ -47,13 +46,13 @@ class Permission:
 
 
 class Users:
-    def __init__(self, api: API) -> None:
-        self._api = api
+    def __init__(self, api: Core) -> None:
+        self._core = api
 
     async def share(self, user: str, permission: Permission) -> None:
         url = URL(f"users/{user}/permissions")
         payload = [permission.to_api()]
-        async with self._api.request("POST", url, json=payload) as resp:
+        async with self._core.request("POST", url, json=payload) as resp:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPCreated, this part must me refactored then
             if resp.status != HTTPCreated.status_code:

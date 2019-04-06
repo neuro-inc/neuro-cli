@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 
 import neuromation
-from neuromation.client import JobStatus
+from neuromation.api import JobStatus
 from tests.e2e.utils import FILE_SIZE_B, JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
 
 

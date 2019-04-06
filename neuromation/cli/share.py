@@ -2,7 +2,7 @@ import logging
 
 import click
 
-from neuromation.client import Permission
+from neuromation.api import Permission
 
 from .rc import Config
 from .utils import (

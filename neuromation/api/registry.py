@@ -4,13 +4,13 @@ from typing import Dict
 import aiohttp
 from yarl import URL
 
-from . import API
+from .core import Core
 
 
 TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
 
 
-class Registry(API):
+class Registry(Core):
     """Transport provider for registry client.
 
     Internal class.

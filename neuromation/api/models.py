@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from yarl import URL
 
-from .api import API
+from .core import Core
 from .jobs import (
     Container,
     Image,
@@ -34,8 +34,8 @@ class TrainResult:
 
 
 class Models:
-    def __init__(self, api: API) -> None:
-        self._api = api
+    def __init__(self, core: Core) -> None:
+        self._core = core
 
     async def train(
         self,
@@ -68,6 +68,6 @@ class Models:
             payload["description"] = description
 
         url = URL(f"models")
-        async with self._api.request("POST", url, json=payload) as resp:
+        async with self._core.request("POST", url, json=payload) as resp:
             ret = await resp.json()
             return TrainResult.from_api(ret)

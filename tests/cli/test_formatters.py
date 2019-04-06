@@ -8,6 +8,18 @@ import click
 import pytest
 from yarl import URL
 
+from neuromation.api import (
+    Container,
+    FileStatus,
+    FileStatusType,
+    HTTPPort,
+    ImageNameParser,
+    JobDescription,
+    JobStatus,
+    JobStatusHistory,
+    JobTelemetry,
+    Resources,
+)
 from neuromation.cli.formatters import (
     ConfigFormatter,
     JobFormatter,
@@ -32,18 +44,6 @@ from neuromation.cli.formatters.storage import (
 )
 from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
-from neuromation.client import (
-    Container,
-    FileStatus,
-    FileStatusType,
-    JobDescription,
-    JobStatus,
-    JobStatusHistory,
-    JobTelemetry,
-    Resources,
-)
-from neuromation.client.jobs import HTTPPort
-from neuromation.client.parsing_utils import ImageNameParser
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"

@@ -2,12 +2,12 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
+from neuromation.api import Action, Client
 from neuromation.cli.utils import (
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
 )
-from neuromation.client import Action, Client
 
 
 async def test_resolve_job_id__no_jobs_found(aiohttp_server, token):

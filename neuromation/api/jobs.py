@@ -22,7 +22,7 @@ from yarl import URL
 
 from neuromation.utils import kill_proc_tree
 
-from .api import API, IllegalArgumentError
+from .core import Core, IllegalArgumentError
 from .url_utils import normalize_storage_path_uri
 
 
@@ -354,8 +354,8 @@ class JobTelemetry:
 
 
 class Jobs:
-    def __init__(self, api: API, token: str) -> None:
-        self._api = api
+    def __init__(self, core: Core, token: str) -> None:
+        self._core = core
         self._token = token
 
     async def submit(
@@ -398,7 +398,7 @@ class Jobs:
             payload["name"] = name
         if description:
             payload["description"] = description
-        async with self._api.request("POST", url, json=payload) as resp:
+        async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
             return JobDescription.from_api(res)
 
@@ -412,13 +412,13 @@ class Jobs:
                 params.add("status", status)
         if name:
             params.add("name", name)
-        async with self._api.request("GET", url, params=params) as resp:
+        async with self._core.request("GET", url, params=params) as resp:
             ret = await resp.json()
             return [JobDescription.from_api(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
-        async with self._api.request("DELETE", url):
+        async with self._core.request("DELETE", url):
             # an error is raised for status >= 400
             return None  # 201 status code
 
@@ -426,7 +426,7 @@ class Jobs:
         self, id: str
     ) -> Any:  # real type is async generator with data chunks
         url = URL(f"jobs/{id}/log")
-        async with self._api.request(
+        async with self._core.request(
             "GET", url, headers={"Accept-Encoding": "identity"}
         ) as resp:
             async for data in resp.content.iter_any():
@@ -434,7 +434,7 @@ class Jobs:
 
     async def status(self, id: str) -> JobDescription:
         url = URL(f"jobs/{id}")
-        async with self._api.request("GET", url) as resp:
+        async with self._core.request("GET", url) as resp:
             ret = await resp.json()
             return JobDescription.from_api(ret)
 
@@ -442,7 +442,7 @@ class Jobs:
         url = URL(f"jobs/{id}/top")
         try:
             received_any = False
-            async for resp in self._api.ws_connect(url):
+            async for resp in self._core.ws_connect(url):
                 yield JobTelemetry.from_api(resp.json())  # type: ignore
                 received_any = True
             if not received_any:

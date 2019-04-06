@@ -1,4 +1,4 @@
-from neuromation.client import Client
+from neuromation.api import Client
 
 
 async def test_client_username(token):
