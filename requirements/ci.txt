@@ -4,7 +4,7 @@ mypy==0.700
 pytest==4.4.0
 pytest-cov==2.6.1
 flake8==3.7.7
-isort==4.3.16
+isort==4.3.17
 pytest-aiohttp==0.3.0
 black==19.3b0
 setuptools==40.9.0
