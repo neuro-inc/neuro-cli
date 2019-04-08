@@ -8,6 +8,7 @@ from .core import (
     IllegalArgumentError,
     ResourceNotFound,
 )
+from .images import DockerImage
 from .jobs import (
     Container,
     HTTPPort,

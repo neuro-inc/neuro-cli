@@ -9,9 +9,9 @@ import aiohttp
 import click
 
 from neuromation.api import (
+    DockerImage,
     Image,
     ImageNameParser,
-    DockerImage,
     JobStatus,
     NetworkPortForwarding,
     Resources,
@@ -38,7 +38,15 @@ from .formatters import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, async_cmd, command, group, resolve_job, volume_to_verbose_str
+from .utils import (
+    ImageType,
+    alias,
+    async_cmd,
+    command,
+    group,
+    resolve_job,
+    volume_to_verbose_str,
+)
 
 
 log = logging.getLogger(__name__)
@@ -52,7 +60,7 @@ def job() -> None:
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("image", type=utils.ImageType())
+@click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
