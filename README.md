@@ -106,7 +106,7 @@ Name | Description|
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
-| _[neuro port-forward](#neuro-port-forward)_| Forward a port of a running job to a local port |
+| _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job local port\(s) |
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
@@ -150,7 +150,7 @@ Name | Description|
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
-| _[neuro job port-forward](#neuro-job-port-forward)_| Forward a port of a running job to a local port |
+| _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a running job to local port\(s) |
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
@@ -279,12 +279,12 @@ Name | Description|
 
 ### neuro job port-forward
 
-Forward a port of a running job to a local port.
+Forward port\(s) of a running to local port\(s).
 
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
+neuro job port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
 ```
 
 **Options:**
@@ -978,12 +978,12 @@ Name | Description|
 
 ## neuro port-forward
 
-Forward a port of a running job to a local port.
+Forward port\(s) of a running job to local port\(s).
 
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
+neuro port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
 ```
 
 **Options:**

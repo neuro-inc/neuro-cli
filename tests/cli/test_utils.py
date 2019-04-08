@@ -1,3 +1,4 @@
+import click
 import pytest
 from aiohttp import web
 from yarl import URL
@@ -7,6 +8,7 @@ from neuromation.cli.utils import (
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
+    LocalRemotePortParamType
 )
 
 
@@ -216,3 +218,32 @@ def test_parse_permission_action_wrong_empty(config):
     err = "invalid permission action '', allowed values: read, write, manage"
     with pytest.raises(ValueError, match=err):
         parse_permission_action(action)
+
+
+@pytest.mark.parametrize(
+    "arg,val",
+    [("1:1", (1, 1)), ("1:10", (1, 10)), ("434:1", (434, 1)), ("0897:123", (897, 123))],
+)
+def test_local_remote_port_param_type_valid(arg, val) -> None:
+    param = LocalRemotePortParamType()
+    assert param.convert(arg, None, None) == val
+
+
+@pytest.mark.parametrize(
+    "arg",
+    [
+        "1:",
+        "-123:10",
+        "34:-65500",
+        "hello:45",
+        "5555:world",
+        "65536:1",
+        "0:0",
+        "none",
+        "",
+    ],
+)
+def test_local_remote_port_param_type_invalid(arg) -> None:
+    param = LocalRemotePortParamType()
+    with pytest.raises(click.BadParameter, match=".* is not a valid port combination"):
+        param.convert(arg, None, None)
