@@ -19,7 +19,6 @@ from yarl import URL
 
 from neuromation.api import FileStatusType, JobDescription, JobStatus, ResourceNotFound
 from neuromation.cli import main, rc
-from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
 from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME
 from neuromation.utils import run
@@ -39,8 +38,6 @@ JOB_OUTPUT_SLEEP_SECONDS = 2
 STORAGE_MAX_WAIT = 60
 CLI_MAX_WAIT = 180
 NETWORK_TIMEOUT = 60.0 * 3
-
-DUMMY_PROGRESS = ProgressBase.create_progress(False)
 
 log = logging.getLogger(__name__)
 
@@ -199,7 +196,7 @@ class Helper:
             for i in range(5):
                 try:
                     await client.storage.download_file(
-                        DUMMY_PROGRESS, path / name, URL("file:" + target)
+                        path / name, URL("file:" + target)
                     )
                 except ResourceNotFound:
                     # the file was not synchronized between platform storage nodes
@@ -247,12 +244,10 @@ class Helper:
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
             if name is None:
-                await client.storage.upload_file(
-                    DUMMY_PROGRESS, URL("file:" + local_file), path
-                )
+                await client.storage.upload_file(URL("file:" + local_file), path)
             else:
                 await client.storage.upload_file(
-                    DUMMY_PROGRESS, URL("file:" + local_file), URL(f"{path}/{name}")
+                    URL("file:" + local_file), URL(f"{path}/{name}")
                 )
 
     @run_async

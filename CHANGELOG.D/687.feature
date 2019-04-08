@@ -1,0 +1,1 @@
+Make progress argument for storage API optional.
