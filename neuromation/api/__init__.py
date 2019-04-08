@@ -54,4 +54,5 @@ __all__ = (
     "AbstractProgress",
     "AbstractSpinner",
     "ImageNameParser",
+    "DockerImage",
 )

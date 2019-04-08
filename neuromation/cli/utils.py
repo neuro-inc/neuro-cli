@@ -16,6 +16,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    cast,
 )
 
 import click
@@ -377,12 +378,13 @@ class ImageType(click.ParamType):
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> DockerImage:
+        assert ctx is not None
         cfg = cast(Config, ctx.obj)
         image_parser = ImageNameParser(cfg.username, cfg.registry_url)
-        if image_parser.is_in_neuro_registry(image):
-            parsed_image = image_parser.parse_as_neuro_image(image)
+        if image_parser.is_in_neuro_registry(value):
+            parsed_image = image_parser.parse_as_neuro_image(value)
         else:
-            parsed_image = image_parser.parse_as_docker_image(image)
+            parsed_image = image_parser.parse_as_docker_image(value)
         return parsed_image
 
     def __repr__(self) -> str:
