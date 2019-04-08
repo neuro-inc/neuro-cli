@@ -24,7 +24,7 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api import DEFAULT_TIMEOUT
+from neuromation.api.core import DEFAULT_TIMEOUT
 from neuromation.api.utils import asynccontextmanager
 
 
