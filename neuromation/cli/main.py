@@ -21,7 +21,17 @@ from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
 if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    if sys.version_info < (3, 7):
+        # Python 3.6 has no WindowsProactorEventLoopPolicy class
+        from asyncio import events
+
+        class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
+            _loop_factory = asyncio.ProactorEventLoop
+
+    else:
+        WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
+
+    asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
 
 
 log = logging.getLogger(__name__)
