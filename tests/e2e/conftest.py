@@ -84,8 +84,6 @@ async def _run_async(coro, *args, **kwargs):
 
 def run_async(coro):
     def wrapper(*args, **kwargs):
-        if sys.platform == "win32":
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
         return run(_run_async(coro, *args, **kwargs))
 
     return wrapper
