@@ -19,7 +19,6 @@ from yarl import URL
 
 from neuromation.api import FileStatusType, JobDescription, JobStatus, ResourceNotFound
 from neuromation.cli import main, rc
-from neuromation.cli.command_progress_report import ProgressBase
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
 from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME
 from neuromation.utils import run
