@@ -40,8 +40,6 @@ STORAGE_MAX_WAIT = 60
 CLI_MAX_WAIT = 180
 NETWORK_TIMEOUT = 60.0 * 3
 
-DUMMY_PROGRESS = ProgressBase.create_progress(False)
-
 log = logging.getLogger(__name__)
 
 job_id_pattern = re.compile(
@@ -199,7 +197,7 @@ class Helper:
             for i in range(5):
                 try:
                     await client.storage.download_file(
-                        DUMMY_PROGRESS, path / name, URL("file:" + target)
+                        path / name, URL("file:" + target)
                     )
                 except ResourceNotFound:
                     # the file was not synchronized between platform storage nodes
@@ -247,12 +245,10 @@ class Helper:
         path = URL(self.tmpstorage + path)
         async with self._config.make_client() as client:
             if name is None:
-                await client.storage.upload_file(
-                    DUMMY_PROGRESS, URL("file:" + local_file), path
-                )
+                await client.storage.upload_file(URL("file:" + local_file), path)
             else:
                 await client.storage.upload_file(
-                    DUMMY_PROGRESS, URL("file:" + local_file), URL(f"{path}/{name}")
+                    URL("file:" + local_file), URL(f"{path}/{name}")
                 )
 
     @run_async

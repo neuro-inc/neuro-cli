@@ -143,18 +143,18 @@ async def cp(
             log.info(f"Using source path:      '{src}'")
             log.info(f"Using destination path: '{dst}'")
             if recursive:
-                await client.storage.upload_dir(progress_obj, src, dst)
+                await client.storage.upload_dir(src, dst, progress=progress_obj)
             else:
-                await client.storage.upload_file(progress_obj, src, dst)
+                await client.storage.upload_file(src, dst, progress=progress_obj)
         elif src.scheme == "storage" and dst.scheme == "file":
             src = normalize_storage_path_uri(src, cfg.username)
             dst = normalize_local_path_uri(dst)
             log.info(f"Using source path:      '{src}'")
             log.info(f"Using destination path: '{dst}'")
             if recursive:
-                await client.storage.download_dir(progress_obj, src, dst)
+                await client.storage.download_dir(src, dst, progress=progress_obj)
             else:
-                await client.storage.download_file(progress_obj, src, dst)
+                await client.storage.download_file(src, dst, progress=progress_obj)
         else:
             raise RuntimeError(
                 f"Copy operation of the file with scheme '{src.scheme}'"
