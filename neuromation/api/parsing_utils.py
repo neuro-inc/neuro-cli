@@ -14,7 +14,7 @@ class ImageNameParser:
 
     def parse_as_docker_image(self, image: str) -> DockerImage:
         try:
-            self._check_for_disambiguation(image)
+            self._validate_image_name(image)
             return self._parse_as_docker_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid docker image '{image}': {e}") from e
@@ -23,7 +23,7 @@ class ImageNameParser:
         self, image: str, raise_if_has_tag: bool = False
     ) -> DockerImage:
         try:
-            self._check_for_disambiguation(image)
+            self._validate_image_name(image)
             if raise_if_has_tag and self.has_tag(image):
                 raise ValueError("tag is not allowed")
             return self._parse_as_neuro_image(image)
@@ -65,7 +65,7 @@ class ImageNameParser:
         name, tag = self._split_image_name(image, default_tag=None)
         return bool(tag)
 
-    def _check_for_disambiguation(self, image: str) -> None:
+    def _validate_image_name(self, image: str) -> None:
         if not image:
             raise ValueError("empty image name")
         if image.startswith("-"):
