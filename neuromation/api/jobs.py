@@ -176,9 +176,7 @@ class HTTPPort:
         )
 
 
-def network_to_api(
-    network: Optional["NetworkPortForwarding"]
-) -> Optional[HTTPPort]:
+def network_to_api(network: Optional["NetworkPortForwarding"]) -> Optional[HTTPPort]:
     http = None
     if network and "http" in network.ports:
         http = HTTPPort.from_api(

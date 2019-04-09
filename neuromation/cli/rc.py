@@ -206,10 +206,7 @@ class ConfigFactory:
 
 
 def save(path: Path, config: Config) -> Config:
-    payload: Dict[str, Any] = {
-        "url": config.url,
-        "registry_url": config.registry_url,
-    }
+    payload: Dict[str, Any] = {"url": config.url, "registry_url": config.registry_url}
     if config.auth_config.is_initialized():
         payload["auth_config"] = _serialize_auth_config(config.auth_config)
     if config.auth_token:

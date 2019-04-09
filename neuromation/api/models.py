@@ -51,10 +51,7 @@ class Models:
         http = network_to_api(network)
 
         container = Container(
-            image=image.image,
-            command=image.command,
-            http=http,
-            resources=resources,
+            image=image.image, command=image.command, http=http, resources=resources
         )
 
         payload = {

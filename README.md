@@ -177,11 +177,6 @@ neuro job submit [OPTIONS] IMAGE [CMD]...
 # Directory /mod mounted to /mod directory in read-write mode.
 neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
-# Starts a container pytorch:latest with connection enabled to port 22 and
-# sets PYTHONPATH environment value to /python.
-# Please note that SSH server should be provided by container.
-neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
-
 ```
 
 **Options:**
@@ -195,7 +190,6 @@ Name | Description|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
-|_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
@@ -882,11 +876,6 @@ neuro submit [OPTIONS] IMAGE [CMD]...
 # Directory /mod mounted to /mod directory in read-write mode.
 neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
-# Starts a container pytorch:latest with connection enabled to port 22 and
-# sets PYTHONPATH environment value to /python.
-# Please note that SSH server should be provided by container.
-neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
-
 ```
 
 **Options:**
@@ -900,7 +889,6 @@ Name | Description|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
-|_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
