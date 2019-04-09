@@ -174,7 +174,6 @@ async def submit(
     extshm: bool,
     http: int,
     http_auth: bool,
-    ssh: int,
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
