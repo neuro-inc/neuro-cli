@@ -109,9 +109,9 @@ class TestImageParser:
         with pytest.raises(ValueError, match="empty image name"):
             self.parser.parse_as_docker_image(image)
 
-    def test_parse_as_docker_image_none_fail(self):
-        image = None
-        with pytest.raises(ValueError, match="empty image name"):
+    def test_parse_as_docker_image_dash_fail(self):
+        image = "-zxc"
+        with pytest.raises(ValueError, match="image cannot start with dash"):
             self.parser.parse_as_docker_image(image)
 
     def test_parse_as_docker_image_with_image_scheme_fail(self):
@@ -190,9 +190,9 @@ class TestImageParser:
         with pytest.raises(ValueError, match="empty image name"):
             self.parser.parse_as_neuro_image(image)
 
-    def test_parse_as_neuro_image_none_fail__fail(self):
-        image = None
-        with pytest.raises(ValueError, match="empty image name"):
+    def test_parse_as_neuro_image_dash_fail__fail(self):
+        image = "-zxc"
+        with pytest.raises(ValueError, match="image cannot start with dash"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_fail(self):

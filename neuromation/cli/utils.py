@@ -16,12 +16,20 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    cast,
 )
 
 import click
 from yarl import URL
 
-from neuromation.api import Action, Client, ImageNameParser, JobDescription, Volume
+from neuromation.api import (
+    Action,
+    Client,
+    DockerImage,
+    ImageNameParser,
+    JobDescription,
+    Volume,
+)
 from neuromation.utils import run
 
 from .rc import Config, ConfigFactory, save
@@ -362,3 +370,22 @@ def parse_permission_action(action: str) -> Action:
         raise ValueError(
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )
+
+
+class ImageType(click.ParamType):
+    name = "image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> DockerImage:
+        assert ctx is not None
+        cfg = cast(Config, ctx.obj)
+        image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+        if image_parser.is_in_neuro_registry(value):
+            parsed_image = image_parser.parse_as_neuro_image(value)
+        else:
+            parsed_image = image_parser.parse_as_docker_image(value)
+        return parsed_image
+
+    def __repr__(self) -> str:
+        return "Image"

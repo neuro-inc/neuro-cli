@@ -9,6 +9,7 @@ import aiohttp
 import click
 
 from neuromation.api import (
+    DockerImage,
     Image,
     ImageNameParser,
     JobStatus,
@@ -37,7 +38,15 @@ from .formatters import (
 )
 from .rc import Config
 from .ssh_utils import connect_ssh
-from .utils import alias, async_cmd, command, group, resolve_job, volume_to_verbose_str
+from .utils import (
+    ImageType,
+    alias,
+    async_cmd,
+    command,
+    group,
+    resolve_job,
+    volume_to_verbose_str,
+)
 
 
 log = logging.getLogger(__name__)
@@ -51,7 +60,7 @@ def job() -> None:
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("image")
+@click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
@@ -160,7 +169,7 @@ def job() -> None:
 @async_cmd
 async def submit(
     cfg: Config,
-    image: str,
+    image: DockerImage,
     gpu: int,
     gpu_model: str,
     cpu: float,
@@ -223,16 +232,11 @@ async def submit(
 
     memory = to_megabytes_str(memory)
 
-    image_parser = ImageNameParser(cfg.username, cfg.registry_url)
-    if image_parser.is_in_neuro_registry(image):
-        parsed_image = image_parser.parse_as_neuro_image(image)
-    else:
-        parsed_image = image_parser.parse_as_docker_image(image)
     # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
     if not quiet:
-        log.info(f"Using image '{parsed_image.as_url_str()}'")
-        log.debug(f"IMAGE: {parsed_image}")
-    image_obj = Image(image=parsed_image.as_repo_str(), command=cmd)
+        log.info(f"Using image '{image.as_url_str()}'")
+        log.debug(f"IMAGE: {image}")
+    image_obj = Image(image=image.as_repo_str(), command=cmd)
 
     network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)

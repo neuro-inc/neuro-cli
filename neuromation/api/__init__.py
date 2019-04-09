@@ -8,6 +8,7 @@ from .core import (
     IllegalArgumentError,
     ResourceNotFound,
 )
+from .images import DockerImage
 from .jobs import (
     Container,
     HTTPPort,
@@ -53,4 +54,5 @@ __all__ = (
     "AbstractProgress",
     "AbstractSpinner",
     "ImageNameParser",
+    "DockerImage",
 )
