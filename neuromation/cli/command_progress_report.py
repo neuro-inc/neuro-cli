@@ -1,6 +1,6 @@
 from typing import Optional
 
-from neuromation.client import AbstractProgress
+from neuromation.api import AbstractProgress
 
 
 class ProgressBase(AbstractProgress):

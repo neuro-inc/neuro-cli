@@ -1,9 +1,10 @@
 import re
+from uuid import uuid4
 
 import pytest
 
 import neuromation
-from neuromation.client import JobStatus
+from neuromation.api import JobStatus
 from tests.e2e.utils import FILE_SIZE_B, JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
 
 
@@ -54,18 +55,20 @@ def test_e2e_job_top(helper):
         "do sleep 1; let COUNTER+=1; done; sleep 30"
     )
     command = f"bash -c '{bash_script}'"
+    job_name = f"test-job-{uuid4()}"
+    aux_params = ["--volume", f"{helper.tmpstorage}:/data:ro", "--name", job_name]
 
-    job_id = helper.run_job_and_wait_state(
-        UBUNTU_IMAGE_NAME,
-        command,
-        JOB_TINY_CONTAINER_PARAMS + ["--volume", f"{helper.tmpstorage}:/data:ro"],
+    helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME,
+        command=command,
+        params=JOB_TINY_CONTAINER_PARAMS + aux_params,
     )
 
     # the job is running
     # upload a file and unblock the job
     helper.check_upload_file_to_storage("dummy", "", __file__)
 
-    captured = helper.run_cli(["job", "top", job_id])
+    captured = helper.run_cli(["job", "top", job_name])
 
     header_line, top_line = split_non_empty_parts(captured.out, separator="\n")
     header_parts = split_non_empty_parts(header_line, separator="\t")

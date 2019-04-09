@@ -12,13 +12,12 @@ import yaml
 from yarl import URL
 
 import neuromation
-from neuromation.client import Client
-from neuromation.client.config import get_server_config
-from neuromation.client.users import get_token_username
+from neuromation.api import Client
+from neuromation.api.users import get_token_username
 
 from .const import WIN32
 from .defaults import API_URL
-from .login import AuthConfig, AuthNegotiator, AuthToken
+from .login import AuthConfig, AuthNegotiator, AuthToken, get_server_config
 
 
 log = logging.getLogger(__name__)
@@ -164,7 +163,9 @@ class ConfigFactory:
     @classmethod
     async def update_api_url(cls, url: str) -> Config:
         cls._validate_api_url(url)
-        server_config = await get_server_config(URL(url))
+        config = load(nmrc_config_path)
+        await config.post_init()
+        server_config = await get_server_config(URL(url), config.connector)
         return cls._update_config(
             auth_config=server_config.auth_config,
             registry_url=str(server_config.registry_url),
@@ -198,8 +199,9 @@ class ConfigFactory:
     async def refresh_auth_token(cls, url: URL) -> Config:
         nmrc_config_path = cls.get_path()
         config = load(nmrc_config_path)
+        await config.post_init()
         cls._validate_api_url(str(url))
-        server_config = await get_server_config(url)
+        server_config = await get_server_config(url, config.connector)
         config = replace(
             config,
             auth_config=server_config.auth_config,

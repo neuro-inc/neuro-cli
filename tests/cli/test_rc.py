@@ -10,11 +10,10 @@ from aiohttp import web
 from jose import jwt
 from yarl import URL
 
+from neuromation.api.users import JWT_IDENTITY_CLAIM_OPTIONS
 from neuromation.cli import rc
-from neuromation.cli.login import AuthConfig
+from neuromation.cli.login import AuthConfig, ServerConfig
 from neuromation.cli.rc import AuthToken, Config, load, save
-from neuromation.client.config import ServerConfig
-from neuromation.client.users import JWT_IDENTITY_CLAIM_OPTIONS
 
 
 DEFAULTS = rc.Config(url="https://staging.neu.ro/api/v1")

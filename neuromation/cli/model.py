@@ -4,8 +4,8 @@ from typing import List
 import click
 from yarl import URL
 
-from neuromation.client import Image, NetworkPortForwarding, Resources
-from neuromation.client.url_utils import normalize_storage_path_uri
+from neuromation.api import DockerImage, Image, NetworkPortForwarding, Resources
+from neuromation.api.url_utils import normalize_storage_path_uri
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
@@ -19,7 +19,7 @@ from .defaults import (
 from .formatters import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import async_cmd, group
+from .utils import ImageType, async_cmd, group
 
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def model() -> None:
 
 
 @model.command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("image")
+@click.argument("image", type=ImageType())
 @click.argument("dataset")
 @click.argument("results")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
@@ -96,7 +96,7 @@ def model() -> None:
 @async_cmd
 async def train(
     cfg: Config,
-    image: str,
+    image: DockerImage,
     dataset: str,
     results: str,
     gpu: int,
@@ -148,7 +148,7 @@ async def train(
             log.info(f"Using dataset '{dataset_url}'")
             log.info(f"Using weights '{resultset_url}'")
 
-        image_obj = Image(image=image, command=cmdline)
+        image_obj = Image(image=image.as_repo_str(), command=cmdline)
 
         fmt = JobFormatter(quiet)
 

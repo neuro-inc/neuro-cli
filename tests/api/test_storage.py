@@ -1,27 +1,17 @@
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
+from unittest import mock
 
 import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.client import AbstractProgress, Client, FileStatus, FileStatusType
+from neuromation.api import Client, FileStatus, FileStatusType
 
 
 FOLDER = Path(__file__).parent
 DATA_FOLDER = FOLDER / "data"
-
-
-class DummyProgress(AbstractProgress):
-    def start(self, file: str, size: int) -> None:
-        pass
-
-    def complete(self, file: str) -> None:
-        pass
-
-    def progress(self, file: str, current: int) -> None:
-        pass
 
 
 def calc_diff(dcmp, *, pre=""):
@@ -323,9 +313,7 @@ async def test_storage_upload_file_does_not_exists(token):
     async with Client("https://example.com", token) as client:
         with pytest.raises(FileNotFoundError):
             await client.storage.upload_file(
-                DummyProgress(),
-                URL("file:///not-exists-file"),
-                URL("storage://host/path/to/file.txt"),
+                URL("file:///not-exists-file"), URL("storage://host/path/to/file.txt")
             )
 
 
@@ -333,7 +321,7 @@ async def test_storage_upload_dir_doesnt_exist(token):
     async with Client("https://example.com", token) as client:
         with pytest.raises(IsADirectoryError):
             await client.storage.upload_file(
-                DummyProgress(), URL(FOLDER.as_uri()), URL("storage://host/path/to")
+                URL(FOLDER.as_uri()), URL("storage://host/path/to")
             )
 
 
@@ -341,9 +329,7 @@ async def test_storage_upload_not_a_file(token):
     async with Client("https://example.com", token) as client:
         with pytest.raises(OSError):
             await client.storage.upload_file(
-                DummyProgress(),
-                URL("file:///dev/random"),
-                URL("storage://host/path/to"),
+                URL("file:///dev/random"), URL("storage://host/path/to")
             )
 
 
@@ -351,16 +337,22 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     storage_server, token, storage_path
 ):
     file_path = DATA_FOLDER / "file.txt"
+    file_size = file_path.stat().st_size
     target_path = storage_path / "file.txt"
+    progress = mock.Mock()
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.upload_file(
-            DummyProgress(), URL(file_path.as_uri()), URL("storage:file.txt")
+            URL(file_path.as_uri()), URL("storage:file.txt"), progress=progress
         )
 
     expected = file_path.read_bytes()
     uploaded = target_path.read_bytes()
     assert uploaded == expected
+
+    progress.start.assert_called_with(str(file_path), file_size)
+    progress.progress.assert_called_with(str(file_path), file_size)
+    progress.complete.assert_called_with(str(file_path))
 
 
 async def test_storage_upload_regular_file_to_existing_dir(
@@ -372,9 +364,7 @@ async def test_storage_upload_regular_file_to_existing_dir(
     target_path = folder / "file.txt"
 
     async with Client(storage_server.make_url("/"), token) as client:
-        await client.storage.upload_file(
-            DummyProgress(), URL(file_path.as_uri()), URL("storage:folder")
-        )
+        await client.storage.upload_file(URL(file_path.as_uri()), URL("storage:folder"))
 
     expected = file_path.read_bytes()
     uploaded = target_path.read_bytes()
@@ -392,7 +382,7 @@ async def test_storage_upload_regular_file_to_existing_file(
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.upload_file(
-            DummyProgress(), URL(file_path.as_uri()), URL("storage:folder/file.txt")
+            URL(file_path.as_uri()), URL("storage:folder/file.txt")
         )
 
     expected = file_path.read_bytes()
@@ -410,7 +400,7 @@ async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.upload_file(
-            DummyProgress(), URL(file_path.as_uri()), URL("storage:folder/")
+            URL(file_path.as_uri()), URL("storage:folder/")
         )
 
     expected = file_path.read_bytes()
@@ -428,9 +418,7 @@ async def test_storage_upload_regular_file_to_existing_non_dir(
     async with Client(storage_server.make_url("/"), token) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_file(
-                DummyProgress(),
-                URL(file_path.as_uri()),
-                URL("storage:file/subfile.txt"),
+                URL(file_path.as_uri()), URL("storage:file/subfile.txt")
             )
 
 
@@ -440,9 +428,7 @@ async def test_storage_upload_regular_file_to_not_existing(storage_server, token
     async with Client(storage_server.make_url("/"), token) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_file(
-                DummyProgress(),
-                URL(file_path.as_uri()),
-                URL("storage:absent-dir/absent-file.txt"),
+                URL(file_path.as_uri()), URL("storage:absent-dir/absent-file.txt")
             )
 
 
@@ -450,9 +436,7 @@ async def test_storage_upload_recursive_src_doesnt_exist(token):
     async with Client("https://example.com", token) as client:
         with pytest.raises(FileNotFoundError):
             await client.storage.upload_dir(
-                DummyProgress(),
-                URL("file:does_not_exist"),
-                URL("storage://host/path/to"),
+                URL("file:does_not_exist"), URL("storage://host/path/to")
             )
 
 
@@ -462,7 +446,7 @@ async def test_storage_upload_recursive_src_is_a_file(token):
     async with Client("https://example.com", token) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_dir(
-                DummyProgress(), URL(file_path.as_uri()), URL("storage://host/path/to")
+                URL(file_path.as_uri()), URL("storage://host/path/to")
             )
 
 
@@ -475,7 +459,7 @@ async def test_storage_upload_recursive_target_is_a_file(
     async with Client(storage_server.make_url("/"), token) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_dir(
-                DummyProgress(), URL(DATA_FOLDER.as_uri()), URL("storage:file.txt")
+                URL(DATA_FOLDER.as_uri()), URL("storage:file.txt")
             )
 
 
@@ -485,7 +469,7 @@ async def test_storage_upload_recursive_ok(storage_server, token, storage_path):
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.upload_dir(
-            DummyProgress(), URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
+            URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
         )
     diff = dircmp(DATA_FOLDER / "nested", target_dir)
     assert not calc_diff(diff)
@@ -499,9 +483,7 @@ async def test_storage_upload_recursive_slash_ending(
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.upload_dir(
-            DummyProgress(),
-            URL(DATA_FOLDER.as_uri()) / "nested",
-            URL("storage:folder/"),
+            URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder/")
         )
     diff = dircmp(DATA_FOLDER / "nested", target_dir / "nested")
     assert not calc_diff(diff)
@@ -516,15 +498,22 @@ async def test_storage_download_regular_file_to_absent_file(
     local_dir = tmp_path / "local"
     local_dir.mkdir()
     local_file = local_dir / "file.txt"
+    progress = mock.Mock()
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.download_file(
-            DummyProgress(), URL("storage:file.txt"), URL(local_file.as_uri())
+            URL("storage:file.txt"), URL(local_file.as_uri()), progress=progress
         )
 
     expected = src_file.read_bytes()
     downloaded = local_file.read_bytes()
     assert downloaded == expected
+
+    file_name = local_file.as_uri()
+    file_size = src_file.stat().st_size
+    progress.start.assert_called_with(file_name, 0)
+    progress.progress.assert_called_with(file_name, file_size)
+    progress.complete.assert_called_with(file_name)
 
 
 async def test_storage_download_regular_file_to_existing_file(
@@ -540,7 +529,7 @@ async def test_storage_download_regular_file_to_existing_file(
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.download_file(
-            DummyProgress(), URL("storage:file.txt"), URL(local_file.as_uri())
+            URL("storage:file.txt"), URL(local_file.as_uri())
         )
 
     expected = src_file.read_bytes()
@@ -560,7 +549,7 @@ async def test_storage_download_regular_file_to_dir(
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.download_file(
-            DummyProgress(), URL("storage:file.txt"), URL(local_dir.as_uri())
+            URL("storage:file.txt"), URL(local_dir.as_uri())
         )
 
     expected = src_file.read_bytes()
@@ -580,7 +569,7 @@ async def test_storage_download_regular_file_to_dir_slash_ended(
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.download_file(
-            DummyProgress(), URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
+            URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
         )
 
     expected = src_file.read_bytes()
@@ -598,7 +587,7 @@ async def test_storage_download_regular_file_to_non_file(
     async with Client(storage_server.make_url("/"), token) as client:
         with pytest.raises(OSError):
             await client.storage.download_file(
-                DummyProgress(), URL("storage:file.txt"), URL("file:///dev/null")
+                URL("storage:file.txt"), URL("file:///dev/null")
             )
 
 
@@ -611,7 +600,7 @@ async def test_storage_download_dir(storage_server, token, tmp_path, storage_pat
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.download_dir(
-            DummyProgress(), URL("storage:folder"), URL(target_dir.as_uri())
+            URL("storage:folder"), URL(target_dir.as_uri())
         )
 
     diff = dircmp(DATA_FOLDER / "nested", target_dir)
@@ -628,7 +617,7 @@ async def test_storage_download_dir_slash_ending(
 
     async with Client(storage_server.make_url("/"), token) as client:
         await client.storage.download_dir(
-            DummyProgress(), URL("storage:folder"), URL(local_dir.as_uri() + "/")
+            URL("storage:folder"), URL(local_dir.as_uri() + "/")
         )
 
     diff = dircmp(DATA_FOLDER / "nested", local_dir / "nested")

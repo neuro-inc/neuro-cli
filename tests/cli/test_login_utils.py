@@ -3,11 +3,17 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.cli.login import AuthConfig
-from neuromation.client.config import ServerConfig, get_server_config
+from neuromation.cli.login import AuthConfig, ServerConfig, get_server_config
 
 
-async def test_get_server_config(aiohttp_server):
+@pytest.fixture
+async def connector():
+    connector = aiohttp.TCPConnector()
+    yield connector
+    await connector.close()
+
+
+async def test_get_server_config(aiohttp_server, connector):
     registry_url = "https://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -36,7 +42,7 @@ async def test_get_server_config(aiohttp_server):
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    config = await get_server_config(srv.make_url("/"))
+    config = await get_server_config(srv.make_url("/"), connector)
     assert config == ServerConfig(
         registry_url=URL(registry_url),
         auth_config=AuthConfig(
@@ -50,7 +56,7 @@ async def test_get_server_config(aiohttp_server):
     )
 
 
-async def test_get_server_config_no_callback_urls(aiohttp_server):
+async def test_get_server_config_no_callback_urls(aiohttp_server, connector):
     registry_url = "https://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -73,7 +79,7 @@ async def test_get_server_config_no_callback_urls(aiohttp_server):
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    config = await get_server_config(srv.make_url("/"))
+    config = await get_server_config(srv.make_url("/"), connector)
     assert config == ServerConfig(
         registry_url=URL(registry_url),
         auth_config=AuthConfig(
@@ -86,7 +92,7 @@ async def test_get_server_config_no_callback_urls(aiohttp_server):
     )
 
 
-async def test_get_server_config__fail(aiohttp_server):
+async def test_get_server_config__fail(aiohttp_server, connector):
     async def handler(request):
         raise aiohttp.web.HTTPInternalServerError(reason="unexpected server error")
 
@@ -95,4 +101,4 @@ async def test_get_server_config__fail(aiohttp_server):
     srv = await aiohttp_server(app)
 
     with pytest.raises(RuntimeError, match="Unable to get server configuration: 500"):
-        await get_server_config(srv.make_url("/"))
+        await get_server_config(srv.make_url("/"), connector)

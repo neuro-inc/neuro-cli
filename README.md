@@ -223,9 +223,9 @@ neuro job ls [OPTIONS]
 
 ```bash
 
-neuro job ls --description=my favourite job
-neuro job ls --status=all
-neuro job ls -s pending -s running -q
+neuro ps --name my-experiments-v1 --status all
+neuro ps --description=my favourite job
+neuro ps -s failed -s succeeded -q
 
 ```
 
@@ -234,7 +234,8 @@ neuro job ls -s pending -s running -q
 Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
-|_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
+|_\-n, --name NAME_|Filter out jobs by name|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
 |_\-q, --quiet_|Print only Job ID|
 |_\-w, --wide_|Do not cut long lines for terminal width|
 |_--help_|Show this message and exit.|
@@ -249,7 +250,7 @@ Display status of a job.
 **Usage:**
 
 ```bash
-neuro job status [OPTIONS] ID
+neuro job status [OPTIONS] JOB
 ```
 
 **Options:**
@@ -268,7 +269,7 @@ Execute command in a running job.
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] ID CMD...
+neuro job exec [OPTIONS] JOB CMD...
 ```
 
 **Options:**
@@ -289,7 +290,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
+neuro job port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
@@ -309,7 +310,7 @@ Print the logs for a container.
 **Usage:**
 
 ```bash
-neuro job logs [OPTIONS] ID
+neuro job logs [OPTIONS] JOB
 ```
 
 **Options:**
@@ -328,7 +329,7 @@ Kill job\(s).
 **Usage:**
 
 ```bash
-neuro job kill [OPTIONS] ID...
+neuro job kill [OPTIONS] JOBS...
 ```
 
 **Options:**
@@ -347,7 +348,7 @@ Display GPU/CPU/Memory usage.
 **Usage:**
 
 ```bash
-neuro job top [OPTIONS] ID
+neuro job top [OPTIONS] JOB
 ```
 
 **Options:**
@@ -927,9 +928,9 @@ neuro ps [OPTIONS]
 
 ```bash
 
-neuro job ls --description=my favourite job
-neuro job ls --status=all
-neuro job ls -s pending -s running -q
+neuro ps --name my-experiments-v1 --status all
+neuro ps --description=my favourite job
+neuro ps -s failed -s succeeded -q
 
 ```
 
@@ -938,7 +939,8 @@ neuro job ls -s pending -s running -q
 Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
-|_\-d, --description DESCRIPTION_|Filter out job by job description \(exact match)|
+|_\-n, --name NAME_|Filter out jobs by name|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
 |_\-q, --quiet_|Print only Job ID|
 |_\-w, --wide_|Do not cut long lines for terminal width|
 |_--help_|Show this message and exit.|
@@ -953,7 +955,7 @@ Display status of a job.
 **Usage:**
 
 ```bash
-neuro status [OPTIONS] ID
+neuro status [OPTIONS] JOB
 ```
 
 **Options:**
@@ -972,7 +974,7 @@ Execute command in a running job.
 **Usage:**
 
 ```bash
-neuro exec [OPTIONS] ID CMD...
+neuro exec [OPTIONS] JOB CMD...
 ```
 
 **Options:**
@@ -993,7 +995,7 @@ Forward a port of a running job exposed with -ssh option to a local port.
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] ID LOCAL_PORT REMOTE_PORT
+neuro port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
 ```
 
 **Options:**
@@ -1013,7 +1015,7 @@ Print the logs for a container.
 **Usage:**
 
 ```bash
-neuro logs [OPTIONS] ID
+neuro logs [OPTIONS] JOB
 ```
 
 **Options:**
@@ -1032,7 +1034,7 @@ Kill job\(s).
 **Usage:**
 
 ```bash
-neuro kill [OPTIONS] ID...
+neuro kill [OPTIONS] JOBS...
 ```
 
 **Options:**
@@ -1051,7 +1053,7 @@ Display GPU/CPU/Memory usage.
 **Usage:**
 
 ```bash
-neuro top [OPTIONS] ID
+neuro top [OPTIONS] JOB
 ```
 
 **Options:**

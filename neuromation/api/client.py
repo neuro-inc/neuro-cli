@@ -4,63 +4,13 @@ from typing import Optional, Type, Union
 import aiohttp
 from yarl import URL
 
-from .abc import AbstractProgress, AbstractSpinner
-from .api import (
-    API,
-    DEFAULT_TIMEOUT,
-    AuthenticationError,
-    AuthError,
-    AuthorizationError,
-    ClientError,
-    IllegalArgumentError,
-    ResourceNotFound,
-)
 from .config import Config
+from .core import DEFAULT_TIMEOUT, Core
 from .images import Images
-from .jobs import (
-    Container,
-    Image,
-    JobDescription,
-    Jobs,
-    JobStatus,
-    JobStatusHistory,
-    JobTelemetry,
-    NetworkPortForwarding,
-    Resources,
-    Volume,
-)
-from .models import Models, TrainResult
-from .parsing_utils import ImageNameParser
-from .storage import FileStatus, FileStatusType, Storage
-from .users import Action, Permission, Users
-
-
-__all__ = (
-    "Image",
-    "ImageNameParser",
-    "JobDescription",
-    "JobStatus",
-    "JobStatusHistory",
-    "JobTelemetry",
-    "NetworkPortForwarding",
-    "Resources",
-    "Volume",
-    "TrainResult",
-    "Action",
-    "Permission",
-    "Client",
-    "FileStatusType",
-    "FileStatus",
-    "Container",
-    "ResourceNotFound",
-    "ClientError",
-    "IllegalArgumentError",
-    "AuthError",
-    "AuthenticationError",
-    "AuthorizationError",
-    "AbstractProgress",
-    "AbstractSpinner",
-)
+from .jobs import Jobs
+from .models import Models
+from .storage import Storage
+from .users import Users
 
 
 class Client:
@@ -86,15 +36,15 @@ class Client:
             close_connector = False
         self._connector = connector
         self._close_connector = close_connector
-        self._api = API(self._connector, url, token, timeout)
-        self._jobs = Jobs(self._api, token)
-        self._models = Models(self._api)
-        self._storage = Storage(self._api, self._config)
-        self._users = Users(self._api)
+        self._core = Core(self._connector, url, token, timeout)
+        self._jobs = Jobs(self._core, token)
+        self._models = Models(self._core)
+        self._storage = Storage(self._core, self._config)
+        self._users = Users(self._core)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
-        await self._api.close()
+        await self._core.close()
         if self._images is not None:
             await self._images.close()
         if self._close_connector:
@@ -138,5 +88,5 @@ class Client:
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images(self._api, self._config)
+            self._images = Images(self._core, self._config)
         return self._images

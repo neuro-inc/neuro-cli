@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 import shlex
 import sys
@@ -15,16 +16,27 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    cast,
 )
 
 import click
+from yarl import URL
 
-from neuromation.client import Volume
+from neuromation.api import (
+    Action,
+    Client,
+    DockerImage,
+    ImageNameParser,
+    JobDescription,
+    Volume,
+)
 from neuromation.utils import run
 
 from .rc import Config, ConfigFactory, save
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
+
+log = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 
@@ -270,7 +282,7 @@ class MainGroup(Group):
             # What is this, the tool lied about a command.  Ignore it
             if cmd is None:
                 continue
-            if cmd.hidden:  # type: ignore
+            if cmd.hidden:
                 continue
 
             if isinstance(cmd, click.MultiCommand):
@@ -306,9 +318,9 @@ def alias(
     if help is None:
         help = f"Alias for {origin.name}."
     if hidden is None:
-        hidden = origin.hidden  # type: ignore
+        hidden = origin.hidden
 
-    return Command(  # type: ignore
+    return Command(
         name=name,
         context_settings=origin.context_settings,
         callback=origin.callback,
@@ -328,3 +340,58 @@ def volume_to_verbose_str(volume: Volume) -> str:
         f"'{volume.storage_path}' mounted to '{volume.container_path}' "
         f"in {('ro' if volume.read_only else 'rw')} mode"
     )
+
+
+async def resolve_job(client: Client, id_or_name: str) -> str:
+    jobs: List[JobDescription] = []
+    try:
+        jobs = await client.jobs.list(name=id_or_name)
+    except Exception as e:
+        log.error(f"Failed to resolve job-name '{id_or_name}' to a job-ID: {e}")
+    if jobs:
+        job_id = jobs[-1].id
+        log.debug(f"Job name '{id_or_name}' resolved to job ID '{job_id}'")
+    else:
+        job_id = id_or_name
+
+    return job_id
+
+
+def parse_resource_for_sharing(uri: str, cfg: Config) -> URL:
+    """ Parses the neuromation resource URI string.
+    Available schemes: storage, image, job. For image URIs, tags are not allowed.
+    """
+    if uri.startswith("image:"):
+        parser = ImageNameParser(cfg.username, cfg.registry_url)
+        image = parser.parse_as_neuro_image(uri, raise_if_has_tag=True)
+        uri = image.as_url_str()
+    return URL(uri)
+
+
+def parse_permission_action(action: str) -> Action:
+    try:
+        return Action[action.upper()]
+    except KeyError:
+        valid_actions = ", ".join([a.value for a in Action])
+        raise ValueError(
+            f"invalid permission action '{action}', allowed values: {valid_actions}"
+        )
+
+
+class ImageType(click.ParamType):
+    name = "image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> DockerImage:
+        assert ctx is not None
+        cfg = cast(Config, ctx.obj)
+        image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+        if image_parser.is_in_neuro_registry(value):
+            parsed_image = image_parser.parse_as_neuro_image(value)
+        else:
+            parsed_image = image_parser.parse_as_docker_image(value)
+        return parsed_image
+
+    def __repr__(self) -> str:
+        return "Image"

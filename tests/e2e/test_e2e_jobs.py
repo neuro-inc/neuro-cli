@@ -8,7 +8,7 @@ import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
 
-from neuromation.client import Image, JobStatus, NetworkPortForwarding, Resources
+from neuromation.api import Image, JobStatus, NetworkPortForwarding, Resources
 from neuromation.utils import run as run_async
 
 
@@ -80,8 +80,8 @@ def test_job_lifecycle(helper):
     assert job_id in store_out
     assert command not in store_out
 
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
+    # Kill the job by name
+    captured = helper.run_cli(["job", "kill", job_name])
 
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
@@ -92,6 +92,22 @@ def test_job_lifecycle(helper):
     captured = helper.run_cli(["job", "ls", "--status", "running"])
     store_out = captured.out
     assert job_id not in store_out
+
+    # Check job ls by name
+    captured = helper.run_cli(["job", "ls", "-n", job_name, "-s", "succeeded"])
+    store_out = captured.out
+    assert job_id in store_out
+    assert job_name in store_out
+
+    # Check job status by id
+    captured = helper.run_cli(["job", "status", job_id])
+    store_out = captured.out
+    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
+
+    # Check job status by name
+    captured = helper.run_cli(["job", "status", job_name])
+    store_out = captured.out
+    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
 
 
 @pytest.mark.e2e
@@ -587,7 +603,6 @@ def test_e2e_multiple_env(helper):
     helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
-@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_multiple_env_from_file(helper, tmp_path):
     env_file = tmp_path / "env_file"
@@ -612,13 +627,13 @@ def test_e2e_multiple_env_from_file(helper, tmp_path):
             str(env_file),
             "--non-preemptible",
             "--no-wait-start",
+            "-q",
             UBUNTU_IMAGE_NAME,
             command,
         ]
     )
 
-    out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    job_id = captured.out
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
@@ -628,6 +643,7 @@ def test_e2e_multiple_env_from_file(helper, tmp_path):
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_true(helper):
+    job_name = f"test-job-{uuid4()}"
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
@@ -639,6 +655,8 @@ def test_e2e_ssh_exec_true(helper):
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "-n",
+            job_name,
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -649,6 +667,9 @@ def test_e2e_ssh_exec_true(helper):
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = helper.run_cli(["job", "exec", "--no-key-check", job_id, "true"])
+    assert captured.out == ""
+
+    captured = helper.run_cli(["job", "exec", "--no-key-check", job_name, "true"])
     assert captured.out == ""
 
 
@@ -822,7 +843,6 @@ def test_e2e_ssh_exec_dead_job(helper):
     assert cm.value.code == 127
 
 
-@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_job_list_filtered_by_status(helper):
     N_JOBS = 5
@@ -877,6 +897,43 @@ def test_e2e_job_list_filtered_by_status(helper):
     jobs_ls_all_explicit = set(captured.out.splitlines())
     # check '>=' (not '==') multiple builds run in parallel can interfere
     assert jobs_ls_all_explicit >= jobs
+
+
+@pytest.mark.e2e
+def test_e2e_job_list_filtered_by_status_and_name(helper):
+    N_JOBS = 5
+    jobs_name_map = dict()
+    name_0 = None
+    command = "sleep 10m"
+    for i in range(N_JOBS):
+        name = f"my-job-{uuid4()}"
+        if not name_0:
+            name_0 = name
+        job_id = helper.run_job_and_wait_state(
+            UBUNTU_IMAGE_NAME, command, params=["--name", name]
+        )
+        jobs_name_map[name] = job_id
+
+    # test filtering by name only (quiet)
+    captured = helper.run_cli(["job", "ls", "--name", name_0, "-q"])
+    jobs_ls = set(captured.out.splitlines())
+    assert jobs_ls == {jobs_name_map[name_0]}
+
+    # test filtering by name only
+    captured = helper.run_cli(["job", "ls", "--name", name_0])
+    jobs_ls = set([line.split()[0] for line in captured.out.splitlines()[1:]])
+    assert jobs_ls == {jobs_name_map[name_0]}
+
+    # test filtering by name and single status
+    captured = helper.run_cli(["job", "ls", "-n", name_0, "-s", "running", "-q"])
+    jobs_ls = set(captured.out.splitlines())
+    assert jobs_ls == {jobs_name_map[name_0]}
+
+    # test filtering by name and 2 statuses - no jobs found
+    captured = helper.run_cli(
+        ["job", "ls", "-n", name_0, "-s", "failed", "-s", "succeeded", "-q"]
+    )
+    assert not captured.out
 
 
 @pytest.fixture
@@ -974,8 +1031,17 @@ async def test_port_forward(async_config, nginx_job_async):
 
 @pytest.mark.e2e
 def test_port_forward_no_job(helper, nginx_job):
+    job_name = f"non-existing-job-{uuid4()}"
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", "nojob", "0", "0"])
+        helper.run_cli(["port-forward", "--no-key-check", job_name, "0", "0"])
+    assert cm.value.code == 127
+
+
+@pytest.mark.e2e
+def test_exec_no_job(helper, nginx_job):
+    job_name = f"non-existing-job-{uuid4()}"
+    with pytest.raises(SystemExit) as cm:
+        helper.run_cli(["exec", "--no-key-check", job_name, "true"])
     assert cm.value.code == 127
 
 

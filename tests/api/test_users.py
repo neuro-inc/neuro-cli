@@ -4,7 +4,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.client import (
+from neuromation.api import (
     Action,
     Client,
     IllegalArgumentError,

@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 from yarl import URL
 
@@ -14,14 +14,18 @@ class ImageNameParser:
 
     def parse_as_docker_image(self, image: str) -> DockerImage:
         try:
-            self._check_for_disambiguation(image)
+            self._validate_image_name(image)
             return self._parse_as_docker_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid docker image '{image}': {e}") from e
 
-    def parse_as_neuro_image(self, image: str) -> DockerImage:
+    def parse_as_neuro_image(
+        self, image: str, raise_if_has_tag: bool = False
+    ) -> DockerImage:
         try:
-            self._check_for_disambiguation(image)
+            self._validate_image_name(image)
+            if raise_if_has_tag and self.has_tag(image):
+                raise ValueError("tag is not allowed")
             return self._parse_as_neuro_image(image)
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
@@ -54,25 +58,32 @@ class ImageNameParser:
             image_normalized = image
         return image_normalized
 
-    def _check_for_disambiguation(self, image: str) -> None:
+    def has_tag(self, image: str) -> bool:
+        prefix = f"{IMAGE_SCHEME}:"
+        if image.startswith(prefix):
+            image = image.lstrip(prefix).lstrip("/")
+        name, tag = self._split_image_name(image, default_tag=None)
+        return bool(tag)
+
+    def _validate_image_name(self, image: str) -> None:
+        if not image:
+            raise ValueError("empty image name")
+        if image.startswith("-"):
+            raise ValueError(f"image cannot start with dash")
         if image == "image:latest":
             raise ValueError(
                 "ambiguous value: valid as both local and remote image name"
             )
 
     def _parse_as_docker_image(self, image: str) -> DockerImage:
-        if not image:
-            raise ValueError("empty image name")
         if self.is_in_neuro_registry(image):
             raise ValueError(
                 f"scheme '{IMAGE_SCHEME}://' is not allowed for docker images"
             )
-        name, tag = self._split_image_name(image)
+        name, tag = self._split_image_name(image, self.default_tag)
         return DockerImage(name=name, tag=tag)
 
     def _parse_as_neuro_image(self, image: str) -> DockerImage:
-        if not image:
-            raise ValueError("empty image name")
         if not self.is_in_neuro_registry(image):
             raise ValueError(
                 f"scheme '{IMAGE_SCHEME}://' is required for remote images"
@@ -94,17 +105,21 @@ class ImageNameParser:
 
         registry = self._registry
         owner = self._default_user if not url.host or url.host == "~" else url.host
-        name, tag = self._split_image_name(url.path.lstrip("/"))
+        name, tag = self._split_image_name(url.path.lstrip("/"), self.default_tag)
         return DockerImage(name=name, tag=tag, registry=registry, owner=owner)
 
-    def _split_image_name(self, image: str) -> Tuple[str, str]:
+    def _split_image_name(
+        self, image: str, default_tag: Optional[str] = None
+    ) -> Tuple[str, Optional[str]]:
         colon_count = image.count(":")
         if colon_count == 0:
-            image, tag = image, self.default_tag
+            image, tag = image, default_tag
         elif colon_count == 1:
             image, tag = image.split(":")
+            if not tag:
+                raise ValueError("empty tag is not allowed")
         else:
-            raise ValueError(f"cannot parse image name '{image}': too many tags")
+            raise ValueError("too many tags")
         return image, tag
 
     def _get_registry_hostname(self, registry_url: str) -> str:

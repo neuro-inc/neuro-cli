@@ -11,8 +11,13 @@ import humanize
 from click import style
 from dateutil.parser import isoparse  # type: ignore
 
-from neuromation.client import JobDescription, JobStatus, JobTelemetry, Resources
-from neuromation.client.parsing_utils import ImageNameParser
+from neuromation.api import (
+    ImageNameParser,
+    JobDescription,
+    JobStatus,
+    JobTelemetry,
+    Resources,
+)
 
 
 BEFORE_PROGRESS = "\r"
@@ -50,18 +55,24 @@ class JobFormatter:
         )
         if job.name:
             out.append(style("Name", bold=True) + f": {job.name}")
+            job_alias = job.name
+        else:
+            job_alias = job.id
         if job.http_url:
             out.append(style("Http URL", bold=True) + f": {job.http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
-        out.append(f"  neuro status {job.id}  " + style("# check job status", dim=True))
+
         out.append(
-            f"  neuro logs {job.id}    " + style("# monitor job stdout", dim=True)
+            f"  neuro status {job_alias}  " + style("# check job status", dim=True)
         )
         out.append(
-            f"  neuro top {job.id}     "
+            f"  neuro logs {job_alias}    " + style("# monitor job stdout", dim=True)
+        )
+        out.append(
+            f"  neuro top {job_alias}     "
             + style("# display real-time job telemetry", dim=True)
         )
-        out.append(f"  neuro kill {job.id}    " + style("# kill job", dim=True))
+        out.append(f"  neuro kill {job_alias}    " + style("# kill job", dim=True))
         return "\n".join(out)
 
 
@@ -175,6 +186,7 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 @dataclass(frozen=True)
 class TabularJobRow:
     id: str
+    name: str
     status: str
     when: str
     image: str
@@ -199,6 +211,7 @@ class TabularJobRow:
             when_humanized = humanize.naturaldate(when_datetime)
         return cls(
             id=job.id,
+            name=job.name if job.name else "",
             status=job.status,
             when=when_humanized,
             image=image_normalized,
@@ -212,6 +225,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
         self.width = width
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
+            "name": [2, 40],
             "status": [6, 10],
             "when": [4, 15],
             "image": [5, 15],
@@ -246,6 +260,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
             rows.append(TabularJobRow.from_job(job, self.image_parser))
         header = TabularJobRow(
             id="ID",
+            name="NAME",
             status="STATUS",
             when="WHEN",
             image="IMAGE",

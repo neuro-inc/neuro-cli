@@ -1,18 +1,18 @@
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import pytest
 from aiohttp import web
 
-from neuromation.client import (
-    Client,
+from neuromation.api import (
     Image,
     JobDescription,
+    JobTelemetry,
     NetworkPortForwarding,
     ResourceNotFound,
     Resources,
     Volume,
 )
-from neuromation.client.jobs import JobTelemetry
+from neuromation.cli.rc import Client
 
 
 async def test_jobs_monitor(aiohttp_server, token):
@@ -658,51 +658,129 @@ def test_volume_from_str_fail(volume):
         Volume.from_cli("testuser", volume)
 
 
-async def test_list(aiohttp_server, token):
-    JSON = {
-        "jobs": [
-            {
-                "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
-                "status": "pending",
-                "history": {
-                    "status": "failed",
-                    "reason": "Error",
-                    "description": "Mounted on Avail\\n/dev/shm     "
-                    "64M\\n\\nExit code: 1",
-                    "created_at": "2018-09-25T12:28:21.298672+00:00",
-                    "started_at": "2018-09-25T12:28:59.759433+00:00",
-                    "finished_at": "2018-09-25T12:28:59.759433+00:00",
-                },
-                "ssh_auth_server": "ssh://my_host.ssh:22",
-                "container": {
-                    "image": "submit-image-name",
-                    "command": "submit-command",
-                    "resources": {
-                        "cpu": 1.0,
-                        "memory_mb": 16384,
-                        "gpu": 1,
-                        "gpu_model": "nvidia-tesla-v100",
-                    },
-                },
-                "is_preemptible": True,
-                "owner": "owner",
-            }
-        ]
+def create_job_response(
+    id: str, status: str, name: Optional[str] = None
+) -> Dict[str, Any]:
+    result = {
+        "id": id,
+        "status": status,
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "container": {
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "gpu_model": "nvidia-tesla-v100",
+            },
+        },
+        "is_preemptible": True,
+        "owner": "owner",
     }
+    if name:
+        result["name"] = name
+    return result
+
+
+async def test_list_no_filter(aiohttp_server, token):
+    jobs = [
+        create_job_response("job-id-1", "pending", name="job-name-1"),
+        create_job_response("job-id-2", "running", name="job-name-1"),
+        create_job_response("job-id-3", "succeeded", name="job-name-1"),
+        create_job_response("job-id-4", "failed", name="job-name-1"),
+    ]
+    JSON = {"jobs": jobs}
 
     async def handler(request):
         return web.json_response(JSON)
 
     app = web.Application()
     app.router.add_get("/jobs", handler)
-
     srv = await aiohttp_server(app)
-    statuses = {"pending", "running", "failed", "succeeded"}
 
     async with Client(srv.make_url("/"), token) as client:
-        ret = await client.jobs.list(statuses)
+        ret = await client.jobs.list()
 
-    assert ret == [JobDescription.from_api(j) for j in JSON["jobs"]]
+    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    assert ret == job_descriptions
+
+
+async def test_list_filter_by_name(aiohttp_server, token):
+    name_1 = "job-name-1"
+    name_2 = "job-name-2"
+    jobs = [
+        create_job_response("job-id-1", "pending", name=name_1),
+        create_job_response("job-id-2", "succeeded", name=name_1),
+        create_job_response("job-id-3", "failed", name=name_1),
+        create_job_response("job-id-4", "running", name=name_2),
+        create_job_response("job-id-5", "succeeded", name=name_2),
+        create_job_response("job-id-6", "failed", name=name_2),
+        create_job_response("job-id-7", "running"),
+        create_job_response("job-id-8", "pending"),
+        create_job_response("job-id-9", "succeeded"),
+        create_job_response("job-id-10", "failed"),
+    ]
+
+    async def handler(request):
+        name = request.query.get("name")
+        assert name
+        filtered_jobs = [job for job in jobs if job.get("name") == name]
+        JSON = {"jobs": filtered_jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    async with Client(srv.make_url("/"), token) as client:
+        ret = await client.jobs.list(name=name_1)
+
+    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    assert ret == job_descriptions[:3]
+
+
+async def test_list_filter_by_statuses(aiohttp_server, token):
+    name_1 = "job-name-1"
+    name_2 = "job-name-2"
+    jobs = [
+        create_job_response("job-id-1", "pending", name=name_1),
+        create_job_response("job-id-2", "succeeded", name=name_1),
+        create_job_response("job-id-3", "failed", name=name_1),
+        create_job_response("job-id-4", "running", name=name_2),
+        create_job_response("job-id-5", "succeeded", name=name_2),
+        create_job_response("job-id-6", "failed", name=name_2),
+        create_job_response("job-id-7", "running"),
+        create_job_response("job-id-8", "pending"),
+        create_job_response("job-id-9", "succeeded"),
+        create_job_response("job-id-10", "failed"),
+    ]
+
+    async def handler(request):
+        statuses = request.query.getall("status")
+        assert statuses
+        filtered_jobs = [job for job in jobs if job["status"] in statuses]
+        JSON = {"jobs": filtered_jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    statuses = {"failed", "succeeded"}
+    async with Client(srv.make_url("/"), token) as client:
+        ret = await client.jobs.list(statuses=statuses)
+
+    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    assert ret == [job for job in job_descriptions if job.status in statuses]
 
 
 class TestVolumeParsing:
@@ -775,3 +853,43 @@ class TestVolumeParsing:
     )
     def test_positive(self, volume_param, volume):
         assert Volume.from_cli("bob", volume_param) == volume
+
+
+async def test_list_filter_by_name_and_statuses(aiohttp_server, token):
+    name_1 = "job-name-1"
+    name_2 = "job-name-2"
+    jobs = [
+        create_job_response("job-id-1", "pending", name=name_1),
+        create_job_response("job-id-2", "succeeded", name=name_1),
+        create_job_response("job-id-3", "failed", name=name_1),
+        create_job_response("job-id-4", "running", name=name_2),
+        create_job_response("job-id-5", "succeeded", name=name_2),
+        create_job_response("job-id-6", "failed", name=name_2),
+        create_job_response("job-id-7", "running"),
+        create_job_response("job-id-8", "pending"),
+        create_job_response("job-id-9", "succeeded"),
+        create_job_response("job-id-10", "failed"),
+    ]
+
+    async def handler(request):
+        statuses = request.query.getall("status")
+        assert statuses
+        name = request.query.get("name")
+        assert name
+        filtered_jobs = [
+            job for job in jobs if job["status"] in statuses and job.get("name") == name
+        ]
+        JSON = {"jobs": filtered_jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    statuses = {"pending", "succeeded"}
+    name = "job-name-1"
+    async with Client(srv.make_url("/"), token) as client:
+        ret = await client.jobs.list(statuses=statuses, name=name)
+
+    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    assert ret == job_descriptions[:2]

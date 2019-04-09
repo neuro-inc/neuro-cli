@@ -3,19 +3,18 @@ import enum
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from yarl import URL
 
-from neuromation.client.url_utils import (
+from .abc import AbstractProgress
+from .config import Config
+from .core import Core, ResourceNotFound
+from .url_utils import (
     _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
-
-from .abc import AbstractProgress
-from .api import API, ResourceNotFound
-from .config import Config
 
 
 log = logging.getLogger(__name__)
@@ -56,8 +55,8 @@ class FileStatus:
 
 
 class Storage:
-    def __init__(self, api: API, config: Config) -> None:
-        self._api = api
+    def __init__(self, core: Core, config: Config) -> None:
+        self._core = core
         self._config = config
 
     def _uri_to_path(self, uri: URL) -> str:
@@ -69,7 +68,7 @@ class Storage:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
-        async with self._api.request("GET", url) as resp:
+        async with self._core.request("GET", url) as resp:
             res = await resp.json()
             return [
                 FileStatus.from_api(status)
@@ -80,7 +79,7 @@ class Storage:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
 
-        async with self._api.request("PUT", url) as resp:
+        async with self._core.request("PUT", url) as resp:
             resp  # resp.status == 201
 
     async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
@@ -89,14 +88,14 @@ class Storage:
         url = URL("storage") / path
         url = url.with_query(op="CREATE")
 
-        async with self._api.request("PUT", url, data=data) as resp:
+        async with self._core.request("PUT", url, data=data) as resp:
             resp  # resp.status == 201
 
     async def stats(self, uri: URL) -> FileStatus:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
-        async with self._api.request("GET", url) as resp:
+        async with self._core.request("GET", url) as resp:
             res = await resp.json()
             return FileStatus.from_api(res["FileStatus"])
 
@@ -107,7 +106,7 @@ class Storage:
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
 
-        async with self._api.request("GET", url) as resp:
+        async with self._core.request("GET", url) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
@@ -127,34 +126,39 @@ class Storage:
         url = URL("storage") / path
         url = url.with_query(op="DELETE")
 
-        async with self._api.request("DELETE", url) as resp:
+        async with self._core.request("DELETE", url) as resp:
             resp  # resp.status == 204
 
     async def mv(self, src: URL, dst: URL) -> None:
         url = URL("storage") / self._uri_to_path(src)
         url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
 
-        async with self._api.request("POST", url) as resp:
+        async with self._core.request("POST", url) as resp:
             resp  # resp.status == 204
 
     # high-level helpers
 
     async def _iterate_file(
-        self, progress: AbstractProgress, src: Path
+        self, src: Path, *, progress: Optional[AbstractProgress] = None
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
-        progress.start(str(src), src.stat().st_size)
+        if progress is not None:
+            progress.start(str(src), src.stat().st_size)
         with src.open("rb") as stream:
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
-                progress.progress(str(src), pos)
+                if progress is not None:
+                    progress.progress(str(src), pos)
                 yield chunk
                 chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
                 pos += len(chunk)
-            progress.complete(str(src))
+            if progress is not None:
+                progress.complete(str(src))
 
-    async def upload_file(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
+    async def upload_file(
+        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+    ) -> None:
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.username)
         path = _extract_path(src)
@@ -181,9 +185,11 @@ class Storage:
                     raise NotADirectoryError(dst.parent)
             except ResourceNotFound:
                 raise NotADirectoryError(dst.parent)
-        await self.create(dst, self._iterate_file(progress, path))
+        await self.create(dst, self._iterate_file(path, progress=progress))
 
-    async def upload_dir(self, progress: AbstractProgress, src: URL, dst: URL) -> None:
+    async def upload_dir(
+        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+    ) -> None:
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
             dst = dst / src.name
@@ -202,9 +208,13 @@ class Storage:
             await self.mkdirs(dst)
         for child in path.iterdir():
             if child.is_file():
-                await self.upload_file(progress, src / child.name, dst / child.name)
+                await self.upload_file(
+                    src / child.name, dst / child.name, progress=progress
+                )
             elif child.is_dir():
-                await self.upload_dir(progress, src / child.name, dst / child.name)
+                await self.upload_dir(
+                    src / child.name, dst / child.name, progress=progress
+                )
             else:
                 # This case is for uploading non-regular file,
                 # e.g. blocking device or unix socket
@@ -212,7 +222,7 @@ class Storage:
                 log.warning("Cannot upload %s", child)  # pragma: no cover
 
     async def download_file(
-        self, progress: AbstractProgress, src: URL, dst: URL
+        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> None:
         src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
@@ -225,16 +235,19 @@ class Storage:
         loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             size = 0  # TODO: display length hint for downloaded file
-            progress.start(str(dst), size)
+            if progress is not None:
+                progress.start(str(dst), size)
             pos = 0
             async for chunk in self.open(src):
                 pos += len(chunk)
-                progress.progress(str(dst), pos)
+                if progress is not None:
+                    progress.progress(str(dst), pos)
                 await loop.run_in_executor(None, stream.write, chunk)
-            progress.complete(str(dst))
+            if progress is not None:
+                progress.complete(str(dst))
 
     async def download_dir(
-        self, progress: AbstractProgress, src: URL, dst: URL
+        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> None:
         src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
@@ -242,8 +255,12 @@ class Storage:
         path.mkdir(parents=True, exist_ok=True)
         for child in await self.ls(src):
             if child.is_file():
-                await self.download_file(progress, src / child.name, dst / child.name)
+                await self.download_file(
+                    src / child.name, dst / child.name, progress=progress
+                )
             elif child.is_dir():
-                await self.download_dir(progress, src / child.name, dst / child.name)
+                await self.download_dir(
+                    src / child.name, dst / child.name, progress=progress
+                )
             else:
                 log.warning("Cannot download %s", child)  # pragma: no cover

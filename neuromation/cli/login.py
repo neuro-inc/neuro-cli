@@ -23,7 +23,8 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.client.utils import asynccontextmanager
+from neuromation.api.core import DEFAULT_TIMEOUT
+from neuromation.api.utils import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:
@@ -410,3 +411,49 @@ class AuthNegotiator:
                 return await token_client.refresh(token)
 
             return token
+
+
+#: move the following API back to neuromation.api_factory
+
+
+@dataclass(frozen=True)
+class ServerConfig:
+    auth_config: AuthConfig
+    registry_url: URL
+
+
+class ConfigLoadException(Exception):
+    pass
+
+
+async def get_server_config(url: URL,
+                            connector: aiohttp.TCPConnector) -> ServerConfig:
+    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT, connector=connector, connector_owner=False) as client:
+        async with client.get(url / "config") as resp:
+            if resp.status != 200:
+                raise RuntimeError(f"Unable to get server configuration: {resp.status}")
+            payload = await resp.json()
+            # TODO (ajuszkowski, 5-Feb-2019) validate received data
+            auth_url = URL(payload["auth_url"])
+            token_url = URL(payload["token_url"])
+            client_id = payload["client_id"]
+            audience = payload["audience"]
+            success_redirect_url = payload.get("success_redirect_url")
+            if success_redirect_url is not None:
+                success_redirect_url = URL(success_redirect_url)
+            callback_urls = payload.get("callback_urls")
+            callback_urls = (
+                tuple(URL(u) for u in callback_urls)
+                if callback_urls is not None
+                else AuthConfig.callback_urls
+            )
+            auth_config = AuthConfig(
+                auth_url=auth_url,
+                token_url=token_url,
+                client_id=client_id,
+                audience=audience,
+                success_redirect_url=success_redirect_url,
+                callback_urls=callback_urls,
+            )
+            registry_url = URL(payload["registry_url"])
+            return ServerConfig(registry_url=registry_url, auth_config=auth_config)
