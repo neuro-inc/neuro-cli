@@ -426,9 +426,10 @@ class ConfigLoadException(Exception):
     pass
 
 
-async def get_server_config(url: URL,
-                            connector: aiohttp.TCPConnector) -> ServerConfig:
-    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT, connector=connector, connector_owner=False) as client:
+async def get_server_config(url: URL, connector: TCPConnector) -> ServerConfig:
+    async with aiohttp.ClientSession(
+        timeout=DEFAULT_TIMEOUT, connector=connector, connector_owner=False
+    ) as client:
         async with client.get(url / "config") as resp:
             if resp.status != 200:
                 raise RuntimeError(f"Unable to get server configuration: {resp.status}")
