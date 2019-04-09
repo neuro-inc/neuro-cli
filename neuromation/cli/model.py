@@ -4,7 +4,7 @@ from typing import List
 import click
 from yarl import URL
 
-from neuromation.api import Image, NetworkPortForwarding, Resources, DockerImage
+from neuromation.api import DockerImage, Image, NetworkPortForwarding, Resources
 from neuromation.api.url_utils import normalize_storage_path_uri
 from neuromation.strings.parse import to_megabytes_str
 
@@ -19,7 +19,7 @@ from .defaults import (
 from .formatters import JobFormatter
 from .rc import Config
 from .ssh_utils import remote_debug
-from .utils import async_cmd, group, ImageType
+from .utils import ImageType, async_cmd, group
 
 
 log = logging.getLogger(__name__)

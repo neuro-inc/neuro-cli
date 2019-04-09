@@ -68,7 +68,7 @@ class ImageNameParser:
     def _check_for_disambiguation(self, image: str) -> None:
         if not image:
             raise ValueError("empty image name")
-        if image.startswith('-'):
+        if image.startswith("-"):
             raise ValueError(f"image cannot start with dash")
         if image == "image:latest":
             raise ValueError(
