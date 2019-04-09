@@ -603,7 +603,6 @@ def test_e2e_multiple_env(helper):
     helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
-@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_multiple_env_from_file(helper, tmp_path):
     env_file = tmp_path / "env_file"
@@ -628,13 +627,13 @@ def test_e2e_multiple_env_from_file(helper, tmp_path):
             str(env_file),
             "--non-preemptible",
             "--no-wait-start",
+            "-q",
             UBUNTU_IMAGE_NAME,
             command,
         ]
     )
 
-    out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    job_id = captured.out
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
@@ -844,7 +843,6 @@ def test_e2e_ssh_exec_dead_job(helper):
     assert cm.value.code == 127
 
 
-@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_job_list_filtered_by_status(helper):
     N_JOBS = 5
