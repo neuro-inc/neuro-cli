@@ -66,14 +66,16 @@ class ImageNameParser:
         return bool(tag)
 
     def _check_for_disambiguation(self, image: str) -> None:
+        if not image:
+            raise ValueError("empty image name")
+        if image.startswith('-'):
+            raise ValueError(f"image cannot start with dash")
         if image == "image:latest":
             raise ValueError(
-                "ambiguous value: valid as both local and remote image name"
+                f"ambiguous value {image}: valid as both local and remote image name"
             )
 
     def _parse_as_docker_image(self, image: str) -> DockerImage:
-        if not image:
-            raise ValueError("empty image name")
         if self.is_in_neuro_registry(image):
             raise ValueError(
                 f"scheme '{IMAGE_SCHEME}://' is not allowed for docker images"
@@ -82,8 +84,6 @@ class ImageNameParser:
         return DockerImage(name=name, tag=tag)
 
     def _parse_as_neuro_image(self, image: str) -> DockerImage:
-        if not image:
-            raise ValueError("empty image name")
         if not self.is_in_neuro_registry(image):
             raise ValueError(
                 f"scheme '{IMAGE_SCHEME}://' is required for remote images"
