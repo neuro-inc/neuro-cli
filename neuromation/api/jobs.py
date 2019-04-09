@@ -13,7 +13,6 @@ from typing import (
     Sequence,
     Set,
     SupportsInt,
-    Tuple,
 )
 
 from aiohttp import WSServerHandshakeError

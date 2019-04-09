@@ -25,7 +25,6 @@ from .defaults import (
     JOB_GPU_MODEL,
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
-    JOB_SSH_USER,
 )
 from .formatters import (
     BaseJobsFormatter,
