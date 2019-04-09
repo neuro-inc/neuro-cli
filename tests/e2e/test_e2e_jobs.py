@@ -924,6 +924,13 @@ def test_port_forward_no_job(helper, nginx_job):
 
 
 @pytest.mark.e2e
+def test_port_forward_invalid_port(helper, nginx_job):
+    with pytest.raises(SystemExit) as cm:
+        helper.run_cli(["port-forward", "--no-key-check", nginx_job, "1:1"])
+    assert cm.value.code == -1
+
+
+@pytest.mark.e2e
 def test_exec_no_job(helper, nginx_job):
     job_name = f"non-existing-job-{uuid4()}"
     with pytest.raises(SystemExit) as cm:
