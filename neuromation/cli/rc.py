@@ -163,6 +163,7 @@ class ConfigFactory:
     @classmethod
     async def update_api_url(cls, url: str) -> Config:
         cls._validate_api_url(url)
+        nmrc_config_path = cls.get_path()
         config = load(nmrc_config_path)
         await config.post_init()
         server_config = await get_server_config(URL(url), config.connector)

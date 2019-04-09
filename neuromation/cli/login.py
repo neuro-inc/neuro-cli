@@ -427,7 +427,7 @@ class ConfigLoadException(Exception):
 
 
 async def get_server_config(url: URL, connector: TCPConnector) -> ServerConfig:
-    async with aiohttp.ClientSession(
+    async with ClientSession(
         timeout=DEFAULT_TIMEOUT, connector=connector, connector_owner=False
     ) as client:
         async with client.get(url / "config") as resp:
