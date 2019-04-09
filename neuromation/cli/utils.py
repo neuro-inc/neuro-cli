@@ -400,10 +400,10 @@ class LocalRemotePortParamType(click.ParamType):
             local_str, remote_str = value.split(":")
             local, remote = int(local_str), int(remote_str)
             if not (0 < local <= 65535 and 0 < remote <= 65535):
-                raise ValueError()
+                raise ValueError("Port should be in range 1 to 65535")
             return local, remote
-        except ValueError:
-            raise BadParameter(f"{value} is not a valid port combination")
+        except ValueError as e:
+            raise BadParameter(f"{value} is not a valid port combination: {e}")
 
 
 LOCAL_REMOTE_PORT = LocalRemotePortParamType()
