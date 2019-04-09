@@ -71,7 +71,6 @@ class Config:
     registry_url: str = ""
     auth_config: AuthConfig = AuthConfig.create_uninitialized()
     auth_token: Optional[AuthToken] = None
-    github_rsa_path: str = ""
     pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(NO_VERSION, 0))
     color: bool = field(default=False)  # don't save the field in config
     tty: bool = field(default=False)  # don't save the field in config
@@ -168,10 +167,6 @@ class ConfigFactory:
             raise ValueError("URL should not contain fragments.")
 
     @classmethod
-    def update_github_rsa_path(cls, github_rsa_path: str) -> Config:
-        return cls._update_config(github_rsa_path=github_rsa_path)
-
-    @classmethod
     def update_last_checked_version(cls, version: Any, timestamp: int) -> Config:
         pypi = PyPIVersion(version, timestamp)
         return cls._update_config(pypi=pypi)
@@ -213,7 +208,6 @@ class ConfigFactory:
 def save(path: Path, config: Config) -> Config:
     payload: Dict[str, Any] = {
         "url": config.url,
-        "github_rsa_path": config.github_rsa_path,
         "registry_url": config.registry_url,
     }
     if config.auth_config.is_initialized():
@@ -310,7 +304,6 @@ def _load(path: Path) -> Config:
         # cast to str as somehow yaml.load loads registry_url as 'yaml.URL' not 'str'
         registry_url=str(payload.get("registry_url", "")),
         auth_token=auth_token,
-        github_rsa_path=payload.get("github_rsa_path", ""),
         pypi=PyPIVersion.from_config(payload.get("pypi")),
     )
 

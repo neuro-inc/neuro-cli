@@ -20,7 +20,6 @@ async def test_model_train(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -42,7 +41,6 @@ async def test_model_train(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    network = NetworkPortForwarding({"http": 8181, "ssh": 22})
     resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
 
     async with Client(srv.make_url("/"), token) as client:

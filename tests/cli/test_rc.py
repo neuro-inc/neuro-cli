@@ -38,7 +38,6 @@ def test_create__with_defaults(nmrc):
     assert nmrc.exists()
     expected_text = dedent(
         """\
-    github_rsa_path: ''
     pypi:
       check_timestamp: 0
       pypi_version: 0.0.0
@@ -83,7 +82,6 @@ def test_create__filled(nmrc):
       expiration_time: 100500
       refresh_token: refresh_token
       token: token
-    github_rsa_path: ''
     pypi:
       check_timestamp: 0
       pypi_version: 0.0.0
@@ -100,16 +98,6 @@ class TestFactoryMethods:
         auth_token = AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         rc.ConfigFactory._update_config(url="http://abc.def", auth_token=auth_token)
-        config2: Config = rc.ConfigFactory.load()
-        assert config == config2
-
-    def test_factory_update_id_rsa(self, nmrc_path):
-        config: Config = Config(
-            url=DEFAULTS.url,
-            auth_token=DEFAULTS.auth_token,
-            github_rsa_path="~/.ssh/id_rsa",
-        )
-        rc.ConfigFactory.update_github_rsa_path("~/.ssh/id_rsa")
         config2: Config = rc.ConfigFactory.load()
         assert config == config2
 
@@ -146,7 +134,6 @@ class TestFactoryMethods:
             auth_token=AuthToken(
                 token=token, expiration_time=mock.ANY, refresh_token=""
             ),
-            github_rsa_path=DEFAULTS.github_rsa_path,
         )
         config: Config = rc.ConfigFactory.load()
         assert config == expected_config
@@ -207,7 +194,7 @@ class TestFactoryMethods:
         uninit_config = Config()
         auth_token = AuthToken.create_non_expiring("token1")
 
-        config = Config(url="http://url", auth_token=auth_token, github_rsa_path="path")
+        config = Config(url="http://url", auth_token=auth_token)
         save(nmrc_path, config)
         await rc.ConfigFactory.update_api_url(url=str(server_config_url))
         config2 = load(nmrc_path)
@@ -216,7 +203,6 @@ class TestFactoryMethods:
         assert config.registry_url == ""
         assert config.auth_config == uninit_auth_config
         assert config.auth_token == auth_token
-        assert config.github_rsa_path == "path"
         assert config.pypi == uninit_config.pypi
         assert config.color == uninit_config.color
         assert config.tty == uninit_config.tty
@@ -226,7 +212,6 @@ class TestFactoryMethods:
         assert config2.registry_url == str(server_config.registry_url)
         assert config2.auth_config == server_config.auth_config
         assert config2.auth_token == auth_token
-        assert config2.github_rsa_path == "path"
         assert config2.pypi == uninit_config.pypi
         assert config2.color == uninit_config.color
         assert config2.tty == uninit_config.tty

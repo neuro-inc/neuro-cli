@@ -1140,7 +1140,6 @@ class TestConfigFormatter:
             auth_token=AuthToken(
                 token=token, refresh_token="refresh-token", expiration_time=123_456
             ),
-            github_rsa_path="path",
         )
         out = ConfigFormatter()(config)
         assert click.unstyle(out) == textwrap.dedent(
@@ -1148,6 +1147,5 @@ class TestConfigFormatter:
             User Configuration:
               User Name: user
               API URL: https://dev.url/api/v1
-              Docker Registry URL: https://registry-dev.url/api/v1
-              Github RSA Path: path"""
+              Docker Registry URL: https://registry-dev.url/api/v1"""
         )

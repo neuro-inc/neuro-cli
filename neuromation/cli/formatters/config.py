@@ -13,9 +13,6 @@ class ConfigFormatter:
         lines.append(
             style("Docker Registry URL", bold=True) + f": {config.registry_url}"
         )
-        lines.append(
-            style("Github RSA Path", bold=True) + f": {config.github_rsa_path}"
-        )
         indent = "  "
         return (
             style("User Configuration", bold=True)

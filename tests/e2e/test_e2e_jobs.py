@@ -949,8 +949,6 @@ def nginx_job(helper):
             "0.1",
             "-g",
             "0",
-            "--ssh",
-            "80",
             "--non-preemptible",
             NGINX_IMAGE_NAME,
             command,
