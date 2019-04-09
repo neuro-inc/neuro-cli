@@ -844,7 +844,6 @@ def test_e2e_ssh_exec_dead_job(helper):
     assert cm.value.code == 127
 
 
-@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_job_list_filtered_by_status(helper):
     N_JOBS = 5
