@@ -5,10 +5,10 @@ from yarl import URL
 
 from neuromation.api import Action
 from neuromation.cli.utils import (
+    LocalRemotePortParamType,
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
-    LocalRemotePortParamType
 )
 
 

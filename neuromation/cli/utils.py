@@ -20,8 +20,8 @@ from typing import (
 )
 
 import click
-from yarl import URL
 from click import BadParameter
+from yarl import URL
 
 from neuromation.api import (
     Action,

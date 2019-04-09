@@ -512,7 +512,6 @@ class _Jobs:
                 "UserKnownHostsFile=/dev/null",
             ]
         command += [f"{server_url.user}@{server_url.host}"]
-        print(f"Port of {id} is forwarded to localhost:{local_port}")
         proc = await asyncio.create_subprocess_exec(*command)
         try:
             result = await proc.wait()

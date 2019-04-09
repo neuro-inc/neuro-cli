@@ -7,7 +7,6 @@ from typing import List, Sequence, Tuple
 
 import click
 
-from neuromation.cli.utils import LOCAL_REMOTE_PORT
 from neuromation.api import (
     DockerImage,
     Image,
@@ -17,6 +16,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.cli.utils import LOCAL_REMOTE_PORT
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
@@ -305,12 +305,16 @@ async def port_forward(
     loop = asyncio.get_event_loop()
     async with cfg.make_client() as client:
         job_id = await resolve_job(client, job)
-        tasks = [
-            loop.create_task(
-                client.jobs.port_forward(job_id, no_key_check, local_port, remote_port)
+        tasks = []
+        for local_port, remote_port in local_remote_port:
+            print(f"Port of {job_id} will be forwarded to localhost:{local_port}")
+            tasks.append(
+                loop.create_task(
+                    client.jobs.port_forward(
+                        job_id, no_key_check, local_port, remote_port
+                    )
+                )
             )
-            for local_port, remote_port in local_remote_port
-        ]
 
         print("Press ^C to stop forwarding")
         result = 0
