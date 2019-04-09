@@ -40,20 +40,12 @@ class AuthCode:
     def __init__(self, callback_url: Optional[URL] = None) -> None:
         self._future: asyncio.Future[str] = asyncio.Future()
 
-        self._verifier = self.generate_verifier()
-        self._challenge = self.generate_challenge(self._verifier)
+        self._verifier = urlsafe_unpadded_b64encode(secrets.token_bytes(32))
+        digest = hashlib.sha256(self._verifier.encode()).digest()
+        self._challenge = urlsafe_unpadded_b64encode(digest)
         self._challenge_method = "S256"
 
         self._callback_url = callback_url
-
-    @classmethod
-    def generate_verifier(cls) -> str:
-        return urlsafe_unpadded_b64encode(secrets.token_bytes(32))
-
-    @classmethod
-    def generate_challenge(cls, verifier: str) -> str:
-        digest = hashlib.sha256(verifier.encode()).digest()
-        return urlsafe_unpadded_b64encode(digest)
 
     @property
     def verifier(self) -> str:
