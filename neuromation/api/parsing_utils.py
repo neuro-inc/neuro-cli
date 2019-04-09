@@ -72,7 +72,7 @@ class ImageNameParser:
             raise ValueError(f"image cannot start with dash")
         if image == "image:latest":
             raise ValueError(
-                f"ambiguous value {image}: valid as both local and remote image name"
+                "ambiguous value: valid as both local and remote image name"
             )
 
     def _parse_as_docker_image(self, image: str) -> DockerImage:
