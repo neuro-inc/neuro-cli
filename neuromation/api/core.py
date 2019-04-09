@@ -60,9 +60,9 @@ class Core:
             headers=self._auth_headers(),
         )
         self._exception_map = {
-            403: AuthorizationError,
-            401: AuthenticationError,
             400: IllegalArgumentError,
+            401: AuthenticationError,
+            403: AuthorizationError,
             404: ResourceNotFound,
             405: ClientError,
         }
