@@ -16,6 +16,7 @@ from typing import (
     Tuple,
 )
 
+import attr
 from aiohttp import WSServerHandshakeError
 from multidict import MultiDict
 from yarl import URL
@@ -426,8 +427,9 @@ class Jobs:
         self, id: str
     ) -> Any:  # real type is async generator with data chunks
         url = URL(f"jobs/{id}/log")
+        timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
-            "GET", url, headers={"Accept-Encoding": "identity"}
+            "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
         ) as resp:
             async for data in resp.content.iter_any():
                 yield data
