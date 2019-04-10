@@ -1,4 +1,4 @@
-from .abc import AbstractProgress, AbstractSpinner
+from .abc import AbstractDockerImageProgress, AbstractProgress
 from .client import Client
 from .core import (
     AuthenticationError,
@@ -8,7 +8,7 @@ from .core import (
     IllegalArgumentError,
     ResourceNotFound,
 )
-from .images import DockerImage
+from .images import DockerImage, DockerImageOperation
 from .jobs import (
     Container,
     HTTPPort,
@@ -52,7 +52,8 @@ __all__ = (
     "AuthenticationError",
     "AuthorizationError",
     "AbstractProgress",
-    "AbstractSpinner",
+    "AbstractDockerImageProgress",
     "ImageNameParser",
     "DockerImage",
+    "DockerImageOperation",
 )
