@@ -11,16 +11,12 @@ CSI = "\033["
 CURSOR_UP = f"{CSI}{{}}A"
 CURSOR_DOWN = f"{CSI}{{}}B"
 CLEAR_LINE_TAIL = f"{CSI}0K"
-CURSOR_HOME = f"{CSI}1G"
 
 
 class AbstractPrinter(abc.ABC):
     """
         Printer is mechanism for displaying some text to end-user
     """
-
-    def __init__(self, print: bool = False):
-        self._print = print
 
     def close(self) -> str:
         return ""
@@ -32,11 +28,6 @@ class AbstractPrinter(abc.ABC):
     def _escape(self, text: str) -> str:
         return text.translate({10: " ", 13: " "})
 
-    def _process(self, message: str) -> str:
-        if self._print:
-            click.echo(message, nl=False)
-        return message
-
 
 class TTYPrinter(AbstractPrinter):
     """
@@ -45,8 +36,7 @@ class TTYPrinter(AbstractPrinter):
         error message will be printed after reported before lines
     """
 
-    def __init__(self, print: bool = False):
-        super().__init__(print)
+    def __init__(self) -> None:
         self._total_lines = 0
 
     @property
@@ -75,7 +65,8 @@ class TTYPrinter(AbstractPrinter):
         message = "".join(commands)
 
         self._total_lines = max(self._total_lines, lineno)
-        return self._process(message)
+        click.echo(message, nl=False)
+        return message
 
 
 class StreamPrinter(AbstractPrinter):
@@ -85,15 +76,9 @@ class StreamPrinter(AbstractPrinter):
     control.
     """
 
-    def __init__(self, print: bool = False) -> None:
-        super().__init__(print)
+    def __init__(self) -> None:
         self._first = True
         self._last_usage_time = 0.0
-
-    def _process(self, message: str) -> str:
-        if self._print:
-            print(message, end="")
-        return message
 
     def print(self, text: str) -> str:
         message = ""
@@ -103,7 +88,8 @@ class StreamPrinter(AbstractPrinter):
             message += linesep
         message += text
         self._last_usage_time = time()
-        return self._process(message)
+        print(message, end="")
+        return message
 
     def tick(self) -> str:
         self._first = False
@@ -111,8 +97,9 @@ class StreamPrinter(AbstractPrinter):
             return ""
         message = "."
         self._last_usage_time = time()
-        return self._process(message)
+        print(message, end="")
+        return message
 
     def close(self) -> str:
-        message = linesep
-        return self._process(message)
+        print(linesep, end="")
+        return linesep

@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
 from neuromation.api import AbstractDockerImageProgress, DockerImageOperation
-from neuromation.cli.writer import StreamPrinter, TTYPrinter
+from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
 class DockerImageProgress(AbstractDockerImageProgress):
@@ -38,35 +38,35 @@ class DockerImageProgress(AbstractDockerImageProgress):
 class DetailedDockerImageProgress(DockerImageProgress):
     def __init__(self) -> None:
         self._mapping: Dict[str, int] = {}
-        self._reporter = TTYPrinter(print=True)
+        self._printer = TTYPrinter()
 
     def __call__(self, message: str, layer_id: Optional[str] = None) -> None:
         if layer_id:
             if layer_id in self._mapping.keys():
                 lineno = self._mapping[layer_id]
-                self._reporter.print(message, lineno)
+                self._printer.print(message, lineno)
             else:
-                self._reporter.print(message)
-                self._mapping[layer_id] = self._reporter.total_lines
+                self._printer.print(message)
+                self._mapping[layer_id] = self._printer.total_lines
         else:
-            self._reporter.print(message)
+            self._printer.print(message)
 
     def close(self) -> None:
         super().close()
-        self._reporter.close()
+        self._printer.close()
 
 
 class StreamDockerImageProgress(DockerImageProgress):
     def __init__(self) -> None:
-        self._reporter = StreamPrinter(print=True)
+        self._printer = StreamPrinter()
         pass
 
     def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
         if layer_id:
-            self._reporter.tick()
+            self._printer.tick()
         else:
-            self._reporter.print(message)
+            self._printer.print(message)
 
     def close(self) -> None:
         super().close()
-        self._reporter.close()
+        self._printer.close()

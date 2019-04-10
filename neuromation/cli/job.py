@@ -259,14 +259,12 @@ async def submit(
             env=env_dict,
         )
         click.echo(JobFormatter(quiet)(job))
-        progress = JobStartProgress(cfg.color)
+        progress = JobStartProgress.create(tty=cfg.tty, color=cfg.color, quiet=quiet)
         while wait_start and job.status == JobStatus.PENDING:
             await asyncio.sleep(0.2)
             job = await client.jobs.status(job.id)
-            if not quiet:
-                click.echo(progress(job), nl=False)
-        if not quiet and wait_start:
-            click.echo(progress(job, finish=True), nl=False)
+            progress(job)
+        progress.close()
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
