@@ -5,7 +5,6 @@ import shlex
 import sys
 from typing import Sequence
 
-import aiohttp
 import click
 
 from neuromation.api import (

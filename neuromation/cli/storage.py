@@ -1,6 +1,5 @@
 import logging
 
-import aiohttp
 import click
 from yarl import URL
 
