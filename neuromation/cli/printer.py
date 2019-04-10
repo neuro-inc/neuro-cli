@@ -21,12 +21,17 @@ class AbstractPrinter(abc.ABC):
     def close(self) -> str:
         return ""
 
-    @abc.abstractmethod
     def print(self, text: str) -> str:
-        pass
+        message = self._escape(text)
+        self._print(message)
+        return message
 
     def _escape(self, text: str) -> str:
         return text.translate({10: " ", 13: " "})
+
+    @abc.abstractmethod
+    def _print(self, text: str) -> None:
+        pass
 
 
 class TTYPrinter(AbstractPrinter):
@@ -54,19 +59,31 @@ class TTYPrinter(AbstractPrinter):
 
         commands = []
         diff = self._total_lines - lineno + 1
+        clear_tail = False
+
         if diff > 0:
             commands.append(CURSOR_UP.format(diff))
+            clear_tail = True
         elif diff < 0:
             commands.append(linesep * (-1 * diff))
             commands.append(CURSOR_UP.format(1))
-        commands.append(self._escape(text) + CLEAR_LINE_TAIL + linesep)
+
+        commands.append(self._escape(text))
+
+        if clear_tail:
+            commands.append(CLEAR_LINE_TAIL)
+        commands.append(linesep)
+
         if diff > 0:
             commands.append(CURSOR_DOWN.format(diff - 1))
         message = "".join(commands)
 
         self._total_lines = max(self._total_lines, lineno)
-        click.echo(message, nl=False)
+        self._print(message)
         return message
+
+    def _print(self, text: str) -> None:
+        click.echo(text, nl=False)
 
 
 class StreamPrinter(AbstractPrinter):
@@ -88,8 +105,11 @@ class StreamPrinter(AbstractPrinter):
             message += linesep
         message += text
         self._last_usage_time = time()
-        print(message, end="")
+        self._print(message)
         return message
+
+    def _print(self, text: str) -> None:
+        print(text, end="")
 
     def tick(self) -> str:
         self._first = False
@@ -97,9 +117,11 @@ class StreamPrinter(AbstractPrinter):
             return ""
         message = "."
         self._last_usage_time = time()
-        print(message, end="")
+        self._print(message)
         return message
 
     def close(self) -> str:
-        print(linesep, end="")
-        return linesep
+        if not self._first:
+            self._print(linesep)
+            return linesep
+        return ""
