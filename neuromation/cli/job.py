@@ -301,8 +301,7 @@ async def port_forward(
     cfg: Config, job: str, no_key_check: bool, local_port: int, remote_port: int
 ) -> None:
     """
-    Forward a port of a running job exposed with -ssh option
-    to a local port.
+    Forward a port of a running job to a local port.
     """
     async with cfg.make_client() as client:
         id = await resolve_job(client, job)
