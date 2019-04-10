@@ -10,7 +10,7 @@ from aiodocker.exceptions import DockerError
 from yarl import URL
 
 from .abc import AbstractSpinner
-from .config import Config
+from .config import _Config
 from .core import AuthorizationError, Core
 from .registry import Registry
 
@@ -52,7 +52,7 @@ class DockerImage:
 
 
 class Images:
-    def __init__(self, core: Core, config: Config) -> None:
+    def __init__(self, core: Core, config: _Config) -> None:
         self._core = core
         self._config = config
         self._temporary_images: List[str] = list()
@@ -74,8 +74,8 @@ class Images:
         self._registry = Registry(
             self._core.connector,
             self._config.registry_url.with_path("/v2/"),
-            self._config.token,
-            self._config.username,
+            self._config.auth_token.token,
+            self._config.auth_token.username,
         )
 
     async def close(self) -> None:
@@ -86,7 +86,7 @@ class Images:
         await self._registry.close()
 
     def _auth(self) -> Dict[str, str]:
-        return {"username": "token", "password": self._config.token}
+        return {"username": "token", "password": self._config.auth_token.token}
 
     async def push(
         self,

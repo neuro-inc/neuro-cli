@@ -22,6 +22,7 @@ from yarl import URL
 
 from neuromation.utils import kill_proc_tree
 
+from .config import _Config
 from .core import Core, IllegalArgumentError
 from .url_utils import normalize_storage_path_uri
 
@@ -354,9 +355,9 @@ class JobTelemetry:
 
 
 class Jobs:
-    def __init__(self, core: Core, token: str) -> None:
+    def __init__(self, core: Core, config: _Config) -> None:
         self._core = core
-        self._token = token
+        self._config = config
 
     async def submit(
         self,
@@ -462,7 +463,7 @@ class Jobs:
         payload = json.dumps(
             {
                 "method": "job_exec",
-                "token": self._token,
+                "token": self._config.auth_token.token,
                 "params": {"job": id, "command": cmd},
             }
         )
@@ -501,7 +502,7 @@ class Jobs:
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._token,
+                "token": self._config.auth_token.token,
                 "params": {"job": id, "port": job_port},
             }
         )

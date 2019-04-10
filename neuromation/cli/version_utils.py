@@ -10,7 +10,8 @@ import aiohttp
 import certifi
 import pkg_resources
 
-from neuromation.cli.rc import NO_VERSION, ConfigFactory
+from neuromation.api.config import _PyPIVersion
+from neuromation.cli.rc import ConfigFactory
 
 
 log = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ class VersionChecker(AbstractVersionChecker):
         async with self._session.get("https://pypi.org/pypi/neuromation/json") as resp:
             if resp.status != 200:
                 log.debug("%s status on fetching PyPI", resp.status)
-                return NO_VERSION
+                return _PyPIVersion.NO_VERSION
             data = await resp.json()
         return self._get_max_version(data)
 
@@ -100,4 +101,4 @@ class VersionChecker(AbstractVersionChecker):
             ]
             return max(ver for ver in ret if not ver.is_prerelease)  # type: ignore
         except (KeyError, ValueError):
-            return NO_VERSION
+            return _PyPIVersion.NO_VERSION

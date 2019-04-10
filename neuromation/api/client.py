@@ -6,7 +6,7 @@ import aiohttp
 import certifi
 from yarl import URL
 
-from .config import Config
+from .config import _Config
 from .core import DEFAULT_TIMEOUT, Core
 from .images import Images
 from .jobs import Jobs
@@ -29,7 +29,7 @@ class Client:
         self._url = url
         self._registry_url = URL(registry_url)
         assert token
-        self._config = Config(url, self._registry_url, token)
+        self._config = _Config(url, self._registry_url, token)
         self._ssl_context = ssl.SSLContext()
         self._ssl_context.load_verify_locations(capath=certifi.where())
         self._connector = aiohttp.TCPConnector(ssl=self._ssl_context)
@@ -56,14 +56,6 @@ class Client:
         exc_tb: Optional[TracebackType] = None,
     ) -> None:
         await self.close()
-
-    @property
-    def username(self) -> str:
-        return self._config.username
-
-    @property
-    def cfg(self) -> Config:
-        return self._config
 
     @property
     def jobs(self) -> Jobs:
