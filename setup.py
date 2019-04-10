@@ -45,7 +45,7 @@ setup(
     long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
     author="Neuromation Team",
     author_email="pypi@neuromation.io",  # TODO: change this email
-    license='Apache 2',
+    license='Apache License, version 2.0',
     url="https://neuromation.io/",
     packages=find_packages(include=("neuromation", "neuromation.*")),
     entry_points={"console_scripts": [
