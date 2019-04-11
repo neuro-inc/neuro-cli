@@ -1171,7 +1171,6 @@ class TestDockerImageProgress:
         assert "message2" not in out
         assert CSI not in out
 
-
     def test_tty(self, capfd, click_tty_emulation):
         formatter = DockerImageProgress.create(
             DockerImageOperation.PUSH,
