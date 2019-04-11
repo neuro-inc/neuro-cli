@@ -21,17 +21,12 @@ class AbstractPrinter(abc.ABC):
     def close(self) -> str:
         return ""
 
-    def print(self, text: str) -> str:
-        message = self._escape(text)
-        self._print(message)
-        return message
+    @abc.abstractmethod
+    def print(self, text: str) -> str:  # pragma: no cover
+        pass
 
     def _escape(self, text: str) -> str:
         return text.translate({10: " ", 13: " "})
-
-    @abc.abstractmethod
-    def _print(self, text: str) -> None:
-        pass
 
 
 class TTYPrinter(AbstractPrinter):

@@ -10,6 +10,7 @@ from yarl import URL
 
 from neuromation.api import (
     Container,
+    DockerImageOperation,
     FileStatus,
     FileStatusType,
     HTTPPort,
@@ -22,6 +23,7 @@ from neuromation.api import (
 )
 from neuromation.cli.formatters import (
     ConfigFormatter,
+    DockerImageProgress,
     JobFormatter,
     JobStatusFormatter,
     JobTelemetryFormatter,
@@ -1133,3 +1135,54 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.url/api/v1
               Github RSA Path: path"""
         )
+
+
+class TestDockerImageProgress:
+    def test_quiet(self, capfd):
+        formatter = DockerImageProgress.create(
+            DockerImageOperation.PULL, "input", "output", tty=True, quiet=True
+        )
+        formatter("message1")
+        formatter("message2", "layer1")
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_no_tty(self, capfd):
+        formatter = DockerImageProgress.create(
+            DockerImageOperation.PUSH,
+            "input:latest",
+            "image://bob/output:stream",
+            tty=False,
+            quiet=False,
+        )
+        formatter("message1")
+        formatter("message2", "layer1")
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "input:latest" in out
+        assert "image://bob/output:stream" in out
+        assert "message1" in out
+        assert "message2" not in out
+
+    def test_tty(self, capfd):
+        formatter = DockerImageProgress.create(
+            DockerImageOperation.PUSH,
+            "input:latest",
+            "image://bob/output:stream",
+            tty=True,
+            quiet=False,
+        )
+        formatter("message1")
+        formatter("message2", "layer1")
+        formatter("message3", "layer1")
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "input:latest" in out
+        assert "image://bob/output:stream" in out
+        assert "message1" in out
+        assert "message2" in out
+        assert "message3" in out
