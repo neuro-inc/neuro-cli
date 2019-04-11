@@ -68,7 +68,7 @@ __all__ = (
 )
 
 
-_DEFAULT_NMRC_PATH = "~/.nmrc"
+_DEFAULT_NMRC_PATH = Path("~/.nmrc")
 
 
 async def get(*, path: Path = _DEFAULT_NMRC_PATH) -> Client:

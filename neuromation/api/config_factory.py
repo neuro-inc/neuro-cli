@@ -1,11 +1,14 @@
+import os
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Dict
 
+import yaml
 from yarl import URL
 
 from .client import Client
-from .config import _Config
+from .config import _Config, _PyPIVersion
 from .login import AuthNegotiator, _AuthConfig, _AuthToken, get_server_config
 
 
@@ -27,7 +30,8 @@ class Factory:
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)
-        return await Loader(path).get()
+            return Client(new_config)
+        return Client(config)
 
     async def login(self, url: URL) -> Client:
         if self._path.exists():
@@ -69,13 +73,13 @@ class Factory:
         if not self._path.is_file():
             raise RCException(f"Config {self._path} is not a regular file")
 
-        stat = path.stat()
+        stat = self._path.stat()
         if not WIN32 and stat.st_mode & 0o777 != 0o600:
             raise RCException(
-                f"Config file {path} has compromised permission bits, "
-                f"run 'chmod 600 {path}' before usage"
+                f"Config file {self._path} has compromised permission bits, "
+                f"run 'chmod 600 {self._path}' first"
             )
-        with path.open("r") as f:
+        with self._path.open("r") as f:
             payload = yaml.safe_load(f)
 
         try:
@@ -154,9 +158,9 @@ class Factory:
         payload["pypi"] = config.pypi.to_config()
 
         # forbid access to other users
-        if path.exists():
+        if self._path.exists():
             # drop a file if exists to reopen it in exclusive mode for writing
-            path.unlink()
+            self._path.unlink()
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-        with os.fdopen(os.open(path, flags, 0o600), "w") as f:
+        with os.fdopen(os.open(self._path, flags, 0o600), "w") as f:
             yaml.safe_dump(payload, f, default_flow_style=False)
