@@ -38,10 +38,10 @@ class Factory:
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=auth_token,
-            pypi = _PyPIVersion.create_uninitialized(),
+            pypi=_PyPIVersion.create_uninitialized(),
             url=url,
-            registry_url=server_config.registry_url
-            )
+            registry_url=server_config.registry_url,
+        )
         self._save(config)
         return Client(config)
 
@@ -52,10 +52,10 @@ class Factory:
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
-            pypi = _PyPIVersion.create_uninitialized(),
+            pypi=_PyPIVersion.create_uninitialized(),
             url=url,
-            registry_url=server_config.registry_url
-            )
+            registry_url=server_config.registry_url,
+        )
         self._save(config)
         return Client(config)
 
