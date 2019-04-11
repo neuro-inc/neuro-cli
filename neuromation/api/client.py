@@ -1,10 +1,9 @@
 import ssl
 from types import TracebackType
-from typing import Optional, Type, Union
+from typing import Optional, Type
 
 import aiohttp
 import certifi
-from yarl import URL
 
 from .config import _Config
 from .core import DEFAULT_TIMEOUT, _Core

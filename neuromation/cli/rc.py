@@ -8,9 +8,8 @@ import aiohttp
 import yaml
 from yarl import URL
 
-import neuromation
 from neuromation.api import Client
-from neuromation.api.config import _PyPIVersion
+from neuromation.api.config import _Config, _PyPIVersion
 from neuromation.api.login import (
     AuthNegotiator,
     _AuthConfig,
@@ -71,17 +70,22 @@ class Config:
         return username
 
     def make_client(self) -> Client:
-        token, username = self._check_registered()
-        kwargs: Dict[str, Any] = {}
-        if self.registry_url:
-            kwargs["registry_url"] = self.registry_url
+        assert self.auth_token
+        assert self.url
+        assert self.registry_url
+        config = _Config(
+            auth_config=self.auth_config,
+            auth_token=self.auth_token,
+            pypi=self.pypi,
+            url=URL(self.url),
+            registry_url=URL(self.registry_url),
+        )
+        self._check_registered()
         return Client(
-            self.url,
-            token,
+            config,
             timeout=aiohttp.ClientTimeout(
                 None, None, self.network_timeout, self.network_timeout
             ),
-            **kwargs,
         )
 
 
