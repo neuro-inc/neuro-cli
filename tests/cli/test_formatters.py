@@ -45,7 +45,6 @@ from neuromation.cli.formatters.storage import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
-from neuromation.cli.login import AuthToken
 from neuromation.cli.printer import CSI
 from neuromation.cli.rc import Config
 

@@ -7,7 +7,7 @@ from aiodocker.exceptions import DockerError
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import AuthorizationError, ImageNameParser, DockerImageOperation
+from neuromation.api import AuthorizationError, DockerImageOperation, ImageNameParser
 from neuromation.api.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
