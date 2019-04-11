@@ -25,6 +25,7 @@ from neuromation.cli.formatters import (
     ConfigFormatter,
     DockerImageProgress,
     JobFormatter,
+    JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
     SimpleJobsFormatter,
@@ -183,6 +184,42 @@ class TestJobStartProgress:
 
     def strip(self, text: str) -> str:
         return click.unstyle(text).strip()
+
+    def test_quiet(self, capfd):
+        progress = JobStartProgress.create(tty=True, color=True, quiet=True)
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_no_tty(self, capfd, click_tty_emulation):
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.RUNNING, "reason"))
+        progress.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert f"{JobStatus.PENDING}" in out
+        assert f"{JobStatus.RUNNING}" in out
+        assert "reason" in out
+        assert out.count(f"{JobStatus.PENDING}") == 1
+        assert CSI not in out
+
+    def test_tty(self, capfd, click_tty_emulation):
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.RUNNING, "reason"))
+        progress.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert f"{JobStatus.PENDING}" in out
+        assert f"{JobStatus.RUNNING}" in out
+        assert "reason" in out
+        assert out.count(f"{JobStatus.PENDING}") != 1
+        assert CSI in out
 
 
 class TestJobOutputFormatter:
@@ -1150,7 +1187,7 @@ class TestDockerImageProgress:
         assert err == ""
         assert out == ""
 
-    def test_no_tty(self, capfd):
+    def test_no_tty(self, capfd, click_tty_emulation):
         formatter = DockerImageProgress.create(
             DockerImageOperation.PUSH,
             "input:latest",
