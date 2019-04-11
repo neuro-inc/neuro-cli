@@ -10,7 +10,7 @@ from yarl import URL
 
 from .abc import AbstractProgress
 from .config import _Config
-from .core import Core, ResourceNotFound
+from .core import ResourceNotFound, _Core
 from .url_utils import (
     _extract_path,
     normalize_local_path_uri,
@@ -55,8 +55,8 @@ class FileStatus:
         )
 
 
-class Storage:
-    def __init__(self, core: Core, config: _Config) -> None:
+class _Storage:
+    def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
 

@@ -34,7 +34,7 @@ class _PyPIVersion:
             log.warning("")  # tailing endline
 
     @classmethod
-    def create_default(cls):
+    def create_default(cls) -> "_PyPIVersion":
         return cls(cls.NO_VERSION, 0)
 
     @classmethod

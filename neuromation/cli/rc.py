@@ -137,7 +137,7 @@ class ConfigFactory:
 
     @classmethod
     def update_last_checked_version(cls, version: Any, timestamp: int) -> Config:
-        pypi = PyPIVersion(version, timestamp)
+        pypi = _PyPIVersion(version, timestamp)
         return cls._update_config(pypi=pypi)
 
     @classmethod
@@ -270,7 +270,7 @@ def _load(path: Path) -> Config:
         # cast to str as somehow yaml.load loads registry_url as 'yaml.URL' not 'str'
         registry_url=str(payload.get("registry_url", "")),
         auth_token=auth_token,
-        pypi=PyPIVersion.from_config(payload.get("pypi")),
+        pypi=_PyPIVersion.from_config(payload.get("pypi")),
     )
 
 
