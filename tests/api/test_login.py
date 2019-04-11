@@ -18,14 +18,14 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.cli.login import (
+from neuromation.api.login import (
     AuthCode,
-    AuthConfig,
     AuthException,
     AuthNegotiator,
-    AuthToken,
     AuthTokenClient,
     DummyAuthCodeCallbackClient,
+    _AuthConfig,
+    _AuthToken,
     create_app_server,
     create_app_server_once,
     create_auth_code_app,
@@ -59,7 +59,7 @@ class TestAuthCode:
 
 class TestAuthToken:
     def test_is_not_expired(self) -> None:
-        token = AuthToken.create(
+        token = _AuthToken.create(
             token="test_token",
             expires_in=100,
             refresh_token="test_refresh_token",
@@ -71,7 +71,7 @@ class TestAuthToken:
         assert token.refresh_token == "test_refresh_token"
 
     def test_is_expired(self) -> None:
-        token = AuthToken.create(
+        token = _AuthToken.create(
             token="test_token",
             expires_in=0,
             refresh_token="test_refresh_token",
@@ -306,9 +306,9 @@ async def auth_server(
 @pytest.fixture
 async def auth_config(
     auth_client_id: str, auth_server: URL
-) -> AsyncIterator[AuthConfig]:
+) -> AsyncIterator[_AuthConfig]:
     port = unused_port()
-    yield AuthConfig.create(
+    yield _AuthConfig.create(
         auth_url=auth_server / "authorize",
         token_url=auth_server / "oauth/token",
         client_id=auth_client_id,
@@ -318,7 +318,7 @@ async def auth_config(
 
 
 class TestTokenClient:
-    async def test_request(self, auth_client_id: str, auth_config: AuthConfig) -> None:
+    async def test_request(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
         code = AuthCode()
         code.set_value("test_code")
         code.callback_url = auth_config.callback_urls[0]
@@ -331,8 +331,8 @@ class TestTokenClient:
             assert token.refresh_token == "test_refresh_token"
             assert not token.is_expired
 
-    async def test_refresh(self, auth_client_id: str, auth_config: AuthConfig) -> None:
-        token = AuthToken.create(
+    async def test_refresh(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
+        token = _AuthToken.create(
             token="test_access_token",
             expires_in=1234,
             refresh_token="test_refresh_token",
@@ -349,7 +349,7 @@ class TestTokenClient:
     async def test_forbidden(
         self,
         aiohttp_server: Callable[[Application], Awaitable[_TestServer]],
-        auth_config: AuthConfig,
+        auth_config: _AuthConfig,
     ) -> None:
         code = AuthCode()
         code.callback_url = auth_config.callback_urls[0]
@@ -371,7 +371,7 @@ class TestTokenClient:
                 await client.request(code)
 
             with pytest.raises(AuthException, match="failed to get an access token."):
-                token = AuthToken.create(
+                token = _AuthToken.create(
                     token="test_token",
                     expires_in=1234,
                     refresh_token="test_refresh_token",
@@ -381,7 +381,7 @@ class TestTokenClient:
 
 class TestAuthConfig:
     def test_is_initialized__no_auth_url(self):
-        auth_config = AuthConfig(
+        auth_config = _AuthConfig(
             auth_url=URL(""),
             token_url=URL("url"),
             client_id="client_id",
@@ -392,7 +392,7 @@ class TestAuthConfig:
         assert auth_config.is_initialized() is False
 
     def test_is_initialized__no_token_url(self):
-        auth_config = AuthConfig(
+        auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL(""),
             client_id="client_id",
@@ -403,7 +403,7 @@ class TestAuthConfig:
         assert auth_config.is_initialized() is False
 
     def test_is_initialized__no_client_id(self):
-        auth_config = AuthConfig(
+        auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
             client_id="",
@@ -414,7 +414,7 @@ class TestAuthConfig:
         assert auth_config.is_initialized() is False
 
     def test_is_initialized__no_audience(self):
-        auth_config = AuthConfig(
+        auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
             client_id="client_id",
@@ -425,7 +425,7 @@ class TestAuthConfig:
         assert auth_config.is_initialized() is False
 
     def test_is_initialized__no_callback_urls(self):
-        auth_config = AuthConfig(
+        auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
             client_id="client_id",
@@ -436,7 +436,7 @@ class TestAuthConfig:
         assert auth_config.is_initialized() is True
 
     def test_is_initialized__no_success_redirect_url(self):
-        auth_config = AuthConfig(
+        auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
             client_id="client_id",
@@ -448,7 +448,7 @@ class TestAuthConfig:
 
 
 class TestAuthNegotiator:
-    async def test_get_code(self, auth_config: AuthConfig) -> None:
+    async def test_get_code(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
             config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
         )
@@ -456,7 +456,7 @@ class TestAuthNegotiator:
         assert await code.wait() == "test_code"
         assert code.callback_url == auth_config.callback_urls[0]
 
-    async def test_get_token(self, auth_config: AuthConfig) -> None:
+    async def test_get_token(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
             config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
         )
@@ -464,7 +464,7 @@ class TestAuthNegotiator:
         assert token.token == "test_access_token"
         assert token.refresh_token == "test_refresh_token"
 
-    async def test_refresh_token_noop(self, auth_config: AuthConfig) -> None:
+    async def test_refresh_token_noop(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
             config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
         )
@@ -477,7 +477,7 @@ class TestAuthNegotiator:
         assert token.token == "test_access_token"
         assert token.refresh_token == "test_refresh_token"
 
-    async def test_refresh_token(self, auth_config: AuthConfig) -> None:
+    async def test_refresh_token(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
             config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
         )
@@ -486,7 +486,7 @@ class TestAuthNegotiator:
         assert token.refresh_token == "test_refresh_token"
         assert not token.is_expired
 
-        token = AuthToken.create(
+        token = _AuthToken.create(
             token=token.token, expires_in=0, refresh_token=token.refresh_token
         )
         token = await negotiator.refresh_token(token=token)

@@ -50,51 +50,6 @@ async def _start_ssh_tunnel(
     await proc.wait()
 
 
-async def _connect_ssh(
-    username: str,
-    job_status: JobDescription,
-    jump_host_key: str,
-    container_user: str,
-    container_key: str,
-) -> None:
-    _validate_job_status_for_ssh_session(job_status)
-    # We shall make an attempt to connect only in case it has SSH
-    ssh_hostname = job_status.jump_host()
-    if not ssh_hostname:
-        raise RuntimeError("Job has no SSH server enabled")
-    nc_command = f"nc {job_status.id} 22"
-    proxy_command = (
-        f"ProxyCommand=ssh -i {jump_host_key} {username}@{ssh_hostname} {nc_command}"
-    )
-    proc = await asyncio.create_subprocess_exec(
-        "ssh",
-        "-o",
-        proxy_command,
-        "-i",
-        container_key,
-        f"{container_user}@{job_status.id}",
-    )
-    await proc.wait()
-
-
-async def connect_ssh(
-    client: Client,
-    job_id: str,
-    jump_host_key: str,
-    container_user: str,
-    container_key: str,
-) -> None:
-    _validate_args_for_ssh_session(container_user, container_key, jump_host_key)
-    # Check if job is running
-    try:
-        job_status = await client.jobs.status(job_id)
-    except aiohttp.ClientError as e:
-        raise ValueError(f"Job not found. Job Id = {job_id}") from e
-    await _connect_ssh(
-        client.username, job_status, jump_host_key, container_user, container_key
-    )
-
-
 async def remote_debug(
     client: Client, job_id: str, jump_host_key: str, local_port: int
 ) -> None:

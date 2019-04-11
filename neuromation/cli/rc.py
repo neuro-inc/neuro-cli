@@ -5,17 +5,21 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
-import pkg_resources
 import yaml
 from yarl import URL
 
-import neuromation
 from neuromation.api import Client
+from neuromation.api.config import _Config, _PyPIVersion
+from neuromation.api.login import (
+    AuthNegotiator,
+    _AuthConfig,
+    _AuthToken,
+    get_server_config,
+)
 from neuromation.api.users import get_token_username
 
 from .const import WIN32
 from .defaults import API_URL
-from .login import AuthConfig, AuthNegotiator, AuthToken, get_server_config
 
 
 log = logging.getLogger(__name__)
@@ -26,53 +30,15 @@ class RCException(Exception):
 
 
 ENV_NAME = "NEUROMATION_CONFIG"
-NO_VERSION = pkg_resources.parse_version("0.0.0")
-
-
-@dataclass
-class PyPIVersion:
-    pypi_version: Any
-    check_timestamp: int
-
-    def warn_if_has_newer_version(self) -> None:
-        current = pkg_resources.parse_version(neuromation.__version__)
-        if current < self.pypi_version:
-            update_command = "pip install --upgrade neuromation"
-            log.warning(
-                f"You are using Neuromation Platform Client version {current}, "
-                f"however version {self.pypi_version} is available. "
-            )
-            log.warning(
-                f"You should consider upgrading via the '{update_command}' command."
-            )
-            log.warning("")  # tailing endline
-
-    @classmethod
-    def from_config(cls, data: Dict[str, Any]) -> "PyPIVersion":
-        try:
-            pypi_version = pkg_resources.parse_version(data["pypi_version"])
-            check_timestamp = int(data["check_timestamp"])
-        except (KeyError, TypeError, ValueError):
-            # config has invalid/missing data, ignore it
-            pypi_version = NO_VERSION
-            check_timestamp = 0
-        return cls(pypi_version=pypi_version, check_timestamp=check_timestamp)
-
-    def to_config(self) -> Dict[str, Any]:
-        return {
-            "pypi_version": str(self.pypi_version),
-            "check_timestamp": int(self.check_timestamp),
-        }
 
 
 @dataclass
 class Config:
     url: str = API_URL
     registry_url: str = ""
-    auth_config: AuthConfig = AuthConfig.create_uninitialized()
-    auth_token: Optional[AuthToken] = None
-    github_rsa_path: str = ""
-    pypi: PyPIVersion = field(default_factory=lambda: PyPIVersion(NO_VERSION, 0))
+    auth_config: _AuthConfig = _AuthConfig.create_uninitialized()
+    auth_token: Optional[_AuthToken] = None
+    pypi: _PyPIVersion = field(default_factory=_PyPIVersion.create_uninitialized)
     color: bool = field(default=False)  # don't save the field in config
     tty: bool = field(default=False)  # don't save the field in config
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config
@@ -103,18 +69,24 @@ class Config:
         token, username = self._check_registered()
         return username
 
-    def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None) -> Client:
-        token, username = self._check_registered()
-        kwargs: Dict[str, Any] = {}
-        if timeout is not None:
-            kwargs["timeout"] = timeout
-        else:
-            kwargs["timeout"] = aiohttp.ClientTimeout(
+    def make_client(self) -> Client:
+        assert self.auth_token
+        assert self.url
+        assert self.registry_url
+        config = _Config(
+            auth_config=self.auth_config,
+            auth_token=self.auth_token,
+            pypi=self.pypi,
+            url=URL(self.url),
+            registry_url=URL(self.registry_url),
+        )
+        self._check_registered()
+        return Client(
+            config,
+            timeout=aiohttp.ClientTimeout(
                 None, None, self.network_timeout, self.network_timeout
-            )
-        if self.registry_url:
-            kwargs["registry_url"] = self.registry_url
-        return Client(self.url, token, **kwargs)
+            ),
+        )
 
 
 class ConfigFactory:
@@ -136,7 +108,7 @@ class ConfigFactory:
     @classmethod
     def update_auth_token(cls, token: str) -> Config:
         get_token_username(token)
-        auth_token = AuthToken.create_non_expiring(token)
+        auth_token = _AuthToken.create_non_expiring(token)
         return cls._update_config(auth_token=auth_token)
 
     @classmethod
@@ -168,12 +140,8 @@ class ConfigFactory:
             raise ValueError("URL should not contain fragments.")
 
     @classmethod
-    def update_github_rsa_path(cls, github_rsa_path: str) -> Config:
-        return cls._update_config(github_rsa_path=github_rsa_path)
-
-    @classmethod
     def update_last_checked_version(cls, version: Any, timestamp: int) -> Config:
-        pypi = PyPIVersion(version, timestamp)
+        pypi = _PyPIVersion(version, timestamp)
         return cls._update_config(pypi=pypi)
 
     @classmethod
@@ -211,11 +179,7 @@ class ConfigFactory:
 
 
 def save(path: Path, config: Config) -> Config:
-    payload: Dict[str, Any] = {
-        "url": config.url,
-        "github_rsa_path": config.github_rsa_path,
-        "registry_url": config.registry_url,
-    }
+    payload: Dict[str, Any] = {"url": config.url, "registry_url": config.registry_url}
     if config.auth_config.is_initialized():
         payload["auth_config"] = _serialize_auth_config(config.auth_config)
     if config.auth_token:
@@ -243,7 +207,7 @@ def load(path: Path) -> Config:
         return _load(path)
 
 
-def _serialize_auth_config(auth_config: AuthConfig) -> Dict[str, Any]:
+def _serialize_auth_config(auth_config: _AuthConfig) -> Dict[str, Any]:
     assert auth_config.is_initialized(), auth_config
     success_redirect_url = None
     if auth_config.success_redirect_url:
@@ -258,13 +222,13 @@ def _serialize_auth_config(auth_config: AuthConfig) -> Dict[str, Any]:
     }
 
 
-def _deserialize_auth_config(payload: Dict[str, Any]) -> Optional[AuthConfig]:
+def _deserialize_auth_config(payload: Dict[str, Any]) -> Optional[_AuthConfig]:
     auth_config = payload.get("auth_config")
     if auth_config:
         success_redirect_url = auth_config.get("success_redirect_url")
         if success_redirect_url:
             success_redirect_url = URL(success_redirect_url)
-        return AuthConfig(
+        return _AuthConfig(
             auth_url=URL(auth_config["auth_url"]),
             token_url=URL(auth_config["token_url"]),
             client_id=auth_config["client_id"],
@@ -275,15 +239,15 @@ def _deserialize_auth_config(payload: Dict[str, Any]) -> Optional[AuthConfig]:
     return None  # for mypy
 
 
-def _deserialize_auth_token(payload: Dict[str, Any]) -> Optional[AuthToken]:
+def _deserialize_auth_token(payload: Dict[str, Any]) -> Optional[_AuthToken]:
     if "auth_token" in payload:
-        return AuthToken(
+        return _AuthToken(
             token=payload["auth_token"]["token"],
             expiration_time=payload["auth_token"]["expiration_time"],
             refresh_token=payload["auth_token"]["refresh_token"],
         )
     if "auth" in payload:
-        return AuthToken.create_non_expiring(payload["auth"])
+        return _AuthToken.create_non_expiring(payload["auth"])
     return None
 
 
@@ -310,8 +274,7 @@ def _load(path: Path) -> Config:
         # cast to str as somehow yaml.load loads registry_url as 'yaml.URL' not 'str'
         registry_url=str(payload.get("registry_url", "")),
         auth_token=auth_token,
-        github_rsa_path=payload.get("github_rsa_path", ""),
-        pypi=PyPIVersion.from_config(payload.get("pypi")),
+        pypi=_PyPIVersion.from_config(payload.get("pypi")),
     )
 
 

@@ -2,7 +2,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Action, Client
+from neuromation.api import Action
 from neuromation.cli.utils import (
     parse_permission_action,
     parse_resource_for_sharing,
@@ -10,7 +10,7 @@ from neuromation.cli.utils import (
 )
 
 
-async def test_resolve_job_id__no_jobs_found(aiohttp_server, token):
+async def test_resolve_job_id__no_jobs_found(aiohttp_server, make_client):
     JSON = {"jobs": []}
     job_id = "job-81839be3-3ecf-4ec5-80d9-19b1588869db"
     job_name_to_resolve = job_id
@@ -24,12 +24,12 @@ async def test_resolve_job_id__no_jobs_found(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 
 
-async def test_resolve_job_id__single_job_found(aiohttp_server, token):
+async def test_resolve_job_id__single_job_found(aiohttp_server, make_client):
     job_name_to_resolve = "test-job-name-555"
     JSON = {
         "jobs": [
@@ -69,12 +69,12 @@ async def test_resolve_job_id__single_job_found(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 
 
-async def test_resolve_job_id__multiple_jobs_found(aiohttp_server, token):
+async def test_resolve_job_id__multiple_jobs_found(aiohttp_server, make_client):
     job_name_to_resolve = "job-name-123-000"
     JSON = {
         "jobs": [
@@ -139,12 +139,12 @@ async def test_resolve_job_id__multiple_jobs_found(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 
 
-async def test_resolve_job_id__server_error(aiohttp_server, token):
+async def test_resolve_job_id__server_error(aiohttp_server, make_client):
     job_id = "job-81839be3-3ecf-4ec5-80d9-19b1588869db"
     job_name_to_resolve = job_id
 
@@ -157,7 +157,7 @@ async def test_resolve_job_id__server_error(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 

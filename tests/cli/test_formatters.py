@@ -21,6 +21,7 @@ from neuromation.api import (
     JobTelemetry,
     Resources,
 )
+from neuromation.api.login import _AuthToken
 from neuromation.cli.formatters import (
     ConfigFormatter,
     DockerImageProgress,
@@ -1159,10 +1160,9 @@ class TestConfigFormatter:
         config = Config(
             url="https://dev.url/api/v1",
             registry_url="https://registry-dev.url/api/v1",
-            auth_token=AuthToken(
+            auth_token=_AuthToken(
                 token=token, refresh_token="refresh-token", expiration_time=123_456
             ),
-            github_rsa_path="path",
         )
         out = ConfigFormatter()(config)
         assert click.unstyle(out) == textwrap.dedent(
@@ -1170,8 +1170,7 @@ class TestConfigFormatter:
             User Configuration:
               User Name: user
               API URL: https://dev.url/api/v1
-              Docker Registry URL: https://registry-dev.url/api/v1
-              Github RSA Path: path"""
+              Docker Registry URL: https://registry-dev.url/api/v1"""
         )
 
 

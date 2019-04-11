@@ -7,12 +7,7 @@ from aiodocker.exceptions import DockerError
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import (
-    AuthorizationError,
-    Client,
-    DockerImageOperation,
-    ImageNameParser,
-)
+from neuromation.api import AuthorizationError, ImageNameParser, DockerImageOperation
 from neuromation.api.images import (
     STATUS_CUSTOM_ERROR,
     STATUS_FORBIDDEN,
@@ -553,49 +548,49 @@ class TestImages:
             "text Either DOCKER_HOST or local sockets are not available text"
         ),
     )
-    async def test_unavailable_docker(self, patched_init, token, progress):
+    async def test_unavailable_docker(self, patched_init, make_client, progress):
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
                 await client.images.pull(image, image, progress)
 
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
     )
-    async def test_unknown_docker_error(self, patched_init, token, progress):
+    async def test_unknown_docker_error(self, patched_init, make_client, progress):
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(ValueError, match=r"something went wrong"):
                 await client.images.pull(image, image, progress)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    async def test_push_non_existent_image(self, patched_tag, token, progress):
+    async def test_push_non_existent_image(self, patched_tag, make_client, progress):
         patched_tag.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(ValueError, match=r"not found"):
                 await client.images.push(image, image, progress)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_to_foreign_repo(
-        self, patched_push, patched_tag, token, progress
+        self, patched_push, patched_tag, make_client, progress
     ):
         patched_tag.return_value = True
         patched_push.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):
                 await client.images.push(image, image, progress)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_with_docker_api_error(
-        self, patched_push, patched_tag, token, progress
+        self, patched_push, patched_tag, make_client, progress
     ):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
@@ -605,7 +600,7 @@ class TestImages:
         image = self.parser.parse_as_neuro_image(
             f"image://bob/image:bananas-wrong-food"
         )
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
                 await client.images.push(image, image, progress)
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
@@ -613,23 +608,25 @@ class TestImages:
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
-    async def test_success_push_image(self, patched_push, patched_tag, token, progress):
+    async def test_success_push_image(
+        self, patched_push, patched_tag, make_client, progress
+    ):
         async def message_generator():
             yield {}
 
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-is-here")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             result = await client.images.push(image, image, progress)
         assert result == image
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_pull_non_existent_image(self, patched_pull, token, progress):
+    async def test_pull_non_existent_image(self, patched_pull, make_client, progress):
         patched_pull.side_effect = DockerError(
             STATUS_NOT_FOUND, {"message": "Mocked error"}
         )
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             image = self.parser.parse_as_neuro_image(
                 f"image://bob/image:no-bananas-here"
             )
@@ -637,25 +634,27 @@ class TestImages:
                 await client.images.pull(image, image, progress)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_pull_image_from_foreign_repo(self, patched_pull, token, progress):
+    async def test_pull_image_from_foreign_repo(
+        self, patched_pull, make_client, progress
+    ):
         patched_pull.side_effect = DockerError(
             STATUS_FORBIDDEN, {"message": "Mocked error"}
         )
         image = self.parser.parse_as_neuro_image(f"image://bob/image:not-your-bananas")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):
                 await client.images.pull(image, image, progress)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_image_with_docker_api_error(
-        self, patched_pull, token, progress
+        self, patched_pull, make_client, progress
     ):
         async def error_generator():
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_pull.return_value = error_generator()
         image = self.parser.parse_as_neuro_image(f"image://bob/image:nuts-here")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
                 await client.images.pull(image, image, progress)
         assert exc_info.value.status == STATUS_CUSTOM_ERROR
@@ -663,14 +662,16 @@ class TestImages:
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_success_pull_image(self, patched_pull, patched_tag, token, progress):
+    async def test_success_pull_image(
+        self, patched_pull, patched_tag, make_client, progress
+    ):
         async def message_generator():
             yield {}
 
         patched_tag.return_value = True
         patched_pull.return_value = message_generator()
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
-        async with Client(URL("https://api.localhost.localdomain"), token) as client:
+        async with make_client("https://api.localhost.localdomain") as client:
             result = await client.images.pull(image, image, progress)
         assert result == image
 
@@ -679,7 +680,7 @@ class TestRegistry:
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doens't support Windows pipes yet"
     )
-    async def test_ls(self, aiohttp_server, token):
+    async def test_ls(self, aiohttp_server, make_client):
         JSON = {"repositories": ["image://bob/alpine", "image://jill/bananas"]}
 
         async def handler(request):
@@ -691,6 +692,6 @@ class TestRegistry:
         srv = await aiohttp_server(app)
         url = "http://platform"
         registry_url = srv.make_url("/v2/")
-        async with Client(url, registry_url=registry_url, token=token) as client:
+        async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
         assert ret == [URL(image) for image in JSON["repositories"]]
