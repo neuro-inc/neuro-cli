@@ -171,8 +171,6 @@ def cli(
     cfg.disable_pypi_version_check = disable_pypi_version_check
     cfg.network_timeout = network_timeout
     ctx.obj = cfg
-    if not disable_pypi_version_check:
-        cfg.pypi.warn_if_has_newer_version()
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help())
 

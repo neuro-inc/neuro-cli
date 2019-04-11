@@ -48,9 +48,11 @@ async def _run_async_function(
 ) -> _T:
     loop = asyncio.get_event_loop()
     version_checker: AbstractVersionChecker
+
     if cfg.disable_pypi_version_check:
         version_checker = DummyVersionChecker()
     else:
+        cfg.pypi.warn_if_has_newer_version()
         # (ASvetlov) This branch is not tested intentionally
         # Don't want to fetch PyPI from unit tests
         # Later the checker initialization code will be refactored
