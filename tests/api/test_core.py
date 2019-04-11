@@ -7,7 +7,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api.core import DEFAULT_TIMEOUT, Core, IllegalArgumentError
+from neuromation.api.core import DEFAULT_TIMEOUT, IllegalArgumentError, _Core
 
 
 if sys.version_info >= (3, 7):
@@ -23,7 +23,7 @@ async def api_factory():
         ssl_context = ssl.SSLContext()
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
-        api = Core(connector, url, "token", DEFAULT_TIMEOUT)
+        api = _Core(connector, url, "token", DEFAULT_TIMEOUT)
         yield api
         await api.close()
         await connector.close()

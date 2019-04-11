@@ -6,7 +6,7 @@ import pytest
 
 from neuromation.cli import main, rc
 from neuromation.cli.const import EX_OK
-from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME, AuthToken, save as save_config
+from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME, _AuthToken, save as save_config
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
@@ -26,7 +26,7 @@ def config(token, nmrc_path):
     cfg = rc.Config(
         url="https://dev.neu.ro/api/v1",
         registry_url="https://registry-dev.neu.ro",
-        auth_token=AuthToken.create_non_expiring(token),
+        auth_token=_AuthToken.create_non_expiring(token),
     )
     save_config(nmrc_path, cfg)
     return cfg

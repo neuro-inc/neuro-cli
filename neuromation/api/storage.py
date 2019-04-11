@@ -9,8 +9,8 @@ import attr
 from yarl import URL
 
 from .abc import AbstractProgress
-from .config import Config
-from .core import Core, ResourceNotFound
+from .config import _Config
+from .core import ResourceNotFound, _Core
 from .url_utils import (
     _extract_path,
     normalize_local_path_uri,
@@ -55,13 +55,13 @@ class FileStatus:
         )
 
 
-class Storage:
-    def __init__(self, core: Core, config: Config) -> None:
+class _Storage:
+    def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
 
     def _uri_to_path(self, uri: URL) -> str:
-        uri = normalize_storage_path_uri(uri, self._config.username)
+        uri = normalize_storage_path_uri(uri, self._config.auth_token.username)
         prefix = uri.host + "/" if uri.host else ""
         return prefix + uri.path.lstrip("/")
 
@@ -163,7 +163,7 @@ class Storage:
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> None:
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, self._config.username)
+        dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src)
         if not path.exists():
             raise FileNotFoundError(f"'{path}' does not exist")
@@ -197,7 +197,7 @@ class Storage:
             # /dst/ ==> /dst for recursive copy
             dst = dst / src.name
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, self._config.username)
+        dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(f"{path} does not exist")
@@ -227,7 +227,7 @@ class Storage:
     async def download_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> None:
-        src = normalize_storage_path_uri(src, self._config.username)
+        src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         if path.exists():
@@ -252,7 +252,7 @@ class Storage:
     async def download_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> None:
-        src = normalize_storage_path_uri(src, self._config.username)
+        src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)

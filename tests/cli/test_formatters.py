@@ -20,6 +20,7 @@ from neuromation.api import (
     JobTelemetry,
     Resources,
 )
+from neuromation.api.login import _AuthToken
 from neuromation.cli.formatters import (
     ConfigFormatter,
     JobFormatter,
@@ -42,7 +43,6 @@ from neuromation.cli.formatters.storage import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
-from neuromation.cli.login import AuthToken
 from neuromation.cli.rc import Config
 
 
@@ -1137,7 +1137,7 @@ class TestConfigFormatter:
         config = Config(
             url="https://dev.url/api/v1",
             registry_url="https://registry-dev.url/api/v1",
-            auth_token=AuthToken(
+            auth_token=_AuthToken(
                 token=token, refresh_token="refresh-token", expiration_time=123_456
             ),
         )

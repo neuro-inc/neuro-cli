@@ -37,7 +37,7 @@ class ResourceNotFound(ValueError):
     pass
 
 
-class Core:
+class _Core:
     """Transport provider for public API client.
 
     Internal class.
