@@ -102,18 +102,19 @@ class Config:
         token, username = self._check_registered()
         return username
 
-    def make_client(self, *, timeout: Optional[aiohttp.ClientTimeout] = None) -> Client:
+    def make_client(self) -> Client:
         token, username = self._check_registered()
         kwargs: Dict[str, Any] = {}
-        if timeout is not None:
-            kwargs["timeout"] = timeout
-        else:
-            kwargs["timeout"] = aiohttp.ClientTimeout(
-                None, None, self.network_timeout, self.network_timeout
-            )
         if self.registry_url:
             kwargs["registry_url"] = self.registry_url
-        return Client(self.url, token, **kwargs)
+        return Client(
+            self.url,
+            token,
+            timeout=aiohttp.ClientTimeout(
+                None, None, self.network_timeout, self.network_timeout
+            ),
+            **kwargs,
+        )
 
 
 class ConfigFactory:

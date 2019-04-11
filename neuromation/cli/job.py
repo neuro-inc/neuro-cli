@@ -5,7 +5,6 @@ import shlex
 import sys
 from typing import Sequence
 
-import aiohttp
 import click
 
 from neuromation.api import (
@@ -318,11 +317,7 @@ async def logs(cfg: Config, job: str) -> None:
     """
     Print the logs for a container.
     """
-    timeout = aiohttp.ClientTimeout(
-        total=None, connect=None, sock_read=None, sock_connect=30
-    )
-
-    async with cfg.make_client(timeout=timeout) as client:
+    async with cfg.make_client() as client:
         id = await resolve_job(client, job)
         async for chunk in client.jobs.monitor(id):
             if not chunk:
