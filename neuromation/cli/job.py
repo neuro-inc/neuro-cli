@@ -25,7 +25,6 @@ from .defaults import (
     JOB_GPU_MODEL,
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
-    JOB_SSH_USER,
 )
 from .formatters import (
     BaseJobsFormatter,
@@ -37,7 +36,6 @@ from .formatters import (
     TabularJobsFormatter,
 )
 from .rc import Config
-from .ssh_utils import connect_ssh
 from .utils import (
     ImageType,
     alias,
@@ -113,7 +111,6 @@ def job() -> None:
     default=True,
     show_default=True,
 )
-@click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
 @click.option(
     "--preemptible/--non-preemptible",
     "-p/-P",
@@ -177,7 +174,6 @@ async def submit(
     extshm: bool,
     http: int,
     http_auth: bool,
-    ssh: int,
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
@@ -202,12 +198,6 @@ async def submit(
     # Directory /mod mounted to /mod directory in read-write mode.
     neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
       pytorch:latest
-
-    # Starts a container pytorch:latest with connection enabled to port 22 and
-    # sets PYTHONPATH environment value to /python.
-    # Please note that SSH server should be provided by container.
-    neuro job submit --env PYTHONPATH=/python --volume \
-      storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
     """
 
     username = cfg.username
@@ -238,7 +228,7 @@ async def submit(
         log.debug(f"IMAGE: {image}")
     image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
+    network = NetworkPortForwarding.from_cli(http, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
     volumes = Volume.from_cli_list(username, volume)
     if volumes and not quiet:
@@ -311,8 +301,7 @@ async def port_forward(
     cfg: Config, job: str, no_key_check: bool, local_port: int, remote_port: int
 ) -> None:
     """
-    Forward a port of a running job exposed with -ssh option
-    to a local port.
+    Forward a port of a running job to a local port.
     """
     async with cfg.make_client() as client:
         id = await resolve_job(client, job)
@@ -320,30 +309,6 @@ async def port_forward(
             id, no_key_check, local_port, remote_port
         )
     sys.exit(retcode)
-
-
-@command(deprecated=True, hidden=True)
-@click.argument("job")
-@click.option(
-    "--user", help="Container user name", default=JOB_SSH_USER, show_default=True
-)
-@click.option("--key", help="Path to container private key.")
-@async_cmd
-async def ssh(cfg: Config, job: str, user: str, key: str) -> None:
-    """
-    Starts ssh terminal connected to running job.
-
-    Job should be started with SSH support enabled.
-
-    Examples:
-
-    neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
-    """
-    git_key = cfg.github_rsa_path
-
-    async with cfg.make_client() as client:
-        id = await resolve_job(client, job)
-        await connect_ssh(client, id, git_key, user, key)
 
 
 @command()
@@ -502,5 +467,3 @@ job.add_command(top)
 
 job.add_command(alias(ls, "list", hidden=True))
 job.add_command(alias(logs, "monitor", hidden=True))
-
-job.add_command(ssh)

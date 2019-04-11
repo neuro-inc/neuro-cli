@@ -17,11 +17,6 @@ with open("neuromation/__init__.py") as f:
         raise RuntimeError("Unable to determine version.")
 
 
-# TODO: Add license
-license = None
-# with open('LICENSE') as f:
-#     license = f.read()
-
 setup(
     name="neuromation",
     version=version,
@@ -50,7 +45,7 @@ setup(
     long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
     author="Neuromation Team",
     author_email="pypi@neuromation.io",  # TODO: change this email
-    license=license,
+    license='Apache License, version 2.0',
     url="https://neuromation.io/",
     packages=find_packages(include=("neuromation", "neuromation.*")),
     entry_points={"console_scripts": [
@@ -69,6 +64,6 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Software Development",
         "Topic :: Utilities",
-        "License :: Other/Proprietary License",
+        'License :: OSI Approved :: Apache Software License',
     ],
 )

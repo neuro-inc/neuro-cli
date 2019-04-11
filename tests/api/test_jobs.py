@@ -195,7 +195,6 @@ async def test_status_failed(aiohttp_server, token):
             "image": "submit-image-name",
             "command": "submit-command",
             "http": {"port": 8181},
-            "ssh": {"port": 22},
             "resources": {
                 "memory_mb": "4096",
                 "cpu": 7.0,
@@ -253,7 +252,6 @@ async def test_status_with_ssh_and_http(aiohttp_server, token):
             "image": "submit-image-name",
             "command": "submit-command",
             "http": {"port": 8181},
-            "ssh": {"port": 22},
             "resources": {
                 "memory_mb": "4096",
                 "cpu": 7.0,
@@ -327,7 +325,6 @@ async def test_job_submit(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -360,7 +357,7 @@ async def test_job_submit(aiohttp_server, token):
 
     async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -420,7 +417,6 @@ async def test_job_submit_with_name_and_description(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -455,7 +451,7 @@ async def test_job_submit_with_name_and_description(aiohttp_server, token):
 
     async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -515,7 +511,6 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -538,7 +533,7 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
 
     async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         ret = await client.jobs.submit(
             image=image,
@@ -591,7 +586,6 @@ async def test_job_submit_preemptible(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -626,7 +620,7 @@ async def test_job_submit_preemptible(aiohttp_server, token):
 
     async with Client(srv.make_url("/"), token) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),

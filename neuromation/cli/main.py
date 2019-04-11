@@ -14,7 +14,7 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 import neuromation
 from neuromation.cli.rc import RCException
 
-from . import completion, config, image, job, model, rc, share, storage
+from . import completion, config, image, job, rc, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
@@ -213,7 +213,6 @@ cli.add_command(image.image)
 cli.add_command(config.config)
 cli.add_command(completion.completion)
 
-cli.add_command(model.model)
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 
 cli.add_command(job.submit)

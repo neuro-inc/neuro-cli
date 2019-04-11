@@ -32,20 +32,6 @@ async def url(cfg: Config, url: str) -> None:
     await rc.ConfigFactory.update_api_url(url)
 
 
-@command(hidden=True, name="id_rsa")
-@click.argument("file", type=click.Path(exists=True, readable=True, dir_okay=False))
-def id_rsa(file: str) -> None:
-    """
-    Update path to id_rsa file with private key.
-
-    FILE is being used for accessing remote shell, remote debug.
-
-    Note: this is temporal and going to be
-    replaced in future by JWT token.
-    """
-    rc.ConfigFactory.update_github_rsa_path(file)
-
-
 @command()
 @click.pass_obj
 def show(cfg: Config) -> None:
@@ -151,5 +137,4 @@ config.add_command(auth)
 config.add_command(logout)
 
 config.add_command(url)
-config.add_command(id_rsa)
 config.add_command(forget)

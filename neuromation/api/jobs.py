@@ -13,7 +13,6 @@ from typing import (
     Sequence,
     Set,
     SupportsInt,
-    Tuple,
 )
 
 from aiohttp import WSServerHandshakeError
@@ -66,14 +65,12 @@ class NetworkPortForwarding:
 
     @classmethod
     def from_cli(
-        cls, http: SupportsInt, ssh: SupportsInt, http_auth: bool = False
+        cls, http: SupportsInt, http_auth: bool = False
     ) -> Optional["NetworkPortForwarding"]:
         net = None
         ports: Dict[str, int] = {}
         if http:
             ports["http"] = int(http)
-        if ssh:
-            ports["ssh"] = int(ssh)
         if ports:
             net = NetworkPortForwarding(ports=ports, http_auth=http_auth)
         return net
@@ -179,32 +176,13 @@ class HTTPPort:
         )
 
 
-@dataclass(frozen=True)
-class SSHPort:
-    port: int
-
-    def to_api(self) -> Dict[str, Any]:
-        ret = {"port": self.port}
-        return ret
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "SSHPort":
-        return SSHPort(port=data.get("port", -1))
-
-
-def network_to_api(
-    network: Optional["NetworkPortForwarding"]
-) -> Tuple[Optional[HTTPPort], Optional[SSHPort]]:
+def network_to_api(network: Optional["NetworkPortForwarding"]) -> Optional[HTTPPort]:
     http = None
-    ssh = None
-    if network:
-        if "http" in network.ports:
-            http = HTTPPort.from_api(
-                {"port": network.ports["http"], "requires_auth": network.http_auth}
-            )
-        if "ssh" in network.ports:
-            ssh = SSHPort.from_api({"port": network.ports["ssh"]})
-    return http, ssh
+    if network and "http" in network.ports:
+        http = HTTPPort.from_api(
+            {"port": network.ports["http"], "requires_auth": network.http_auth}
+        )
+    return http
 
 
 @dataclass(frozen=True)
@@ -213,7 +191,6 @@ class Container:
     resources: Resources
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
-    ssh: Optional[SSHPort] = None
     # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
     env: Dict[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
@@ -225,7 +202,6 @@ class Container:
             resources=Resources.from_api(data["resources"]),
             command=data.get("command", None),
             http=HTTPPort.from_api(data["http"]) if "http" in data else None,
-            ssh=SSHPort.from_api(data["ssh"]) if "ssh" in data else None,
             env=data.get("env", dict()),
             volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
         )
@@ -239,8 +215,6 @@ class Container:
             primitive["command"] = self.command
         if self.http:
             primitive["http"] = self.http.to_api()
-        if self.ssh:
-            primitive["ssh"] = self.ssh.to_api()
         if self.env:
             primitive["env"] = self.env
         if self.volumes:
@@ -253,7 +227,6 @@ class ContainerPayload:
     image: str
     command: Optional[str]
     http: Optional[Mapping[str, int]]
-    ssh: Optional[Mapping[str, int]]
     resources: Resources
     env: Optional[Mapping[str, str]] = None
 
@@ -263,8 +236,6 @@ class ContainerPayload:
             primitive["command"] = self.command
         if self.http:
             primitive["http"] = self.http
-        if self.ssh:
-            primitive["ssh"] = self.ssh
         if self.env:
             primitive["env"] = self.env
         return primitive
@@ -371,7 +342,7 @@ class Jobs:
         is_preemptible: bool = False,
         env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
-        http, ssh = network_to_api(network)
+        http = network_to_api(network)
         if env is None:
             real_env: Dict[str, str] = {}
         else:
@@ -384,7 +355,6 @@ class Jobs:
             image=image.image,
             command=image.command,
             http=http,
-            ssh=ssh,
             resources=resources,
             env=real_env,
             volumes=volumes,
