@@ -1,11 +1,9 @@
 import pytest
 from jose import jwt
-
 from yarl import URL
 
 from neuromation.api import Client
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-
 
 
 @pytest.fixture
