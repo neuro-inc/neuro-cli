@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
 
+import attr
 from yarl import URL
 
 from .abc import AbstractProgress
@@ -87,8 +88,9 @@ class Storage:
         assert path, "Creation in root is not allowed"
         url = URL("storage") / path
         url = url.with_query(op="CREATE")
+        timeout = attr.evolve(self._core.timeout, sock_read=None)
 
-        async with self._core.request("PUT", url, data=data) as resp:
+        async with self._core.request("PUT", url, data=data, timeout=timeout) as resp:
             resp  # resp.status == 201
 
     async def stats(self, uri: URL) -> FileStatus:
@@ -105,8 +107,9 @@ class Storage:
             raise IsADirectoryError(uri)
         url = URL("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
+        timeout = attr.evolve(self._core.timeout, sock_read=None)
 
-        async with self._core.request("GET", url) as resp:
+        async with self._core.request("GET", url, timeout=timeout) as resp:
             async for data in resp.content.iter_any():
                 yield data
 

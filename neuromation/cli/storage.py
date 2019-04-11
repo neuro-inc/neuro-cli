@@ -1,6 +1,5 @@
 import logging
 
-import aiohttp
 import click
 from yarl import URL
 
@@ -124,9 +123,6 @@ async def cp(
     # explicit file:// scheme set
     neuro storage cp storage:///foo file:///foo
     """
-    timeout = aiohttp.ClientTimeout(
-        total=None, connect=None, sock_read=None, sock_connect=30
-    )
     src = URL(source)
     dst = URL(destination)
 
@@ -136,7 +132,7 @@ async def cp(
         src = URL(f"file:{source}")
     if not dst.scheme or len(dst.scheme) == 1:
         dst = URL(f"file:{destination}")
-    async with cfg.make_client(timeout=timeout) as client:
+    async with cfg.make_client() as client:
         if src.scheme == "file" and dst.scheme == "storage":
             src = normalize_local_path_uri(src)
             dst = normalize_storage_path_uri(dst, cfg.username)

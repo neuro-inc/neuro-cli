@@ -53,6 +53,7 @@ class Core:
         self._connector = connector
         self._url = url
         self._token = token
+        self._timeout = timeout
         self._session = aiohttp.ClientSession(
             connector=connector,
             connector_owner=False,
@@ -71,6 +72,10 @@ class Core:
     def connector(self) -> aiohttp.TCPConnector:
         return self._connector
 
+    @property
+    def timeout(self) -> aiohttp.ClientTimeout:
+        return self._timeout
+
     async def close(self) -> None:
         await self._session.close()
 
@@ -88,12 +93,21 @@ class Core:
         data: Any = None,
         json: Any = None,
         headers: Optional[Dict[str, str]] = None,
+        timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         assert not rel_url.is_absolute(), rel_url
         url = (self._url / "").join(rel_url)
         log.debug("Fetch [%s] %s", method, url)
+        if timeout is None:
+            timeout = self._timeout
         async with self._session.request(
-            method, url, headers=headers, params=params, json=json, data=data
+            method,
+            url,
+            headers=headers,
+            params=params,
+            json=json,
+            data=data,
+            timeout=timeout,
         ) as resp:
             if 400 <= resp.status:
                 err_text = await resp.text()
