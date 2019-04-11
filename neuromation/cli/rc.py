@@ -10,6 +10,7 @@ from yarl import URL
 
 from neuromation.api import Client
 from neuromation.api.config import _Config, _PyPIVersion
+from neuromation.api.config_factory import RCException
 from neuromation.api.login import (
     AuthNegotiator,
     _AuthConfig,
@@ -23,10 +24,6 @@ from .defaults import API_URL
 
 
 log = logging.getLogger(__name__)
-
-
-class RCException(Exception):
-    pass
 
 
 ENV_NAME = "NEUROMATION_CONFIG"
