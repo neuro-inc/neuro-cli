@@ -10,10 +10,10 @@ from aiohttp import web
 from jose import jwt
 from yarl import URL
 
+from neuromation.api.login import _AuthConfig, _ServerConfig
 from neuromation.api.users import JWT_IDENTITY_CLAIM_OPTIONS
 from neuromation.cli import rc
-from neuromation.cli.login import AuthConfig, ServerConfig
-from neuromation.cli.rc import AuthToken, Config, load, save
+from neuromation.cli.rc import Config, _AuthToken, load, save
 
 
 DEFAULTS = rc.Config(url="https://staging.neu.ro/api/v1")
@@ -52,7 +52,7 @@ def test_create__filled(nmrc):
     config = Config(
         url="https://dev.ai/api/v1",
         registry_url="https://registry-dev.ai/api/v1",
-        auth_config=AuthConfig(
+        auth_config=_AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
             client_id="client_id",
@@ -60,7 +60,7 @@ def test_create__filled(nmrc):
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         ),
-        auth_token=AuthToken(
+        auth_token=_AuthToken(
             token="token", expiration_time=100_500, refresh_token="refresh_token"
         ),
     )
@@ -95,7 +95,7 @@ def test_create__filled(nmrc):
 @pytest.mark.usefixtures("patch_home_for_test")
 class TestFactoryMethods:
     def test_factory(self, nmrc_path):
-        auth_token = AuthToken.create_non_expiring("token1")
+        auth_token = _AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         rc.ConfigFactory._update_config(url="http://abc.def", auth_token=auth_token)
         config2: Config = rc.ConfigFactory.load()
@@ -131,7 +131,7 @@ class TestFactoryMethods:
         rc.ConfigFactory.update_auth_token(token)
         expected_config = Config(
             url=DEFAULTS.url,
-            auth_token=AuthToken(
+            auth_token=_AuthToken(
                 token=token, expiration_time=mock.ANY, refresh_token=""
             ),
         )
@@ -145,9 +145,9 @@ class TestFactoryMethods:
 
     @pytest.fixture
     def server_config(self, nmrc_path):
-        return ServerConfig(
+        return _ServerConfig(
             registry_url=URL("registry_url"),
-            auth_config=AuthConfig(
+            auth_config=_AuthConfig(
                 auth_url=URL("https://auth0"),
                 token_url=URL("https://token"),
                 client_id="this_is_client_id",
@@ -165,7 +165,7 @@ class TestFactoryMethods:
     @pytest.mark.asyncio
     async def server_config_url(self, server_config, aiohttp_server, nmrc_path):
         registry_url: URL = server_config.registry_url
-        auth_config: AuthConfig = server_config.auth_config
+        auth_config: _AuthConfig = server_config.auth_config
         JSON = {
             "registry_url": str(registry_url),
             "auth_url": str(auth_config.auth_url),
@@ -190,9 +190,9 @@ class TestFactoryMethods:
     async def test_factory_update_url(
         self, server_config_url, server_config, nmrc_path
     ):
-        uninit_auth_config = AuthConfig.create_uninitialized()
+        uninit_auth_config = _AuthConfig.create_uninitialized()
         uninit_config = Config()
-        auth_token = AuthToken.create_non_expiring("token1")
+        auth_token = _AuthToken.create_non_expiring("token1")
 
         config = Config(url="http://url", auth_token=auth_token)
         save(nmrc_path, config)
@@ -218,7 +218,7 @@ class TestFactoryMethods:
         assert config2.terminal_size == uninit_config.terminal_size
 
     async def test_factory_update_url_malformed(self, nmrc_path):
-        auth_token = AuthToken.create_non_expiring("token1")
+        auth_token = _AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             await rc.ConfigFactory.update_api_url(url="ftp://abc.def")
@@ -226,7 +226,7 @@ class TestFactoryMethods:
         assert config.url != config2.url
 
     async def test_factory_update_url_malformed_trailing_slash(self, nmrc_path):
-        auth_token = AuthToken.create_non_expiring("token1")
+        auth_token = _AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             await rc.ConfigFactory.update_api_url(url="http://abc.def/")
@@ -234,7 +234,7 @@ class TestFactoryMethods:
         assert config.url != config2.url
 
     async def test_factory_update_url_malformed_with_fragment(self, nmrc_path):
-        auth_token = AuthToken.create_non_expiring("token1")
+        auth_token = _AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             await rc.ConfigFactory.update_api_url(url="http://abc.def?blabla")
@@ -242,7 +242,7 @@ class TestFactoryMethods:
         assert config.url != config2.url
 
     async def test_factory_update_url_malformed_with_anchor(self, nmrc_path):
-        auth_token = AuthToken.create_non_expiring("token1")
+        auth_token = _AuthToken.create_non_expiring("token1")
         config: Config = Config(url="http://abc.def", auth_token=auth_token)
         with pytest.raises(ValueError):
             await rc.ConfigFactory.update_api_url(url="http://abc.def#ping")
@@ -263,7 +263,7 @@ def test_jwt_user(identity_claim):
     assert DEFAULTS.get_platform_user_name() is None
     custom_staging = rc.Config(
         url="http://platform.staging.neuromation.io/api/v1",
-        auth_token=AuthToken.create_non_expiring(
+        auth_token=_AuthToken.create_non_expiring(
             jwt.encode({identity_claim: "testuser"}, "secret", algorithm="HS256")
         ),
     )
@@ -275,7 +275,7 @@ def test_jwt_user_missing():
     assert DEFAULTS.get_platform_user_name() is None
     custom_staging = rc.Config(
         url="http://platform.staging.neuromation.io/api/v1",
-        auth_token=AuthToken.create_non_expiring(
+        auth_token=_AuthToken.create_non_expiring(
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
             "eyJzcyI6InJhZmEifQ."
             "9JsoI-AkyDRbLbp4V00_z-K5cpgfZABU2L0z-NZ77oc"

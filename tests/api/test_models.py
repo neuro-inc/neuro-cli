@@ -4,7 +4,7 @@ from yarl import URL
 from neuromation.api import Client, Image, NetworkPortForwarding, Resources, TrainResult
 
 
-async def test_model_train(aiohttp_server, token):
+async def test_model_train(aiohttp_server, make_client):
     JSON = {
         "job_id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "status": "failed",
@@ -43,7 +43,7 @@ async def test_model_train(aiohttp_server, token):
 
     resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         ret = await client.models.train(

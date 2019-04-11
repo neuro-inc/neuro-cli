@@ -14,7 +14,7 @@ from neuromation.api import (
 
 
 @pytest.fixture()
-async def mocked_share_client(aiohttp_server, token):
+async def mocked_share_client(aiohttp_server, make_client):
     async def handler(request):
         data = await request.json()
         assert data[0]["action"] in [item.value for item in Action]
@@ -23,7 +23,7 @@ async def mocked_share_client(aiohttp_server, token):
     app = web.Application()
     app.router.add_post("/users/bill/permissions", handler)
     srv = await aiohttp_server(app)
-    client = Client(srv.make_url("/"), token)
+    client = make_client(srv.make_url("/"))
     yield client
     await client.close()
 

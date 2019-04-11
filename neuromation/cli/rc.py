@@ -38,7 +38,7 @@ class Config:
     registry_url: str = ""
     auth_config: _AuthConfig = _AuthConfig.create_uninitialized()
     auth_token: Optional[_AuthToken] = None
-    pypi: _PyPIVersion = field(default_factory=_PyPIVersion.create_default)
+    pypi: _PyPIVersion = field(default_factory=_PyPIVersion.create_uninitialized)
     color: bool = field(default=False)  # don't save the field in config
     tty: bool = field(default=False)  # don't save the field in config
     terminal_size: Tuple[int, int] = field(default=(80, 24))  # don't save it in config

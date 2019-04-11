@@ -13,8 +13,8 @@ from neuromation.api.url_utils import (
 
 
 @pytest.fixture
-async def client(loop, token):
-    async with Client(URL("https://example.com"), token) as client:
+async def client(loop, make_client):
+    async with make_client("https://example.com") as client:
         yield client
 
 
@@ -31,7 +31,7 @@ def pwd():
 
 
 async def test_config_username(token, client):
-    assert client.cfg.username == "user"
+    assert client.username == "user"
 
 
 async def test_normalize_storage_path_uri__0_slashes_relative(token, client):
