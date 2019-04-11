@@ -78,9 +78,6 @@ __all__ = (
 )
 
 
-_DEFAULT_NMRC_PATH = Path("~/.nmrc")
-
-
 class _ContextManager(Awaitable[Client], AsyncContextManager[Client]):
 
     __slots__ = ("_func", "_client")
@@ -108,31 +105,31 @@ class _ContextManager(Awaitable[Client], AsyncContextManager[Client]):
         return None
 
 
-def get(*, path: Path = _DEFAULT_NMRC_PATH) -> _ContextManager:
+def get(*, path: Optional[Path] = None) -> _ContextManager:
     return _ContextManager(_get(path))
 
 
-async def _get(path: Path) -> Client:
+async def _get(path: Optional[Path]) -> Client:
     return await Factory(path).get()
 
 
-def login(url: URL, *, path: Path = _DEFAULT_NMRC_PATH) -> _ContextManager:
+def login(url: URL, *, path: Optional[Path] = None) -> _ContextManager:
     return _ContextManager(_login(url, path))
 
 
-async def _login(url: URL, path: Path) -> Client:
+async def _login(url: URL, path: Optional[Path]) -> Client:
     return await Factory(path).login(url)
 
 
 def login_with_token(
-    url: URL, token: str, *, path: Path = _DEFAULT_NMRC_PATH
+    url: URL, token: str, *, path: Optional[Path] = None
 ) -> _ContextManager:
     return _ContextManager(_login_with_token(url, token, path))
 
 
-async def _login_with_token(url: URL, token: str, path: Path) -> Client:
+async def _login_with_token(url: URL, token: str, path: Optional[Path]) -> Client:
     return await Factory(path).login_with_token(url, token)
 
 
-async def logout(*, path: Path = _DEFAULT_NMRC_PATH) -> None:
+async def logout(*, path: Optional[Path] = None) -> None:
     return await Factory(path).logout()

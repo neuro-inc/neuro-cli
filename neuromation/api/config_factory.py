@@ -2,7 +2,7 @@ import os
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import yaml
 from yarl import URL
@@ -14,6 +14,8 @@ from .login import AuthNegotiator, _AuthConfig, _AuthToken, get_server_config
 
 WIN32 = sys.platform == "win32"
 MALFORMED_CONFIG_TEXT = "Malformed config. Please logout and login again."
+DEFAULT_NMRC_PATH = "~/.nmrc"
+ENV_NAME = "NEUROMATION_CONFIG"
 
 
 class RCException(Exception):
@@ -21,7 +23,9 @@ class RCException(Exception):
 
 
 class Factory:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Optional[Path] = None) -> None:
+        if path is None:
+            path = Path(os.environ.get(ENV_NAME, DEFAULT_NMRC_PATH))
         self._path = path.expanduser()
 
     async def get(self) -> Client:
