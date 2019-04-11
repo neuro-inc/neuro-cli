@@ -1160,6 +1160,8 @@ class TestDockerImageProgress:
         )
         formatter("message1")
         formatter("message2", "layer1")
+        formatter("message3", "layer1")
+
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
@@ -1167,6 +1169,8 @@ class TestDockerImageProgress:
         assert "image://bob/output:stream" in out
         assert "message1" in out
         assert "message2" not in out
+        assert CSI not in out
+
 
     def test_tty(self, capfd, click_tty_emulation):
         formatter = DockerImageProgress.create(
