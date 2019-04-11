@@ -1,5 +1,4 @@
 from os import linesep
-from typing import List
 
 import pytest
 
