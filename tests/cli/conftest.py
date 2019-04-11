@@ -50,3 +50,8 @@ def run_cli(config, capfd, tmp_path) -> SysCapWithCode:
         return SysCapWithCode(out.strip(), err.strip(), code)
 
     return _run_cli
+
+
+@pytest.fixture()
+def click_tty_emulation(monkeypatch):
+    monkeypatch.setattr("click._compat.isatty", lambda stream: True)

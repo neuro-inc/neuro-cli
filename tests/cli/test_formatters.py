@@ -44,6 +44,7 @@ from neuromation.cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
 )
 from neuromation.cli.login import AuthToken
+from neuromation.cli.printer import CSI
 from neuromation.cli.rc import Config
 
 
@@ -1167,7 +1168,7 @@ class TestDockerImageProgress:
         assert "message1" in out
         assert "message2" not in out
 
-    def test_tty(self, capfd):
+    def test_tty(self, capfd, click_tty_emulation):
         formatter = DockerImageProgress.create(
             DockerImageOperation.PUSH,
             "input:latest",
@@ -1186,3 +1187,4 @@ class TestDockerImageProgress:
         assert "message1" in out
         assert "message2" in out
         assert "message3" in out
+        assert CSI in out
