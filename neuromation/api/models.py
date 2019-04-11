@@ -48,14 +48,10 @@ class Models:
         network: Optional[NetworkPortForwarding] = None,
         is_preemptible: bool = True,
     ) -> TrainResult:
-        http, ssh = network_to_api(network)
+        http = network_to_api(network)
 
         container = Container(
-            image=image.image,
-            command=image.command,
-            http=http,
-            ssh=ssh,
-            resources=resources,
+            image=image.image, command=image.command, http=http, resources=resources
         )
 
         payload = {
