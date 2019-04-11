@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 from yarl import URL
 
-from neuromation.api import Client
 from neuromation.api.url_utils import (
     _extract_path,
     normalize_local_path_uri,

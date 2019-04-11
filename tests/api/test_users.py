@@ -4,13 +4,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import (
-    Action,
-    Client,
-    IllegalArgumentError,
-    Permission,
-    ResourceNotFound,
-)
+from neuromation.api import Action, IllegalArgumentError, Permission, ResourceNotFound
 
 
 @pytest.fixture()

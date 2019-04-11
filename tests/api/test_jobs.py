@@ -12,7 +12,6 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.cli.rc import Client
 
 
 async def test_jobs_monitor(aiohttp_server, make_client):
