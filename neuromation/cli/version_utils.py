@@ -4,6 +4,7 @@ import logging
 import ssl
 import time
 import types
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type
 
 import aiohttp
@@ -50,7 +51,7 @@ class VersionChecker(AbstractVersionChecker):
         connector: Optional[aiohttp.TCPConnector] = None,
         timer: Callable[[], float] = time.time,
     ) -> None:
-        self._config_path = path
+        self._config_path = config_path
         if connector is None:
             ssl_context = ssl.SSLContext()
             ssl_context.load_verify_locations(capath=certifi.where())
@@ -87,7 +88,7 @@ class VersionChecker(AbstractVersionChecker):
         pypi_version = await self._fetch_pypi()
         # Direct config overriding here is a little ugly
         # Let's refactor it later (maybe with sqlite DB usage)
-        Factory(self._path)._update_last_checked_version(
+        Factory(self._config_path)._update_last_checked_version(
             pypi_version, int(self._timer())
         )
 
