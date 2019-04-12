@@ -40,7 +40,7 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
 
     """
 
-    parser = ImageNameParser(root.username, str(root.registry_url))
+    parser = ImageNameParser(root.username, root.registry_url)
     local_img = parser.parse_as_docker_image(image_name)
     if remote_image_name:
         remote_img = parser.parse_as_neuro_image(remote_image_name)
@@ -77,7 +77,7 @@ async def pull(root: Root, image_name: str, local_image_name: str) -> None:
 
     """
 
-    parser = ImageNameParser(root.username, str(root.registry_url))
+    parser = ImageNameParser(root.username, root.registry_url)
     remote_img = parser.parse_as_neuro_image(image_name)
     if local_image_name:
         local_img = parser.parse_as_docker_image(local_image_name)

@@ -353,7 +353,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
-        parser = ImageNameParser(root.username, str(root.registry_url))
+        parser = ImageNameParser(root.username, root.registry_url)
         image = parser.parse_as_neuro_image(uri, raise_if_has_tag=True)
         uri = image.as_url_str()
     return URL(uri)
@@ -377,7 +377,7 @@ class ImageType(click.ParamType):
     ) -> DockerImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        image_parser = ImageNameParser(root.username, str(root.registry_url))
+        image_parser = ImageNameParser(root.username, root.registry_url)
         if image_parser.is_in_neuro_registry(value):
             parsed_image = image_parser.parse_as_neuro_image(value)
         else:

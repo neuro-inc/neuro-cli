@@ -381,7 +381,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        image_parser = ImageNameParser(root.username, str(root.registry_url))
+        image_parser = ImageNameParser(root.username, root.registry_url)
         formatter = TabularJobsFormatter(width, image_parser)
 
     for line in formatter(jobs):
