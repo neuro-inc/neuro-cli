@@ -41,7 +41,7 @@ class Factory:
 
     async def login(
         self, url: URL, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
-    ) -> Client:
+    ) -> None:
         if self._path.exists():
             raise RCException(f"Config file {self._path} already exists. Please logout")
         server_config = await get_server_config(url)
@@ -55,11 +55,10 @@ class Factory:
             registry_url=server_config.registry_url,
         )
         self._save(config)
-        return Client(config, timeout=timeout)
 
     async def login_with_token(
         self, url: URL, token: str, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
-    ) -> Client:
+    ) -> None:
         if self._path.exists():
             raise RCException(f"Config file {self._path} already exists. Please logout")
         server_config = await get_server_config(url)
@@ -71,7 +70,6 @@ class Factory:
             registry_url=server_config.registry_url,
         )
         self._save(config)
-        return Client(config, timeout=timeout)
 
     async def logout(self) -> None:
         # TODO: logout from auth0

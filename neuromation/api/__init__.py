@@ -120,36 +120,24 @@ async def _get(path: Optional[Path], timeout: aiohttp.ClientTimeout) -> Client:
     return await Factory(path).get(timeout=timeout)
 
 
-def login(
+async def login(
     url: URL,
     *,
     path: Optional[Path] = None,
     timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
-) -> _ContextManager:
-    return _ContextManager(_login(url, path, timeout))
+) -> None:
+    await Factory(path).login(url, timeout=timeout)
 
 
-async def _login(
-    url: URL, path: Optional[Path], timeout: aiohttp.ClientTimeout
-) -> Client:
-    return await Factory(path).login(url, timeout=timeout)
-
-
-def login_with_token(
+async def login_with_token(
     url: URL,
     token: str,
     *,
     path: Optional[Path] = None,
     timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
-) -> _ContextManager:
-    return _ContextManager(_login_with_token(url, token, path, timeout))
-
-
-async def _login_with_token(
-    url: URL, token: str, path: Optional[Path], timeout: aiohttp.ClientTimeout
-) -> Client:
-    return await Factory(path).login_with_token(url, token, timeout=timeout)
+) -> None:
+    await Factory(path).login_with_token(url, token, timeout=timeout)
 
 
 async def logout(*, path: Optional[Path] = None) -> None:
-    return await Factory(path).logout()
+    await Factory(path).logout()

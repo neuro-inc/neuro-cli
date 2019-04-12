@@ -66,7 +66,7 @@ class Root:
         assert self._client is not None
         return self._client
 
-    async def post_init(self) -> None:
+    async def init_client(self) -> None:
         client = await api_get(path=self.config_path, timeout=self.timeout)
 
         self._client = client

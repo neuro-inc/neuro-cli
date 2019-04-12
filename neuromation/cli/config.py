@@ -40,7 +40,7 @@ def show_token(root: Root) -> None:
 
 @command()
 @click.argument("url", required=False, default=API_URL, type=URL)
-@async_cmd(read_config=False)
+@async_cmd(init_client=False)
 async def login(root: Root, url: URL) -> None:
     """
     Log into Neuromation Platform.
