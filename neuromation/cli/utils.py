@@ -43,7 +43,7 @@ _T = TypeVar("_T")
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 
 
-async def _run_async_function(
+async def _run_async_function(read_config: bool,
     func: Callable[..., Awaitable[_T]], root: Root, *args: Any, **kwargs: Any
 ) -> _T:
     loop = asyncio.get_event_loop()
@@ -60,7 +60,8 @@ async def _run_async_function(
         version_checker = VersionChecker()  # pragma: no cover
     task = loop.create_task(version_checker.run())
 
-    await root.post_init()
+    if read_config:
+        await root.post_init()
 
     try:
         return await func(root, *args, **kwargs)
@@ -81,13 +82,13 @@ async def _run_async_function(
             await asyncio.sleep(0.1)
 
 
-def async_cmd() -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
+def async_cmd(read_config: bool=True) -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
     def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
         # N.B. the decorator implies @click.pass_obj
         @click.pass_obj
         @wraps(callback)
         def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
-            return run(_run_async_function(callback, root, *args, **kwargs))
+            return run(_run_async_function(read_config, callback, root, *args, **kwargs))
 
         return wrapper
 

@@ -23,8 +23,13 @@ class Root:
     network_timeout: float
     config_path: Path
 
-    _config: Optional[_Config] = None
     _client: Optional[Client] = None
+
+    @property
+    def _config(self) -> Optional[_Config]:
+        if self._client is None:
+            return None
+        return self._client._config
 
     @property
     def auth(self) -> Optional[str]:
@@ -71,7 +76,6 @@ class Root:
         client = await api_get(path=self.config_path, timeout=self.timeout)
 
         self._client = client
-        self._config = client._config
 
     async def close(self) -> None:
         if self._client is not None:
