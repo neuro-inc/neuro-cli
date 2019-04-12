@@ -34,7 +34,7 @@ from .formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .rc import Root
+from .root import Root
 from .utils import (
     ImageType,
     alias,

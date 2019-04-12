@@ -16,7 +16,7 @@ from .formatters import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
-from .rc import Root
+from .root import Root
 from .utils import async_cmd, command, group
 
 

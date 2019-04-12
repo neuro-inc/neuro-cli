@@ -10,7 +10,7 @@ from neuromation.api import login as api_login, logout as api_logout
 
 from .defaults import API_URL
 from .formatters import ConfigFormatter
-from .rc import Root
+from .root import Root
 from .utils import async_cmd, command, group
 
 

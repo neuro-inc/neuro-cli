@@ -1,6 +1,6 @@
 from click import style
 
-from neuromation.cli.rc import Root
+from neuromation.cli.root import Root
 
 
 class ConfigFormatter:

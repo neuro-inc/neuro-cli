@@ -15,7 +15,7 @@ from yarl import URL
 
 from .abc import AbstractProgress, AbstractSpinner
 from .client import Client
-from .config_factory import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, Factory
+from .config_factory import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, Factory, RCException
 from .core import (
     DEFAULT_TIMEOUT,
     AuthenticationError,
@@ -79,6 +79,7 @@ __all__ = (
     "login",
     "login_with_token",
     "logout",
+    "RCException",
 )
 
 

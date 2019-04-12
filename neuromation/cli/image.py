@@ -6,7 +6,7 @@ import click
 from neuromation.api import ImageNameParser
 
 from .command_spinner import SpinnerBase
-from .rc import Root
+from .root import Root
 from .utils import async_cmd, command, group
 
 

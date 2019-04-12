@@ -12,8 +12,8 @@ from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
-from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH
-from neuromation.cli.rc import RCException, Root
+from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, RCException
+from neuromation.cli.root import Root
 
 from . import completion, config, image, job, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE

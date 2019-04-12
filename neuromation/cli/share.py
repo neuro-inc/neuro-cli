@@ -4,7 +4,7 @@ import click
 
 from neuromation.api import Permission
 
-from .rc import Root
+from .root import Root
 from .utils import (
     async_cmd,
     command,

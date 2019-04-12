@@ -32,7 +32,7 @@ from neuromation.api import (
 )
 from neuromation.utils import run
 
-from .rc import Root
+from .root import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
