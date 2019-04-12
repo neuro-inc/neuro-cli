@@ -11,6 +11,7 @@ import certifi
 import pkg_resources
 
 from neuromation.api.config import _PyPIVersion
+from neuromation.api.config_factory import Factory
 
 
 log = logging.getLogger(__name__)
@@ -45,9 +46,11 @@ class DummyVersionChecker(AbstractVersionChecker):
 class VersionChecker(AbstractVersionChecker):
     def __init__(
         self,
+        config_path: Path,
         connector: Optional[aiohttp.TCPConnector] = None,
         timer: Callable[[], float] = time.time,
     ) -> None:
+        self._config_path = path
         if connector is None:
             ssl_context = ssl.SSLContext()
             ssl_context.load_verify_locations(capath=certifi.where())
@@ -81,9 +84,12 @@ class VersionChecker(AbstractVersionChecker):
             log.exception("Error on fetching data from PyPI")
 
     async def update_latest_version(self) -> None:
-        # pypi_version = await self._fetch_pypi()
-        assert False
-        # ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
+        pypi_version = await self._fetch_pypi()
+        # Direct config overriding here is a little ugly
+        # Let's refactor it later (maybe with sqlite DB usage)
+        Factory(self._path)._update_last_checked_version(
+            pypi_version, int(self._timer())
+        )
 
     async def _fetch_pypi(self) -> Any:
         async with self._session.get("https://pypi.org/pypi/neuromation/json") as resp:

@@ -173,3 +173,10 @@ class Factory:
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
         with os.fdopen(os.open(self._path, flags, 0o600), "w") as f:
             yaml.safe_dump(payload, f, default_flow_style=False)
+
+    def _update_last_checked_version(self, version: Any, timestamp: int) -> None:
+        config = self._read()
+        new_config = replace(
+            config, pypi=_PyPIVersion(pypi_version=version, check_timestamp=timestamp)
+        )
+        self._save(new_config)
