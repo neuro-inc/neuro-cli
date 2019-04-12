@@ -3,7 +3,7 @@ import logging
 import os
 import shlex
 import sys
-from typing import Sequence
+from typing import List, Sequence, Tuple
 
 import click
 
@@ -16,6 +16,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.cli.utils import LOCAL_REMOTE_PORT
 from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
@@ -286,8 +287,7 @@ async def exec(
 
 @command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("job")
-@click.argument("local_port", type=int)
-@click.argument("remote_port", type=int)
+@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1)
 @click.option(
     "--no-key-check",
     is_flag=True,
@@ -295,17 +295,37 @@ async def exec(
 )
 @async_cmd
 async def port_forward(
-    cfg: Config, job: str, no_key_check: bool, local_port: int, remote_port: int
+    cfg: Config, job: str, no_key_check: bool, local_remote_port: List[Tuple[int, int]]
 ) -> None:
     """
-    Forward a port of a running job to a local port.
+    Forward port(s) of a running job to local port(s).
     """
+    loop = asyncio.get_event_loop()
     async with cfg.make_client() as client:
-        id = await resolve_job(client, job)
-        retcode = await client.jobs.port_forward(
-            id, no_key_check, local_port, remote_port
-        )
-    sys.exit(retcode)
+        job_id = await resolve_job(client, job)
+        tasks = []
+        for local_port, remote_port in local_remote_port:
+            print(f"Port of {job_id} will be forwarded to localhost:{local_port}")
+            tasks.append(
+                loop.create_task(
+                    client.jobs.port_forward(
+                        job_id, no_key_check, local_port, remote_port
+                    )
+                )
+            )
+
+        print("Press ^C to stop forwarding")
+        result = 0
+        for future in asyncio.as_completed(tasks):
+            try:
+                await future
+            except ValueError as e:
+                print(f"Port forwarding failed: {e}")
+                [task.cancel() for task in tasks]
+                result = -1
+                break
+
+    sys.exit(result)
 
 
 @command()

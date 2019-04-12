@@ -512,11 +512,12 @@ class _Jobs:
                 "UserKnownHostsFile=/dev/null",
             ]
         command += [f"{server_url.user}@{server_url.host}"]
-        print(f"Port of {id} is forwarded to localhost:{local_port}")
-        print(f"Press ^C to stop forwarding")
         proc = await asyncio.create_subprocess_exec(*command)
         try:
-            return await proc.wait()
+            result = await proc.wait()
+            if result != 0:
+                raise ValueError(f"error code {result}")
+            return local_port
         finally:
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
