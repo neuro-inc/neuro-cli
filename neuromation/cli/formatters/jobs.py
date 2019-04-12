@@ -324,7 +324,7 @@ class DetailedJobStartProgress(JobStartProgress):
         if platform == "win32":
             self._spinner = itertools.cycle("-\\|/")
         else:
-            self._spinner = itertools.cycle(("◢◣◤◥"))
+            self._spinner = itertools.cycle("◢◣◤◥")
         self._printer = TTYPrinter()
         self._lineno = 0
 
