@@ -6,7 +6,7 @@ from typing import Any, Dict
 import click
 from yarl import URL
 
-from neuromation.api import login as api_login, logout as api_logout, ConfigError
+from neuromation.api import ConfigError, login as api_login, logout as api_logout
 
 from .defaults import API_URL
 from .formatters import ConfigFormatter
