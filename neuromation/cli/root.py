@@ -37,12 +37,6 @@ class Root:
             return self._config.auth_token.token
         return None
 
-    def get_platform_user_name(self) -> Optional[str]:
-        # TODO: drop the method, use self.username
-        if self._config is not None:
-            return self._config.auth_token.username
-        return None
-
     @property
     def timeout(self) -> aiohttp.ClientTimeout:
         return aiohttp.ClientTimeout(
@@ -80,7 +74,3 @@ class Root:
     async def close(self) -> None:
         if self._client is not None:
             await self._client.close()
-
-    def make_client(self) -> Client:
-        # TODO: drop the method, use self.client
-        return self.client
