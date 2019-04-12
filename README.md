@@ -106,7 +106,7 @@ Name | Description|
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
-| _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job local port\(s) |
+| _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job to local port\(s) |
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
@@ -279,7 +279,7 @@ Name | Description|
 
 ### neuro job port-forward
 
-Forward port\(s) of a running to local port\(s).
+Forward port\(s) of a running job to local port\(s).
 
 **Usage:**
 
