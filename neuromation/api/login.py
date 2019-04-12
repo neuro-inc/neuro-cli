@@ -401,9 +401,6 @@ class AuthNegotiator:
             return token
 
 
-#: move the following API back to neuromation.api_factory
-
-
 @dataclass(frozen=True)
 class _ServerConfig:
     auth_config: _AuthConfig
