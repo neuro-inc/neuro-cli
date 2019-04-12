@@ -45,7 +45,12 @@ async def login(root: Root, url: URL) -> None:
     """
     Log into Neuromation Platform.
     """
-    await api_login(url, path=root.config_path, timeout=root.timeout)
+    try:
+        await api_login(url, path=root.config_path, timeout=root.timeout)
+    except RCException:
+        await api_logout(path=root.config_path)
+        click.echo("You were successfully logged out.")
+        await api_login(url, path=root.config_path, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
