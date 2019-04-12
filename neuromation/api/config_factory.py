@@ -20,7 +20,7 @@ DEFAULT_CONFIG_PATH = "~/.nmrc"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 
 
-class RCException(Exception):
+class ConfigError(RuntimeError):
     pass
 
 
@@ -43,7 +43,7 @@ class Factory:
         self, url: URL, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
     ) -> None:
         if self._path.exists():
-            raise RCException(f"Config file {self._path} already exists. Please logout")
+            raise ConfigError(f"Config file {self._path} already exists. Please logout")
         server_config = await get_server_config(url)
         negotiator = AuthNegotiator(server_config.auth_config)
         auth_token = await negotiator.refresh_token()
@@ -60,7 +60,7 @@ class Factory:
         self, url: URL, token: str, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
     ) -> None:
         if self._path.exists():
-            raise RCException(f"Config file {self._path} already exists. Please logout")
+            raise ConfigError(f"Config file {self._path} already exists. Please logout")
         server_config = await get_server_config(url)
         config = _Config(
             auth_config=server_config.auth_config,
@@ -78,13 +78,13 @@ class Factory:
 
     def _read(self) -> _Config:
         if not self._path.exists():
-            raise RCException(f"Config file {self._path} does not exists. Please login")
+            raise ConfigError(f"Config file {self._path} does not exists. Please login")
         if not self._path.is_file():
-            raise RCException(f"Config {self._path} is not a regular file")
+            raise ConfigError(f"Config {self._path} is not a regular file")
 
         stat = self._path.stat()
         if not WIN32 and stat.st_mode & 0o777 != 0o600:
-            raise RCException(
+            raise ConfigError(
                 f"Config file {self._path} has compromised permission bits, "
                 f"run 'chmod 600 {self._path}' first"
             )
@@ -96,7 +96,7 @@ class Factory:
             registry_url = URL(payload["registry_url"])
             pypi_payload = payload["pypi"]
         except (KeyError, TypeError, ValueError):
-            raise RCException(MALFORMED_CONFIG_TEXT)
+            raise ConfigError(MALFORMED_CONFIG_TEXT)
 
         auth_config = self._deserialize_auth_config(payload)
         auth_token = self._deserialize_auth_token(payload)
@@ -126,7 +126,7 @@ class Factory:
     def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
         auth_config = payload.get("auth_config")
         if not auth_config:
-            raise RCException(MALFORMED_CONFIG_TEXT)
+            raise ConfigError(MALFORMED_CONFIG_TEXT)
         success_redirect_url = auth_config.get("success_redirect_url")
         if success_redirect_url:
             success_redirect_url = URL(success_redirect_url)
@@ -142,7 +142,7 @@ class Factory:
     def _deserialize_auth_token(self, payload: Dict[str, Any]) -> _AuthToken:
         auth_payload = payload.get("auth_token")
         if auth_payload is None:
-            raise RCException(MALFORMED_CONFIG_TEXT)
+            raise ConfigError(MALFORMED_CONFIG_TEXT)
         return _AuthToken(
             token=auth_payload["token"],
             expiration_time=auth_payload["expiration_time"],

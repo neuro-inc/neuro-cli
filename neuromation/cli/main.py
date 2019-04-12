@@ -12,7 +12,7 @@ from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
-from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, RCException
+from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
 from neuromation.cli.root import Root
 
 from . import completion, config, image, job, share, storage
@@ -266,7 +266,7 @@ def main(args: Optional[List[str]] = None) -> None:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(EX_SOFTWARE)
 
-    except RCException as error:
+    except ConfigError as error:
         LOG_ERROR(f"{error}")
         sys.exit(EX_SOFTWARE)
 

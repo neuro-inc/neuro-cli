@@ -8,7 +8,7 @@ from yarl import URL
 
 from neuromation.api import Client, get as api_get
 from neuromation.api.config import _Config
-from neuromation.api.config_factory import RCException
+from neuromation.api.config_factory import ConfigError
 
 
 log = logging.getLogger(__name__)
@@ -46,19 +46,19 @@ class Root:
     @property
     def username(self) -> str:
         if self._config is None:
-            raise RCException("User is not registered, run 'neuro login'.")
+            raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.auth_token.username
 
     @property
     def url(self) -> URL:
         if self._config is None:
-            raise RCException("User is not registered, run 'neuro login'.")
+            raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.url
 
     @property
     def registry_url(self) -> URL:
         if self._config is None:
-            raise RCException("User is not registered, run 'neuro login'.")
+            raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.registry_url
 
     @property

@@ -6,7 +6,7 @@ from typing import Any, Dict
 import click
 from yarl import URL
 
-from neuromation.api import login as api_login, logout as api_logout
+from neuromation.api import login as api_login, logout as api_logout, ConfigError
 
 from .defaults import API_URL
 from .formatters import ConfigFormatter
@@ -47,7 +47,7 @@ async def login(root: Root, url: URL) -> None:
     """
     try:
         await api_login(url, path=root.config_path, timeout=root.timeout)
-    except RCException:
+    except ConfigError:
         await api_logout(path=root.config_path)
         click.echo("You were successfully logged out.")
         await api_login(url, path=root.config_path, timeout=root.timeout)
