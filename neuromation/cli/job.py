@@ -162,7 +162,7 @@ def job() -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
-@async_cmd
+@async_cmd()
 async def submit(
     root: Root,
     image: DockerImage,
@@ -271,7 +271,7 @@ async def submit(
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@async_cmd
+@async_cmd()
 async def exec(
     root: Root, job: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
@@ -293,7 +293,7 @@ async def exec(
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@async_cmd
+@async_cmd()
 async def port_forward(
     root: Root, job: str, no_key_check: bool, local_port: int, remote_port: int
 ) -> None:
@@ -309,7 +309,7 @@ async def port_forward(
 
 @command()
 @click.argument("job")
-@async_cmd
+@async_cmd()
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -340,7 +340,7 @@ async def logs(root: Root, job: str) -> None:
 @click.option(
     "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
 )
-@async_cmd
+@async_cmd()
 async def ls(
     root: Root,
     status: Sequence[str],
@@ -390,7 +390,7 @@ async def ls(
 
 @command()
 @click.argument("job")
-@async_cmd
+@async_cmd()
 async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
@@ -402,7 +402,7 @@ async def status(root: Root, job: str) -> None:
 
 @command()
 @click.argument("job")
-@async_cmd
+@async_cmd()
 async def top(root: Root, job: str) -> None:
     """
     Display GPU/CPU/Memory usage.
@@ -420,7 +420,7 @@ async def top(root: Root, job: str) -> None:
 
 @command()
 @click.argument("jobs", nargs=-1, required=True)
-@async_cmd
+@async_cmd()
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).

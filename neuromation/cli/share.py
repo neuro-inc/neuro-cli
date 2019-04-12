@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 @click.argument("uri")
 @click.argument("user")
 @click.argument("permission", type=click.Choice(["read", "write", "manage"]))
-@async_cmd
+@async_cmd()
 async def share(root: Root, uri: str, user: str, permission: str) -> None:
     """
         Shares resource specified by URI to a USER with PERMISSION

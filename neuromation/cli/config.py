@@ -40,7 +40,7 @@ def show_token(root: Root) -> None:
 
 @command()
 @click.argument("url", required=False, default=API_URL, type=URL)
-@async_cmd
+@async_cmd()
 async def login(root: Root, url: URL) -> None:
     """
     Log into Neuromation Platform.
@@ -50,7 +50,7 @@ async def login(root: Root, url: URL) -> None:
 
 
 @command()
-@async_cmd
+@async_cmd()
 async def logout(root: Root) -> None:
     """
     Log out.
@@ -68,7 +68,7 @@ async def logout(root: Root) -> None:
     default=lambda: os.environ.get("DOCKER_CONFIG", Path.home() / ".docker"),
     show_default=False,
 )
-@async_cmd
+@async_cmd()
 async def docker(root: Root, docker_config: str) -> None:
     """
     Configure docker client for working with platform registry

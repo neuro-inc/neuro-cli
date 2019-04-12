@@ -23,7 +23,7 @@ def image() -> None:
 @command()
 @click.argument("image_name")
 @click.argument("remote_image_name", required=False)
-@async_cmd
+@async_cmd()
 async def push(root: Root, image_name: str, remote_image_name: str) -> None:
     """
     Push an image to platform registry.
@@ -61,7 +61,7 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
 @command()
 @click.argument("image_name")
 @click.argument("local_image_name", required=False)
-@async_cmd
+@async_cmd()
 async def pull(root: Root, image_name: str, local_image_name: str) -> None:
     """
     Pull an image from platform registry.
@@ -96,7 +96,7 @@ async def pull(root: Root, image_name: str, local_image_name: str) -> None:
 
 
 @command()
-@async_cmd
+@async_cmd()
 async def ls(root: Root) -> None:
     """
     List images.

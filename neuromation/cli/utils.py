@@ -81,14 +81,17 @@ async def _run_async_function(
             await asyncio.sleep(0.1)
 
 
-def async_cmd(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
-    # N.B. the decorator implies @click.pass_obj
-    @click.pass_obj
-    @wraps(callback)
-    def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
-        return run(_run_async_function(callback, root, *args, **kwargs))
+def async_cmd() -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
+    def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
+        # N.B. the decorator implies @click.pass_obj
+        @click.pass_obj
+        @wraps(callback)
+        def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
+            return run(_run_async_function(callback, root, *args, **kwargs))
 
-    return wrapper
+        return wrapper
+
+    return deco
 
 
 class HelpFormatter(click.HelpFormatter):

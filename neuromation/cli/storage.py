@@ -32,7 +32,7 @@ def storage() -> None:
 
 @command()
 @click.argument("path")
-@async_cmd
+@async_cmd()
 async def rm(root: Root, path: str) -> None:
     """
     Remove files or directories.
@@ -64,7 +64,7 @@ async def rm(root: Root, path: str) -> None:
     default="name",
     help="sort by given field, default is name",
 )
-@async_cmd
+@async_cmd()
 async def ls(
     root: Root, path: str, human_readable: bool, format_long: bool, sort: str
 ) -> None:
@@ -101,7 +101,7 @@ async def ls(
 @click.argument("destination")
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
-@async_cmd
+@async_cmd()
 async def cp(
     root: Root, source: str, destination: str, recursive: bool, progress: bool
 ) -> None:
@@ -159,7 +159,7 @@ async def cp(
 
 @command()
 @click.argument("path")
-@async_cmd
+@async_cmd()
 async def mkdir(root: Root, path: str) -> None:
     """
     Make directories.
@@ -174,7 +174,7 @@ async def mkdir(root: Root, path: str) -> None:
 @command()
 @click.argument("source")
 @click.argument("destination")
-@async_cmd
+@async_cmd()
 async def mv(root: Root, source: str, destination: str) -> None:
     """
     Move or rename files and directories.
