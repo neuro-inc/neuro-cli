@@ -6,7 +6,7 @@ import click
 from neuromation.api import ImageNameParser
 
 from .command_spinner import SpinnerBase
-from .rc import Config
+from .rc import Root
 from .utils import async_cmd, command, group
 
 
@@ -24,7 +24,7 @@ def image() -> None:
 @click.argument("image_name")
 @click.argument("remote_image_name", required=False)
 @async_cmd
-async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
+async def push(root: Root, image_name: str, remote_image_name: str) -> None:
     """
     Push an image to platform registry.
 
@@ -40,7 +40,7 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
 
     """
 
-    parser = ImageNameParser(cfg.username, cfg.registry_url)
+    parser = ImageNameParser(root.username, str(root.registry_url))
     local_img = parser.parse_as_docker_image(image_name)
     if remote_image_name:
         remote_img = parser.parse_as_neuro_image(remote_image_name)
@@ -54,16 +54,15 @@ async def push(cfg: Config, image_name: str, remote_image_name: str) -> None:
 
     spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pushing image {}  ")
 
-    async with cfg.make_client() as client:
-        result_remote_image = await client.images.push(local_img, remote_img, spinner)
-        click.echo(result_remote_image.as_url_str())
+    result_remote_image = await root.client.images.push(local_img, remote_img, spinner)
+    click.echo(result_remote_image.as_url_str())
 
 
 @command()
 @click.argument("image_name")
 @click.argument("local_image_name", required=False)
 @async_cmd
-async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
+async def pull(root: Root, image_name: str, local_image_name: str) -> None:
     """
     Pull an image from platform registry.
 
@@ -78,7 +77,7 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 
     """
 
-    parser = ImageNameParser(cfg.username, cfg.registry_url)
+    parser = ImageNameParser(root.username, str(root.registry_url))
     remote_img = parser.parse_as_neuro_image(image_name)
     if local_image_name:
         local_img = parser.parse_as_docker_image(local_image_name)
@@ -92,22 +91,20 @@ async def pull(cfg: Config, image_name: str, local_image_name: str) -> None:
 
     spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pulling image {}  ")
 
-    async with cfg.make_client() as client:
-        result_local_image = await client.images.pull(remote_img, local_img, spinner)
-        click.echo(result_local_image.as_local_str())
+    result_local_image = await root.client.images.pull(remote_img, local_img, spinner)
+    click.echo(result_local_image.as_local_str())
 
 
 @command()
 @async_cmd
-async def ls(cfg: Config) -> None:
+async def ls(root: Root) -> None:
     """
     List images.
     """
 
-    async with cfg.make_client() as client:
-        images = await client.images.ls()
-        for image in images:
-            click.echo(image)
+    images = await root.client.images.ls()
+    for image in images:
+        click.echo(image)
 
 
 image.add_command(ls)

@@ -1,18 +1,14 @@
 from click import style
 
-from neuromation.cli.rc import Config
+from neuromation.cli.rc import Root
 
 
 class ConfigFormatter:
-    def __call__(self, config: Config) -> str:
+    def __call__(self, root: Root) -> str:
         lines = []
-        lines.append(
-            style("User Name", bold=True) + f": {config.get_platform_user_name()}"
-        )
-        lines.append(style("API URL", bold=True) + f": {config.url}")
-        lines.append(
-            style("Docker Registry URL", bold=True) + f": {config.registry_url}"
-        )
+        lines.append(style("User Name", bold=True) + f": {root.username}")
+        lines.append(style("API URL", bold=True) + f": {root.url}")
+        lines.append(style("Docker Registry URL", bold=True) + f": {root.registry_url}")
         indent = "  "
         return (
             style("User Configuration", bold=True)

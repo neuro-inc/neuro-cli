@@ -32,7 +32,7 @@ from neuromation.api import (
 )
 from neuromation.utils import run
 
-from .rc import Config, ConfigFactory, save
+from .rc import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
@@ -44,15 +44,15 @@ DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 
 
 async def _run_async_function(
-    func: Callable[..., Awaitable[_T]], cfg: Config, *args: Any, **kwargs: Any
+    func: Callable[..., Awaitable[_T]], root: Root, *args: Any, **kwargs: Any
 ) -> _T:
     loop = asyncio.get_event_loop()
     version_checker: AbstractVersionChecker
 
-    if cfg.disable_pypi_version_check:
+    if True:  # root.disable_pypi_version_check:
         version_checker = DummyVersionChecker()
     else:
-        cfg.pypi.warn_if_has_newer_version()
+        root.pypi.warn_if_has_newer_version()
         # (ASvetlov) This branch is not tested intentionally
         # Don't want to fetch PyPI from unit tests
         # Later the checker initialization code will be refactored
@@ -60,23 +60,18 @@ async def _run_async_function(
         version_checker = VersionChecker()  # pragma: no cover
     task = loop.create_task(version_checker.run())
 
-    # Refresh auth0 token if needed
-    # Potentially it can be a parallel operation like PyPI version check
-    config = await ConfigFactory._refresh_auth_token(cfg)
-    if config != cfg:
-        nmrc_config_path = ConfigFactory.get_path()
-        save(nmrc_config_path, config)
-        # Use a refreshed config for command callback call
-        cfg = config
+    await root.post_init()
 
     try:
-        return await func(cfg, *args, **kwargs)
+        return await func(root, *args, **kwargs)
     finally:
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
         with suppress(asyncio.CancelledError):
             await version_checker.close()
+
+        await root.close()
 
         # looks ugly but proper fix requires aiohttp changes
         if sys.platform == "win32":
@@ -90,8 +85,8 @@ def async_cmd(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
     # N.B. the decorator implies @click.pass_obj
     @click.pass_obj
     @wraps(callback)
-    def wrapper(cfg: Config, *args: Any, **kwargs: Any) -> _T:
-        return run(_run_async_function(callback, cfg, *args, **kwargs))
+    def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
+        return run(_run_async_function(callback, root, *args, **kwargs))
 
     return wrapper
 
@@ -353,12 +348,12 @@ async def resolve_job(client: Client, id_or_name: str) -> str:
     return job_id
 
 
-def parse_resource_for_sharing(uri: str, cfg: Config) -> URL:
+def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
-        parser = ImageNameParser(cfg.username, cfg.registry_url)
+        parser = ImageNameParser(root.username, str(root.registry_url))
         image = parser.parse_as_neuro_image(uri, raise_if_has_tag=True)
         uri = image.as_url_str()
     return URL(uri)
@@ -381,8 +376,8 @@ class ImageType(click.ParamType):
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> DockerImage:
         assert ctx is not None
-        cfg = cast(Config, ctx.obj)
-        image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+        root = cast(Root, ctx.obj)
+        image_parser = ImageNameParser(root.username, str(root.registry_url))
         if image_parser.is_in_neuro_registry(value):
             parsed_image = image_parser.parse_as_neuro_image(value)
         else:

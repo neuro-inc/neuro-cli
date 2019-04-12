@@ -27,7 +27,6 @@
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config docker](#neuro-config-docker)
-		* [neuro config auth](#neuro-config-auth)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
 		* [neuro completion generate](#neuro-completion-generate)
@@ -652,7 +651,6 @@ Name | Description|
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
-| _[neuro config auth](#neuro-config-auth)_| Update authorization token |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
 
@@ -730,25 +728,6 @@ neuro config docker [OPTIONS]
 Name | Description|
 |----|------------|
 |_\--docker-config PATH_|Specifies the location of the Docker client configuration files|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config auth
-
-Update authorization token.
-
-**Usage:**
-
-```bash
-neuro config auth [OPTIONS] TOKEN
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
 |_--help_|Show this message and exit.|
 
 

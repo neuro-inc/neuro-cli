@@ -10,12 +10,14 @@ from typing import (
     Type,
 )
 
+import aiohttp
 from yarl import URL
 
 from .abc import AbstractProgress, AbstractSpinner
 from .client import Client
-from .config_factory import Factory
+from .config_factory import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, Factory
 from .core import (
+    DEFAULT_TIMEOUT,
     AuthenticationError,
     AuthError,
     AuthorizationError,
@@ -43,6 +45,8 @@ from .users import Action, Permission
 
 
 __all__ = (
+    "DEFAULT_CONFIG_PATH",
+    "CONFIG_ENV_NAME",
     "Image",
     "ImageNameParser",
     "JobDescription",
@@ -80,7 +84,7 @@ __all__ = (
 
 class _ContextManager(Awaitable[Client], AsyncContextManager[Client]):
 
-    __slots__ = ("_func", "_client")
+    __slots__ = ("_coro", "_client")
 
     def __init__(self, coro: Coroutine[Any, Any, Client]) -> None:
         self._coro = coro
@@ -105,30 +109,45 @@ class _ContextManager(Awaitable[Client], AsyncContextManager[Client]):
         return None
 
 
-def get(*, path: Optional[Path] = None) -> _ContextManager:
-    return _ContextManager(_get(path))
+def get(
+    *, path: Optional[Path] = None, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+) -> _ContextManager:
+    return _ContextManager(_get(path, timeout))
 
 
-async def _get(path: Optional[Path]) -> Client:
-    return await Factory(path).get()
+async def _get(path: Optional[Path], timeout: aiohttp.ClientTimeout) -> Client:
+    return await Factory(path).get(timeout=timeout)
 
 
-def login(url: URL, *, path: Optional[Path] = None) -> _ContextManager:
-    return _ContextManager(_login(url, path))
+def login(
+    url: URL,
+    *,
+    path: Optional[Path] = None,
+    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+) -> _ContextManager:
+    return _ContextManager(_login(url, path, timeout))
 
 
-async def _login(url: URL, path: Optional[Path]) -> Client:
-    return await Factory(path).login(url)
+async def _login(
+    url: URL, path: Optional[Path], timeout: aiohttp.ClientTimeout
+) -> Client:
+    return await Factory(path).login(url, timeout=timeout)
 
 
 def login_with_token(
-    url: URL, token: str, *, path: Optional[Path] = None
+    url: URL,
+    token: str,
+    *,
+    path: Optional[Path] = None,
+    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
 ) -> _ContextManager:
-    return _ContextManager(_login_with_token(url, token, path))
+    return _ContextManager(_login_with_token(url, token, path, timeout))
 
 
-async def _login_with_token(url: URL, token: str, path: Optional[Path]) -> Client:
-    return await Factory(path).login_with_token(url, token)
+async def _login_with_token(
+    url: URL, token: str, path: Optional[Path], timeout: aiohttp.ClientTimeout
+) -> Client:
+    return await Factory(path).login_with_token(url, token, timeout=timeout)
 
 
 async def logout(*, path: Optional[Path] = None) -> None:

@@ -4,18 +4,20 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import aiohttp
 import yaml
 from yarl import URL
 
 from .client import Client
 from .config import _Config, _PyPIVersion
+from .core import DEFAULT_TIMEOUT
 from .login import AuthNegotiator, _AuthConfig, _AuthToken, get_server_config
 
 
 WIN32 = sys.platform == "win32"
 MALFORMED_CONFIG_TEXT = "Malformed config. Please logout and login again."
-DEFAULT_NMRC_PATH = "~/.nmrc"
-ENV_NAME = "NEUROMATION_CONFIG"
+DEFAULT_CONFIG_PATH = "~/.nmrc"
+CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 
 
 class RCException(Exception):
@@ -25,19 +27,21 @@ class RCException(Exception):
 class Factory:
     def __init__(self, path: Optional[Path] = None) -> None:
         if path is None:
-            path = Path(os.environ.get(ENV_NAME, DEFAULT_NMRC_PATH))
+            path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
         self._path = path.expanduser()
 
-    async def get(self) -> Client:
+    async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
         new_token = await self._refresh_auth_token(config)
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)
-            return Client(new_config)
-        return Client(config)
+            return Client(new_config, timeout=timeout)
+        return Client(config, timeout=timeout)
 
-    async def login(self, url: URL) -> Client:
+    async def login(
+        self, url: URL, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+    ) -> Client:
         if self._path.exists():
             raise RCException(f"Config file {self._path} already exists. Please logout")
         server_config = await get_server_config(url)
@@ -51,9 +55,11 @@ class Factory:
             registry_url=server_config.registry_url,
         )
         self._save(config)
-        return Client(config)
+        return Client(config, timeout=timeout)
 
-    async def login_with_token(self, url: URL, token: str) -> Client:
+    async def login_with_token(
+        self, url: URL, token: str, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+    ) -> Client:
         if self._path.exists():
             raise RCException(f"Config file {self._path} already exists. Please logout")
         server_config = await get_server_config(url)
@@ -65,9 +71,10 @@ class Factory:
             registry_url=server_config.registry_url,
         )
         self._save(config)
-        return Client(config)
+        return Client(config, timeout=timeout)
 
     async def logout(self) -> None:
+        # TODO: logout from auth0
         if self._path.exists():
             self._path.unlink()
 

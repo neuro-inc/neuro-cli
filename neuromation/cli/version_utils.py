@@ -11,7 +11,6 @@ import certifi
 import pkg_resources
 
 from neuromation.api.config import _PyPIVersion
-from neuromation.cli.rc import ConfigFactory
 
 
 log = logging.getLogger(__name__)
@@ -82,8 +81,9 @@ class VersionChecker(AbstractVersionChecker):
             log.exception("Error on fetching data from PyPI")
 
     async def update_latest_version(self) -> None:
-        pypi_version = await self._fetch_pypi()
-        ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
+        # pypi_version = await self._fetch_pypi()
+        assert False
+        # ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
 
     async def _fetch_pypi(self) -> Any:
         async with self._session.get("https://pypi.org/pypi/neuromation/json") as resp:

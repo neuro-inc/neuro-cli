@@ -34,7 +34,7 @@ from .formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .rc import Config
+from .rc import Root
 from .utils import (
     ImageType,
     alias,
@@ -164,7 +164,7 @@ def job() -> None:
 )
 @async_cmd
 async def submit(
-    cfg: Config,
+    root: Root,
     image: DockerImage,
     gpu: int,
     gpu_model: str,
@@ -199,7 +199,7 @@ async def submit(
       pytorch:latest
     """
 
-    username = cfg.username
+    username = root.username
 
     # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
     # separate function.
@@ -236,26 +236,25 @@ async def submit(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    async with cfg.make_client() as client:
-        job = await client.jobs.submit(
-            image=image_obj,
-            resources=resources,
-            network=network,
-            volumes=volumes,
-            is_preemptible=preemptible,
-            name=name,
-            description=description,
-            env=env_dict,
-        )
-        click.echo(JobFormatter(quiet)(job))
-        progress = JobStartProgress(cfg.color)
-        while wait_start and job.status == JobStatus.PENDING:
-            await asyncio.sleep(0.2)
-            job = await client.jobs.status(job.id)
-            if not quiet:
-                click.echo(progress(job), nl=False)
-        if not quiet and wait_start:
-            click.echo(progress(job, finish=True), nl=False)
+    job = await root.client.jobs.submit(
+        image=image_obj,
+        resources=resources,
+        network=network,
+        volumes=volumes,
+        is_preemptible=preemptible,
+        name=name,
+        description=description,
+        env=env_dict,
+    )
+    click.echo(JobFormatter(quiet)(job))
+    progress = JobStartProgress(root.color)
+    while wait_start and job.status == JobStatus.PENDING:
+        await asyncio.sleep(0.2)
+        job = await root.client.jobs.status(job.id)
+        if not quiet:
+            click.echo(progress(job), nl=False)
+    if not quiet and wait_start:
+        click.echo(progress(job, finish=True), nl=False)
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
@@ -274,15 +273,14 @@ async def submit(
 )
 @async_cmd
 async def exec(
-    cfg: Config, job: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
+    root: Root, job: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
     """
     Execute command in a running job.
     """
     cmd = shlex.split(" ".join(cmd))
-    async with cfg.make_client() as client:
-        id = await resolve_job(client, job)
-        retcode = await client.jobs.exec(id, tty, no_key_check, cmd)
+    id = await resolve_job(root.client, job)
+    retcode = await root.client.jobs.exec(id, tty, no_key_check, cmd)
     sys.exit(retcode)
 
 
@@ -297,32 +295,30 @@ async def exec(
 )
 @async_cmd
 async def port_forward(
-    cfg: Config, job: str, no_key_check: bool, local_port: int, remote_port: int
+    root: Root, job: str, no_key_check: bool, local_port: int, remote_port: int
 ) -> None:
     """
     Forward a port of a running job to a local port.
     """
-    async with cfg.make_client() as client:
-        id = await resolve_job(client, job)
-        retcode = await client.jobs.port_forward(
-            id, no_key_check, local_port, remote_port
-        )
+    id = await resolve_job(root.client, job)
+    retcode = await root.client.jobs.port_forward(
+        id, no_key_check, local_port, remote_port
+    )
     sys.exit(retcode)
 
 
 @command()
 @click.argument("job")
 @async_cmd
-async def logs(cfg: Config, job: str) -> None:
+async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
     """
-    async with cfg.make_client() as client:
-        id = await resolve_job(client, job)
-        async for chunk in client.jobs.monitor(id):
-            if not chunk:
-                break
-            click.echo(chunk.decode(errors="ignore"), nl=False)
+    id = await resolve_job(root.client, job)
+    async for chunk in root.client.jobs.monitor(id):
+        if not chunk:
+            break
+        click.echo(chunk.decode(errors="ignore"), nl=False)
 
 
 @command()
@@ -346,7 +342,7 @@ async def logs(cfg: Config, job: str) -> None:
 )
 @async_cmd
 async def ls(
-    cfg: Config,
+    root: Root,
     status: Sequence[str],
     name: str,
     description: str,
@@ -370,8 +366,7 @@ async def ls(
     if "all" in statuses:
         statuses = set()
 
-    async with cfg.make_client() as client:
-        jobs = await client.jobs.list(statuses, name)
+    jobs = await root.client.jobs.list(statuses, name)
 
     # client-side filtering
     if description:
@@ -382,11 +377,11 @@ async def ls(
     if quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
-        if wide or not cfg.tty:
+        if wide or not root.tty:
             width = 0
         else:
-            width = cfg.terminal_size[0]
-        image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+            width = root.terminal_size[0]
+        image_parser = ImageNameParser(root.username, str(root.registry_url))
         formatter = TabularJobsFormatter(width, image_parser)
 
     for line in formatter(jobs):
@@ -396,52 +391,49 @@ async def ls(
 @command()
 @click.argument("job")
 @async_cmd
-async def status(cfg: Config, job: str) -> None:
+async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
     """
-    async with cfg.make_client() as client:
-        id = await resolve_job(client, job)
-        res = await client.jobs.status(id)
-        click.echo(JobStatusFormatter()(res))
+    id = await resolve_job(root.client, job)
+    res = await root.client.jobs.status(id)
+    click.echo(JobStatusFormatter()(res))
 
 
 @command()
 @click.argument("job")
 @async_cmd
-async def top(cfg: Config, job: str) -> None:
+async def top(root: Root, job: str) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
-    async with cfg.make_client() as client:
-        id = await resolve_job(client, job)
-        print_header = True
-        async for res in client.jobs.top(id):
-            if print_header:
-                click.echo(formatter.header())
-                print_header = False
-            line = formatter(res)
-            click.echo(f"\r{line}", nl=False)
+    id = await resolve_job(root.client, job)
+    print_header = True
+    async for res in root.client.jobs.top(id):
+        if print_header:
+            click.echo(formatter.header())
+            print_header = False
+        line = formatter(res)
+        click.echo(f"\r{line}", nl=False)
 
 
 @command()
 @click.argument("jobs", nargs=-1, required=True)
 @async_cmd
-async def kill(cfg: Config, jobs: Sequence[str]) -> None:
+async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
     """
     errors = []
-    async with cfg.make_client() as client:
-        for job in jobs:
-            job_resolved = await resolve_job(client, job)
-            try:
-                await client.jobs.kill(job_resolved)
-                # TODO (ajuszkowski) printing should be on the cli level
-                print(job_resolved)
-            except ValueError as e:
-                errors.append((job, e))
+    for job in jobs:
+        job_resolved = await resolve_job(root.client, job)
+        try:
+            await root.client.jobs.kill(job_resolved)
+            # TODO (ajuszkowski) printing should be on the cli level
+            print(job_resolved)
+        except ValueError as e:
+            errors.append((job, e))
 
     def format_fail(job: str, reason: Exception) -> str:
         return f"Cannot kill job {job}: {reason}"
