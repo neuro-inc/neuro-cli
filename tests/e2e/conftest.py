@@ -17,10 +17,16 @@ import aiohttp
 import pytest
 from yarl import URL
 
-from neuromation.api import FileStatusType, JobDescription, JobStatus, ResourceNotFound
-from neuromation.cli import main, rc
+from neuromation.api import (
+    Factory,
+    FileStatusType,
+    JobDescription,
+    JobStatus,
+    ResourceNotFound,
+    get as api_get,
+)
+from neuromation.cli import main
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
-from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME
 from neuromation.utils import run
 from tests.e2e.utils import (
     FILE_SIZE_B,
@@ -38,6 +44,7 @@ JOB_OUTPUT_SLEEP_SECONDS = 2
 STORAGE_MAX_WAIT = 60
 CLI_MAX_WAIT = 180
 NETWORK_TIMEOUT = 60.0 * 3
+CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIMEOUT)
 
 log = logging.getLogger(__name__)
 
@@ -82,8 +89,7 @@ def run_async(coro):
 
 
 class Helper:
-    def __init__(self, config: rc.Config, nmrc_path, capfd, tmp_path: Path):
-        self._config = config
+    def __init__(self, nmrc_path, capfd, tmp_path: Path):
         self._nmrc_path = nmrc_path
         self._capfd = capfd
         self._tmp = tmp_path
@@ -102,8 +108,19 @@ class Helper:
                     self.run_cli(["job", "kill"] + self._executed_jobs)
 
     @property
-    def config(self):
-        return self._config
+    def username(self):
+        config = Factory(path=self._nmrc_path)._read()
+        return config.auth_token.username
+
+    @property
+    def token(self):
+        config = Factory(path=self._nmrc_path)._read()
+        return config.auth_token.token
+
+    @property
+    def registry_url(self):
+        config = Factory(path=self._nmrc_path)._read()
+        return config.registry_url
 
     @property
     def tmpstorage(self):
@@ -112,13 +129,13 @@ class Helper:
     @run_async
     async def mkdir(self, path):
         url = URL(self.tmpstorage + path)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mkdirs(url)
 
     @run_async
     async def rm(self, path):
         url = URL(self.tmpstorage + path)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url)
 
     @run_async
@@ -126,7 +143,7 @@ class Helper:
         path = URL(self.tmpstorage + path)
         loop = asyncio.get_event_loop()
         t0 = loop.time()
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             while loop.time() - t0 < STORAGE_MAX_WAIT:
                 try:
                     files = await client.storage.ls(path)
@@ -148,7 +165,7 @@ class Helper:
         path = URL(self.tmpstorage + path)
         loop = asyncio.get_event_loop()
         t0 = loop.time()
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             while loop.time() - t0 < STORAGE_MAX_WAIT:
                 try:
                     files = await client.storage.ls(path)
@@ -164,7 +181,7 @@ class Helper:
     @run_async
     async def check_dir_absent_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(path)
             for file in files:
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
@@ -173,7 +190,7 @@ class Helper:
     @run_async
     async def check_file_absent_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(path)
             for file in files:
                 if file.type == FileStatusType.FILE and file.path == name:
@@ -190,7 +207,7 @@ class Helper:
         else:
             target = tmpdir
             target_file = join(tmpdir, name)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             delay = 5  # need a relative big initial delay to synchronize 16MB file
             await asyncio.sleep(delay)
             for i in range(5):
@@ -216,20 +233,20 @@ class Helper:
     @run_async
     async def check_create_dir_on_storage(self, path: str):
         path = URL(self.tmpstorage + path)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mkdirs(path)
 
     @run_async
     async def check_rmdir_on_storage(self, path: str):
         path = URL(self.tmpstorage + path)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(path)
 
     @run_async
     async def check_rm_file_on_storage(self, name: str, path: str):
         path = URL(self.tmpstorage + path)
         delay = 0.5
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             for i in range(10):
                 try:
                     await client.storage.rm(path / name)
@@ -242,7 +259,7 @@ class Helper:
     @run_async
     async def check_upload_file_to_storage(self, name: str, path: str, local_file: str):
         path = URL(self.tmpstorage + path)
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             if name is None:
                 await client.storage.upload_file(URL("file:" + local_file), path)
             else:
@@ -254,7 +271,7 @@ class Helper:
     async def check_rename_file_on_storage(
         self, name_from: str, path_from: str, name_to: str, path_to: str
     ):
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}/{name_from}"),
                 URL(f"{self.tmpstorage}{path_to}/{name_to}"),
@@ -269,7 +286,7 @@ class Helper:
 
     @run_async
     async def check_rename_directory_on_storage(self, path_from: str, path_to: str):
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}"), URL(f"{self.tmpstorage}{path_to}")
             )
@@ -285,7 +302,7 @@ class Helper:
     @run_async
     async def wait_job_change_state_from(self, job_id, wait_state, stop_state=None):
         start_time = time()
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             while job.status == wait_state and (int(time() - start_time) < JOB_TIMEOUT):
                 if stop_state == job.status:
@@ -298,7 +315,7 @@ class Helper:
     @run_async
     async def wait_job_change_state_to(self, job_id, target_state, stop_state=None):
         start_time = time()
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             while target_state != job.status:
                 if stop_state == job.status:
@@ -314,13 +331,13 @@ class Helper:
 
     @run_async
     async def assert_job_state(self, job_id, state):
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             assert job.status == state
 
     @run_async
     async def job_info(self, job_id) -> JobDescription:
-        async with self._config.make_client() as client:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             return await client.jobs.status(job_id)
 
     @run_async
@@ -330,7 +347,7 @@ class Helper:
         """
 
         async def _check_job_output():
-            async with self._config.make_client() as client:
+            async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
                 async for chunk in client.jobs.monitor(job_id):
                     yield chunk
 
@@ -362,13 +379,17 @@ class Helper:
             pre_out_size = len(pre_out)
             pre_err_size = len(pre_err)
             try:
+                args = []
+                if self._nmrc_path:
+                    args.append(f"--neuromation-config={self._nmrc_path}")
+
                 main(
-                    [
-                        f"--neuromation-config={self._nmrc_path}",
+                    args
+                    + [
                         "--show-traceback",
                         "--disable-pypi-version-check",
                         "--color=no",
-                        f"--network-timeout={self.config.network_timeout}",
+                        f"--network-timeout={NETWORK_TIMEOUT}",
                     ]
                     + arguments
                 )
@@ -453,69 +474,41 @@ class Helper:
 
 
 @pytest.fixture()
-def nmrc_path(tmp_path, monkeypatch):
+def nmrc_path(tmp_path):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
         nmrc_path = tmp_path / "conftest.nmrc"
-        monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
-        rc.ConfigFactory.set_path(nmrc_path)
+
+        rc_text = RC_TEXT.format(token=e2e_test_token)
+        nmrc_path.write_text(rc_text)
+        nmrc_path.chmod(0o600)
     else:
-        nmrc_path = rc.ConfigFactory.get_path()
+        nmrc_path = None
     return nmrc_path
 
 
 @pytest.fixture
-def config(nmrc_path, monkeypatch):
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
-
-    if e2e_test_token:
-        rc_text = RC_TEXT.format(token=e2e_test_token)
-        nmrc_path.write_text(rc_text)
-        nmrc_path.chmod(0o600)
-
-    config = rc.ConfigFactory.load()
-    config.network_timeout = NETWORK_TIMEOUT
-    yield config
-
-
-@pytest.fixture
-def helper(config, capfd, monkeypatch, tmp_path, nmrc_path):
-    ret = Helper(config=config, nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
+def helper(capfd, monkeypatch, tmp_path, nmrc_path):
+    ret = Helper(nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
     yield ret
     ret.close()
 
 
 @pytest.fixture()
-def nmrc_path_alt(tmp_path, monkeypatch):
+def nmrc_path_alt(tmp_path):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
     if not e2e_test_token:
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
     nmrc_path = tmp_path / "conftest-alt.nmrc"
-    monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
-    rc.ConfigFactory.set_path(nmrc_path)
+    rc_text = RC_TEXT.format(token=e2e_test_token)
+    nmrc_path_alt.write_text(rc_text)
+    nmrc_path_alt.chmod(0o600)
     return nmrc_path
 
 
 @pytest.fixture
-def config_alt(tmp_path, nmrc_path_alt):
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
-    if e2e_test_token:
-        rc_text = RC_TEXT.format(token=e2e_test_token)
-        nmrc_path_alt.write_text(rc_text)
-        nmrc_path_alt.chmod(0o600)
-    else:
-        pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
-
-    config = rc.ConfigFactory.load()
-    config.network_timeout = NETWORK_TIMEOUT
-    yield config
-
-
-@pytest.fixture
-def helper_alt(config_alt, nmrc_path_alt, capfd, tmp_path):
-    ret = Helper(
-        config=config_alt, nmrc_path=nmrc_path_alt, capfd=capfd, tmp_path=tmp_path
-    )
+def helper_alt(nmrc_path_alt, capfd, tmp_path):
+    ret = Helper(nmrc_path=nmrc_path_alt, capfd=capfd, tmp_path=tmp_path)
     yield ret
     ret.close()
 

@@ -20,8 +20,8 @@ def config() -> None:
 
 
 @command()
-@click.pass_obj
-def show(root: Root) -> None:
+@async_cmd()
+async def show(root: Root) -> None:
     """
     Print current settings.
     """
@@ -30,8 +30,8 @@ def show(root: Root) -> None:
 
 
 @command()
-@click.pass_obj
-def show_token(root: Root) -> None:
+@async_cmd()
+async def show_token(root: Root) -> None:
     """
     Print current authorization token.
     """

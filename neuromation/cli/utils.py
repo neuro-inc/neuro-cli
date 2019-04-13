@@ -26,6 +26,7 @@ from neuromation.api import (
     Action,
     Client,
     DockerImage,
+    Factory,
     ImageNameParser,
     JobDescription,
     Volume,
@@ -389,7 +390,8 @@ class ImageType(click.ParamType):
     ) -> DockerImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        image_parser = ImageNameParser(root.username, root.registry_url)
+        config = Factory(root.config_path)._read()
+        image_parser = ImageNameParser(config.auth_token.username, config.registry_url)
         if image_parser.is_in_neuro_registry(value):
             parsed_image = image_parser.parse_as_neuro_image(value)
         else:

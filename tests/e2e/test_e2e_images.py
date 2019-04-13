@@ -66,7 +66,7 @@ def test_images_complete_lifecycle(helper, image, tag, loop, docker):
     # stderr has "Used image ..." lines
     # assert not captured.err
 
-    image_full_str = f"image://{helper._config.username}/{image}"
+    image_full_str = f"image://{helper.username}/{image}"
     assert captured.out.endswith(image_full_str)
     image_url = URL(image_full_str)
 
@@ -129,7 +129,7 @@ def test_images_push_with_specified_name(helper, image, tag, loop, docker):
     )
     # stderr has "Used image ..." lines
     # assert not captured.err
-    image_pushed_full_str = f"image://{helper._config.username}/{pushed_no_tag}:{tag}"
+    image_pushed_full_str = f"image://{helper.username}/{pushed_no_tag}:{tag}"
     assert captured.out.endswith(image_pushed_full_str)
     image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
 
@@ -159,8 +159,8 @@ def test_images_push_with_specified_name(helper, image, tag, loop, docker):
 @pytest.mark.e2e
 def test_docker_helper(helper, image, tag):
     helper.run_cli(["config", "docker"])
-    registry = URL(helper.config.registry_url).host
-    username = helper.config.username
+    registry = helper.registry_url.host
+    username = helper.username
     full_tag = f"{registry}/{username}/{image}"
     tag_cmd = f"docker tag {image} {full_tag}"
     result = subprocess.run(
