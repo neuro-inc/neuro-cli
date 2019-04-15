@@ -17,7 +17,7 @@ auth_config:
   success_redirect_url: https://neu.ro/#running-your-first-job
   token_url: https://dev-neuromation.auth0.com/oauth/token
 auth_token:
-  expiration_time: 1555333239
+  expiration_time: 1713014496
   refresh_token: refresh-token
   token: {token}
 pypi:
