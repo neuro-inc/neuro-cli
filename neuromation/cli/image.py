@@ -56,7 +56,7 @@ async def push(
         type=DockerImageOperation.PUSH,
         input_image=local_img.as_local_str(),
         output_image=remote_img.as_url_str(),
-        tty=cfg.tty,
+        tty=root.tty,
         quiet=quiet,
     )
 
@@ -99,7 +99,7 @@ async def pull(root: Root, image_name: str, local_image_name: str, quiet: bool) 
         type=DockerImageOperation.PULL,
         input_image=remote_img.as_url_str(),
         output_image=local_img.as_local_str(),
-        tty=cfg.tty,
+        tty=root.tty,
         quiet=quiet,
     )
     result_local_image = await root.client.images.pull(remote_img, local_img, progress)
