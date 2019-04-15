@@ -1,14 +1,7 @@
+import sys
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    Awaitable,
-    Coroutine,
-    Generator,
-    Optional,
-    Type,
-)
-import sys
+from typing import Any, Awaitable, Coroutine, Generator, Optional, Type
 
 import aiohttp
 from yarl import URL
@@ -49,7 +42,7 @@ if sys.version_info >= (3, 7):
 else:
     from typing import Generic, TypeVar
 
-    _T = TypeVar('_T')
+    _T = TypeVar("_T")
 
     class AsyncContextManager(Generic[_T]):
         async def __aenter__(self) -> _T:
