@@ -11,7 +11,6 @@ from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
 
-from neuromation.cli.rc import ConfigFactory
 from neuromation.cli.version_utils import VersionChecker
 
 

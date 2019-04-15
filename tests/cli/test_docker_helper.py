@@ -9,10 +9,9 @@ from typing import List
 import pytest
 from yarl import URL
 
-from neuromation.cli import rc
+from neuromation.api import CONFIG_ENV_NAME
 from neuromation.cli.const import EX_OK
 from neuromation.cli.docker_credential_helper import main as dch
-from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME, save as save_config
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
@@ -20,44 +19,18 @@ log = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def nmrc_anon_path(tmp_path, monkeypatch):
-    nmrc_path = tmp_path / "anon.nmrc"
-    monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
-    return nmrc_path
-
-
-@pytest.fixture()
-def config_anon(token, nmrc_anon_path):
-    cfg = rc.Config(
-        url="https://dev.neu.ro/api/v1", registry_url="https://registry-dev.neu.ro"
-    )
-    save_config(nmrc_anon_path, cfg)
-    return cfg
-
-
-@pytest.fixture()
-def run_dch(
-    capfd, monkeypatch, tmp_path, config_anon, config, nmrc_anon_path, nmrc_path
-) -> SysCapWithCode:
-    def _run_dch(arguments: List[str], anon=False):
+def run_dch(capfd, monkeypatch, tmp_path, nmrc_path) -> SysCapWithCode:
+    def _run_dch(arguments: List[str]):
 
         log.info("Run 'docker-helper-neuro %s'", " ".join(arguments))
         code = EX_OK
         try:
-            old_config_path = rc.ConfigFactory.get_path()
             with monkeypatch.context() as ctx:
                 ctx.setattr(sys, "argv", ["docker-credential-helper"] + arguments)
-                if anon:
-                    rc.ConfigFactory.set_path(nmrc_anon_path)
-                else:
-                    rc.ConfigFactory.set_path(nmrc_path)
-
+                ctx.setenv(CONFIG_ENV_NAME, nmrc_path)
                 dch()
         except SystemExit as e:
             code = e.code
-            pass
-        finally:
-            rc.ConfigFactory.set_path(old_config_path)
         out, err = capfd.readouterr()
         return SysCapWithCode(out.strip(), err.strip(), code)
 
@@ -150,18 +123,6 @@ class TestHelper:
 
     def test_store_operation(self, run_dch):
         capture = run_dch(["store"])
-        assert capture.code != EX_OK
-
-    def test_anon_get_operation(self, run_dch, monkeypatch, config_anon):
-        registry = URL(config_anon.registry_url).host
-        monkeypatch.setattr("sys.stdin", io.StringIO(registry))
-        capture = run_dch(["get"], True)
-        assert capture.code != EX_OK
-
-    def test_unknown_registry_get_operation(self, run_dch, monkeypatch, config):
-        registry = "macro.net"
-        monkeypatch.setattr("sys.stdin", io.StringIO(registry))
-        capture = run_dch(["get"], True)
         assert capture.code != EX_OK
 
     def test_get_operation(self, run_dch, monkeypatch, config):

@@ -3,10 +3,12 @@ from collections import namedtuple
 from typing import List
 
 import pytest
+from yarl import URL
 
-from neuromation.cli import main, rc
+from neuromation.api import Factory
+from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
+from neuromation.cli import main
 from neuromation.cli.const import EX_OK
-from neuromation.cli.rc import ENV_NAME as CFG_ENV_NAME, _AuthToken, save as save_config
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
@@ -14,33 +16,33 @@ log = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def nmrc_path(tmp_path, monkeypatch):
+def nmrc_path(tmp_path, token, auth_config):
     nmrc_path = tmp_path / "conftest.nmrc"
-    monkeypatch.setenv(CFG_ENV_NAME, str(nmrc_path))
-    rc.ConfigFactory.set_path(nmrc_path)
+    config = _Config(
+        auth_config=auth_config,
+        auth_token=_AuthToken.create_non_expiring(token),
+        pypi=_PyPIVersion.create_uninitialized(),
+        url=URL("https://dev.neu.ro/api/v1"),
+        registry_url=URL("https://registry-dev.neu.ro"),
+    )
+    Factory(nmrc_path)._save(config)
     return nmrc_path
 
 
 @pytest.fixture()
-def config(token, nmrc_path):
-    cfg = rc.Config(
-        url="https://dev.neu.ro/api/v1",
-        registry_url="https://registry-dev.neu.ro",
-        auth_token=_AuthToken.create_non_expiring(token),
-    )
-    save_config(nmrc_path, cfg)
-    return cfg
-
-
-@pytest.fixture()
-def run_cli(config, capfd, tmp_path) -> SysCapWithCode:
+def run_cli(nmrc_path, capfd, tmp_path) -> SysCapWithCode:
     def _run_cli(arguments: List[str]):
 
         log.info("Run 'neuro %s'", " ".join(arguments))
         code = EX_OK
         try:
             main(
-                ["--show-traceback", "--disable-pypi-version-check", "--color=no"]
+                [
+                    "--show-traceback",
+                    "--disable-pypi-version-check",
+                    "--color=no",
+                    f"--neuromation-config={nmrc_path}",
+                ]
                 + arguments
             )
         except SystemExit as e:

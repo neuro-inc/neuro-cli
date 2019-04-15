@@ -43,7 +43,6 @@ from neuromation.cli.formatters.storage import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
-from neuromation.cli.rc import Config
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
@@ -561,7 +560,7 @@ class TestSimpleJobsFormatter:
 
 
 class TestTabularJobRow:
-    image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
+    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def _job_descr_with_status(
         self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
@@ -631,7 +630,7 @@ class TestTabularJobRow:
 
 class TestTabularJobsFormatter:
     columns = ["ID", "NAME", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
-    image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
+    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def test_empty(self):
         formatter = TabularJobsFormatter(0, self.image_parser)
@@ -1133,19 +1132,13 @@ class TestResourcesFormatter:
 
 
 class TestConfigFormatter:
-    def test_output(self, token) -> None:
-        config = Config(
-            url="https://dev.url/api/v1",
-            registry_url="https://registry-dev.url/api/v1",
-            auth_token=_AuthToken(
-                token=token, refresh_token="refresh-token", expiration_time=123_456
-            ),
-        )
-        out = ConfigFormatter()(config)
-        assert click.unstyle(out) == textwrap.dedent(
-            """\
-            User Configuration:
-              User Name: user
-              API URL: https://dev.url/api/v1
-              Docker Registry URL: https://registry-dev.url/api/v1"""
-        )
+    async def test_output(self, nmrc_path) -> None:
+        async with api_get(path=nmrc_path) as client:
+            out = ConfigFormatter()(client._config)
+            assert click.unstyle(out) == textwrap.dedent(
+                """\
+                User Configuration:
+                  User Name: user
+                  API URL: https://dev.url/api/v1
+                  Docker Registry URL: https://registry-dev.url/api/v1"""
+            )

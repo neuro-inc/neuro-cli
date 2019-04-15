@@ -12,11 +12,15 @@ from yarl import URL
 
 from neuromation.api.login import _AuthConfig, _ServerConfig
 from neuromation.api.users import JWT_IDENTITY_CLAIM_OPTIONS
-from neuromation.cli import rc
-from neuromation.cli.rc import Config, _AuthToken, load, save
 
 
-DEFAULTS = rc.Config(url="https://staging.neu.ro/api/v1")
+pytestmark = pytest.mark.skip("rc was removed")
+
+# from neuromation.cli import rc
+# from neuromation.cli.rc import Config, _AuthToken, load, save
+
+
+# DEFAULTS = rc.Config(url="https://staging.neu.ro/api/v1")
 
 
 @pytest.fixture
