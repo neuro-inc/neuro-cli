@@ -46,7 +46,7 @@ else:
 
     class AsyncContextManager(Generic[_T]):
         async def __aenter__(self) -> _T:
-            pass
+            pass  # pragma: no cover
 
         async def __aexit__(
             self,
@@ -54,7 +54,7 @@ else:
             exc: Optional[BaseException],
             tb: Optional[TracebackType],
         ) -> Optional[bool]:
-            pass
+            pass  # pragma: no cover
 
 
 __all__ = (
