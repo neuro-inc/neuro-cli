@@ -499,11 +499,11 @@ def nmrc_path_alt(tmp_path):
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
     if not e2e_test_token:
         pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
-    nmrc_path = tmp_path / "conftest-alt.nmrc"
+    path = tmp_path / "conftest-alt.nmrc"
     rc_text = RC_TEXT.format(token=e2e_test_token)
-    nmrc_path_alt.write_text(rc_text)
-    nmrc_path_alt.chmod(0o600)
-    return nmrc_path
+    path.write_text(rc_text)
+    path.chmod(0o600)
+    return path
 
 
 @pytest.fixture
