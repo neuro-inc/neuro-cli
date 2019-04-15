@@ -2,13 +2,13 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
-    AsyncContextManager,
     Awaitable,
     Coroutine,
     Generator,
     Optional,
     Type,
 )
+import sys
 
 import aiohttp
 from yarl import URL
@@ -42,6 +42,26 @@ from .models import TrainResult
 from .parsing_utils import ImageNameParser
 from .storage import FileStatus, FileStatusType
 from .users import Action, Permission
+
+
+if sys.version_info >= (3, 7):
+    from typing import AsyncContextManager
+else:
+    from typing import Generic, TypeVar
+
+    _T = TypeVar('_T')
+
+    class AsyncContextManager(Generic[_T]):
+        async def __aenter__(self) -> _T:
+            pass
+
+        async def __aexit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc: Optional[BaseException],
+            tb: Optional[TracebackType],
+        ) -> Optional[bool]:
+            pass
 
 
 __all__ = (
