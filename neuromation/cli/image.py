@@ -70,9 +70,7 @@ async def push(
 @click.argument("local_image_name", required=False)
 @click.option("-q", "--quiet", is_flag=True)
 @async_cmd()
-async def pull(
-    root: Root, image_name: str, local_image_name: str, quiet: bool
-) -> None:
+async def pull(root: Root, image_name: str, local_image_name: str, quiet: bool) -> None:
     """
     Pull an image from platform registry.
 
