@@ -1132,13 +1132,12 @@ class TestResourcesFormatter:
 
 
 class TestConfigFormatter:
-    async def test_output(self, nmrc_path) -> None:
-        async with api_get(path=nmrc_path) as client:
-            out = ConfigFormatter()(client._config)
-            assert click.unstyle(out) == textwrap.dedent(
-                """\
-                User Configuration:
-                  User Name: user
-                  API URL: https://dev.url/api/v1
-                  Docker Registry URL: https://registry-dev.url/api/v1"""
-            )
+    async def test_output(self, root) -> None:
+        out = ConfigFormatter()(root)
+        assert click.unstyle(out) == textwrap.dedent(
+            """\
+            User Configuration:
+              User Name: user
+              API URL: https://dev.neu.ro/api/v1
+              Docker Registry URL: https://registry-dev.neu.ro"""
+        )

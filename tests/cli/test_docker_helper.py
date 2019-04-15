@@ -9,13 +9,18 @@ from typing import List
 import pytest
 from yarl import URL
 
-from neuromation.api import CONFIG_ENV_NAME
+from neuromation.api import CONFIG_ENV_NAME, Factory
 from neuromation.cli.const import EX_OK
 from neuromation.cli.docker_credential_helper import main as dch
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
 log = logging.getLogger(__name__)
+
+
+@pytest.fixture()
+def config(nmrc_path):
+    return Factory(path=nmrc_path)._read()
 
 
 @pytest.fixture()
@@ -27,7 +32,7 @@ def run_dch(capfd, monkeypatch, tmp_path, nmrc_path) -> SysCapWithCode:
         try:
             with monkeypatch.context() as ctx:
                 ctx.setattr(sys, "argv", ["docker-credential-helper"] + arguments)
-                ctx.setenv(CONFIG_ENV_NAME, nmrc_path)
+                ctx.setenv(CONFIG_ENV_NAME, str(nmrc_path))
                 dch()
         except SystemExit as e:
             code = e.code
@@ -53,7 +58,7 @@ class TestCli:
         assert captured.code
         assert captured.err
 
-    def test_path_from_env(self, run_cli, tmp_path, config, monkeypatch):
+    def test_path_from_env(self, run_cli, tmp_path, monkeypatch, config):
         json_path = tmp_path / "config.json"
         with json_path.open("w") as file:
             file.write("{}")
@@ -125,10 +130,10 @@ class TestHelper:
         capture = run_dch(["store"])
         assert capture.code != EX_OK
 
-    def test_get_operation(self, run_dch, monkeypatch, config):
-        registry = URL(config.registry_url).host
+    def test_get_operation(self, run_dch, monkeypatch, config, token):
+        registry = config.registry_url.host
         monkeypatch.setattr("sys.stdin", io.StringIO(registry))
         capture = run_dch(["get"])
         assert capture.code == EX_OK
         payload = json.loads(capture.out)
-        assert payload == {"Username": "token", "Secret": config.auth}
+        assert payload == {"Username": "token", "Secret": token}

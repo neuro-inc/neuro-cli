@@ -162,56 +162,56 @@ async def test_resolve_job_id__server_error(aiohttp_server, make_client):
         assert resolved == job_id
 
 
-def test_parse_resource_for_sharing_image_no_tag(config):
+async def test_parse_resource_for_sharing_image_no_tag(root):
     uri = "image://~/ubuntu"
-    parsed = parse_resource_for_sharing(uri, config)
+    parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL("image://user/ubuntu:latest")
 
 
-def test_parse_resource_for_sharing_image_with_tag_fail(config):
+async def test_parse_resource_for_sharing_image_with_tag_fail(root):
     uri = "image://~/ubuntu:latest"
     with pytest.raises(ValueError, match="tag is not allowed"):
-        parse_resource_for_sharing(uri, config)
+        parse_resource_for_sharing(uri, root)
 
 
-def test_parse_permission_action_read_lowercase(config):
+def test_parse_permission_action_read_lowercase():
     action = "read"
     assert parse_permission_action(action) == Action.READ
 
 
-def test_parse_permission_action_read(config):
+def test_parse_permission_action_read():
     action = "READ"
     assert parse_permission_action(action) == Action.READ
 
 
-def test_parse_permission_action_write_lowercase(config):
+def test_parse_permission_action_write_lowercase():
     action = "write"
     assert parse_permission_action(action) == Action.WRITE
 
 
-def test_parse_permission_action_write(config):
+def test_parse_permission_action_write():
     action = "WRITE"
     assert parse_permission_action(action) == Action.WRITE
 
 
-def test_parse_permission_action_manage_lowercase(config):
+def test_parse_permission_action_manage_lowercase():
     action = "manage"
     assert parse_permission_action(action) == Action.MANAGE
 
 
-def test_parse_permission_action_manage(config):
+def test_parse_permission_action_manage():
     action = "MANAGE"
     assert parse_permission_action(action) == Action.MANAGE
 
 
-def test_parse_permission_action_wrong_string(config):
+def test_parse_permission_action_wrong_string():
     action = "tosh"
     err = "invalid permission action 'tosh', allowed values: read, write, manage"
     with pytest.raises(ValueError, match=err):
         parse_permission_action(action)
 
 
-def test_parse_permission_action_wrong_empty(config):
+def test_parse_permission_action_wrong_empty():
     action = ""
     err = "invalid permission action '', allowed values: read, write, manage"
     with pytest.raises(ValueError, match=err):

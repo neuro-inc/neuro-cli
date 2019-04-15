@@ -9,6 +9,7 @@ from neuromation.api import Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
+from neuromation.cli.root import Root
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
@@ -27,6 +28,22 @@ def nmrc_path(tmp_path, token, auth_config):
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path
+
+
+@pytest.fixture()
+async def root(nmrc_path, loop):
+    root = Root(
+        color=False,
+        tty=False,
+        terminal_size=(80, 24),
+        disable_pypi_version_check=True,
+        network_timeout=60,
+        config_path=nmrc_path,
+    )
+
+    await root.init_client()
+    yield root
+    await root.close()
 
 
 @pytest.fixture()
