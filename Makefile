@@ -99,6 +99,7 @@ _e2e:
 _e2e_win:
 	pytest \
 		-n 4 \
+		--timeout=570 --timeout_method=thread\
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
