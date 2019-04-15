@@ -1,11 +1,10 @@
 import logging
-import sys
 
 import click
 
-from neuromation.api import ImageNameParser
+from neuromation.api import DockerImageOperation, ImageNameParser
+from neuromation.cli.formatters import DockerImageProgress
 
-from .command_spinner import SpinnerBase
 from .root import Root
 from .utils import async_cmd, command, group
 
@@ -23,8 +22,11 @@ def image() -> None:
 @command()
 @click.argument("image_name")
 @click.argument("remote_image_name", required=False)
+@click.option("-q", "--quiet", is_flag=True)
 @async_cmd()
-async def push(root: Root, image_name: str, remote_image_name: str) -> None:
+async def push(
+    root: Root, image_name: str, remote_image_name: str, quiet: bool
+) -> None:
     """
     Push an image to platform registry.
 
@@ -47,22 +49,30 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
     else:
         remote_img = parser.convert_to_neuro_image(local_img)
 
-    click.echo(f"Using local image '{local_img.as_local_str()}'")
-    click.echo(f"Using remote image '{remote_img.as_url_str()}'")
     log.debug(f"LOCAL: '{local_img}'")
     log.debug(f"REMOTE: '{remote_img}'")
 
-    spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pushing image {}  ")
+    progress = DockerImageProgress.create(
+        type=DockerImageOperation.PUSH,
+        input_image=local_img.as_local_str(),
+        output_image=remote_img.as_url_str(),
+        tty=cfg.tty,
+        quiet=quiet,
+    )
 
-    result_remote_image = await root.client.images.push(local_img, remote_img, spinner)
+    result_remote_image = await root.client.images.push(local_img, remote_img, progress)
+    progress.close()
     click.echo(result_remote_image.as_url_str())
 
 
 @command()
 @click.argument("image_name")
 @click.argument("local_image_name", required=False)
+@click.option("-q", "--quiet", is_flag=True)
 @async_cmd()
-async def pull(root: Root, image_name: str, local_image_name: str) -> None:
+async def pull(
+    root: Root, image_name: str, local_image_name: str, quiet: bool
+) -> None:
     """
     Pull an image from platform registry.
 
@@ -84,14 +94,18 @@ async def pull(root: Root, image_name: str, local_image_name: str) -> None:
     else:
         local_img = parser.convert_to_docker_image(remote_img)
 
-    click.echo(f"Using remote image '{remote_img.as_url_str()}'")
-    click.echo(f"Using local image '{local_img.as_local_str()}'")
     log.debug(f"REMOTE: '{remote_img}'")
     log.debug(f"LOCAL: '{local_img}'")
 
-    spinner = SpinnerBase.create_spinner(sys.stdout.isatty(), "Pulling image {}  ")
-
-    result_local_image = await root.client.images.pull(remote_img, local_img, spinner)
+    progress = DockerImageProgress.create(
+        type=DockerImageOperation.PULL,
+        input_image=remote_img.as_url_str(),
+        output_image=local_img.as_local_str(),
+        tty=cfg.tty,
+        quiet=quiet,
+    )
+    result_local_image = await root.client.images.pull(remote_img, local_img, progress)
+    progress.close()
     click.echo(result_local_image.as_local_str())
 
 

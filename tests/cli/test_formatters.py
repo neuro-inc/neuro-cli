@@ -10,6 +10,7 @@ from yarl import URL
 
 from neuromation.api import (
     Container,
+    DockerImageOperation,
     FileStatus,
     FileStatusType,
     HTTPPort,
@@ -22,6 +23,7 @@ from neuromation.api import (
 )
 from neuromation.cli.formatters import (
     ConfigFormatter,
+    DockerImageProgress,
     JobFormatter,
     JobStartProgress,
     JobStatusFormatter,
@@ -42,6 +44,7 @@ from neuromation.cli.formatters.storage import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
+from neuromation.cli.printer import CSI
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
@@ -180,22 +183,41 @@ class TestJobStartProgress:
     def strip(self, text: str) -> str:
         return click.unstyle(text).strip()
 
-    def test_progress(self) -> None:
-        progress = JobStartProgress(True)
+    def test_quiet(self, capfd):
+        progress = JobStartProgress.create(tty=True, color=True, quiet=True)
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
 
-        assert "Status: pending Initializing" in self.strip(
-            progress(self.make_job(JobStatus.PENDING, None))
-        )
-        assert "Status: pending ContainerCreating" in self.strip(
-            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-        )
-        assert "Status: pending ContainerCreating" in self.strip(
-            progress(self.make_job(JobStatus.PENDING, "ContainerCreating"))
-        )
+    def test_no_tty(self, capfd, click_tty_emulation):
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.RUNNING, "reason"))
+        progress.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert f"{JobStatus.PENDING}" in out
+        assert f"{JobStatus.RUNNING}" in out
+        assert "reason" in out
+        assert out.count(f"{JobStatus.PENDING}") == 1
+        assert CSI not in out
 
-        assert "Status: succeeded" in self.strip(
-            progress(self.make_job(JobStatus.SUCCEEDED, None), finish=True)
-        )
+    def test_tty(self, capfd, click_tty_emulation):
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.RUNNING, "reason"))
+        progress.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert f"{JobStatus.PENDING}" in out
+        assert f"{JobStatus.RUNNING}" in out
+        assert "reason" in out
+        assert out.count(f"{JobStatus.PENDING}") != 1
+        assert CSI in out
 
 
 class TestJobOutputFormatter:
@@ -1140,3 +1162,58 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro"""
         )
+
+
+class TestDockerImageProgress:
+    def test_quiet(self, capfd):
+        formatter = DockerImageProgress.create(
+            DockerImageOperation.PULL, "input", "output", tty=True, quiet=True
+        )
+        formatter("message1")
+        formatter("message2", "layer1")
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_no_tty(self, capfd, click_tty_emulation):
+        formatter = DockerImageProgress.create(
+            DockerImageOperation.PUSH,
+            "input:latest",
+            "image://bob/output:stream",
+            tty=False,
+            quiet=False,
+        )
+        formatter("message1")
+        formatter("message2", "layer1")
+        formatter("message3", "layer1")
+
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "input:latest" in out
+        assert "image://bob/output:stream" in out
+        assert "message1" in out
+        assert "message2" not in out
+        assert CSI not in out
+
+    def test_tty(self, capfd, click_tty_emulation):
+        formatter = DockerImageProgress.create(
+            DockerImageOperation.PUSH,
+            "input:latest",
+            "image://bob/output:stream",
+            tty=True,
+            quiet=False,
+        )
+        formatter("message1")
+        formatter("message2", "layer1")
+        formatter("message3", "layer1")
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "input:latest" in out
+        assert "image://bob/output:stream" in out
+        assert "message1" in out
+        assert "message2" in out
+        assert "message3" in out
+        assert CSI in out

@@ -6,7 +6,7 @@ from typing import Any, Awaitable, Coroutine, Generator, Optional, Type
 import aiohttp
 from yarl import URL
 
-from .abc import AbstractProgress, AbstractSpinner
+from .abc import AbstractDockerImageProgress, AbstractProgress
 from .client import Client
 from .config_factory import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError, Factory
 from .core import (
@@ -18,7 +18,7 @@ from .core import (
     IllegalArgumentError,
     ResourceNotFound,
 )
-from .images import DockerImage
+from .images import DockerImage, DockerImageOperation
 from .jobs import (
     Container,
     HTTPPort,
@@ -60,6 +60,7 @@ else:
 __all__ = (
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
+    "DockerImageOperation",
     "Image",
     "ImageNameParser",
     "JobDescription",
@@ -84,7 +85,7 @@ __all__ = (
     "AuthenticationError",
     "AuthorizationError",
     "AbstractProgress",
-    "AbstractSpinner",
+    "AbstractDockerImageProgress",
     "ImageNameParser",
     "DockerImage",
     "Factory",

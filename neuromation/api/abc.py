@@ -1,4 +1,5 @@
 import abc
+from typing import Optional
 
 
 class AbstractProgress(abc.ABC):
@@ -15,15 +16,10 @@ class AbstractProgress(abc.ABC):
         pass
 
 
-class AbstractSpinner(abc.ABC):
+class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
-    def start(self, message: str = None) -> None:  # pragma: no cover
+    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 
-    @abc.abstractmethod
-    def complete(self, message: str = None) -> None:  # pragma: no cover
-        pass
-
-    @abc.abstractmethod
-    def tick(self) -> None:  # pragma: no cover
+    def close(self) -> None:
         pass

@@ -20,6 +20,7 @@ from typing import (
 )
 
 import click
+from click import BadParameter
 from yarl import URL
 
 from neuromation.api import (
@@ -400,3 +401,20 @@ class ImageType(click.ParamType):
 
     def __repr__(self) -> str:
         return "Image"
+
+
+class LocalRemotePortParamType(click.ParamType):
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> Tuple[int, int]:
+        try:
+            local_str, remote_str = value.split(":")
+            local, remote = int(local_str), int(remote_str)
+            if not (0 < local <= 65535 and 0 < remote <= 65535):
+                raise ValueError("Port should be in range 1 to 65535")
+            return local, remote
+        except ValueError as e:
+            raise BadParameter(f"{value} is not a valid port combination: {e}")
+
+
+LOCAL_REMOTE_PORT = LocalRemotePortParamType()
