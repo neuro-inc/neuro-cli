@@ -108,6 +108,10 @@ class Helper:
                     self.run_cli(["job", "kill"] + self._executed_jobs)
 
     @property
+    def config_path(self):
+        return self._nmrc_path
+
+    @property
     def username(self):
         config = Factory(path=self._nmrc_path)._read()
         return config.auth_token.username
