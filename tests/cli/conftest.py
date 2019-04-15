@@ -6,7 +6,7 @@ import pytest
 from yarl import URL
 
 from neuromation.api import Factory
-from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
+from neuromation.api.config import _AuthToken, _Config, _PyPIVersion
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
 from neuromation.cli.root import Root

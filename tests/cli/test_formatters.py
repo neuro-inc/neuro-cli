@@ -20,7 +20,6 @@ from neuromation.api import (
     JobTelemetry,
     Resources,
 )
-from neuromation.api.login import _AuthToken
 from neuromation.cli.formatters import (
     ConfigFormatter,
     JobFormatter,
