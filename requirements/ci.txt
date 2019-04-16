@@ -17,4 +17,4 @@ markdown-toc==1.2.4
 pytest-testmon==0.9.16
 towncrier==19.2.0
 asynctest==0.12.3
-trustme==0.5.0
+trustme==0.5.1
