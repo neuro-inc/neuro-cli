@@ -24,6 +24,7 @@
 		* [neuro image pull](#neuro-image-pull)
 	* [neuro config](#neuro-config)
 		* [neuro config login](#neuro-config-login)
+		* [neuro config login-with-token](#neuro-config-login-with-token)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config docker](#neuro-config-docker)
@@ -650,6 +651,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
+| _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuromation Platform with token |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
@@ -660,12 +662,31 @@ Name | Description|
 
 ### neuro config login
 
-Log into Neuromation Platform.
+Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
 ```bash
 neuro config login [OPTIONS] [URL]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config login-with-token
+
+Log into Neuromation Platform with token.<br/><br/>TOKEN is authentication token provided by Neuromation administration team.<br/>URL is a platform entrypoint URL.
+
+**Usage:**
+
+```bash
+neuro config login-with-token [OPTIONS] TOKEN [URL]
 ```
 
 **Options:**
@@ -1036,7 +1057,7 @@ Name | Description|
 
 ## neuro login
 
-Log into Neuromation Platform.
+Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 

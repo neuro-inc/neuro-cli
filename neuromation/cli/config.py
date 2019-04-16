@@ -6,9 +6,14 @@ from typing import Any, Dict
 import click
 from yarl import URL
 
-from neuromation.api import ConfigError, login as api_login, logout as api_logout
+from neuromation.api import (
+    DEFAULT_API_URL,
+    ConfigError,
+    login as api_login,
+    login_with_token as api_login_with_token,
+    logout as api_logout,
+)
 
-from .defaults import API_URL
 from .formatters import ConfigFormatter
 from .root import Root
 from .utils import async_cmd, command, group
@@ -39,18 +44,44 @@ async def show_token(root: Root) -> None:
 
 
 @command()
-@click.argument("url", required=False, default=API_URL, type=URL)
+@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 @async_cmd(init_client=False)
 async def login(root: Root, url: URL) -> None:
     """
     Log into Neuromation Platform.
+
+    URL is a platform entrypoint URL.
     """
     try:
-        await api_login(url, path=root.config_path, timeout=root.timeout)
+        await api_login(url=url, path=root.config_path, timeout=root.timeout)
     except ConfigError:
         await api_logout(path=root.config_path)
         click.echo("You were successfully logged out.")
-        await api_login(url, path=root.config_path, timeout=root.timeout)
+        await api_login(url=url, path=root.config_path, timeout=root.timeout)
+    click.echo(f"Logged into {url}")
+
+
+@command()
+@click.argument("token", required=True, type=str)
+@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
+@async_cmd(init_client=False)
+async def login_with_token(root: Root, token: str, url: URL) -> None:
+    """
+    Log into Neuromation Platform with token.
+
+    TOKEN is authentication token provided by Neuromation administration team.
+    URL is a platform entrypoint URL.
+    """
+    try:
+        await api_login_with_token(
+            token, url=url, path=root.config_path, timeout=root.timeout
+        )
+    except ConfigError:
+        await api_logout(path=root.config_path)
+        click.echo("You were successfully logged out.")
+        await api_login_with_token(
+            token, url=url, path=root.config_path, timeout=root.timeout
+        )
     click.echo(f"Logged into {url}")
 
 
@@ -99,6 +130,7 @@ async def docker(root: Root, docker_config: str) -> None:
 
 
 config.add_command(login)
+config.add_command(login_with_token)
 config.add_command(show)
 config.add_command(show_token)
 

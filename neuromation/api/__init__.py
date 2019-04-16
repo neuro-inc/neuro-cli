@@ -8,7 +8,13 @@ from yarl import URL
 
 from .abc import AbstractDockerImageProgress, AbstractProgress
 from .client import Client
-from .config_factory import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError, Factory
+from .config_factory import (
+    CONFIG_ENV_NAME,
+    DEFAULT_API_URL,
+    DEFAULT_CONFIG_PATH,
+    ConfigError,
+    Factory,
+)
 from .core import (
     DEFAULT_TIMEOUT,
     AuthenticationError,
@@ -58,6 +64,7 @@ else:
 
 
 __all__ = (
+    "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
     "DockerImageOperation",
@@ -135,22 +142,22 @@ async def _get(path: Optional[Path], timeout: aiohttp.ClientTimeout) -> Client:
 
 
 async def login(
-    url: URL,
     *,
+    url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
     timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
 ) -> None:
-    await Factory(path).login(url, timeout=timeout)
+    await Factory(path).login(url=url, timeout=timeout)
 
 
 async def login_with_token(
-    url: URL,
     token: str,
     *,
+    url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
     timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
 ) -> None:
-    await Factory(path).login_with_token(url, token, timeout=timeout)
+    await Factory(path).login_with_token(token, url=url, timeout=timeout)
 
 
 async def logout(*, path: Optional[Path] = None) -> None:

@@ -18,6 +18,7 @@ WIN32 = sys.platform == "win32"
 MALFORMED_CONFIG_TEXT = "Malformed config. Please logout and login again."
 DEFAULT_CONFIG_PATH = "~/.nmrc"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
+DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
 class ConfigError(RuntimeError):
@@ -40,10 +41,15 @@ class Factory:
         return Client(config, timeout=timeout)
 
     async def login(
-        self, url: URL, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+        self,
+        *,
+        url: URL = DEFAULT_API_URL,
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        if url is None:
+            url = DEFAULT_API_URL
         server_config = await get_server_config(url)
         negotiator = AuthNegotiator(server_config.auth_config)
         auth_token = await negotiator.refresh_token()
@@ -54,10 +60,16 @@ class Factory:
             url=url,
             registry_url=server_config.registry_url,
         )
+        async with Client(config, timeout=timeout) as client:
+            await client.jobs.list()  # raises an exception if cannot login
         self._save(config)
 
     async def login_with_token(
-        self, url: URL, token: str, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+        self,
+        token: str,
+        *,
+        url: URL = DEFAULT_API_URL,
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
@@ -69,6 +81,8 @@ class Factory:
             url=url,
             registry_url=server_config.registry_url,
         )
+        async with Client(config, timeout=timeout) as client:
+            await client.jobs.list()  # raises an exception if cannot login
         self._save(config)
 
     async def logout(self) -> None:
