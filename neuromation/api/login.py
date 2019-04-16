@@ -349,17 +349,6 @@ class _AuthConfig:
             callback_urls=callback_urls or cls.callback_urls,
         )
 
-    @classmethod
-    def create_uninitialized(cls) -> "_AuthConfig":
-        return cls.create(
-            auth_url=URL(""),
-            token_url=URL(""),
-            client_id="",
-            audience="",
-            success_redirect_url=None,
-            callback_urls=None,
-        )
-
 
 class AuthNegotiator:
     def __init__(
@@ -399,9 +388,6 @@ class AuthNegotiator:
                 return await token_client.refresh(token)
 
             return token
-
-
-#: move the following API back to neuromation.api_factory
 
 
 @dataclass(frozen=True)

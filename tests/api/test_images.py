@@ -26,7 +26,9 @@ def patch_docker_host():
 
 
 class TestImageParser:
-    parser = ImageNameParser(default_user="alice", registry_url="https://reg.neu.ro")
+    parser = ImageNameParser(
+        default_user="alice", registry_url=URL("https://reg.neu.ro")
+    )
 
     @pytest.mark.parametrize(
         "image",
@@ -66,8 +68,8 @@ class TestImageParser:
         ],
     )
     def test_get_registry_hostname(self, registry_url):
-        registry = self.parser._get_registry_hostname(registry_url)
-        assert registry == "reg.neu.ro"
+        parser = ImageNameParser(default_user="alice", registry_url=URL(registry_url))
+        assert parser._registry == "reg.neu.ro"
 
     @pytest.mark.parametrize(
         "registry_url",
@@ -75,7 +77,7 @@ class TestImageParser:
     )
     def test_get_registry_hostname__bad_url_empty_hostname(self, registry_url):
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
-            self.parser._get_registry_hostname(registry_url)
+            ImageNameParser(default_user="alice", registry_url=URL(registry_url))
 
     def test_split_image_name_no_colon(self):
         splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
@@ -530,7 +532,7 @@ class TestDockerImage:
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
-    parser = ImageNameParser(default_user="bob", registry_url="https://reg.neu.ro")
+    parser = ImageNameParser(default_user="bob", registry_url=URL("https://reg.neu.ro"))
 
     @pytest.fixture()
     def progress(self) -> DockerImageProgress:

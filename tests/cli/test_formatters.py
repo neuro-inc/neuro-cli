@@ -21,7 +21,6 @@ from neuromation.api import (
     JobTelemetry,
     Resources,
 )
-from neuromation.api.login import _AuthToken
 from neuromation.cli.formatters import (
     ConfigFormatter,
     DockerImageProgress,
@@ -46,7 +45,6 @@ from neuromation.cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
 )
 from neuromation.cli.printer import CSI
-from neuromation.cli.rc import Config
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
@@ -583,7 +581,7 @@ class TestSimpleJobsFormatter:
 
 
 class TestTabularJobRow:
-    image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
+    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def _job_descr_with_status(
         self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
@@ -653,7 +651,7 @@ class TestTabularJobRow:
 
 class TestTabularJobsFormatter:
     columns = ["ID", "NAME", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
-    image_parser = ImageNameParser("bob", "https://registry-test.neu.ro")
+    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def test_empty(self):
         formatter = TabularJobsFormatter(0, self.image_parser)
@@ -1155,21 +1153,14 @@ class TestResourcesFormatter:
 
 
 class TestConfigFormatter:
-    def test_output(self, token) -> None:
-        config = Config(
-            url="https://dev.url/api/v1",
-            registry_url="https://registry-dev.url/api/v1",
-            auth_token=_AuthToken(
-                token=token, refresh_token="refresh-token", expiration_time=123_456
-            ),
-        )
-        out = ConfigFormatter()(config)
+    async def test_output(self, root) -> None:
+        out = ConfigFormatter()(root)
         assert click.unstyle(out) == textwrap.dedent(
             """\
             User Configuration:
               User Name: user
-              API URL: https://dev.url/api/v1
-              Docker Registry URL: https://registry-dev.url/api/v1"""
+              API URL: https://dev.neu.ro/api/v1
+              Docker Registry URL: https://registry-dev.neu.ro"""
         )
 
 

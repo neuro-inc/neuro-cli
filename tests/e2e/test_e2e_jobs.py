@@ -8,7 +8,13 @@ import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
 
-from neuromation.api import Image, JobStatus, NetworkPortForwarding, Resources
+from neuromation.api import (
+    Image,
+    JobStatus,
+    NetworkPortForwarding,
+    Resources,
+    get as api_get,
+)
 from neuromation.utils import run as run_async
 
 
@@ -851,8 +857,8 @@ def nginx_job(helper):
 
 
 @pytest.fixture
-async def nginx_job_async(config, loop):
-    async with config.make_client() as client:
+async def nginx_job_async(nmrc_path, loop):
+    async with api_get(path=nmrc_path) as client:
         command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
             image=Image("python:latest", command=command),
@@ -877,7 +883,7 @@ async def nginx_job_async(config, loop):
 
 
 @pytest.mark.e2e
-async def test_port_forward(config, nginx_job_async):
+async def test_port_forward(nmrc_path, nginx_job_async):
     loop_sleep = 1
     service_wait_time = 60
 
@@ -896,7 +902,7 @@ async def test_port_forward(config, nginx_job_async):
         return status
 
     loop = asyncio.get_event_loop()
-    async with config.make_client() as client:
+    async with api_get(path=nmrc_path) as client:
         forwarder = None
         try:
             port = unused_port()
@@ -913,29 +919,6 @@ async def test_port_forward(config, nginx_job_async):
             forwarder.cancel()
             with pytest.raises(asyncio.CancelledError):
                 await forwarder
-
-
-@pytest.mark.e2e
-def test_port_forward_no_job(helper, nginx_job):
-    job_name = f"non-existing-job-{uuid4()}"
-    with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", job_name, "1:1"])
-    assert cm.value.code == -1
-
-
-@pytest.mark.e2e
-def test_port_forward_invalid_port(helper, nginx_job):
-    with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["port-forward", "--no-key-check", nginx_job, "1:1"])
-    assert cm.value.code == -1
-
-
-@pytest.mark.e2e
-def test_exec_no_job(helper, nginx_job):
-    job_name = f"non-existing-job-{uuid4()}"
-    with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["exec", "--no-key-check", job_name, "true"])
-    assert cm.value.code == 127
 
 
 @pytest.mark.e2e
@@ -981,7 +964,7 @@ def test_job_submit_http_auth(helper, secret_job):
 
     run_async(_test_http_auth_redirect(ingress_secret_url))
 
-    cookies = {"dat": helper.config.auth_token.token}
+    cookies = {"dat": helper.token}
     run_async(
         _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
     )

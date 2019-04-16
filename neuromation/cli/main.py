@@ -12,9 +12,10 @@ from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
-from neuromation.cli.rc import RCException
+from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
+from neuromation.cli.root import Root
 
-from . import completion, config, image, job, rc, share, storage
+from . import completion, config, image, job, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
@@ -97,9 +98,9 @@ def print_options(
     type=click.Path(dir_okay=False),
     required=False,
     help="Path to config file.",
-    default=lambda: rc.ConfigFactory.get_path(),
+    default=DEFAULT_CONFIG_PATH,
     metavar="PATH",
-    envvar=rc.ENV_NAME,
+    envvar=CONFIG_ENV_NAME,
 )
 @click.option(
     "--show-traceback",
@@ -163,16 +164,15 @@ def cli(
         real_color = tty
     ctx.color = real_color
     setup_logging(verbose=verbose, color=real_color)
-    rc.ConfigFactory.set_path(Path(neuromation_config))
-    cfg = rc.ConfigFactory.load()
-    cfg.color = real_color
-    cfg.tty = tty
-    cfg.terminal_size = shutil.get_terminal_size()
-    cfg.disable_pypi_version_check = disable_pypi_version_check
-    cfg.network_timeout = network_timeout
-    ctx.obj = cfg
-    if not disable_pypi_version_check:
-        cfg.pypi.warn_if_has_newer_version()
+    root = Root(
+        color=real_color,
+        tty=tty,
+        terminal_size=shutil.get_terminal_size(),
+        disable_pypi_version_check=disable_pypi_version_check,
+        network_timeout=network_timeout,
+        config_path=Path(neuromation_config),
+    )
+    ctx.obj = root
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help())
 
@@ -266,7 +266,7 @@ def main(args: Optional[List[str]] = None) -> None:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(EX_SOFTWARE)
 
-    except RCException as error:
+    except ConfigError as error:
         LOG_ERROR(f"{error}")
         sys.exit(EX_SOFTWARE)
 

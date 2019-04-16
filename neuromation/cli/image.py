@@ -5,7 +5,7 @@ import click
 from neuromation.api import DockerImageOperation, ImageNameParser
 from neuromation.cli.formatters import DockerImageProgress
 
-from .rc import Config
+from .root import Root
 from .utils import async_cmd, command, group
 
 
@@ -23,9 +23,9 @@ def image() -> None:
 @click.argument("image_name")
 @click.argument("remote_image_name", required=False)
 @click.option("-q", "--quiet", is_flag=True)
-@async_cmd
+@async_cmd()
 async def push(
-    cfg: Config, image_name: str, remote_image_name: str, quiet: bool
+    root: Root, image_name: str, remote_image_name: str, quiet: bool
 ) -> None:
     """
     Push an image to platform registry.
@@ -42,7 +42,7 @@ async def push(
 
     """
 
-    parser = ImageNameParser(cfg.username, cfg.registry_url)
+    parser = ImageNameParser(root.username, root.registry_url)
     local_img = parser.parse_as_docker_image(image_name)
     if remote_image_name:
         remote_img = parser.parse_as_neuro_image(remote_image_name)
@@ -56,12 +56,11 @@ async def push(
         type=DockerImageOperation.PUSH,
         input_image=local_img.as_local_str(),
         output_image=remote_img.as_url_str(),
-        tty=cfg.tty,
+        tty=root.tty,
         quiet=quiet,
     )
 
-    async with cfg.make_client() as client:
-        result_remote_image = await client.images.push(local_img, remote_img, progress)
+    result_remote_image = await root.client.images.push(local_img, remote_img, progress)
     progress.close()
     click.echo(result_remote_image.as_url_str())
 
@@ -70,10 +69,8 @@ async def push(
 @click.argument("image_name")
 @click.argument("local_image_name", required=False)
 @click.option("-q", "--quiet", is_flag=True)
-@async_cmd
-async def pull(
-    cfg: Config, image_name: str, local_image_name: str, quiet: bool
-) -> None:
+@async_cmd()
+async def pull(root: Root, image_name: str, local_image_name: str, quiet: bool) -> None:
     """
     Pull an image from platform registry.
 
@@ -88,7 +85,7 @@ async def pull(
 
     """
 
-    parser = ImageNameParser(cfg.username, cfg.registry_url)
+    parser = ImageNameParser(root.username, root.registry_url)
     remote_img = parser.parse_as_neuro_image(image_name)
     if local_image_name:
         local_img = parser.parse_as_docker_image(local_image_name)
@@ -102,26 +99,24 @@ async def pull(
         type=DockerImageOperation.PULL,
         input_image=remote_img.as_url_str(),
         output_image=local_img.as_local_str(),
-        tty=cfg.tty,
+        tty=root.tty,
         quiet=quiet,
     )
-    async with cfg.make_client() as client:
-        result_local_image = await client.images.pull(remote_img, local_img, progress)
+    result_local_image = await root.client.images.pull(remote_img, local_img, progress)
     progress.close()
     click.echo(result_local_image.as_local_str())
 
 
 @command()
-@async_cmd
-async def ls(cfg: Config) -> None:
+@async_cmd()
+async def ls(root: Root) -> None:
     """
     List images.
     """
 
-    async with cfg.make_client() as client:
-        images = await client.images.ls()
-        for image in images:
-            click.echo(image)
+    images = await root.client.images.ls()
+    for image in images:
+        click.echo(image)
 
 
 image.add_command(ls)

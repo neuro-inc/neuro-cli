@@ -8,9 +8,14 @@ from .images import IMAGE_SCHEME, DockerImage
 class ImageNameParser:
     default_tag = "latest"
 
-    def __init__(self, default_user: str, registry_url: str):
+    def __init__(self, default_user: str, registry_url: URL):
         self._default_user = default_user
-        self._registry = self._get_registry_hostname(registry_url)
+        if not registry_url.host:
+            raise ValueError(
+                f"Empty hostname in registry URL '{registry_url}': "
+                "please consider updating configuration"
+            )
+        self._registry = registry_url.host
 
     def parse_as_docker_image(self, image: str) -> DockerImage:
         try:
@@ -121,15 +126,6 @@ class ImageNameParser:
         else:
             raise ValueError("too many tags")
         return image, tag
-
-    def _get_registry_hostname(self, registry_url: str) -> str:
-        url = URL(registry_url)
-        if not url.host:
-            raise ValueError(
-                f"Empty hostname in registry URL '{registry_url}': "
-                "please consider updating configuration"
-            )
-        return url.host
 
     def _check_allowed_uri_elements(self, url: URL) -> None:
         if not url.path or url.path == "/":
