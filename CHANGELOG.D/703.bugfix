@@ -1,1 +1,0 @@
-Respect `--network-timeout` option in `logs` and `cp` operations.

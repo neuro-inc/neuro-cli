@@ -1,1 +1,0 @@
-Implement `neuro config login-with-token TOKEN URL` command.

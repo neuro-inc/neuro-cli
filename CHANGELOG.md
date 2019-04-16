@@ -5,6 +5,43 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.4.16 (2019-04-16)
+================================
+
+Features
+--------
+
+
+- New option `--neuromation-config` for using alternative config file location. Environment variable `NEUROMATION_CONFIG` can be used as option.
+  New command `neuro config docker` allows to use `docker image push/pull` commands with platform registry. ([#381](https://github.com/neuromation/platform-api-clients/issues/381))
+
+- `neuro port-forward` command now accepts multiple local-remote port pairs in order to forward several ports by a single command. ([#632](https://github.com/neuromation/platform-api-clients/issues/632))
+
+- Support job names. ([#648](https://github.com/neuromation/platform-api-clients/issues/648))
+
+- Make progress argument for storage API optional. ([#687](https://github.com/neuromation/platform-api-clients/issues/687))
+
+- Rename neuromation.client to neuromation.api ([#688](https://github.com/neuromation/platform-api-clients/issues/688))
+
+- Implement `neuro config login-with-token TOKEN URL` command. ([#712](https://github.com/neuromation/platform-api-clients/issues/712))
+
+
+Bugfixes
+--------
+
+
+- Don't allow to submit image names starting with dash. ([#526](https://github.com/neuromation/platform-api-clients/issues/526))
+
+- Respect `--network-timeout` option in `logs` and `cp` operations. ([#703](https://github.com/neuromation/platform-api-clients/issues/703))
+
+
+Deprecations and Removals
+-------------------------
+
+
+- Remove deprecated functionality: `neuro model`, `neuro config id_rsa` and `neuro job submit --ssh` option. ([#700](https://github.com/neuromation/platform-api-clients/issues/700))
+
+
 Neuromation 0.7.2 (2019-03-25)
 ==============================
 

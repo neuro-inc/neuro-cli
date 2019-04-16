@@ -1,1 +1,0 @@
-Remove deprecated functionality: `neuro model`, `neuro config id_rsa` and `neuro job submit --ssh` option.
