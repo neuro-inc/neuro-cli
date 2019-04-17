@@ -48,8 +48,6 @@ class Factory:
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        if url is None:
-            url = DEFAULT_API_URL
         server_config = await get_server_config(url)
         negotiator = AuthNegotiator(server_config.auth_config)
         auth_token = await negotiator.refresh_token()
