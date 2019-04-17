@@ -11,7 +11,7 @@ from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthToken, _Config, _PyPIVersion
 from neuromation.api.jobs import _Jobs
 from neuromation.api.login import AuthNegotiator
-
+import yaml
 
 @pytest.fixture
 def token():
@@ -139,6 +139,21 @@ class TestConfigFileInteraction:
         Path(config_file).chmod(0o777)
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
+
+    async def test_mailformed_config(self, config_file):
+        # await Factory().login(url=mock_for_login)
+        # config_file = tmp_home / ".nmrc"
+        with config_file.open("r") as f:
+            original = yaml.safe_load(f)
+
+        for key in ["auth_config", "auth_token", "pypi", "registry_url", "url"]:
+            modified = original.copy()
+            del modified[key]
+            with config_file.open("w") as f:
+                yaml.safe_dump(modified, f, default_flow_style=False)
+            with pytest.raises(ConfigError, match=r"Malformed"):
+                await Factory().get()
+
 
 
 class TestLogin:
