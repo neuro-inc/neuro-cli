@@ -4,6 +4,7 @@ from typing import Optional, Set
 from uuid import uuid4 as uuid
 
 import pytest
+import yaml
 from aiohttp import web
 from yarl import URL
 
@@ -11,7 +12,7 @@ from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthToken, _Config, _PyPIVersion
 from neuromation.api.jobs import _Jobs
 from neuromation.api.login import AuthNegotiator
-import yaml
+
 
 @pytest.fixture
 def token():
@@ -153,7 +154,6 @@ class TestConfigFileInteraction:
                 yaml.safe_dump(modified, f, default_flow_style=False)
             with pytest.raises(ConfigError, match=r"Malformed"):
                 await Factory().get()
-
 
 
 class TestLogin:
