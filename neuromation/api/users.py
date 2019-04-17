@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict
 
-from aiohttp.web import HTTPCreated
+from aiohttp.web import HTTPCreated, HTTPNoContent
 from jose import JWTError, jwt
 from yarl import URL
 
@@ -57,6 +57,17 @@ class Users:
             #  HTTPCreated, this part must me refactored then
             if resp.status != HTTPCreated.status_code:
                 raise ClientError("Server return unexpected result.")  # NOQA
+        return None
+
+    async def revoke(self, user: str, uri: URL) -> None:
+        url = URL(f"users/{user}/permissions")
+        async with self._core.request("DELETE", url, params={"uri": str(uri)}) as resp:
+            #  TODO: server part contain TODO record for returning more then
+            #  HTTPNoContent, this part must me refactored then
+            if resp.status != HTTPNoContent.status_code:
+                raise ClientError(
+                    f"Server return unexpected result: {resp.status}."
+                )  # NOQA
         return None
 
 

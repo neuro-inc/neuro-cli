@@ -43,3 +43,27 @@ async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
 
     except ValueError as e:
         raise ValueError(f"Could not share resource '{uri}': {e}") from e
+
+
+@command()
+@click.argument("uri")
+@click.argument("user")
+@async_cmd
+async def revoke(cfg: Config, uri: str, user: str) -> None:
+    """
+        Revoke from a USER permissions for previously shared resource specified by URI
+
+        Examples:
+        neuro revoke storage:///sample_data/ alice
+        neuro revoke image:resnet50 bob
+        neuro revoke job:///my_job_id alice
+    """
+    try:
+        uri_obj = parse_resource_for_sharing(uri, cfg)
+        log.info(f"Using resource '{uri_obj}'")
+
+        async with cfg.make_client() as client:
+            await client.users.revoke(user, uri_obj)
+
+    except ValueError as e:
+        raise ValueError(f"Could not unshare resource '{uri}': {e}") from e
