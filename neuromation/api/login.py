@@ -24,8 +24,9 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api.core import DEFAULT_TIMEOUT
-from neuromation.api.utils import asynccontextmanager
+from .core import DEFAULT_TIMEOUT
+from .users import get_token_username
+from .utils import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:
@@ -40,20 +41,12 @@ class AuthCode:
     def __init__(self, callback_url: Optional[URL] = None) -> None:
         self._future: asyncio.Future[str] = asyncio.Future()
 
-        self._verifier = self.generate_verifier()
-        self._challenge = self.generate_challenge(self._verifier)
+        self._verifier = urlsafe_unpadded_b64encode(secrets.token_bytes(32))
+        digest = hashlib.sha256(self._verifier.encode()).digest()
+        self._challenge = urlsafe_unpadded_b64encode(digest)
         self._challenge_method = "S256"
 
         self._callback_url = callback_url
-
-    @classmethod
-    def generate_verifier(cls) -> str:
-        return urlsafe_unpadded_b64encode(secrets.token_bytes(32))
-
-    @classmethod
-    def generate_challenge(cls, verifier: str) -> str:
-        digest = hashlib.sha256(verifier.encode()).digest()
-        return urlsafe_unpadded_b64encode(digest)
 
     @property
     def verifier(self) -> str:
@@ -208,7 +201,7 @@ async def create_app_server(
 
 
 @dataclass(frozen=True)
-class AuthToken:
+class _AuthToken:
     token: str
     expiration_time: int
     refresh_token: str = field(repr=False)
@@ -223,6 +216,10 @@ class AuthToken:
         current_time = int(tf())  # type: ignore
         return self.expiration_time <= current_time
 
+    @property
+    def username(self) -> str:
+        return get_token_username(self.token)
+
     @classmethod
     def create(
         cls,
@@ -231,7 +228,7 @@ class AuthToken:
         refresh_token: str,
         expiration_ratio: float = 0.75,
         time_factory: Optional[Callable[[], float]] = None,
-    ) -> "AuthToken":
+    ) -> "_AuthToken":
         time_factory = time_factory or cls.time_factory
         expiration_time = int(time_factory()) + int(expires_in * expiration_ratio)
         return cls(
@@ -242,7 +239,7 @@ class AuthToken:
         )
 
     @classmethod
-    def create_non_expiring(cls, token: str) -> "AuthToken":
+    def create_non_expiring(cls, token: str) -> "_AuthToken":
         # NOTE: for backward compatibility we assume that manually set token
         # expires in 3 years.
         expires_in = 60 * 60 * 24 * 365 * 3  # 3 years
@@ -265,7 +262,7 @@ class AuthTokenClient:
     async def __aexit__(self, *_: Sequence[Any]) -> None:
         await self.close()
 
-    async def request(self, code: AuthCode) -> AuthToken:
+    async def request(self, code: AuthCode) -> _AuthToken:
         payload = dict(
             grant_type="authorization_code",
             code_verifier=code.verifier,
@@ -279,13 +276,13 @@ class AuthTokenClient:
             except ClientResponseError as exc:
                 raise AuthException("failed to get an access token.") from exc
             resp_payload = await resp.json()
-            return AuthToken.create(
+            return _AuthToken.create(
                 token=resp_payload["access_token"],
                 expires_in=resp_payload["expires_in"],
                 refresh_token=resp_payload["refresh_token"],
             )
 
-    async def refresh(self, token: AuthToken) -> AuthToken:
+    async def refresh(self, token: _AuthToken) -> _AuthToken:
         payload = dict(
             grant_type="refresh_token",
             refresh_token=token.refresh_token,
@@ -297,7 +294,7 @@ class AuthTokenClient:
             except ClientResponseError as exc:
                 raise AuthException("failed to get an access token.") from exc
             resp_payload = await resp.json()
-            return AuthToken.create(
+            return _AuthToken.create(
                 token=resp_payload["access_token"],
                 expires_in=resp_payload["expires_in"],
                 refresh_token=token.refresh_token,
@@ -305,7 +302,7 @@ class AuthTokenClient:
 
 
 @dataclass(frozen=True)
-class AuthConfig:
+class _AuthConfig:
     auth_url: URL
     token_url: URL
 
@@ -342,7 +339,7 @@ class AuthConfig:
         audience: str,
         success_redirect_url: Optional[URL] = None,
         callback_urls: Optional[Sequence[URL]] = None,
-    ) -> "AuthConfig":
+    ) -> "_AuthConfig":
         return cls(
             auth_url=auth_url,
             token_url=token_url,
@@ -352,22 +349,11 @@ class AuthConfig:
             callback_urls=callback_urls or cls.callback_urls,
         )
 
-    @classmethod
-    def create_uninitialized(cls) -> "AuthConfig":
-        return cls.create(
-            auth_url=URL(""),
-            token_url=URL(""),
-            client_id="",
-            audience="",
-            success_redirect_url=None,
-            callback_urls=None,
-        )
-
 
 class AuthNegotiator:
     def __init__(
         self,
-        config: AuthConfig,
+        config: _AuthConfig,
         code_callback_client_factory: Type[
             AuthCodeCallbackClient
         ] = WebBrowserAuthCodeCallbackClient,
@@ -390,7 +376,7 @@ class AuthNegotiator:
             )
             return await code_callback_client.request(code)
 
-    async def refresh_token(self, token: Optional[AuthToken] = None) -> AuthToken:
+    async def refresh_token(self, token: Optional[_AuthToken] = None) -> _AuthToken:
         async with AuthTokenClient(
             url=self._config.token_url, client_id=self._config.client_id
         ) as token_client:
@@ -404,12 +390,9 @@ class AuthNegotiator:
             return token
 
 
-#: move the following API back to neuromation.api_factory
-
-
 @dataclass(frozen=True)
-class ServerConfig:
-    auth_config: AuthConfig
+class _ServerConfig:
+    auth_config: _AuthConfig
     registry_url: URL
 
 
@@ -417,7 +400,7 @@ class ConfigLoadException(Exception):
     pass
 
 
-async def get_server_config(url: URL) -> ServerConfig:
+async def get_server_config(url: URL) -> _ServerConfig:
     async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as client:
         async with client.get(url / "config") as resp:
             if resp.status != 200:
@@ -435,9 +418,9 @@ async def get_server_config(url: URL) -> ServerConfig:
             callback_urls = (
                 tuple(URL(u) for u in callback_urls)
                 if callback_urls is not None
-                else AuthConfig.callback_urls
+                else _AuthConfig.callback_urls
             )
-            auth_config = AuthConfig(
+            auth_config = _AuthConfig(
                 auth_url=auth_url,
                 token_url=token_url,
                 client_id=client_id,
@@ -446,4 +429,4 @@ async def get_server_config(url: URL) -> ServerConfig:
                 callback_urls=callback_urls,
             )
             registry_url = URL(payload["registry_url"])
-            return ServerConfig(registry_url=registry_url, auth_config=auth_config)
+            return _ServerConfig(registry_url=registry_url, auth_config=auth_config)

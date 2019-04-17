@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from yarl import URL
 
-from .core import Core
+from .core import _Core
 from .jobs import (
     Container,
     Image,
@@ -33,8 +33,8 @@ class TrainResult:
         )
 
 
-class Models:
-    def __init__(self, core: Core) -> None:
+class _Models:
+    def __init__(self, core: _Core) -> None:
         self._core = core
 
     async def train(
@@ -48,14 +48,10 @@ class Models:
         network: Optional[NetworkPortForwarding] = None,
         is_preemptible: bool = True,
     ) -> TrainResult:
-        http, ssh = network_to_api(network)
+        http = network_to_api(network)
 
         container = Container(
-            image=image.image,
-            command=image.command,
-            http=http,
-            ssh=ssh,
-            resources=resources,
+            image=image.image, command=image.command, http=http, resources=resources
         )
 
         payload = {

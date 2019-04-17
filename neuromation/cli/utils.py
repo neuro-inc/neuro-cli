@@ -16,15 +16,25 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    cast,
 )
 
 import click
+from click import BadParameter
 from yarl import URL
 
-from neuromation.api import Action, Client, ImageNameParser, JobDescription, Volume
+from neuromation.api import (
+    Action,
+    Client,
+    DockerImage,
+    Factory,
+    ImageNameParser,
+    JobDescription,
+    Volume,
+)
 from neuromation.utils import run
 
-from .rc import Config, ConfigFactory, save
+from .root import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
@@ -36,13 +46,19 @@ DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 
 
 async def _run_async_function(
-    func: Callable[..., Awaitable[_T]], cfg: Config, *args: Any, **kwargs: Any
+    init_client: bool,
+    func: Callable[..., Awaitable[_T]],
+    root: Root,
+    *args: Any,
+    **kwargs: Any,
 ) -> _T:
     loop = asyncio.get_event_loop()
     version_checker: AbstractVersionChecker
-    if cfg.disable_pypi_version_check:
+
+    if True:  # root.disable_pypi_version_check:
         version_checker = DummyVersionChecker()
     else:
+        root.pypi.warn_if_has_newer_version()
         # (ASvetlov) This branch is not tested intentionally
         # Don't want to fetch PyPI from unit tests
         # Later the checker initialization code will be refactored
@@ -50,23 +66,19 @@ async def _run_async_function(
         version_checker = VersionChecker()  # pragma: no cover
     task = loop.create_task(version_checker.run())
 
-    # Refresh auth0 token if needed
-    # Potentially it can be a parallel operation like PyPI version check
-    config = await ConfigFactory._refresh_auth_token(cfg)
-    if config != cfg:
-        nmrc_config_path = ConfigFactory.get_path()
-        save(nmrc_config_path, config)
-        # Use a refreshed config for command callback call
-        cfg = config
+    if init_client:
+        await root.init_client()
 
     try:
-        return await func(cfg, *args, **kwargs)
+        return await func(root, *args, **kwargs)
     finally:
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
         with suppress(asyncio.CancelledError):
             await version_checker.close()
+
+        await root.close()
 
         # looks ugly but proper fix requires aiohttp changes
         if sys.platform == "win32":
@@ -76,14 +88,21 @@ async def _run_async_function(
             await asyncio.sleep(0.1)
 
 
-def async_cmd(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
-    # N.B. the decorator implies @click.pass_obj
-    @click.pass_obj
-    @wraps(callback)
-    def wrapper(cfg: Config, *args: Any, **kwargs: Any) -> _T:
-        return run(_run_async_function(callback, cfg, *args, **kwargs))
+def async_cmd(
+    init_client: bool = True
+) -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
+    def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
+        # N.B. the decorator implies @click.pass_obj
+        @click.pass_obj
+        @wraps(callback)
+        def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
+            return run(
+                _run_async_function(init_client, callback, root, *args, **kwargs)
+            )
 
-    return wrapper
+        return wrapper
+
+    return deco
 
 
 class HelpFormatter(click.HelpFormatter):
@@ -343,12 +362,12 @@ async def resolve_job(client: Client, id_or_name: str) -> str:
     return job_id
 
 
-def parse_resource_for_sharing(uri: str, cfg: Config) -> URL:
+def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
-        parser = ImageNameParser(cfg.username, cfg.registry_url)
+        parser = ImageNameParser(root.username, root.registry_url)
         image = parser.parse_as_neuro_image(uri, raise_if_has_tag=True)
         uri = image.as_url_str()
     return URL(uri)
@@ -362,3 +381,40 @@ def parse_permission_action(action: str) -> Action:
         raise ValueError(
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )
+
+
+class ImageType(click.ParamType):
+    name = "image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> DockerImage:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        config = Factory(root.config_path)._read()
+        image_parser = ImageNameParser(config.auth_token.username, config.registry_url)
+        if image_parser.is_in_neuro_registry(value):
+            parsed_image = image_parser.parse_as_neuro_image(value)
+        else:
+            parsed_image = image_parser.parse_as_docker_image(value)
+        return parsed_image
+
+    def __repr__(self) -> str:
+        return "Image"
+
+
+class LocalRemotePortParamType(click.ParamType):
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> Tuple[int, int]:
+        try:
+            local_str, remote_str = value.split(":")
+            local, remote = int(local_str), int(remote_str)
+            if not (0 < local <= 65535 and 0 < remote <= 65535):
+                raise ValueError("Port should be in range 1 to 65535")
+            return local, remote
+        except ValueError as e:
+            raise BadParameter(f"{value} is not a valid port combination: {e}")
+
+
+LOCAL_REMOTE_PORT = LocalRemotePortParamType()

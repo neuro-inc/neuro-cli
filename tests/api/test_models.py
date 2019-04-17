@@ -1,10 +1,10 @@
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Client, Image, NetworkPortForwarding, Resources, TrainResult
+from neuromation.api import Image, NetworkPortForwarding, Resources, TrainResult
 
 
-async def test_model_train(aiohttp_server, token):
+async def test_model_train(aiohttp_server, make_client):
     JSON = {
         "job_id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "status": "failed",
@@ -20,7 +20,6 @@ async def test_model_train(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -42,10 +41,9 @@ async def test_model_train(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    network = NetworkPortForwarding({"http": 8181, "ssh": 22})
     resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181, "ssh": 22})
         ret = await client.models.train(

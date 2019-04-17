@@ -4,13 +4,15 @@ import logging
 import ssl
 import time
 import types
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type
 
 import aiohttp
 import certifi
 import pkg_resources
 
-from neuromation.cli.rc import NO_VERSION, ConfigFactory
+from neuromation.api.config import _PyPIVersion
+from neuromation.api.config_factory import Factory
 
 
 log = logging.getLogger(__name__)
@@ -45,9 +47,11 @@ class DummyVersionChecker(AbstractVersionChecker):
 class VersionChecker(AbstractVersionChecker):
     def __init__(
         self,
+        config_path: Path,
         connector: Optional[aiohttp.TCPConnector] = None,
         timer: Callable[[], float] = time.time,
     ) -> None:
+        self._config_path = config_path
         if connector is None:
             ssl_context = ssl.SSLContext()
             ssl_context.load_verify_locations(capath=certifi.where())
@@ -82,13 +86,17 @@ class VersionChecker(AbstractVersionChecker):
 
     async def update_latest_version(self) -> None:
         pypi_version = await self._fetch_pypi()
-        ConfigFactory.update_last_checked_version(pypi_version, int(self._timer()))
+        # Direct config overriding here is a little ugly
+        # Let's refactor it later (maybe with sqlite DB usage)
+        Factory(self._config_path)._update_last_checked_version(
+            pypi_version, int(self._timer())
+        )
 
     async def _fetch_pypi(self) -> Any:
         async with self._session.get("https://pypi.org/pypi/neuromation/json") as resp:
             if resp.status != 200:
                 log.debug("%s status on fetching PyPI", resp.status)
-                return NO_VERSION
+                return _PyPIVersion.NO_VERSION
             data = await resp.json()
         return self._get_max_version(data)
 
@@ -100,4 +108,4 @@ class VersionChecker(AbstractVersionChecker):
             ]
             return max(ver for ver in ret if not ver.is_prerelease)  # type: ignore
         except (KeyError, ValueError):
-            return NO_VERSION
+            return _PyPIVersion.NO_VERSION

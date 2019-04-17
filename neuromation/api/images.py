@@ -2,6 +2,7 @@ import logging
 import re
 from contextlib import suppress
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, List, Optional
 
 import aiodocker
@@ -9,10 +10,10 @@ import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from .abc import AbstractSpinner
-from .config import Config
-from .core import AuthorizationError, Core
-from .registry import Registry
+from .abc import AbstractDockerImageProgress
+from .config import _Config
+from .core import AuthorizationError, _Core
+from .registry import _Registry
 
 
 STATUS_FORBIDDEN = 403
@@ -22,6 +23,11 @@ STATUS_CUSTOM_ERROR = 900
 log = logging.getLogger(__name__)
 
 IMAGE_SCHEME = "image"
+
+
+class DockerImageOperation(str, Enum):
+    PUSH = "push"
+    PULL = "pull"
 
 
 @dataclass(frozen=True)
@@ -51,8 +57,8 @@ class DockerImage:
         return self.name + post
 
 
-class Images:
-    def __init__(self, core: Core, config: Config) -> None:
+class _Images:
+    def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
         self._temporary_images: List[str] = list()
@@ -71,11 +77,11 @@ class Images:
                     },
                 )
             raise
-        self._registry = Registry(
+        self._registry = _Registry(
             self._core.connector,
             self._config.registry_url.with_path("/v2/"),
-            self._config.token,
-            self._config.username,
+            self._config.auth_token.token,
+            self._config.auth_token.username,
         )
 
     async def close(self) -> None:
@@ -86,33 +92,28 @@ class Images:
         await self._registry.close()
 
     def _auth(self) -> Dict[str, str]:
-        return {"username": "token", "password": self._config.token}
+        return {"username": "token", "password": self._config.auth_token.token}
 
     async def push(
         self,
         local_image: DockerImage,
         remote_image: DockerImage,
-        spinner: AbstractSpinner,
+        progress: AbstractDockerImageProgress,
     ) -> DockerImage:
         repo = remote_image.as_repo_str()
-        spinner.start("Pushing image ...")
         try:
             await self._docker.images.tag(local_image.as_local_str(), repo)
         except DockerError as error:
-            spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
                     f"Image {local_image.as_local_str()} was not found "
                     "in your local docker images"
                 ) from error
-        spinner.tick()
         try:
             stream = await self._docker.images.push(
                 repo, auth=self._auth(), stream=True
             )
-            spinner.tick()
         except DockerError as error:
-            spinner.complete()
             # TODO check this part when registry fixed
             if error.status == STATUS_FORBIDDEN:
                 raise AuthorizationError(
@@ -120,29 +121,30 @@ class Images:
                 ) from error
             raise  # pragma: no cover
         async for obj in stream:
-            spinner.tick()
             if "error" in obj.keys():
-                spinner.complete()
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
-        spinner.complete()
+            elif "id" in obj.keys() and obj["id"] != remote_image.tag:
+                if "progress" in obj.keys():
+                    message = f"{obj['id']}: {obj['status']} {obj['progress']}"
+                else:
+                    message = f"{obj['id']}: {obj['status']}"
+                progress(message, obj["id"])
         return remote_image
 
     async def pull(
         self,
         remote_image: DockerImage,
         local_image: DockerImage,
-        spinner: AbstractSpinner,
+        progress: AbstractDockerImageProgress,
     ) -> DockerImage:
         repo = remote_image.as_repo_str()
-        spinner.start("Pulling image ...")
         try:
             stream = await self._docker.pull(
                 repo, auth=self._auth(), repo=repo, stream=True
             )
             self._temporary_images.append(repo)
         except DockerError as error:
-            spinner.complete()
             if error.status == STATUS_NOT_FOUND:
                 raise ValueError(
                     f"Image {remote_image.as_url_str()} was not found " "in registry"
@@ -153,18 +155,19 @@ class Images:
                     f"Access denied {remote_image.as_url_str()}"
                 ) from error
             raise  # pragma: no cover
-        spinner.tick()
 
         async for obj in stream:
-            spinner.tick()
             if "error" in obj.keys():
-                spinner.complete()
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(STATUS_CUSTOM_ERROR, error_details)
-        spinner.tick()
+            elif "id" in obj.keys() and obj["id"] != remote_image.tag:
+                if "progress" in obj.keys():
+                    message = f"{obj['id']}: {obj['status']} {obj['progress']}"
+                else:
+                    message = f"{obj['id']}: {obj['status']}"
+                progress(message, obj["id"])
 
         await self._docker.images.tag(repo, local_image.as_local_str())
-        spinner.complete()
 
         return local_image
 

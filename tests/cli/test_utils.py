@@ -1,16 +1,18 @@
+import click
 import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Action, Client
+from neuromation.api import Action
 from neuromation.cli.utils import (
+    LocalRemotePortParamType,
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
 )
 
 
-async def test_resolve_job_id__no_jobs_found(aiohttp_server, token):
+async def test_resolve_job_id__no_jobs_found(aiohttp_server, make_client):
     JSON = {"jobs": []}
     job_id = "job-81839be3-3ecf-4ec5-80d9-19b1588869db"
     job_name_to_resolve = job_id
@@ -24,12 +26,12 @@ async def test_resolve_job_id__no_jobs_found(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 
 
-async def test_resolve_job_id__single_job_found(aiohttp_server, token):
+async def test_resolve_job_id__single_job_found(aiohttp_server, make_client):
     job_name_to_resolve = "test-job-name-555"
     JSON = {
         "jobs": [
@@ -69,12 +71,12 @@ async def test_resolve_job_id__single_job_found(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 
 
-async def test_resolve_job_id__multiple_jobs_found(aiohttp_server, token):
+async def test_resolve_job_id__multiple_jobs_found(aiohttp_server, make_client):
     job_name_to_resolve = "job-name-123-000"
     JSON = {
         "jobs": [
@@ -139,12 +141,12 @@ async def test_resolve_job_id__multiple_jobs_found(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 
 
-async def test_resolve_job_id__server_error(aiohttp_server, token):
+async def test_resolve_job_id__server_error(aiohttp_server, make_client):
     job_id = "job-81839be3-3ecf-4ec5-80d9-19b1588869db"
     job_name_to_resolve = job_id
 
@@ -157,62 +159,91 @@ async def test_resolve_job_id__server_error(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(client, job_name_to_resolve)
         assert resolved == job_id
 
 
-def test_parse_resource_for_sharing_image_no_tag(config):
+async def test_parse_resource_for_sharing_image_no_tag(root):
     uri = "image://~/ubuntu"
-    parsed = parse_resource_for_sharing(uri, config)
+    parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL("image://user/ubuntu:latest")
 
 
-def test_parse_resource_for_sharing_image_with_tag_fail(config):
+async def test_parse_resource_for_sharing_image_with_tag_fail(root):
     uri = "image://~/ubuntu:latest"
     with pytest.raises(ValueError, match="tag is not allowed"):
-        parse_resource_for_sharing(uri, config)
+        parse_resource_for_sharing(uri, root)
 
 
-def test_parse_permission_action_read_lowercase(config):
+def test_parse_permission_action_read_lowercase():
     action = "read"
     assert parse_permission_action(action) == Action.READ
 
 
-def test_parse_permission_action_read(config):
+def test_parse_permission_action_read():
     action = "READ"
     assert parse_permission_action(action) == Action.READ
 
 
-def test_parse_permission_action_write_lowercase(config):
+def test_parse_permission_action_write_lowercase():
     action = "write"
     assert parse_permission_action(action) == Action.WRITE
 
 
-def test_parse_permission_action_write(config):
+def test_parse_permission_action_write():
     action = "WRITE"
     assert parse_permission_action(action) == Action.WRITE
 
 
-def test_parse_permission_action_manage_lowercase(config):
+def test_parse_permission_action_manage_lowercase():
     action = "manage"
     assert parse_permission_action(action) == Action.MANAGE
 
 
-def test_parse_permission_action_manage(config):
+def test_parse_permission_action_manage():
     action = "MANAGE"
     assert parse_permission_action(action) == Action.MANAGE
 
 
-def test_parse_permission_action_wrong_string(config):
+def test_parse_permission_action_wrong_string():
     action = "tosh"
     err = "invalid permission action 'tosh', allowed values: read, write, manage"
     with pytest.raises(ValueError, match=err):
         parse_permission_action(action)
 
 
-def test_parse_permission_action_wrong_empty(config):
+def test_parse_permission_action_wrong_empty():
     action = ""
     err = "invalid permission action '', allowed values: read, write, manage"
     with pytest.raises(ValueError, match=err):
         parse_permission_action(action)
+
+
+@pytest.mark.parametrize(
+    "arg,val",
+    [("1:1", (1, 1)), ("1:10", (1, 10)), ("434:1", (434, 1)), ("0897:123", (897, 123))],
+)
+def test_local_remote_port_param_type_valid(arg, val) -> None:
+    param = LocalRemotePortParamType()
+    assert param.convert(arg, None, None) == val
+
+
+@pytest.mark.parametrize(
+    "arg",
+    [
+        "1:",
+        "-123:10",
+        "34:-65500",
+        "hello:45",
+        "5555:world",
+        "65536:1",
+        "0:0",
+        "none",
+        "",
+    ],
+)
+def test_local_remote_port_param_type_invalid(arg) -> None:
+    param = LocalRemotePortParamType()
+    with pytest.raises(click.BadParameter, match=".* is not a valid port combination"):
+        param.convert(arg, None, None)

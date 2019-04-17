@@ -6,7 +6,7 @@ from aiohttp.web import HTTPCreated, HTTPNoContent
 from jose import JWTError, jwt
 from yarl import URL
 
-from .core import ClientError, Core
+from .core import ClientError, _Core
 
 
 JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
@@ -45,9 +45,9 @@ class Permission:
         return primitive
 
 
-class Users:
-    def __init__(self, api: Core) -> None:
-        self._core = api
+class _Users:
+    def __init__(self, core: _Core) -> None:
+        self._core = core
 
     async def share(self, user: str, permission: Permission) -> None:
         url = URL(f"users/{user}/permissions")

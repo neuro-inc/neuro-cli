@@ -1,44 +1,35 @@
 import ssl
 from types import TracebackType
-from typing import Optional, Type, Union
+from typing import Optional, Type
 
 import aiohttp
 import certifi
-from yarl import URL
 
-from .config import Config
-from .core import DEFAULT_TIMEOUT, Core
-from .images import Images
-from .jobs import Jobs
-from .models import Models
-from .storage import Storage
-from .users import Users
+from .config import _Config
+from .core import DEFAULT_TIMEOUT, _Core
+from .images import _Images
+from .jobs import _Jobs
+from .models import _Models
+from .storage import _Storage
+from .users import _Users
 
 
 class Client:
     def __init__(
-        self,
-        url: Union[URL, str],
-        token: str,
-        *,
-        registry_url: str = "",
-        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
+        self, config: _Config, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
     ) -> None:
-        if isinstance(url, str):
-            url = URL(url)
-        self._url = url
-        self._registry_url = URL(registry_url)
-        assert token
-        self._config = Config(url, self._registry_url, token)
+        self._config = config
         self._ssl_context = ssl.SSLContext()
         self._ssl_context.load_verify_locations(capath=certifi.where())
         self._connector = aiohttp.TCPConnector(ssl=self._ssl_context)
-        self._core = Core(self._connector, url, token, timeout)
-        self._jobs = Jobs(self._core, token)
-        self._models = Models(self._core)
-        self._storage = Storage(self._core, self._config)
-        self._users = Users(self._core)
-        self._images: Optional[Images] = None
+        self._core = _Core(
+            self._connector, self._config.url, self._config.auth_token.token, timeout
+        )
+        self._jobs = _Jobs(self._core, self._config)
+        self._models = _Models(self._core)
+        self._storage = _Storage(self._core, self._config)
+        self._users = _Users(self._core)
+        self._images: Optional[_Images] = None
 
     async def close(self) -> None:
         await self._core.close()
@@ -59,30 +50,26 @@ class Client:
 
     @property
     def username(self) -> str:
-        return self._config.username
+        return self._config.auth_token.username
 
     @property
-    def cfg(self) -> Config:
-        return self._config
-
-    @property
-    def jobs(self) -> Jobs:
+    def jobs(self) -> _Jobs:
         return self._jobs
 
     @property
-    def models(self) -> Models:
+    def models(self) -> _Models:
         return self._models
 
     @property
-    def storage(self) -> Storage:
+    def storage(self) -> _Storage:
         return self._storage
 
     @property
-    def users(self) -> Users:
+    def users(self) -> _Users:
         return self._users
 
     @property
-    def images(self) -> Images:
+    def images(self) -> _Images:
         if self._images is None:
-            self._images = Images(self._core, self._config)
+            self._images = _Images(self._core, self._config)
         return self._images

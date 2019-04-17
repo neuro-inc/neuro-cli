@@ -12,10 +12,9 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.cli.rc import Client
 
 
-async def test_jobs_monitor(aiohttp_server, token):
+async def test_jobs_monitor(aiohttp_server, make_client):
     async def log_stream(request):
         assert request.headers["Accept-Encoding"] == "identity"
         resp = web.StreamResponse()
@@ -32,7 +31,7 @@ async def test_jobs_monitor(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     lst = []
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         async for data in client.jobs.monitor("job-id"):
             lst.append(data)
 
@@ -52,7 +51,7 @@ async def test_jobs_monitor(aiohttp_server, token):
     )
 
 
-async def test_monitor_notexistent_job(aiohttp_server, token):
+async def test_monitor_notexistent_job(aiohttp_server, make_client):
     async def handler(request):
         raise web.HTTPNotFound()
 
@@ -62,14 +61,14 @@ async def test_monitor_notexistent_job(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     lst = []
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         with pytest.raises(ResourceNotFound):
             async for data in client.jobs.monitor("job-id"):
                 lst.append(data)
     assert lst == []
 
 
-async def test_job_top(aiohttp_server, token):
+async def test_job_top(aiohttp_server, make_client):
     def get_data_chunk(index):
         return {
             "cpu": 0.5,
@@ -100,14 +99,14 @@ async def test_job_top(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     lst = []
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         async for data in client.jobs.top("job-id"):
             lst.append(data)
 
     assert lst == [get_job_telemetry(i) for i in range(10)]
 
 
-async def test_top_finished_job(aiohttp_server, token):
+async def test_top_finished_job(aiohttp_server, make_client):
     async def handler(request):
         ws = web.WebSocketResponse()
         await ws.prepare(request)
@@ -121,14 +120,14 @@ async def test_top_finished_job(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     lst = []
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         with pytest.raises(ValueError, match="not running"):
             async for data in client.jobs.top("job-id"):
                 lst.append(data)
     assert lst == []
 
 
-async def test_top_nonexisting_job(aiohttp_server, token):
+async def test_top_nonexisting_job(aiohttp_server, make_client):
     async def handler(request):
         raise web.HTTPBadRequest()
 
@@ -138,14 +137,14 @@ async def test_top_nonexisting_job(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     lst = []
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         with pytest.raises(ValueError, match="not found"):
             async for data in client.jobs.top("job-id"):
                 lst.append(data)
     assert lst == []
 
 
-async def test_kill_not_found_error(aiohttp_server, token):
+async def test_kill_not_found_error(aiohttp_server, make_client):
     async def handler(request):
         raise web.HTTPNotFound()
 
@@ -154,12 +153,12 @@ async def test_kill_not_found_error(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         with pytest.raises(ResourceNotFound):
             await client.jobs.kill("job-id")
 
 
-async def test_kill_ok(aiohttp_server, token):
+async def test_kill_ok(aiohttp_server, make_client):
     async def handler(request):
         raise web.HTTPNoContent()
 
@@ -168,13 +167,13 @@ async def test_kill_ok(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.kill("job-id")
 
     assert ret is None
 
 
-async def test_status_failed(aiohttp_server, token):
+async def test_status_failed(aiohttp_server, make_client):
     JSON = {
         "status": "failed",
         "id": "job-id",
@@ -195,7 +194,6 @@ async def test_status_failed(aiohttp_server, token):
             "image": "submit-image-name",
             "command": "submit-command",
             "http": {"port": 8181},
-            "ssh": {"port": 22},
             "resources": {
                 "memory_mb": "4096",
                 "cpu": 7.0,
@@ -226,13 +224,13 @@ async def test_status_failed(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_status_with_ssh_and_http(aiohttp_server, token):
+async def test_status_with_ssh_and_http(aiohttp_server, make_client):
     JSON = {
         "status": "running",
         "id": "job-id",
@@ -253,7 +251,6 @@ async def test_status_with_ssh_and_http(aiohttp_server, token):
             "image": "submit-image-name",
             "command": "submit-command",
             "http": {"port": 8181},
-            "ssh": {"port": 22},
             "resources": {
                 "memory_mb": "4096",
                 "cpu": 7.0,
@@ -284,13 +281,13 @@ async def test_status_with_ssh_and_http(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit(aiohttp_server, token):
+async def test_job_submit(aiohttp_server, make_client):
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "status": "failed",
@@ -327,7 +324,6 @@ async def test_job_submit(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -358,9 +354,9 @@ async def test_job_submit(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -381,7 +377,7 @@ async def test_job_submit(aiohttp_server, token):
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit_with_name_and_description(aiohttp_server, token):
+async def test_job_submit_with_name_and_description(aiohttp_server, make_client):
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "name": "test-job-name",
@@ -420,7 +416,6 @@ async def test_job_submit_with_name_and_description(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -453,9 +448,9 @@ async def test_job_submit_with_name_and_description(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -477,7 +472,7 @@ async def test_job_submit_with_name_and_description(aiohttp_server, token):
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit_no_volumes(aiohttp_server, token):
+async def test_job_submit_no_volumes(aiohttp_server, make_client):
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "name": "test-job-name",
@@ -515,7 +510,6 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -536,9 +530,9 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         ret = await client.jobs.submit(
             image=image,
@@ -553,7 +547,7 @@ async def test_job_submit_no_volumes(aiohttp_server, token):
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit_preemptible(aiohttp_server, token):
+async def test_job_submit_preemptible(aiohttp_server, make_client):
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "name": "test-job-name",
@@ -591,7 +585,6 @@ async def test_job_submit_preemptible(aiohttp_server, token):
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
-                "ssh": {"port": 22},
                 "resources": {
                     "memory_mb": "4G",
                     "cpu": 7.0,
@@ -624,9 +617,9 @@ async def test_job_submit_preemptible(aiohttp_server, token):
 
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181, "ssh": 22})
+        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -691,7 +684,7 @@ def create_job_response(
     return result
 
 
-async def test_list_no_filter(aiohttp_server, token):
+async def test_list_no_filter(aiohttp_server, make_client):
     jobs = [
         create_job_response("job-id-1", "pending", name="job-name-1"),
         create_job_response("job-id-2", "running", name="job-name-1"),
@@ -707,14 +700,14 @@ async def test_list_no_filter(aiohttp_server, token):
     app.router.add_get("/jobs", handler)
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list()
 
     job_descriptions = [JobDescription.from_api(job) for job in jobs]
     assert ret == job_descriptions
 
 
-async def test_list_filter_by_name(aiohttp_server, token):
+async def test_list_filter_by_name(aiohttp_server, make_client):
     name_1 = "job-name-1"
     name_2 = "job-name-2"
     jobs = [
@@ -741,14 +734,14 @@ async def test_list_filter_by_name(aiohttp_server, token):
     app.router.add_get("/jobs", handler)
     srv = await aiohttp_server(app)
 
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(name=name_1)
 
     job_descriptions = [JobDescription.from_api(job) for job in jobs]
     assert ret == job_descriptions[:3]
 
 
-async def test_list_filter_by_statuses(aiohttp_server, token):
+async def test_list_filter_by_statuses(aiohttp_server, make_client):
     name_1 = "job-name-1"
     name_2 = "job-name-2"
     jobs = [
@@ -776,7 +769,7 @@ async def test_list_filter_by_statuses(aiohttp_server, token):
     srv = await aiohttp_server(app)
 
     statuses = {"failed", "succeeded"}
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses)
 
     job_descriptions = [JobDescription.from_api(job) for job in jobs]
@@ -855,7 +848,7 @@ class TestVolumeParsing:
         assert Volume.from_cli("bob", volume_param) == volume
 
 
-async def test_list_filter_by_name_and_statuses(aiohttp_server, token):
+async def test_list_filter_by_name_and_statuses(aiohttp_server, make_client):
     name_1 = "job-name-1"
     name_2 = "job-name-2"
     jobs = [
@@ -888,7 +881,7 @@ async def test_list_filter_by_name_and_statuses(aiohttp_server, token):
 
     statuses = {"pending", "succeeded"}
     name = "job-name-1"
-    async with Client(srv.make_url("/"), token) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses, name=name)
 
     job_descriptions = [JobDescription.from_api(job) for job in jobs]

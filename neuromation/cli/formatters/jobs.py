@@ -8,7 +8,7 @@ from sys import platform
 from typing import Iterable, Iterator, List, Mapping
 
 import humanize
-from click import style
+from click import style, unstyle
 from dateutil.parser import isoparse  # type: ignore
 
 from neuromation.api import (
@@ -18,12 +18,8 @@ from neuromation.api import (
     JobTelemetry,
     Resources,
 )
+from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
-
-BEFORE_PROGRESS = "\r"
-AFTER_PROGRESS = "\n"
-CLEAR_LINE_TAIL = "\033[0K"
-LINE_UP = "\033[1A"
 
 COLORS = {
     JobStatus.PENDING: "yellow",
@@ -305,48 +301,76 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
-    if platform == "win32":
-        SPINNER = ("-", "\\", "|", "/")
-    else:
-        SPINNER = ("◢", "◣", "◤", "◥")
-    LINE_PRE = BEFORE_PROGRESS + "\r" + style("Status", bold=True) + ": "
+    @classmethod
+    def create(cls, tty: bool, color: bool, quiet: bool) -> "JobStartProgress":
+        if quiet:
+            return JobStartProgress()
+        elif tty:
+            return DetailedJobStartProgress(color)
+        return StreamJobStartProgress()
 
-    def __init__(self, color: bool) -> None:
-        self._color = color
+    def __call__(self, job: JobDescription) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+
+class DetailedJobStartProgress(JobStartProgress):
+    def __init__(self, color: bool):
         self._time = time.time()
-        self._spinner = itertools.cycle(self.SPINNER)
+        self._color = color
         self._prev = ""
-        self._prev_reason = ""
+        if platform == "win32":
+            self._spinner = itertools.cycle("-\\|/")
+        else:
+            self._spinner = itertools.cycle("◢◣◤◥")
+        self._printer = TTYPrinter()
+        self._lineno = 0
 
-    def __call__(self, job: JobDescription, *, finish: bool = False) -> str:
-        if not self._color:
-            return ""
+    def __call__(self, job: JobDescription) -> None:
         new_time = time.time()
         dt = new_time - self._time
-        msg = format_job_status(job.status)
+        msg = "Status: " + format_job_status(job.status)
         if job.history.reason:
             reason = job.history.reason
-            self._prev_reason = reason
-        elif not self._prev_reason:
+        elif job.status == JobStatus.PENDING:
             reason = "Initializing"
         else:
             reason = ""
         if reason:
             msg += " " + style(reason, bold=True)
-        if self._prev:
-            ret = LINE_UP
-        else:
-            ret = ""
-        # ret = LINE_UP
-        # ret = ""
+        if not self._color:
+            msg = unstyle(msg)
         if msg != self._prev:
             if self._prev:
-                ret += self.LINE_PRE + self._prev + CLEAR_LINE_TAIL + "\n"
+                self._printer.print(self._prev, lineno=self._lineno)
             self._prev = msg
-        ret += self.LINE_PRE + msg + f" [{dt:.1f} sec]"
-        if not finish:
-            ret += " " + next(self._spinner)
-        ret += CLEAR_LINE_TAIL + "\n"
-        if finish:
-            ret += AFTER_PROGRESS
-        return ret
+            self._printer.print(msg)
+            self._lineno = self._printer.total_lines
+        else:
+            self._printer.print(
+                f"{msg} {next(self._spinner)} [{dt:.1f} sec]", lineno=self._lineno
+            )
+
+
+class StreamJobStartProgress(JobStartProgress):
+    def __init__(self) -> None:
+        self._printer = StreamPrinter()
+        self._prev = ""
+
+    def __call__(self, job: JobDescription) -> None:
+        msg = f"Status: {job.status}"
+        if job.history.reason:
+            reason = job.history.reason
+        elif job.status == JobStatus.PENDING:
+            reason = "Initializing"
+        else:
+            reason = ""
+        if reason:
+            msg += " " + reason
+        if msg != self._prev:
+            self._printer.print(msg)
+            self._prev = msg
+        else:
+            self._printer.tick()

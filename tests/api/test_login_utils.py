@@ -3,7 +3,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.cli.login import AuthConfig, ServerConfig, get_server_config
+from neuromation.api.login import _AuthConfig, _ServerConfig, get_server_config
 
 
 async def test_get_server_config(aiohttp_server):
@@ -36,9 +36,9 @@ async def test_get_server_config(aiohttp_server):
     srv = await aiohttp_server(app)
 
     config = await get_server_config(srv.make_url("/"))
-    assert config == ServerConfig(
+    assert config == _ServerConfig(
         registry_url=URL(registry_url),
-        auth_config=AuthConfig(
+        auth_config=_AuthConfig(
             auth_url=URL(auth_url),
             token_url=URL(token_url),
             client_id=client_id,
@@ -73,9 +73,9 @@ async def test_get_server_config_no_callback_urls(aiohttp_server):
     srv = await aiohttp_server(app)
 
     config = await get_server_config(srv.make_url("/"))
-    assert config == ServerConfig(
+    assert config == _ServerConfig(
         registry_url=URL(registry_url),
-        auth_config=AuthConfig(
+        auth_config=_AuthConfig(
             auth_url=URL(auth_url),
             token_url=URL(token_url),
             client_id=client_id,

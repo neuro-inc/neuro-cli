@@ -13,16 +13,17 @@ from typing import (
     Sequence,
     Set,
     SupportsInt,
-    Tuple,
 )
 
+import attr
 from aiohttp import WSServerHandshakeError
 from multidict import MultiDict
 from yarl import URL
 
 from neuromation.utils import kill_proc_tree
 
-from .core import Core, IllegalArgumentError
+from .config import _Config
+from .core import IllegalArgumentError, _Core
 from .url_utils import normalize_storage_path_uri
 
 
@@ -36,7 +37,12 @@ class Resources:
 
     @classmethod
     def create(
-        cls, cpu: float, gpu: int, gpu_model: str, memory: str, extshm: bool
+        cls,
+        cpu: float,
+        gpu: Optional[int],
+        gpu_model: Optional[str],
+        memory: str,
+        extshm: bool,
     ) -> "Resources":
         return cls(memory, cpu, gpu, extshm, gpu_model)
 
@@ -65,14 +71,12 @@ class NetworkPortForwarding:
 
     @classmethod
     def from_cli(
-        cls, http: SupportsInt, ssh: SupportsInt, http_auth: bool = False
+        cls, http: SupportsInt, http_auth: bool = False
     ) -> Optional["NetworkPortForwarding"]:
         net = None
         ports: Dict[str, int] = {}
         if http:
             ports["http"] = int(http)
-        if ssh:
-            ports["ssh"] = int(ssh)
         if ports:
             net = NetworkPortForwarding(ports=ports, http_auth=http_auth)
         return net
@@ -178,32 +182,13 @@ class HTTPPort:
         )
 
 
-@dataclass(frozen=True)
-class SSHPort:
-    port: int
-
-    def to_api(self) -> Dict[str, Any]:
-        ret = {"port": self.port}
-        return ret
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "SSHPort":
-        return SSHPort(port=data.get("port", -1))
-
-
-def network_to_api(
-    network: Optional["NetworkPortForwarding"]
-) -> Tuple[Optional[HTTPPort], Optional[SSHPort]]:
+def network_to_api(network: Optional["NetworkPortForwarding"]) -> Optional[HTTPPort]:
     http = None
-    ssh = None
-    if network:
-        if "http" in network.ports:
-            http = HTTPPort.from_api(
-                {"port": network.ports["http"], "requires_auth": network.http_auth}
-            )
-        if "ssh" in network.ports:
-            ssh = SSHPort.from_api({"port": network.ports["ssh"]})
-    return http, ssh
+    if network and "http" in network.ports:
+        http = HTTPPort.from_api(
+            {"port": network.ports["http"], "requires_auth": network.http_auth}
+        )
+    return http
 
 
 @dataclass(frozen=True)
@@ -212,7 +197,6 @@ class Container:
     resources: Resources
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
-    ssh: Optional[SSHPort] = None
     # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
     env: Dict[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
@@ -224,7 +208,6 @@ class Container:
             resources=Resources.from_api(data["resources"]),
             command=data.get("command", None),
             http=HTTPPort.from_api(data["http"]) if "http" in data else None,
-            ssh=SSHPort.from_api(data["ssh"]) if "ssh" in data else None,
             env=data.get("env", dict()),
             volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
         )
@@ -238,8 +221,6 @@ class Container:
             primitive["command"] = self.command
         if self.http:
             primitive["http"] = self.http.to_api()
-        if self.ssh:
-            primitive["ssh"] = self.ssh.to_api()
         if self.env:
             primitive["env"] = self.env
         if self.volumes:
@@ -252,7 +233,6 @@ class ContainerPayload:
     image: str
     command: Optional[str]
     http: Optional[Mapping[str, int]]
-    ssh: Optional[Mapping[str, int]]
     resources: Resources
     env: Optional[Mapping[str, str]] = None
 
@@ -262,8 +242,6 @@ class ContainerPayload:
             primitive["command"] = self.command
         if self.http:
             primitive["http"] = self.http
-        if self.ssh:
-            primitive["ssh"] = self.ssh
         if self.env:
             primitive["env"] = self.env
         return primitive
@@ -353,24 +331,24 @@ class JobTelemetry:
         )
 
 
-class Jobs:
-    def __init__(self, core: Core, token: str) -> None:
+class _Jobs:
+    def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
-        self._token = token
+        self._config = config
 
     async def submit(
         self,
         *,
         image: Image,
         resources: Resources,
-        network: Optional[NetworkPortForwarding],
-        volumes: Optional[List[Volume]],
+        network: Optional[NetworkPortForwarding] = None,
+        volumes: Optional[List[Volume]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_preemptible: bool = False,
         env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
-        http, ssh = network_to_api(network)
+        http = network_to_api(network)
         if env is None:
             real_env: Dict[str, str] = {}
         else:
@@ -383,7 +361,6 @@ class Jobs:
             image=image.image,
             command=image.command,
             http=http,
-            ssh=ssh,
             resources=resources,
             env=real_env,
             volumes=volumes,
@@ -426,8 +403,9 @@ class Jobs:
         self, id: str
     ) -> Any:  # real type is async generator with data chunks
         url = URL(f"jobs/{id}/log")
+        timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
-            "GET", url, headers={"Accept-Encoding": "identity"}
+            "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
         ) as resp:
             async for data in resp.content.iter_any():
                 yield data
@@ -462,7 +440,7 @@ class Jobs:
         payload = json.dumps(
             {
                 "method": "job_exec",
-                "token": self._token,
+                "token": self._config.auth_token.token,
                 "params": {"job": id, "command": cmd},
             }
         )
@@ -501,7 +479,7 @@ class Jobs:
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._token,
+                "token": self._config.auth_token.token,
                 "params": {"job": id, "port": job_port},
             }
         )
@@ -539,11 +517,12 @@ class Jobs:
                 "UserKnownHostsFile=/dev/null",
             ]
         command += [f"{server_url.user}@{server_url.host}"]
-        print(f"Port of {id} is forwarded to localhost:{local_port}")
-        print(f"Press ^C to stop forwarding")
         proc = await asyncio.create_subprocess_exec(*command)
         try:
-            return await proc.wait()
+            result = await proc.wait()
+            if result != 0:
+                raise ValueError(f"error code {result}")
+            return local_port
         finally:
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks

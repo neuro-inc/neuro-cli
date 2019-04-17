@@ -24,10 +24,10 @@
 		* [neuro image pull](#neuro-image-pull)
 	* [neuro config](#neuro-config)
 		* [neuro config login](#neuro-config-login)
+		* [neuro config login-with-token](#neuro-config-login-with-token)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config docker](#neuro-config-docker)
-		* [neuro config auth](#neuro-config-auth)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
 		* [neuro completion generate](#neuro-completion-generate)
@@ -106,7 +106,7 @@ Name | Description|
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
-| _[neuro port-forward](#neuro-port-forward)_| Forward a port of a running job exposed with -ssh option to a local port |
+| _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job to local port\(s) |
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
@@ -150,7 +150,7 @@ Name | Description|
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
-| _[neuro job port-forward](#neuro-job-port-forward)_| Forward a port of a running job exposed with -ssh option to a local port |
+| _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a running job to local port\(s) |
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
@@ -177,11 +177,6 @@ neuro job submit [OPTIONS] IMAGE [CMD]...
 # Directory /mod mounted to /mod directory in read-write mode.
 neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
-# Starts a container pytorch:latest with connection enabled to port 22 and
-# sets PYTHONPATH environment value to /python.
-# Please note that SSH server should be provided by container.
-neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
-
 ```
 
 **Options:**
@@ -195,7 +190,6 @@ Name | Description|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
-|_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
@@ -285,12 +279,12 @@ Name | Description|
 
 ### neuro job port-forward
 
-Forward a port of a running job exposed with -ssh option to a local port.
+Forward port\(s) of a running job to local port\(s).
 
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
+neuro job port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
 ```
 
 **Options:**
@@ -599,6 +593,7 @@ neuro image push alpine image://myfriend/alpine:shared
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -628,6 +623,7 @@ neuro image pull image://username/my-alpine:production alpine:from-registry
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -655,10 +651,10 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
+| _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuromation Platform with token |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
-| _[neuro config auth](#neuro-config-auth)_| Update authorization token |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
 
@@ -666,12 +662,31 @@ Name | Description|
 
 ### neuro config login
 
-Log into Neuromation Platform.
+Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
 ```bash
 neuro config login [OPTIONS] [URL]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config login-with-token
+
+Log into Neuromation Platform with token.<br/><br/>TOKEN is authentication token provided by Neuromation administration team.<br/>URL is a platform entrypoint URL.
+
+**Usage:**
+
+```bash
+neuro config login-with-token [OPTIONS] TOKEN [URL]
 ```
 
 **Options:**
@@ -736,25 +751,6 @@ neuro config docker [OPTIONS]
 Name | Description|
 |----|------------|
 |_\--docker-config PATH_|Specifies the location of the Docker client configuration files|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config auth
-
-Update authorization token.
-
-**Usage:**
-
-```bash
-neuro config auth [OPTIONS] TOKEN
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
 |_--help_|Show this message and exit.|
 
 
@@ -882,11 +878,6 @@ neuro submit [OPTIONS] IMAGE [CMD]...
 # Directory /mod mounted to /mod directory in read-write mode.
 neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
-# Starts a container pytorch:latest with connection enabled to port 22 and
-# sets PYTHONPATH environment value to /python.
-# Please note that SSH server should be provided by container.
-neuro job submit --env PYTHONPATH=/python --volume storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
-
 ```
 
 **Options:**
@@ -900,7 +891,6 @@ Name | Description|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
-|_--ssh INTEGER_|Enable SSH port forwarding to container|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
@@ -990,12 +980,12 @@ Name | Description|
 
 ## neuro port-forward
 
-Forward a port of a running job exposed with -ssh option to a local port.
+Forward port\(s) of a running job to local port\(s).
 
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB LOCAL_PORT REMOTE_PORT
+neuro port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
 ```
 
 **Options:**
@@ -1067,7 +1057,7 @@ Name | Description|
 
 ## neuro login
 
-Log into Neuromation Platform.
+Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
@@ -1284,6 +1274,7 @@ neuro image push alpine image://myfriend/alpine:shared
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -1313,6 +1304,7 @@ neuro image pull image://username/my-alpine:production alpine:from-registry
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
