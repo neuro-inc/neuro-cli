@@ -90,11 +90,11 @@ jobs:
     <<: *defaults
     steps:
       - run:
-        name: trigger platform-e2e tests
-	command: |
-          curl -X POST --header "Content-Type: application/json" \
-	       -d '{"branch":"master"}'
-	       https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
+          name: trigger platform-e2e tests
+          command: |
+              curl -X POST --header "Content-Type: application/json" \
+                   -d '{"branch":"master"}'
+                   https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
 
 
 workflows:
@@ -109,9 +109,9 @@ workflows:
               only: /^v.*/
       - trigger_e2e:
           context: org-global:
-	  filters:
-	    branches:
-	      only: master
+          filters:
+            branches:
+              only: master
       - devpi_deploy:
           context: org-global
           requires:
