@@ -26,7 +26,7 @@ async def mocked_share_client(aiohttp_server, make_client):
 async def mocked_revoke_client(aiohttp_server, make_client):
     async def handler(request):
         assert "uri" in request.query
-        raise web.HTTPCreated()
+        raise web.HTTPNoContent()
 
     app = web.Application()
     app.router.add_delete("/users/bill/permissions", handler)
