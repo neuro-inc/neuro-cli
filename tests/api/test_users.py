@@ -23,7 +23,7 @@ async def mocked_share_client(aiohttp_server, make_client):
 
 
 @pytest.fixture()
-async def mocked_revoke_client(aiohttp_server, token):
+async def mocked_revoke_client(aiohttp_server, make_client):
     async def handler(request):
         assert "uri" in request.query
         raise web.HTTPCreated()
@@ -31,7 +31,7 @@ async def mocked_revoke_client(aiohttp_server, token):
     app = web.Application()
     app.router.add_delete("/users/bill/permissions", handler)
     srv = await aiohttp_server(app)
-    client = Client(srv.make_url("/"), token)
+    client = make_client(srv.make_url("/"))
     yield client
     await client.close()
 
