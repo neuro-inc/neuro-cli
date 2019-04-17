@@ -52,6 +52,7 @@
 	* [neuro push](#neuro-push)
 	* [neuro pull](#neuro-pull)
 	* [neuro share](#neuro-share)
+	* [neuro revoke](#neuro-revoke)
 * [Api](#Api)
 * [Contributing](#Contributing)
 
@@ -121,6 +122,7 @@ Name | Description|
 | _[neuro push](#neuro-push)_| Push an image to platform registry |
 | _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
 | _[neuro share](#neuro-share)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro share... |
+| _[neuro revoke](#neuro-revoke)_| Revoke from a USER permissions for previously shared resource specified by URI... |
 
 
 
@@ -1327,6 +1329,35 @@ neuro share [OPTIONS] URI USER [read|write|manage]
 neuro share storage:///sample_data/ alice manage
 neuro share image:resnet50 bob read
 neuro share job:///my_job_id alice write
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro revoke
+
+Revoke from a USER permissions for previously shared resource specified by<br/>URI<br/>
+
+**Usage:**
+
+```bash
+neuro revoke [OPTIONS] URI USER
+```
+
+**Examples:**
+
+```bash
+
+neuro revoke storage:///sample_data/ alice
+neuro revoke image:resnet50 bob
+neuro revoke job:///my_job_id alice
 
 ```
 
