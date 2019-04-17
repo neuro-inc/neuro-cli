@@ -38,24 +38,6 @@ jobs:
             . .env/bin/activate
             make ci
 
-  devpi_deploy:
-    <<: *defaults
-    steps:
-      - checkout
-
-      - run:
-          name: devpi setup
-          command: |
-            python3 -m venv .env
-            . .env/bin/activate
-            make -s devpi_setup
-
-      - run:
-          name: devpi upload
-          command: |
-            . .env/bin/activate
-            make devpi_upload
-
   pypi_deploy:
     <<: *defaults
     steps:
@@ -86,6 +68,17 @@ jobs:
             - ./.env
           key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
+  trigger_e2e:
+    <<: *defaults
+    steps:
+      - run:
+          name: trigger platform-e2e tests
+          command: |
+              curl -X POST --header "Content-Type: application/json" \
+                   -d '{"branch":"master"}' \
+                   https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
+
+
 workflows:
   version: 2
 
@@ -96,15 +89,11 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-      - devpi_deploy:
+      - trigger_e2e:
           context: org-global
-          requires:
-            - build
           filters:
-            tags:
-              only: /^v.*/
             branches:
-              ignore: /.*/
+              only: master
       - pypi_deploy:
           context: org-global
           requires:

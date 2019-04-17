@@ -494,25 +494,6 @@ def helper(capfd, monkeypatch, tmp_path, nmrc_path):
     ret.close()
 
 
-@pytest.fixture()
-def nmrc_path_alt(tmp_path):
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME_ALT")
-    if not e2e_test_token:
-        pytest.skip("CLIENT_TEST_E2E_USER_NAME_ALT variable is not set")
-    path = tmp_path / "conftest-alt.nmrc"
-    rc_text = RC_TEXT.format(token=e2e_test_token)
-    path.write_text(rc_text)
-    path.chmod(0o600)
-    return path
-
-
-@pytest.fixture
-def helper_alt(nmrc_path_alt, capfd, tmp_path):
-    ret = Helper(nmrc_path=nmrc_path_alt, capfd=capfd, tmp_path=tmp_path)
-    yield ret
-    ret.close()
-
-
 def generate_random_file(path: Path, size):
     name = f"{uuid()}.tmp"
     path_and_name = path / name
