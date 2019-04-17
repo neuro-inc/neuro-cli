@@ -36,9 +36,9 @@ async def push(
 
     Examples:
 
-    neuro image push myimage
-    neuro image push alpine:latest image:my-alpine:production
-    neuro image push alpine image://myfriend/alpine:shared
+    neuro push myimage
+    neuro push alpine:latest image:my-alpine:production
+    neuro push alpine image://myfriend/alpine:shared
 
     """
 
@@ -79,9 +79,9 @@ async def pull(root: Root, image_name: str, local_image_name: str, quiet: bool) 
 
     Examples:
 
-    neuro image pull image:myimage
-    neuro image pull image://myfriend/alpine:shared
-    neuro image pull image://username/my-alpine:production alpine:from-registry
+    neuro pull image:myimage
+    neuro pull image://myfriend/alpine:shared
+    neuro pull image://username/my-alpine:production alpine:from-registry
 
     """
 

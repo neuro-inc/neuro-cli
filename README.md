@@ -175,7 +175,7 @@ neuro job submit [OPTIONS] IMAGE [CMD]...
 # Starts a container pytorch:latest with two paths mounted. Directory /q1/
 # is mounted in read only mode to /qm directory within container.
 # Directory /mod mounted to /mod directory in read-write mode.
-neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
+neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
 ```
 
@@ -399,12 +399,12 @@ neuro storage cp [OPTIONS] SOURCE DESTINATION
 ```bash
 
 # copy local file ./foo into remote storage root
-neuro storage cp ./foo storage:///
-neuro storage cp ./foo storage:/
+neuro cp ./foo storage:///
+neuro cp ./foo storage:/
 
 # download remote file foo into local file foo with
 # explicit file:// scheme set
-neuro storage cp storage:///foo file:///foo
+neuro cp storage:///foo file:///foo
 
 ```
 
@@ -455,9 +455,9 @@ neuro storage rm [OPTIONS] PATH
 
 ```bash
 
-neuro storage rm storage:///foo/bar/
-neuro storage rm storage:/foo/bar/
-neuro storage rm storage://{username}/foo/bar/
+neuro rm storage:///foo/bar/
+neuro rm storage:/foo/bar/
+neuro rm storage://{username}/foo/bar/
 
 ```
 
@@ -504,12 +504,12 @@ neuro storage mv [OPTIONS] SOURCE DESTINATION
 ```bash
 
 # move or rename remote file
-neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+neuro mv storage://{username}/foo.txt storage://{username}/bar.txt
+neuro mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
 
 # move or rename remote directory
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+neuro mv storage://{username}/foo/ storage://{username}/bar/
+neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
 
 ```
 
@@ -583,9 +583,9 @@ neuro image push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
 
 ```bash
 
-neuro image push myimage
-neuro image push alpine:latest image:my-alpine:production
-neuro image push alpine image://myfriend/alpine:shared
+neuro push myimage
+neuro push alpine:latest image:my-alpine:production
+neuro push alpine image://myfriend/alpine:shared
 
 ```
 
@@ -613,9 +613,9 @@ neuro image pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
 
 ```bash
 
-neuro image pull image:myimage
-neuro image pull image://myfriend/alpine:shared
-neuro image pull image://username/my-alpine:production alpine:from-registry
+neuro pull image:myimage
+neuro pull image://myfriend/alpine:shared
+neuro pull image://username/my-alpine:production alpine:from-registry
 
 ```
 
@@ -876,7 +876,7 @@ neuro submit [OPTIONS] IMAGE [CMD]...
 # Starts a container pytorch:latest with two paths mounted. Directory /q1/
 # is mounted in read only mode to /qm directory within container.
 # Directory /mod mounted to /mod directory in read-write mode.
-neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
+neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
 ```
 
@@ -1108,12 +1108,12 @@ neuro cp [OPTIONS] SOURCE DESTINATION
 ```bash
 
 # copy local file ./foo into remote storage root
-neuro storage cp ./foo storage:///
-neuro storage cp ./foo storage:/
+neuro cp ./foo storage:///
+neuro cp ./foo storage:/
 
 # download remote file foo into local file foo with
 # explicit file:// scheme set
-neuro storage cp storage:///foo file:///foo
+neuro cp storage:///foo file:///foo
 
 ```
 
@@ -1164,9 +1164,9 @@ neuro rm [OPTIONS] PATH
 
 ```bash
 
-neuro storage rm storage:///foo/bar/
-neuro storage rm storage:/foo/bar/
-neuro storage rm storage://{username}/foo/bar/
+neuro rm storage:///foo/bar/
+neuro rm storage:/foo/bar/
+neuro rm storage://{username}/foo/bar/
 
 ```
 
@@ -1213,12 +1213,12 @@ neuro mv [OPTIONS] SOURCE DESTINATION
 ```bash
 
 # move or rename remote file
-neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+neuro mv storage://{username}/foo.txt storage://{username}/bar.txt
+neuro mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
 
 # move or rename remote directory
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+neuro mv storage://{username}/foo/ storage://{username}/bar/
+neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
 
 ```
 
@@ -1264,9 +1264,9 @@ neuro push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
 
 ```bash
 
-neuro image push myimage
-neuro image push alpine:latest image:my-alpine:production
-neuro image push alpine image://myfriend/alpine:shared
+neuro push myimage
+neuro push alpine:latest image:my-alpine:production
+neuro push alpine image://myfriend/alpine:shared
 
 ```
 
@@ -1294,9 +1294,9 @@ neuro pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
 
 ```bash
 
-neuro image pull image:myimage
-neuro image pull image://myfriend/alpine:shared
-neuro image pull image://username/my-alpine:production alpine:from-registry
+neuro pull image:myimage
+neuro pull image://myfriend/alpine:shared
+neuro pull image://username/my-alpine:production alpine:from-registry
 
 ```
 
