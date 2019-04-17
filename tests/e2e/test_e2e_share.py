@@ -7,3 +7,5 @@ def test_share_complete_lifecycle(helper):
     assert captured.out == ""
     captured = helper.run_cli(["revoke", "storage:///shared-read", "public"])
     assert captured.out == ""
+    captured = helper.run_cli(["share", "storage:shared-read", "public", "read"])
+    assert captured.out == ""
