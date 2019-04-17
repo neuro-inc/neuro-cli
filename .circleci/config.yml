@@ -108,7 +108,7 @@ workflows:
             tags:
               only: /^v.*/
       - trigger_e2e:
-          context: org-global:
+          context: org-global
           filters:
             branches:
               only: master
