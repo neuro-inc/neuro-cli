@@ -129,7 +129,7 @@ class TestConfigFileInteraction:
         assert client._config.auth_token.token == new_token
         assert (
             file_stat_before != file_stat_after
-        ), "Config wile not rewritten while token refreshed"
+        ), "Config file not rewritten while token refreshed"
 
     @pytest.mark.skipif(
         sys.platform == "win32",
