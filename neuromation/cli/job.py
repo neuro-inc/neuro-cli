@@ -381,10 +381,12 @@ async def ls(
 
     # TODO: add validation of status values
     statuses = set(status)
-    if "all" in statuses:
-        statuses = set()
+    if "all" not in statuses:
+        real_statuses = set(JobStatus(s) for s in statuses)
+    else:
+        real_statuses = set()
 
-    jobs = await root.client.jobs.list(statuses, name)
+    jobs = await root.client.jobs.list(statuses=real_statuses, name=name)
 
     # client-side filtering
     if description:

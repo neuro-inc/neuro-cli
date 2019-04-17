@@ -380,13 +380,13 @@ class _Jobs:
             return JobDescription.from_api(res)
 
     async def list(
-        self, statuses: Optional[Set[str]] = None, name: Optional[str] = None
+        self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
         if statuses:
             for status in statuses:
-                params.add("status", status)
+                params.add("status", status.value)
         if name:
             params.add("name", name)
         async with self._core.request("GET", url, params=params) as resp:
