@@ -38,24 +38,6 @@ jobs:
             . .env/bin/activate
             make ci
 
-  devpi_deploy:
-    <<: *defaults
-    steps:
-      - checkout
-
-      - run:
-          name: devpi setup
-          command: |
-            python3 -m venv .env
-            . .env/bin/activate
-            make -s devpi_setup
-
-      - run:
-          name: devpi upload
-          command: |
-            . .env/bin/activate
-            make devpi_upload
-
   pypi_deploy:
     <<: *defaults
     steps:
@@ -112,15 +94,6 @@ workflows:
           filters:
             branches:
               only: master
-      - devpi_deploy:
-          context: org-global
-          requires:
-            - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
       - pypi_deploy:
           context: org-global
           requires:
