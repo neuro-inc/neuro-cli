@@ -93,7 +93,7 @@ jobs:
           name: trigger platform-e2e tests
           command: |
               curl -X POST --header "Content-Type: application/json" \
-                   -d '{"branch":"master"}'
+                   -d '{"branch":"master"}' \
                    https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
 
 
