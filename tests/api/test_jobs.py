@@ -6,6 +6,7 @@ from aiohttp import web
 from neuromation.api import (
     Image,
     JobDescription,
+    JobStatus,
     JobTelemetry,
     NetworkPortForwarding,
     ResourceNotFound,
@@ -768,7 +769,7 @@ async def test_list_filter_by_statuses(aiohttp_server, make_client):
     app.router.add_get("/jobs", handler)
     srv = await aiohttp_server(app)
 
-    statuses = {"failed", "succeeded"}
+    statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses)
 
@@ -879,7 +880,7 @@ async def test_list_filter_by_name_and_statuses(aiohttp_server, make_client):
     app.router.add_get("/jobs", handler)
     srv = await aiohttp_server(app)
 
-    statuses = {"pending", "succeeded"}
+    statuses = {JobStatus.PENDING, JobStatus.SUCCEEDED}
     name = "job-name-1"
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses, name=name)
