@@ -152,14 +152,6 @@ class Volume:
             read_only=read_only,
         )
 
-    @classmethod
-    def from_cli_list(
-        cls, username: str, lst: Sequence[str]
-    ) -> Optional[List["Volume"]]:
-        if not lst:
-            return None
-        return [cls.from_cli(username, s) for s in lst]
-
 
 @dataclass(frozen=True)
 class HTTPPort:

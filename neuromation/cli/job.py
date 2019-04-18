@@ -5,7 +5,7 @@ import shlex
 import sys
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import click
 
@@ -181,7 +181,9 @@ def job() -> None:
     metavar="MOUNT",
     multiple=True,
     help="Mounts directory from vault into container. "
-    "Use multiple options to mount more than one volume",
+    "Use multiple options to mount more than one volume. "
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation:/var/storage/neuromation:ro",
 )
 @click.option(
     "-e",
@@ -528,12 +530,10 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--volume",
     metavar="MOUNT",
     multiple=True,
-    default=(
-        "storage://~:/var/storage/home:rw",
-        "storage://neuromation:/var/storage/neuromation:ro",
-    ),
     help="Mounts directory from vault into container. "
-    "Use multiple options to mount more than one volume",
+    "Use multiple options to mount more than one volume. "
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation:/var/storage/neuromation:ro",
 )
 @click.option(
     "-e",
@@ -668,7 +668,19 @@ async def run_job(
 
     network = NetworkPortForwarding.from_cli(http, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-    volumes = Volume.from_cli_list(username, volume)
+
+    volumes: Set[Volume] = set()
+    for v in volume:
+        if v == "HOME":
+            volumes.add(Volume.from_cli(username, "storage://~:/var/storage/home:rw"))
+            volumes.add(
+                Volume.from_cli(
+                    username, "storage://neuromation:/var/storage/neuromation:ro"
+                )
+            )
+        else:
+            volumes.add(Volume.from_cli(username, v))
+
     if volumes and not quiet:
         log.info(
             "Using volumes: \n"
@@ -679,7 +691,7 @@ async def run_job(
         image=image_obj,
         resources=resources,
         network=network,
-        volumes=volumes,
+        volumes=list(volumes) if volumes else None,
         is_preemptible=preemptible,
         name=name,
         description=description,
