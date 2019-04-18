@@ -29,7 +29,7 @@ from .url_utils import normalize_storage_path_uri
 
 @dataclass(frozen=True)
 class Resources:
-    memory_mb: str
+    memory_mb: int
     cpu: float
     gpu: Optional[int]
     shm: Optional[bool]
@@ -41,13 +41,13 @@ class Resources:
         cpu: float,
         gpu: Optional[int],
         gpu_model: Optional[str],
-        memory: str,
+        memory: int,
         extshm: bool,
     ) -> "Resources":
         return cls(memory, cpu, gpu, extshm, gpu_model)
 
     def to_api(self) -> Dict[str, Any]:
-        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
+        value = {"memory_mb": str(self.memory_mb), "cpu": self.cpu, "shm": self.shm}
         if self.gpu:
             value["gpu"] = self.gpu
             value["gpu_model"] = self.gpu_model
@@ -56,7 +56,7 @@ class Resources:
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "Resources":
         return Resources(
-            memory_mb=data["memory_mb"],
+            memory_mb=int(data["memory_mb"]),
             cpu=data["cpu"],
             shm=data.get("shm", None),
             gpu=data.get("gpu", None),
