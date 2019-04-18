@@ -16,8 +16,6 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.cli.utils import LOCAL_REMOTE_PORT
-from neuromation.strings.parse import to_megabytes
 
 from .defaults import (
     GPU_MODELS,
@@ -37,6 +35,8 @@ from .formatters import (
 )
 from .root import Root
 from .utils import (
+    LOCAL_REMOTE_PORT,
+    MEGABYTE,
     ImageType,
     alias,
     async_cmd,
@@ -90,10 +90,9 @@ def job() -> None:
     "-m",
     "--memory",
     metavar="AMOUNT",
-    type=str,
-    callback=to_megabytes,
+    type=MEGABYTE,
     help="Memory amount to request",
-    default=to_megabytes(JOB_MEMORY_AMOUNT),
+    default=JOB_MEMORY_AMOUNT,
     show_default=True,
 )
 @click.option(

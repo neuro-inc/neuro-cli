@@ -32,6 +32,7 @@ from neuromation.api import (
     JobDescription,
     Volume,
 )
+from neuromation.strings.parse import to_megabytes
 from neuromation.utils import run
 
 from .root import Root
@@ -404,6 +405,8 @@ class ImageType(click.ParamType):
 
 
 class LocalRemotePortParamType(click.ParamType):
+    name = "local-remote-port-pair"
+
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> Tuple[int, int]:
@@ -418,3 +421,18 @@ class LocalRemotePortParamType(click.ParamType):
 
 
 LOCAL_REMOTE_PORT = LocalRemotePortParamType()
+
+
+class MegabyteType(click.ParamType):
+    name = "megabyte"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> int:
+        return to_megabytes(value)
+
+    def __repr__(self) -> str:
+        return "Image"
+
+
+MEGABYTE = MegabyteType()
