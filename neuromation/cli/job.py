@@ -5,22 +5,19 @@ import shlex
 import sys
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Dict, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
-import aiohttp
 import click
 
-from neuromation.client import (
-    Client,
+from neuromation.api import (
+    DockerImage,
     Image,
     ImageNameParser,
-    JobDescription,
     JobStatus,
     NetworkPortForwarding,
     Resources,
     Volume,
 )
-from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
     GPU_MODELS,
@@ -28,7 +25,6 @@ from .defaults import (
     JOB_GPU_MODEL,
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
-    JOB_SSH_USER,
 )
 from .formatters import (
     BaseJobsFormatter,
@@ -39,9 +35,18 @@ from .formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .rc import Config
-from .ssh_utils import connect_ssh
-from .utils import alias, async_cmd, command, group, volume_to_verbose_str
+from .root import Root
+from .utils import (
+    LOCAL_REMOTE_PORT,
+    MEGABYTE,
+    ImageType,
+    alias,
+    async_cmd,
+    command,
+    group,
+    resolve_job,
+    volume_to_verbose_str,
+)
 
 
 log = logging.getLogger(__name__)
@@ -50,17 +55,19 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class RunPreset:
     cpu: float
-    memory: str
+    memory: int
     gpu: Optional[int]
     gpu_model: Optional[str]
 
 
 RUN_PRESET = MappingProxyType(
     {
-        "gpu-small": RunPreset(gpu=1, cpu=7, memory="30", gpu_model=GPU_MODELS[0]),
-        "gpu-large": RunPreset(gpu=1, cpu=7, memory="60", gpu_model=GPU_MODELS[-1]),
-        "cpu-small": RunPreset(gpu=None, cpu=1, memory="30", gpu_model=None),
-        "cpu-large": RunPreset(gpu=None, cpu=7, memory="60", gpu_model=None),
+        "gpu-small": RunPreset(gpu=1, cpu=7, memory=30 * 1024, gpu_model=GPU_MODELS[0]),
+        "gpu-large": RunPreset(
+            gpu=1, cpu=7, memory=60 * 1024, gpu_model=GPU_MODELS[-1]
+        ),
+        "cpu-small": RunPreset(gpu=None, cpu=2, memory=2 * 1024, gpu_model=None),
+        "cpu-large": RunPreset(gpu=None, cpu=3, memory=14 * 1024, gpu_model=None),
     }
 )
 
@@ -90,7 +97,7 @@ def job() -> None:
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("image")
+@click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-g",
@@ -122,7 +129,7 @@ def job() -> None:
     "-m",
     "--memory",
     metavar="AMOUNT",
-    type=str,
+    type=MEGABYTE,
     help="Memory amount to request",
     default=JOB_MEMORY_AMOUNT,
     show_default=True,
@@ -143,7 +150,6 @@ def job() -> None:
     default=True,
     show_default=True,
 )
-@click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
 @click.option(
     "--preemptible/--non-preemptible",
     "-p/-P",
@@ -196,24 +202,23 @@ def job() -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
-@async_cmd
+@async_cmd()
 async def submit(
-    cfg: Config,
-    image: str,
-    gpu: int,
-    gpu_model: str,
+    root: Root,
+    image: DockerImage,
+    gpu: Optional[int],
+    gpu_model: Optional[str],
     cpu: float,
-    memory: str,
+    memory: int,
     extshm: bool,
     http: int,
     http_auth: bool,
-    ssh: int,
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
     env_file: str,
     preemptible: bool,
-    name: str,
+    name: Optional[str],
     description: str,
     quiet: bool,
     wait_start: bool,
@@ -230,61 +235,33 @@ async def submit(
     # Starts a container pytorch:latest with two paths mounted. Directory /q1/
     # is mounted in read only mode to /qm directory within container.
     # Directory /mod mounted to /mod directory in read-write mode.
-    neuro job submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
+    neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
       pytorch:latest
-
-    # Starts a container pytorch:latest with connection enabled to port 22 and
-    # sets PYTHONPATH environment value to /python.
-    # Please note that SSH server should be provided by container.
-    neuro job submit --env PYTHONPATH=/python --volume \
-      storage:/data/2018q1:/data:ro --ssh 22 pytorch:latest
     """
-
-    username = cfg.username
-
-    env_dict = build_env(env, env_file)
-
-    cmd = " ".join(cmd) if cmd is not None else None
-    log.debug(f'cmd="{cmd}"')
-
-    memory = to_megabytes_str(memory)
-
-    image_parser = ImageNameParser(cfg.username, cfg.registry_url)
-    if image_parser.is_in_neuro_registry(image):
-        parsed_image = image_parser.parse_as_neuro_image(image)
-    else:
-        parsed_image = image_parser.parse_as_docker_image(image)
-    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
-    if not quiet:
-        log.info(f"Using image '{parsed_image.as_url_str()}'")
-        log.debug(f"IMAGE: {parsed_image}")
-    image_obj = Image(image=parsed_image.as_repo_str(), command=cmd)
-
-    network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
-    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-    volumes = Volume.from_cli_list(username, volume)
-    if volumes and not quiet:
-        log.info(
-            "Using volumes: \n"
-            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
-        )
-
-    async with cfg.make_client() as client:
-        job = await client.jobs.submit(
-            image=image_obj,
-            resources=resources,
-            network=network,
-            volumes=volumes,
-            is_preemptible=preemptible,
-            name=name,
-            description=description,
-            env=env_dict,
-        )
-        await show_job_start_helper(cfg, client, job, quiet, wait_start)
+    await run_job(
+        root,
+        image=image,
+        gpu=gpu,
+        gpu_model=gpu_model,
+        cpu=cpu,
+        memory=memory,
+        extshm=extshm,
+        http=http,
+        http_auth=http_auth,
+        cmd=cmd,
+        volume=volume,
+        env=env,
+        env_file=env_file,
+        preemptible=preemptible,
+        name=name,
+        description=description,
+        quiet=quiet,
+        wait_start=wait_start,
+    )
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("id")
+@click.argument("job")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
     "-t",
@@ -297,82 +274,73 @@ async def submit(
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@async_cmd
+@async_cmd()
 async def exec(
-    cfg: Config, id: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
+    root: Root, job: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
 ) -> None:
     """
     Execute command in a running job.
     """
     cmd = shlex.split(" ".join(cmd))
-    async with cfg.make_client() as client:
-        retcode = await client.jobs.exec(id, tty, no_key_check, cmd)
+    id = await resolve_job(root.client, job)
+    retcode = await root.client.jobs.exec(id, tty, no_key_check, cmd)
     sys.exit(retcode)
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("id")
-@click.argument("local_port", type=int)
-@click.argument("remote_port", type=int)
+@click.argument("job")
+@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1)
 @click.option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@async_cmd
+@async_cmd()
 async def port_forward(
-    cfg: Config, id: str, no_key_check: bool, local_port: int, remote_port: int
+    root: Root, job: str, no_key_check: bool, local_remote_port: List[Tuple[int, int]]
 ) -> None:
     """
-    Forward a port of a running job exposed with -ssh option
-    to a local port.
+    Forward port(s) of a running job to local port(s).
     """
-    async with cfg.make_client() as client:
-        retcode = await client.jobs.port_forward(
-            id, no_key_check, local_port, remote_port
+    loop = asyncio.get_event_loop()
+    job_id = await resolve_job(root.client, job)
+    tasks = []
+    for local_port, remote_port in local_remote_port:
+        print(f"Port of {job_id} will be forwarded to localhost:{local_port}")
+        tasks.append(
+            loop.create_task(
+                root.client.jobs.port_forward(
+                    job_id, no_key_check, local_port, remote_port
+                )
+            )
         )
-    sys.exit(retcode)
 
+    print("Press ^C to stop forwarding")
+    result = 0
+    for future in asyncio.as_completed(tasks):
+        try:
+            await future
+        except ValueError as e:
+            print(f"Port forwarding failed: {e}")
+            [task.cancel() for task in tasks]
+            result = -1
+            break
 
-@command(deprecated=True, hidden=True)
-@click.argument("id")
-@click.option(
-    "--user", help="Container user name", default=JOB_SSH_USER, show_default=True
-)
-@click.option("--key", help="Path to container private key.")
-@async_cmd
-async def ssh(cfg: Config, id: str, user: str, key: str) -> None:
-    """
-    Starts ssh terminal connected to running job.
-
-    Job should be started with SSH support enabled.
-
-    Examples:
-
-    neuro job ssh --user alfa --key ./my_docker_id_rsa job-abc-def-ghk
-    """
-    git_key = cfg.github_rsa_path
-
-    async with cfg.make_client() as client:
-        await connect_ssh(client, id, git_key, user, key)
+    sys.exit(result)
 
 
 @command()
-@click.argument("id")
-@async_cmd
-async def logs(cfg: Config, id: str) -> None:
+@click.argument("job")
+@async_cmd()
+async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
     """
-    timeout = aiohttp.ClientTimeout(
-        total=None, connect=None, sock_read=None, sock_connect=30
-    )
-
-    async with cfg.make_client(timeout=timeout) as client:
-        async for chunk in client.jobs.monitor(id):
-            if not chunk:
-                break
-            click.echo(chunk.decode(errors="ignore"), nl=False)
+    id = await resolve_job(root.client, job)
+    async for chunk in root.client.jobs.monitor(id):
+        if not chunk:
+            break
+        click.echo(chunk.decode(errors="ignore"), nl=False)
 
 
 @command()
@@ -394,9 +362,9 @@ async def logs(cfg: Config, id: str) -> None:
 @click.option(
     "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
 )
-@async_cmd
+@async_cmd()
 async def ls(
-    cfg: Config,
+    root: Root,
     status: Sequence[str],
     name: str,
     description: str,
@@ -417,11 +385,12 @@ async def ls(
 
     # TODO: add validation of status values
     statuses = set(status)
-    if "all" in statuses:
-        statuses = set()
+    if "all" not in statuses:
+        real_statuses = set(JobStatus(s) for s in statuses)
+    else:
+        real_statuses = set()
 
-    async with cfg.make_client() as client:
-        jobs = await client.jobs.list(statuses, name)
+    jobs = await root.client.jobs.list(statuses=real_statuses, name=name)
 
     # client-side filtering
     if description:
@@ -432,11 +401,11 @@ async def ls(
     if quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
-        if wide or not cfg.tty:
+        if wide or not root.tty:
             width = 0
         else:
-            width = cfg.terminal_size[0]
-        image_parser = ImageNameParser(cfg.username, cfg.registry_url)
+            width = root.terminal_size[0]
+        image_parser = ImageNameParser(root.username, root.registry_url)
         formatter = TabularJobsFormatter(width, image_parser)
 
     for line in formatter(jobs):
@@ -444,50 +413,51 @@ async def ls(
 
 
 @command()
-@click.argument("id")
-@async_cmd
-async def status(cfg: Config, id: str) -> None:
+@click.argument("job")
+@async_cmd()
+async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
     """
-    async with cfg.make_client() as client:
-        res = await client.jobs.status(id)
-        click.echo(JobStatusFormatter()(res))
+    id = await resolve_job(root.client, job)
+    res = await root.client.jobs.status(id)
+    click.echo(JobStatusFormatter()(res))
 
 
 @command()
-@click.argument("id")
-@async_cmd
-async def top(cfg: Config, id: str) -> None:
+@click.argument("job")
+@async_cmd()
+async def top(root: Root, job: str) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
-    async with cfg.make_client() as client:
-        print_header = True
-        async for res in client.jobs.top(id):
-            if print_header:
-                click.echo(formatter.header())
-                print_header = False
-            line = formatter(res)
-            click.echo(f"\r{line}", nl=False)
+    id = await resolve_job(root.client, job)
+    print_header = True
+    async for res in root.client.jobs.top(id):
+        if print_header:
+            click.echo(formatter.header())
+            print_header = False
+        line = formatter(res)
+        click.echo(f"\r{line}", nl=False)
 
 
 @command()
-@click.argument("id", nargs=-1, required=True)
-@async_cmd
-async def kill(cfg: Config, id: Sequence[str]) -> None:
+@click.argument("jobs", nargs=-1, required=True)
+@async_cmd()
+async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
     """
     errors = []
-    async with cfg.make_client() as client:
-        for job in id:
-            try:
-                await client.jobs.kill(job)
-                print(job)
-            except ValueError as e:
-                errors.append((job, e))
+    for job in jobs:
+        job_resolved = await resolve_job(root.client, job)
+        try:
+            await root.client.jobs.kill(job_resolved)
+            # TODO (ajuszkowski) printing should be on the cli level
+            print(job_resolved)
+        except ValueError as e:
+            errors.append((job, e))
 
     def format_fail(job: str, reason: Exception) -> str:
         return f"Cannot kill job {job}: {reason}"
@@ -497,7 +467,7 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
-@click.argument("image")
+@click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-s",
@@ -539,10 +509,31 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
     show_default=True,
 )
 @click.option(
+    "-n",
+    "--name",
+    metavar="NAME",
+    type=str,
+    help="Optional job name",
+    default=None,
+    show_default=True,
+)
+@click.option(
     "-d", "--description", metavar="DESC", help="Add optional description to the job"
 )
 @click.option(
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
+)
+@click.option(
+    "-v",
+    "--volume",
+    metavar="MOUNT",
+    multiple=True,
+    default=(
+        "storage://~:/var/storage/home:rw",
+        "storage://neuromation:/var/storage/neuromation:ro",
+    ),
+    help="Mounts directory from vault into container. "
+    "Use multiple options to mount more than one volume",
 )
 @click.option(
     "-e",
@@ -563,19 +554,21 @@ async def kill(cfg: Config, id: Sequence[str]) -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
-@async_cmd
+@async_cmd()
 async def run(
-    cfg: Config,
-    image: str,
+    root: Root,
+    image: DockerImage,
     preset: str,
     extshm: bool,
     http: int,
     http_auth: bool,
     ssh: int,
     cmd: Sequence[str],
+    volume: Sequence[str],
     env: Sequence[str],
     env_file: str,
     preemptible: bool,
+    name: Optional[str],
     description: str,
     quiet: bool,
     wait_start: bool,
@@ -600,56 +593,28 @@ async def run(
     # Please note that SSH server should be provided by container.
     neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
     """
-
-    username = cfg.username
-
-    env_dict = build_env(env, env_file)
-
-    cmd = " ".join(cmd) if cmd is not None else None
-    log.debug(f'cmd="{cmd}"')
-
-    image_parser = ImageNameParser(cfg.username, cfg.registry_url)
-    if image_parser.is_in_neuro_registry(image):
-        parsed_image = image_parser.parse_as_neuro_image(image)
-    else:
-        parsed_image = image_parser.parse_as_docker_image(image)
-    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
-    if not quiet:
-        log.info(f"Using image '{parsed_image.as_url_str()}'")
-        log.debug(f"IMAGE: {parsed_image}")
-    image_obj = Image(image=parsed_image.as_repo_str(), command=cmd)
-
-    network = NetworkPortForwarding.from_cli(http, ssh, http_auth)
-
     job_preset = RUN_PRESET[preset]
-    resources = Resources.create(
-        job_preset.cpu, job_preset.gpu, job_preset.gpu_model, job_preset.memory, extshm
-    )
-    volumes = Volume.from_cli_list(
-        username,
-        [
-            "storage://~:/var/storage/home:rw",
-            "storage://neuromation:/var/storage/neuromation:ro",
-        ],
-    )
-    assert volumes
-    if not quiet:
-        log.info(
-            "Using volumes: \n"
-            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
-        )
 
-    async with cfg.make_client() as client:
-        job = await client.jobs.submit(
-            image=image_obj,
-            resources=resources,
-            network=network,
-            volumes=volumes,
-            is_preemptible=preemptible,
-            description=description,
-            env=env_dict,
-        )
-        await show_job_start_helper(cfg, client, job, quiet, wait_start)
+    await run_job(
+        root,
+        image=image,
+        gpu=job_preset.gpu,
+        gpu_model=job_preset.gpu_model,
+        cpu=job_preset.cpu,
+        memory=job_preset.memory,
+        extshm=extshm,
+        http=http,
+        http_auth=http_auth,
+        cmd=cmd,
+        volume=volume,
+        env=env,
+        env_file=env_file,
+        preemptible=preemptible,
+        name=name,
+        description=description,
+        quiet=quiet,
+        wait_start=wait_start,
+    )
 
 
 job.add_command(run)
@@ -666,18 +631,64 @@ job.add_command(top)
 job.add_command(alias(ls, "list", hidden=True))
 job.add_command(alias(logs, "monitor", hidden=True))
 
-job.add_command(ssh)
 
-
-async def show_job_start_helper(
-    cfg: Config, client: Client, job: JobDescription, quiet: bool, wait_start: bool
+async def run_job(
+    root: Root,
+    *,
+    image: DockerImage,
+    gpu: Optional[int],
+    gpu_model: Optional[str],
+    cpu: float,
+    memory: int,
+    extshm: bool,
+    http: int,
+    http_auth: bool,
+    cmd: Sequence[str],
+    volume: Sequence[str],
+    env: Sequence[str],
+    env_file: str,
+    preemptible: bool,
+    name: Optional[str],
+    description: str,
+    quiet: bool,
+    wait_start: bool,
 ) -> None:
+    username = root.username
+
+    env_dict = build_env(env, env_file)
+
+    cmd = " ".join(cmd) if cmd is not None else None
+    log.debug(f'cmd="{cmd}"')
+
+    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
+    if not quiet:
+        log.info(f"Using image '{image.as_url_str()}'")
+        log.debug(f"IMAGE: {image}")
+    image_obj = Image(image=image.as_repo_str(), command=cmd)
+
+    network = NetworkPortForwarding.from_cli(http, http_auth)
+    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+    volumes = Volume.from_cli_list(username, volume)
+    if volumes and not quiet:
+        log.info(
+            "Using volumes: \n"
+            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
+        )
+
+    job = await root.client.jobs.submit(
+        image=image_obj,
+        resources=resources,
+        network=network,
+        volumes=volumes,
+        is_preemptible=preemptible,
+        name=name,
+        description=description,
+        env=env_dict,
+    )
     click.echo(JobFormatter(quiet)(job))
-    progress = JobStartProgress(cfg.color)
+    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=quiet)
     while wait_start and job.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
-        job = await client.jobs.status(job.id)
-        if not quiet:
-            click.echo(progress(job), nl=False)
-    if not quiet and wait_start:
-        click.echo(progress(job, finish=True), nl=False)
+        job = await root.client.jobs.status(job.id)
+        progress(job)
+    progress.close()

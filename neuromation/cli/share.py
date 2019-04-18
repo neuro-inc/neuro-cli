@@ -1,12 +1,16 @@
 import logging
 
 import click
-from yarl import URL
 
-from neuromation.client import Action, IllegalArgumentError, Permission
+from neuromation.api import Permission
 
-from .rc import Config
-from .utils import async_cmd, command
+from .root import Root
+from .utils import (
+    async_cmd,
+    command,
+    parse_permission_action,
+    parse_resource_for_sharing,
+)
 
 
 log = logging.getLogger(__name__)
@@ -16,8 +20,8 @@ log = logging.getLogger(__name__)
 @click.argument("uri")
 @click.argument("user")
 @click.argument("permission", type=click.Choice(["read", "write", "manage"]))
-@async_cmd
-async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
+@async_cmd()
+async def share(root: Root, uri: str, user: str, permission: str) -> None:
     """
         Shares resource specified by URI to a USER with PERMISSION
 
@@ -26,23 +30,15 @@ async def share(cfg: Config, uri: str, user: str, permission: str) -> None:
         neuro share image:resnet50 bob read
         neuro share job:///my_job_id alice write
     """
-    uri_obj = URL(uri)
     try:
-        action = Action[permission.upper()]
-    except KeyError as error:
-        raise ValueError(
-            "Resource not shared. Please specify one of read/write/manage."
-        ) from error
-    permission_obj = Permission.from_cli(
-        username=cfg.username, uri=uri_obj, action=action
-    )
+        uri_obj = parse_resource_for_sharing(uri, root)
+        action_obj = parse_permission_action(permission)
+        permission_obj = Permission.from_cli(
+            username=root.username, uri=uri_obj, action=action_obj
+        )
+        log.info(f"Using resource '{permission_obj.uri}'")
 
-    log.info(f"Using resource '{permission_obj.uri}'")
+        await root.client.users.share(user, permission_obj)
 
-    async with cfg.make_client() as client:
-        try:
-            await client.users.share(user, permission_obj)
-        except IllegalArgumentError as error:
-            raise ValueError(
-                "Resource not shared. Please verify resource-uri, user name."
-            ) from error
+    except ValueError as e:
+        raise ValueError(f"Could not share resource '{uri}': {e}") from e

@@ -1,10 +1,9 @@
 import logging
 
-import aiohttp
 import click
 from yarl import URL
 
-from neuromation.client.url_utils import (
+from neuromation.api.url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
@@ -17,7 +16,7 @@ from .formatters import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
 )
-from .rc import Config
+from .root import Root
 from .utils import async_cmd, command, group
 
 
@@ -33,22 +32,21 @@ def storage() -> None:
 
 @command()
 @click.argument("path")
-@async_cmd
-async def rm(cfg: Config, path: str) -> None:
+@async_cmd()
+async def rm(root: Root, path: str) -> None:
     """
     Remove files or directories.
 
     Examples:
 
-    neuro storage rm storage:///foo/bar/
-    neuro storage rm storage:/foo/bar/
-    neuro storage rm storage://{username}/foo/bar/
+    neuro rm storage:///foo/bar/
+    neuro rm storage:/foo/bar/
+    neuro rm storage://{username}/foo/bar/
     """
-    uri = normalize_storage_path_uri(URL(path), cfg.username)
+    uri = normalize_storage_path_uri(URL(path), root.username)
     log.info(f"Using path '{uri}'")
 
-    async with cfg.make_client() as client:
-        await client.storage.rm(uri)
+    await root.client.storage.rm(uri)
 
 
 @command()
@@ -66,9 +64,9 @@ async def rm(cfg: Config, path: str) -> None:
     default="name",
     help="sort by given field, default is name",
 )
-@async_cmd
+@async_cmd()
 async def ls(
-    cfg: Config, path: str, human_readable: bool, format_long: bool, sort: str
+    root: Root, path: str, human_readable: bool, format_long: bool, sort: str
 ) -> None:
     """
     List directory contents.
@@ -77,21 +75,20 @@ async def ls(
     """
     if format_long:
         formatter: BaseFilesFormatter = LongFilesFormatter(
-            human_readable=human_readable, color=cfg.color
+            human_readable=human_readable, color=root.color
         )
     else:
-        if cfg.tty:
+        if root.tty:
             formatter = VerticalColumnsFilesFormatter(
-                width=cfg.terminal_size[0], color=cfg.color
+                width=root.terminal_size[0], color=root.color
             )
         else:
-            formatter = SimpleFilesFormatter(cfg.color)
+            formatter = SimpleFilesFormatter(root.color)
 
-    uri = normalize_storage_path_uri(URL(path), cfg.username)
+    uri = normalize_storage_path_uri(URL(path), root.username)
     log.info(f"Using path '{uri}'")
 
-    async with cfg.make_client() as client:
-        files = await client.storage.ls(uri)
+    files = await root.client.storage.ls(uri)
 
     files = sorted(files, key=FilesSorter(sort).key())
 
@@ -104,9 +101,9 @@ async def ls(
 @click.argument("destination")
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
-@async_cmd
+@async_cmd()
 async def cp(
-    cfg: Config, source: str, destination: str, recursive: bool, progress: bool
+    root: Root, source: str, destination: str, recursive: bool, progress: bool
 ) -> None:
     """
     Copy files and directories.
@@ -117,16 +114,13 @@ async def cp(
     Examples:
 
     # copy local file ./foo into remote storage root
-    neuro storage cp ./foo storage:///
-    neuro storage cp ./foo storage:/
+    neuro cp ./foo storage:///
+    neuro cp ./foo storage:/
 
     # download remote file foo into local file foo with
     # explicit file:// scheme set
-    neuro storage cp storage:///foo file:///foo
+    neuro cp storage:///foo file:///foo
     """
-    timeout = aiohttp.ClientTimeout(
-        total=None, connect=None, sock_read=None, sock_connect=30
-    )
     src = URL(source)
     dst = URL(destination)
 
@@ -136,53 +130,52 @@ async def cp(
         src = URL(f"file:{source}")
     if not dst.scheme or len(dst.scheme) == 1:
         dst = URL(f"file:{destination}")
-    async with cfg.make_client(timeout=timeout) as client:
-        if src.scheme == "file" and dst.scheme == "storage":
-            src = normalize_local_path_uri(src)
-            dst = normalize_storage_path_uri(dst, cfg.username)
-            log.info(f"Using source path:      '{src}'")
-            log.info(f"Using destination path: '{dst}'")
-            if recursive:
-                await client.storage.upload_dir(progress_obj, src, dst)
-            else:
-                await client.storage.upload_file(progress_obj, src, dst)
-        elif src.scheme == "storage" and dst.scheme == "file":
-            src = normalize_storage_path_uri(src, cfg.username)
-            dst = normalize_local_path_uri(dst)
-            log.info(f"Using source path:      '{src}'")
-            log.info(f"Using destination path: '{dst}'")
-            if recursive:
-                await client.storage.download_dir(progress_obj, src, dst)
-            else:
-                await client.storage.download_file(progress_obj, src, dst)
+
+    if src.scheme == "file" and dst.scheme == "storage":
+        src = normalize_local_path_uri(src)
+        dst = normalize_storage_path_uri(dst, root.username)
+        log.info(f"Using source path:      '{src}'")
+        log.info(f"Using destination path: '{dst}'")
+        if recursive:
+            await root.client.storage.upload_dir(src, dst, progress=progress_obj)
         else:
-            raise RuntimeError(
-                f"Copy operation of the file with scheme '{src.scheme}'"
-                f" to the file with scheme '{dst.scheme}'"
-                f" is not supported"
-            )
+            await root.client.storage.upload_file(src, dst, progress=progress_obj)
+    elif src.scheme == "storage" and dst.scheme == "file":
+        src = normalize_storage_path_uri(src, root.username)
+        dst = normalize_local_path_uri(dst)
+        log.info(f"Using source path:      '{src}'")
+        log.info(f"Using destination path: '{dst}'")
+        if recursive:
+            await root.client.storage.download_dir(src, dst, progress=progress_obj)
+        else:
+            await root.client.storage.download_file(src, dst, progress=progress_obj)
+    else:
+        raise RuntimeError(
+            f"Copy operation of the file with scheme '{src.scheme}'"
+            f" to the file with scheme '{dst.scheme}'"
+            f" is not supported"
+        )
 
 
 @command()
 @click.argument("path")
-@async_cmd
-async def mkdir(cfg: Config, path: str) -> None:
+@async_cmd()
+async def mkdir(root: Root, path: str) -> None:
     """
     Make directories.
     """
 
-    uri = normalize_storage_path_uri(URL(path), cfg.username)
+    uri = normalize_storage_path_uri(URL(path), root.username)
     log.info(f"Using path '{uri}'")
 
-    async with cfg.make_client() as client:
-        await client.storage.mkdirs(uri)
+    await root.client.storage.mkdirs(uri)
 
 
 @command()
 @click.argument("source")
 @click.argument("destination")
-@async_cmd
-async def mv(cfg: Config, source: str, destination: str) -> None:
+@async_cmd()
+async def mv(root: Root, source: str, destination: str) -> None:
     """
     Move or rename files and directories.
 
@@ -194,21 +187,20 @@ async def mv(cfg: Config, source: str, destination: str) -> None:
     Examples:
 
     # move or rename remote file
-    neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-    neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+    neuro mv storage://{username}/foo.txt storage://{username}/bar.txt
+    neuro mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
 
     # move or rename remote directory
-    neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-    neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+    neuro mv storage://{username}/foo/ storage://{username}/bar/
+    neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
     """
 
-    src = normalize_storage_path_uri(URL(source), cfg.username)
-    dst = normalize_storage_path_uri(URL(destination), cfg.username)
+    src = normalize_storage_path_uri(URL(source), root.username)
+    dst = normalize_storage_path_uri(URL(destination), root.username)
     log.info(f"Using source path:      '{src}'")
     log.info(f"Using destination path: '{dst}'")
 
-    async with cfg.make_client() as client:
-        await client.storage.mv(src, dst)
+    await root.client.storage.mv(src, dst)
 
 
 storage.add_command(cp)

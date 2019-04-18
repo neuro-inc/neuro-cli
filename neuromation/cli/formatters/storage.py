@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterator, List, Sequence
 import humanize
 from click import style, unstyle
 
-from neuromation.client import Action, FileStatus, FileStatusType
+from neuromation.api import Action, FileStatus, FileStatusType
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2

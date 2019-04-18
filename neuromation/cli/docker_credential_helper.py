@@ -1,15 +1,35 @@
 import sys
 from json import dumps
 
-from yarl import URL
+from neuromation.api import get
+from neuromation.utils import run
 
-from .const import EX_DATAERR, EX_NOUSER, EX_UNAVAILABLE, EX_USAGE
-from .rc import ConfigFactory
+from .const import EX_DATAERR, EX_UNAVAILABLE, EX_USAGE
 
 
 def error(message: str, exit_code: int) -> None:
     print(message)
     exit(exit_code)
+
+
+async def async_main(action: str) -> None:
+    if action == "store":
+        error("Please use `neuro login` instead `docker login ...`", EX_UNAVAILABLE)
+    elif action == "erase":
+        print("Please use `neuro logout` instead `docker logout ...`", EX_UNAVAILABLE)
+    else:
+        async with get() as client:
+            config = client._config
+            registry = sys.stdin.readline().strip()
+            neuro_registry = config.registry_url.host
+            if registry != neuro_registry:
+                error(
+                    f"Unknown registry {registry}. "
+                    "neuro configured with {neuro_registry}.",
+                    EX_DATAERR,
+                )
+            payload = {"Username": "token", "Secret": config.auth_token.token}
+            print(dumps(payload))
 
 
 def main() -> None:
@@ -18,22 +38,4 @@ def main() -> None:
             "Neuromation docker credential helper.\nService tool, not for use", EX_USAGE
         )
     action = sys.argv[1]
-    config = ConfigFactory.load()
-    if action == "store":
-        error("Please use `neuro login` instead `docker login ...`", EX_UNAVAILABLE)
-    elif action == "erase":
-        print("Please use `neuro logout` instead `docker logout ...`", EX_UNAVAILABLE)
-    else:
-        registry = sys.stdin.readline().strip()
-        neuro_registry = URL(config.registry_url).host
-        if registry != neuro_registry:
-            error(
-                f"Unknown registry {registry}. "
-                "neuro configured with {neuro_registry}.",
-                EX_DATAERR,
-            )
-        if not config.auth:
-            error("Not logged in. Please use ``neuro login` first.", EX_NOUSER)
-
-        payload = {"Username": "token", "Secret": config.auth}
-        print(dumps(payload))
+    run(async_main(action))

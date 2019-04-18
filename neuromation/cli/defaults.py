@@ -1,4 +1,3 @@
-API_URL = "https://staging.neu.ro/api/v1"
 JOB_GPU_NUMBER = 0
 JOB_GPU_MODEL = "nvidia-tesla-k80"
 JOB_CPU_NUMBER = 0.1

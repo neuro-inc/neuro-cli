@@ -6,10 +6,16 @@ from typing import Any, Dict
 import click
 from yarl import URL
 
-from . import rc
-from .defaults import API_URL
+from neuromation.api import (
+    DEFAULT_API_URL,
+    ConfigError,
+    login as api_login,
+    login_with_token as api_login_with_token,
+    logout as api_logout,
+)
+
 from .formatters import ConfigFormatter
-from .rc import Config
+from .root import Root
 from .utils import async_cmd, command, group
 
 
@@ -18,92 +24,74 @@ def config() -> None:
     """Client configuration."""
 
 
-@command(hidden=True)
-@click.argument("url")
-@async_cmd
-async def url(cfg: Config, url: str) -> None:
-    """
-    Update settings with provided platform URL.
-
-    Examples:
-
-    neuro config url https://platform.neuromation.io/api/v1
-    """
-    await rc.ConfigFactory.update_api_url(url)
-
-
-@command(hidden=True, name="id_rsa")
-@click.argument("file", type=click.Path(exists=True, readable=True, dir_okay=False))
-def id_rsa(file: str) -> None:
-    """
-    Update path to id_rsa file with private key.
-
-    FILE is being used for accessing remote shell, remote debug.
-
-    Note: this is temporal and going to be
-    replaced in future by JWT token.
-    """
-    rc.ConfigFactory.update_github_rsa_path(file)
-
-
 @command()
-@click.pass_obj
-def show(cfg: Config) -> None:
+@async_cmd()
+async def show(root: Root) -> None:
     """
     Print current settings.
     """
     fmt = ConfigFormatter()
-    click.echo(fmt(cfg))
+    click.echo(fmt(root))
 
 
 @command()
-@click.pass_obj
-def show_token(cfg: Config) -> None:
+@async_cmd()
+async def show_token(root: Root) -> None:
     """
     Print current authorization token.
     """
-    click.echo(cfg.auth)
+    click.echo(root.auth)
 
 
 @command()
-@click.argument("token")
-def auth(token: str) -> None:
-    """
-    Update authorization token.
-    """
-    # TODO (R Zubairov, 09/13/2018): check token correct
-    # connectivity, check with Alex
-    # Do not overwrite token in case new one does not work
-    # TODO (R Zubairov, 09/13/2018): on server side we shall implement
-    # protection against brute-force
-    rc.ConfigFactory.update_auth_token(token=token)
-
-
-@command(hidden=True, deprecated=True)
-def forget() -> None:
-    """
-    Forget authorization token.
-    """
-    rc.ConfigFactory.forget_auth_token()
-
-
-@command()
-@click.argument("url", required=False, default=API_URL, type=URL)
-@async_cmd
-async def login(cfg: Config, url: URL) -> None:
+@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
+@async_cmd(init_client=False)
+async def login(root: Root, url: URL) -> None:
     """
     Log into Neuromation Platform.
+
+    URL is a platform entrypoint URL.
     """
-    await rc.ConfigFactory.refresh_auth_token(url)
+    try:
+        await api_login(url=url, path=root.config_path, timeout=root.timeout)
+    except ConfigError:
+        await api_logout(path=root.config_path)
+        click.echo("You were successfully logged out.")
+        await api_login(url=url, path=root.config_path, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
 @command()
-def logout() -> None:
+@click.argument("token", required=True, type=str)
+@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
+@async_cmd(init_client=False)
+async def login_with_token(root: Root, token: str, url: URL) -> None:
+    """
+    Log into Neuromation Platform with token.
+
+    TOKEN is authentication token provided by Neuromation administration team.
+    URL is a platform entrypoint URL.
+    """
+    try:
+        await api_login_with_token(
+            token, url=url, path=root.config_path, timeout=root.timeout
+        )
+    except ConfigError:
+        await api_logout(path=root.config_path)
+        click.echo("You were successfully logged out.")
+        await api_login_with_token(
+            token, url=url, path=root.config_path, timeout=root.timeout
+        )
+    click.echo(f"Logged into {url}")
+
+
+@command()
+@async_cmd()
+async def logout(root: Root) -> None:
     """
     Log out.
     """
-    rc.ConfigFactory.forget_auth_token()
+    await api_logout(path=root.config_path)
     click.echo("Logged out")
 
 
@@ -116,8 +104,8 @@ def logout() -> None:
     default=lambda: os.environ.get("DOCKER_CONFIG", Path.home() / ".docker"),
     show_default=False,
 )
-@click.pass_obj
-def docker(cfg: Config, docker_config: str) -> None:
+@async_cmd()
+async def docker(root: Root, docker_config: str) -> None:
     """
     Configure docker client for working with platform registry
     """
@@ -135,21 +123,17 @@ def docker(cfg: Config, docker_config: str) -> None:
     if "credHelpers" not in payload:
         payload["credHelpers"] = {}
 
-    registry = URL(cfg.registry_url).host
+    registry = URL(root.registry_url).host
     payload["credHelpers"][registry] = "neuro"
     with json_path.open("w") as file:
         json.dump(payload, file, indent=2)
 
 
 config.add_command(login)
+config.add_command(login_with_token)
 config.add_command(show)
 config.add_command(show_token)
 
 config.add_command(docker)
 
-config.add_command(auth)
 config.add_command(logout)
-
-config.add_command(url)
-config.add_command(id_rsa)
-config.add_command(forget)

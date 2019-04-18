@@ -9,19 +9,30 @@ from typing import Any, List, Optional, Sequence, Type, Union
 import aiohttp
 import click
 from aiodocker.exceptions import DockerError
-from click.exceptions import Abort as ClickAbort, Exit as ClickExit  # type: ignore
+from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
-from neuromation.cli.rc import RCException
+from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
+from neuromation.cli.root import Root
 
-from . import completion, config, image, job, model, rc, share, storage
+from . import completion, config, image, job, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
 
 if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    if sys.version_info < (3, 7):
+        # Python 3.6 has no WindowsProactorEventLoopPolicy class
+        from asyncio import events
+
+        class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
+            _loop_factory = asyncio.ProactorEventLoop
+
+    else:
+        WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
+
+    asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
 
 
 log = logging.getLogger(__name__)
@@ -87,9 +98,9 @@ def print_options(
     type=click.Path(dir_okay=False),
     required=False,
     help="Path to config file.",
-    default=lambda: rc.ConfigFactory.get_path(),
+    default=DEFAULT_CONFIG_PATH,
     metavar="PATH",
-    envvar=rc.ENV_NAME,
+    envvar=CONFIG_ENV_NAME,
 )
 @click.option(
     "--show-traceback",
@@ -153,16 +164,15 @@ def cli(
         real_color = tty
     ctx.color = real_color
     setup_logging(verbose=verbose, color=real_color)
-    rc.ConfigFactory.set_path(Path(neuromation_config))
-    cfg = rc.ConfigFactory.load()
-    cfg.color = real_color
-    cfg.tty = tty
-    cfg.terminal_size = shutil.get_terminal_size()
-    cfg.disable_pypi_version_check = disable_pypi_version_check
-    cfg.network_timeout = network_timeout
-    ctx.obj = cfg
-    if not disable_pypi_version_check:
-        cfg.pypi.warn_if_has_newer_version()
+    root = Root(
+        color=real_color,
+        tty=tty,
+        terminal_size=shutil.get_terminal_size(),
+        disable_pypi_version_check=disable_pypi_version_check,
+        network_timeout=network_timeout,
+        config_path=Path(neuromation_config),
+    )
+    ctx.obj = root
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help())
 
@@ -181,7 +191,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         current_cmd = ctx_stack[-1].command
         if isinstance(current_cmd, click.MultiCommand):
             sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
-            if sub_cmd is None or sub_cmd.hidden:  # type: ignore
+            if sub_cmd is None or sub_cmd.hidden:
                 click.echo(not_found)
                 break
             sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
@@ -204,7 +214,6 @@ cli.add_command(image.image)
 cli.add_command(config.config)
 cli.add_command(completion.completion)
 
-cli.add_command(model.model)
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 
 # shortcuts
@@ -240,27 +249,27 @@ def main(args: Optional[List[str]] = None) -> None:
         e.show()
         sys.exit(e.exit_code)
     except ClickExit as e:
-        sys.exit(e.exit_code)
-    except neuromation.client.IllegalArgumentError as error:
+        sys.exit(e.exit_code)  # type: ignore
+    except neuromation.api.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
         sys.exit(EX_DATAERR)
 
-    except neuromation.client.ResourceNotFound as error:
+    except neuromation.api.ResourceNotFound as error:
         LOG_ERROR(f"{error}")
         sys.exit(EX_OSFILE)
 
-    except neuromation.client.AuthenticationError as error:
+    except neuromation.api.AuthenticationError as error:
         LOG_ERROR(f"Cannot authenticate ({error})")
         sys.exit(EX_NOPERM)
-    except neuromation.client.AuthorizationError as error:
+    except neuromation.api.AuthorizationError as error:
         LOG_ERROR(f"Not enough permissions ({error})")
         sys.exit(EX_NOPERM)
 
-    except neuromation.client.ClientError as error:
+    except neuromation.api.ClientError as error:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(EX_SOFTWARE)
 
-    except RCException as error:
+    except ConfigError as error:
         LOG_ERROR(f"{error}")
         sys.exit(EX_SOFTWARE)
 

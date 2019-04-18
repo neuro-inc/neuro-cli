@@ -16,6 +16,8 @@ FLAKE8_REGEXP := .+\\.py$
 
 DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
+README_PATTERN := README.XXXXXXXX.md
+
 .PHONY: help
 .SILENT: help
 help:
@@ -97,6 +99,7 @@ _e2e:
 _e2e_win:
 	pytest \
 		-n 4 \
+		--timeout=570 --timeout_method=thread\
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -212,7 +215,7 @@ docs:
 
 
 .PHONY: lint-docs
-lint-docs: TMP:=$(shell mktemp $${TMPDIR:-/tmp}/README.XXXXXXXX.md)
+lint-docs: TMP:=$(shell if command -v gmktemp >/dev/null 2>&1 ; then gmktemp $${TMPDIR:-/tmp}/${README_PATTERN} ; else mktemp $${TMPDIR:-/tmp}/${README_PATTERN} ; fi)
 lint-docs:
 	build-tools/cli-help-generator.py README.in.md ${TMP}
 	markdown-toc -t github -h 6 ${TMP}
