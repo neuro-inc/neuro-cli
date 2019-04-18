@@ -21,7 +21,7 @@ async def test_model_train(aiohttp_server, make_client):
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": "4G",
+                    "memory_mb": 16384,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -41,7 +41,7 @@ async def test_model_train(aiohttp_server, make_client):
 
     srv = await aiohttp_server(app)
 
-    resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
+    resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")

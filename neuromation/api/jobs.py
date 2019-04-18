@@ -56,7 +56,7 @@ class Resources:
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "Resources":
         return Resources(
-            memory_mb=int(data["memory_mb"]),
+            memory_mb=data["memory_mb"],
             cpu=data["cpu"],
             shm=data.get("shm", None),
             gpu=data.get("gpu", None),
