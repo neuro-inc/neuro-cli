@@ -400,9 +400,6 @@ class ImageType(click.ParamType):
             parsed_image = image_parser.parse_as_docker_image(value)
         return parsed_image
 
-    def __repr__(self) -> str:
-        return "Image"
-
 
 class LocalRemotePortParamType(click.ParamType):
     name = "local-remote-port-pair"
@@ -430,9 +427,6 @@ class MegabyteType(click.ParamType):
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> int:
         return to_megabytes(value)
-
-    def __repr__(self) -> str:
-        return "Image"
 
 
 MEGABYTE = MegabyteType()
