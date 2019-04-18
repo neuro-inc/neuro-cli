@@ -47,10 +47,10 @@ class Resources:
         return cls(memory, cpu, gpu, extshm, gpu_model)
 
     def to_api(self) -> Dict[str, Any]:
-        value = {"memory_mb": str(self.memory_mb), "cpu": self.cpu, "shm": self.shm}
+        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
         if self.gpu:
             value["gpu"] = self.gpu
-            value["gpu_model"] = self.gpu_model
+            value["gpu_model"] = self.gpu_model  # type: ignore
         return value
 
     @classmethod

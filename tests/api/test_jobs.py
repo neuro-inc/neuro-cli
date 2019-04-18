@@ -587,7 +587,7 @@ async def test_job_submit_preemptible(aiohttp_server, make_client):
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": "4G",
+                    "memory_mb": 16384,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
