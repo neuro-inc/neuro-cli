@@ -9,7 +9,6 @@ from .config import _Config
 from .core import DEFAULT_TIMEOUT, _Core
 from .images import _Images
 from .jobs import _Jobs
-from .models import _Models
 from .storage import _Storage
 from .users import _Users
 
@@ -26,7 +25,6 @@ class Client:
             self._connector, self._config.url, self._config.auth_token.token, timeout
         )
         self._jobs = _Jobs(self._core, self._config)
-        self._models = _Models(self._core)
         self._storage = _Storage(self._core, self._config)
         self._users = _Users(self._core)
         self._images: Optional[_Images] = None
@@ -55,10 +53,6 @@ class Client:
     @property
     def jobs(self) -> _Jobs:
         return self._jobs
-
-    @property
-    def models(self) -> _Models:
-        return self._models
 
     @property
     def storage(self) -> _Storage:

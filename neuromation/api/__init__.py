@@ -37,7 +37,6 @@ from .jobs import (
     Resources,
     Volume,
 )
-from .models import TrainResult
 from .parsing_utils import ImageNameParser
 from .storage import FileStatus, FileStatusType
 from .users import Action, Permission
@@ -78,7 +77,6 @@ __all__ = (
     "Resources",
     "Volume",
     "HTTPPort",
-    "TrainResult",
     "Action",
     "Permission",
     "Client",
