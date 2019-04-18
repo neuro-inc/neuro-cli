@@ -16,8 +16,6 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.cli.utils import LOCAL_REMOTE_PORT
-from neuromation.strings.parse import to_megabytes_str
 
 from .defaults import (
     GPU_MODELS,
@@ -37,6 +35,8 @@ from .formatters import (
 )
 from .root import Root
 from .utils import (
+    LOCAL_REMOTE_PORT,
+    MEGABYTE,
     ImageType,
     alias,
     async_cmd,
@@ -90,7 +90,7 @@ def job() -> None:
     "-m",
     "--memory",
     metavar="AMOUNT",
-    type=str,
+    type=MEGABYTE,
     help="Memory amount to request",
     default=JOB_MEMORY_AMOUNT,
     show_default=True,
@@ -170,7 +170,7 @@ async def submit(
     gpu: int,
     gpu_model: str,
     cpu: float,
-    memory: str,
+    memory: int,
     extshm: bool,
     http: int,
     http_auth: bool,
@@ -219,8 +219,6 @@ async def submit(
 
     cmd = " ".join(cmd) if cmd is not None else None
     log.debug(f'cmd="{cmd}"')
-
-    memory = to_megabytes_str(memory)
 
     # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
     if not quiet:

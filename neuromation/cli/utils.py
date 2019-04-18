@@ -32,6 +32,7 @@ from neuromation.api import (
     JobDescription,
     Volume,
 )
+from neuromation.strings.parse import to_megabytes
 from neuromation.utils import run
 
 from .root import Root
@@ -399,11 +400,10 @@ class ImageType(click.ParamType):
             parsed_image = image_parser.parse_as_docker_image(value)
         return parsed_image
 
-    def __repr__(self) -> str:
-        return "Image"
-
 
 class LocalRemotePortParamType(click.ParamType):
+    name = "local-remote-port-pair"
+
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> Tuple[int, int]:
@@ -418,3 +418,15 @@ class LocalRemotePortParamType(click.ParamType):
 
 
 LOCAL_REMOTE_PORT = LocalRemotePortParamType()
+
+
+class MegabyteType(click.ParamType):
+    name = "megabyte"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> int:
+        return to_megabytes(value)
+
+
+MEGABYTE = MegabyteType()

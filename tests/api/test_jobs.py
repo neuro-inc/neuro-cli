@@ -326,7 +326,7 @@ async def test_job_submit(aiohttp_server, make_client):
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": "4G",
+                    "memory_mb": 16384,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -358,7 +358,7 @@ async def test_job_submit(aiohttp_server, make_client):
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181})
-        resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
+        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
@@ -418,7 +418,7 @@ async def test_job_submit_with_name_and_description(aiohttp_server, make_client)
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": "4G",
+                    "memory_mb": 16384,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -452,7 +452,7 @@ async def test_job_submit_with_name_and_description(aiohttp_server, make_client)
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181})
-        resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
+        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
@@ -512,7 +512,7 @@ async def test_job_submit_no_volumes(aiohttp_server, make_client):
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": "4G",
+                    "memory_mb": 16384,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -534,7 +534,7 @@ async def test_job_submit_no_volumes(aiohttp_server, make_client):
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181})
-        resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
+        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         ret = await client.jobs.submit(
             image=image,
             resources=resources,
@@ -587,7 +587,7 @@ async def test_job_submit_preemptible(aiohttp_server, make_client):
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": "4G",
+                    "memory_mb": 16384,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -621,7 +621,7 @@ async def test_job_submit_preemptible(aiohttp_server, make_client):
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
         network = NetworkPortForwarding({"http": 8181})
-        resources = Resources.create(7, 1, "test-gpu-model", "4G", True)
+        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(

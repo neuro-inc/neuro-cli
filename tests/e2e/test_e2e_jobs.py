@@ -605,7 +605,7 @@ async def nginx_job_async(nmrc_path, loop):
         command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
             image=Image("python:latest", command=command),
-            resources=Resources.create(0.1, None, None, "20", True),
+            resources=Resources.create(0.1, None, None, 20, True),
             network=NetworkPortForwarding.from_cli(None, 22),
             is_preemptible=False,
             volumes=None,

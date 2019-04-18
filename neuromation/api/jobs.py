@@ -29,7 +29,7 @@ from .url_utils import normalize_storage_path_uri
 
 @dataclass(frozen=True)
 class Resources:
-    memory_mb: str
+    memory_mb: int
     cpu: float
     gpu: Optional[int]
     shm: Optional[bool]
@@ -41,7 +41,7 @@ class Resources:
         cpu: float,
         gpu: Optional[int],
         gpu_model: Optional[str],
-        memory: str,
+        memory: int,
         extshm: bool,
     ) -> "Resources":
         return cls(memory, cpu, gpu, extshm, gpu_model)
@@ -50,7 +50,7 @@ class Resources:
         value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
         if self.gpu:
             value["gpu"] = self.gpu
-            value["gpu_model"] = self.gpu_model
+            value["gpu_model"] = self.gpu_model  # type: ignore
         return value
 
     @classmethod
