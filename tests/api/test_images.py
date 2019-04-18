@@ -446,7 +446,7 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_raise_if_has_tag_true_with_scheme_no_tag(self):
         image = "image:ubuntu"
-        parsed = self.parser.parse_as_neuro_image(image, raise_if_has_tag=True)
+        parsed = self.parser.parse_as_neuro_image(image, allow_tag=True)
         assert parsed == DockerImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
@@ -454,12 +454,12 @@ class TestImageParser:
     def test_parse_as_neuro_image_raise_if_has_tag_true_no_scheme_with_tag(self):
         image = "ubuntu"
         with pytest.raises(ValueError, match="scheme 'image://' is required"):
-            self.parser.parse_as_neuro_image(image, raise_if_has_tag=True)
+            self.parser.parse_as_neuro_image(image, allow_tag=True)
 
     def test_parse_as_neuro_image_raise_if_has_tag_true_with_scheme_with_tag(self):
         image = "ubuntu:latest"
         with pytest.raises(ValueError, match="tag is not allowed"):
-            self.parser.parse_as_neuro_image(image, raise_if_has_tag=True)
+            self.parser.parse_as_neuro_image(image, allow_tag=True)
 
     def test_convert_to_docker_image(self):
         neuro_image = DockerImage(
