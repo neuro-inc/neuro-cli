@@ -472,6 +472,10 @@ class Helper:
                     request_info=resp.request_info,
                 )
 
+    def get_output_after_fail(self) -> SysCap:
+        cap = self._capfd.readouterr()
+        return SysCap(cap.out.strip(), cap.err.strip())
+
 
 @pytest.fixture()
 def nmrc_path(tmp_path):
