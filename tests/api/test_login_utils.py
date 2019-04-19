@@ -18,6 +18,9 @@ async def test_get_server_config(aiohttp_server):
         "http://127.0.0.1:54542",
     ]
     success_redirect_url = "https://platform.neuromation.io"
+    storage_url = "http://neu.ro/api/v1/storage"
+    users_url = "http://neu.ro/api/v1/users"
+    monitoring_url = "http://neu.ro/api/v1/jobs"
     JSON = {
         "registry_url": registry_url,
         "auth_url": auth_url,
@@ -26,6 +29,9 @@ async def test_get_server_config(aiohttp_server):
         "audience": audience,
         "callback_urls": callback_urls,
         "success_redirect_url": success_redirect_url,
+        "storage_url": storage_url,
+        "users_url": users_url,
+        "monitoring_url": monitoring_url,
     }
 
     async def handler(request):
@@ -46,10 +52,13 @@ async def test_get_server_config(aiohttp_server):
             callback_urls=tuple(URL(u) for u in callback_urls),
             success_redirect_url=URL(success_redirect_url),
         ),
+        storage_url=URL(storage_url),
+        users_url=URL(users_url),
+        monitoring_url=URL(monitoring_url),
     )
 
 
-async def test_get_server_config_no_callback_urls(aiohttp_server):
+async def test_get_server_config_no_server_urls(aiohttp_server):
     registry_url = "https://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -82,6 +91,51 @@ async def test_get_server_config_no_callback_urls(aiohttp_server):
             audience=audience,
             success_redirect_url=URL(success_redirect_url),
         ),
+    )
+
+
+async def test_get_server_config_no_callback_urls(aiohttp_server):
+    registry_url = "https://registry.dev.neuromation.io"
+    auth_url = "https://dev-neuromation.auth0.com/authorize"
+    token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    client_id = "this_is_client_id"
+    audience = "https://platform.dev.neuromation.io"
+    success_redirect_url = "https://platform.neuromation.io"
+    storage_url = "http://neu.ro/api/v1/storage"
+    users_url = "http://neu.ro/api/v1/users"
+    monitoring_url = "http://neu.ro/api/v1/jobs"
+    JSON = {
+        "registry_url": registry_url,
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "client_id": client_id,
+        "audience": audience,
+        "success_redirect_url": success_redirect_url,
+        "storage_url": storage_url,
+        "users_url": users_url,
+        "monitoring_url": monitoring_url,
+    }
+
+    async def handler(request):
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/config", handler)
+    srv = await aiohttp_server(app)
+
+    config = await get_server_config(srv.make_url("/"))
+    assert config == _ServerConfig(
+        registry_url=URL(registry_url),
+        auth_config=_AuthConfig(
+            auth_url=URL(auth_url),
+            token_url=URL(token_url),
+            client_id=client_id,
+            audience=audience,
+            success_redirect_url=URL(success_redirect_url),
+        ),
+        storage_url=URL(storage_url),
+        users_url=URL(users_url),
+        monitoring_url=URL(monitoring_url),
     )
 
 
