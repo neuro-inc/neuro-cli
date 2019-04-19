@@ -182,7 +182,7 @@ async def test_parse_resource_for_sharing_image_with_tag_fail(root):
         parse_resource_for_sharing(uri, root)
 
 
-def test_parhse_permission_action_read_lowercase():
+def test_parse_permission_action_read_lowercase():
     action = "read"
     assert parse_permission_action(action) == Action.READ
 
