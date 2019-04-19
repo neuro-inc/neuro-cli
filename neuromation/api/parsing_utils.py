@@ -27,6 +27,7 @@ class ImageNameParser:
     def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> DockerImage:
         try:
             self._validate_image_name(image)
+            tag: Optional[str]
             if allow_tag:
                 tag = self.default_tag
             else:
