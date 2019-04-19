@@ -369,7 +369,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """
     if uri.startswith("image:"):
         parser = ImageNameParser(root.username, root.registry_url)
-        image = parser.parse_as_neuro_image(uri, allow_tag=True)
+        image = parser.parse_as_neuro_image(uri, allow_tag=False)
         uri = image.as_url_str()
     return URL(uri)
 

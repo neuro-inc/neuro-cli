@@ -24,15 +24,15 @@ class ImageNameParser:
         except ValueError as e:
             raise ValueError(f"Invalid docker image '{image}': {e}") from e
 
-    def parse_as_neuro_image(self, image: str, allow_tag: bool = False) -> DockerImage:
+    def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> DockerImage:
         try:
             self._validate_image_name(image)
             if allow_tag:
+                tag = self.default_tag
+            else:
                 if self.has_tag(image):
                     raise ValueError("tag is not allowed")
                 tag = None
-            else:
-                tag = self.default_tag
             return self._parse_as_neuro_image(image, default_tag=tag)
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
