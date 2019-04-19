@@ -28,4 +28,5 @@ def test_share_image_with_tag_fails(helper):
             ["share", "image://~/my-ubuntu:latest", another_test_user, "read"]
         )
     assert cm.value.code == 127
-    assert "tag is not allowed" in helper.get_output_after_fail().out
+    last_out = helper.get_last_output().out
+    assert "tag is not allowed" in last_out
