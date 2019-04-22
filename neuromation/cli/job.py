@@ -586,13 +586,7 @@ async def run(
     # Starts a container pytorch:latest with two paths mounted.
     # Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
     # storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-    neuro run pytorch:latest
-
-    # Starts a container pytorch:latest with connection enabled to port 22 and
-    # sets PYTHONPATH environment value to /python.
-    # Directories as mounted as in previous example.
-    # Please note that SSH server should be provided by container.
-    neuro run --env PYTHONPATH=/python --ssh 22 pytorch:latest
+    neuro run pytorch:latest --volume=HOME
     """
     job_preset = RUN_PRESET[preset]
 
