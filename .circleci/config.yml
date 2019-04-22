@@ -45,11 +45,11 @@ version: 2
 jobs:  
   build_py36:
     <<: *py36
-    <<: build
+    <<: *build
 
   build_py37:
     <<: *py37
-    <<: build
+    <<: *build
 
   pypi_deploy:
     <<: *py36
