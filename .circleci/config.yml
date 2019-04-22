@@ -2,15 +2,17 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-defaults: &defaults
+py36: &py36
     docker:
       - image: circleci/python:3.6.1
     working_directory: ~/repo
 
-version: 2
-jobs:  
-  build:
-    <<: *defaults
+py36: &py37
+    docker:
+      - image: circleci/python:3.7.2
+    working_directory: ~/repo
+
+build: &build
     steps:
       - checkout
 
@@ -38,8 +40,19 @@ jobs:
             . .env/bin/activate
             make ci
 
+
+version: 2
+jobs:  
+  build_py36:
+    <<: *py36
+    <<: *build
+
+  build_py37:
+    <<: *py37
+    <<: *build
+
   pypi_deploy:
-    <<: *defaults
+    <<: *py36
     steps:
       - checkout
 
@@ -69,7 +82,7 @@ jobs:
           key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
   trigger_e2e:
-    <<: *defaults
+    <<: *py36
     steps:
       - run:
           name: trigger platform-e2e tests
@@ -84,7 +97,12 @@ workflows:
 
   main:
     jobs:
-      - build:
+      - build_py36:
+          context: org-global
+          filters:
+            tags:
+              only: /^v.*/
+      - build_py37:
           context: org-global
           filters:
             tags:
@@ -97,7 +115,8 @@ workflows:
       - pypi_deploy:
           context: org-global
           requires:
-            - build
+            - build_py36
+            - build_py37
           filters:
             tags:
               only: /^v.*/
