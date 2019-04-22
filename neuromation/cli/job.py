@@ -519,7 +519,10 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
 )
 @click.option(
-    "-d", "--description", metavar="DESC", help="Add optional description to the job"
+    "-d",
+    "--description",
+    metavar="DESC",
+    help="Add optional description in free format",
 )
 @click.option(
     "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
