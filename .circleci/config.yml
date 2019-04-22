@@ -102,6 +102,11 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+      - build_py37:
+          context: org-global
+          filters:
+            tags:
+              only: /^v.*/
       - trigger_e2e:
           context: org-global
           filters:
@@ -110,7 +115,8 @@ workflows:
       - pypi_deploy:
           context: org-global
           requires:
-            - build
+            - build_py36
+            - build_py37
           filters:
             tags:
               only: /^v.*/
