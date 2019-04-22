@@ -711,3 +711,34 @@ def test_job_submit_http_auth(helper, secret_job):
     run_async(
         _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
     )
+
+
+@pytest.mark.e2e
+def test_job_run(helper):
+    # Run a new job
+    command = 'bash -c "sleep 10m; false"'
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-q",
+            "-s",
+            "cpu-small",
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    job_id = captured.out
+
+    # Wait until the job is running
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+
+    # Kill the job
+    captured = helper.run_cli(["job", "kill", job_id])
+
+    # Currently we check that the job is not running anymore
+    # TODO(adavydow): replace to succeeded check when racecon in
+    # platform-api fixed.
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)

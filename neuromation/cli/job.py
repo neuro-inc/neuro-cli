@@ -3,7 +3,9 @@ import logging
 import os
 import shlex
 import sys
-from typing import List, Sequence, Tuple
+from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import click
 
@@ -48,6 +50,43 @@ from .utils import (
 
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class RunPreset:
+    cpu: float
+    memory: int
+    gpu: Optional[int]
+    gpu_model: Optional[str]
+
+
+RUN_PRESET = MappingProxyType(
+    {
+        "gpu-small": RunPreset(gpu=1, cpu=7, memory=30 * 1024, gpu_model=GPU_MODELS[0]),
+        "gpu-large": RunPreset(
+            gpu=1, cpu=7, memory=60 * 1024, gpu_model=GPU_MODELS[-1]
+        ),
+        "cpu-small": RunPreset(gpu=None, cpu=2, memory=2 * 1024, gpu_model=None),
+        "cpu-large": RunPreset(gpu=None, cpu=3, memory=14 * 1024, gpu_model=None),
+    }
+)
+
+
+def build_env(env: Sequence[str], env_file: str) -> Dict[str, str]:
+    if env_file:
+        with open(env_file, "r") as ef:
+            env = ef.read().splitlines() + list(env)
+
+    env_dict = {}
+    for line in env:
+        splitted = line.split("=", 1)
+        if len(splitted) == 1:
+            val = os.environ.get(splitted[0], "")
+            env_dict[splitted[0]] = val
+        else:
+            env_dict[splitted[0]] = splitted[1]
+
+    return env_dict
 
 
 @group()
@@ -142,7 +181,9 @@ def job() -> None:
     metavar="MOUNT",
     multiple=True,
     help="Mounts directory from vault into container. "
-    "Use multiple options to mount more than one volume",
+    "Use multiple options to mount more than one volume. "
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation:/var/storage/neuromation:ro",
 )
 @click.option(
     "-e",
@@ -167,8 +208,8 @@ def job() -> None:
 async def submit(
     root: Root,
     image: DockerImage,
-    gpu: int,
-    gpu_model: str,
+    gpu: Optional[int],
+    gpu_model: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -179,7 +220,7 @@ async def submit(
     env: Sequence[str],
     env_file: str,
     preemptible: bool,
-    name: str,
+    name: Optional[str],
     description: str,
     quiet: bool,
     wait_start: bool,
@@ -199,59 +240,26 @@ async def submit(
     neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
       pytorch:latest
     """
-
-    username = root.username
-
-    # TODO (Alex Davydow 12.12.2018): Consider splitting env logic into
-    # separate function.
-    if env_file:
-        with open(env_file, "r") as ef:
-            env = ef.read().splitlines() + list(env)
-
-    env_dict = {}
-    for line in env:
-        splitted = line.split("=", 1)
-        if len(splitted) == 1:
-            val = os.environ.get(splitted[0], "")
-            env_dict[splitted[0]] = val
-        else:
-            env_dict[splitted[0]] = splitted[1]
-
-    cmd = " ".join(cmd) if cmd is not None else None
-    log.debug(f'cmd="{cmd}"')
-
-    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
-    if not quiet:
-        log.info(f"Using image '{image.as_url_str()}'")
-        log.debug(f"IMAGE: {image}")
-    image_obj = Image(image=image.as_repo_str(), command=cmd)
-
-    network = NetworkPortForwarding.from_cli(http, http_auth)
-    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
-    volumes = Volume.from_cli_list(username, volume)
-    if volumes and not quiet:
-        log.info(
-            "Using volumes: \n"
-            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
-        )
-
-    job = await root.client.jobs.submit(
-        image=image_obj,
-        resources=resources,
-        network=network,
-        volumes=volumes,
-        is_preemptible=preemptible,
+    await run_job(
+        root,
+        image=image,
+        gpu=gpu,
+        gpu_model=gpu_model,
+        cpu=cpu,
+        memory=memory,
+        extshm=extshm,
+        http=http,
+        http_auth=http_auth,
+        cmd=cmd,
+        volume=volume,
+        env=env,
+        env_file=env_file,
+        preemptible=preemptible,
         name=name,
         description=description,
-        env=env_dict,
+        quiet=quiet,
+        wait_start=wait_start,
     )
-    click.echo(JobFormatter(quiet)(job))
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=quiet)
-    while wait_start and job.status == JobStatus.PENDING:
-        await asyncio.sleep(0.2)
-        job = await root.client.jobs.status(job.id)
-        progress(job)
-    progress.close()
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
@@ -460,6 +468,151 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         click.echo(format_fail(job, error))
 
 
+@command(context_settings=dict(ignore_unknown_options=True))
+@click.argument("image", type=ImageType())
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@click.option(
+    "-s",
+    "--preset",
+    metavar="PRESET",
+    type=click.Choice(list(RUN_PRESET)),
+    help="Predefined job profile",
+    default="gpu-small",
+    show_default=True,
+)
+@click.option(
+    "-x/-X",
+    "--extshm/--no-extshm",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Request extended '/dev/shm' space",
+)
+@click.option(
+    "--http",
+    type=int,
+    default=80,
+    show_default=True,
+    help="Enable HTTP port forwarding to container",
+)
+@click.option(
+    "--http-auth/--no-http-auth",
+    is_flag=True,
+    help="Enable HTTP authentication for forwarded HTTP port",
+    default=True,
+    show_default=True,
+)
+@click.option(
+    "--preemptible/--non-preemptible",
+    "-p/-P",
+    help="Run job on a lower-cost preemptible instance",
+    default=True,
+    show_default=True,
+)
+@click.option(
+    "-n",
+    "--name",
+    metavar="NAME",
+    type=str,
+    help="Optional job name",
+    default=None,
+    show_default=True,
+)
+@click.option(
+    "-d",
+    "--description",
+    metavar="DESC",
+    help="Add optional description in free format",
+)
+@click.option(
+    "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
+)
+@click.option(
+    "-v",
+    "--volume",
+    metavar="MOUNT",
+    multiple=True,
+    help="Mounts directory from vault into container. "
+    "Use multiple options to mount more than one volume. "
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation:/var/storage/neuromation:ro",
+)
+@click.option(
+    "-e",
+    "--env",
+    metavar="VAR=VAL",
+    multiple=True,
+    help="Set environment variable in container "
+    "Use multiple options to define more than one variable",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="File with environment variables to pass",
+)
+@click.option(
+    "--wait-start/--no-wait-start",
+    default=True,
+    show_default=True,
+    help="Wait for a job start or failure",
+)
+@async_cmd()
+async def run(
+    root: Root,
+    image: DockerImage,
+    preset: str,
+    extshm: bool,
+    http: int,
+    http_auth: bool,
+    cmd: Sequence[str],
+    volume: Sequence[str],
+    env: Sequence[str],
+    env_file: str,
+    preemptible: bool,
+    name: Optional[str],
+    description: str,
+    quiet: bool,
+    wait_start: bool,
+) -> None:
+    """
+    Run an image with predefined configuration.
+
+    IMAGE container image name.
+
+    CMD list will be passed as commands to model container.
+
+    Examples:
+
+    # Starts a container pytorch:latest with two paths mounted.
+    # Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
+    # storage://neuromation is mounted as :/var/storage/neuromation as read-only.
+    neuro run pytorch:latest --volume=HOME
+    """
+    job_preset = RUN_PRESET[preset]
+
+    await run_job(
+        root,
+        image=image,
+        gpu=job_preset.gpu,
+        gpu_model=job_preset.gpu_model,
+        cpu=job_preset.cpu,
+        memory=job_preset.memory,
+        extshm=extshm,
+        http=http,
+        http_auth=http_auth,
+        cmd=cmd,
+        volume=volume,
+        env=env,
+        env_file=env_file,
+        preemptible=preemptible,
+        name=name,
+        description=description,
+        quiet=quiet,
+        wait_start=wait_start,
+    )
+
+
+job.add_command(run)
 job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
@@ -472,3 +625,77 @@ job.add_command(top)
 
 job.add_command(alias(ls, "list", hidden=True))
 job.add_command(alias(logs, "monitor", hidden=True))
+
+
+async def run_job(
+    root: Root,
+    *,
+    image: DockerImage,
+    gpu: Optional[int],
+    gpu_model: Optional[str],
+    cpu: float,
+    memory: int,
+    extshm: bool,
+    http: int,
+    http_auth: bool,
+    cmd: Sequence[str],
+    volume: Sequence[str],
+    env: Sequence[str],
+    env_file: str,
+    preemptible: bool,
+    name: Optional[str],
+    description: str,
+    quiet: bool,
+    wait_start: bool,
+) -> None:
+    username = root.username
+
+    env_dict = build_env(env, env_file)
+
+    cmd = " ".join(cmd) if cmd is not None else None
+    log.debug(f'cmd="{cmd}"')
+
+    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
+    if not quiet:
+        log.info(f"Using image '{image.as_url_str()}'")
+        log.debug(f"IMAGE: {image}")
+    image_obj = Image(image=image.as_repo_str(), command=cmd)
+
+    network = NetworkPortForwarding.from_cli(http, http_auth)
+    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+
+    volumes: Set[Volume] = set()
+    for v in volume:
+        if v == "HOME":
+            volumes.add(Volume.from_cli(username, "storage://~:/var/storage/home:rw"))
+            volumes.add(
+                Volume.from_cli(
+                    username, "storage://neuromation:/var/storage/neuromation:ro"
+                )
+            )
+        else:
+            volumes.add(Volume.from_cli(username, v))
+
+    if volumes and not quiet:
+        log.info(
+            "Using volumes: \n"
+            + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
+        )
+
+    job = await root.client.jobs.submit(
+        image=image_obj,
+        resources=resources,
+        network=network,
+        volumes=list(volumes) if volumes else None,
+        is_preemptible=preemptible,
+        name=name,
+        description=description,
+        env=env_dict,
+    )
+    click.echo(JobFormatter(quiet)(job))
+    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=quiet)
+    while wait_start and job.status == JobStatus.PENDING:
+        await asyncio.sleep(0.2)
+        job = await root.client.jobs.status(job.id)
+        progress(job)
+    progress.close()
