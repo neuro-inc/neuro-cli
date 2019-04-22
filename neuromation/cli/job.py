@@ -502,7 +502,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     default=True,
     show_default=True,
 )
-@click.option("--ssh", type=int, help="Enable SSH port forwarding to container")
 @click.option(
     "--preemptible/--non-preemptible",
     "-p/-P",
@@ -562,7 +561,6 @@ async def run(
     extshm: bool,
     http: int,
     http_auth: bool,
-    ssh: int,
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
