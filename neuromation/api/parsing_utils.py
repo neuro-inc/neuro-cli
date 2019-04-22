@@ -24,14 +24,17 @@ class ImageNameParser:
         except ValueError as e:
             raise ValueError(f"Invalid docker image '{image}': {e}") from e
 
-    def parse_as_neuro_image(
-        self, image: str, raise_if_has_tag: bool = False
-    ) -> DockerImage:
+    def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> DockerImage:
         try:
             self._validate_image_name(image)
-            if raise_if_has_tag and self.has_tag(image):
-                raise ValueError("tag is not allowed")
-            return self._parse_as_neuro_image(image)
+            tag: Optional[str]
+            if allow_tag:
+                tag = self.default_tag
+            else:
+                if self.has_tag(image):
+                    raise ValueError("tag is not allowed")
+                tag = None
+            return self._parse_as_neuro_image(image, default_tag=tag)
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
 
@@ -88,7 +91,9 @@ class ImageNameParser:
         name, tag = self._split_image_name(image, self.default_tag)
         return DockerImage(name=name, tag=tag)
 
-    def _parse_as_neuro_image(self, image: str) -> DockerImage:
+    def _parse_as_neuro_image(
+        self, image: str, default_tag: Optional[str]
+    ) -> DockerImage:
         if not self.is_in_neuro_registry(image):
             raise ValueError(
                 f"scheme '{IMAGE_SCHEME}://' is required for remote images"
@@ -110,7 +115,7 @@ class ImageNameParser:
 
         registry = self._registry
         owner = self._default_user if not url.host or url.host == "~" else url.host
-        name, tag = self._split_image_name(url.path.lstrip("/"), self.default_tag)
+        name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
         return DockerImage(name=name, tag=tag, registry=registry, owner=owner)
 
     def _split_image_name(
