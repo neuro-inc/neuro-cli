@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Optional, Set
+from typing import Any, List, Optional, Set
 from uuid import uuid4 as uuid
 
 import pytest
@@ -9,18 +9,18 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.api import ConfigError, Factory
-from neuromation.api.config import _AuthToken, _Config, _PyPIVersion
+from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
 from neuromation.api.jobs import _Jobs
 from neuromation.api.login import AuthNegotiator
 
 
 @pytest.fixture
-def token():
+def token() -> str:
     return str(uuid())
 
 
 @pytest.fixture
-def tmp_home(tmp_path, monkeypatch):
+def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
     monkeypatch.setattr(Path, "home", lambda: tmp_path)  # Like as it's not enough
     monkeypatch.setenv("HOME", str(tmp_path))
 
@@ -28,25 +28,25 @@ def tmp_home(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def config_file(tmp_home, auth_config):
+def config_file(tmp_home: Path, auth_config: _AuthConfig) -> Path:
     config_path = tmp_home / ".nmrc"
     _create_config(config_path, auth_config)
     return config_path
 
 
 @pytest.fixture
-async def mock_for_login(monkeypatch, aiohttp_server):
+async def mock_for_login(monkeypatch: Any, aiohttp_server: Any) -> URL:
     async def _refresh_token_mock(
-        self, token: Optional[_AuthToken] = None
+        self: Any, token: Optional[_AuthToken] = None
     ) -> _AuthToken:
         return _AuthToken.create_non_expiring(str(uuid()))
 
     async def _jobs_list_mock(
-        self, statuses: Optional[Set[str]] = None, name: Optional[str] = None
-    ):
+        self: Any, statuses: Optional[Set[str]] = None, name: Optional[str] = None
+    ) -> List[str]:
         return []
 
-    async def _config_handler(request):
+    async def _config_handler(request: web.Request) -> web.Response:
         return web.json_response(
             {
                 "registry_url": "https://registry-dev.test.com",
@@ -73,7 +73,7 @@ async def mock_for_login(monkeypatch, aiohttp_server):
     return srv.make_url("/")
 
 
-def _create_config(nmrc_path: Path, auth_config):
+def _create_config(nmrc_path: Path, auth_config: _AuthConfig) -> str:
     token = str(uuid())
     config = _Config(
         auth_config=auth_config,
@@ -88,38 +88,40 @@ def _create_config(nmrc_path: Path, auth_config):
 
 
 class TestConfigFileInteraction:
-    async def test_config_file_absent(self, tmp_home):
+    async def test_config_file_absent(self, tmp_home: Path) -> None:
         with pytest.raises(ConfigError, match=r"file.+not exists"):
             await Factory().get()
 
-    async def test_config_file_is_dir(self, tmp_home):
+    async def test_config_file_is_dir(self, tmp_home: Path) -> None:
         Path(tmp_home / ".nmrc").mkdir()
         with pytest.raises(ConfigError, match=r"not a regular file"):
             await Factory().get()
 
-    async def test_default_path(self, tmp_home, auth_config):
+    async def test_default_path(self, tmp_home: Path, auth_config: _AuthConfig) -> None:
         token = _create_config(tmp_home / ".nmrc", auth_config)
         client = await Factory().get()
         await client.close()
         assert client._config.auth_token.token == token
 
-    async def test_shorten_path(self, tmp_home, auth_config):
+    async def test_shorten_path(self, tmp_home: Path, auth_config: _AuthConfig) -> None:
         token = _create_config(tmp_home / "test.nmrc", auth_config)
         client = await Factory(Path("~/test.nmrc")).get()
         await client.close()
         assert client._config.auth_token.token == token
 
-    async def test_full_path(self, tmp_home, auth_config):
+    async def test_full_path(self, tmp_home: Path, auth_config: _AuthConfig) -> None:
         config_path = tmp_home / "test.nmrc"
         token = _create_config(config_path, auth_config)
         client = await Factory(config_path).get()
         await client.close()
         assert client._config.auth_token.token == token
 
-    async def test_token_autorefreshing(self, config_file, monkeypatch):
+    async def test_token_autorefreshing(
+        self, config_file: Path, monkeypatch: Any
+    ) -> None:
         new_token = str(uuid()) + "changed" * 10  # token must has other size
 
-        async def _refresh_token_mock(self, token):
+        async def _refresh_token_mock(self: Any, token: str) -> _AuthToken:
             return _AuthToken.create_non_expiring(new_token)
 
         monkeypatch.setattr(AuthNegotiator, "refresh_token", _refresh_token_mock)
@@ -136,12 +138,12 @@ class TestConfigFileInteraction:
         sys.platform == "win32",
         reason="Windows does not supports UNIX-like permissions",
     )
-    async def test_file_permissions(self, config_file):
+    async def test_file_permissions(self, config_file: Path) -> None:
         Path(config_file).chmod(0o777)
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
 
-    async def test_mailformed_config(self, config_file):
+    async def test_mailformed_config(self, config_file: Path) -> None:
         # await Factory().login(url=mock_for_login)
         # config_file = tmp_home / ".nmrc"
         with config_file.open("r") as f:
@@ -157,26 +159,26 @@ class TestConfigFileInteraction:
 
 
 class TestLogin:
-    async def test_login_already_logged(self, config_file):
+    async def test_login_already_logged(self, config_file: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
             await Factory().login()
 
-    async def test_normal_login(self, tmp_home, mock_for_login):
+    async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
         await Factory().login(url=mock_for_login)
         assert Path(tmp_home / ".nmrc").exists(), "Config file not written after login "
 
 
 class TestLoginWithToken:
-    async def test_login_with_token_already_logged(self, config_file):
+    async def test_login_with_token_already_logged(self, config_file: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
             await Factory().login_with_token(token="tokenstr")
 
-    async def test_normal_login(self, tmp_home, mock_for_login):
+    async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
         await Factory().login_with_token(token="tokenstr", url=mock_for_login)
         assert Path(tmp_home / ".nmrc").exists(), "Config file not written after login "
 
 
 class TestLogout:
-    async def test_logout(self, config_file):
+    async def test_logout(self, config_file: Path) -> None:
         await Factory().logout()
         assert not config_file.exists(), "Config not removed after logout"
