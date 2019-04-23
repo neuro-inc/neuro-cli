@@ -2,7 +2,7 @@ import textwrap
 import time
 from dataclasses import replace
 from datetime import datetime
-from typing import Optional
+from typing import Any, List, Optional
 
 import click
 import pytest
@@ -22,6 +22,7 @@ from neuromation.api import (
     Resources,
 )
 from neuromation.cli.formatters import (
+    BaseFilesFormatter,
     ConfigFormatter,
     DockerImageProgress,
     JobFormatter,
@@ -45,6 +46,7 @@ from neuromation.cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
 )
 from neuromation.cli.printer import CSI
+from neuromation.cli.root import Root
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
@@ -52,7 +54,7 @@ TEST_JOB_NAME = "test-job-name"
 
 
 @pytest.fixture
-def job_descr_no_name():
+def job_descr_no_name() -> JobDescription:
     return JobDescription(
         status=JobStatus.PENDING,
         id=TEST_JOB_ID,
@@ -74,7 +76,7 @@ def job_descr_no_name():
 
 
 @pytest.fixture
-def job_descr():
+def job_descr() -> JobDescription:
     return JobDescription(
         status=JobStatus.PENDING,
         id=TEST_JOB_ID,
@@ -97,13 +99,13 @@ def job_descr():
 
 
 class TestJobFormatter:
-    def test_quiet_no_name(self, job_descr_no_name):
+    def test_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
         assert JobFormatter(quiet=True)(job_descr_no_name) == TEST_JOB_ID
 
-    def test_quiet(self, job_descr):
+    def test_quiet(self, job_descr: JobDescription) -> None:
         assert JobFormatter(quiet=True)(job_descr) == TEST_JOB_ID
 
-    def test_non_quiet_no_name(self, job_descr_no_name) -> None:
+    def test_non_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Shortcuts:\n"
@@ -114,7 +116,7 @@ class TestJobFormatter:
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
-    def test_non_quiet(self, job_descr) -> None:
+    def test_non_quiet(self, job_descr: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Name: {TEST_JOB_NAME}\n"
@@ -126,7 +128,9 @@ class TestJobFormatter:
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
-    def test_non_quiet_http_url_no_name(self, job_descr_no_name) -> None:
+    def test_non_quiet_http_url_no_name(
+        self, job_descr_no_name: JobDescription
+    ) -> None:
         job_descr_no_name = replace(job_descr_no_name, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
@@ -139,7 +143,7 @@ class TestJobFormatter:
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
-    def test_non_quiet_http_url(self, job_descr) -> None:
+    def test_non_quiet_http_url(self, job_descr: JobDescription) -> None:
         job_descr = replace(job_descr, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
@@ -183,7 +187,7 @@ class TestJobStartProgress:
     def strip(self, text: str) -> str:
         return click.unstyle(text).strip()
 
-    def test_quiet(self, capfd):
+    def test_quiet(self, capfd: Any) -> None:
         progress = JobStartProgress.create(tty=True, color=True, quiet=True)
         progress(self.make_job(JobStatus.PENDING, None))
         progress.close()
@@ -191,7 +195,7 @@ class TestJobStartProgress:
         assert err == ""
         assert out == ""
 
-    def test_no_tty(self, capfd, click_tty_emulation):
+    def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=False, color=True, quiet=False)
         progress(self.make_job(JobStatus.PENDING, None))
         progress(self.make_job(JobStatus.PENDING, None))
@@ -205,7 +209,7 @@ class TestJobStartProgress:
         assert out.count(f"{JobStatus.PENDING}") == 1
         assert CSI not in out
 
-    def test_tty(self, capfd, click_tty_emulation):
+    def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=True, color=True, quiet=False)
         progress(self.make_job(JobStatus.PENDING, None))
         progress(self.make_job(JobStatus.PENDING, None))
@@ -444,7 +448,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
             ),
             ssh_auth_server="ssh-auth",
             is_preemptible=False,
@@ -470,7 +474,9 @@ class TestJobOutputFormatter:
 
 
 class TestJobTelemetryFormatter:
-    def _format(self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str):
+    def _format(
+        self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str
+    ) -> str:
         return "\t".join(
             [
                 f"{timestamp:<24}",
@@ -481,7 +487,7 @@ class TestJobTelemetryFormatter:
             ]
         )
 
-    def test_format_header_line(self):
+    def test_format_header_line(self) -> None:
         line = JobTelemetryFormatter().header()
         assert line == self._format(
             timestamp="TIMESTAMP",
@@ -491,7 +497,7 @@ class TestJobTelemetryFormatter:
             gpu_mem="GPU_MEMORY (MB)",
         )
 
-    def test_format_telemetry_line_no_gpu(self):
+    def test_format_telemetry_line_no_gpu(self) -> None:
         formatter = JobTelemetryFormatter()
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466.238_723_6
@@ -502,7 +508,7 @@ class TestJobTelemetryFormatter:
             timestamp=timestamp_str, cpu="0.123", mem="256.123", gpu="0", gpu_mem="0"
         )
 
-    def test_format_telemetry_line_with_gpu(self):
+    def test_format_telemetry_line_with_gpu(self) -> None:
         formatter = JobTelemetryFormatter()
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466
@@ -525,12 +531,12 @@ class TestJobTelemetryFormatter:
 
 
 class TestSimpleJobsFormatter:
-    def test_empty(self):
+    def test_empty(self) -> None:
         formatter = SimpleJobsFormatter()
         result = [item for item in formatter([])]
         assert result == []
 
-    def test_list(self):
+    def test_list(self) -> None:
         jobs = [
             JobDescription(
                 status=JobStatus.PENDING,
@@ -546,7 +552,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image="ubuntu:latest",
-                    resources=Resources.create(0.1, 0, None, None, False),
+                    resources=Resources.create(0.1, 0, None, 16, False),
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -566,7 +572,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image="ubuntu:latest",
-                    resources=Resources.create(0.1, 0, None, None, False),
+                    resources=Resources.create(0.1, 0, None, 16, False),
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -602,21 +608,21 @@ class TestTabularJobRow:
             ),
             container=Container(
                 image=image,
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
                 command="ls",
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
         )
 
-    def test_with_job_name(self):
+    def test_with_job_name(self) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(JobStatus.RUNNING, name="job-name"),
             self.image_parser,
         )
         assert row.name == "job-name"
 
-    def test_without_job_name(self):
+    def test_without_job_name(self) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(JobStatus.RUNNING, name=None), self.image_parser
         )
@@ -631,14 +637,14 @@ class TestTabularJobRow:
             (JobStatus.SUCCEEDED, "Mar 04 2017"),
         ],
     )
-    def test_status_date_relation(self, status, date):
+    def test_status_date_relation(self, status: JobStatus, date: str) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(status), self.image_parser
         )
         assert row.status == f"{status}"
         assert row.when == date
 
-    def test_image_from_registry_parsing(self):
+    def test_image_from_registry_parsing(self) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
                 JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red"
@@ -653,17 +659,17 @@ class TestTabularJobsFormatter:
     columns = ["ID", "NAME", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
     image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
-    def test_empty(self):
+    def test_empty(self) -> None:
         formatter = TabularJobsFormatter(0, self.image_parser)
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)]
 
-    def test_width_cutting(self):
+    def test_width_cutting(self) -> None:
         formatter = TabularJobsFormatter(10, self.image_parser)
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)[:10]]
 
-    def test_short_cells(self):
+    def test_short_cells(self) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
@@ -680,7 +686,7 @@ class TestTabularJobsFormatter:
             ),
             container=Container(
                 image="i:l",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
                 command="c",
             ),
             ssh_auth_server=URL("ssh-auth"),
@@ -703,7 +709,7 @@ class TestTabularJobsFormatter:
             ],
         ]
 
-    def test_wide_cells(self):
+    def test_wide_cells(self) -> None:
         jobs = [
             JobDescription(
                 status=JobStatus.FAILED,
@@ -721,7 +727,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image="some-image-name:with-long-tag",
-                    resources=Resources.create(0.1, 0, None, None, False),
+                    resources=Resources.create(0.1, 0, None, 16, False),
                     command="ls -la /some/path",
                 ),
                 ssh_auth_server=URL("ssh-auth"),
@@ -743,7 +749,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image="some-image-name:with-long-tag",
-                    resources=Resources.create(0.1, 0, None, None, False),
+                    resources=Resources.create(0.1, 0, None, 16, False),
                     command="ls -la /some/path",
                 ),
                 ssh_auth_server=URL("ssh-auth"),
@@ -760,7 +766,7 @@ class TestTabularJobsFormatter:
 
 
 class TestNonePainter:
-    def test_simple(self):
+    def test_simple(self) -> None:
         painter = NonePainter()
         file = FileStatus(
             "File1",
@@ -773,7 +779,7 @@ class TestNonePainter:
 
 
 class TestGnuPainter:
-    def test_color_parsing_simple(self):
+    def test_color_parsing_simple(self) -> None:
         painter = GnuPainter("rs=1;0;1")
         assert painter.color_indicator[GnuIndicators.RESET] == "1;0;1"
 
@@ -814,7 +820,7 @@ class TestGnuPainter:
             ("a\\=b", "a=b"),
         ],
     )
-    def test_color_parsing_escaped_simple(self, escaped, result):
+    def test_color_parsing_escaped_simple(self, escaped: str, result: str) -> None:
         painter = GnuPainter("rs=" + escaped)
         assert painter.color_indicator[GnuIndicators.RESET] == result
 
@@ -834,7 +840,7 @@ class TestGnuPainter:
             ("a\\2b", "a" + chr(2) + "b"),
         ],
     )
-    def test_color_parsing_escaped_octal(self, escaped, result):
+    def test_color_parsing_escaped_octal(self, escaped: str, result: str) -> None:
         painter = GnuPainter("rs=" + escaped)
         assert painter.color_indicator[GnuIndicators.RESET] == result
 
@@ -855,7 +861,7 @@ class TestGnuPainter:
             ("a\\x2z", "a" + chr(0x2) + "z"),
         ],
     )
-    def test_color_parsing_escaped_hex(self, escaped, result):
+    def test_color_parsing_escaped_hex(self, escaped: str, result: str) -> None:
         painter = GnuPainter("rs=" + escaped)
         assert painter.color_indicator[GnuIndicators.RESET] == result
 
@@ -875,7 +881,7 @@ class TestGnuPainter:
             ("a^Zb", "a" + chr(26) + "b"),
         ],
     )
-    def test_color_parsing_carret(self, escaped, result):
+    def test_color_parsing_carret(self, escaped: str, result: str) -> None:
         painter = GnuPainter("rs=" + escaped)
         assert painter.color_indicator[GnuIndicators.RESET] == result
 
@@ -886,14 +892,14 @@ class TestGnuPainter:
         assert painter.color_ext_type[result] == result
 
     @pytest.mark.parametrize("escaped", [("^1"), ("^"), ("^" + chr(130))])
-    def test_color_parsing_carret_incorrect(self, escaped):
+    def test_color_parsing_carret_incorrect(self, escaped: str) -> None:
         with pytest.raises(EnvironmentError):
             GnuPainter("rs=" + escaped)
 
         with pytest.raises(EnvironmentError):
             GnuPainter(escaped + "=1;2")
 
-    def test_coloring(self):
+    def test_coloring(self) -> None:
         file = FileStatus(
             "test.txt",
             1024,
@@ -930,11 +936,11 @@ class TestGnuPainter:
 
 
 class TestBSDPainter:
-    def test_color_parsing(self):
+    def test_color_parsing(self) -> None:
         painter = BSDPainter("exfxcxdxbxegedabagacad")
         assert painter._colors[BSDAttributes.DIRECTORY] == "ex"
 
-    def test_coloring(self):
+    def test_coloring(self) -> None:
         file = FileStatus(
             "test.txt",
             1024,
@@ -961,7 +967,7 @@ class TestBSDPainter:
 
 
 class TestPainterFactory:
-    def test_detection(self, monkeypatch):
+    def test_detection(self, monkeypatch: Any) -> None:
         monkeypatch.setenv("LS_COLORS", "")
         monkeypatch.setenv("LSCOLORS", "")
         painter = PainterFactory.detect(True)
@@ -1028,13 +1034,13 @@ class TestFilesFormatter:
     ]
     files_and_folders = files + folders
 
-    def test_simple_formatter(self):
+    def test_simple_formatter(self) -> None:
         formatter = SimpleFilesFormatter(color=False)
         assert list(formatter(self.files_and_folders)) == [
             f"{file.name}" for file in self.files_and_folders
         ]
 
-    def test_long_formatter(self):
+    def test_long_formatter(self) -> None:
         formatter = LongFilesFormatter(human_readable=False, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "-r    2048 2018-01-01 03:00:00 File1",
@@ -1053,7 +1059,7 @@ class TestFilesFormatter:
             "dm       0 2017-03-03 06:03:02 1Folder with space",
         ]
 
-    def test_column_formatter(self):
+    def test_column_formatter(self) -> None:
         formatter = VerticalColumnsFilesFormatter(width=40, color=False)
         assert list(formatter(self.files_and_folders)) == [
             "File1             Folder1",
@@ -1085,11 +1091,11 @@ class TestFilesFormatter:
             (LongFilesFormatter(human_readable=False, color=False)),
         ],
     )
-    def test_formatter_with_empty_files(self, formatter):
-        files = []
+    def test_formatter_with_empty_files(self, formatter: BaseFilesFormatter) -> None:
+        files: List[FileStatus] = []
         assert [] == list(formatter(files))
 
-    def test_sorter(self):
+    def test_sorter(self) -> None:
         sorter = FilesSorter.NAME
         files = sorted(self.files_and_folders, key=sorter.key())
         assert files == [
@@ -1153,7 +1159,7 @@ class TestResourcesFormatter:
 
 
 class TestConfigFormatter:
-    async def test_output(self, root) -> None:
+    async def test_output(self, root: Root) -> None:
         out = ConfigFormatter()(root)
         assert click.unstyle(out) == textwrap.dedent(
             """\
@@ -1165,7 +1171,7 @@ class TestConfigFormatter:
 
 
 class TestDockerImageProgress:
-    def test_quiet(self, capfd):
+    def test_quiet(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PULL, "input", "output", tty=True, quiet=True
         )
@@ -1176,7 +1182,7 @@ class TestDockerImageProgress:
         assert err == ""
         assert out == ""
 
-    def test_no_tty(self, capfd, click_tty_emulation):
+    def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PUSH,
             "input:latest",
@@ -1197,7 +1203,7 @@ class TestDockerImageProgress:
         assert "message2" not in out
         assert CSI not in out
 
-    def test_tty(self, capfd, click_tty_emulation):
+    def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PUSH,
             "input:latest",
