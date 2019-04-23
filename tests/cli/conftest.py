@@ -1,12 +1,14 @@
+import asyncio
 import logging
 from collections import namedtuple
-from typing import List
+from pathlib import Path
+from typing import Any, AsyncIterator, Callable, List
 
 import pytest
 from yarl import URL
 
 from neuromation.api import Factory
-from neuromation.api.config import _AuthToken, _Config, _PyPIVersion
+from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
 from neuromation.cli.root import Root
@@ -17,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def nmrc_path(tmp_path, token, auth_config):
+def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     nmrc_path = tmp_path / "conftest.nmrc"
     config = _Config(
         auth_config=auth_config,
@@ -31,7 +33,7 @@ def nmrc_path(tmp_path, token, auth_config):
 
 
 @pytest.fixture()
-async def root(nmrc_path, loop):
+async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterator[Root]:
     root = Root(
         color=False,
         tty=False,
@@ -47,8 +49,10 @@ async def root(nmrc_path, loop):
 
 
 @pytest.fixture()
-def run_cli(nmrc_path, capfd, tmp_path) -> SysCapWithCode:
-    def _run_cli(arguments: List[str]):
+def run_cli(
+    nmrc_path: Path, capfd: Any, tmp_path: Path
+) -> Callable[[List[str]], SysCapWithCode]:
+    def _run_cli(arguments: List[str]) -> SysCapWithCode:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
         code = EX_OK
@@ -72,5 +76,5 @@ def run_cli(nmrc_path, capfd, tmp_path) -> SysCapWithCode:
 
 
 @pytest.fixture()
-def click_tty_emulation(monkeypatch):
+def click_tty_emulation(monkeypatch: Any) -> None:
     monkeypatch.setattr("click._compat.isatty", lambda stream: True)
