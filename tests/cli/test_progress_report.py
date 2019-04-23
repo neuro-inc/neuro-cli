@@ -1,20 +1,22 @@
+from typing import Any
+
 from neuromation.cli.command_progress_report import (
     ProgressBase,
     StandardPrintPercentOnly,
 )
 
 
-def test_progress_factory_none():
+def test_progress_factory_none() -> None:
     progress = ProgressBase.create_progress(False)
     assert isinstance(progress, ProgressBase)
 
 
-def test_progress_factory_percent():
+def test_progress_factory_percent() -> None:
     progress = ProgressBase.create_progress(True)
     assert isinstance(progress, StandardPrintPercentOnly)
 
 
-def test_simple_progress(capsys):
+def test_simple_progress(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
     file_name = "abc"
 
