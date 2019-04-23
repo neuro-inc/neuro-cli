@@ -1,12 +1,15 @@
 import asyncio
 import os
 import re
+from pathlib import Path
 from time import sleep, time
+from typing import Any, AsyncIterator, Callable, Dict, Iterator
 from uuid import uuid4
 
 import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
+from yarl import URL
 
 from neuromation.api import (
     Image,
@@ -16,6 +19,7 @@ from neuromation.api import (
     get as api_get,
 )
 from neuromation.utils import run as run_async
+from tests.e2e import Helper
 
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
@@ -25,7 +29,7 @@ MAX_PORT = 65535
 
 
 @pytest.mark.e2e
-def test_job_lifecycle(helper):
+def test_job_lifecycle(helper: Helper) -> None:
     # Remember original running jobs
     captured = helper.run_cli(
         ["job", "ls", "--status", "running", "--status", "pending"]
@@ -56,7 +60,9 @@ def test_job_lifecycle(helper):
             command,
         ]
     )
-    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
     assert f"Name: {job_name}" in captured.out
@@ -117,7 +123,7 @@ def test_job_lifecycle(helper):
 
 
 @pytest.mark.e2e
-def test_job_description(helper):
+def test_job_description(helper: Helper) -> None:
     # Remember original running jobs
     captured = helper.run_cli(
         ["job", "ls", "--status", "running", "--status", "pending"]
@@ -147,7 +153,9 @@ def test_job_description(helper):
             command,
         ]
     )
-    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
 
     # Check it was not running before
     assert job_id.startswith("job-")
@@ -194,7 +202,7 @@ def test_job_description(helper):
 
 
 @pytest.mark.e2e
-def test_job_kill_non_existing(helper):
+def test_job_kill_non_existing(helper: Helper) -> None:
     # try to kill non existing job
     phantom_id = "NOT_A_JOB_ID"
     expected_out = f"Cannot kill job {phantom_id}"
@@ -205,7 +213,7 @@ def test_job_kill_non_existing(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_no_env(helper):
+def test_e2e_no_env(helper: Helper) -> None:
     bash_script = 'echo "begin"$VAR"end"  | grep beginend'
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
@@ -226,7 +234,9 @@ def test_e2e_no_env(helper):
     )
 
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
@@ -235,7 +245,7 @@ def test_e2e_no_env(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_env(helper):
+def test_e2e_env(helper: Helper) -> None:
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
@@ -258,7 +268,9 @@ def test_e2e_env(helper):
     )
 
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
@@ -267,7 +279,7 @@ def test_e2e_env(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_env_from_local(helper):
+def test_e2e_env_from_local(helper: Helper) -> None:
     os.environ["VAR"] = "VAL"
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
@@ -291,7 +303,9 @@ def test_e2e_env_from_local(helper):
     )
 
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
@@ -300,7 +314,7 @@ def test_e2e_env_from_local(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_multiple_env(helper):
+def test_e2e_multiple_env(helper: Helper) -> None:
     bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
@@ -325,7 +339,9 @@ def test_e2e_multiple_env(helper):
     )
 
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
@@ -334,7 +350,7 @@ def test_e2e_multiple_env(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_multiple_env_from_file(helper, tmp_path):
+def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
     env_file = tmp_path / "env_file"
     env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
     bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
@@ -372,7 +388,7 @@ def test_e2e_multiple_env_from_file(helper, tmp_path):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_true(helper):
+def test_e2e_ssh_exec_true(helper: Helper) -> None:
     job_name = f"test-job-{uuid4()}"
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
@@ -392,7 +408,9 @@ def test_e2e_ssh_exec_true(helper):
         ]
     )
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
@@ -404,7 +422,7 @@ def test_e2e_ssh_exec_true(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_false(helper):
+def test_e2e_ssh_exec_false(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
@@ -421,7 +439,9 @@ def test_e2e_ssh_exec_false(helper):
         ]
     )
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
@@ -431,7 +451,7 @@ def test_e2e_ssh_exec_false(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_no_cmd(helper):
+def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
@@ -448,7 +468,9 @@ def test_e2e_ssh_exec_no_cmd(helper):
         ]
     )
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
@@ -458,7 +480,7 @@ def test_e2e_ssh_exec_no_cmd(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_echo(helper):
+def test_e2e_ssh_exec_echo(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
@@ -475,7 +497,9 @@ def test_e2e_ssh_exec_echo(helper):
         ]
     )
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
@@ -484,7 +508,7 @@ def test_e2e_ssh_exec_echo(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_no_tty(helper):
+def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
@@ -501,7 +525,9 @@ def test_e2e_ssh_exec_no_tty(helper):
         ]
     )
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
@@ -511,7 +537,7 @@ def test_e2e_ssh_exec_no_tty(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_tty(helper):
+def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
@@ -528,7 +554,9 @@ def test_e2e_ssh_exec_tty(helper):
         ]
     )
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
@@ -539,14 +567,14 @@ def test_e2e_ssh_exec_tty(helper):
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_no_job(helper):
+def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
     with pytest.raises(SystemExit) as cm:
         helper.run_cli(["job", "exec", "--no-key-check", "job_id", "true"])
     assert cm.value.code == 127
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_dead_job(helper):
+def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     command = "true"
     captured = helper.run_cli(
         [
@@ -563,7 +591,9 @@ def test_e2e_ssh_exec_dead_job(helper):
         ]
     )
     out = captured.out
-    job_id = re.match("Job ID: (.+) Status:", out).group(1)
+    match = re.match("Job ID: (.+) Status:", out)
+    assert match is not None
+    job_id = match.group(1)
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
@@ -574,7 +604,7 @@ def test_e2e_ssh_exec_dead_job(helper):
 
 
 @pytest.fixture
-def nginx_job(helper):
+def nginx_job(helper: Helper) -> Iterator[str]:
     command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
     captured = helper.run_cli(
         [
@@ -591,7 +621,9 @@ def nginx_job(helper):
             command,
         ]
     )
-    job_id = re.match("Job ID: (.+) Status:", captured.out).group(1)
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
 
     yield job_id
@@ -600,17 +632,18 @@ def nginx_job(helper):
 
 
 @pytest.fixture
-async def nginx_job_async(nmrc_path, loop):
+async def nginx_job_async(
+    nmrc_path: Path, loop: asyncio.AbstractEventLoop
+) -> AsyncIterator[str]:
     async with api_get(path=nmrc_path) as client:
         command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
             image=Image("python:latest", command=command),
             resources=Resources.create(0.1, None, None, 20, True),
-            network=NetworkPortForwarding.from_cli(None, 22),
             is_preemptible=False,
             volumes=None,
             description="test NGINX job",
-            env=[],
+            env={},
         )
         try:
             for i in range(60):
@@ -626,11 +659,11 @@ async def nginx_job_async(nmrc_path, loop):
 
 
 @pytest.mark.e2e
-async def test_port_forward(nmrc_path, nginx_job_async):
+async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
     loop_sleep = 1
     service_wait_time = 60
 
-    async def get_(url):
+    async def get_(url: str) -> int:
         status = 999
         start_time = time()
         async with aiohttp.ClientSession() as session:
@@ -646,15 +679,14 @@ async def test_port_forward(nmrc_path, nginx_job_async):
 
     loop = asyncio.get_event_loop()
     async with api_get(path=nmrc_path) as client:
-        forwarder = None
-        try:
-            port = unused_port()
-            # We test client instead of run_cli as asyncio subprocesses do
-            # not work if run from thread other than main.
-            forwarder = loop.create_task(
-                client.jobs.port_forward(nginx_job_async, True, port, 22)
-            )
+        port = unused_port()
+        # We test client instead of run_cli as asyncio subprocesses do
+        # not work if run from thread other than main.
+        forwarder = loop.create_task(
+            client.jobs.port_forward(nginx_job_async, True, port, 22)
+        )
 
+        try:
             url = f"http://127.0.0.1:{port}"
             probe = await get_(url)
             assert probe == 200
@@ -665,11 +697,13 @@ async def test_port_forward(nmrc_path, nginx_job_async):
 
 
 @pytest.mark.e2e
-def test_job_submit_http_auth(helper, secret_job):
+def test_job_submit_http_auth(
+    helper: Helper, secret_job: Callable[..., Dict[str, Any]]
+) -> None:
     loop_sleep = 1
     service_wait_time = 60
 
-    async def _test_http_auth_redirect(url):
+    async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
         async with aiohttp.ClientSession() as session:
             while time() - start_time < service_wait_time:
@@ -685,9 +719,11 @@ def test_job_submit_http_auth(helper, secret_job):
             else:
                 raise AssertionError("HTTP Auth not detected")
 
-    async def _test_http_auth_with_cookie(url, cookies, secret):
+    async def _test_http_auth_with_cookie(
+        url: URL, cookies: Dict[str, str], secret: str
+    ) -> None:
         start_time = time()
-        async with aiohttp.ClientSession(cookies=cookies) as session:
+        async with aiohttp.ClientSession(cookies=cookies) as session:  # type: ignore
             while time() - start_time < service_wait_time:
                 try:
                     async with session.get(url, allow_redirects=False) as resp:
@@ -714,7 +750,7 @@ def test_job_submit_http_auth(helper, secret_job):
 
 
 @pytest.mark.e2e
-def test_job_run(helper):
+def test_job_run(helper: Helper) -> None:
     # Run a new job
     command = 'bash -c "sleep 10m; false"'
     captured = helper.run_cli(
