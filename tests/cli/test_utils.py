@@ -164,10 +164,16 @@ async def test_resolve_job_id__server_error(aiohttp_server, make_client):
         assert resolved == job_id
 
 
-async def test_parse_resource_for_sharing_image_no_tag(root):
+async def test_parse_resource_for_sharing_image_1_no_tag(root):
     uri = "image://~/ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL("image://user/ubuntu:latest")
+    assert parsed == URL("image://user/ubuntu")
+
+
+async def test_parse_resource_for_sharing_image_2_no_tag(root):
+    uri = "image:ubuntu"
+    parsed = parse_resource_for_sharing(uri, root)
+    assert parsed == URL("image://user/ubuntu")
 
 
 async def test_parse_resource_for_sharing_image_with_tag_fail(root):

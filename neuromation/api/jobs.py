@@ -29,7 +29,7 @@ from .url_utils import normalize_storage_path_uri
 
 @dataclass(frozen=True)
 class Resources:
-    memory_mb: str
+    memory_mb: int
     cpu: float
     gpu: Optional[int]
     shm: Optional[bool]
@@ -41,7 +41,7 @@ class Resources:
         cpu: float,
         gpu: Optional[int],
         gpu_model: Optional[str],
-        memory: str,
+        memory: int,
         extshm: bool,
     ) -> "Resources":
         return cls(memory, cpu, gpu, extshm, gpu_model)
@@ -50,7 +50,7 @@ class Resources:
         value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
         if self.gpu:
             value["gpu"] = self.gpu
-            value["gpu_model"] = self.gpu_model
+            value["gpu_model"] = self.gpu_model  # type: ignore
         return value
 
     @classmethod
@@ -151,14 +151,6 @@ class Volume:
             container_path=container_path,
             read_only=read_only,
         )
-
-    @classmethod
-    def from_cli_list(
-        cls, username: str, lst: Sequence[str]
-    ) -> Optional[List["Volume"]]:
-        if not lst:
-            return None
-        return [cls.from_cli(username, s) for s in lst]
 
 
 @dataclass(frozen=True)
@@ -380,13 +372,13 @@ class _Jobs:
             return JobDescription.from_api(res)
 
     async def list(
-        self, statuses: Optional[Set[str]] = None, name: Optional[str] = None
+        self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
         if statuses:
             for status in statuses:
-                params.add("status", status)
+                params.add("status", status.value)
         if name:
             params.add("name", name)
         async with self._core.request("GET", url, params=params) as resp:

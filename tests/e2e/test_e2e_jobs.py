@@ -573,99 +573,6 @@ def test_e2e_ssh_exec_dead_job(helper):
     assert cm.value.code == 127
 
 
-@pytest.mark.e2e
-def test_e2e_job_list_filtered_by_status(helper):
-    N_JOBS = 5
-
-    # submit N jobs
-    jobs = set()
-    for _ in range(N_JOBS):
-        command = "sleep 10m"
-        job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
-        jobs.add(job_id)
-
-    # test no status filters (same as pending+running)
-    captured = helper.run_cli(["job", "ls", "--quiet"])
-    jobs_ls_no_arg = set(captured.out.splitlines())
-    # check '>=' (not '==') multiple builds run in parallel can interfere
-    assert jobs_ls_no_arg >= jobs
-
-    # test single status filter
-    captured = helper.run_cli(["job", "ls", "--status", "running", "--quiet"])
-    jobs_ls_running = set(captured.out.splitlines())
-    # check '>=' (not '==') multiple builds run in parallel can interfere
-    assert jobs_ls_running >= jobs
-
-    # test multiple status filters
-    captured = helper.run_cli(["job", "ls", "-s", "running", "-s", "failed", "-q"])
-    jobs_ls_running = set(captured.out.splitlines())
-    # check '>=' (not '==') multiple builds run in parallel can interfere
-    assert jobs_ls_running >= jobs
-
-    # test "all" status filter
-    captured = helper.run_cli(["job", "ls", "-s", "all", "-q"])
-    jobs_ls_all = set(captured.out.splitlines())
-    # check '>=' (not '==') multiple builds run in parallel can interfere
-    assert jobs_ls_all >= jobs
-
-    # status "all" is the same as pending+running+failed+succeeded
-    captured = helper.run_cli(
-        [
-            "job",
-            "ls",
-            "-s",
-            "pending",
-            "-s",
-            "running",
-            "-s",
-            "failed",
-            "-s",
-            "succeeded",
-            "-q",
-        ]
-    )
-    jobs_ls_all_explicit = set(captured.out.splitlines())
-    # check '>=' (not '==') multiple builds run in parallel can interfere
-    assert jobs_ls_all_explicit >= jobs
-
-
-@pytest.mark.e2e
-def test_e2e_job_list_filtered_by_status_and_name(helper):
-    N_JOBS = 5
-    jobs_name_map = dict()
-    name_0 = None
-    command = "sleep 10m"
-    for i in range(N_JOBS):
-        name = f"my-job-{uuid4()}"
-        if not name_0:
-            name_0 = name
-        job_id = helper.run_job_and_wait_state(
-            UBUNTU_IMAGE_NAME, command, params=["--name", name]
-        )
-        jobs_name_map[name] = job_id
-
-    # test filtering by name only (quiet)
-    captured = helper.run_cli(["job", "ls", "--name", name_0, "-q"])
-    jobs_ls = set(captured.out.splitlines())
-    assert jobs_ls == {jobs_name_map[name_0]}
-
-    # test filtering by name only
-    captured = helper.run_cli(["job", "ls", "--name", name_0])
-    jobs_ls = set([line.split()[0] for line in captured.out.splitlines()[1:]])
-    assert jobs_ls == {jobs_name_map[name_0]}
-
-    # test filtering by name and single status
-    captured = helper.run_cli(["job", "ls", "-n", name_0, "-s", "running", "-q"])
-    jobs_ls = set(captured.out.splitlines())
-    assert jobs_ls == {jobs_name_map[name_0]}
-
-    # test filtering by name and 2 statuses - no jobs found
-    captured = helper.run_cli(
-        ["job", "ls", "-n", name_0, "-s", "failed", "-s", "succeeded", "-q"]
-    )
-    assert not captured.out
-
-
 @pytest.fixture
 def nginx_job(helper):
     command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
@@ -698,7 +605,7 @@ async def nginx_job_async(nmrc_path, loop):
         command = "timeout 15m python -m http.server 22"
         job = await client.jobs.submit(
             image=Image("python:latest", command=command),
-            resources=Resources.create(0.1, None, None, "20", True),
+            resources=Resources.create(0.1, None, None, 20, True),
             network=NetworkPortForwarding.from_cli(None, 22),
             is_preemptible=False,
             volumes=None,
@@ -804,3 +711,34 @@ def test_job_submit_http_auth(helper, secret_job):
     run_async(
         _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
     )
+
+
+@pytest.mark.e2e
+def test_job_run(helper):
+    # Run a new job
+    command = 'bash -c "sleep 10m; false"'
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-q",
+            "-s",
+            "cpu-small",
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    job_id = captured.out
+
+    # Wait until the job is running
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+
+    # Kill the job
+    captured = helper.run_cli(["job", "kill", job_id])
+
+    # Currently we check that the job is not running anymore
+    # TODO(adavydow): replace to succeeded check when racecon in
+    # platform-api fixed.
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)

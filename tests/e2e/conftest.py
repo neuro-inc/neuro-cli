@@ -96,6 +96,7 @@ class Helper:
         self._tmpstorage = "storage:" + str(uuid()) + "/"
         self._executed_jobs = []
         self.mkdir("")
+        self._last_output: SysCap = SysCap("", "")
 
     def close(self):
         if self._tmpstorage is not None:
@@ -413,18 +414,20 @@ class Helper:
                     continue
                 elif exc.code != EX_OK:
                     raise
-            post_out, post_err = self._capfd.readouterr()
-            out = post_out[pre_out_size:]
-            err = post_err[pre_err_size:]
-            if any(
-                " ".join(arguments).startswith(start)
-                for start in ("submit", "job submit", "model train")
-            ):
-                match = job_id_pattern.search(out)
-                if match:
-                    self._executed_jobs.append(match.group(1))
-
-            return SysCap(out.strip(), err.strip())
+            finally:
+                post_out, post_err = self._capfd.readouterr()
+                out = post_out[pre_out_size:]
+                err = post_err[pre_err_size:]
+                if any(
+                    " ".join(arguments).startswith(start)
+                    for start in ("submit", "job submit", "run", "job run")
+                ):
+                    match = job_id_pattern.search(out)
+                    if match:
+                        self._executed_jobs.append(match.group(1))
+                output = SysCap(out.strip(), err.strip())
+                self._last_output = output
+            return output
         else:
             raise TestRetriesExceeded(
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
@@ -471,6 +474,9 @@ class Helper:
                     history=tuple(),
                     request_info=resp.request_info,
                 )
+
+    def get_last_output(self) -> SysCap:
+        return self._last_output
 
 
 @pytest.fixture()

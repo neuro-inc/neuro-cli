@@ -39,9 +39,9 @@ async def rm(root: Root, path: str) -> None:
 
     Examples:
 
-    neuro storage rm storage:///foo/bar/
-    neuro storage rm storage:/foo/bar/
-    neuro storage rm storage://{username}/foo/bar/
+    neuro rm storage:///foo/bar/
+    neuro rm storage:/foo/bar/
+    neuro rm storage://{username}/foo/bar/
     """
     uri = normalize_storage_path_uri(URL(path), root.username)
     log.info(f"Using path '{uri}'")
@@ -114,12 +114,12 @@ async def cp(
     Examples:
 
     # copy local file ./foo into remote storage root
-    neuro storage cp ./foo storage:///
-    neuro storage cp ./foo storage:/
+    neuro cp ./foo storage:///
+    neuro cp ./foo storage:/
 
     # download remote file foo into local file foo with
     # explicit file:// scheme set
-    neuro storage cp storage:///foo file:///foo
+    neuro cp storage:///foo file:///foo
     """
     src = URL(source)
     dst = URL(destination)
@@ -187,12 +187,12 @@ async def mv(root: Root, source: str, destination: str) -> None:
     Examples:
 
     # move or rename remote file
-    neuro storage mv storage://{username}/foo.txt storage://{username}/bar.txt
-    neuro storage mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+    neuro mv storage://{username}/foo.txt storage://{username}/bar.txt
+    neuro mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
 
     # move or rename remote directory
-    neuro storage mv storage://{username}/foo/ storage://{username}/bar/
-    neuro storage mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+    neuro mv storage://{username}/foo/ storage://{username}/bar/
+    neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
     """
 
     src = normalize_storage_path_uri(URL(source), root.username)
