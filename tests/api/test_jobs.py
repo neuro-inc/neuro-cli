@@ -866,7 +866,7 @@ class TestVolumeParsing:
             ),
         ],
     )
-    def test_positive(self, volume_param: str, volume: Volume):
+    def test_positive(self, volume_param: str, volume: Volume) -> None:
         assert Volume.from_cli("bob", volume_param) == volume
 
 
