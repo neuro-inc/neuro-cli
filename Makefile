@@ -9,7 +9,7 @@ ISORT_DIRS := neuromation tests build-tools
 ISORT_REGEXP := ^(neuromation|tests|build-tools)/.+\\.py
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
-MYPY_DIRS :=  neuromation
+MYPY_DIRS := neuromation tests
 MYPY_REGEXP := ^neuromation/.+\\.py
 FLAKE8_DIRS := .
 FLAKE8_REGEXP := .+\\.py$
@@ -139,7 +139,11 @@ test-all:
 lint: lint-docs
 	isort -c -rc ${ISORT_DIRS}
 	black --check $(BLACK_DIRS)
-	mypy --cache-dir $(MYPY_CACHE_DIR) $(MYPY_DIRS)
+	mypy --cache-dir $(MYPY_CACHE_DIR) neuromation
+	mypy --cache-dir $(MYPY_CACHE_DIR) tests
+	mypy --cache-dir $(MYPY_CACHE_DIR) tests/api
+	mypy --cache-dir $(MYPY_CACHE_DIR) tests/cli
+	mypy --cache-dir $(MYPY_CACHE_DIR) tests/e2e
 	flake8 $(FLAKE8_DIRS)
 
 .PHONY: lint-diff
