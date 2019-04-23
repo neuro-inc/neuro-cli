@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.4.23 (2019-04-23)
+================================
+
+Features
+--------
+
+
+- Implement *job run* command. ([#652](https://github.com/neuromation/platform-api-clients/issues/652))
+
+
+Bugfixes
+--------
+
+
+- Fix image name parser to substitute lastest tag automatically. ([#729](https://github.com/neuromation/platform-api-clients/issues/729))
+
+
 Neuromation 19.4.16 (2019-04-16)
 ================================
 
