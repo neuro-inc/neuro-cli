@@ -2,17 +2,97 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 from aiohttp import web
+from yarl import URL
 
 from neuromation.api import (
+    Container,
     Image,
     JobDescription,
     JobStatus,
+    JobStatusHistory,
     JobTelemetry,
     NetworkPortForwarding,
     ResourceNotFound,
     Resources,
     Volume,
 )
+
+
+class TestJobDescription:
+    @pytest.fixture
+    def job_desc_primitive(self):
+        return {
+            "id": "job-id",
+            "owner": "owner",
+            "status": "running",
+            "container": {
+                "image": "ubuntu:latest",
+                "resources": {"memory_mb": 256, "cpu": 8, "shm": True},
+                "command": "submit-command",
+                "ssh_auth_server": "ssh_auth_server",
+            },
+            "history": {},
+            "is_preemptible": False,
+            "ssh_auth_server": "ssh-auth",
+        }
+
+    @pytest.fixture
+    def job_desc_factory(self):
+        def _factory(http_url: str, job_name: Optional[str] = None):
+            return JobDescription(
+                http_url=URL(http_url),
+                id="job-id",
+                name=job_name,
+                owner="owner",
+                status=JobStatus.RUNNING,
+                container=Container(
+                    image="ubuntu:latest",
+                    command="submit-command",
+                    resources=Resources.create(
+                        cpu=8, memory=256, extshm=True, gpu=None, gpu_model=None
+                    ),
+                ),
+                history=JobStatusHistory(
+                    status=JobStatus.UNKNOWN,
+                    reason="",
+                    description="",
+                    created_at="",
+                    started_at="",
+                    finished_at="",
+                ),
+                is_preemptible=False,
+                ssh_auth_server=URL("ssh-auth"),
+            )
+
+        yield _factory
+
+    def test_from_api_http_url(self, job_desc_primitive, job_desc_factory):
+        HTTP_URL = "http://job-id.jobs.neu.ro/"
+        job_desc_primitive["http_url"] = HTTP_URL
+        expected = job_desc_factory(http_url=HTTP_URL)
+        assert JobDescription.from_api(job_desc_primitive) == expected
+
+    def test_from_api_http_url_named(self, job_desc_primitive, job_desc_factory):
+        NAME = "job-name"
+        HTTP_URL = "http://job-id.jobs.neu.ro/"
+        HTTP_URL_NAMED = f"http://{NAME}-owner.jobs.neu.ro/"
+        job_desc_primitive["name"] = NAME
+        job_desc_primitive["http_url"] = HTTP_URL
+        job_desc_primitive["http_url_named"] = HTTP_URL_NAMED
+        expected = job_desc_factory(http_url=HTTP_URL_NAMED, job_name=NAME)
+        assert JobDescription.from_api(job_desc_primitive) == expected
+
+    def test_from_api_http_url_not_exposed(self, job_desc_primitive, job_desc_factory):
+        expected = job_desc_factory(http_url="")
+        assert JobDescription.from_api(job_desc_primitive) == expected
+
+    def test_from_api_http_url_named_not_exposed(
+        self, job_desc_primitive, job_desc_factory
+    ):
+        NAME = "job-name"
+        job_desc_primitive["name"] = NAME
+        expected = job_desc_factory(http_url="", job_name=NAME)
+        assert JobDescription.from_api(job_desc_primitive) == expected
 
 
 async def test_jobs_monitor(aiohttp_server, make_client):

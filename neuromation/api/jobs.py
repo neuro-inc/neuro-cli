@@ -285,7 +285,7 @@ class JobDescription:
             started_at=res["history"].get("started_at", ""),
             finished_at=res["history"].get("finished_at", ""),
         )
-        http_url = URL(res["http_url"]) if "http_url" in res else URL()
+        http_url = URL(res.get("http_url_named", res.get("http_url", "")))
         ssh_server = URL(res["ssh_server"]) if "ssh_server" in res else URL()
         internal_hostname = res.get("internal_hostname", None)
         return JobDescription(
@@ -367,6 +367,9 @@ class _Jobs:
             payload["name"] = name
         if description:
             payload["description"] = description
+        import json
+
+        print(json.dumps(payload))
         async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
             return JobDescription.from_api(res)
