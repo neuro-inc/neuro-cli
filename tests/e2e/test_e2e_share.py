@@ -7,7 +7,7 @@ def test_share_complete_lifecycle(helper):
     expected_err = f"Using resource 'storage://{helper.username}/shared-read'"
     assert expected_err in captured.err
     assert captured.out == ""
-    captured = helper.run_cli(["revoke", "storage:///shared-read", "public"])
+    captured = helper.run_cli(["revoke", "storage://shared-read", "public"])
     assert captured.out == ""
     captured = helper.run_cli(["share", "storage:shared-read", "public", "read"])
     assert captured.out == ""
