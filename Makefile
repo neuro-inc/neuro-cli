@@ -177,8 +177,8 @@ coverage:
 	pip install codecov
 	codecov -f coverage.xml -X gcov
 
-.PHONY: format
-format:
+.PHONY: format fmt
+format fmt:
 	isort -rc $(ISORT_DIRS)
 	black $(BLACK_DIRS)
 	# generate docs as the last stage to allow reformat code first
