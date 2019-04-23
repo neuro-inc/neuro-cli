@@ -1,9 +1,12 @@
+import asyncio
 import sys
 from pathlib import Path
+from typing import Any, AsyncIterator, Callable
 
 import pytest
 from yarl import URL
 
+from neuromation.api import Client
 from neuromation.api.url_utils import (
     _extract_path,
     normalize_local_path_uri,
@@ -12,28 +15,30 @@ from neuromation.api.url_utils import (
 
 
 @pytest.fixture
-async def client(loop, make_client):
+async def client(
+    loop: asyncio.AbstractEventLoop, make_client: Callable[..., Client]
+) -> AsyncIterator[Client]:
     async with make_client("https://example.com") as client:
         yield client
 
 
 # asvetlov: I don't like autouse but it is the fastest fix
 @pytest.fixture(autouse=True)
-def fake_homedir(monkeypatch, tmp_path):
+def fake_homedir(monkeypatch: Any, tmp_path: Path) -> Path:
     monkeypatch.setenv("HOME", str(tmp_path))
     return Path.home()
 
 
 @pytest.fixture
-def pwd():
+def pwd() -> Path:
     return Path.cwd()
 
 
-async def test_config_username(token, client):
+async def test_config_username(token: str, client: Client) -> None:
     assert client.username == "user"
 
 
-async def test_normalize_storage_path_uri__0_slashes_relative(token, client):
+async def test_normalize_storage_path_uri__0_slashes_relative(client: Client) -> None:
     url = URL("storage:path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -42,7 +47,7 @@ async def test_normalize_storage_path_uri__0_slashes_relative(token, client):
     assert str(url) == "storage://user/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__0_slashes_relative(token, pwd):
+async def test_normalize_local_path_uri__0_slashes_relative(pwd: Path) -> None:
     url = URL("file:path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
@@ -50,7 +55,7 @@ async def test_normalize_local_path_uri__0_slashes_relative(token, pwd):
     assert _extract_path(url) == pwd / "path/to/file.txt"
 
 
-async def test_normalize_storage_path_uri__1_slash_absolute(token, client):
+async def test_normalize_storage_path_uri__1_slash_absolute(client: Client) -> None:
     url = URL("storage:/path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -59,7 +64,7 @@ async def test_normalize_storage_path_uri__1_slash_absolute(token, client):
     assert str(url) == "storage://user/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__1_slash_absolute(token, pwd):
+async def test_normalize_local_path_uri__1_slash_absolute(pwd: Path) -> None:
     url = URL("file:/path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
@@ -67,7 +72,7 @@ async def test_normalize_local_path_uri__1_slash_absolute(token, pwd):
     assert _extract_path(url) == Path(pwd.drive + "/path/to/file.txt")
 
 
-async def test_normalize_storage_path_uri__2_slashes(token, client):
+async def test_normalize_storage_path_uri__2_slashes(client: Client) -> None:
     url = URL("storage://path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -76,13 +81,13 @@ async def test_normalize_storage_path_uri__2_slashes(token, client):
     assert str(url) == "storage://path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__2_slashes(token, pwd):
+async def test_normalize_local_path_uri__2_slashes(pwd: Path) -> None:
     url = URL("file://path/to/file.txt")
     with pytest.raises(ValueError, match="Host part is not allowed, found 'path'"):
         url = normalize_local_path_uri(url)
 
 
-async def test_normalize_storage_path_uri__3_slashes_relative(token, client):
+async def test_normalize_storage_path_uri__3_slashes_relative(client: Client) -> None:
     url = URL("storage:///path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -91,7 +96,7 @@ async def test_normalize_storage_path_uri__3_slashes_relative(token, client):
     assert str(url) == "storage://user/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__3_slashes_relative(token, pwd):
+async def test_normalize_local_path_uri__3_slashes_relative(pwd: Path) -> None:
     url = URL("file:///path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
@@ -99,7 +104,7 @@ async def test_normalize_local_path_uri__3_slashes_relative(token, pwd):
     assert _extract_path(url) == Path(pwd.drive + "/path/to/file.txt")
 
 
-async def test_normalize_storage_path_uri__4_slashes_relative(token, client):
+async def test_normalize_storage_path_uri__4_slashes_relative(client: Client) -> None:
     url = URL("storage:////path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -118,13 +123,17 @@ async def test_normalize_local_path_uri__4_slashes_relative():
     assert str(url) == f"file:///path/to/file.txt"
 
 
-async def test_normalize_storage_path_uri__tilde_in_relative_path(token, client):
+async def test_normalize_storage_path_uri__tilde_in_relative_path(
+    client: Client
+) -> None:
     url = URL("storage:~/path/to/file.txt")
     with pytest.raises(ValueError, match=".*Cannot expand user.*"):
         normalize_storage_path_uri(url, client.username)
 
 
-async def test_normalize_local_path_uri__tilde_in_relative_path(token, fake_homedir):
+async def test_normalize_local_path_uri__tilde_in_relative_path(
+    fake_homedir: Path
+) -> None:
     url = URL("file:~/path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
@@ -133,19 +142,23 @@ async def test_normalize_local_path_uri__tilde_in_relative_path(token, fake_home
     assert str(url) == (fake_homedir / "path/to/file.txt").as_uri()
 
 
-async def test_normalize_storage_path_uri__tilde_in_absolute_path(token, client):
+async def test_normalize_storage_path_uri__tilde_in_absolute_path(
+    client: Client
+) -> None:
     url = URL("storage:/~/path/to/file.txt")
     with pytest.raises(ValueError, match=".*Cannot expand user.*"):
         normalize_storage_path_uri(url, client.username)
 
 
-async def test_normalize_local_path_uri__tilde_in_absolute_path(token, fake_homedir):
+async def test_normalize_local_path_uri__tilde_in_absolute_path(
+    fake_homedir: Path
+) -> None:
     url = URL("file:/~/path/to/file.txt")
     with pytest.raises(ValueError, match=".*Cannot expand user.*"):
         normalize_local_path_uri(url)
 
 
-async def test_normalize_storage_path_uri__tilde_in_host(token, client):
+async def test_normalize_storage_path_uri__tilde_in_host(client: Client) -> None:
     url = URL("storage://~/path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -153,19 +166,21 @@ async def test_normalize_storage_path_uri__tilde_in_host(token, client):
     assert url.path == "/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__tilde_in_host(token, client, pwd):
+async def test_normalize_local_path_uri__tilde_in_host(
+    client: Client, pwd: Path
+) -> None:
     url = URL("file://~/path/to/file.txt")
     with pytest.raises(ValueError, match=f"Host part is not allowed, found '~'"):
         url = normalize_local_path_uri(url)
 
 
-async def test_normalize_storage_path_uri__bad_scheme(token, client):
+async def test_normalize_storage_path_uri__bad_scheme(client: Client) -> None:
     with pytest.raises(ValueError, match="Invalid storage scheme 'other://'"):
         url = URL("other:path/to/file.txt")
         normalize_storage_path_uri(url, client.username)
 
 
-async def test_normalize_local_path_uri__bad_scheme(token):
+async def test_normalize_local_path_uri__bad_scheme() -> None:
     with pytest.raises(ValueError, match="Invalid local file scheme 'other://'"):
         url = URL("other:path/to/file.txt")
         normalize_local_path_uri(url)
@@ -174,7 +189,7 @@ async def test_normalize_local_path_uri__bad_scheme(token):
 # The tests below check that f(f(x)) == f(x) where f is a path normalization function
 
 
-async def test_normalize_storage_path_uri__no_slash__double(token, client):
+async def test_normalize_storage_path_uri__no_slash__double(client: Client) -> None:
     url = URL("storage:path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -183,7 +198,7 @@ async def test_normalize_storage_path_uri__no_slash__double(token, client):
     assert str(url) == "storage://user/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__no_slash__double(token, pwd):
+async def test_normalize_local_path_uri__no_slash__double(pwd: Path) -> None:
     url = URL("file:path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
@@ -191,13 +206,15 @@ async def test_normalize_local_path_uri__no_slash__double(token, pwd):
     assert _extract_path(url) == pwd / "path/to/file.txt"
 
 
-async def test_normalize_storage_path_uri__tilde_slash__double(token, client):
+async def test_normalize_storage_path_uri__tilde_slash__double(client: Client) -> None:
     url = URL("storage:~/path/to/file.txt")
     with pytest.raises(ValueError, match=".*Cannot expand user.*"):
         normalize_storage_path_uri(url, client.username)
 
 
-async def test_normalize_local_path_uri__tilde_slash__double(token, fake_homedir):
+async def test_normalize_local_path_uri__tilde_slash__double(
+    fake_homedir: Path
+) -> None:
     url = URL("file:~/path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
@@ -206,7 +223,7 @@ async def test_normalize_local_path_uri__tilde_slash__double(token, fake_homedir
     assert str(url) == (fake_homedir / "path/to/file.txt").as_uri()
 
 
-async def test_normalize_storage_path_uri__3_slashes__double(token, client):
+async def test_normalize_storage_path_uri__3_slashes__double(client: Client) -> None:
     url = URL("storage:///path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
@@ -215,7 +232,7 @@ async def test_normalize_storage_path_uri__3_slashes__double(token, client):
     assert str(url) == "storage://user/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__3_slashes__double(token, pwd):
+async def test_normalize_local_path_uri__3_slashes__double(pwd: Path) -> None:
     url = URL(f"file:///{pwd}/path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
@@ -225,6 +242,6 @@ async def test_normalize_local_path_uri__3_slashes__double(token, pwd):
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Requires Windows")
-def test_normalized_path():
+def test_normalized_path() -> None:
     p = URL("file:///Z:/neuromation/platform-api-clients/python/setup.py")
     assert normalize_local_path_uri(p) == p

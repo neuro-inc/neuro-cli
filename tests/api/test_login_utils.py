@@ -1,3 +1,5 @@
+from typing import Any
+
 import aiohttp
 import pytest
 from aiohttp import web
@@ -6,7 +8,7 @@ from yarl import URL
 from neuromation.api.login import _AuthConfig, _ServerConfig, get_server_config
 
 
-async def test_get_server_config(aiohttp_server):
+async def test_get_server_config(aiohttp_server: Any) -> None:
     registry_url = "https://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -28,7 +30,7 @@ async def test_get_server_config(aiohttp_server):
         "success_redirect_url": success_redirect_url,
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         return web.json_response(JSON)
 
     app = web.Application()
@@ -49,7 +51,7 @@ async def test_get_server_config(aiohttp_server):
     )
 
 
-async def test_get_server_config_no_callback_urls(aiohttp_server):
+async def test_get_server_config_no_callback_urls(aiohttp_server: Any) -> None:
     registry_url = "https://registry.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -65,7 +67,7 @@ async def test_get_server_config_no_callback_urls(aiohttp_server):
         "success_redirect_url": success_redirect_url,
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         return web.json_response(JSON)
 
     app = web.Application()
@@ -85,8 +87,8 @@ async def test_get_server_config_no_callback_urls(aiohttp_server):
     )
 
 
-async def test_get_server_config__fail(aiohttp_server):
-    async def handler(request):
+async def test_get_server_config__fail(aiohttp_server: Any) -> None:
+    async def handler(request: web.Request) -> web.Response:
         raise aiohttp.web.HTTPInternalServerError(reason="unexpected server error")
 
     app = web.Application()

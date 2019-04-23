@@ -1,5 +1,6 @@
 import ssl
 import sys
+from typing import Any, AsyncIterator
 
 import aiohttp
 import certifi
@@ -17,9 +18,9 @@ else:
 
 
 @pytest.fixture
-async def api_factory():
+async def api_factory() -> Any:
     @asynccontextmanager
-    async def factory(url):
+    async def factory(url: URL) -> AsyncIterator[_Core]:
         ssl_context = ssl.SSLContext()
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
@@ -31,8 +32,10 @@ async def api_factory():
     yield factory
 
 
-async def test_raise_for_status_no_error_message(aiohttp_server, api_factory):
-    async def handler(request):
+async def test_raise_for_status_no_error_message(
+    aiohttp_server: Any, api_factory: Any
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
         raise web.HTTPBadRequest()
 
     app = web.Application()
@@ -45,10 +48,12 @@ async def test_raise_for_status_no_error_message(aiohttp_server, api_factory):
                 pass
 
 
-async def test_raise_for_status_contains_error_message(aiohttp_server, api_factory):
+async def test_raise_for_status_contains_error_message(
+    aiohttp_server: Any, api_factory: Any
+) -> None:
     ERROR_MSG = '{"error": "this is the error message"}'
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         raise web.HTTPBadRequest(text=ERROR_MSG)
 
     app = web.Application()
