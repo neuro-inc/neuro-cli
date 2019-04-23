@@ -68,9 +68,9 @@ def job_descr_no_name() -> JobDescription:
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
         container=Container(
-            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, None, False)
+            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, 16, False)
         ),
-        ssh_auth_server="ssh-auth",
+        ssh_auth_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -91,9 +91,9 @@ def job_descr() -> JobDescription:
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
         container=Container(
-            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, None, False)
+            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, 16, False)
         ),
-        ssh_auth_server="ssh-auth",
+        ssh_auth_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -159,7 +159,7 @@ class TestJobFormatter:
 
 
 class TestJobStartProgress:
-    def make_job(self, status: JobStatus, reason: Optional[str]) -> JobDescription:
+    def make_job(self, status: JobStatus, reason: str) -> JobDescription:
         return JobDescription(
             status=status,
             owner="test-user",
@@ -178,9 +178,9 @@ class TestJobStartProgress:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
             ),
-            ssh_auth_server="ssh-auth",
+            ssh_auth_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -189,7 +189,7 @@ class TestJobStartProgress:
 
     def test_quiet(self, capfd: Any) -> None:
         progress = JobStartProgress.create(tty=True, color=True, quiet=True)
-        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.PENDING, ""))
         progress.close()
         out, err = capfd.readouterr()
         assert err == ""
@@ -197,8 +197,8 @@ class TestJobStartProgress:
 
     def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress(self.make_job(JobStatus.PENDING, None))
-        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.PENDING, ""))
+        progress(self.make_job(JobStatus.PENDING, ""))
         progress(self.make_job(JobStatus.RUNNING, "reason"))
         progress.close()
         out, err = capfd.readouterr()
@@ -211,8 +211,8 @@ class TestJobStartProgress:
 
     def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress(self.make_job(JobStatus.PENDING, None))
-        progress(self.make_job(JobStatus.PENDING, None))
+        progress(self.make_job(JobStatus.PENDING, ""))
+        progress(self.make_job(JobStatus.PENDING, ""))
         progress(self.make_job(JobStatus.RUNNING, "reason"))
         progress.close()
         out, err = capfd.readouterr()
@@ -245,10 +245,10 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_auth_server="ssh-auth",
+            ssh_auth_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -292,10 +292,10 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_auth_server="ssh-auth",
+            ssh_auth_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -326,18 +326,18 @@ class TestJobOutputFormatter:
             description="test job description",
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
-                reason=None,
-                description=None,
+                reason="",
+                description="",
                 created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at=None,
-                finished_at=None,
+                started_at="",
+                finished_at="",
             ),
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
             ),
-            ssh_auth_server="ssh-auth",
+            ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -364,17 +364,17 @@ class TestJobOutputFormatter:
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
-                description=None,
+                description="",
                 created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at=None,
-                finished_at=None,
+                started_at="",
+                finished_at="",
             ),
             container=Container(
                 image="test-image",
                 command="test-command",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
             ),
-            ssh_auth_server="ssh-auth",
+            ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -401,17 +401,17 @@ class TestJobOutputFormatter:
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
-                description=None,
+                description="",
                 created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at=None,
-                finished_at=None,
+                started_at="",
+                finished_at="",
             ),
             container=Container(
                 image="test-image",
                 command="test-command",
-                resources=Resources.create(0.1, 0, None, None, False),
+                resources=Resources.create(0.1, 0, None, 16, False),
             ),
-            ssh_auth_server="ssh-auth",
+            ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -438,10 +438,10 @@ class TestJobOutputFormatter:
             history=JobStatusHistory(
                 status=JobStatus.RUNNING,
                 reason="ContainerRunning",
-                description=None,
+                description="",
                 created_at="2018-09-25T12:28:21.298672+00:00",
                 started_at="2018-09-25T12:28:24.759433+00:00",
-                finished_at=None,
+                finished_at="",
             ),
             http_url=URL("http://local.host.test/"),
             ssh_server=URL("ssh://local.host.test:22/"),
@@ -450,7 +450,7 @@ class TestJobOutputFormatter:
                 image="test-image",
                 resources=Resources.create(0.1, 0, None, 16, False),
             ),
-            ssh_auth_server="ssh-auth",
+            ssh_auth_server=URL("ssh-auth"),
             is_preemptible=False,
             internal_hostname="host.local",
         )
