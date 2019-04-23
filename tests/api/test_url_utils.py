@@ -114,7 +114,7 @@ async def test_normalize_storage_path_uri__4_slashes_relative(client: Client) ->
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Doesn't work on Windows")
-async def test_normalize_local_path_uri__4_slashes_relative():
+async def test_normalize_local_path_uri__4_slashes_relative() -> None:
     url = URL("file:////path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"

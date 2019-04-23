@@ -1,17 +1,10 @@
-from dataclasses import dataclass
 from typing import Any, AsyncIterator, Callable
 
 import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import (
-    Action,
-    Client,
-    IllegalArgumentError,
-    Permission,
-    ResourceNotFound,
-)
+from neuromation.api import Action, Client, Permission, ResourceNotFound
 
 
 _MakeClient = Callable[..., Client]

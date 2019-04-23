@@ -1,13 +1,18 @@
-from pathlib import PurePath
+from pathlib import Path, PurePath
+from typing import Tuple
 
 import pytest
 
 from neuromation.cli.const import EX_OSFILE
+from tests.e2e import Helper
 from tests.e2e.utils import FILE_SIZE_B
 
 
+_Data = Tuple[str, str]
+
+
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_0(helper, data):
+def test_copy_local_to_platform_single_file_0(helper: Helper, data: _Data) -> None:
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
@@ -27,7 +32,7 @@ def test_copy_local_to_platform_single_file_0(helper, data):
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_1(helper, data):
+def test_copy_local_to_platform_single_file_1(helper: Helper, data: _Data) -> None:
     # case when copy happens without the trailing '/'
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
@@ -48,7 +53,7 @@ def test_copy_local_to_platform_single_file_1(helper, data):
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_2(helper, data):
+def test_copy_local_to_platform_single_file_2(helper: Helper, data: _Data) -> None:
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
@@ -69,7 +74,7 @@ def test_copy_local_to_platform_single_file_2(helper, data):
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_3(helper, data):
+def test_copy_local_to_platform_single_file_3(helper: Helper, data: _Data) -> None:
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
 
@@ -87,7 +92,9 @@ def test_copy_local_to_platform_single_file_3(helper, data):
 
 
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_non_existing_local(helper, tmp_path):
+def test_e2e_copy_non_existing_platform_to_non_existing_local(
+    helper: Helper, tmp_path: Path
+) -> None:
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(EX_OSFILE)):
         helper.run_cli(
@@ -102,7 +109,9 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(helper, tmp_path):
 
 
 @pytest.mark.e2e
-def test_e2e_copy_non_existing_platform_to_____existing_local(helper, tmp_path):
+def test_e2e_copy_non_existing_platform_to_____existing_local(
+    helper: Helper, tmp_path: Path
+) -> None:
     # Try downloading non existing file
     with pytest.raises(SystemExit, match=str(EX_OSFILE)):
         helper.run_cli(

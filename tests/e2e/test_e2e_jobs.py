@@ -11,13 +11,7 @@ import pytest
 from aiohttp.test_utils import unused_port
 from yarl import URL
 
-from neuromation.api import (
-    Image,
-    JobStatus,
-    NetworkPortForwarding,
-    Resources,
-    get as api_get,
-)
+from neuromation.api import Image, JobStatus, Resources, get as api_get
 from neuromation.utils import run as run_async
 from tests.e2e import Helper
 

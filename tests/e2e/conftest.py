@@ -313,7 +313,7 @@ class Helper:
                 URL(f"{self.tmpstorage}{path_from}"), URL(f"{self.tmpstorage}{path_to}")
             )
 
-    def hash_hex(self, file: str) -> str:
+    def hash_hex(self, file: Union[str, Path]) -> str:
         _hash = sha1()
         with open(file, "rb") as f:
             for block in iter(lambda: f.read(16 * 1024 * 1024), b""):
