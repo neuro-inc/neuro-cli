@@ -24,6 +24,20 @@ MAX_PORT = 65535
 
 @pytest.mark.e2e
 def test_job_lifecycle(helper: Helper) -> None:
+
+    name = f"job-{os.urandom(5).hex()}"
+
+    # Kill another active jobs with same name, if any
+    captured = helper.run_cli(["job", "ls", "--name", name, "-q"])
+    if captured.out:
+        jobs_same_name = captured.out.split("\n")
+        assert len(jobs_same_name) == 1, f"found multiple active jobs with name {name}"
+        job_id = jobs_same_name[0]
+        helper.run_cli(["job", "kill", name])
+        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+        captured = helper.run_cli(["job", "ls", "--name", name, "-q"])
+        assert not captured.out
+
     # Remember original running jobs
     captured = helper.run_cli(
         ["job", "ls", "--status", "running", "--status", "pending"]
@@ -31,8 +45,6 @@ def test_job_lifecycle(helper: Helper) -> None:
     store_out_list = captured.out.split("\n")[1:]
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
-    # Run a new job
-    job_name = f"test-job-name-{uuid4()}"
     command = 'bash -c "sleep 10m; false"'
     captured = helper.run_cli(
         [
@@ -49,7 +61,7 @@ def test_job_lifecycle(helper: Helper) -> None:
             "--non-preemptible",
             "--no-wait-start",
             "--name",
-            job_name,
+            name,
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -59,7 +71,7 @@ def test_job_lifecycle(helper: Helper) -> None:
     job_id = match.group(1)
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
-    assert f"Name: {job_name}" in captured.out
+    assert f"Name: {name}" in captured.out
     assert re.search("Http URL: http", captured.out), captured.out
 
     # Check it is in a running,pending job list now
@@ -75,19 +87,19 @@ def test_job_lifecycle(helper: Helper) -> None:
 
     # Check that it is in a running job list
     captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
+    captured_out = captured.out
+    assert job_id in captured_out
     # Check that the command is in the list
-    assert command in store_out
+    assert command in captured_out
 
     # Check that no command is in the list if quite
     captured = helper.run_cli(["job", "ls", "--status", "running", "-q"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert command not in store_out
+    captured_out = captured.out
+    assert job_id in captured_out
+    assert command not in captured_out
 
     # Kill the job by name
-    captured = helper.run_cli(["job", "kill", job_name])
+    captured = helper.run_cli(["job", "kill", name])
 
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
@@ -96,24 +108,24 @@ def test_job_lifecycle(helper: Helper) -> None:
 
     # Check that it is not in a running job list anymore
     captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
+    captured_out = captured.out
+    assert job_id not in captured_out
 
     # Check job ls by name
-    captured = helper.run_cli(["job", "ls", "-n", job_name, "-s", "succeeded"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert job_name in store_out
+    captured = helper.run_cli(["job", "ls", "-n", name, "-s", "succeeded"])
+    captured_out = captured.out
+    assert job_id in captured_out
+    assert name in captured_out
 
     # Check job status by id
     captured = helper.run_cli(["job", "status", job_id])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
+    captured_out = captured.out
+    assert captured_out.startswith(f"Job: {job_id}\nName: {name}")
 
     # Check job status by name
-    captured = helper.run_cli(["job", "status", job_name])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
+    captured = helper.run_cli(["job", "status", name])
+    captured_out = captured.out
+    assert captured_out.startswith(f"Job: {job_id}\nName: {name}")
 
 
 @pytest.mark.e2e

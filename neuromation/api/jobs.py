@@ -262,6 +262,7 @@ class JobDescription:
     name: Optional[str] = None
     description: Optional[str] = None
     http_url: URL = URL()
+    http_url_named: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
@@ -286,8 +287,9 @@ class JobDescription:
             started_at=res["history"].get("started_at", ""),
             finished_at=res["history"].get("finished_at", ""),
         )
-        http_url = URL(res["http_url"]) if "http_url" in res else URL()
-        ssh_server = URL(res["ssh_server"]) if "ssh_server" in res else URL()
+        http_url = URL(res.get("http_url", ""))
+        http_url_named = URL(res.get("http_url_named", ""))
+        ssh_server = URL(res.get("ssh_server", ""))
         internal_hostname = res.get("internal_hostname", None)
         return JobDescription(
             status=JobStatus(res["status"]),
@@ -299,6 +301,7 @@ class JobDescription:
             name=name,
             description=description,
             http_url=http_url,
+            http_url_named=http_url_named,
             ssh_server=ssh_server,
             ssh_auth_server=URL(res["ssh_auth_server"]),
             internal_hostname=internal_hostname,

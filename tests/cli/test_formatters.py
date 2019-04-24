@@ -157,6 +157,20 @@ class TestJobFormatter:
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
+    def test_non_quiet_http_url_named(self, job_descr: JobDescription) -> None:
+        job_descr = replace(job_descr, http_url_named=URL("https://job-named.dev"))
+        expected = (
+            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
+            + f"Name: {TEST_JOB_NAME}\n"
+            + f"Http URL: https://job-named.dev\n"
+            + f"Shortcuts:\n"
+            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
+            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
+            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
+            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+        )
+        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
+
 
 class TestJobStartProgress:
     def make_job(self, status: JobStatus, reason: str) -> JobDescription:
