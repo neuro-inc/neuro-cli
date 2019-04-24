@@ -28,8 +28,10 @@ async def mocked_share_client(
 
 
 @pytest.fixture()
-async def mocked_revoke_client(aiohttp_server, make_client):
-    async def handler(request):
+async def mocked_revoke_client(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> AsyncIterator[Client]:
+    async def handler(request: web.Request) -> web.Response:
         assert "uri" in request.query
         raise web.HTTPNoContent()
 
@@ -71,13 +73,13 @@ class TestUsersShare:
         )
         assert ret is None  # at this moment no result
 
-    async def test_revoke_unknown_user(self, mocked_revoke_client):
+    async def test_revoke_unknown_user(self, mocked_revoke_client: Client) -> None:
         with pytest.raises(ResourceNotFound):
             await mocked_revoke_client.users.revoke(
                 user="not-exists", uri=URL("storage://bob/resource")
             )
 
-    async def test_correct_revoke(self, mocked_revoke_client):
+    async def test_correct_revoke(self, mocked_revoke_client: Client) -> None:
         ret = await mocked_revoke_client.users.revoke(
             user="bill", uri=URL("storage://bob/resource")
         )

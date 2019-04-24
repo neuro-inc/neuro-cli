@@ -16,7 +16,7 @@ def test_share_complete_lifecycle(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_unshare_no_effect(helper):
+def test_unshare_no_effect(helper: Helper) -> None:
     with pytest.raises(SystemExit) as cm:
         helper.run_cli(["revoke", "storage:unshared", "public"])
     assert cm.value.code == 127
