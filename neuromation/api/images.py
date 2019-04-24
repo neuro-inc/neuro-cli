@@ -14,6 +14,7 @@ from .abc import AbstractDockerImageProgress
 from .config import _Config
 from .core import AuthorizationError, _Core
 from .registry import _Registry
+from .utils import NoPublicConstructor
 
 
 STATUS_FORBIDDEN = 403
@@ -57,7 +58,7 @@ class DockerImage:
         return self.name + post
 
 
-class _Images:
+class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config

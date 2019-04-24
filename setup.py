@@ -35,6 +35,7 @@ setup(
         "colorama>=0.4",
         "humanize>=0.5",
         "psutil>=5.5.0",
+        "typing_extensions>=3.7.2",
         # should upgrade the version after every certify release.
         # This is very serious security point
         "certifi>=2019.3.9",
@@ -45,13 +46,15 @@ setup(
     long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
     author="Neuromation Team",
     author_email="pypi@neuromation.io",  # TODO: change this email
-    license='Apache License, version 2.0',
+    license="Apache License, version 2.0",
     url="https://neuromation.io/",
     packages=find_packages(include=("neuromation", "neuromation.*")),
-    entry_points={"console_scripts": [
-        "neuro=neuromation.cli:main",
-        "docker-credential-neuro=neuromation.cli:dch"
-    ]},
+    entry_points={
+        "console_scripts": [
+            "neuro=neuromation.cli:main",
+            "docker-credential-neuro=neuromation.cli:dch",
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Other/Proprietary License",
@@ -64,6 +67,6 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Software Development",
         "Topic :: Utilities",
-        'License :: OSI Approved :: Apache Software License',
+        "License :: OSI Approved :: Apache Software License",
     ],
 )

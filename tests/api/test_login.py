@@ -1,10 +1,10 @@
 import asyncio
-from typing import AsyncIterator, Awaitable, Callable, Optional
+from typing import AsyncIterator, Optional
 from unittest import mock
 
 import pytest
 from aiohttp import ClientSession
-from aiohttp.test_utils import TestServer as _TestServer, unused_port
+from aiohttp.test_utils import unused_port
 from aiohttp.web import (
     Application,
     HTTPBadRequest,
@@ -30,6 +30,7 @@ from neuromation.api.login import (
     create_app_server_once,
     create_auth_code_app,
 )
+from tests import _TestServerFactory
 
 
 class TestAuthCode:
@@ -293,7 +294,7 @@ def auth_client_id() -> str:
 
 @pytest.fixture
 async def auth_server(
-    auth_client_id: str, aiohttp_server: Callable[[Application], Awaitable[_TestServer]]
+    auth_client_id: str, aiohttp_server: _TestServerFactory
 ) -> AsyncIterator[URL]:
     handler = _TestAuthHandler(client_id=auth_client_id)
     app = Application()
@@ -347,9 +348,7 @@ class TestTokenClient:
             assert not token.is_expired
 
     async def test_forbidden(
-        self,
-        aiohttp_server: Callable[[Application], Awaitable[_TestServer]],
-        auth_config: _AuthConfig,
+        self, aiohttp_server: _TestServerFactory, auth_config: _AuthConfig
     ) -> None:
         code = AuthCode()
         code.callback_url = auth_config.callback_urls[0]
@@ -380,7 +379,7 @@ class TestTokenClient:
 
 
 class TestAuthConfig:
-    def test_is_initialized__no_auth_url(self):
+    def test_is_initialized__no_auth_url(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL(""),
             token_url=URL("url"),
@@ -391,7 +390,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_token_url(self):
+    def test_is_initialized__no_token_url(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL(""),
@@ -402,7 +401,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_client_id(self):
+    def test_is_initialized__no_client_id(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
@@ -413,7 +412,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_audience(self):
+    def test_is_initialized__no_audience(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
@@ -424,7 +423,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_callback_urls(self):
+    def test_is_initialized__no_callback_urls(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
@@ -435,7 +434,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is True
 
-    def test_is_initialized__no_success_redirect_url(self):
+    def test_is_initialized__no_success_redirect_url(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),

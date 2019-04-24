@@ -3,6 +3,7 @@ import logging
 import click
 
 from neuromation.api import Permission
+from neuromation.api.users import uri_from_cli
 
 from .root import Root
 from .utils import (
@@ -42,3 +43,27 @@ async def share(root: Root, uri: str, user: str, permission: str) -> None:
 
     except ValueError as e:
         raise ValueError(f"Could not share resource '{uri}': {e}") from e
+
+
+@command()
+@click.argument("uri")
+@click.argument("user")
+@async_cmd()
+async def revoke(root: Root, uri: str, user: str) -> None:
+    """
+        Revoke from a USER permissions for previously shared resource specified by URI
+
+        Examples:
+        neuro revoke storage:///sample_data/ alice
+        neuro revoke image:resnet50 bob
+        neuro revoke job:///my_job_id alice
+    """
+    try:
+        uri_obj = parse_resource_for_sharing(uri, root)
+        uri_obj = uri_from_cli(username=root.username, uri=uri_obj)
+        log.info(f"Using resource '{uri_obj}'")
+
+        await root.client.users.revoke(user, uri_obj)
+
+    except ValueError as e:
+        raise ValueError(f"Could not unshare resource '{uri}': {e}") from e

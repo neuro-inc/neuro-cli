@@ -1,7 +1,8 @@
 import asyncio
 import socket
 import ssl
-from typing import Dict, Tuple
+from pathlib import Path
+from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
 import pkg_resources
@@ -128,24 +129,24 @@ PYPI_JSON = {
 
 
 @pytest.fixture
-def tls_certificate_authority():
+def tls_certificate_authority() -> Any:
     return trustme.CA()
 
 
 @pytest.fixture
-def tls_certificate(tls_certificate_authority):
+def tls_certificate(tls_certificate_authority: Any) -> Any:
     return tls_certificate_authority.issue_server_cert("localhost", "127.0.0.1", "::1")
 
 
 @pytest.fixture
-def ssl_ctx(tls_certificate):
+def ssl_ctx(tls_certificate: Any) -> ssl.SSLContext:
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     tls_certificate.configure_cert(ssl_ctx)
     return ssl_ctx
 
 
 @pytest.fixture
-def client_ssl_ctx(tls_certificate_authority):
+def client_ssl_ctx(tls_certificate_authority: Any) -> ssl.SSLContext:
     ssl_ctx = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
     tls_certificate_authority.configure_trust(ssl_ctx)
     return ssl_ctx
@@ -154,11 +155,13 @@ def client_ssl_ctx(tls_certificate_authority):
 class FakeResolver(AbstractResolver):
     _LOCAL_HOST = {0: "127.0.0.1", socket.AF_INET: "127.0.0.1", socket.AF_INET6: "::1"}
 
-    def __init__(self, fakes):
+    def __init__(self, fakes: Dict[str, int]) -> None:
         """fakes -- dns -> port dict"""
         self._fakes = fakes
 
-    async def resolve(self, host, port=0, family=socket.AF_INET):
+    async def resolve(
+        self, host: str, port: int = 0, family: int = socket.AF_INET
+    ) -> List[Dict[str, Any]]:
         return [
             {
                 "hostname": host,
@@ -178,11 +181,11 @@ class FakePyPI:
     def __init__(self, ssl_context: ssl.SSLContext) -> None:
         self.app = web.Application()
         self.app.router.add_routes([web.get("/pypi/neuromation/json", self.json_info)])
-        self.runner = None
+        self.runner: Optional[web.AppRunner] = None
         self.ssl_context = ssl_context
-        self.response = None
+        self.response: Optional[Tuple[int, Dict[str, Any]]] = None
 
-    async def start(self):
+    async def start(self) -> Dict[str, int]:
         port = unused_port()
         self.runner = web.AppRunner(self.app)
         await self.runner.setup()
@@ -190,15 +193,19 @@ class FakePyPI:
         await site.start()
         return {"pypi.org": port}
 
-    async def stop(self):
+    async def stop(self) -> None:
+        assert self.runner is not None
         await self.runner.cleanup()
 
-    async def json_info(self, request):
+    async def json_info(self, request: web.Request) -> web.Response:
+        assert self.response is not None
         return web.json_response(self.response[1], status=self.response[0])
 
 
 @pytest.fixture()
-async def fake_pypi(ssl_ctx: ssl.SSLContext, loop: asyncio.AbstractEventLoop) -> None:
+async def fake_pypi(
+    ssl_ctx: ssl.SSLContext, loop: asyncio.AbstractEventLoop
+) -> AsyncIterator[Tuple[FakePyPI, Dict[str, int]]]:
     fake_pypi = FakePyPI(ssl_ctx)
     info = await fake_pypi.start()
     yield fake_pypi, info
@@ -212,12 +219,12 @@ async def connector(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> aiohttp.TCPCo
 
 
 @pytest.fixture
-def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]):
+def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
     return fake_pypi[0]
 
 
 async def test__fetch_pypi(
-    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
 ) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
@@ -227,7 +234,7 @@ async def test__fetch_pypi(
 
 
 async def test__fetch_pypi_no_releases(
-    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
 ) -> None:
     pypi_server.response = (200, {})
 
@@ -237,7 +244,7 @@ async def test__fetch_pypi_no_releases(
 
 
 async def test__fetch_pypi_non_200(
-    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
 ) -> None:
     pypi_server.response = (403, {"Status": "Forbidden"})
 
@@ -247,7 +254,7 @@ async def test__fetch_pypi_non_200(
 
 
 async def test_update_latest_version(
-    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
 ) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
@@ -258,7 +265,9 @@ async def test_update_latest_version(
     assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.2.1")
 
 
-async def test_run(pypi_server, connector: aiohttp.TCPConnector, nmrc_path) -> None:
+async def test_run(
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
+) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
     checker = VersionChecker(config_path=nmrc_path, connector=connector)
@@ -269,7 +278,7 @@ async def test_run(pypi_server, connector: aiohttp.TCPConnector, nmrc_path) -> N
 
 
 async def test_run_cancelled(
-    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
 ) -> None:
     loop = asyncio.get_event_loop()
     pypi_server.response = (200, PYPI_JSON)
@@ -285,7 +294,7 @@ async def test_run_cancelled(
 
 
 async def test_run_cancelled_with_delay(
-    pypi_server, connector: aiohttp.TCPConnector, nmrc_path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
 ) -> None:
     loop = asyncio.get_event_loop()
     pypi_server.response = (200, PYPI_JSON)
@@ -301,7 +310,7 @@ async def test_run_cancelled_with_delay(
     assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
 
 
-async def test_run_no_server(nmrc_path) -> None:
+async def test_run_no_server(nmrc_path: Path) -> None:
     port = unused_port()
     resolver = FakeResolver({"pypi.org": port})
     connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)

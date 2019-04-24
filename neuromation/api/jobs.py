@@ -25,6 +25,7 @@ from neuromation.utils import kill_proc_tree
 from .config import _Config
 from .core import IllegalArgumentError, _Core
 from .url_utils import normalize_storage_path_uri
+from .utils import NoPublicConstructor
 
 
 @dataclass(frozen=True)
@@ -323,7 +324,7 @@ class JobTelemetry:
         )
 
 
-class _Jobs:
+class Jobs(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config

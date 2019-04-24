@@ -16,6 +16,7 @@ from .url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
+from .utils import NoPublicConstructor
 
 
 log = logging.getLogger(__name__)
@@ -48,14 +49,14 @@ class FileStatus:
     def from_api(cls, values: Dict[str, Any]) -> "FileStatus":
         return cls(
             path=values["path"],
-            type=values["type"],
+            type=FileStatusType(values["type"]),
             size=int(values["length"]),
             modification_time=int(values["modificationTime"]),
             permission=values["permission"],
         )
 
 
-class _Storage:
+class Storage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config

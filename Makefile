@@ -5,14 +5,14 @@ BRANCH := $(shell git branch | grep \* | cut -d ' ' -f2)
 
 MYPY_CACHE_DIR=.mypy_cache/$(shell md5sum setup.py | awk '{print $$1}')-$(shell find requirements -type f -exec md5sum {} \; | sort -k 2 | md5sum | awk '{print $$1}')
 
-ISORT_DIRS := neuromation tests build-tools
-ISORT_REGEXP := ^(neuromation|tests|build-tools)/.+\\.py
+ISORT_DIRS := neuromation tests build-tools setup.py
+ISORT_REGEXP := ^((neuromation|tests|build-tools)/.+|setup)\\.py$
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
-MYPY_DIRS :=  neuromation
-MYPY_REGEXP := ^neuromation/.+\\.py
-FLAKE8_DIRS := .
-FLAKE8_REGEXP := .+\\.py$
+MYPY_DIRS :=  neuromation tests
+MYPY_REGEXP := ^(neuromation|tests)/.+\\.py$
+FLAKE8_DIRS := $(ISORT_DIRS)
+FLAKE8_REGEXP := $(ISORT_REGEXP)
 
 DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
@@ -177,8 +177,8 @@ coverage:
 	pip install codecov
 	codecov -f coverage.xml -X gcov
 
-.PHONY: format
-format:
+.PHONY: format fmt
+format fmt:
 	isort -rc $(ISORT_DIRS)
 	black $(BLACK_DIRS)
 	# generate docs as the last stage to allow reformat code first
