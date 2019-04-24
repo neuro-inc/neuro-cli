@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from yarl import URL
 
 from .core import ClientError, _Core
+from .utils import NoPublicConstructor
 
 
 JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
@@ -33,7 +34,7 @@ class Permission:
         return primitive
 
 
-class _Users:
+class Users(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core) -> None:
         self._core = core
 

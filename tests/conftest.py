@@ -39,6 +39,6 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[[str, str], Cl
             url=URL(url),
             registry_url=URL(registry_url),
         )
-        return Client(config)
+        return Client._create(config)
 
     return go

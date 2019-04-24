@@ -37,8 +37,8 @@ class Factory:
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)
-            return Client(new_config, timeout=timeout)
-        return Client(config, timeout=timeout)
+            return Client._create(new_config, timeout=timeout)
+        return Client._create(config, timeout=timeout)
 
     async def login(
         self,
@@ -58,7 +58,7 @@ class Factory:
             url=url,
             registry_url=server_config.registry_url,
         )
-        async with Client(config, timeout=timeout) as client:
+        async with Client._create(config, timeout=timeout) as client:
             await client.jobs.list()  # raises an exception if cannot login
         self._save(config)
 
@@ -79,7 +79,7 @@ class Factory:
             url=url,
             registry_url=server_config.registry_url,
         )
-        async with Client(config, timeout=timeout) as client:
+        async with Client._create(config, timeout=timeout) as client:
             await client.jobs.list()  # raises an exception if cannot login
         self._save(config)
 

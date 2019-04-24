@@ -10,7 +10,7 @@ from yarl import URL
 
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-from neuromation.api.jobs import _Jobs
+from neuromation.api.jobs import Jobs
 from neuromation.api.login import AuthNegotiator
 
 
@@ -68,7 +68,7 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: Any) -> URL:
     srv = await aiohttp_server(app)
 
     monkeypatch.setattr(AuthNegotiator, "refresh_token", _refresh_token_mock)
-    monkeypatch.setattr(_Jobs, "list", _jobs_list_mock)
+    monkeypatch.setattr(Jobs, "list", _jobs_list_mock)
 
     return srv.make_url("/")
 

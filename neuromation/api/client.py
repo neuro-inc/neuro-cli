@@ -7,13 +7,14 @@ import certifi
 
 from .config import _Config
 from .core import DEFAULT_TIMEOUT, _Core
-from .images import _Images
-from .jobs import _Jobs
-from .storage import _Storage
-from .users import _Users
+from .images import Images
+from .jobs import Jobs
+from .storage import Storage
+from .users import Users
+from .utils import NoPublicConstructor
 
 
-class Client:
+class Client(metaclass=NoPublicConstructor):
     def __init__(
         self, config: _Config, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
     ) -> None:
@@ -24,10 +25,10 @@ class Client:
         self._core = _Core(
             self._connector, self._config.url, self._config.auth_token.token, timeout
         )
-        self._jobs = _Jobs(self._core, self._config)
-        self._storage = _Storage(self._core, self._config)
-        self._users = _Users(self._core)
-        self._images: Optional[_Images] = None
+        self._jobs = Jobs._create(self._core, self._config)
+        self._storage = Storage._create(self._core, self._config)
+        self._users = Users._create(self._core)
+        self._images: Optional[Images] = None
 
     async def close(self) -> None:
         await self._core.close()
@@ -51,19 +52,19 @@ class Client:
         return self._config.auth_token.username
 
     @property
-    def jobs(self) -> _Jobs:
+    def jobs(self) -> Jobs:
         return self._jobs
 
     @property
-    def storage(self) -> _Storage:
+    def storage(self) -> Storage:
         return self._storage
 
     @property
-    def users(self) -> _Users:
+    def users(self) -> Users:
         return self._users
 
     @property
-    def images(self) -> _Images:
+    def images(self) -> Images:
         if self._images is None:
-            self._images = _Images(self._core, self._config)
+            self._images = Images._create(self._core, self._config)
         return self._images
