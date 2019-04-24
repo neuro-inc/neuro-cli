@@ -16,6 +16,7 @@ from .url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
+from .utils import NoPublicConstructor
 
 
 log = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class FileStatus:
         )
 
 
-class _Storage:
+class Storage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
