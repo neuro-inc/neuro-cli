@@ -162,34 +162,3 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
 
     # And confirm
     helper.check_dir_absent_on_storage("folder2", "")
-
-
-@pytest.mark.e2e
-def test_job_storage_interaction(
-    helper: Helper, data: Tuple[Path, str], tmp_path: Path
-) -> None:
-    srcfile, checksum = data
-    # Create directory for the test
-    helper.check_create_dir_on_storage("data")
-
-    # Upload local file
-    helper.check_upload_file_to_storage("foo", "data", str(srcfile))
-
-    command = "cp /data/foo /res/foo"
-
-    helper.run_job_and_wait_state(
-        UBUNTU_IMAGE_NAME,
-        command,
-        JOB_TINY_CONTAINER_PARAMS
-        + [
-            "--volume",
-            f"{helper.tmpstorage}data:/data:ro",
-            "--volume",
-            f"{helper.tmpstorage}result:/res:rw",
-        ],
-        JobStatus.SUCCEEDED,
-        JobStatus.FAILED,
-    )
-
-    # Download into local dir and confirm checksum
-    helper.check_file_on_storage_checksum("foo", "result", checksum, tmp_path, "bar")
