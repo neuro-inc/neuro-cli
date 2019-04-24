@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional
 
 import pytest
 from aiohttp import web
@@ -22,7 +22,7 @@ from tests import _TestServerFactory
 
 class TestJobDescription:
     @pytest.fixture
-    def job_desc_primitive(self):
+    def job_desc_primitive(self) -> Dict[str, Any]:
         return {
             "id": "job-id",
             "owner": "owner",
@@ -39,8 +39,10 @@ class TestJobDescription:
         }
 
     @pytest.fixture
-    def job_desc_factory(self):
-        def _factory(http_url: str, job_name: Optional[str] = None):
+    def job_desc_factory(
+        self
+    ) -> Iterator[Callable[[str, Optional[str]], JobDescription]]:
+        def _factory(http_url: str, job_name: Optional[str] = None) -> JobDescription:
             return JobDescription(
                 http_url=URL(http_url),
                 id="job-id",
@@ -68,13 +70,17 @@ class TestJobDescription:
 
         yield _factory
 
-    def test_from_api_http_url(self, job_desc_primitive, job_desc_factory):
+    def test_from_api_http_url(
+        self, job_desc_primitive: Dict[str, Any], job_desc_factory: Any
+    ) -> None:
         HTTP_URL = "http://job-id.jobs.neu.ro/"
         job_desc_primitive["http_url"] = HTTP_URL
         expected = job_desc_factory(http_url=HTTP_URL)
         assert JobDescription.from_api(job_desc_primitive) == expected
 
-    def test_from_api_http_url_named(self, job_desc_primitive, job_desc_factory):
+    def test_from_api_http_url_named(
+        self, job_desc_primitive: Dict[str, Any], job_desc_factory: Any
+    ) -> None:
         NAME = "job-name"
         HTTP_URL = "http://job-id.jobs.neu.ro/"
         HTTP_URL_NAMED = f"http://{NAME}-owner.jobs.neu.ro/"
@@ -84,13 +90,15 @@ class TestJobDescription:
         expected = job_desc_factory(http_url=HTTP_URL_NAMED, job_name=NAME)
         assert JobDescription.from_api(job_desc_primitive) == expected
 
-    def test_from_api_http_url_not_exposed(self, job_desc_primitive, job_desc_factory):
+    def test_from_api_http_url_not_exposed(
+        self, job_desc_primitive: Dict[str, Any], job_desc_factory: Any
+    ) -> None:
         expected = job_desc_factory(http_url="")
         assert JobDescription.from_api(job_desc_primitive) == expected
 
     def test_from_api_http_url_named_not_exposed(
-        self, job_desc_primitive, job_desc_factory
-    ):
+        self, job_desc_primitive: Dict[str, Any], job_desc_factory: Any
+    ) -> None:
         NAME = "job-name"
         job_desc_primitive["name"] = NAME
         expected = job_desc_factory(http_url="", job_name=NAME)
@@ -100,8 +108,9 @@ class TestJobDescription:
 _MakeClient = Callable[..., Client]
 
 
-
-async def test_jobs_monitor(aiohttp_server, make_client):
+async def test_jobs_monitor(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
         assert request.headers["Accept-Encoding"] == "identity"
         resp = web.StreamResponse()
@@ -139,7 +148,7 @@ async def test_jobs_monitor(aiohttp_server, make_client):
 
 
 async def test_monitor_notexistent_job(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
         raise web.HTTPNotFound()
