@@ -1,15 +1,18 @@
 import re
+from pathlib import Path
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 import pytest
 
 import neuromation
 from neuromation.api import JobStatus
+from tests.e2e import Helper
 from tests.e2e.utils import FILE_SIZE_B, JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
-def test_print_version(helper):
+def test_print_version(helper: Helper) -> None:
     expected_out = f"Neuromation Platform Client {neuromation.__version__}"
 
     captured = helper.run_cli(["--version"])
@@ -18,36 +21,36 @@ def test_print_version(helper):
 
 
 @pytest.mark.e2e
-def test_print_options(helper):
+def test_print_options(helper: Helper) -> None:
     captured = helper.run_cli(["--options"])
     assert not captured.err
     assert "Options" in captured.out
 
 
 @pytest.mark.e2e
-def test_print_config(helper):
+def test_print_config(helper: Helper) -> None:
     captured = helper.run_cli(["config", "show"])
     assert not captured.err
     assert "API URL: https://dev.neu.ro/api/v1" in captured.out
 
 
 @pytest.mark.e2e
-def test_print_config_token(helper):
+def test_print_config_token(helper: Helper) -> None:
     captured = helper.run_cli(["config", "show-token"])
     assert not captured.err
     assert captured.out  # some secure information was printed
 
 
 @pytest.mark.e2e
-def test_empty_directory_ls_output(helper):
+def test_empty_directory_ls_output(helper: Helper) -> None:
     # Ensure output of ls - empty directory shall print nothing.
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert not captured.out
 
 
 @pytest.mark.e2e
-def test_e2e_job_top(helper):
-    def split_non_empty_parts(line, separator=None):
+def test_e2e_job_top(helper: Helper) -> None:
+    def split_non_empty_parts(line: str, separator: Optional[str] = None) -> List[str]:
         return [part.strip() for part in line.split(separator) if part.strip()]
 
     bash_script = (
@@ -105,11 +108,11 @@ def test_e2e_job_top(helper):
     "switch,expected",
     [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
 )
-def test_e2e_shm_switch(switch, expected, helper):
+def test_e2e_shm_switch(switch: str, expected: bool, helper: Helper) -> None:
     # Start the df test job
     bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
     command = f"bash -c '{bash_script}'"
-    params = [] + JOB_TINY_CONTAINER_PARAMS
+    params = list(JOB_TINY_CONTAINER_PARAMS)
     if switch is not None:
         params.append(switch)
 
@@ -126,7 +129,7 @@ def test_e2e_shm_switch(switch, expected, helper):
 
 
 @pytest.mark.e2e
-def test_e2e_storage(data, tmp_path, helper):
+def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> None:
     srcfile, checksum = data
 
     # Create directory for the test
@@ -162,7 +165,9 @@ def test_e2e_storage(data, tmp_path, helper):
 
 
 @pytest.mark.e2e
-def test_job_storage_interaction(helper, data, tmp_path):
+def test_job_storage_interaction(
+    helper: Helper, data: Tuple[Path, str], tmp_path: Path
+) -> None:
     srcfile, checksum = data
     # Create directory for the test
     helper.check_create_dir_on_storage("data")

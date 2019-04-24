@@ -1,6 +1,3 @@
-from time import sleep
-
-
 BLOCK_SIZE_MB = 16
 FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
@@ -47,31 +44,3 @@ JOB_TINY_CONTAINER_PARAMS = ["-m", "20M", "-c", "0.1", "-g", "0", "--non-preempt
 
 class JobWaitStateStopReached(AssertionError):
     pass
-
-
-def attempt(attempts: int = 4, sleep_time: float = 15.0):
-    """
-    This decorator allow function fail up to _attempts_ times with
-    pause _sleep_timeout_ seconds between each attempt
-    :param attempts:
-    :param sleep_time:
-    :return:
-    """
-
-    def _attempt(func, *args, **kwargs):
-        def wrapped(*args, **kwargs):
-            nonlocal attempts
-            while True:
-                attempts -= 1
-                if attempts > 0:
-                    try:
-                        return func(*args, **kwargs)
-                    except BaseException:
-                        pass
-                    sleep(sleep_time)
-                else:
-                    return func(*args, **kwargs)
-
-        return wrapped
-
-    return _attempt

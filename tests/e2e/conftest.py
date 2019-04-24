@@ -10,7 +10,19 @@ from hashlib import sha1
 from os.path import join
 from pathlib import Path
 from time import sleep, time
-from typing import List, Optional
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 from uuid import uuid4 as uuid
 
 import aiohttp
@@ -56,7 +68,7 @@ job_id_pattern = re.compile(
 
 
 @pytest.fixture
-def loop():
+def loop() -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     yield loop
@@ -71,7 +83,9 @@ class TestRetriesExceeded(Exception):
 SysCap = namedtuple("SysCap", "out err")
 
 
-async def _run_async(coro, *args, **kwargs):
+async def _run_async(
+    coro: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
+) -> Any:
     try:
         return await coro(*args, **kwargs)
     finally:
@@ -81,73 +95,76 @@ async def _run_async(coro, *args, **kwargs):
             await asyncio.sleep(0.05)
 
 
-def run_async(coro):
-    def wrapper(*args, **kwargs):
+def run_async(coro: Any) -> Callable[..., Any]:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         return run(_run_async(coro, *args, **kwargs))
 
     return wrapper
 
 
 class Helper:
-    def __init__(self, nmrc_path, capfd, tmp_path: Path):
+    def __init__(self, nmrc_path: Path, capfd: Any, tmp_path: Path) -> None:
         self._nmrc_path = nmrc_path
         self._capfd = capfd
         self._tmp = tmp_path
         self._tmpstorage = "storage:" + str(uuid()) + "/"
-        self._executed_jobs = []
+        self._closed = False
+        self._executed_jobs: List[str] = []
         self.mkdir("")
         self._last_output: SysCap = SysCap("", "")
 
-    def close(self):
-        if self._tmpstorage is not None:
+    def close(self) -> None:
+        if not self._closed:
             with suppress(Exception):
                 self.rm("")
-            self._tmpstorage = None
+            self._closed = True
         if self._executed_jobs:
             with suppress(Exception):
                 with suppress(Exception):
                     self.run_cli(["job", "kill"] + self._executed_jobs)
 
     @property
-    def username(self):
+    def username(self) -> str:
         config = Factory(path=self._nmrc_path)._read()
         return config.auth_token.username
 
     @property
-    def token(self):
+    def token(self) -> str:
         config = Factory(path=self._nmrc_path)._read()
         return config.auth_token.token
 
     @property
-    def registry_url(self):
+    def registry_url(self) -> URL:
         config = Factory(path=self._nmrc_path)._read()
         return config.registry_url
 
     @property
-    def tmpstorage(self):
+    def tmpstorage(self) -> str:
         return self._tmpstorage
 
     @run_async
-    async def mkdir(self, path):
+    async def mkdir(self, path: str) -> None:
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mkdirs(url)
 
     @run_async
-    async def rm(self, path):
+    async def rm(self, path: str) -> None:
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url)
 
     @run_async
-    async def check_file_exists_on_storage(self, name: str, path: str, size: int):
-        path = URL(self.tmpstorage + path)
+    async def check_file_exists_on_storage(
+        self, name: str, path: str, size: int
+    ) -> None:
+        url = URL(self.tmpstorage + path)
         loop = asyncio.get_event_loop()
         t0 = loop.time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             while loop.time() - t0 < STORAGE_MAX_WAIT:
                 try:
-                    files = await client.storage.ls(path)
+                    files = await client.storage.ls(url)
                 except ResourceNotFound:
                     await asyncio.sleep(1)
                     continue
@@ -159,17 +176,17 @@ class Helper:
                     ):
                         return
                 await asyncio.sleep(1)
-        raise AssertionError(f"File {name} with size {size} not found in {path}")
+        raise AssertionError(f"File {name} with size {size} not found in {url}")
 
     @run_async
-    async def check_dir_exists_on_storage(self, name: str, path: str):
-        path = URL(self.tmpstorage + path)
+    async def check_dir_exists_on_storage(self, name: str, path: str) -> None:
+        url = URL(self.tmpstorage + path)
         loop = asyncio.get_event_loop()
         t0 = loop.time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             while loop.time() - t0 < STORAGE_MAX_WAIT:
                 try:
-                    files = await client.storage.ls(path)
+                    files = await client.storage.ls(url)
                 except ResourceNotFound:
                     await asyncio.sleep(1)
                     continue
@@ -177,31 +194,31 @@ class Helper:
                     if file.type == FileStatusType.DIRECTORY and file.path == name:
                         return
                 await asyncio.sleep(1)
-        raise AssertionError(f"Dir {name} not found in {path}")
+        raise AssertionError(f"Dir {name} not found in {url}")
 
     @run_async
-    async def check_dir_absent_on_storage(self, name: str, path: str):
-        path = URL(self.tmpstorage + path)
+    async def check_dir_absent_on_storage(self, name: str, path: str) -> None:
+        url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            files = await client.storage.ls(path)
+            files = await client.storage.ls(url)
             for file in files:
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
-                    raise AssertionError(f"Dir {name} found in {path}")
+                    raise AssertionError(f"Dir {name} found in {url}")
 
     @run_async
-    async def check_file_absent_on_storage(self, name: str, path: str):
-        path = URL(self.tmpstorage + path)
+    async def check_file_absent_on_storage(self, name: str, path: str) -> None:
+        url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            files = await client.storage.ls(path)
+            files = await client.storage.ls(url)
             for file in files:
                 if file.type == FileStatusType.FILE and file.path == name:
-                    raise AssertionError(f"File {name} found in {path}")
+                    raise AssertionError(f"File {name} found in {url}")
 
     @run_async
     async def check_file_on_storage_checksum(
         self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
-    ):
-        path = URL(self.tmpstorage + path)
+    ) -> None:
+        url = URL(self.tmpstorage + path)
         if tmpname:
             target = join(tmpdir, tmpname)
             target_file = target
@@ -214,7 +231,7 @@ class Helper:
             for i in range(5):
                 try:
                     await client.storage.download_file(
-                        path / name, URL("file:" + target)
+                        url / name, URL("file:" + target)
                     )
                 except ResourceNotFound:
                     # the file was not synchronized between platform storage nodes
@@ -229,28 +246,28 @@ class Helper:
                     # need to try again
                     await asyncio.sleep(delay)
                     delay *= 2
-            raise AssertionError("checksum test failed for {path}")
+            raise AssertionError("checksum test failed for {url}")
 
     @run_async
-    async def check_create_dir_on_storage(self, path: str):
-        path = URL(self.tmpstorage + path)
+    async def check_create_dir_on_storage(self, path: str) -> None:
+        url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.mkdirs(path)
+            await client.storage.mkdirs(url)
 
     @run_async
-    async def check_rmdir_on_storage(self, path: str):
-        path = URL(self.tmpstorage + path)
+    async def check_rmdir_on_storage(self, path: str) -> None:
+        url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.rm(path)
+            await client.storage.rm(url)
 
     @run_async
-    async def check_rm_file_on_storage(self, name: str, path: str):
-        path = URL(self.tmpstorage + path)
+    async def check_rm_file_on_storage(self, name: str, path: str) -> None:
+        url = URL(self.tmpstorage + path)
         delay = 0.5
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             for i in range(10):
                 try:
-                    await client.storage.rm(path / name)
+                    await client.storage.rm(url / name)
                 except ResourceNotFound:
                     await asyncio.sleep(delay)
                     delay *= 2
@@ -258,20 +275,22 @@ class Helper:
                     return
 
     @run_async
-    async def check_upload_file_to_storage(self, name: str, path: str, local_file: str):
-        path = URL(self.tmpstorage + path)
+    async def check_upload_file_to_storage(
+        self, name: str, path: str, local_file: str
+    ) -> None:
+        url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             if name is None:
-                await client.storage.upload_file(URL("file:" + local_file), path)
+                await client.storage.upload_file(URL("file:" + local_file), url)
             else:
                 await client.storage.upload_file(
-                    URL("file:" + local_file), URL(f"{path}/{name}")
+                    URL("file:" + local_file), URL(f"{url}/{name}")
                 )
 
     @run_async
     async def check_rename_file_on_storage(
         self, name_from: str, path_from: str, name_to: str, path_to: str
-    ):
+    ) -> None:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}/{name_from}"),
@@ -286,13 +305,15 @@ class Helper:
             assert name_to in names2
 
     @run_async
-    async def check_rename_directory_on_storage(self, path_from: str, path_to: str):
+    async def check_rename_directory_on_storage(
+        self, path_from: str, path_to: str
+    ) -> None:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}"), URL(f"{self.tmpstorage}{path_to}")
             )
 
-    def hash_hex(self, file):
+    def hash_hex(self, file: Union[str, Path]) -> str:
         _hash = sha1()
         with open(file, "rb") as f:
             for block in iter(lambda: f.read(16 * 1024 * 1024), b""):
@@ -301,7 +322,9 @@ class Helper:
         return _hash.hexdigest()
 
     @run_async
-    async def wait_job_change_state_from(self, job_id, wait_state, stop_state=None):
+    async def wait_job_change_state_from(
+        self, job_id: str, wait_state: JobStatus, stop_state: Optional[JobStatus] = None
+    ) -> None:
         start_time = time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -314,7 +337,12 @@ class Helper:
                 job = await client.jobs.status(job_id)
 
     @run_async
-    async def wait_job_change_state_to(self, job_id, target_state, stop_state=None):
+    async def wait_job_change_state_to(
+        self,
+        job_id: str,
+        target_state: JobStatus,
+        stop_state: Optional[JobStatus] = None,
+    ) -> None:
         start_time = time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -331,23 +359,25 @@ class Helper:
                 job = await client.jobs.status(job_id)
 
     @run_async
-    async def assert_job_state(self, job_id, state):
+    async def assert_job_state(self, job_id: str, state: JobStatus) -> None:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             assert job.status == state
 
     @run_async
-    async def job_info(self, job_id) -> JobDescription:
+    async def job_info(self, job_id: str) -> JobDescription:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             return await client.jobs.status(job_id)
 
     @run_async
-    async def check_job_output(self, job_id, expected, flags=0):
+    async def check_job_output(
+        self, job_id: str, expected: str, flags: int = 0
+    ) -> None:
         """
             Wait until job output satisfies given regexp
         """
 
-        async def _check_job_output():
+        async def _check_job_output() -> AsyncIterator[bytes]:
             async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
                 async for chunk in client.jobs.monitor(job_id):
                     yield chunk
@@ -433,10 +463,10 @@ class Helper:
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
             )
 
-    def run_job(self, image, command="", params=[]) -> str:
+    def run_job(self, image: str, command: str = "", params: Sequence[str] = ()) -> str:
         captured = self.run_cli(
             ["job", "submit", "-q"]
-            + params
+            + list(params)
             + ([image, command] if command else [image])
         )
         assert not captured.err
@@ -444,12 +474,12 @@ class Helper:
 
     def run_job_and_wait_state(
         self,
-        image,
-        command="",
-        params=[],
-        wait_state=JobStatus.RUNNING,
-        stop_state=JobStatus.FAILED,
-    ):
+        image: str,
+        command: str = "",
+        params: Sequence[str] = (),
+        wait_state: JobStatus = JobStatus.RUNNING,
+        stop_state: JobStatus = JobStatus.FAILED,
+    ) -> str:
         job_id = self.run_job(image, command, params)
         assert job_id
         self.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
@@ -457,7 +487,7 @@ class Helper:
         return job_id
 
     @run_async
-    async def check_http_get(self, url):
+    async def check_http_get(self, url: Union[URL, str]) -> str:
         """
             Try to fetch given url few times.
         """
@@ -480,7 +510,7 @@ class Helper:
 
 
 @pytest.fixture()
-def nmrc_path(tmp_path):
+def nmrc_path(tmp_path: Path) -> Optional[Path]:
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
         nmrc_path = tmp_path / "conftest.nmrc"
@@ -488,19 +518,21 @@ def nmrc_path(tmp_path):
         rc_text = RC_TEXT.format(token=e2e_test_token)
         nmrc_path.write_text(rc_text)
         nmrc_path.chmod(0o600)
+        return nmrc_path
     else:
-        nmrc_path = None
-    return nmrc_path
+        return None
 
 
 @pytest.fixture
-def helper(capfd, monkeypatch, tmp_path, nmrc_path):
+def helper(
+    capfd: Any, monkeypatch: Any, tmp_path: Path, nmrc_path: Path
+) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
     yield ret
     ret.close()
 
 
-def generate_random_file(path: Path, size):
+def generate_random_file(path: Path, size: int) -> Tuple[str, str]:
     name = f"{uuid()}.tmp"
     path_and_name = path / name
     hasher = hashlib.sha1()
@@ -516,19 +548,19 @@ def generate_random_file(path: Path, size):
 
 
 @pytest.fixture(scope="session")
-def static_path(tmp_path_factory):
+def static_path(tmp_path_factory: Any) -> Path:
     return tmp_path_factory.mktemp("data")
 
 
 @pytest.fixture(scope="session")
-def data(static_path):
+def data(static_path: Path) -> Tuple[str, str]:
     folder = static_path / "data"
     folder.mkdir()
     return generate_random_file(folder, FILE_SIZE_B)
 
 
 @pytest.fixture(scope="session")
-def nested_data(static_path):
+def nested_data(static_path: Path) -> Tuple[str, str, str]:
     root_dir = static_path / "neested_data" / "nested"
     nested_dir = root_dir / "directory" / "for" / "test"
     nested_dir.mkdir(parents=True, exist_ok=True)
@@ -537,15 +569,17 @@ def nested_data(static_path):
 
 
 @pytest.fixture
-def secret_job(helper):
-    def go(http_port: bool, http_auth: bool = False, description: Optional[str] = None):
+def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str, Any]]:
+    def go(
+        http_port: bool, http_auth: bool = False, description: Optional[str] = None
+    ) -> Dict[str, Any]:
         secret = str(uuid())
         # Run http job
         command = (
             f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
             f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
-        args = []
+        args: List[str] = []
         if http_port:
             args += ["--http", "80"]
             if http_auth:

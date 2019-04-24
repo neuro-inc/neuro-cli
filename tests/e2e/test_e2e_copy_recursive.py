@@ -1,12 +1,16 @@
 from pathlib import Path
+from typing import Tuple
 
 import pytest
 
+from tests.e2e import Helper
 from tests.e2e.utils import FILE_SIZE_B
 
 
 @pytest.mark.e2e
-def test_e2e_copy_recursive_to_platform(helper, nested_data, tmp_path):
+def test_e2e_copy_recursive_to_platform(
+    helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path
+) -> None:
     srcfile, checksum, dir_path = nested_data
     target_file_name = Path(srcfile).name
 

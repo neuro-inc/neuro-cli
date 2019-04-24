@@ -48,7 +48,7 @@ class FileStatus:
     def from_api(cls, values: Dict[str, Any]) -> "FileStatus":
         return cls(
             path=values["path"],
-            type=values["type"],
+            type=FileStatusType(values["type"]),
             size=int(values["length"]),
             modification_time=int(values["modificationTime"]),
             permission=values["permission"],

@@ -1,7 +1,7 @@
 from neuromation.api import FileStatus, FileStatusType
 
 
-def test_from_api():
+def test_from_api() -> None:
     stat = FileStatus.from_api(
         {
             "path": "name",
@@ -18,7 +18,7 @@ def test_from_api():
     assert stat.permission == "read"
 
 
-def test_file():
+def test_file() -> None:
     stat = FileStatus.from_api(
         {
             "path": "name",
@@ -33,7 +33,7 @@ def test_file():
     assert not stat.is_dir()
 
 
-def test_is_dir():
+def test_is_dir() -> None:
     stat = FileStatus.from_api(
         {
             "path": "name",
@@ -48,7 +48,7 @@ def test_is_dir():
     assert stat.is_dir()
 
 
-def test_name():
+def test_name() -> None:
     stat = FileStatus.from_api(
         {
             "path": "name",

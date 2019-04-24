@@ -380,7 +380,7 @@ class TestTokenClient:
 
 
 class TestAuthConfig:
-    def test_is_initialized__no_auth_url(self):
+    def test_is_initialized__no_auth_url(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL(""),
             token_url=URL("url"),
@@ -391,7 +391,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_token_url(self):
+    def test_is_initialized__no_token_url(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL(""),
@@ -402,7 +402,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_client_id(self):
+    def test_is_initialized__no_client_id(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
@@ -413,7 +413,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_audience(self):
+    def test_is_initialized__no_audience(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
@@ -424,7 +424,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is False
 
-    def test_is_initialized__no_callback_urls(self):
+    def test_is_initialized__no_callback_urls(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),
@@ -435,7 +435,7 @@ class TestAuthConfig:
         )
         assert auth_config.is_initialized() is True
 
-    def test_is_initialized__no_success_redirect_url(self):
+    def test_is_initialized__no_success_redirect_url(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
             token_url=URL("url"),

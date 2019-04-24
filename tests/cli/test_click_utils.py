@@ -5,17 +5,17 @@ from click.testing import CliRunner
 from neuromation.cli.utils import DeprecatedGroup, MainGroup, command, group
 
 
-def test_print():
+def test_print() -> None:
     @group()
-    def sub_command():
+    def sub_command() -> None:
         pass
 
     @command()
-    def plain_cmd():
+    def plain_cmd() -> None:
         pass
 
     @group(cls=MainGroup)
-    def main():
+    def main() -> None:
         pass
 
     main.add_command(sub_command)
@@ -41,17 +41,17 @@ def test_print():
     )
 
 
-def test_print_use_group_helpers():
+def test_print_use_group_helpers() -> None:
     @group(cls=MainGroup)
-    def main():
+    def main() -> None:
         pass
 
     @main.group()
-    def sub_command():
+    def sub_command() -> None:
         pass
 
     @main.command()
-    def plain_cmd():
+    def plain_cmd() -> None:
         pass
 
     runner = CliRunner()
@@ -74,17 +74,17 @@ def test_print_use_group_helpers():
     )
 
 
-def test_print_hidden():
+def test_print_hidden() -> None:
     @group()
-    def sub_command():
+    def sub_command() -> None:
         pass
 
     @command(hidden=True)
-    def plain_cmd():
+    def plain_cmd() -> None:
         pass
 
     @group()
-    def main():
+    def main() -> None:
         pass
 
     main.add_command(sub_command)
@@ -103,15 +103,15 @@ def test_print_hidden():
     )
 
 
-def test_print_deprecated_group():
+def test_print_deprecated_group() -> None:
     @group()
-    def sub_command():
+    def sub_command() -> None:
         """
         Sub-command.
         """
 
     @group()
-    def main():
+    def main() -> None:
         pass
 
     main.add_command(sub_command)
@@ -131,22 +131,22 @@ def test_print_deprecated_group():
     )
 
 
-def test_print_deprecated_group_content():
+def test_print_deprecated_group_content() -> None:
     @group()
-    def sub_command():
+    def sub_command() -> None:
         """
         Sub-command.
         """
 
     @sub_command.command()
-    def cmd():
+    def cmd() -> None:
         """Command.
 
         Detailed description is here.
         """
 
     @group(cls=MainGroup)
-    def main():
+    def main() -> None:
         pass
 
     main.add_command(sub_command)
@@ -167,9 +167,9 @@ def test_print_deprecated_group_content():
     )
 
 
-def test_print_deprecated_no_help():
+def test_print_deprecated_no_help() -> None:
     @command(deprecated=True)
-    def main():
+    def main() -> None:
         pass
 
     runner = CliRunner()
@@ -187,9 +187,9 @@ def test_print_deprecated_no_help():
     )
 
 
-def test_print_deprecated_with_help():
+def test_print_deprecated_with_help() -> None:
     @command(deprecated=True)
-    def main():
+    def main() -> None:
         """Main help."""
 
     runner = CliRunner()
@@ -207,9 +207,9 @@ def test_print_deprecated_with_help():
     )
 
 
-def test_print_help_with_examples():
+def test_print_help_with_examples() -> None:
     @command()
-    def main():
+    def main() -> None:
         """
         Main help.
 

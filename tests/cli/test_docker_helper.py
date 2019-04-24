@@ -4,12 +4,13 @@ import logging
 import sys
 from collections import namedtuple
 from pathlib import Path
-from typing import List
+from typing import Any, Callable, List
 
 import pytest
 from yarl import URL
 
 from neuromation.api import CONFIG_ENV_NAME, Factory
+from neuromation.api.config import _Config
 from neuromation.cli.const import EX_OK
 from neuromation.cli.docker_credential_helper import main as dch
 
@@ -18,14 +19,20 @@ SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
 log = logging.getLogger(__name__)
 
 
+_RunCli = Callable[[List[str]], SysCapWithCode]
+
+
 @pytest.fixture()
-def config(nmrc_path):
+def config(nmrc_path: Path) -> _Config:
     return Factory(path=nmrc_path)._read()
 
 
+_RunDch = Callable[[List[str]], SysCapWithCode]
+
+
 @pytest.fixture()
-def run_dch(capfd, monkeypatch, tmp_path, nmrc_path) -> SysCapWithCode:
-    def _run_dch(arguments: List[str]):
+def run_dch(capfd: Any, monkeypatch: Any, tmp_path: Path, nmrc_path: Path) -> _RunDch:
+    def _run_dch(arguments: List[str]) -> SysCapWithCode:
 
         log.info("Run 'docker-helper-neuro %s'", " ".join(arguments))
         code = EX_OK
@@ -43,14 +50,14 @@ def run_dch(capfd, monkeypatch, tmp_path, nmrc_path) -> SysCapWithCode:
 
 
 class TestCli:
-    def test_path_not_exists(self, run_cli, tmp_path: Path):
+    def test_path_not_exists(self, run_cli: _RunCli, tmp_path: Path) -> None:
         path = tmp_path / "some" / "not-exists"
         json_path = path / "config.json"
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert json_path.is_file()
 
-    def test_path_is_not_dir(self, run_cli, tmp_path: Path):
+    def test_path_is_not_dir(self, run_cli: _RunCli, tmp_path: Path) -> None:
         path = tmp_path / "file"
         with path.open("w") as file:
             file.write("text")
@@ -58,7 +65,9 @@ class TestCli:
         assert captured.code
         assert captured.err
 
-    def test_path_from_env(self, run_cli, tmp_path, monkeypatch, config):
+    def test_path_from_env(
+        self, run_cli: _RunCli, tmp_path: Path, monkeypatch: Any, config: _Config
+    ) -> None:
         json_path = tmp_path / "config.json"
         with json_path.open("w") as file:
             file.write("{}")
@@ -71,7 +80,7 @@ class TestCli:
         registry = URL(config.registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
 
-    def test_new_file(self, run_cli, tmp_path: Path, config):
+    def test_new_file(self, run_cli: _RunCli, tmp_path: Path, config: _Config) -> None:
         path = tmp_path / ".docker"
         json_path = path / "config.json"
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
@@ -82,7 +91,9 @@ class TestCli:
         registry = URL(config.registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
 
-    def test_merge_file_without_helpers(self, run_cli, tmp_path: Path, config):
+    def test_merge_file_without_helpers(
+        self, run_cli: _RunCli, tmp_path: Path, config: _Config
+    ) -> None:
         path = tmp_path / ".docker"
         path.mkdir()
         json_path = path / "config.json"
@@ -97,7 +108,9 @@ class TestCli:
         assert payload["credHelpers"] == {registry: "neuro"}
         assert payload["test"] == "value"
 
-    def test_merge_file_with_existing_helpers(self, run_cli, tmp_path: Path, config):
+    def test_merge_file_with_existing_helpers(
+        self, run_cli: _RunCli, tmp_path: Path, config: _Config
+    ) -> None:
         path = tmp_path / ".docker"
         path.mkdir()
         json_path = path / "config.json"
@@ -114,24 +127,27 @@ class TestCli:
 
 
 class TestHelper:
-    def test_no_params_use(self, run_dch):
+    def test_no_params_use(self, run_dch: _RunDch) -> None:
         capture = run_dch([])
         assert capture.code != EX_OK
 
-    def test_too_mach_params(self, run_dch):
+    def test_too_mach_params(self, run_dch: _RunDch) -> None:
         capture = run_dch(["one", "two"])
         assert capture.code != EX_OK
 
-    def test_unknown_operation(self, run_dch):
+    def test_unknown_operation(self, run_dch: _RunDch) -> None:
         capture = run_dch(["ping"])
         assert capture.code != EX_OK
 
-    def test_store_operation(self, run_dch):
+    def test_store_operation(self, run_dch: _RunDch) -> None:
         capture = run_dch(["store"])
         assert capture.code != EX_OK
 
-    def test_get_operation(self, run_dch, monkeypatch, config, token):
+    def test_get_operation(
+        self, run_dch: _RunDch, monkeypatch: Any, config: _Config, token: str
+    ) -> None:
         registry = config.registry_url.host
+        assert registry is not None
         monkeypatch.setattr("sys.stdin", io.StringIO(registry))
         capture = run_dch(["get"])
         assert capture.code == EX_OK

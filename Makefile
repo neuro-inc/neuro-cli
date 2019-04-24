@@ -9,8 +9,8 @@ ISORT_DIRS := neuromation tests build-tools setup.py
 ISORT_REGEXP := ^((neuromation|tests|build-tools)/.+|setup)\\.py$
 BLACK_DIRS := $(ISORT_DIRS)
 BLACK_REGEXP := $(ISORT_REGEXP)
-MYPY_DIRS :=  neuromation
-MYPY_REGEXP := ^neuromation/.+\\.py$
+MYPY_DIRS :=  neuromation tests
+MYPY_REGEXP := ^(neuromation|tests)/.+\\.py$
 FLAKE8_DIRS := $(ISORT_DIRS)
 FLAKE8_REGEXP := $(ISORT_REGEXP)
 
@@ -177,8 +177,8 @@ coverage:
 	pip install codecov
 	codecov -f coverage.xml -X gcov
 
-.PHONY: format
-format:
+.PHONY: format fmt
+format fmt:
 	isort -rc $(ISORT_DIRS)
 	black $(BLACK_DIRS)
 	# generate docs as the last stage to allow reformat code first

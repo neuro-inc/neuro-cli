@@ -1,9 +1,10 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import pytest
 from aiohttp import web
 
 from neuromation.api import (
+    Client,
     Image,
     JobDescription,
     JobStatus,
@@ -15,8 +16,11 @@ from neuromation.api import (
 )
 
 
-async def test_jobs_monitor(aiohttp_server, make_client):
-    async def log_stream(request):
+_MakeClient = Callable[..., Client]
+
+
+async def test_jobs_monitor(aiohttp_server: Any, make_client: _MakeClient) -> None:
+    async def log_stream(request: web.Request) -> web.StreamResponse:
         assert request.headers["Accept-Encoding"] == "identity"
         resp = web.StreamResponse()
         resp.enable_chunked_encoding()
@@ -52,8 +56,10 @@ async def test_jobs_monitor(aiohttp_server, make_client):
     )
 
 
-async def test_monitor_notexistent_job(aiohttp_server, make_client):
-    async def handler(request):
+async def test_monitor_notexistent_job(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
         raise web.HTTPNotFound()
 
     app = web.Application()
@@ -69,8 +75,8 @@ async def test_monitor_notexistent_job(aiohttp_server, make_client):
     assert lst == []
 
 
-async def test_job_top(aiohttp_server, make_client):
-    def get_data_chunk(index):
+async def test_job_top(aiohttp_server: Any, make_client: _MakeClient) -> None:
+    def get_data_chunk(index: int) -> Dict[str, Any]:
         return {
             "cpu": 0.5,
             "memory": 50,
@@ -79,12 +85,12 @@ async def test_job_top(aiohttp_server, make_client):
             "gpu_memory": 55.6,
         }
 
-    def get_job_telemetry(index):
+    def get_job_telemetry(index: int) -> JobTelemetry:
         return JobTelemetry(
             cpu=0.5, memory=50, timestamp=index, gpu_duty_cycle=50, gpu_memory=55.6
         )
 
-    async def top_stream(request):
+    async def top_stream(request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
@@ -107,8 +113,8 @@ async def test_job_top(aiohttp_server, make_client):
     assert lst == [get_job_telemetry(i) for i in range(10)]
 
 
-async def test_top_finished_job(aiohttp_server, make_client):
-    async def handler(request):
+async def test_top_finished_job(aiohttp_server: Any, make_client: _MakeClient) -> None:
+    async def handler(request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
@@ -128,8 +134,10 @@ async def test_top_finished_job(aiohttp_server, make_client):
     assert lst == []
 
 
-async def test_top_nonexisting_job(aiohttp_server, make_client):
-    async def handler(request):
+async def test_top_nonexisting_job(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
         raise web.HTTPBadRequest()
 
     app = web.Application()
@@ -145,8 +153,10 @@ async def test_top_nonexisting_job(aiohttp_server, make_client):
     assert lst == []
 
 
-async def test_kill_not_found_error(aiohttp_server, make_client):
-    async def handler(request):
+async def test_kill_not_found_error(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
         raise web.HTTPNotFound()
 
     app = web.Application()
@@ -159,8 +169,8 @@ async def test_kill_not_found_error(aiohttp_server, make_client):
             await client.jobs.kill("job-id")
 
 
-async def test_kill_ok(aiohttp_server, make_client):
-    async def handler(request):
+async def test_kill_ok(aiohttp_server: Any, make_client: _MakeClient) -> None:
+    async def handler(request: web.Request) -> web.Response:
         raise web.HTTPNoContent()
 
     app = web.Application()
@@ -174,7 +184,7 @@ async def test_kill_ok(aiohttp_server, make_client):
     assert ret is None
 
 
-async def test_status_failed(aiohttp_server, make_client):
+async def test_status_failed(aiohttp_server: Any, make_client: _MakeClient) -> None:
     JSON = {
         "status": "failed",
         "id": "job-id",
@@ -217,7 +227,7 @@ async def test_status_failed(aiohttp_server, make_client):
         },
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         return web.json_response(JSON)
 
     app = web.Application()
@@ -231,7 +241,9 @@ async def test_status_failed(aiohttp_server, make_client):
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_status_with_ssh_and_http(aiohttp_server, make_client):
+async def test_status_with_ssh_and_http(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
     JSON = {
         "status": "running",
         "id": "job-id",
@@ -274,7 +286,7 @@ async def test_status_with_ssh_and_http(aiohttp_server, make_client):
         },
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         return web.json_response(JSON)
 
     app = web.Application()
@@ -288,7 +300,7 @@ async def test_status_with_ssh_and_http(aiohttp_server, make_client):
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit(aiohttp_server, make_client):
+async def test_job_submit(aiohttp_server: Any, make_client: _MakeClient) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "status": "failed",
@@ -318,7 +330,7 @@ async def test_job_submit(aiohttp_server, make_client):
         "is_preemptible": False,
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data == {
             "container": {
@@ -378,7 +390,9 @@ async def test_job_submit(aiohttp_server, make_client):
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit_with_name_and_description(aiohttp_server, make_client):
+async def test_job_submit_with_name_and_description(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "name": "test-job-name",
@@ -410,7 +424,7 @@ async def test_job_submit_with_name_and_description(aiohttp_server, make_client)
         "is_preemptible": False,
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data == {
             "container": {
@@ -473,7 +487,9 @@ async def test_job_submit_with_name_and_description(aiohttp_server, make_client)
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit_no_volumes(aiohttp_server, make_client):
+async def test_job_submit_no_volumes(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "name": "test-job-name",
@@ -504,7 +520,7 @@ async def test_job_submit_no_volumes(aiohttp_server, make_client):
         "is_preemptible": False,
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data == {
             "container": {
@@ -548,7 +564,9 @@ async def test_job_submit_no_volumes(aiohttp_server, make_client):
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit_preemptible(aiohttp_server, make_client):
+async def test_job_submit_preemptible(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "name": "test-job-name",
@@ -579,7 +597,7 @@ async def test_job_submit_preemptible(aiohttp_server, make_client):
         "ssh_auth_server": "ssh://my_host.ssh:22",
     }
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data == {
             "container": {
@@ -644,10 +662,9 @@ async def test_job_submit_preemptible(aiohttp_server, make_client):
 
 
 @pytest.mark.parametrize(
-    "volume",
-    [("storage:///"), (":"), ("::::"), (""), ("storage:///data/:/data/rest:wrong")],
+    "volume", ["storage:///", ":", "::::", "", "storage:///data/:/data/rest:wrong"]
 )
-def test_volume_from_str_fail(volume):
+def test_volume_from_str_fail(volume: str) -> None:
     with pytest.raises(ValueError):
         Volume.from_cli("testuser", volume)
 
@@ -685,7 +702,7 @@ def create_job_response(
     return result
 
 
-async def test_list_no_filter(aiohttp_server, make_client):
+async def test_list_no_filter(aiohttp_server: Any, make_client: _MakeClient) -> None:
     jobs = [
         create_job_response("job-id-1", "pending", name="job-name-1"),
         create_job_response("job-id-2", "running", name="job-name-1"),
@@ -694,7 +711,7 @@ async def test_list_no_filter(aiohttp_server, make_client):
     ]
     JSON = {"jobs": jobs}
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         return web.json_response(JSON)
 
     app = web.Application()
@@ -708,7 +725,9 @@ async def test_list_no_filter(aiohttp_server, make_client):
     assert ret == job_descriptions
 
 
-async def test_list_filter_by_name(aiohttp_server, make_client):
+async def test_list_filter_by_name(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
     name_1 = "job-name-1"
     name_2 = "job-name-2"
     jobs = [
@@ -724,7 +743,7 @@ async def test_list_filter_by_name(aiohttp_server, make_client):
         create_job_response("job-id-10", "failed"),
     ]
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         name = request.query.get("name")
         assert name
         filtered_jobs = [job for job in jobs if job.get("name") == name]
@@ -742,7 +761,9 @@ async def test_list_filter_by_name(aiohttp_server, make_client):
     assert ret == job_descriptions[:3]
 
 
-async def test_list_filter_by_statuses(aiohttp_server, make_client):
+async def test_list_filter_by_statuses(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
     name_1 = "job-name-1"
     name_2 = "job-name-2"
     jobs = [
@@ -758,7 +779,7 @@ async def test_list_filter_by_statuses(aiohttp_server, make_client):
         create_job_response("job-id-10", "failed"),
     ]
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         statuses = request.query.getall("status")
         assert statuses
         filtered_jobs = [job for job in jobs if job["status"] in statuses]
@@ -781,14 +802,14 @@ class TestVolumeParsing:
     @pytest.mark.parametrize(
         "volume_param", ["dir", "storage://dir", "storage://dir:/var/www:rw:ro"]
     )
-    def test_incorrect_params_count(self, volume_param):
+    def test_incorrect_params_count(self, volume_param: str) -> None:
         with pytest.raises(ValueError, match=r"Invalid volume specification"):
             Volume.from_cli("bob", volume_param)
 
     @pytest.mark.parametrize(
         "volume_param", ["storage://dir:/var/www:write", "storage://dir:/var/www:"]
     )
-    def test_incorrect_mode(self, volume_param):
+    def test_incorrect_mode(self, volume_param: str) -> None:
         with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
             Volume.from_cli("bob", volume_param)
 
@@ -845,11 +866,13 @@ class TestVolumeParsing:
             ),
         ],
     )
-    def test_positive(self, volume_param, volume):
+    def test_positive(self, volume_param: str, volume: Volume) -> None:
         assert Volume.from_cli("bob", volume_param) == volume
 
 
-async def test_list_filter_by_name_and_statuses(aiohttp_server, make_client):
+async def test_list_filter_by_name_and_statuses(
+    aiohttp_server: Any, make_client: _MakeClient
+) -> None:
     name_1 = "job-name-1"
     name_2 = "job-name-2"
     jobs = [
@@ -865,7 +888,7 @@ async def test_list_filter_by_name_and_statuses(aiohttp_server, make_client):
         create_job_response("job-id-10", "failed"),
     ]
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         statuses = request.query.getall("status")
         assert statuses
         name = request.query.get("name")

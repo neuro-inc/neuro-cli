@@ -3,8 +3,8 @@ import pytest
 from neuromation.strings import parse_memory
 
 
-def test_parse_memory():
-    for value in ["1234", "   ", None, "", "-124", "M", "K", "k", "123B"]:
+def test_parse_memory() -> None:
+    for value in ["1234", "   ", "", "-124", "M", "K", "k", "123B"]:
         with pytest.raises(ValueError, match=f"Unable parse value: {value}"):
             parse_memory(value)
 
