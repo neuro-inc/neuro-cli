@@ -109,7 +109,7 @@ async def test_storage_ls(aiohttp_server: Any, make_client: _MakeClient) -> None
                 {
                     "path": "bar",
                     "length": 4 * 1024,
-                    "type": "DIR",
+                    "type": "DIRECTORY",
                     "modificationTime": 0,
                     "permission": "read",
                 },
