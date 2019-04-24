@@ -9,6 +9,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.api import Client, FileStatus, FileStatusType
+from tests import _RawTestServerFactory, _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
@@ -39,7 +40,9 @@ def storage_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-async def storage_server(aiohttp_raw_server: Any, storage_path: Path) -> Any:
+async def storage_server(
+    aiohttp_raw_server: _RawTestServerFactory, storage_path: Path
+) -> Any:
     PREFIX = "/storage/user"
     PREFIX_LEN = len(PREFIX)
 
@@ -95,7 +98,9 @@ async def storage_server(aiohttp_raw_server: Any, storage_path: Path) -> Any:
     return await aiohttp_raw_server(handler)
 
 
-async def test_storage_ls(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_storage_ls(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     JSON = {
         "FileStatuses": {
             "FileStatus": [
@@ -148,7 +153,9 @@ async def test_storage_ls(aiohttp_server: Any, make_client: _MakeClient) -> None
     ]
 
 
-async def test_storage_rm(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_storage_rm(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "DELETE"}
@@ -163,7 +170,9 @@ async def test_storage_rm(aiohttp_server: Any, make_client: _MakeClient) -> None
         await client.storage.rm(URL("storage://~/folder"))
 
 
-async def test_storage_mv(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_storage_mv(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "RENAME", "destination": "/user/other"}
@@ -178,7 +187,9 @@ async def test_storage_mv(aiohttp_server: Any, make_client: _MakeClient) -> None
         await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
 
 
-async def test_storage_mkdir(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_storage_mkdir(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "MKDIRS"}
@@ -193,7 +204,9 @@ async def test_storage_mkdir(aiohttp_server: Any, make_client: _MakeClient) -> N
         await client.storage.mkdirs(URL("storage://~/folder"))
 
 
-async def test_storage_create(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_storage_create(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/file"
         assert request.query == {"op": "CREATE"}
@@ -214,7 +227,9 @@ async def test_storage_create(aiohttp_server: Any, make_client: _MakeClient) -> 
         await client.storage.create(URL("storage://~/file"), gen())
 
 
-async def test_storage_stats(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_storage_stats(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "GETFILESTATUS"}
@@ -246,7 +261,9 @@ async def test_storage_stats(aiohttp_server: Any, make_client: _MakeClient) -> N
         )
 
 
-async def test_storage_open(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_storage_open(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
         assert request.path == "/storage/user/file"
         if request.query["op"] == "OPEN":
@@ -283,7 +300,7 @@ async def test_storage_open(aiohttp_server: Any, make_client: _MakeClient) -> No
 
 
 async def test_storage_open_directory(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/folder"

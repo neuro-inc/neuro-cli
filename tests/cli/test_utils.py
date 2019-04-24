@@ -13,13 +13,14 @@ from neuromation.cli.utils import (
     parse_resource_for_sharing,
     resolve_job,
 )
+from tests import _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
 
 
 async def test_resolve_job_id__no_jobs_found(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON: Dict[str, Any] = {"jobs": []}
     job_id = "job-81839be3-3ecf-4ec5-80d9-19b1588869db"
@@ -40,7 +41,7 @@ async def test_resolve_job_id__no_jobs_found(
 
 
 async def test_resolve_job_id__single_job_found(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     job_name_to_resolve = "test-job-name-555"
     JSON = {
@@ -87,7 +88,7 @@ async def test_resolve_job_id__single_job_found(
 
 
 async def test_resolve_job_id__multiple_jobs_found(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     job_name_to_resolve = "job-name-123-000"
     JSON = {
@@ -159,7 +160,7 @@ async def test_resolve_job_id__multiple_jobs_found(
 
 
 async def test_resolve_job_id__server_error(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     job_id = "job-81839be3-3ecf-4ec5-80d9-19b1588869db"
     job_name_to_resolve = job_id

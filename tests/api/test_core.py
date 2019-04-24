@@ -1,6 +1,6 @@
 import ssl
 import sys
-from typing import Any, AsyncIterator
+from typing import AsyncContextManager, AsyncIterator, Callable
 
 import aiohttp
 import certifi
@@ -9,6 +9,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.api.core import DEFAULT_TIMEOUT, IllegalArgumentError, _Core
+from tests import _TestServerFactory
 
 
 if sys.version_info >= (3, 7):
@@ -17,8 +18,11 @@ else:
     from async_generator import asynccontextmanager
 
 
+_ApiFactory = Callable[[URL], AsyncContextManager[_Core]]
+
+
 @pytest.fixture
-async def api_factory() -> Any:
+async def api_factory() -> AsyncIterator[_ApiFactory]:
     @asynccontextmanager
     async def factory(url: URL) -> AsyncIterator[_Core]:
         ssl_context = ssl.SSLContext()
@@ -33,7 +37,7 @@ async def api_factory() -> Any:
 
 
 async def test_raise_for_status_no_error_message(
-    aiohttp_server: Any, api_factory: Any
+    aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
         raise web.HTTPBadRequest()
@@ -49,7 +53,7 @@ async def test_raise_for_status_no_error_message(
 
 
 async def test_raise_for_status_contains_error_message(
-    aiohttp_server: Any, api_factory: Any
+    aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
 ) -> None:
     ERROR_MSG = '{"error": "this is the error message"}'
 
