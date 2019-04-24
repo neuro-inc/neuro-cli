@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict
 
-from aiohttp.web import HTTPCreated
+from aiohttp.web import HTTPCreated, HTTPNoContent
 from jose import JWTError, jwt
 from yarl import URL
 
@@ -26,19 +26,7 @@ class Permission:
 
     @classmethod
     def from_cli(cls, username: str, uri: URL, action: Action) -> "Permission":
-        if not uri.scheme:
-            raise ValueError(
-                "URI Scheme not specified. "
-                "Please specify one of storage, image, job."
-            )
-        if uri.scheme not in ["storage", "image", "job"]:
-            raise ValueError(
-                f"Unsupported URI scheme: {uri.scheme or 'Empty'}. "
-                "Please specify one of storage, image, job."
-            )
-        if not uri.host:
-            uri = URL(f"{uri.scheme}://{username}/") / uri.path.lstrip("/")
-        return Permission(uri=uri, action=action)
+        return Permission(uri=uri_from_cli(username, uri), action=action)
 
     def to_api(self) -> Dict[str, Any]:
         primitive: Dict[str, Any] = {"uri": str(self.uri), "action": self.action.value}
@@ -59,6 +47,17 @@ class _Users:
                 raise ClientError("Server return unexpected result.")  # NOQA
         return None
 
+    async def revoke(self, user: str, uri: URL) -> None:
+        url = URL(f"users/{user}/permissions")
+        async with self._core.request("DELETE", url, params={"uri": str(uri)}) as resp:
+            #  TODO: server part contain TODO record for returning more then
+            #  HTTPNoContent, this part must me refactored then
+            if resp.status != HTTPNoContent.status_code:
+                raise ClientError(
+                    f"Server return unexpected result: {resp.status}."
+                )  # NOQA
+        return None
+
 
 def get_token_username(token: str) -> str:
     try:
@@ -69,3 +68,18 @@ def get_token_username(token: str) -> str:
         if identity_claim in claims:
             return claims[identity_claim]
     raise ValueError("JWT Claims structure is not correct.")
+
+
+def uri_from_cli(username: str, uri: URL) -> URL:
+    if not uri.scheme:
+        raise ValueError(
+            "URI Scheme not specified. " "Please specify one of storage, image, job."
+        )
+    if uri.scheme not in ["storage", "image", "job"]:
+        raise ValueError(
+            f"Unsupported URI scheme: {uri.scheme or 'Empty'}. "
+            f"Please specify one of storage, image, job."
+        )
+    if not uri.host:
+        uri = URL(f"{uri.scheme}://{username}/") / uri.path.lstrip("/")
+    return uri

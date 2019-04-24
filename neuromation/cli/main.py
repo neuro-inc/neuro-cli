@@ -237,6 +237,7 @@ cli.add_command(alias(image.ls, "images", help=image.ls.help, deprecated=False))
 cli.add_command(image.push)
 cli.add_command(image.pull)
 cli.add_command(share.share)
+cli.add_command(share.revoke)
 
 
 def main(args: Optional[List[str]] = None) -> None:

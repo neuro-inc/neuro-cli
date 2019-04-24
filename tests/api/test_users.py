@@ -22,6 +22,20 @@ async def mocked_share_client(aiohttp_server, make_client):
     await client.close()
 
 
+@pytest.fixture()
+async def mocked_revoke_client(aiohttp_server, make_client):
+    async def handler(request):
+        assert "uri" in request.query
+        raise web.HTTPNoContent()
+
+    app = web.Application()
+    app.router.add_delete("/users/bill/permissions", handler)
+    srv = await aiohttp_server(app)
+    client = make_client(srv.make_url("/"))
+    yield client
+    await client.close()
+
+
 class TestUsersShare:
     def test_permissions_from_cli(self):
         with pytest.raises(ValueError, match=r"URI Scheme not specified"):
@@ -62,5 +76,17 @@ class TestUsersShare:
         ret = await mocked_share_client.users.share(
             user="bill",
             permission=Permission(URL("storage://bob/resource"), Action.READ),
+        )
+        assert ret is None  # at this moment no result
+
+    async def test_revoke_unknown_user(self, mocked_revoke_client):
+        with pytest.raises(ResourceNotFound):
+            await mocked_revoke_client.users.revoke(
+                user="not-exists", uri=URL("storage://bob/resource")
+            )
+
+    async def test_correct_revoke(self, mocked_revoke_client):
+        ret = await mocked_revoke_client.users.revoke(
+            user="bill", uri=URL("storage://bob/resource")
         )
         assert ret is None  # at this moment no result
