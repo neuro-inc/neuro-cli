@@ -3,6 +3,7 @@ import logging
 import click
 
 from neuromation.api import Permission
+from neuromation.api.users import uri_from_cli
 
 from .root import Root
 from .utils import (
@@ -59,6 +60,7 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     """
     try:
         uri_obj = parse_resource_for_sharing(uri, root)
+        uri_obj = uri_from_cli(username=root.username, uri=uri_obj)
         log.info(f"Using resource '{uri_obj}'")
 
         await root.client.users.revoke(user, uri_obj)

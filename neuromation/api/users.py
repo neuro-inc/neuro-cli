@@ -26,19 +26,7 @@ class Permission:
 
     @classmethod
     def from_cli(cls, username: str, uri: URL, action: Action) -> "Permission":
-        if not uri.scheme:
-            raise ValueError(
-                "URI Scheme not specified. "
-                "Please specify one of storage, image, job."
-            )
-        if uri.scheme not in ["storage", "image", "job"]:
-            raise ValueError(
-                f"Unsupported URI scheme: {uri.scheme or 'Empty'}. "
-                "Please specify one of storage, image, job."
-            )
-        if not uri.host:
-            uri = URL(f"{uri.scheme}://{username}/") / uri.path.lstrip("/")
-        return Permission(uri=uri, action=action)
+        return Permission(uri=uri_from_cli(username, uri), action=action)
 
     def to_api(self) -> Dict[str, Any]:
         primitive: Dict[str, Any] = {"uri": str(self.uri), "action": self.action.value}
@@ -80,3 +68,18 @@ def get_token_username(token: str) -> str:
         if identity_claim in claims:
             return claims[identity_claim]
     raise ValueError("JWT Claims structure is not correct.")
+
+
+def uri_from_cli(username: str, uri: URL) -> URL:
+    if not uri.scheme:
+        raise ValueError(
+            "URI Scheme not specified. " "Please specify one of storage, image, job."
+        )
+    if uri.scheme not in ["storage", "image", "job"]:
+        raise ValueError(
+            f"Unsupported URI scheme: {uri.scheme or 'Empty'}. "
+            f"Please specify one of storage, image, job."
+        )
+    if not uri.host:
+        uri = URL(f"{uri.scheme}://{username}/") / uri.path.lstrip("/")
+    return uri
