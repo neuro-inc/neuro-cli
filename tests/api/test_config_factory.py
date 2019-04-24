@@ -12,6 +12,7 @@ from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
 from neuromation.api.jobs import Jobs
 from neuromation.api.login import AuthNegotiator
+from tests import _TestServerFactory
 
 
 @pytest.fixture
@@ -35,7 +36,7 @@ def config_file(tmp_home: Path, auth_config: _AuthConfig) -> Path:
 
 
 @pytest.fixture
-async def mock_for_login(monkeypatch: Any, aiohttp_server: Any) -> URL:
+async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -> URL:
     async def _refresh_token_mock(
         self: Any, token: Optional[_AuthToken] = None
     ) -> _AuthToken:

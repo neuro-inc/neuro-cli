@@ -1,10 +1,11 @@
-from typing import Any, AsyncIterator, Callable
+from typing import AsyncIterator, Callable
 
 import pytest
 from aiohttp import web
 from yarl import URL
 
 from neuromation.api import Action, Client, Permission, ResourceNotFound
+from tests import _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
@@ -12,7 +13,7 @@ _MakeClient = Callable[..., Client]
 
 @pytest.fixture()
 async def mocked_share_client(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> AsyncIterator[Client]:
     async def handler(request: web.Request) -> web.Response:
         data = await request.json()
@@ -29,7 +30,7 @@ async def mocked_share_client(
 
 @pytest.fixture()
 async def mocked_revoke_client(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> AsyncIterator[Client]:
     async def handler(request: web.Request) -> web.Response:
         assert "uri" in request.query

@@ -14,12 +14,15 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from tests import _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
 
 
-async def test_jobs_monitor(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_jobs_monitor(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
         assert request.headers["Accept-Encoding"] == "identity"
         resp = web.StreamResponse()
@@ -75,7 +78,9 @@ async def test_monitor_notexistent_job(
     assert lst == []
 
 
-async def test_job_top(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_job_top(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     def get_data_chunk(index: int) -> Dict[str, Any]:
         return {
             "cpu": 0.5,
@@ -113,7 +118,9 @@ async def test_job_top(aiohttp_server: Any, make_client: _MakeClient) -> None:
     assert lst == [get_job_telemetry(i) for i in range(10)]
 
 
-async def test_top_finished_job(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_top_finished_job(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
         await ws.prepare(request)
@@ -135,7 +142,7 @@ async def test_top_finished_job(aiohttp_server: Any, make_client: _MakeClient) -
 
 
 async def test_top_nonexisting_job(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
         raise web.HTTPBadRequest()
@@ -154,7 +161,7 @@ async def test_top_nonexisting_job(
 
 
 async def test_kill_not_found_error(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
         raise web.HTTPNotFound()
@@ -169,7 +176,9 @@ async def test_kill_not_found_error(
             await client.jobs.kill("job-id")
 
 
-async def test_kill_ok(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_kill_ok(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     async def handler(request: web.Request) -> web.Response:
         raise web.HTTPNoContent()
 
@@ -184,7 +193,9 @@ async def test_kill_ok(aiohttp_server: Any, make_client: _MakeClient) -> None:
     assert ret is None
 
 
-async def test_status_failed(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_status_failed(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     JSON = {
         "status": "failed",
         "id": "job-id",
@@ -242,7 +253,7 @@ async def test_status_failed(aiohttp_server: Any, make_client: _MakeClient) -> N
 
 
 async def test_status_with_ssh_and_http(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
         "status": "running",
@@ -300,7 +311,9 @@ async def test_status_with_ssh_and_http(
     assert ret == JobDescription.from_api(JSON)
 
 
-async def test_job_submit(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_job_submit(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "status": "failed",
@@ -391,7 +404,7 @@ async def test_job_submit(aiohttp_server: Any, make_client: _MakeClient) -> None
 
 
 async def test_job_submit_with_name_and_description(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
@@ -488,7 +501,7 @@ async def test_job_submit_with_name_and_description(
 
 
 async def test_job_submit_no_volumes(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
@@ -565,7 +578,7 @@ async def test_job_submit_no_volumes(
 
 
 async def test_job_submit_preemptible(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
         "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
@@ -702,7 +715,9 @@ def create_job_response(
     return result
 
 
-async def test_list_no_filter(aiohttp_server: Any, make_client: _MakeClient) -> None:
+async def test_list_no_filter(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     jobs = [
         create_job_response("job-id-1", "pending", name="job-name-1"),
         create_job_response("job-id-2", "running", name="job-name-1"),
@@ -726,7 +741,7 @@ async def test_list_no_filter(aiohttp_server: Any, make_client: _MakeClient) -> 
 
 
 async def test_list_filter_by_name(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     name_1 = "job-name-1"
     name_2 = "job-name-2"
@@ -762,7 +777,7 @@ async def test_list_filter_by_name(
 
 
 async def test_list_filter_by_statuses(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     name_1 = "job-name-1"
     name_2 = "job-name-2"
@@ -871,7 +886,7 @@ class TestVolumeParsing:
 
 
 async def test_list_filter_by_name_and_statuses(
-    aiohttp_server: Any, make_client: _MakeClient
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     name_1 = "job-name-1"
     name_2 = "job-name-2"

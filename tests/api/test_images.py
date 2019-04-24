@@ -21,6 +21,7 @@ from neuromation.api.images import (
     DockerImage,
 )
 from neuromation.cli.formatters import DockerImageProgress
+from tests import _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
@@ -717,7 +718,9 @@ class TestRegistry:
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doens't support Windows pipes yet"
     )
-    async def test_ls(self, aiohttp_server: Any, make_client: _MakeClient) -> None:
+    async def test_ls(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
         JSON = {"repositories": ["image://bob/alpine", "image://jill/bananas"]}
 
         async def handler(request: web.Request) -> web.Response:
