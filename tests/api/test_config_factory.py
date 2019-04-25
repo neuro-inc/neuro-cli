@@ -50,6 +50,9 @@ async def mock_for_login(monkeypatch, aiohttp_server):
         return web.json_response(
             {
                 "registry_url": "https://registry-dev.test.com",
+                "storage_url": "https://storage.dev.neuromation.io",
+                "users_url": "https://users.dev.neuromation.io",
+                "monitoring_url": "https://jobs.dev.neuromation.io",
                 "auth_url": "https://test-neuromation.auth0.com/authorize",
                 "token_url": "https://test-neuromation.auth0.com/oauth/token",
                 "client_id": "banana",

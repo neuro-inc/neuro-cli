@@ -60,6 +60,9 @@ async def test_get_server_config(aiohttp_server):
 
 async def test_get_server_config_no_server_urls(aiohttp_server):
     registry_url = "https://registry.dev.neuromation.io"
+    storage_url = "https://storage.dev.neuromation.io"
+    users_url = "https://users.dev.neuromation.io"
+    monitoring_url = "https://jobs.dev.neuromation.io"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
@@ -67,6 +70,9 @@ async def test_get_server_config_no_server_urls(aiohttp_server):
     success_redirect_url = "https://platform.neuromation.io"
     JSON = {
         "registry_url": registry_url,
+        "storage_url": storage_url,
+        "users_url": users_url,
+        "monitoring_url": monitoring_url,
         "auth_url": auth_url,
         "token_url": token_url,
         "client_id": client_id,
@@ -84,6 +90,9 @@ async def test_get_server_config_no_server_urls(aiohttp_server):
     config = await get_server_config(srv.make_url("/"))
     assert config == _ServerConfig(
         registry_url=URL(registry_url),
+        storage_url=URL(storage_url),
+        users_url=URL(users_url),
+        monitoring_url=URL(monitoring_url),
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
             token_url=URL(token_url),
