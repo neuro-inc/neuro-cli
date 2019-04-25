@@ -1,7 +1,6 @@
 import re
 import sys
 from pathlib import Path
-from typing import Dict, Optional
 
 from yarl import URL
 
@@ -52,9 +51,3 @@ def _extract_path(uri: URL) -> Path:
         if re.match(r"^[/\\][A-Za-z]:[/\\]", str(path)):
             return Path(str(path)[1:])
     return path
-
-
-def try_get_url_from_dict(primitive: Dict[str, str], key: str) -> Optional[URL]:
-    if key in primitive:
-        return URL(primitive[key])
-    return None

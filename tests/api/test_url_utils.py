@@ -8,7 +8,6 @@ from neuromation.api.url_utils import (
     _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,
-    try_get_url_from_dict,
 )
 
 
@@ -229,13 +228,3 @@ async def test_normalize_local_path_uri__3_slashes__double(token, pwd):
 def test_normalized_path():
     p = URL("file:///Z:/neuromation/platform-api-clients/python/setup.py")
     assert normalize_local_path_uri(p) == p
-
-
-def test_try_get_url_from_dict_has_key():
-    primitive = {"key": "http://something"}
-    assert try_get_url_from_dict(primitive, "key") == URL("http://something")
-
-
-def test_try_get_url_from_dict_does_not_have_key():
-    primitive = {"key": "http://something"}
-    assert try_get_url_from_dict(primitive, "key") == URL("http://something")

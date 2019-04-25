@@ -24,8 +24,6 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api.url_utils import try_get_url_from_dict
-
 from .core import DEFAULT_TIMEOUT
 from .users import get_token_username
 from .utils import asynccontextmanager
@@ -396,9 +394,9 @@ class AuthNegotiator:
 class _ServerConfig:
     auth_config: _AuthConfig
     registry_url: URL
-    storage_url: Optional[URL] = None
-    users_url: Optional[URL] = None
-    monitoring_url: Optional[URL] = None
+    storage_url: URL
+    users_url: URL
+    monitoring_url: URL
 
 
 class ConfigLoadException(Exception):
@@ -434,9 +432,9 @@ async def get_server_config(url: URL) -> _ServerConfig:
                 callback_urls=callback_urls,
             )
             registry_url = URL(payload["registry_url"])
-            storage_url = try_get_url_from_dict(payload, "storage_url")
-            users_url = try_get_url_from_dict(payload, "users_url")
-            monitoring_url = try_get_url_from_dict(payload, "monitoring_url")
+            storage_url = URL(payload["storage_url"])
+            users_url = URL(payload["users_url"])
+            monitoring_url = URL(payload["monitoring_url"])
             return _ServerConfig(
                 auth_config=auth_config,
                 registry_url=registry_url,
