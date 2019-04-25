@@ -24,6 +24,20 @@ MAX_PORT = 65535
 
 @pytest.mark.e2e
 def test_job_lifecycle(helper: Helper) -> None:
+
+    job_name = f"job-{os.urandom(5).hex()}"
+
+    # Kill another active jobs with same name, if any
+    captured = helper.run_cli(["job", "ls", "--name", job_name, "-q"])
+    if captured.out:
+        jobs_same_name = captured.out.split("\n")
+        assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
+        job_id = jobs_same_name[0]
+        helper.run_cli(["job", "kill", job_name])
+        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+        captured = helper.run_cli(["job", "ls", "--name", job_name, "-q"])
+        assert not captured.out
+
     # Remember original running jobs
     captured = helper.run_cli(
         ["job", "ls", "--status", "running", "--status", "pending"]
@@ -31,8 +45,6 @@ def test_job_lifecycle(helper: Helper) -> None:
     store_out_list = captured.out.split("\n")[1:]
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
-    # Run a new job
-    job_name = f"test-job-name-{uuid4()}"
     command = 'bash -c "sleep 10m; false"'
     captured = helper.run_cli(
         [
