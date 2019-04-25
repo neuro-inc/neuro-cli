@@ -87,16 +87,16 @@ def test_job_lifecycle(helper: Helper) -> None:
 
     # Check that it is in a running job list
     captured = helper.run_cli(["job", "ls", "--status", "running"])
-    captured_out = captured.out
-    assert job_id in captured_out
+    store_out = captured.out
+    assert job_id in store_out
     # Check that the command is in the list
-    assert command in captured_out
+    assert command in store_out
 
     # Check that no command is in the list if quite
     captured = helper.run_cli(["job", "ls", "--status", "running", "-q"])
-    captured_out = captured.out
-    assert job_id in captured_out
-    assert command not in captured_out
+    store_out = captured.out
+    assert job_id in store_out
+    assert command not in store_out
 
     # Kill the job by name
     captured = helper.run_cli(["job", "kill", name])
@@ -108,24 +108,24 @@ def test_job_lifecycle(helper: Helper) -> None:
 
     # Check that it is not in a running job list anymore
     captured = helper.run_cli(["job", "ls", "--status", "running"])
-    captured_out = captured.out
-    assert job_id not in captured_out
+    store_out = captured.out
+    assert job_id not in store_out
 
     # Check job ls by name
     captured = helper.run_cli(["job", "ls", "-n", name, "-s", "succeeded"])
-    captured_out = captured.out
-    assert job_id in captured_out
-    assert name in captured_out
+    store_out = captured.out
+    assert job_id in store_out
+    assert name in store_out
 
     # Check job status by id
     captured = helper.run_cli(["job", "status", job_id])
-    captured_out = captured.out
-    assert captured_out.startswith(f"Job: {job_id}\nName: {name}")
+    store_out = captured.out
+    assert store_out.startswith(f"Job: {job_id}\nName: {name}")
 
     # Check job status by name
     captured = helper.run_cli(["job", "status", name])
-    captured_out = captured.out
-    assert captured_out.startswith(f"Job: {job_id}\nName: {name}")
+    store_out = captured.out
+    assert store_out.startswith(f"Job: {job_id}\nName: {name}")
 
 
 @pytest.mark.e2e
