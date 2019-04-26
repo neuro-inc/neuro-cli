@@ -11,6 +11,6 @@ colorama==0.4.1
 humanize==0.5.1
 # upgrade setup.py after pinning certtifi to new version
 certifi==2019.3.9
-psutil==5.6.1
+psutil==5.6.2
 typing_extensions==3.7.2
 -e .
