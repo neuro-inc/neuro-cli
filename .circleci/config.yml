@@ -25,9 +25,10 @@ build: &build
       - run:
           name: install dependencies
           command: |
-            python3 -m venv .env
+            sudo pip install -U pip
+            python -m venv .env
             . .env/bin/activate
-            pip3 install -r requirements/ci.txt
+            pip install -r requirements/ci.txt
 
       - save_cache:
           paths:
@@ -66,7 +67,8 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python3 -m venv .env
+            sudo pip install -U pip
+            python -m venv .env
             . .env/bin/activate
             make init
 
