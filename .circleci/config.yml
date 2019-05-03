@@ -19,21 +19,20 @@ build: &build
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          - v2-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v2-dependencies-
       - run:
           name: install dependencies
           command: |
-            sudo pip install -U pip
-            python -m venv .env
+            python3 -m venv .env
             . .env/bin/activate
-            pip install -r requirements/ci.txt
+            pip3 install -r requirements/ci.txt
 
       - save_cache:
           paths:
             - ./.env
-          key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          key: v2-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
       - setup_remote_docker
       - run:
           name: run CI target
@@ -60,15 +59,14 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          - v2-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v2-dependencies-
 
       - run:
           name: install dependencies
           command: |
-            sudo pip install -U pip
-            python -m venv .env
+            python3 -m venv .env
             . .env/bin/activate
             make init
 
@@ -81,7 +79,7 @@ jobs:
       - save_cache:
           paths:
             - ./.env
-          key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          key: v2-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
   trigger_e2e:
     <<: *py36
