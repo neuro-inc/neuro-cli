@@ -58,7 +58,7 @@ def test_e2e_job_top(helper: Helper) -> None:
         "do sleep 1; let COUNTER+=1; done; sleep 30"
     )
     command = f"bash -c '{bash_script}'"
-    job_name = f"test-job-{uuid4()}"
+    job_name = f"test-job-{str(uuid4())[:8]}"
     aux_params = ["--volume", f"{helper.tmpstorage}:/data:ro", "--name", job_name]
 
     helper.run_job_and_wait_state(
