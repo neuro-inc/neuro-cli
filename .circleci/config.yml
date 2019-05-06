@@ -7,14 +7,14 @@ py36: &py36
       - image: circleci/python:3.6.1
     working_directory: ~/repo
     environment:
-      PYTHON_VERSION=3.6.1
+      PYTHON_VERSION: 3.6.1
 
 py36: &py37
     docker:
       - image: circleci/python:3.7.2
     working_directory: ~/repo
     environment:
-      PYTHON_VERSION=3.7.2
+      PYTHON_VERSION: 3.7.2
 
 build: &build
     steps:
