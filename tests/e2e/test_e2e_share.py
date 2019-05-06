@@ -14,22 +14,35 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"storage://{helper.username} manage" in result
-    assert f"job://{helper.username} manage" in result
+    assert f"user://{helper.username} read" in result
 
-    captured = helper.run_cli(["acl", "list", "storage"])
+    captured = helper.run_cli(["acl", "list", "--scheme", "storage"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"storage://{helper.username} manage" in result
-    assert f"job://{helper.username} manage" not in result
+    for line in result:
+        assert line.startswith("storage://")
 
     captured = helper.run_cli(["acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"storage://{helper.username} manage public" in result
 
+    captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "storage"])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert f"storage://{helper.username} manage public" not in result
+    for line in result:
+        assert line.startswith("storage://")
+
     captured = helper.run_cli(["acl", "revoke", "storage:shared-read", "public"])
     assert captured.out == ""
     assert expected_err in captured.err
+
+    captured = helper.run_cli(["acl", "list", "--shared"])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert f"storage://{helper.username} manage public" not in result
 
 
 @pytest.mark.e2e

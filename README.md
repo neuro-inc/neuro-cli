@@ -984,7 +984,7 @@ List resource available to a USER or shared by a USER<br/>
 **Usage:**
 
 ```bash
-neuro acl list [OPTIONS] [SCHEME]
+neuro acl list [OPTIONS]
 ```
 
 **Examples:**
@@ -992,9 +992,9 @@ neuro acl list [OPTIONS] [SCHEME]
 ```bash
 
 neuro acl list
-neuro acl list storage
+neuro acl list --scheme storage
 neuro acl list --shared
-neuro acl list --shared image
+neuro acl list --shared --scheme image
 
 ```
 
@@ -1002,6 +1002,7 @@ neuro acl list --shared image
 
 Name | Description|
 |----|------------|
+|_\-s, --scheme TEXT_|Filter resources by scheme|
 |_--shared_|Output the resources shared by the user|
 |_--help_|Show this message and exit.|
 

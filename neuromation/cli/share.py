@@ -79,7 +79,7 @@ async def revoke(root: Root, uri: str, user: str) -> None:
 
 
 @command()
-@click.argument("scheme", required=False, default=None)
+@click.option("-s", "--scheme", default=None, help="Filter resources by scheme")
 @click.option(
     "--shared",
     is_flag=True,
@@ -93,9 +93,9 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
 
         Examples:
         neuro acl list
-        neuro acl list storage
+        neuro acl list --scheme storage
         neuro acl list --shared
-        neuro acl list --shared image
+        neuro acl list --shared --scheme image
     """
     if not shared:
         for uri, action in sorted(await root.client.users.list(root.username, scheme)):
