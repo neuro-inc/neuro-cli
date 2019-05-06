@@ -6,11 +6,15 @@ py36: &py36
     docker:
       - image: circleci/python:3.6.1
     working_directory: ~/repo
+    environment:
+      PYTHON_VERSION:3.6.1
 
 py36: &py37
     docker:
       - image: circleci/python:3.7.2
     working_directory: ~/repo
+    environment:
+      PYTHON_VERSION:3.7.2
 
 build: &build
     steps:
@@ -19,9 +23,7 @@ build: &build
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v2-dependencies-
+          - v2-dependencies-{{ .Environment.PYTHON_VERSION }}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
       - run:
           name: install dependencies
           command: |
@@ -32,7 +34,7 @@ build: &build
       - save_cache:
           paths:
             - ./.env
-          key: v2-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          key: v2-dependencies-{{ .Environment.PYTHON_VERSION }}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
       - setup_remote_docker
       - run:
           name: run CI target
@@ -59,9 +61,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v2-dependencies-
+          - v2-dependencies-{{ .Environment.PYTHON_VERSION }}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
       - run:
           name: install dependencies
