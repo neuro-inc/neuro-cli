@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, Optional, Tuple
 
-from aiohttp.web import HTTPCreated, HTTPNoContent
+from aiohttp.web import HTTPCreated, HTTPNoContent, HTTPOk
 from jose import JWTError, jwt
 from yarl import URL
 
@@ -37,6 +37,38 @@ class Permission:
 class Users(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core) -> None:
         self._core = core
+
+    async def list(
+        self, user: str, scheme: Optional[str] = None
+    ) -> Iterable[Tuple[URL, Action]]:
+        url = URL(f"users/{user}/permissions")
+        params = {"scheme": scheme} if scheme else {}
+        async with self._core.request("GET", url, params=params) as resp:
+            if resp.status != HTTPOk.status_code:
+                raise ClientError("Server return unexpected result.")  # NOQA
+            payload = await resp.json()
+        ret = []
+        for item in payload:
+            uri = URL(item["uri"])
+            action = Action(item["action"])
+            ret.append((uri, action))
+        return ret
+
+    async def list_shared(
+        self, user: str, scheme: Optional[str] = None
+    ) -> Iterable[Tuple[str, URL, Action]]:
+        url = URL(f"users/{user}/permissions/shared")
+        params = {"scheme": scheme} if scheme else {}
+        async with self._core.request("GET", url, params=params) as resp:
+            if resp.status != HTTPOk.status_code:
+                raise ClientError("Server return unexpected result.")  # NOQA
+            payload = await resp.json()
+        ret = []
+        for item in payload:
+            uri = URL(item["uri"])
+            action = Action(item["action"])
+            ret.append((item["user"], uri, action))
+        return ret
 
     async def share(self, user: str, permission: Permission) -> None:
         url = URL(f"users/{user}/permissions")
