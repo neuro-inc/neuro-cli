@@ -23,7 +23,7 @@ build: &build
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-dependencies-{{../.python_version}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          - v2-dependencies-{{checksum "../.python_version"}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
       - run:
           name: install dependencies
           command: |
@@ -34,7 +34,7 @@ build: &build
       - save_cache:
           paths:
             - ./.env
-          key: v2-dependencies-{{../.python_version}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          key: v2-dependencies-{{checksum "../.python_version"}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
       - setup_remote_docker
       - run:
           name: run CI target
@@ -65,7 +65,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-dependencies-{{../.python_version}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          - v2-dependencies-{{checksum "../.python_version"}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
       - run:
           name: install dependencies
@@ -83,7 +83,7 @@ jobs:
       - save_cache:
           paths:
             - ./.env
-          key: v2-dependencies-{{../.python_version}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
+          key: v2-dependencies-{{checksum "../.python_version"}}-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
   trigger_e2e:
     <<: *py36
