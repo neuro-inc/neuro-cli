@@ -117,15 +117,15 @@ async def kill_proc_tree(
     def _kill_proc_tree() -> None:
         try:
             parent = psutil.Process(pid)
-            procs = parent.children(recursive=True)
+            children = parent.children(recursive=True)
             if include_parent:
-                procs.insert(0, parent)
-            for p in procs:
+                children.append(parent)
+            for p in children:
                 try:
                     p.send_signal(sig)
                 except psutil.NoSuchProcess:
                     pass
-            _, alive = psutil.wait_procs(procs, timeout=timeout)
+            _, alive = psutil.wait_procs(children, timeout=timeout)
             if alive:
                 raise RuntimeWarning(f"Possible zombie subprocesses: {alive}")
         except psutil.NoSuchProcess:
