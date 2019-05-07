@@ -16,12 +16,6 @@ build: &build
     steps:
       - checkout
 
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
       - run:
           name: install dependencies
           command: |
@@ -29,10 +23,6 @@ build: &build
             . .env/bin/activate
             pip3 install -r requirements/ci.txt
 
-      - save_cache:
-          paths:
-            - ./.env
-          key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
       - setup_remote_docker
       - run:
           name: run CI target
@@ -56,13 +46,6 @@ jobs:
     steps:
       - checkout
 
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
       - run:
           name: install dependencies
           command: |
@@ -75,11 +58,6 @@ jobs:
           command: |
             . .env/bin/activate
             make publish
-
-      - save_cache:
-          paths:
-            - ./.env
-          key: v1-dependencies-{{ checksum "requirements/ci.txt" }}-{{ checksum "requirements/base.txt" }}
 
   trigger_e2e:
     <<: *py36
