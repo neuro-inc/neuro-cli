@@ -172,7 +172,7 @@ class Factory:
         cluster_config = payload.get("cluster_config")
         if not cluster_config:
             raise ConfigError(MALFORMED_CONFIG_TEXT)
-        return _ClusterConfig(
+        return _ClusterConfig.create(
             registry_url=URL(cluster_config["registry_url"]),
             storage_url=URL(cluster_config["storage_url"]),
             users_url=URL(cluster_config["users_url"]),

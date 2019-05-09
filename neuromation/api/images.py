@@ -61,8 +61,6 @@ class DockerImage:
 class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
-        if not config.cluster_config.is_initialized():
-            raise ValueError("Missing cluster configuration")
         self._config = config
         self._temporary_images: List[str] = list()
         try:

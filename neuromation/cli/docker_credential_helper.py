@@ -20,10 +20,7 @@ async def async_main(action: str) -> None:
     else:
         async with get() as client:
             config = client._config
-            if not config.cluster_config.is_initialized():
-                raise ValueError(
-                    "Missing cluster configuration, please use `neuro login`"
-                )
+            config.check_initialized()
             registry = sys.stdin.readline().strip()
             neuro_registry = config.cluster_config.registry_url.host
             if registry != neuro_registry:

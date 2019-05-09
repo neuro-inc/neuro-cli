@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 @pytest.fixture()
 def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     nmrc_path = tmp_path / "conftest.nmrc"
-    cluster_config = _ClusterConfig(
+    cluster_config = _ClusterConfig.create(
         registry_url=URL("https://registry-dev.neu.ro"),
         storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),

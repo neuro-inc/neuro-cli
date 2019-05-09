@@ -450,7 +450,7 @@ async def get_server_config(url: URL) -> _ServerConfig:
                 success_redirect_url=success_redirect_url,
                 callback_urls=callback_urls,
             )
-            cluster_config = _ClusterConfig(
+            cluster_config = _ClusterConfig.create(
                 registry_url=URL(payload["registry_url"]),
                 storage_url=URL(payload["storage_url"]),
                 users_url=URL(payload["users_url"]),

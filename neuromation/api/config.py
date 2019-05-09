@@ -62,3 +62,10 @@ class _Config:
     cluster_config: _ClusterConfig
     pypi: _PyPIVersion
     url: URL
+
+    def check_initialized(self) -> None:
+        if (
+            not self.auth_config.is_initialized()
+            or not self.cluster_config.is_initialized()
+        ):
+            raise ValueError("Missing server configuration, need to login")

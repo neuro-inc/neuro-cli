@@ -57,7 +57,7 @@ async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
             callback_urls=tuple(URL(u) for u in callback_urls),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=_ClusterConfig(
+        cluster_config=_ClusterConfig.create(
             registry_url=URL(registry_url),
             storage_url=URL(storage_url),
             users_url=URL(users_url),
@@ -106,7 +106,7 @@ async def test_get_server_config_no_callback_urls(
             audience=audience,
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=_ClusterConfig(
+        cluster_config=_ClusterConfig.create(
             registry_url=URL(registry_url),
             storage_url=URL(storage_url),
             users_url=URL(users_url),
