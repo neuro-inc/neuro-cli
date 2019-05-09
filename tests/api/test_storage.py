@@ -132,8 +132,7 @@ async def test_storage_ls(
 
     srv = await aiohttp_server(app)
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         ret = await client.storage.ls(URL("storage://~/folder"))
 
     assert ret == [
@@ -167,8 +166,7 @@ async def test_storage_rm(
 
     srv = await aiohttp_server(app)
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         await client.storage.rm(URL("storage://~/folder"))
 
 
@@ -185,8 +183,7 @@ async def test_storage_mv(
 
     srv = await aiohttp_server(app)
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
 
 
@@ -203,8 +200,7 @@ async def test_storage_mkdir(
 
     srv = await aiohttp_server(app)
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         await client.storage.mkdirs(URL("storage://~/folder"))
 
 
@@ -227,8 +223,7 @@ async def test_storage_create(
         for i in range(5):
             yield str(i).encode("ascii")
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         await client.storage.create(URL("storage://~/file"), gen())
 
 
@@ -255,8 +250,7 @@ async def test_storage_stats(
 
     srv = await aiohttp_server(app)
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         stats = await client.storage.stats(URL("storage://~/folder"))
         assert stats == FileStatus(
             path="/user/folder",
@@ -298,8 +292,7 @@ async def test_storage_open(
 
     srv = await aiohttp_server(app)
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
         async for chunk in client.storage.open(URL("storage://~/file")):
             buf.extend(chunk)
@@ -329,8 +322,7 @@ async def test_storage_open_directory(
 
     srv = await aiohttp_server(app)
 
-    url = srv.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
         with pytest.raises(IsADirectoryError):
             async for chunk in client.storage.open(URL("storage://~/folder")):
@@ -376,8 +368,7 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     target_path = storage_path / "file.txt"
     progress = mock.Mock()
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
             URL(file_path.as_uri()), URL("storage:file.txt"), progress=progress
         )
@@ -399,8 +390,7 @@ async def test_storage_upload_regular_file_to_existing_dir(
     folder.mkdir()
     target_path = folder / "file.txt"
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(URL(file_path.as_uri()), URL("storage:folder"))
 
     expected = file_path.read_bytes()
@@ -417,8 +407,7 @@ async def test_storage_upload_regular_file_to_existing_file(
     target_path = folder / "file.txt"
     target_path.write_bytes(b"existing file")
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
             URL(file_path.as_uri()), URL("storage:folder/file.txt")
         )
@@ -436,8 +425,7 @@ async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
     folder.mkdir()
     target_path = folder / "file.txt"
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
             URL(file_path.as_uri()), URL("storage:folder/")
         )
@@ -454,8 +442,7 @@ async def test_storage_upload_regular_file_to_existing_non_dir(
     path = storage_path / "file"
     path.write_bytes(b"dummy")
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_file(
                 URL(file_path.as_uri()), URL("storage:file/subfile.txt")
@@ -467,8 +454,7 @@ async def test_storage_upload_regular_file_to_not_existing(
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_file(
                 URL(file_path.as_uri()), URL("storage:absent-dir/absent-file.txt")
@@ -501,8 +487,7 @@ async def test_storage_upload_recursive_target_is_a_file(
     target_file = storage_path / "file.txt"
     target_file.write_bytes(b"dummy")
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_dir(
                 URL(DATA_FOLDER.as_uri()), URL("storage:file.txt")
@@ -515,8 +500,7 @@ async def test_storage_upload_recursive_ok(
     target_dir = storage_path / "folder"
     target_dir.mkdir()
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
             URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
         )
@@ -530,8 +514,7 @@ async def test_storage_upload_recursive_slash_ending(
     target_dir = storage_path / "folder"
     target_dir.mkdir()
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
             URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder/")
         )
@@ -550,8 +533,7 @@ async def test_storage_download_regular_file_to_absent_file(
     local_file = local_dir / "file.txt"
     progress = mock.Mock()
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
             URL("storage:file.txt"), URL(local_file.as_uri()), progress=progress
         )
@@ -578,8 +560,7 @@ async def test_storage_download_regular_file_to_existing_file(
     local_file = local_dir / "file.txt"
     local_file.write_bytes(b"Previous data")
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
             URL("storage:file.txt"), URL(local_file.as_uri())
         )
@@ -599,8 +580,7 @@ async def test_storage_download_regular_file_to_dir(
     local_dir.mkdir()
     local_file = local_dir / "file.txt"
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
             URL("storage:file.txt"), URL(local_dir.as_uri())
         )
@@ -620,8 +600,7 @@ async def test_storage_download_regular_file_to_dir_slash_ended(
     local_dir.mkdir()
     local_file = local_dir / "file.txt"
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
             URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
         )
@@ -638,8 +617,7 @@ async def test_storage_download_regular_file_to_non_file(
     storage_file = storage_path / "file.txt"
     storage_file.write_bytes(src_file.read_bytes())
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(OSError):
             await client.storage.download_file(
                 URL("storage:file.txt"), URL("file:///dev/null")
@@ -655,8 +633,7 @@ async def test_storage_download_dir(
     local_dir.mkdir()
     target_dir = local_dir / "nested"
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_dir(
             URL("storage:folder"), URL(target_dir.as_uri())
         )
@@ -673,8 +650,7 @@ async def test_storage_download_dir_slash_ending(
     local_dir = tmp_path / "local"
     local_dir.mkdir()
 
-    url = storage_server.make_url("/")
-    async with make_client(url, storage_url=(url / "storage")) as client:
+    async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_dir(
             URL("storage:folder"), URL(local_dir.as_uri() + "/")
         )

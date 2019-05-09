@@ -1,5 +1,4 @@
-from dataclasses import replace
-from typing import Callable, Optional
+from typing import Callable
 
 import pytest
 from jose import jwt
@@ -42,28 +41,21 @@ def cluster_config() -> _ClusterConfig:
 
 
 @pytest.fixture
-def make_client(
-    token: str, auth_config: _AuthConfig, cluster_config: _ClusterConfig
-) -> Callable[..., Client]:
-    def go(
-        url: str,
-        registry_url: Optional[URL] = None,
-        monitoring_url: Optional[URL] = None,
-        storage_url: Optional[URL] = None,
-    ) -> Client:
-        _cluster_config = cluster_config
-        if registry_url:
-            _cluster_config = replace(_cluster_config, registry_url=registry_url)
-        if monitoring_url:
-            _cluster_config = replace(_cluster_config, monitoring_url=monitoring_url)
-        if storage_url:
-            _cluster_config = replace(_cluster_config, storage_url=storage_url)
+def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
+    def go(url_str: str, registry_url: str = "https://registry-dev.neu.ro") -> Client:
+        url = URL(url_str)
+        cluster_config = _ClusterConfig(
+            registry_url=URL(registry_url),
+            monitoring_url=(url / "jobs"),
+            storage_url=(url / "storage"),
+            users_url=url,
+        )
         config = _Config(
             auth_config=auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             pypi=_PyPIVersion.create_uninitialized(),
             url=URL(url),
-            cluster_config=_cluster_config,
+            cluster_config=cluster_config,
         )
         return Client._create(config)
 
