@@ -9,10 +9,11 @@ def uri_from_cli(path_or_uri: str, username: str) -> URL:
     uri = URL(path_or_uri)
     # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
     if not uri.scheme or len(uri.scheme) == 1:
-        # In "file:256" "256" is interpreted as a port number
-        if path_or_uri.startswith("file:"):
-            path_or_uri = path_or_uri[5:]
-        uri = URL.build(path=path_or_uri)
+        # URLs like "scheme:123" are specially handled in urllib.parse.urlslip().
+        if re.fullmatch(r"[a-zA-Z0-9+\-.]{2,}:[0-9]+", path_or_uri):
+            uri = URL(path_or_uri + "#")  # "#" is ignored
+        else:
+            uri = URL.build(path=path_or_uri)
     if not uri.scheme or uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
     elif uri.scheme == "storage":
@@ -57,7 +58,7 @@ def normalize_local_path_uri(uri: URL) -> URL:
     while ret.path.startswith("//"):
         ret = ret.with_path(ret.path[1:])
     if not ret.scheme:
-        ret = ret.with_scheme("file:")
+        ret = ret.with_scheme("file")
     return ret
 
 

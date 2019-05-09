@@ -84,6 +84,10 @@ def test_uri_from_cli_numberic_path() -> None:
     assert str(uri) == Path("256").absolute().as_uri()
     uri = uri_from_cli("file:123456", "testuser")
     assert str(uri) == Path("123456").absolute().as_uri()
+    uri = uri_from_cli("storage:256", "testuser")
+    assert str(uri) == "storage://testuser/256"
+    uri = uri_from_cli("storage:123456", "testuser")
+    assert str(uri) == "storage://testuser/123456"
 
 
 async def test_normalize_storage_path_uri__0_slashes_relative(client: Client) -> None:
