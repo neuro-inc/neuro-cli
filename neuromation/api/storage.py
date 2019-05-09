@@ -67,7 +67,7 @@ class Storage(metaclass=NoPublicConstructor):
         return prefix + uri.path.lstrip("/")
 
     async def ls(self, uri: URL) -> List[FileStatus]:
-        url = URL("storage") / self._uri_to_path(uri)
+        url = self._core.make_url("storage") / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
         async with self._core.request("GET", url) as resp:
@@ -78,7 +78,7 @@ class Storage(metaclass=NoPublicConstructor):
             ]
 
     async def mkdirs(self, uri: URL) -> None:
-        url = URL("storage") / self._uri_to_path(uri)
+        url = self._core.make_url("storage") / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
 
         async with self._core.request("PUT", url) as resp:
@@ -87,7 +87,7 @@ class Storage(metaclass=NoPublicConstructor):
     async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
         path = self._uri_to_path(uri)
         assert path, "Creation in root is not allowed"
-        url = URL("storage") / path
+        url = self._core.make_url("storage") / path
         url = url.with_query(op="CREATE")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
 
@@ -95,7 +95,7 @@ class Storage(metaclass=NoPublicConstructor):
             resp  # resp.status == 201
 
     async def stats(self, uri: URL) -> FileStatus:
-        url = URL("storage") / self._uri_to_path(uri)
+        url = self._core.make_url("storage") / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
         async with self._core.request("GET", url) as resp:
@@ -106,7 +106,7 @@ class Storage(metaclass=NoPublicConstructor):
         stat = await self.stats(uri)
         if not stat.is_file():
             raise IsADirectoryError(uri)
-        url = URL("storage") / self._uri_to_path(uri)
+        url = self._core.make_url("storage") / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
 
@@ -127,14 +127,14 @@ class Storage(metaclass=NoPublicConstructor):
         # if final_path == root_data_path or final_path.parent == root_data_path:
         #     raise ValueError("Invalid path value.")
 
-        url = URL("storage") / path
+        url = self._core.make_url("storage") / path
         url = url.with_query(op="DELETE")
 
         async with self._core.request("DELETE", url) as resp:
             resp  # resp.status == 204
 
     async def mv(self, src: URL, dst: URL) -> None:
-        url = URL("storage") / self._uri_to_path(src)
+        url = self._core.make_url("storage") / self._uri_to_path(src)
         url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
 
         async with self._core.request("POST", url) as resp:

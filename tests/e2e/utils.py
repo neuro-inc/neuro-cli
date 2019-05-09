@@ -20,7 +20,11 @@ auth_token:
 pypi:
   check_timestamp: 0
   pypi_version: 0.0.0
-registry_url: https://registry-dev.neu.ro
+cluster_config:
+    registry_url: https://registry-dev.neu.ro
+    storage_url: https://storage-dev.neu.ro
+    users_url: https://users-dev.neu.ro
+    monitoring_url: https://monitoring-dev.neu.ro
 url: https://dev.neu.ro/api/v1
 """
 

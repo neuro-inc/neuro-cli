@@ -9,6 +9,7 @@ from yarl import URL
 
 from neuromation.api import Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
+from neuromation.api.login import _ClusterConfig
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
 from neuromation.cli.root import Root
@@ -21,12 +22,18 @@ log = logging.getLogger(__name__)
 @pytest.fixture()
 def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     nmrc_path = tmp_path / "conftest.nmrc"
+    cluster_config = _ClusterConfig(
+        registry_url=URL("https://registry-dev.neu.ro"),
+        storage_url=URL("https://storage-dev.neu.ro"),
+        users_url=URL("https://users-dev.neu.ro"),
+        monitoring_url=URL("https://monitoring-dev.neu.ro"),
+    )
     config = _Config(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
+        cluster_config=cluster_config,
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
-        registry_url=URL("https://registry-dev.neu.ro"),
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path

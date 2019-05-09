@@ -46,12 +46,12 @@ class _Core:
     def __init__(
         self,
         connector: aiohttp.TCPConnector,
-        url: URL,
+        base_url: URL,
         token: str,
         timeout: aiohttp.ClientTimeout,
     ) -> None:
         self._connector = connector
-        self._url = url
+        self._base_url = base_url
         self._token = token
         self._timeout = timeout
         self._session = aiohttp.ClientSession(
@@ -83,11 +83,14 @@ class _Core:
         headers = {"Authorization": f"Bearer {self._token}"} if self._token else {}
         return headers
 
+    def make_url(self, path: str) -> URL:
+        return self._base_url / path
+
     @asynccontextmanager
     async def request(
         self,
         method: str,
-        rel_url: URL,
+        url: URL,
         *,
         params: Optional[Mapping[str, str]] = None,
         data: Any = None,
@@ -95,8 +98,7 @@ class _Core:
         headers: Optional[Dict[str, str]] = None,
         timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
-        assert not rel_url.is_absolute(), rel_url
-        url = (self._url / "").join(rel_url)
+        assert url.is_absolute(), url
         log.debug("Fetch [%s] %s", method, url)
         if timeout is None:
             timeout = self._timeout
@@ -117,11 +119,10 @@ class _Core:
                 yield resp
 
     async def ws_connect(
-        self, rel_url: URL, *, headers: Optional[Dict[str, str]] = None
+        self, url: URL, *, headers: Optional[Dict[str, str]] = None
     ) -> AsyncIterator[WSMessage]:
         # TODO: timeout
-        assert not rel_url.is_absolute()
-        url = (self._url / "").join(rel_url)
+        assert url.is_absolute()
         log.debug("Fetch web socket: %s", url)
 
         async with self._session.ws_connect(url, headers=headers) as ws:

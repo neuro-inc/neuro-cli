@@ -61,6 +61,8 @@ class DockerImage:
 class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
+        if not config.cluster_config.is_initialized():
+            raise ValueError("Missing cluster configuration")
         self._config = config
         self._temporary_images: List[str] = list()
         try:
@@ -80,7 +82,7 @@ class Images(metaclass=NoPublicConstructor):
             raise
         self._registry = _Registry(
             self._core.connector,
-            self._config.registry_url.with_path("/v2/"),
+            self._config.cluster_config.registry_url.with_path("/v2/"),
             self._config.auth_token.token,
             self._config.auth_token.username,
         )
@@ -173,6 +175,7 @@ class Images(metaclass=NoPublicConstructor):
         return local_image
 
     async def ls(self) -> List[URL]:
-        async with self._registry.request("GET", URL("_catalog")) as resp:
+        url = self._registry.make_url("_catalog")
+        async with self._registry.request("GET", url) as resp:
             ret = await resp.json()
             return [URL(name) for name in ret["repositories"]]

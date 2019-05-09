@@ -302,6 +302,28 @@ class AuthTokenClient:
 
 
 @dataclass(frozen=True)
+class _ClusterConfig:
+    registry_url: URL
+    storage_url: URL
+    users_url: URL
+    monitoring_url: URL
+
+    @classmethod
+    def create(
+        cls, registry_url: URL, storage_url: URL, users_url: URL, monitoring_url: URL
+    ) -> "_ClusterConfig":
+        return cls(registry_url, storage_url, users_url, monitoring_url)
+
+    def is_initialized(self) -> bool:
+        return bool(
+            self.registry_url
+            and self.storage_url
+            and self.users_url
+            and self.monitoring_url
+        )
+
+
+@dataclass(frozen=True)
 class _AuthConfig:
     auth_url: URL
     token_url: URL
@@ -393,7 +415,7 @@ class AuthNegotiator:
 @dataclass(frozen=True)
 class _ServerConfig:
     auth_config: _AuthConfig
-    registry_url: URL
+    cluster_config: _ClusterConfig
 
 
 class ConfigLoadException(Exception):
@@ -428,5 +450,10 @@ async def get_server_config(url: URL) -> _ServerConfig:
                 success_redirect_url=success_redirect_url,
                 callback_urls=callback_urls,
             )
-            registry_url = URL(payload["registry_url"])
-            return _ServerConfig(registry_url=registry_url, auth_config=auth_config)
+            cluster_config = _ClusterConfig(
+                registry_url=URL(payload["registry_url"]),
+                storage_url=URL(payload["storage_url"]),
+                users_url=URL(payload["users_url"]),
+                monitoring_url=URL(payload["monitoring_url"]),
+            )
+            return _ServerConfig(auth_config=auth_config, cluster_config=cluster_config)

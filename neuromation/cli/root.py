@@ -57,9 +57,11 @@ class Root:
 
     @property
     def registry_url(self) -> URL:
-        if self._config is None:
+        if self._config is None or not self._config.cluster_config.is_initialized():
+            print(self._config)
+            raise Exception()
             raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.registry_url
+        return self._config.cluster_config.registry_url
 
     @property
     def client(self) -> Client:

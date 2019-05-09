@@ -136,7 +136,7 @@ class Helper:
     @property
     def registry_url(self) -> URL:
         config = Factory(path=self._nmrc_path)._read()
-        return config.registry_url
+        return config.cluster_config.registry_url
 
     @property
     def tmpstorage(self) -> str:

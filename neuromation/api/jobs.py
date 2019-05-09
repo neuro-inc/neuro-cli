@@ -362,7 +362,7 @@ class Jobs(metaclass=NoPublicConstructor):
             volumes=volumes,
         )
 
-        url = URL("jobs")
+        url = self._core.make_url("jobs")
         payload: Dict[str, Any] = {
             "container": container.to_api(),
             "is_preemptible": is_preemptible,
@@ -378,7 +378,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def list(
         self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
     ) -> List[JobDescription]:
-        url = URL(f"jobs")
+        url = self._core.make_url(f"jobs")
         params: MultiDict[str] = MultiDict()
         if statuses:
             for status in statuses:
@@ -390,7 +390,7 @@ class Jobs(metaclass=NoPublicConstructor):
             return [JobDescription.from_api(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
-        url = URL(f"jobs/{id}")
+        url = self._core.make_url(f"jobs/{id}")
         async with self._core.request("DELETE", url):
             # an error is raised for status >= 400
             return None  # 201 status code
@@ -398,7 +398,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def monitor(
         self, id: str
     ) -> Any:  # real type is async generator with data chunks
-        url = URL(f"jobs/{id}/log")
+        url = self._core.make_url(f"jobs/{id}/log")  # TODO: should use `monitoring_url`
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
             "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
@@ -407,13 +407,13 @@ class Jobs(metaclass=NoPublicConstructor):
                 yield data
 
     async def status(self, id: str) -> JobDescription:
-        url = URL(f"jobs/{id}")
+        url = self._core.make_url(f"jobs/{id}")
         async with self._core.request("GET", url) as resp:
             ret = await resp.json()
             return JobDescription.from_api(ret)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
-        url = URL(f"jobs/{id}/top")
+        url = self._core.make_url(f"jobs/{id}/top")  # TODO: should use `monitoring_url`
         try:
             received_any = False
             async for resp in self._core.ws_connect(url):

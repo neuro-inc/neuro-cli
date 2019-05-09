@@ -393,7 +393,9 @@ class ImageType(click.ParamType):
         assert ctx is not None
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
-        image_parser = ImageNameParser(config.auth_token.username, config.registry_url)
+        image_parser = ImageNameParser(
+            config.auth_token.username, config.cluster_config.registry_url
+        )
         if image_parser.is_in_neuro_registry(value):
             parsed_image = image_parser.parse_as_neuro_image(value)
         else:

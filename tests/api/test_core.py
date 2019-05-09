@@ -49,7 +49,7 @@ async def test_raise_for_status_no_error_message(
 
     async with api_factory(srv.make_url("/")) as api:
         with pytest.raises(IllegalArgumentError, match="^400: Bad Request$"):
-            async with api.request(method="GET", rel_url=URL("test")):
+            async with api.request(method="GET", url=api.make_url("test")):
                 pass
 
 
@@ -67,5 +67,5 @@ async def test_raise_for_status_contains_error_message(
 
     async with api_factory(srv.make_url("/")) as api:
         with pytest.raises(IllegalArgumentError, match=f"^{ERROR_MSG}$"):
-            async with api.request(method="GET", rel_url=URL("test")):
+            async with api.request(method="GET", url=api.make_url("test")):
                 pass

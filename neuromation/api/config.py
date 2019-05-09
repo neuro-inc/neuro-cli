@@ -7,7 +7,7 @@ from yarl import URL
 
 import neuromation
 
-from .login import _AuthConfig, _AuthToken
+from .login import _AuthConfig, _AuthToken, _ClusterConfig
 
 
 log = logging.getLogger(__name__)
@@ -59,6 +59,6 @@ class _PyPIVersion:
 class _Config:
     auth_config: _AuthConfig
     auth_token: _AuthToken
+    cluster_config: _ClusterConfig
     pypi: _PyPIVersion
     url: URL
-    registry_url: URL
