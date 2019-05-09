@@ -96,7 +96,7 @@ class _Core:
         timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         if not url.is_absolute():
-            url = self._base_url / str(url)
+            url = (self._base_url / "").join(url)
         log.debug("Fetch [%s] %s", method, url)
         if timeout is None:
             timeout = self._timeout
@@ -117,13 +117,13 @@ class _Core:
                 yield resp
 
     async def ws_connect(
-        self, url: URL, *, headers: Optional[Dict[str, str]] = None
+        self, abs_url: URL, *, headers: Optional[Dict[str, str]] = None
     ) -> AsyncIterator[WSMessage]:
         # TODO: timeout
-        assert url.is_absolute()
-        log.debug("Fetch web socket: %s", url)
+        assert abs_url.is_absolute(), abs_url
+        log.debug("Fetch web socket: %s", abs_url)
 
-        async with self._session.ws_connect(url, headers=headers) as ws:
+        async with self._session.ws_connect(abs_url, headers=headers) as ws:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg
