@@ -13,14 +13,15 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
             "(only 'storage://' is allowed)"
         )
 
-    if uri.host == "~":
-        uri = uri.with_host(username)
-    elif not uri.host:
+    if not uri.host:
+        if uri.path.startswith("~"):
+            raise ValueError(f"Cannot expand user for {uri}")
         uri = URL("storage://" + username + "/" + uri.path)
-    uri = uri.with_path(uri.path.lstrip("/"))
-
-    if "~" in uri.path:
+    elif uri.host == "~":
+        uri = uri.with_host(username)
+    elif uri.host.startswith("~"):  # type: ignore
         raise ValueError(f"Cannot expand user for {uri}")
+    uri = uri.with_path(uri.path.lstrip("/"))
 
     return uri
 
@@ -35,10 +36,11 @@ def normalize_local_path_uri(uri: URL) -> URL:
     if uri.host:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
     path = _extract_path(uri)
-    path = path.expanduser().absolute()
-    ret = URL(path.as_uri())
-    if "~" in ret.path:
+    path = path.expanduser()
+    if str(path.parents[0]).startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
+    path = path.absolute()
+    ret = URL(path.as_uri())
     while ret.path.startswith("//"):
         ret = ret.with_path(ret.path[1:])
     return ret
