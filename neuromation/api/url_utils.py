@@ -5,6 +5,21 @@ from pathlib import Path
 from yarl import URL
 
 
+def uri_from_cli(path_or_uri: str, username: str) -> URL:
+    uri = URL(path_or_uri)
+    # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
+    if not uri.scheme or len(uri.scheme) == 1:
+        # In "file:256" "256" is interpreted as a port number
+        if path_or_uri.startswith("file:"):
+            path_or_uri = path_or_uri[5:]
+        uri = URL.build(path=path_or_uri)
+    if not uri.scheme or uri.scheme == "file":
+        uri = normalize_local_path_uri(uri)
+    elif uri.scheme == "storage":
+        uri = normalize_storage_path_uri(uri, username)
+    return uri
+
+
 def normalize_storage_path_uri(uri: URL, username: str) -> URL:
     """Normalize storage url."""
     if uri.scheme != "storage":
@@ -27,7 +42,7 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
 
 def normalize_local_path_uri(uri: URL) -> URL:
     """Normalize local file url."""
-    if uri.scheme != "file":
+    if uri.scheme and uri.scheme != "file":
         raise ValueError(
             f"Invalid local file scheme '{uri.scheme}://' "
             "(only 'file://' is allowed)"
@@ -41,6 +56,8 @@ def normalize_local_path_uri(uri: URL) -> URL:
         raise ValueError(f"Cannot expand user for {uri}")
     while ret.path.startswith("//"):
         ret = ret.with_path(ret.path[1:])
+    if not ret.scheme:
+        ret = ret.with_scheme("file:")
     return ret
 
 

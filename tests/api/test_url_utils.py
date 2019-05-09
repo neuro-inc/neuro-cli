@@ -11,6 +11,7 @@ from neuromation.api.url_utils import (
     _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,
+    uri_from_cli,
 )
 
 
@@ -36,6 +37,53 @@ def pwd() -> Path:
 
 async def test_config_username(token: str, client: Client) -> None:
     assert client.username == "user"
+
+
+def test_uri_from_cli_relative_path() -> None:
+    uri = uri_from_cli("path/to/file.txt", "testuser")
+    assert str(uri) == Path("path/to/file.txt").absolute().as_uri()
+
+
+def test_uri_from_cli_absolute_path() -> None:
+    uri = uri_from_cli("/path/to/file.txt", "testuser")
+    assert str(uri) == "file:///path/to/file.txt"
+
+
+def test_uri_from_cli_relative_file_uri() -> None:
+    uri = uri_from_cli("file:path/to/file.txt", "testuser")
+    assert str(uri) == Path("path/to/file.txt").absolute().as_uri()
+
+
+def test_uri_from_cli_absolute_file_uri() -> None:
+    uri = uri_from_cli("file:/path/to/file.txt", "testuser")
+    assert str(uri) == "file:///path/to/file.txt"
+    uri = uri_from_cli("file:///path/to/file.txt", "testuser")
+    assert str(uri) == "file:///path/to/file.txt"
+
+
+def test_uri_from_cli_relative_storage_uri() -> None:
+    uri = uri_from_cli("storage:path/to/file.txt", "testuser")
+    assert str(uri) == "storage://testuser/path/to/file.txt"
+    uri = uri_from_cli("storage:/path/to/file.txt", "testuser")
+    assert str(uri) == "storage://testuser/path/to/file.txt"
+
+
+def test_uri_from_cli_absolute_storage_uri() -> None:
+    uri = uri_from_cli("storage://otheruser/path/to/file.txt", "testuser")
+    assert str(uri) == "storage://otheruser/path/to/file.txt"
+    uri = uri_from_cli("storage:///path/to/file.txt", "testuser")
+    assert str(uri) == "storage://testuser/path/to/file.txt"
+
+
+def test_uri_from_cli_numberic_path() -> None:
+    uri = uri_from_cli("256", "testuser")
+    assert str(uri) == Path("256").absolute().as_uri()
+    uri = uri_from_cli("123456", "testuser")
+    assert str(uri) == Path("123456").absolute().as_uri()
+    uri = uri_from_cli("file:256", "testuser")
+    assert str(uri) == Path("256").absolute().as_uri()
+    uri = uri_from_cli("file:123456", "testuser")
+    assert str(uri) == Path("123456").absolute().as_uri()
 
 
 async def test_normalize_storage_path_uri__0_slashes_relative(client: Client) -> None:

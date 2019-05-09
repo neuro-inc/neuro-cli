@@ -3,10 +3,7 @@ import logging
 import click
 from yarl import URL
 
-from neuromation.api.url_utils import (
-    normalize_local_path_uri,
-    normalize_storage_path_uri,
-)
+from neuromation.api.url_utils import normalize_storage_path_uri, uri_from_cli
 
 from .command_progress_report import ProgressBase
 from .formatters import (
@@ -121,19 +118,12 @@ async def cp(
     # explicit file:// scheme set
     neuro cp storage:///foo file:///foo
     """
-    src = URL(source)
-    dst = URL(destination)
+    src = uri_from_cli(source, root.username)
+    dst = uri_from_cli(destination, root.username)
 
     progress_obj = ProgressBase.create_progress(progress)
-    # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
-    if not src.scheme or len(src.scheme) == 1:
-        src = URL(f"file:{source}")
-    if not dst.scheme or len(dst.scheme) == 1:
-        dst = URL(f"file:{destination}")
 
     if src.scheme == "file" and dst.scheme == "storage":
-        src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, root.username)
         log.info(f"Using source path:      '{src}'")
         log.info(f"Using destination path: '{dst}'")
         if recursive:
@@ -141,8 +131,6 @@ async def cp(
         else:
             await root.client.storage.upload_file(src, dst, progress=progress_obj)
     elif src.scheme == "storage" and dst.scheme == "file":
-        src = normalize_storage_path_uri(src, root.username)
-        dst = normalize_local_path_uri(dst)
         log.info(f"Using source path:      '{src}'")
         log.info(f"Using destination path: '{dst}'")
         if recursive:
