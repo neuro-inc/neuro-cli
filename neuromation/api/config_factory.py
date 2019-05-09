@@ -185,13 +185,11 @@ class Factory:
             def opener(file: str, flags: int) -> int:
                 return os.open(file, flags, 0o600)
 
-            # Workaround for typeshed and MyPy bugs:
+            # Silence the typeshed bug:
             # https://github.com/python/typeshed/issues/2976
-            # https://github.com/python/mypy/issues/6807
-            import builtins  # typing: ignore
-
-            open = getattr(builtins, "open")
-            with open(tmppath, "x", encoding="utf-8", opener=opener) as f:
+            with open(  # type: ignore
+                tmppath, "x", encoding="utf-8", opener=opener
+            ) as f:
                 yaml.safe_dump(payload, f, default_flow_style=False)
             os.replace(tmppath, self._path)
         except:  # noqa  # bare 'except' with 'raise' is legal
