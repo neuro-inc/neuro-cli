@@ -46,7 +46,7 @@ def test_uri_from_cli_relative_path() -> None:
 
 def test_uri_from_cli_absolute_path() -> None:
     uri = uri_from_cli("/path/to/file.txt", "testuser")
-    assert str(uri) == "file:///path/to/file.txt"
+    assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
 
 
 def test_uri_from_cli_relative_file_uri() -> None:
@@ -56,9 +56,9 @@ def test_uri_from_cli_relative_file_uri() -> None:
 
 def test_uri_from_cli_absolute_file_uri() -> None:
     uri = uri_from_cli("file:/path/to/file.txt", "testuser")
-    assert str(uri) == "file:///path/to/file.txt"
+    assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
     uri = uri_from_cli("file:///path/to/file.txt", "testuser")
-    assert str(uri) == "file:///path/to/file.txt"
+    assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
 
 
 def test_uri_from_cli_relative_storage_uri() -> None:
