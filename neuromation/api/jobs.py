@@ -362,7 +362,7 @@ class Jobs(metaclass=NoPublicConstructor):
             volumes=volumes,
         )
 
-        url = self._core.make_url("jobs")
+        url = URL("jobs")
         payload: Dict[str, Any] = {
             "container": container.to_api(),
             "is_preemptible": is_preemptible,
@@ -378,7 +378,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def list(
         self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
     ) -> List[JobDescription]:
-        url = self._core.make_url(f"jobs")
+        url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
         if statuses:
             for status in statuses:
@@ -390,7 +390,7 @@ class Jobs(metaclass=NoPublicConstructor):
             return [JobDescription.from_api(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
-        url = self._core.make_url(f"jobs/{id}")
+        url = URL(f"jobs/{id}")
         async with self._core.request("DELETE", url):
             # an error is raised for status >= 400
             return None  # 201 status code
@@ -407,7 +407,7 @@ class Jobs(metaclass=NoPublicConstructor):
                 yield data
 
     async def status(self, id: str) -> JobDescription:
-        url = self._core.make_url(f"jobs/{id}")
+        url = URL(f"jobs/{id}")
         async with self._core.request("GET", url) as resp:
             ret = await resp.json()
             return JobDescription.from_api(ret)

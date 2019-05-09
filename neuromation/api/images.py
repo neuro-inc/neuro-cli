@@ -175,7 +175,6 @@ class Images(metaclass=NoPublicConstructor):
         return local_image
 
     async def ls(self) -> List[URL]:
-        url = self._registry.make_url("_catalog")
-        async with self._registry.request("GET", url) as resp:
+        async with self._registry.request("GET", URL("_catalog")) as resp:
             ret = await resp.json()
             return [URL(name) for name in ret["repositories"]]

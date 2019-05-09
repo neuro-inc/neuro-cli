@@ -83,9 +83,6 @@ class _Core:
         headers = {"Authorization": f"Bearer {self._token}"} if self._token else {}
         return headers
 
-    def make_url(self, path: str) -> URL:
-        return self._base_url / path
-
     @asynccontextmanager
     async def request(
         self,
@@ -98,7 +95,8 @@ class _Core:
         headers: Optional[Dict[str, str]] = None,
         timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
-        assert url.is_absolute(), url
+        if not url.is_absolute():
+            url = self._base_url / str(url)
         log.debug("Fetch [%s] %s", method, url)
         if timeout is None:
             timeout = self._timeout

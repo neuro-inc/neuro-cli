@@ -39,7 +39,7 @@ class Users(metaclass=NoPublicConstructor):
         self._core = core
 
     async def share(self, user: str, permission: Permission) -> None:
-        url = self._core.make_url(f"users/{user}/permissions")
+        url = URL(f"users/{user}/permissions")
         payload = [permission.to_api()]
         async with self._core.request("POST", url, json=payload) as resp:
             #  TODO: server part contain TODO record for returning more then
@@ -49,7 +49,7 @@ class Users(metaclass=NoPublicConstructor):
         return None
 
     async def revoke(self, user: str, uri: URL) -> None:
-        url = self._core.make_url(f"users/{user}/permissions")
+        url = URL(f"users/{user}/permissions")
         async with self._core.request("DELETE", url, params={"uri": str(uri)}) as resp:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPNoContent, this part must me refactored then
