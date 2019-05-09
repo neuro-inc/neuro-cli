@@ -21,10 +21,10 @@ pypi:
   check_timestamp: 0
   pypi_version: 0.0.0
 cluster_config:
-    registry_url: https://registry-dev.neu.ro
-    storage_url: https://storage-dev.neu.ro
-    users_url: https://users-dev.neu.ro
-    monitoring_url: https://monitoring-dev.neu.ro
+  monitoring_url: https://dev.neu.ro/api/v1/jobs
+  registry_url: https://registry-dev.neu.ro
+  storage_url: https://dev.neu.ro/api/v1/storage
+  users_url: https://dev.neu.ro/api/v1/users
 url: https://dev.neu.ro/api/v1
 """
 
