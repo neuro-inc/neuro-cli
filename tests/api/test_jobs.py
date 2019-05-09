@@ -39,7 +39,8 @@ async def test_jobs_monitor(
     srv = await aiohttp_server(app)
 
     lst = []
-    async with make_client(srv.make_url("/")) as client:
+    url = srv.make_url("/")
+    async with make_client(url, monitoring_url=(url / "jobs")) as client:
         async for data in client.jobs.monitor("job-id"):
             lst.append(data)
 
@@ -71,7 +72,8 @@ async def test_monitor_notexistent_job(
     srv = await aiohttp_server(app)
 
     lst = []
-    async with make_client(srv.make_url("/")) as client:
+    url = srv.make_url("/")
+    async with make_client(url, monitoring_url=(url / "jobs")) as client:
         with pytest.raises(ResourceNotFound):
             async for data in client.jobs.monitor("job-id"):
                 lst.append(data)
@@ -111,7 +113,8 @@ async def test_job_top(
     srv = await aiohttp_server(app)
 
     lst = []
-    async with make_client(srv.make_url("/")) as client:
+    url = srv.make_url("/")
+    async with make_client(url, monitoring_url=(url / "jobs")) as client:
         async for data in client.jobs.top("job-id"):
             lst.append(data)
 
@@ -134,7 +137,8 @@ async def test_top_finished_job(
     srv = await aiohttp_server(app)
 
     lst = []
-    async with make_client(srv.make_url("/")) as client:
+    url = srv.make_url("/")
+    async with make_client(url, monitoring_url=(url / "jobs")) as client:
         with pytest.raises(ValueError, match="not running"):
             async for data in client.jobs.top("job-id"):
                 lst.append(data)
@@ -153,7 +157,8 @@ async def test_top_nonexisting_job(
     srv = await aiohttp_server(app)
 
     lst = []
-    async with make_client(srv.make_url("/")) as client:
+    url = srv.make_url("/")
+    async with make_client(url, monitoring_url=(url / "jobs")) as client:
         with pytest.raises(ValueError, match="not found"):
             async for data in client.jobs.top("job-id"):
                 lst.append(data)

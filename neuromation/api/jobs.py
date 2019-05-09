@@ -398,7 +398,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def monitor(
         self, id: str
     ) -> Any:  # real type is async generator with data chunks
-        url = self._core.make_url(f"jobs/{id}/log")  # TODO: should use `monitoring_url`
+        url = self._config.cluster_config.monitoring_url / f"{id}/log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
             "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
@@ -413,7 +413,7 @@ class Jobs(metaclass=NoPublicConstructor):
             return JobDescription.from_api(ret)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
-        url = self._core.make_url(f"jobs/{id}/top")  # TODO: should use `monitoring_url`
+        url = self._config.cluster_config.monitoring_url / f"{id}/top"
         try:
             received_any = False
             async for resp in self._core.ws_connect(url):

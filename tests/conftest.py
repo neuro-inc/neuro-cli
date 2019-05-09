@@ -44,11 +44,20 @@ def cluster_config() -> _ClusterConfig:
 @pytest.fixture
 def make_client(
     token: str, auth_config: _AuthConfig, cluster_config: _ClusterConfig
-) -> Callable[[str, str], Client]:
-    def go(url: str, registry_url: Optional[str] = None) -> Client:
+) -> Callable[..., Client]:
+    def go(
+        url: str,
+        registry_url: Optional[URL] = None,
+        monitoring_url: Optional[URL] = None,
+        storage_url: Optional[URL] = None,
+    ) -> Client:
         _cluster_config = cluster_config
         if registry_url:
-            _cluster_config = replace(cluster_config, registry_url=URL(registry_url))
+            _cluster_config = replace(_cluster_config, registry_url=registry_url)
+        if monitoring_url:
+            _cluster_config = replace(_cluster_config, monitoring_url=monitoring_url)
+        if storage_url:
+            _cluster_config = replace(_cluster_config, storage_url=storage_url)
         config = _Config(
             auth_config=auth_config,
             auth_token=_AuthToken.create_non_expiring(token),

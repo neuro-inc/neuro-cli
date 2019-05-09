@@ -382,7 +382,7 @@ class TestTokenClient:
 class TestAuthConfig:
     def test_is_initialized__no_auth_url(self) -> None:
         auth_config = _AuthConfig(
-            auth_url=URL(""),
+            auth_url=URL(),
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
@@ -394,7 +394,7 @@ class TestAuthConfig:
     def test_is_initialized__no_token_url(self) -> None:
         auth_config = _AuthConfig(
             auth_url=URL("url"),
-            token_url=URL(""),
+            token_url=URL(),
             client_id="client_id",
             audience="audience",
             callback_urls=(URL("url1"), URL("url2")),
@@ -459,7 +459,7 @@ class TestClusterConfig:
 
     def test_is_initialized__no_registry_url(self) -> None:
         cluster_config = _ClusterConfig(
-            registry_url=URL(""),
+            registry_url=URL(),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
@@ -469,7 +469,7 @@ class TestClusterConfig:
     def test_is_initialized__no_storage_url(self) -> None:
         cluster_config = _ClusterConfig(
             registry_url=URL("value"),
-            storage_url=URL(""),
+            storage_url=URL(),
             users_url=URL("value"),
             monitoring_url=URL("value"),
         )
@@ -479,7 +479,7 @@ class TestClusterConfig:
         cluster_config = _ClusterConfig(
             registry_url=URL("value"),
             storage_url=URL("value"),
-            users_url=URL(""),
+            users_url=URL(),
             monitoring_url=URL("value"),
         )
         assert cluster_config.is_initialized() is False
@@ -489,7 +489,7 @@ class TestClusterConfig:
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
-            monitoring_url=URL(""),
+            monitoring_url=URL(),
         )
         assert cluster_config.is_initialized() is False
 
