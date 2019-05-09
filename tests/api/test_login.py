@@ -26,6 +26,7 @@ from neuromation.api.login import (
     DummyAuthCodeCallbackClient,
     _AuthConfig,
     _AuthToken,
+    _ClusterConfig,
     create_app_server,
     create_app_server_once,
     create_auth_code_app,
@@ -444,6 +445,53 @@ class TestAuthConfig:
             success_redirect_url=None,
         )
         assert auth_config.is_initialized() is True
+
+
+class TestClusterConfig:
+    def test_is_initialized(self) -> None:
+        cluster_config = _ClusterConfig(
+            registry_url=URL("value"),
+            storage_url=URL("value"),
+            users_url=URL("value"),
+            monitoring_url=URL("value"),
+        )
+        assert cluster_config.is_initialized() is True
+
+    def test_is_initialized__no_registry_url(self) -> None:
+        cluster_config = _ClusterConfig(
+            registry_url=URL(""),
+            storage_url=URL("value"),
+            users_url=URL("value"),
+            monitoring_url=URL("value"),
+        )
+        assert cluster_config.is_initialized() is False
+
+    def test_is_initialized__no_storage_url(self) -> None:
+        cluster_config = _ClusterConfig(
+            registry_url=URL("value"),
+            storage_url=URL(""),
+            users_url=URL("value"),
+            monitoring_url=URL("value"),
+        )
+        assert cluster_config.is_initialized() is False
+
+    def test_is_initialized__no_users_url(self) -> None:
+        cluster_config = _ClusterConfig(
+            registry_url=URL("value"),
+            storage_url=URL("value"),
+            users_url=URL(""),
+            monitoring_url=URL("value"),
+        )
+        assert cluster_config.is_initialized() is False
+
+    def test_is_initialized__no_monitoring_url(self) -> None:
+        cluster_config = _ClusterConfig(
+            registry_url=URL("value"),
+            storage_url=URL("value"),
+            users_url=URL("value"),
+            monitoring_url=URL(""),
+        )
+        assert cluster_config.is_initialized() is False
 
 
 class TestAuthNegotiator:
