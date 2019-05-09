@@ -100,7 +100,7 @@ class Factory:
                 f"Config file {self._path} has compromised permission bits, "
                 f"run 'chmod 600 {self._path}' first"
             )
-        with self._path.open("r") as f:
+        with self._path.open("r", encoding="utf-8") as f:
             payload = yaml.safe_load(f)
 
         try:
@@ -178,13 +178,28 @@ class Factory:
         }
         payload["pypi"] = config.pypi.to_config()
 
-        # forbid access to other users
-        if self._path.exists():
-            # drop a file if exists to reopen it in exclusive mode for writing
-            self._path.unlink()
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-        with os.fdopen(os.open(self._path, flags, 0o600), "w") as f:
-            yaml.safe_dump(payload, f, default_flow_style=False)
+        # atomically rewrite the config file
+        tmppath = f"{self._path}.new{os.getpid()}"
+        try:
+            # forbid access to other users
+            def opener(file: str, flags: int) -> int:
+                return os.open(file, flags, 0o600)
+
+            # Workaround for typeshed and MyPy bugs:
+            # https://github.com/python/typeshed/issues/2976
+            # https://github.com/python/mypy/issues/6807
+            import builtins  # typing: ignore
+
+            open = getattr(builtins, "open")
+            with open(tmppath, "x", encoding="utf-8", opener=opener) as f:
+                yaml.safe_dump(payload, f, default_flow_style=False)
+            os.replace(tmppath, self._path)
+        except:  # noqa  # bare 'except' with 'raise' is legal
+            try:
+                os.unlink(tmppath)
+            except FileNotFoundError:
+                pass
+            raise
 
     def _update_last_checked_version(self, version: Any, timestamp: int) -> None:
         config = self._read()
