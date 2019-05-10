@@ -3,7 +3,7 @@ import gc
 import signal
 import sys
 import warnings
-from typing import Awaitable, TypeVar
+from typing import Awaitable, List, TypeVar
 
 import psutil
 
@@ -118,7 +118,7 @@ async def kill_proc_tree(
         try:
             parent = psutil.Process(pid)
             children = parent.children(recursive=True)
-            zombies = []
+            zombies: List[psutil.Process] = []
             # Try to kill all children first
             for p in children:
                 try:
@@ -135,11 +135,11 @@ async def kill_proc_tree(
                     _, children_alive = psutil.wait_procs(
                         children_alive, timeout=timeout
                     )
-                    zombies.append(children_alive)
+                    zombies.extend(children_alive)
                 except psutil.TimeoutExpired:
                     zombies.append(parent)
             else:
-                zombies.append(children_alive)
+                zombies.extend(children_alive)
 
             if zombies:
                 raise RuntimeWarning(f"Possible zombie subprocesse: {zombies}")
