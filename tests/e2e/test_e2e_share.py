@@ -8,10 +8,18 @@ from tests.e2e import Helper
 @pytest.mark.e2e
 def test_grant_complete_lifecycle(helper: Helper) -> None:
     uri = f"storage://{helper.username}/{uuid4()}"
+    uri2 = f"image://{helper.username}/{uuid4()}"
+    another_test_user = "test2"
+
     captured = helper.run_cli(["acl", "grant", uri, "public", "read"])
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
+
+    captured = helper.run_cli(["acl", "grant", uri2, another_test_user, "write"])
+    assert captured.out == ""
+    expected_err2 = f"Using resource '{uri2}'"
+    assert expected_err2 in captured.err
 
     captured = helper.run_cli(["acl", "list"])
     assert captured.err == ""
@@ -30,6 +38,7 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" in result
+    assert f"{uri2} write {another_test_user}" in result
     for line in result:
         assert not line.startswith("storage://{helper.username} ")
         assert not line.endswith(f" {helper.username}")
@@ -45,6 +54,7 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "image"])
     assert captured.err == ""
     result2 = captured.out.splitlines()
+    assert f"{uri2} write {another_test_user}" in result2
     for line in result2:
         assert line.startswith("image://")
         assert line in result
@@ -53,12 +63,18 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     assert captured.out == ""
     assert expected_err in captured.err
 
+    captured = helper.run_cli(["acl", "revoke", uri2, another_test_user])
+    assert captured.out == ""
+    assert expected_err2 in captured.err
+
     captured = helper.run_cli(["acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" not in result
+    assert f"{uri2} write {another_test_user}" not in result
     for line in result:
         assert not line.startswith("{uri} ")
+        assert not line.startswith("{uri2} ")
 
 
 @pytest.mark.e2e
