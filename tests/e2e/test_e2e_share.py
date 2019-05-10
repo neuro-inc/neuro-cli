@@ -38,7 +38,7 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     assert captured.err == ""
     result2 = captured.out.splitlines()
     assert f"{uri} read public" in result2
-    for line in result:
+    for line in result2:
         assert line.startswith("storage://")
         assert line in result
 
