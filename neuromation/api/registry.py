@@ -17,10 +17,10 @@ class _Registry(_Core):
     """
 
     def __init__(
-        self, connector: aiohttp.TCPConnector, url: URL, token: str, username: str
+        self, connector: aiohttp.TCPConnector, base_url: URL, token: str, username: str
     ) -> None:
         self._username = username
-        super().__init__(connector, url, token, TIMEOUT)
+        super().__init__(connector, base_url, token, TIMEOUT)
 
     def _auth_headers(self) -> Dict[str, str]:
         assert self._username
