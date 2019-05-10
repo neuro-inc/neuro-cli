@@ -3,7 +3,7 @@ import os
 import re
 from pathlib import Path
 from time import sleep, time
-from typing import Any, AsyncIterator, Callable, Dict, Iterator
+from typing import Any, AsyncIterator, Callable, Dict, Iterator, Tuple
 from uuid import uuid4
 
 import aiohttp
@@ -640,11 +640,15 @@ def nginx_job(helper: Helper) -> Iterator[str]:
 @pytest.fixture
 async def nginx_job_async(
     nmrc_path: Path, loop: asyncio.AbstractEventLoop
-) -> AsyncIterator[str]:
+) -> AsyncIterator[Tuple[str, str]]:
     async with api_get(path=nmrc_path) as client:
-        command = "timeout 15m python -m http.server 22"
+        secret = uuid4()
+        command = (
+            f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
+            f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+        )
         job = await client.jobs.submit(
-            image=Image("python:latest", command=command),
+            image=Image(NGINX_IMAGE_NAME, command=command),
             resources=Resources.create(0.1, None, None, 20, True),
             is_preemptible=False,
             volumes=None,
@@ -659,7 +663,7 @@ async def nginx_job_async(
                 await asyncio.sleep(1)
             else:
                 raise AssertionError("Cannot start NGINX job")
-            yield job.id
+            yield job.id, str(secret)
         finally:
             await client.jobs.kill(job.id)
 
@@ -677,6 +681,11 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
                 try:
                     async with session.get(url) as resp:
                         status = resp.status
+                        text = await resp.text()
+                        assert text == nginx_job_async[1], (
+                            f"Secret not found "
+                            f"via {url}. Like as it's not our test server."
+                        )
                 except aiohttp.ClientConnectionError:
                     status = 599
                 if status != 200:
@@ -689,11 +698,12 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
         # We test client instead of run_cli as asyncio subprocesses do
         # not work if run from thread other than main.
         forwarder = loop.create_task(
-            client.jobs.port_forward(nginx_job_async, True, port, 22)
+            client.jobs.port_forward(nginx_job_async[0], True, port, 80)
         )
+        await asyncio.sleep(loop_sleep)
 
         try:
-            url = f"http://127.0.0.1:{port}"
+            url = f"http://127.0.0.1:{port}/secret.txt"
             probe = await get_(url)
             assert probe == 200
         finally:
