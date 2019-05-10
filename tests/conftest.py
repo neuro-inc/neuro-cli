@@ -1,4 +1,5 @@
-from typing import Callable
+import uuid
+from typing import Callable, Iterator
 
 import pytest
 from jose import jwt
@@ -60,3 +61,11 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
         return Client._create(config)
 
     return go
+
+
+@pytest.fixture()
+def random_job_name() -> Iterator[Callable[[], str]]:
+    def _impl() -> str:
+        return f"job-{str(uuid.uuid1())[:8]}"
+
+    yield _impl

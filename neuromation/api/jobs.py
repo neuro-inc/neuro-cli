@@ -1,6 +1,7 @@
 import asyncio
 import enum
 import json
+import logging
 import shlex
 from dataclasses import dataclass, field
 from typing import (
@@ -26,6 +27,9 @@ from .config import _Config
 from .core import IllegalArgumentError, _Core
 from .url_utils import normalize_storage_path_uri
 from .utils import NoPublicConstructor
+
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -288,7 +292,16 @@ class JobDescription:
             finished_at=res["history"].get("finished_at", ""),
         )
         http_url = URL(res.get("http_url", ""))
-        http_url_named = URL(res.get("http_url_named", ""))
+        # TODO (ajuszkowski 30-Apr-2019) Try-catch block below is a TEMPORARY PATCH:
+        #  Some jobs have too long DNS labels for `http_url_named` so that
+        #  `yarl.URL` fails to encode such URLs (we just skip these URLs).
+        #  (see https://github.com/neuromation/platform-client-python/issues/750)
+        try:
+            # TODO: Remove this try-catch block once the Redis database is cleaned up
+            #  (see https://github.com/neuromation/platform-api/issues/642)
+            http_url_named = URL(res.get("http_url_named", ""))
+        except UnicodeError:
+            http_url_named = URL("")
         ssh_server = URL(res.get("ssh_server", ""))
         internal_hostname = res.get("internal_hostname", None)
         return JobDescription(

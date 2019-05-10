@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
-from uuid import uuid4
+from typing import Callable, List, Optional, Tuple
 
 import pytest
 
@@ -49,7 +48,7 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_e2e_job_top(helper: Helper) -> None:
+def test_e2e_job_top(helper: Helper, random_job_name: Callable[[], str]) -> None:
     def split_non_empty_parts(line: str, separator: Optional[str] = None) -> List[str]:
         return [part.strip() for part in line.split(separator) if part.strip()]
 
@@ -58,7 +57,7 @@ def test_e2e_job_top(helper: Helper) -> None:
         "do sleep 1; let COUNTER+=1; done; sleep 30"
     )
     command = f"bash -c '{bash_script}'"
-    job_name = f"test-job-{str(uuid4())[:8]}"
+    job_name = random_job_name()
     aux_params = ["--volume", f"{helper.tmpstorage}:/data:ro", "--name", job_name]
 
     helper.run_job_and_wait_state(

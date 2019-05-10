@@ -1,7 +1,9 @@
 from typing import Any, Callable, Dict, List, Optional
+from uuid import uuid4
 
 import pytest
 from aiohttp import web
+from yarl import URL
 
 from neuromation.api import (
     Client,
@@ -683,7 +685,7 @@ def test_volume_from_str_fail(volume: str) -> None:
 
 
 def create_job_response(
-    id: str, status: str, name: Optional[str] = None
+    id: str, status: str, name: Optional[str] = None, **kwargs: str
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -709,6 +711,7 @@ def create_job_response(
         },
         "is_preemptible": True,
         "owner": "owner",
+        **kwargs,
     }
     if name:
         result["name"] = name
@@ -925,3 +928,25 @@ async def test_list_filter_by_name_and_statuses(
 
     job_descriptions = [JobDescription.from_api(job) for job in jobs]
     assert ret == job_descriptions[:2]
+
+
+def test_job_description_from_api_named_job_dns_name_too_long() -> None:
+    """ Regression test on too long DNS labels for named jobs with long names.
+    See issue see https://github.com/neuromation/platform-client-python/issues/750
+    This test checks that `JobDescription.from_api` does not throw the following error:
+        UnicodeError: encoding with 'idna' codec failed (UnicodeError: label
+        empty or too long)
+    """
+    job_id = "job-id-1"
+    job_name = f"test-job-name-with-very-long-name-{uuid4()}"
+    owner = f"test-job-user-with-very-long-name-{uuid4()}"
+    job_description = JobDescription.from_api(
+        create_job_response(
+            job_id,
+            "running",
+            name=job_name,
+            http_url=f"https://{job_id}.jobs.neu.ro",
+            http_url_named=f"https://{job_name}-{owner}.jobs.neu.ro",
+        )
+    )
+    assert job_description.http_url_named == URL("")

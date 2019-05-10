@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 from time import sleep, time
 from typing import Any, AsyncIterator, Callable, Dict, Iterator
-from uuid import uuid4
 
 import aiohttp
 import pytest
@@ -394,8 +393,8 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_true(helper: Helper) -> None:
-    job_name = f"test-job-{str(uuid4())[:8]}"
+def test_e2e_ssh_exec_true(helper: Helper, random_job_name: Callable[[], str]) -> None:
+    job_name = random_job_name()
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [
