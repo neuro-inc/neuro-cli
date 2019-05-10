@@ -11,7 +11,7 @@ from yarl import URL
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
 from neuromation.api.jobs import Jobs
-from neuromation.api.login import AuthNegotiator
+from neuromation.api.login import AuthNegotiator, _ClusterConfig
 from tests import _TestServerFactory
 
 
@@ -29,9 +29,11 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 
 
 @pytest.fixture
-def config_file(tmp_home: Path, auth_config: _AuthConfig) -> Path:
+def config_file(
+    tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+) -> Path:
     config_path = tmp_home / ".nmrc"
-    _create_config(config_path, auth_config)
+    _create_config(config_path, auth_config, cluster_config)
     return config_path
 
 
@@ -51,6 +53,9 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
         return web.json_response(
             {
                 "registry_url": "https://registry-dev.test.com",
+                "storage_url": "https://storage-dev.test.com",
+                "users_url": "https://users-dev.test.com",
+                "monitoring_url": "https://monitoring-dev.test.com",
                 "auth_url": "https://test-neuromation.auth0.com/authorize",
                 "token_url": "https://test-neuromation.auth0.com/oauth/token",
                 "client_id": "banana",
@@ -74,18 +79,108 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
     return srv.make_url("/")
 
 
-def _create_config(nmrc_path: Path, auth_config: _AuthConfig) -> str:
+def _create_config(
+    nmrc_path: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+) -> str:
     token = str(uuid())
     config = _Config(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
+        cluster_config=cluster_config,
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
-        registry_url=URL("https://registry-dev.neu.ro"),
     )
     Factory(nmrc_path)._save(config)
     assert nmrc_path.exists()
     return token
+
+
+class TestConfig:
+    def test_check_initialized(self) -> None:
+        auth_config_good = _AuthConfig.create(
+            auth_url=URL("auth_url"),
+            token_url=URL("http://token"),
+            client_id="client-id",
+            audience="everyone",
+        )
+        assert auth_config_good.is_initialized()
+
+        cluster_config_good = _ClusterConfig.create(
+            registry_url=URL("http://value"),
+            storage_url=URL("http://value"),
+            users_url=URL("http://value"),
+            monitoring_url=URL("http://value"),
+        )
+        assert cluster_config_good.is_initialized()
+
+        config = _Config(
+            auth_config=auth_config_good,
+            auth_token=_AuthToken(
+                token="token", expiration_time=10, refresh_token="ok"
+            ),
+            cluster_config=cluster_config_good,
+            pypi=_PyPIVersion(pypi_version="1.2.3", check_timestamp=20),
+            url=URL("https://dev.neu.ro"),
+        )
+        config.check_initialized()  # check no exceptions
+
+    def test_check_initialized_bad_auth_config(self) -> None:
+        auth_config_bad = _AuthConfig.create(
+            auth_url=URL(),  # empty
+            token_url=URL("http://token"),
+            client_id="client-id",
+            audience="everyone",
+        )
+        assert not auth_config_bad.is_initialized()
+
+        cluster_config_good = _ClusterConfig.create(
+            registry_url=URL("http://value"),
+            storage_url=URL("http://value"),
+            users_url=URL("http://value"),
+            monitoring_url=URL("http://value"),
+        )
+        assert cluster_config_good.is_initialized()
+
+        config = _Config(
+            auth_config=auth_config_bad,
+            auth_token=_AuthToken(
+                token="token", expiration_time=10, refresh_token="ok"
+            ),
+            cluster_config=cluster_config_good,
+            pypi=_PyPIVersion(pypi_version="1.2.3", check_timestamp=20),
+            url=URL("https://dev.neu.ro"),
+        )
+        with pytest.raises(ValueError, match="Missing server configuration"):
+            config.check_initialized()
+
+    def test_check_initialized_bad_cluster_config(self) -> None:
+        auth_config_bad = _AuthConfig.create(
+            auth_url=URL("auth_url"),
+            token_url=URL("http://token"),
+            client_id="client-id",
+            audience="everyone",
+        )
+        assert auth_config_bad.is_initialized()
+
+        cluster_config_good = _ClusterConfig.create(
+            registry_url=URL(),  # empty
+            storage_url=URL("http://value"),
+            users_url=URL("http://value"),
+            monitoring_url=URL("http://value"),
+        )
+        assert not cluster_config_good.is_initialized()
+
+        config = _Config(
+            auth_config=auth_config_bad,
+            auth_token=_AuthToken(
+                token="token", expiration_time=10, refresh_token="ok"
+            ),
+            cluster_config=cluster_config_good,
+            pypi=_PyPIVersion(pypi_version="1.2.3", check_timestamp=20),
+            url=URL("https://dev.neu.ro"),
+        )
+        with pytest.raises(ValueError, match="Missing server configuration"):
+            config.check_initialized()
 
 
 class TestConfigFileInteraction:
@@ -98,21 +193,27 @@ class TestConfigFileInteraction:
         with pytest.raises(ConfigError, match=r"not a regular file"):
             await Factory().get()
 
-    async def test_default_path(self, tmp_home: Path, auth_config: _AuthConfig) -> None:
-        token = _create_config(tmp_home / ".nmrc", auth_config)
+    async def test_default_path(
+        self, tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+    ) -> None:
+        token = _create_config(tmp_home / ".nmrc", auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
         assert client._config.auth_token.token == token
 
-    async def test_shorten_path(self, tmp_home: Path, auth_config: _AuthConfig) -> None:
-        token = _create_config(tmp_home / "test.nmrc", auth_config)
+    async def test_shorten_path(
+        self, tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+    ) -> None:
+        token = _create_config(tmp_home / "test.nmrc", auth_config, cluster_config)
         client = await Factory(Path("~/test.nmrc")).get()
         await client.close()
         assert client._config.auth_token.token == token
 
-    async def test_full_path(self, tmp_home: Path, auth_config: _AuthConfig) -> None:
+    async def test_full_path(
+        self, tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+    ) -> None:
         config_path = tmp_home / "test.nmrc"
-        token = _create_config(config_path, auth_config)
+        token = _create_config(config_path, auth_config, cluster_config)
         client = await Factory(config_path).get()
         await client.close()
         assert client._config.auth_token.token == token
@@ -150,7 +251,7 @@ class TestConfigFileInteraction:
         with config_file.open("r") as f:
             original = yaml.safe_load(f)
 
-        for key in ["auth_config", "auth_token", "pypi", "registry_url", "url"]:
+        for key in ["auth_config", "auth_token", "pypi", "cluster_config", "url"]:
             modified = original.copy()
             del modified[key]
             with config_file.open("w") as f:

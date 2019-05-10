@@ -395,7 +395,7 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_true(helper: Helper) -> None:
-    job_name = f"test-job-{uuid4()}"
+    job_name = f"test-job-{str(uuid4())[:8]}"
     command = 'bash -c "sleep 15m; false"'
     captured = helper.run_cli(
         [

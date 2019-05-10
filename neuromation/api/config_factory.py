@@ -11,7 +11,13 @@ from yarl import URL
 from .client import Client
 from .config import _Config, _PyPIVersion
 from .core import DEFAULT_TIMEOUT
-from .login import AuthNegotiator, _AuthConfig, _AuthToken, get_server_config
+from .login import (
+    AuthNegotiator,
+    _AuthConfig,
+    _AuthToken,
+    _ClusterConfig,
+    get_server_config,
+)
 
 
 WIN32 = sys.platform == "win32"
@@ -54,9 +60,9 @@ class Factory:
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=auth_token,
+            cluster_config=server_config.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
-            registry_url=server_config.registry_url,
         )
         async with Client._create(config, timeout=timeout) as client:
             await client.jobs.list()  # raises an exception if cannot login
@@ -75,9 +81,9 @@ class Factory:
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
+            cluster_config=server_config.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
-            registry_url=server_config.registry_url,
         )
         async with Client._create(config, timeout=timeout) as client:
             await client.jobs.list()  # raises an exception if cannot login
@@ -105,20 +111,20 @@ class Factory:
 
         try:
             api_url = URL(payload["url"])
-            registry_url = URL(payload["registry_url"])
             pypi_payload = payload["pypi"]
         except (KeyError, TypeError, ValueError):
             raise ConfigError(MALFORMED_CONFIG_TEXT)
 
         auth_config = self._deserialize_auth_config(payload)
+        cluster_config = self._deserialize_cluster_config(payload)
         auth_token = self._deserialize_auth_token(payload)
 
         return _Config(
             auth_config=auth_config,
+            cluster_config=cluster_config,
             auth_token=auth_token,
             pypi=_PyPIVersion.from_config(pypi_payload),
             url=api_url,
-            registry_url=registry_url,
         )
 
     def _serialize_auth_config(self, auth_config: _AuthConfig) -> Dict[str, Any]:
@@ -133,6 +139,17 @@ class Factory:
             "audience": auth_config.audience,
             "success_redirect_url": success_redirect_url,
             "callback_urls": [str(u) for u in auth_config.callback_urls],
+        }
+
+    def _serialize_cluster_config(
+        self, cluster_config: _ClusterConfig
+    ) -> Dict[str, str]:
+        assert cluster_config.is_initialized(), cluster_config
+        return {
+            "registry_url": str(cluster_config.registry_url),
+            "storage_url": str(cluster_config.storage_url),
+            "users_url": str(cluster_config.users_url),
+            "monitoring_url": str(cluster_config.monitoring_url),
         }
 
     def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
@@ -151,6 +168,17 @@ class Factory:
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
 
+    def _deserialize_cluster_config(self, payload: Dict[str, Any]) -> _ClusterConfig:
+        cluster_config = payload.get("cluster_config")
+        if not cluster_config:
+            raise ConfigError(MALFORMED_CONFIG_TEXT)
+        return _ClusterConfig.create(
+            registry_url=URL(cluster_config["registry_url"]),
+            storage_url=URL(cluster_config["storage_url"]),
+            users_url=URL(cluster_config["users_url"]),
+            monitoring_url=URL(cluster_config["monitoring_url"]),
+        )
+
     def _deserialize_auth_token(self, payload: Dict[str, Any]) -> _AuthToken:
         auth_payload = payload.get("auth_token")
         if auth_payload is None:
@@ -166,11 +194,12 @@ class Factory:
         return await auth_negotiator.refresh_token(config.auth_token)
 
     def _save(self, config: _Config) -> None:
-        payload: Dict[str, Any] = {
-            "url": str(config.url),
-            "registry_url": str(config.registry_url),
-        }
+        payload: Dict[str, Any] = dict()
+        payload["url"] = str(config.url)
         payload["auth_config"] = self._serialize_auth_config(config.auth_config)
+        payload["cluster_config"] = self._serialize_cluster_config(
+            config.cluster_config
+        )
         payload["auth_token"] = {
             "token": config.auth_token.token,
             "expiration_time": config.auth_token.expiration_time,
