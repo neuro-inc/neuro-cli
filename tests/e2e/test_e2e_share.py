@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from tests.e2e import Helper
@@ -5,9 +7,11 @@ from tests.e2e import Helper
 
 @pytest.mark.e2e
 def test_grant_complete_lifecycle(helper: Helper) -> None:
-    captured = helper.run_cli(["acl", "grant", "storage:shared-read", "public", "read"])
+    path = str(uuid4())
+    uri = f"storage://{helper.username}/{path}"
+    captured = helper.run_cli(["acl", "grant", uri, "public", "read"])
     assert captured.out == ""
-    expected_err = f"Using resource 'storage://{helper.username}/shared-read'"
+    expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
     captured = helper.run_cli(["acl", "list"])
@@ -26,26 +30,36 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     captured = helper.run_cli(["acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert result == [f"storage://{helper.username}/shared-read read public"]
+    assert f"{uri} read public" in result
+    for line in result:
+        assert not line.startswith("storage://{helper.username} ")
+        assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "storage"])
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert result == [f"storage://{helper.username}/shared-read read public"]
+    result2 = captured.out.splitlines()
+    assert f"{uri} read public" in result2
+    for line in result:
+        assert line.startswith("storage://")
+        assert line in result
 
     captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "image"])
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert result == []
+    result2 = captured.out.splitlines()
+    for line in result2:
+        assert line.startswith("image://")
+        assert line in result
 
-    captured = helper.run_cli(["acl", "revoke", "storage:shared-read", "public"])
+    captured = helper.run_cli(["acl", "revoke", uri, "public"])
     assert captured.out == ""
     assert expected_err in captured.err
 
     captured = helper.run_cli(["acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert result == []
+    assert f"{uri} read public" not in result
+    for line in result:
+        assert not line.startswith("{uri} ")
 
 
 @pytest.mark.e2e

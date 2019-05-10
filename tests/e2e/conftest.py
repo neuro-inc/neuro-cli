@@ -402,6 +402,7 @@ class Helper:
     def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
+        self._capfd.readouterr()
 
         t0 = time()
         delay = 0.5
