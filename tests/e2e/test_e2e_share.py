@@ -26,14 +26,17 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     captured = helper.run_cli(["acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"storage://{helper.username} manage public" in result
+    assert result == [f"storage://{helper.username}/shared-read read public"]
 
     captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "storage"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"storage://{helper.username} manage public" not in result
-    for line in result:
-        assert line.startswith("storage://")
+    assert result == [f"storage://{helper.username}/shared-read read public"]
+
+    captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "image"])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert result == []
 
     captured = helper.run_cli(["acl", "revoke", "storage:shared-read", "public"])
     assert captured.out == ""
@@ -42,7 +45,7 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
     captured = helper.run_cli(["acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"storage://{helper.username} manage public" not in result
+    assert result == []
 
 
 @pytest.mark.e2e
