@@ -54,13 +54,15 @@ class Factory:
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        server_config = await get_server_config(url)
-        negotiator = AuthNegotiator(server_config.auth_config)
+        config_unauthorized = await get_server_config(url)
+        negotiator = AuthNegotiator(config_unauthorized.auth_config)
         auth_token = await negotiator.refresh_token()
+
+        config_authorized = await get_server_config(url, token=auth_token.token)
         config = _Config(
-            auth_config=server_config.auth_config,
+            auth_config=config_authorized.auth_config,
             auth_token=auth_token,
-            cluster_config=server_config.cluster_config,
+            cluster_config=config_authorized.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
         )
@@ -77,7 +79,7 @@ class Factory:
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        server_config = await get_server_config(url)
+        server_config = await get_server_config(url, token=token)
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=_AuthToken.create_non_expiring(token),

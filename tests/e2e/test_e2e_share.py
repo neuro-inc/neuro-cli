@@ -7,8 +7,7 @@ from tests.e2e import Helper
 
 @pytest.mark.e2e
 def test_grant_complete_lifecycle(helper: Helper) -> None:
-    path = str(uuid4())
-    uri = f"storage://{helper.username}/{path}"
+    uri = f"storage://{helper.username}/{uuid4()}"
     captured = helper.run_cli(["acl", "grant", uri, "public", "read"])
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
@@ -64,38 +63,39 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_revoke_no_effect(helper: Helper) -> None:
+    uri = f"storage://{helper.username}/{uuid4()}"
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["acl", "revoke", "storage:unshared", "public"])
+        helper.run_cli(["acl", "revoke", uri, "public"])
     assert cm.value.code == 127
     captured = helper.get_last_output()
     expected_out = "Operation has no effect."
     assert expected_out in captured.out
-    expected_err = f"Using resource 'storage://{helper.username}/unshared'"
+    expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
 
 @pytest.mark.e2e
 def test_grant_image_no_tag(helper: Helper) -> None:
+    rel_path = str(uuid4())
+    rel_uri = f"image:{rel_path}"
+    uri = f"image://{helper.username}/{rel_path}"
     another_test_user = "test2"
-    captured = helper.run_cli(
-        ["acl", "grant", "image:my-ubuntu", another_test_user, "read"]
-    )
+    captured = helper.run_cli(["acl", "grant", rel_uri, another_test_user, "read"])
     assert captured.out == ""
-    expected_err = f"Using resource 'image://{helper.username}/my-ubuntu'"
+    expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
-    captured = helper.run_cli(["acl", "revoke", "image:my-ubuntu", another_test_user])
+    captured = helper.run_cli(["acl", "revoke", rel_uri, another_test_user])
     assert captured.out == ""
     assert expected_err in captured.err
 
 
 @pytest.mark.e2e
 def test_grant_image_with_tag_fails(helper: Helper) -> None:
+    uri = f"image://{helper.username}/{uuid4()}:latest"
     another_test_user = "test2"
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(
-            ["acl", "grant", "image://~/my-ubuntu:latest", another_test_user, "read"]
-        )
+        helper.run_cli(["acl", "grant", uri, another_test_user, "read"])
     assert cm.value.code == 127
     last_out = helper.get_last_output().out
     assert "tag is not allowed" in last_out
