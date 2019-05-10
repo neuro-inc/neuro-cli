@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from tests.e2e import Helper
@@ -5,48 +7,52 @@ from tests.e2e import Helper
 
 @pytest.mark.e2e
 def test_share_complete_lifecycle(helper: Helper) -> None:
-    captured = helper.run_cli(["share", "storage:shared-read", "public", "read"])
+    uri = f"storage://{helper.username}/{uuid4()}"
+    captured = helper.run_cli(["share", uri, "public", "read"])
     assert captured.out == ""
-    expected_err = f"Using resource 'storage://{helper.username}/shared-read'"
+    expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
-    captured = helper.run_cli(["revoke", "storage:shared-read", "public"])
+    captured = helper.run_cli(["revoke", uri, "public"])
     assert captured.out == ""
     assert expected_err in captured.err
 
 
 @pytest.mark.e2e
 def test_unshare_no_effect(helper: Helper) -> None:
+    uri = f"storage://{helper.username}/{uuid4()}"
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(["revoke", "storage:unshared", "public"])
+        helper.run_cli(["revoke", uri, "public"])
     assert cm.value.code == 127
     captured = helper.get_last_output()
     expected_out = "Operation has no effect."
     assert expected_out in captured.out
-    expected_err = f"Using resource 'storage://{helper.username}/unshared'"
+    expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
 
 @pytest.mark.e2e
 def test_share_image_no_tag(helper: Helper) -> None:
+    rel_path = str(uuid4())
+    rel_uri = f"image:{rel_path}"
+    uri = f"image://{helper.username}/{rel_path}"
     another_test_user = "test2"
-    captured = helper.run_cli(["share", "image:my-ubuntu", another_test_user, "read"])
+    captured = helper.run_cli(["share", rel_uri, another_test_user, "read"])
     assert captured.out == ""
-    expected_err = f"Using resource 'image://{helper.username}/my-ubuntu'"
+    expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
-    captured = helper.run_cli(["revoke", "image:my-ubuntu", another_test_user])
+    captured = helper.run_cli(["revoke", rel_uri, another_test_user])
     assert captured.out == ""
     assert expected_err in captured.err
 
 
 @pytest.mark.e2e
 def test_share_image_with_tag_fails(helper: Helper) -> None:
+    uri = f"image://{helper.username}/{uuid4()}:latest"
     another_test_user = "test2"
     with pytest.raises(SystemExit) as cm:
-        helper.run_cli(
-            ["share", "image://~/my-ubuntu:latest", another_test_user, "read"]
-        )
+        helper.run_cli(["share", uri, another_test_user, "read"])
     assert cm.value.code == 127
     last_out = helper.get_last_output().out
     assert "tag is not allowed" in last_out

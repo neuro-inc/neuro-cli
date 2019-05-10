@@ -402,13 +402,11 @@ class Helper:
     def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
+        self._capfd.readouterr()
 
         t0 = time()
         delay = 0.5
         while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
-            pre_out, pre_err = self._capfd.readouterr()
-            pre_out_size = len(pre_out)
-            pre_err_size = len(pre_err)
             try:
                 args = []
                 if self._nmrc_path:
@@ -445,9 +443,7 @@ class Helper:
                 elif exc.code != EX_OK:
                     raise
             finally:
-                post_out, post_err = self._capfd.readouterr()
-                out = post_out[pre_out_size:]
-                err = post_err[pre_err_size:]
+                out, err = self._capfd.readouterr()
                 if any(
                     " ".join(arguments).startswith(start)
                     for start in ("submit", "job submit", "run", "job run")
