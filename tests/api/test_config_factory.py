@@ -50,24 +50,29 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
         return []
 
     async def _config_handler(request: web.Request) -> web.Response:
-        return web.json_response(
-            {
-                "registry_url": "https://registry-dev.test.com",
-                "storage_url": "https://storage-dev.test.com",
-                "users_url": "https://users-dev.test.com",
-                "monitoring_url": "https://monitoring-dev.test.com",
-                "auth_url": "https://test-neuromation.auth0.com/authorize",
-                "token_url": "https://test-neuromation.auth0.com/oauth/token",
-                "client_id": "banana",
-                "audience": "https://test.dev.neuromation.io",
-                "callback_urls": [
-                    "http://127.0.0.2:54540",
-                    "http://127.0.0.2:54541",
-                    "http://127.0.0.2:54542",
-                ],
-                "success_redirect_url": "https://neu.ro/#test",
-            }
-        )
+        config_json = {
+            "auth_url": "https://test-neuromation.auth0.com/authorize",
+            "token_url": "https://test-neuromation.auth0.com/oauth/token",
+            "client_id": "banana",
+            "audience": "https://test.dev.neuromation.io",
+            "callback_urls": [
+                "http://127.0.0.2:54540",
+                "http://127.0.0.2:54541",
+                "http://127.0.0.2:54542",
+            ],
+            "success_redirect_url": "https://neu.ro/#test",
+        }
+
+        if "Authorization" in request.headers:
+            config_json.update(
+                {
+                    "registry_url": "https://registry-dev.test.com",
+                    "storage_url": "https://storage-dev.test.com",
+                    "users_url": "https://users-dev.test.com",
+                    "monitoring_url": "https://monitoring-dev.test.com",
+                }
+            )
+        return web.json_response(config_json)
 
     app = web.Application()
     app.router.add_get("/config", _config_handler)
@@ -267,7 +272,11 @@ class TestLogin:
 
     async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
         await Factory().login(url=mock_for_login)
-        assert Path(tmp_home / ".nmrc").exists(), "Config file not written after login "
+        nmrc_path = tmp_home / ".nmrc"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+        saved_config = Factory(nmrc_path)._read()
+        assert saved_config.auth_config.is_initialized()
+        assert saved_config.cluster_config.is_initialized()
 
 
 class TestLoginWithToken:
@@ -277,7 +286,11 @@ class TestLoginWithToken:
 
     async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
         await Factory().login_with_token(token="tokenstr", url=mock_for_login)
-        assert Path(tmp_home / ".nmrc").exists(), "Config file not written after login "
+        nmrc_path = tmp_home / ".nmrc"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+        saved_config = Factory(nmrc_path)._read()
+        assert saved_config.auth_config.is_initialized()
+        assert saved_config.cluster_config.is_initialized()
 
 
 class TestLogout:
