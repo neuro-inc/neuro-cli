@@ -9,12 +9,15 @@ def uri_from_cli(path_or_uri: str, username: str) -> URL:
     uri = URL(path_or_uri)
     # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
     if not uri.scheme or len(uri.scheme) == 1:
-        # URLs like "scheme:123" are specially handled in urllib.parse.urlslip().
+        # Workaround for urllib.parse.urlsplit()'s strange behavior with
+        # URLs like "scheme:123".
         if re.fullmatch(r"[a-zA-Z0-9+\-.]{2,}:[0-9]+", path_or_uri):
-            uri = URL(path_or_uri + "#")  # "#" is ignored
+            uri = URL(f"{path_or_uri}#")
+        elif re.fullmatch(r"[0-9]+", path_or_uri):
+            uri = URL(f"file:{path_or_uri}#")
         else:
-            uri = URL.build(path=path_or_uri)
-    if not uri.scheme or uri.scheme == "file":
+            uri = URL(f"file:{path_or_uri}")
+    if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
     elif uri.scheme == "storage":
         uri = normalize_storage_path_uri(uri, username)
@@ -43,7 +46,7 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
 
 def normalize_local_path_uri(uri: URL) -> URL:
     """Normalize local file url."""
-    if uri.scheme and uri.scheme != "file":
+    if uri.scheme != "file":
         raise ValueError(
             f"Invalid local file scheme '{uri.scheme}://' "
             "(only 'file://' is allowed)"
@@ -57,8 +60,6 @@ def normalize_local_path_uri(uri: URL) -> URL:
         raise ValueError(f"Cannot expand user for {uri}")
     while ret.path.startswith("//"):
         ret = ret.with_path(ret.path[1:])
-    if not ret.scheme:
-        ret = ret.with_scheme("file")
     return ret
 
 

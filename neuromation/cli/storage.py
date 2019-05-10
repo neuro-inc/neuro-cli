@@ -1,7 +1,6 @@
 import logging
 
 import click
-from yarl import URL
 
 from neuromation.api.url_utils import uri_from_cli
 
