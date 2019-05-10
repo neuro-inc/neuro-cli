@@ -54,7 +54,7 @@ def run_cli(
 ) -> Callable[[List[str]], SysCapWithCode]:
     def _run_cli(arguments: List[str]) -> SysCapWithCode:
         log.info("Run 'neuro %s'", " ".join(arguments))
-        self._capfd.readouterr()
+        capfd.readouterr()
 
         code = EX_OK
         try:
