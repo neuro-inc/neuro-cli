@@ -33,14 +33,16 @@ def test_unshare_no_effect(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_share_image_no_tag(helper: Helper) -> None:
-    uri = f"image://{helper.username}/{uuid4()}"
+    rel_path = str(uuid4())
+    rel_uri = f"image:{rel_path}"
+    uri = f"image://{helper.username}/{rel_path}"
     another_test_user = "test2"
-    captured = helper.run_cli(["share", uri, another_test_user, "read"])
+    captured = helper.run_cli(["share", rel_uri, another_test_user, "read"])
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
-    captured = helper.run_cli(["revoke", uri, another_test_user])
+    captured = helper.run_cli(["revoke", rel_uri, another_test_user])
     assert captured.out == ""
     assert expected_err in captured.err
 
