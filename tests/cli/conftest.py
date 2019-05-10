@@ -53,8 +53,9 @@ def run_cli(
     nmrc_path: Path, capfd: Any, tmp_path: Path
 ) -> Callable[[List[str]], SysCapWithCode]:
     def _run_cli(arguments: List[str]) -> SysCapWithCode:
-        with capfd.disabled():
-            log.info("Run 'neuro %s'", " ".join(arguments))
+        log.info("Run 'neuro %s'", " ".join(arguments))
+        self._capfd.readouterr()
+
         code = EX_OK
         try:
             main(
