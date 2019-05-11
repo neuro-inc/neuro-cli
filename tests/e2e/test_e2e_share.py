@@ -45,19 +45,20 @@ def test_grant_complete_lifecycle(helper: Helper) -> None:
 
     captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "storage"])
     assert captured.err == ""
-    result2 = captured.out.splitlines()
-    assert f"{uri} read public" in result2
-    for line in result2:
+    result = captured.out.splitlines()
+    assert f"{uri} read public" in result
+    for line in result:
         assert line.startswith("storage://")
-        assert line in result
+        assert not line.startswith("storage://{helper.username} ")
+        assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "image"])
     assert captured.err == ""
-    result2 = captured.out.splitlines()
-    assert f"{uri2} write {another_test_user}" in result2
-    for line in result2:
+    result = captured.out.splitlines()
+    assert f"{uri2} write {another_test_user}" in result
+    for line in result:
         assert line.startswith("image://")
-        assert line in result
+        assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["acl", "revoke", uri, "public"])
     assert captured.out == ""
