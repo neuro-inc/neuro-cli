@@ -1,3 +1,4 @@
+from typing import Any, Tuple
 from uuid import uuid4
 
 import pytest
@@ -5,10 +6,30 @@ import pytest
 from tests.e2e import Helper
 
 
+@pytest.fixture
+def test_uris(helper: Helper) -> Any:
+    uris = [
+        f"storage://{helper.username}/{uuid4()}",
+        f"image://{helper.username}/{uuid4()}",
+    ]
+    yield uris
+
+    uri, uri2 = uris
+    another_test_user = "test2"
+
+    permissions = ((uri, "public"), (uri2, another_test_user))
+
+    for permission in permissions:
+        try:
+            helper.run_cli(["acl", "revoke", permission[0], permission[1]])
+        except SystemExit:  # let's ignore any possible errors
+            pass
+
+
 @pytest.mark.e2e
-def test_grant_complete_lifecycle(helper: Helper) -> None:
-    uri = f"storage://{helper.username}/{uuid4()}"
-    uri2 = f"image://{helper.username}/{uuid4()}"
+def test_grant_complete_lifecycle(helper: Helper, test_uris: Tuple[str, str]) -> None:
+    uri, uri2 = test_uris
+
     another_test_user = "test2"
 
     captured = helper.run_cli(["acl", "grant", uri, "public", "read"])
