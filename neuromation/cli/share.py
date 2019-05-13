@@ -1,9 +1,9 @@
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 import click
 
-from neuromation.api import Permission
+from neuromation.api import Permission, SharedPermission
 from neuromation.api.users import uri_from_cli
 
 from .root import Root
@@ -98,13 +98,24 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
         neuro acl list --shared --scheme image
     """
     if not shared:
-        for uri, action in sorted(await root.client.users.list(root.username, scheme)):
-            print(uri, action.value)
-    else:
-        for user, uri, action in sorted(
-            await root.client.users.list_shared(root.username, scheme)
+
+        def permission_key(p: Permission) -> Any:
+            return p.uri, p.action
+
+        for p in sorted(
+            await root.client.users.get_acl(root.username, scheme), key=permission_key
         ):
-            print(uri, action.value, user)
+            print(p.uri, p.action.value)
+    else:
+
+        def shared_permission_key(sp: SharedPermission) -> Any:
+            return sp.permission.uri, sp.permission.action.value, sp.username
+
+        for sp in sorted(
+            await root.client.users.get_shared_acl(root.username, scheme),
+            key=shared_permission_key,
+        ):
+            print(sp.permission.uri, sp.permission.action.value, sp.username)
 
 
 acl.add_command(grant)
