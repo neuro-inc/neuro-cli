@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Optional, Sequence
 
-from aiohttp.web import HTTPCreated, HTTPNoContent, HTTPOk
+from aiohttp.web import HTTPCreated, HTTPNoContent
 from jose import JWTError, jwt
 from yarl import URL
 
@@ -46,12 +46,10 @@ class Users(metaclass=NoPublicConstructor):
 
     async def get_acl(
         self, user: str, scheme: Optional[str] = None
-    ) -> Iterable[Permission]:
+    ) -> Sequence[Permission]:
         url = URL(f"users/{user}/permissions")
         params = {"scheme": scheme} if scheme else {}
         async with self._core.request("GET", url, params=params) as resp:
-            if resp.status != HTTPOk.status_code:
-                raise ClientError("Server return unexpected result.")  # NOQA
             payload = await resp.json()
         ret = []
         for item in payload:
@@ -62,12 +60,10 @@ class Users(metaclass=NoPublicConstructor):
 
     async def get_shared_acl(
         self, user: str, scheme: Optional[str] = None
-    ) -> Iterable[SharedPermission]:
+    ) -> Sequence[SharedPermission]:
         url = URL(f"users/{user}/permissions/shared")
         params = {"scheme": scheme} if scheme else {}
         async with self._core.request("GET", url, params=params) as resp:
-            if resp.status != HTTPOk.status_code:
-                raise ClientError("Server return unexpected result.")  # NOQA
             payload = await resp.json()
         ret = []
         for item in payload:
