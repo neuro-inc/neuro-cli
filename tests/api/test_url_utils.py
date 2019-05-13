@@ -204,8 +204,8 @@ async def test_normalize_local_path_uri__tilde_in_absolute_path(
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
-    assert url.path == "/~/path/to/file.txt"
-    assert str(url) == "file:///~/path/to/file.txt"
+    assert _extract_path(url) == Path.cwd() / "/~/path/to/file.txt"
+    assert str(url) == (Path.cwd() / "/~/path/to/file.txt").as_uri().replace("%7E", "~")
 
 
 async def test_normalize_storage_path_uri__tilde_in_host(client: Client) -> None:
