@@ -142,7 +142,7 @@ async def kill_proc_tree(
                 zombies.extend(children_alive)
 
             if zombies:
-                raise RuntimeWarning(f"Possible zombie subprocesse: {zombies}")
+                raise RuntimeWarning(f"Possible zombie subprocesses: {zombies}")
 
         except psutil.NoSuchProcess:
             pass
