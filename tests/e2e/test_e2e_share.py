@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -6,37 +6,27 @@ import pytest
 from tests.e2e import Helper
 
 
-@pytest.fixture
-def test_uris(helper: Helper) -> Any:
-    uris = [
-        f"storage://{helper.username}/{uuid4()}",
-        f"image://{helper.username}/{uuid4()}",
-    ]
-    yield uris
-
-    uri, uri2 = uris
-    another_test_user = "test2"
-
-    permissions = ((uri, "public"), (uri2, another_test_user))
-
-    for permission in permissions:
-        try:
-            helper.run_cli(["acl", "revoke", permission[0], permission[1]])
-        except SystemExit:  # let's ignore any possible errors
-            pass
+def revoke(helper: Helper, uri: str, username: str) -> None:
+    try:
+        helper.run_cli(["acl", "revoke", uri, username])
+    except SystemExit:  # let's ignore any possible errors
+        pass
 
 
 @pytest.mark.e2e
-def test_grant_complete_lifecycle(helper: Helper, test_uris: Tuple[str, str]) -> None:
-    uri, uri2 = test_uris
+def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
+    uri = f"storage://{helper.username}/{uuid4()}"
+    uri2 = f"image://{helper.username}/{uuid4()}"
 
     another_test_user = "test2"
 
+    request.addfinalizer(lambda: revoke(helper, uri, "public"))
     captured = helper.run_cli(["acl", "grant", uri, "public", "read"])
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
+    request.addfinalizer(lambda: revoke(helper, uri2, another_test_user))
     captured = helper.run_cli(["acl", "grant", uri2, another_test_user, "write"])
     assert captured.out == ""
     expected_err2 = f"Using resource '{uri2}'"
@@ -113,11 +103,13 @@ def test_revoke_no_effect(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_grant_image_no_tag(helper: Helper) -> None:
+def test_grant_image_no_tag(request: Any, helper: Helper) -> None:
     rel_path = str(uuid4())
     rel_uri = f"image:{rel_path}"
     uri = f"image://{helper.username}/{rel_path}"
     another_test_user = "test2"
+
+    request.addfinalizer(lambda: revoke(helper, rel_uri, another_test_user))
     captured = helper.run_cli(["acl", "grant", rel_uri, another_test_user, "read"])
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
@@ -129,10 +121,11 @@ def test_grant_image_no_tag(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_grant_image_with_tag_fails(helper: Helper) -> None:
+def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
     uri = f"image://{helper.username}/{uuid4()}:latest"
     another_test_user = "test2"
     with pytest.raises(SystemExit) as cm:
+        request.addfinalizer(lambda: revoke(helper, uri, another_test_user))
         helper.run_cli(["acl", "grant", uri, another_test_user, "read"])
     assert cm.value.code == 127
     last_out = helper.get_last_output().out
