@@ -102,3 +102,5 @@ class TestTTYPrinter:
         assert "message1-replace" in out
         assert "message3" in out
         assert CSI in out
+        assert f"{CSI}0A" not in out
+        assert f"{CSI}0B" not in out
