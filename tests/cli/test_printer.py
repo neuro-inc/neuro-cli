@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from neuromation.cli.printer import CSI, StreamPrinter, TTYPrinter
+from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
 class TestStreamPrinter:
@@ -111,6 +111,7 @@ class TestTTYPrinter:
         assert "message3" in out
         assert "message7" in out
         assert "message2" in out
+        CSI = "\033["
         assert CSI in out
         assert f"{CSI}0A" not in out
         assert f"{CSI}0B" not in out
