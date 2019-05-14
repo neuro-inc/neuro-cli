@@ -5,6 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.5.13 (2019-05-13)
+================================
+
+Features
+--------
+
+
+- Print exposed HTTP for named jobs ([#736](https://github.com/neuromation/platform-api-clients/issues/736))
+
+- Support retrieving server config for authorized users. ([#766](https://github.com/neuromation/platform-api-clients/issues/766))
+
+
 Neuromation 19.4.23 (2019-04-23)
 ================================
 
