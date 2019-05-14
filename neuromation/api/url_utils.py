@@ -5,6 +5,25 @@ from pathlib import Path
 from yarl import URL
 
 
+def uri_from_cli(path_or_uri: str, username: str) -> URL:
+    uri = URL(path_or_uri)
+    # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
+    if not uri.scheme or len(uri.scheme) == 1:
+        # Workaround for urllib.parse.urlsplit()'s strange behavior with
+        # URLs like "scheme:123".
+        if re.fullmatch(r"[a-zA-Z0-9+\-.]{2,}:[0-9]+", path_or_uri):
+            uri = URL(f"{path_or_uri}#")
+        elif re.fullmatch(r"[0-9]+", path_or_uri):
+            uri = URL(f"file:{path_or_uri}#")
+        else:
+            uri = URL(f"file:{path_or_uri}")
+    if uri.scheme == "file":
+        uri = normalize_local_path_uri(uri)
+    elif uri.scheme == "storage":
+        uri = normalize_storage_path_uri(uri, username)
+    return uri
+
+
 def normalize_storage_path_uri(uri: URL, username: str) -> URL:
     """Normalize storage url."""
     if uri.scheme != "storage":
