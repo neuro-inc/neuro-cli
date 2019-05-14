@@ -1,0 +1,1 @@
+Changes in `neuro store rm` behavior: removes only files by default, add option `--recursive` to remove directories.
