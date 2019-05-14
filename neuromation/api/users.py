@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Sequence
 
 from aiohttp.web import HTTPCreated, HTTPNoContent
 from jose import JWTError, jwt
@@ -34,9 +34,43 @@ class Permission:
         return primitive
 
 
+@dataclass(frozen=True)
+class SharedPermission:
+    username: str
+    permission: Permission
+
+
 class Users(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core) -> None:
         self._core = core
+
+    async def get_acl(
+        self, user: str, scheme: Optional[str] = None
+    ) -> Sequence[Permission]:
+        url = URL(f"users/{user}/permissions")
+        params = {"scheme": scheme} if scheme else {}
+        async with self._core.request("GET", url, params=params) as resp:
+            payload = await resp.json()
+        ret = []
+        for item in payload:
+            uri = URL(item["uri"])
+            action = Action(item["action"])
+            ret.append(Permission(uri, action))
+        return ret
+
+    async def get_shared_acl(
+        self, user: str, scheme: Optional[str] = None
+    ) -> Sequence[SharedPermission]:
+        url = URL(f"users/{user}/permissions/shared")
+        params = {"scheme": scheme} if scheme else {}
+        async with self._core.request("GET", url, params=params) as resp:
+            payload = await resp.json()
+        ret = []
+        for item in payload:
+            uri = URL(item["uri"])
+            action = Action(item["action"])
+            ret.append(SharedPermission(item["user"], Permission(uri, action)))
+        return ret
 
     async def share(self, user: str, permission: Permission) -> None:
         url = URL(f"users/{user}/permissions")

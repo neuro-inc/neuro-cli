@@ -7,7 +7,17 @@ import secrets
 import time
 import webbrowser
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Callable, List, Optional, Sequence, Type, cast
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    cast,
+)
 
 import aiohttp
 from aiohttp import ClientResponseError, ClientSession
@@ -302,6 +312,28 @@ class AuthTokenClient:
 
 
 @dataclass(frozen=True)
+class _ClusterConfig:
+    registry_url: URL
+    storage_url: URL
+    users_url: URL
+    monitoring_url: URL
+
+    @classmethod
+    def create(
+        cls, registry_url: URL, storage_url: URL, users_url: URL, monitoring_url: URL
+    ) -> "_ClusterConfig":
+        return cls(registry_url, storage_url, users_url, monitoring_url)
+
+    def is_initialized(self) -> bool:
+        return bool(
+            self.registry_url
+            and self.storage_url
+            and self.users_url
+            and self.monitoring_url
+        )
+
+
+@dataclass(frozen=True)
 class _AuthConfig:
     auth_url: URL
     token_url: URL
@@ -393,27 +425,25 @@ class AuthNegotiator:
 @dataclass(frozen=True)
 class _ServerConfig:
     auth_config: _AuthConfig
-    registry_url: URL
+    cluster_config: _ClusterConfig
 
 
 class ConfigLoadException(Exception):
     pass
 
 
-async def get_server_config(url: URL) -> _ServerConfig:
+async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerConfig:
     async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as client:
-        async with client.get(url / "config") as resp:
+        headers: Dict[str, str] = {}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        async with client.get(url / "config", headers=headers) as resp:
             if resp.status != 200:
                 raise RuntimeError(f"Unable to get server configuration: {resp.status}")
             payload = await resp.json()
             # TODO (ajuszkowski, 5-Feb-2019) validate received data
-            auth_url = URL(payload["auth_url"])
-            token_url = URL(payload["token_url"])
-            client_id = payload["client_id"]
-            audience = payload["audience"]
-            success_redirect_url = payload.get("success_redirect_url")
-            if success_redirect_url is not None:
-                success_redirect_url = URL(success_redirect_url)
+            success_redirect_url = URL(payload.get("success_redirect_url", "")) or None
             callback_urls = payload.get("callback_urls")
             callback_urls = (
                 tuple(URL(u) for u in callback_urls)
@@ -421,12 +451,17 @@ async def get_server_config(url: URL) -> _ServerConfig:
                 else _AuthConfig.callback_urls
             )
             auth_config = _AuthConfig(
-                auth_url=auth_url,
-                token_url=token_url,
-                client_id=client_id,
-                audience=audience,
+                auth_url=URL(payload["auth_url"]),
+                token_url=URL(payload["token_url"]),
+                client_id=payload["client_id"],
+                audience=payload["audience"],
                 success_redirect_url=success_redirect_url,
                 callback_urls=callback_urls,
             )
-            registry_url = URL(payload["registry_url"])
-            return _ServerConfig(registry_url=registry_url, auth_config=auth_config)
+            cluster_config = _ClusterConfig(
+                registry_url=URL(payload.get("registry_url", "")),
+                storage_url=URL(payload.get("storage_url", "")),
+                users_url=URL(payload.get("users_url", "")),
+                monitoring_url=URL(payload.get("monitoring_url", "")),
+            )
+            return _ServerConfig(cluster_config=cluster_config, auth_config=auth_config)

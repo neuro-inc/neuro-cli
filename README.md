@@ -33,6 +33,10 @@
 	* [neuro completion](#neuro-completion)
 		* [neuro completion generate](#neuro-completion-generate)
 		* [neuro completion patch](#neuro-completion-patch)
+	* [neuro acl](#neuro-acl)
+		* [neuro acl grant](#neuro-acl-grant)
+		* [neuro acl revoke](#neuro-acl-revoke)
+		* [neuro acl list](#neuro-acl-list)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
@@ -54,7 +58,6 @@
 	* [neuro push](#neuro-push)
 	* [neuro pull](#neuro-pull)
 	* [neuro share](#neuro-share)
-	* [neuro revoke](#neuro-revoke)
 * [Api](#Api)
 * [Contributing](#Contributing)
 
@@ -98,6 +101,7 @@ Name | Description|
 | _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
+| _[neuro acl](#neuro-acl)_| ACL operations |
 
 
 **Commands:**
@@ -124,8 +128,7 @@ Name | Description|
 | _[neuro images](#neuro-images)_| List images |
 | _[neuro push](#neuro-push)_| Push an image to platform registry |
 | _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
-| _[neuro share](#neuro-share)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro share... |
-| _[neuro revoke](#neuro-revoke)_| Revoke from a USER permissions for previously shared resource specified by URI... |
+| _[neuro share](#neuro-share)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro acl... |
 
 
 
@@ -888,6 +891,124 @@ Name | Description|
 
 
 
+## neuro acl
+
+ACL operations.
+
+**Usage:**
+
+```bash
+neuro acl [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro acl grant](#neuro-acl-grant)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro acl... |
+| _[neuro acl revoke](#neuro-acl-revoke)_| Revoke from a USER permissions for previously shared resource specified by URI... |
+| _[neuro acl list](#neuro-acl-list)_| List resource available to a USER or shared by a USER Examples: neuro acl list... |
+
+
+
+
+### neuro acl grant
+
+Shares resource specified by URI to a USER with PERMISSION<br/>
+
+**Usage:**
+
+```bash
+neuro acl grant [OPTIONS] URI USER [read|write|manage]
+```
+
+**Examples:**
+
+```bash
+
+neuro acl grant storage:///sample_data/ alice manage
+neuro acl grant image:resnet50 bob read
+neuro acl grant job:///my_job_id alice write
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro acl revoke
+
+Revoke from a USER permissions for previously shared resource specified by<br/>URI<br/>
+
+**Usage:**
+
+```bash
+neuro acl revoke [OPTIONS] URI USER
+```
+
+**Examples:**
+
+```bash
+
+neuro acl revoke storage:///sample_data/ alice
+neuro acl revoke image:resnet50 bob
+neuro acl revoke job:///my_job_id alice
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro acl list
+
+List resource available to a USER or shared by a USER<br/>
+
+**Usage:**
+
+```bash
+neuro acl list [OPTIONS]
+```
+
+**Examples:**
+
+```bash
+
+neuro acl list
+neuro acl list --scheme storage
+neuro acl list --shared
+neuro acl list --shared --scheme image
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-s, --scheme TEXT_|Filter resources by scheme|
+|_--shared_|Output the resources shared by the user|
+|_--help_|Show this message and exit.|
+
+
+
+
 ## neuro help
 
 Get help on a command.
@@ -1414,38 +1535,9 @@ neuro share [OPTIONS] URI USER [read|write|manage]
 
 ```bash
 
-neuro share storage:///sample_data/ alice manage
-neuro share image:resnet50 bob read
-neuro share job:///my_job_id alice write
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-## neuro revoke
-
-Revoke from a USER permissions for previously shared resource specified by<br/>URI<br/>
-
-**Usage:**
-
-```bash
-neuro revoke [OPTIONS] URI USER
-```
-
-**Examples:**
-
-```bash
-
-neuro revoke storage:///sample_data/ alice
-neuro revoke image:resnet50 bob
-neuro revoke job:///my_job_id alice
+neuro acl grant storage:///sample_data/ alice manage
+neuro acl grant image:resnet50 bob read
+neuro acl grant job:///my_job_id alice write
 
 ```
 

@@ -213,6 +213,7 @@ cli.add_command(storage.storage)
 cli.add_command(image.image)
 cli.add_command(config.config)
 cli.add_command(completion.completion)
+cli.add_command(share.acl)
 
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 
@@ -236,8 +237,7 @@ cli.add_command(storage.mv)
 cli.add_command(alias(image.ls, "images", help=image.ls.help, deprecated=False))
 cli.add_command(image.push)
 cli.add_command(image.pull)
-cli.add_command(share.share)
-cli.add_command(share.revoke)
+cli.add_command(alias(share.grant, "share", help=share.grant.help, deprecated=False))
 
 
 def main(args: Optional[List[str]] = None) -> None:

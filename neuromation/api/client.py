@@ -18,6 +18,7 @@ class Client(metaclass=NoPublicConstructor):
     def __init__(
         self, config: _Config, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
     ) -> None:
+        config.check_initialized()
         self._config = config
         self._ssl_context = ssl.SSLContext()
         self._ssl_context.load_verify_locations(capath=certifi.where())

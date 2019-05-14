@@ -39,7 +39,7 @@ from .jobs import (
 )
 from .parsing_utils import ImageNameParser
 from .storage import FileStatus, FileStatusType
-from .users import Action, Permission
+from .users import Action, Permission, SharedPermission
 
 
 if sys.version_info >= (3, 7):
@@ -79,6 +79,7 @@ __all__ = (
     "HTTPPort",
     "Action",
     "Permission",
+    "SharedPermission",
     "Client",
     "FileStatusType",
     "FileStatus",
