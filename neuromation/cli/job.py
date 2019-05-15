@@ -291,7 +291,7 @@ async def exec(
 
 @command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("job")
-@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1)
+@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @click.option(
     "--no-key-check",
     is_flag=True,
@@ -303,16 +303,35 @@ async def port_forward(
 ) -> None:
     """
     Forward port(s) of a running job to local port(s).
+
+    Examples:
+
+    # Forward local port 2080 to port 80 of job's container.
+    # You can use http://localhost:2080 in browser to access job's served http
+    neuro job port-forward my-fastai-job 2080:80
+
+    # Forward local port 2222 to job's port 22
+    # Then copy all data from container's folder '/data' to current folder
+    # (please run second command in other terminal)
+    neuro job port-forward my-job-with-ssh-server 2222:22
+    rsync -avxzhe "ssh -p 2222" root@localhost:/data .
+
+    # Forward few ports at once
+    neuro job port-forward my-job- 2080:80 2222:22 2000:100
+
     """
     loop = asyncio.get_event_loop()
     job_id = await resolve_job(root.client, job)
     tasks = []
-    for local_port, remote_port in local_remote_port:
-        print(f"Port of {job_id} will be forwarded to localhost:{local_port}")
+    for local_port, job_port in local_remote_port:
+        print(
+            f"Port localhost:{local_port} will be forwarded "
+            f"to port {job_port} of {job_id}"
+        )
         tasks.append(
             loop.create_task(
                 root.client.jobs.port_forward(
-                    job_id, no_key_check, local_port, remote_port
+                    job_id, no_key_check, local_port, job_port
                 )
             )
         )
