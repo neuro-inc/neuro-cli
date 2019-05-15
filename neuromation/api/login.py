@@ -112,23 +112,33 @@ class AuthCodeCallbackClient(abc.ABC):
             scope="offline_access",
             audience=self._audience,
         )
-        await self._request(url)
+        await self._request(url, code)
         await code.wait()
         return code
 
     @abc.abstractmethod
-    async def _request(self, url: URL) -> None:
+    async def _request(self, url: URL, code: AuthCode) -> None:
         pass
 
 
 class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
-    async def _request(self, url: URL) -> None:
+    async def _request(self, url: URL, code: AuthCode) -> None:
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, webbrowser.open_new, str(url))
 
 
+class HeadlessAuthCodeCallbackClient(AuthCodeCallbackClient):
+    async def _request(self, url: URL, code: AuthCode) -> None:
+        print(f"Open {url} in a browser")
+        print("Put the code displayed in a browser after successful login")
+        auth_code = input("Code (empty for exit)-> ")
+        if not auth_code:
+            sys.exit()
+        code.set_value(auth_code)
+
+
 class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
-    async def _request(self, url: URL) -> None:
+    async def _request(self, url: URL, code: AuthCode) -> None:
         async with ClientSession() as client:
             await client.get(url, allow_redirects=True)
 
@@ -341,6 +351,8 @@ class _AuthConfig:
     client_id: str
     audience: str
 
+    headless_callback_url: URL
+
     callback_urls: Sequence[URL] = (
         URL("http://127.0.0.1:54540"),
         URL("http://127.0.0.1:54541"),
@@ -382,16 +394,9 @@ class _AuthConfig:
         )
 
 
-class AuthNegotiator:
-    def __init__(
-        self,
-        config: _AuthConfig,
-        code_callback_client_factory: Type[
-            AuthCodeCallbackClient
-        ] = WebBrowserAuthCodeCallbackClient,
-    ) -> None:
+class BaseNegotiator:
+    def __init__(self, config: _AuthConfig) -> None:
         self._config = config
-        self._code_callback_client_factory = code_callback_client_factory
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
@@ -422,6 +427,56 @@ class AuthNegotiator:
             return token
 
 
+class AuthNegotiator(BaseNegotiator):
+    def __init__(
+        self,
+        config: _AuthConfig,
+        code_callback_client_factory: Type[
+            AuthCodeCallbackClient
+        ] = WebBrowserAuthCodeCallbackClient,
+    ) -> None:
+        super().__init__(config)
+        self._code_callback_client_factory = code_callback_client_factory
+
+    async def get_code(self) -> AuthCode:
+        code = AuthCode()
+        app = create_auth_code_app(code, redirect_url=self._config.success_redirect_url)
+
+        async with create_app_server(
+            app, host=self._config.callback_host, ports=self._config.callback_ports
+        ) as url:
+            code.callback_url = url
+            code_callback_client = self._code_callback_client_factory(
+                url=self._config.auth_url,
+                client_id=self._config.client_id,
+                audience=self._config.audience,
+            )
+            return await code_callback_client.request(code)
+
+
+class HeadlessNegotiator(BaseNegotiator):
+    def __init__(
+        self,
+        config: _AuthConfig,
+        code_callback_client_factory: Type[
+            AuthCodeCallbackClient
+        ] = HeadlessAuthCodeCallbackClient,
+    ) -> None:
+        super().__init__(config)
+        self._code_callback_client_factory = code_callback_client_factory
+
+    async def get_code(self) -> AuthCode:
+        code = AuthCode()
+        code.callback_url = self._config.headless_callback_url
+
+        code_callback_client = self._code_callback_client_factory(
+            url=self._config.auth_url,
+            client_id=self._config.client_id,
+            audience=self._config.audience,
+        )
+        return await code_callback_client.request(code)
+
+
 @dataclass(frozen=True)
 class _ServerConfig:
     auth_config: _AuthConfig
@@ -450,6 +505,7 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                 if callback_urls is not None
                 else _AuthConfig.callback_urls
             )
+            headless_callback_url = URL(payload["headless_callback_url"])
             auth_config = _AuthConfig(
                 auth_url=URL(payload["auth_url"]),
                 token_url=URL(payload["token_url"]),
@@ -457,6 +513,7 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                 audience=payload["audience"],
                 success_redirect_url=success_redirect_url,
                 callback_urls=callback_urls,
+                headless_callback_url=headless_callback_url,
             )
             cluster_config = _ClusterConfig(
                 registry_url=URL(payload.get("registry_url", "")),

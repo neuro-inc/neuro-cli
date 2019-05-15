@@ -159,5 +159,14 @@ async def login_with_token(
     await Factory(path).login_with_token(token, url=url, timeout=timeout)
 
 
+async def login_headless(
+    *,
+    url: URL = DEFAULT_API_URL,
+    path: Optional[Path] = None,
+    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+) -> None:
+    await Factory(path).login_headless(url=url, timeout=timeout)
+
+
 async def logout(*, path: Optional[Path] = None) -> None:
     await Factory(path).logout()

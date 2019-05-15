@@ -26,6 +26,7 @@
 	* [neuro config](#neuro-config)
 		* [neuro config login](#neuro-config-login)
 		* [neuro config login-with-token](#neuro-config-login-with-token)
+		* [neuro config login-headless](#neuro-config-login-headless)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config docker](#neuro-config-docker)
@@ -722,6 +723,7 @@ Name | Description|
 |---|---|
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
 | _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuromation Platform with token |
+| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuromation Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
@@ -757,6 +759,25 @@ Log into Neuromation Platform with token.<br/><br/>TOKEN is authentication token
 
 ```bash
 neuro config login-with-token [OPTIONS] TOKEN [URL]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config login-headless
+
+Log into Neuromation Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back<br/>in neuro command to finish the login process.
+
+**Usage:**
+
+```bash
+neuro config login-headless [OPTIONS] [URL]
 ```
 
 **Options:**

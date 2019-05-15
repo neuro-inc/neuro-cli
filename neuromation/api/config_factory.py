@@ -13,6 +13,7 @@ from .config import _Config, _PyPIVersion
 from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
+    HeadlessNegotiator,
     _AuthConfig,
     _AuthToken,
     _ClusterConfig,
@@ -56,6 +57,30 @@ class Factory:
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
         config_unauthorized = await get_server_config(url)
         negotiator = AuthNegotiator(config_unauthorized.auth_config)
+        auth_token = await negotiator.refresh_token()
+
+        config_authorized = await get_server_config(url, token=auth_token.token)
+        config = _Config(
+            auth_config=config_authorized.auth_config,
+            auth_token=auth_token,
+            cluster_config=config_authorized.cluster_config,
+            pypi=_PyPIVersion.create_uninitialized(),
+            url=url,
+        )
+        async with Client._create(config, timeout=timeout) as client:
+            await client.jobs.list()  # raises an exception if cannot login
+        self._save(config)
+
+    async def login_headless(
+        self,
+        *,
+        url: URL = DEFAULT_API_URL,
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
+    ) -> None:
+        if self._path.exists():
+            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_unauthorized = await get_server_config(url)
+        negotiator = HeadlessNegotiator(config_unauthorized.auth_config)
         auth_token = await negotiator.refresh_token()
 
         config_authorized = await get_server_config(url, token=auth_token.token)
@@ -139,6 +164,7 @@ class Factory:
             "token_url": str(auth_config.token_url),
             "client_id": auth_config.client_id,
             "audience": auth_config.audience,
+            "headless_callback_url": str(auth_config.headless_callback_url),
             "success_redirect_url": success_redirect_url,
             "callback_urls": [str(u) for u in auth_config.callback_urls],
         }
@@ -166,6 +192,7 @@ class Factory:
             token_url=URL(auth_config["token_url"]),
             client_id=auth_config["client_id"],
             audience=auth_config["audience"],
+            headless_callback_url=auth_config["headless_callback_url"],
             success_redirect_url=success_redirect_url,
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )

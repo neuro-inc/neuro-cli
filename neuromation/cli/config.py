@@ -10,6 +10,7 @@ from neuromation.api import (
     DEFAULT_API_URL,
     ConfigError,
     login as api_login,
+    login_headless as api_login_headless,
     login_with_token as api_login_with_token,
     logout as api_logout,
 )
@@ -86,6 +87,31 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
 
 
 @command()
+@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
+@async_cmd(init_client=False)
+async def login_headless(root: Root, url: URL) -> None:
+    """
+    Log into Neuromation Platform from non-GUI server environment.
+
+    URL is a platform entrypoint URL.
+
+    The command works similar to "neuro login" but instead of
+    opening a browser for performing OAuth registration prints
+    an URL that should be open on guest host.
+
+    Then user inputs a code displayed in a browser after successful login
+    back in neuro command to finish the login process.
+    """
+    try:
+        await api_login_headless(url=url, path=root.config_path, timeout=root.timeout)
+    except ConfigError:
+        await api_logout(path=root.config_path)
+        click.echo("You were successfully logged out.")
+        await api_login(url=url, path=root.config_path, timeout=root.timeout)
+    click.echo(f"Logged into {url}")
+
+
+@command()
 @async_cmd()
 async def logout(root: Root) -> None:
     """
@@ -131,6 +157,7 @@ async def docker(root: Root, docker_config: str) -> None:
 
 config.add_command(login)
 config.add_command(login_with_token)
+config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
 
