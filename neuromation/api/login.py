@@ -464,4 +464,6 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                 users_url=URL(payload.get("users_url", "")),
                 monitoring_url=URL(payload.get("monitoring_url", "")),
             )
+            if headers and not cluster_config.is_initialized():
+                raise AuthException("Cannot authorize user")
             return _ServerConfig(cluster_config=cluster_config, auth_config=auth_config)
