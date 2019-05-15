@@ -330,12 +330,31 @@ Name | Description|
 
 ### neuro job port-forward
 
-Forward port\(s) of a running job to local port\(s).
+Forward port\(s) of a running job to local port\(s).<br/>
 
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
+neuro job port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
+```
+
+**Examples:**
+
+```bash
+
+# Forward local port 2080 to port 80 of job's container.
+# You can use http://localhost:2080 in browser to access job's served http
+neuro job port-forward my-fastai-job 2080:80
+
+# Forward local port 2222 to job's port 22
+# Then copy all data from container's folder '/data' to current folder
+# (please run second command in other terminal)
+neuro job port-forward my-job-with-ssh-server 2222:22
+rsync -avxzhe ssh -p 2222 root@localhost:/data .
+
+# Forward few ports at once
+neuro job port-forward my-job- 2080:80 2222:22 2000:100
+
 ```
 
 **Options:**
@@ -1191,12 +1210,31 @@ Name | Description|
 
 ## neuro port-forward
 
-Forward port\(s) of a running job to local port\(s).
+Forward port\(s) of a running job to local port\(s).<br/>
 
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
+neuro port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
+```
+
+**Examples:**
+
+```bash
+
+# Forward local port 2080 to port 80 of job's container.
+# You can use http://localhost:2080 in browser to access job's served http
+neuro job port-forward my-fastai-job 2080:80
+
+# Forward local port 2222 to job's port 22
+# Then copy all data from container's folder '/data' to current folder
+# (please run second command in other terminal)
+neuro job port-forward my-job-with-ssh-server 2222:22
+rsync -avxzhe ssh -p 2222 root@localhost:/data .
+
+# Forward few ports at once
+neuro job port-forward my-job- 2080:80 2222:22 2000:100
+
 ```
 
 **Options:**

@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from neuromation.cli.printer import CSI, StreamPrinter, TTYPrinter
+from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
 class TestStreamPrinter:
@@ -92,13 +92,26 @@ class TestTTYPrinter:
 
     # very simple test
     def test_message_lineno(self, printer: TTYPrinter, capfd: Any) -> None:
+        assert printer.total_lines == 0
         printer.print("message1")
+        assert printer.total_lines == 1
         printer.print("message1-replace", 1)
+        assert printer.total_lines == 1
         printer.print("message3", 3)
+        assert printer.total_lines == 3
+        printer.print("message7", 7)
+        assert printer.total_lines == 7
+        printer.print("message2", 2)
+        assert printer.total_lines == 7
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert "message1" in out
         assert "message1-replace" in out
         assert "message3" in out
+        assert "message7" in out
+        assert "message2" in out
+        CSI = "\033["
         assert CSI in out
+        assert f"{CSI}0A" not in out
+        assert f"{CSI}0B" not in out
