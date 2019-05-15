@@ -69,7 +69,7 @@ class TTYPrinter(AbstractPrinter):
             commands.append(CLEAR_LINE_TAIL)
         commands.append(linesep)
 
-        if diff > 0:
+        if diff > 1:
             commands.append(CURSOR_DOWN.format(diff - 1))
         message = "".join(commands)
 
