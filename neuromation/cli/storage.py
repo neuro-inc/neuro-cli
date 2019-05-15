@@ -146,8 +146,14 @@ async def cp(
 
 @command()
 @click.argument("path")
+@click.option(
+    "-p",
+    "--parents",
+    is_flag=True,
+    help="No error if existing, make parent directories as needed",
+)
 @async_cmd()
-async def mkdir(root: Root, path: str) -> None:
+async def mkdir(root: Root, path: str, parents: bool) -> None:
     """
     Make directories.
     """
@@ -155,7 +161,7 @@ async def mkdir(root: Root, path: str) -> None:
     uri = uri_from_cli(path, root.username)
     log.info(f"Using path '{uri}'")
 
-    await root.client.storage.mkdirs(uri)
+    await root.client.storage.mkdirs(uri, parents=parents, exist_ok=parents)
 
 
 @command()

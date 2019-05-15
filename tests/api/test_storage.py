@@ -76,7 +76,7 @@ async def storage_server(
                 }
             )
         elif op == "MKDIRS":
-            local_path.mkdir(parents=True)
+            local_path.mkdir(parents=True, exist_ok=True)
             return web.Response(status=201)
         elif op == "LISTSTATUS":
             ret = []
@@ -187,21 +187,118 @@ async def test_storage_mv(
         await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
 
 
-async def test_storage_mkdir(
+async def test_storage_mkdir_parents_exist_ok(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/user/folder/sub"
         assert request.query == {"op": "MKDIRS"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_put("/storage/user/folder", handler)
+    app.router.add_put("/storage/user/folder/sub", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(URL("storage://~/folder"))
+        await client.storage.mkdirs(
+            URL("storage://~/folder/sub"), parents=True, exist_ok=True
+        )
+
+
+async def test_storage_mkdir_parents(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def get_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder/sub"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.Response(status=404)
+
+    async def put_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder/sub"
+        assert request.query == {"op": "MKDIRS"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder/sub", get_handler)
+    app.router.add_put("/storage/user/folder/sub", put_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.mkdirs(URL("storage://~/folder/sub"), parents=True)
+
+
+async def test_storage_mkdir_exist_ok(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def get_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/folder",
+                    "type": "DIRECTORY",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    async def put_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder/sub"
+        assert request.query == {"op": "MKDIRS"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder", get_handler)
+    app.router.add_put("/storage/user/folder/sub", put_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.mkdirs(URL("storage://~/folder/sub"), exist_ok=True)
+
+
+async def test_storage_mkdir(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def get_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder/sub"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.Response(status=404)
+
+    async def parent_get_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/folder",
+                    "type": "DIRECTORY",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    async def put_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder/sub"
+        assert request.query == {"op": "MKDIRS"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder/sub", get_handler)
+    app.router.add_get("/storage/user/folder", parent_get_handler)
+    app.router.add_put("/storage/user/folder/sub", put_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.mkdirs(URL("storage://~/folder/sub"))
 
 
 async def test_storage_create(
