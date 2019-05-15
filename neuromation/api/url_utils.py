@@ -56,7 +56,7 @@ def normalize_local_path_uri(uri: URL) -> URL:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
     path = _extract_path(uri)
     path = path.expanduser()
-    if str(path.parents[0]).startswith("~"):
+    if path.parents and str(path.parents[0]).startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
     path = path.absolute()
     ret = URL(path.as_uri())
