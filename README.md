@@ -437,12 +437,12 @@ Name | Description|
 
 ### neuro storage cp
 
-Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
 
 **Usage:**
 
 ```bash
-neuro storage cp [OPTIONS] SOURCE DESTINATION
+neuro storage cp [OPTIONS] SOURCES... DESTINATION
 ```
 
 **Examples:**
@@ -477,7 +477,7 @@ List directory contents.<br/><br/>By default PATH is equal user`s home dir \(sto
 **Usage:**
 
 ```bash
-neuro storage ls [OPTIONS] [PATH]
+neuro storage ls [OPTIONS] [PATHS]...
 ```
 
 **Options:**
@@ -499,7 +499,7 @@ Remove files or directories.<br/>
 **Usage:**
 
 ```bash
-neuro storage rm [OPTIONS] PATH
+neuro storage rm [OPTIONS] PATHS...
 ```
 
 **Examples:**
@@ -528,7 +528,7 @@ Make directories.
 **Usage:**
 
 ```bash
-neuro storage mkdir [OPTIONS] PATH
+neuro storage mkdir [OPTIONS] PATHS...
 ```
 
 **Options:**
@@ -547,7 +547,7 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro storage mv [OPTIONS] SOURCE DESTINATION
+neuro storage mv [OPTIONS] SOURCES... DESTINATION
 ```
 
 **Examples:**
@@ -1306,12 +1306,12 @@ Name | Description|
 
 ## neuro cp
 
-Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
 
 **Usage:**
 
 ```bash
-neuro cp [OPTIONS] SOURCE DESTINATION
+neuro cp [OPTIONS] SOURCES... DESTINATION
 ```
 
 **Examples:**
@@ -1346,7 +1346,7 @@ List directory contents.<br/><br/>By default PATH is equal user`s home dir \(sto
 **Usage:**
 
 ```bash
-neuro ls [OPTIONS] [PATH]
+neuro ls [OPTIONS] [PATHS]...
 ```
 
 **Options:**
@@ -1368,7 +1368,7 @@ Remove files or directories.<br/>
 **Usage:**
 
 ```bash
-neuro rm [OPTIONS] PATH
+neuro rm [OPTIONS] PATHS...
 ```
 
 **Examples:**
@@ -1397,7 +1397,7 @@ Make directories.
 **Usage:**
 
 ```bash
-neuro mkdir [OPTIONS] PATH
+neuro mkdir [OPTIONS] PATHS...
 ```
 
 **Options:**
@@ -1416,7 +1416,7 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro mv [OPTIONS] SOURCE DESTINATION
+neuro mv [OPTIONS] SOURCES... DESTINATION
 ```
 
 **Examples:**
