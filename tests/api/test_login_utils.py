@@ -73,6 +73,7 @@ async def test_get_server_config_no_callback_urls(
         "token_url": token_url,
         "client_id": client_id,
         "audience": audience,
+        "headless_callback_url": headless_callback_url,
         "success_redirect_url": success_redirect_url,
     }
 

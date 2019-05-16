@@ -55,6 +55,7 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
             "token_url": "https://test-neuromation.auth0.com/oauth/token",
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
+            "headless_callback_url": "https://https://dev.neu.ro/oauth/show-code",
             "callback_urls": [
                 "http://127.0.0.2:54540",
                 "http://127.0.0.2:54541",
