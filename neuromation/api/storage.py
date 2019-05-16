@@ -94,10 +94,13 @@ class Storage(metaclass=NoPublicConstructor):
             while not parent.name and parent != parent.parent:
                 parent = parent.parent
             parent = parent.parent
-            try:
-                await self.stats(parent)
-            except ResourceNotFound:
-                raise FileNotFoundError(errno.ENOENT, "No such directory:", str(parent))
+            if parent != parent.parent:
+                try:
+                    await self.stats(parent)
+                except ResourceNotFound:
+                    raise FileNotFoundError(
+                        errno.ENOENT, "No such directory:", str(parent)
+                    )
 
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
