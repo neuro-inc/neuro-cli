@@ -554,6 +554,7 @@ neuro storage mkdir [OPTIONS] PATH
 
 Name | Description|
 |----|------------|
+|_\-p, --parents_|No error if existing, make parent directories as needed|
 |_--help_|Show this message and exit.|
 
 
@@ -1442,6 +1443,7 @@ neuro mkdir [OPTIONS] PATH
 
 Name | Description|
 |----|------------|
+|_\-p, --parents_|No error if existing, make parent directories as needed|
 |_--help_|Show this message and exit.|
 
 
