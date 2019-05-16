@@ -171,3 +171,26 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
 
     # And confirm
     helper.check_dir_absent_on_storage("folder2", "")
+
+
+@pytest.mark.e2e
+def test_e2e_storage_mkdir(helper: Helper) -> None:
+    helper.check_create_dir_on_storage("folder")
+    helper.check_dir_exists_on_storage("folder", "")
+
+    # Create existing directory
+    with pytest.raises(OSError):
+        helper.check_create_dir_on_storage("folder")
+    helper.check_create_dir_on_storage("folder", exist_ok=True)
+
+    # Create a subdirectory in existing directory
+    helper.check_create_dir_on_storage("folder/subfolder")
+    helper.check_dir_exists_on_storage("subfolder", "folder")
+
+    # Create a subdirectory in non-existing directory
+    with pytest.raises(OSError):
+        helper.check_create_dir_on_storage("parent/child")
+    helper.check_dir_absent_on_storage("parent", "")
+    helper.check_create_dir_on_storage("parent/child", parents=True)
+    helper.check_dir_exists_on_storage("parent", "")
+    helper.check_dir_exists_on_storage("child", "parent")
