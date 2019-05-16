@@ -1,3 +1,4 @@
+import errno
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
@@ -153,21 +154,89 @@ async def test_storage_ls(
     ]
 
 
-async def test_storage_rm(
+async def test_storage_rm_file(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    async def handler(request: web.Request) -> web.Response:
+    async def get_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/file"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/file",
+                    "type": "FILE",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    async def delete_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/file"
+        assert request.query == {"op": "DELETE"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_get("/storage/user/file", get_handler)
+    app.router.add_delete("/storage/user/file", delete_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.rm(URL("storage://~/file"))
+
+
+async def test_storage_rm_directory(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def get_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/folder",
+                    "type": "DIRECTORY",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    async def delete_handler(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "DELETE"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_delete("/storage/user/folder", handler)
+    app.router.add_get("/storage/user/folder", get_handler)
+    app.router.add_delete("/storage/user/folder", delete_handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.rm(URL("storage://~/folder"))
+        with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
+            await client.storage.rm(URL("storage://~/folder"))
+        assert cm.value.errno == errno.EISDIR
+
+
+async def test_storage_rm_recursive(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def delete_handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "DELETE"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_delete("/storage/user/folder", delete_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.rm(URL("storage://~/folder"), recursive=True)
 
 
 async def test_storage_mv(
