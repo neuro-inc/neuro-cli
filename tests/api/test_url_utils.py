@@ -90,6 +90,40 @@ def test_uri_from_cli_numberic_path() -> None:
     assert str(uri) == "storage://testuser/123456"
 
 
+async def test_normalize_storage_path_uri_no_path(client: Client) -> None:
+    url = URL("storage:")
+    url = normalize_storage_path_uri(url, client.username)
+    assert url.scheme == "storage"
+    assert url.host == "user"
+    assert url.path == "/"
+    assert str(url) == "storage://user"
+
+
+async def test_normalize_local_path_uri_no_path(pwd: Path) -> None:
+    url = URL("file:")
+    url = normalize_local_path_uri(url)
+    assert url.scheme == "file"
+    assert url.host is None
+    assert _extract_path(url) == pwd
+
+
+async def test_normalize_storage_path_uri_no_slashes(client: Client) -> None:
+    url = URL("storage:file.txt")
+    url = normalize_storage_path_uri(url, client.username)
+    assert url.scheme == "storage"
+    assert url.host == "user"
+    assert url.path == "/file.txt"
+    assert str(url) == "storage://user/file.txt"
+
+
+async def test_normalize_local_path_uri_no_slashes(pwd: Path) -> None:
+    url = URL("file:file.txt")
+    url = normalize_local_path_uri(url)
+    assert url.scheme == "file"
+    assert url.host is None
+    assert _extract_path(url) == pwd / "file.txt"
+
+
 async def test_normalize_storage_path_uri__0_slashes_relative(client: Client) -> None:
     url = URL("storage:path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
