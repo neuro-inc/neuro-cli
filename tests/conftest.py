@@ -21,6 +21,7 @@ def auth_config() -> _AuthConfig:
         token_url=URL("https://dev-neuromation.auth0.com/oauth/token"),
         client_id="CLIENT-ID",
         audience="https://platform.dev.neuromation.io",
+        headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
         success_redirect_url=URL("https://neu.ro/#running-your-first-job"),
         callback_urls=[
             URL("http://127.0.0.1:54540"),

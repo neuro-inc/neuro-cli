@@ -4,6 +4,7 @@ import base64
 import errno
 import hashlib
 import secrets
+import sys
 import time
 import webbrowser
 from dataclasses import dataclass, field
@@ -371,7 +372,11 @@ class _AuthConfig:
 
     def is_initialized(self) -> bool:
         return bool(
-            self.auth_url and self.token_url and self.client_id and self.audience
+            self.auth_url
+            and self.token_url
+            and self.client_id
+            and self.audience
+            and self.headless_callback_url
         )
 
     @classmethod
@@ -381,6 +386,7 @@ class _AuthConfig:
         token_url: URL,
         client_id: str,
         audience: str,
+        headless_callback_url: URL,
         success_redirect_url: Optional[URL] = None,
         callback_urls: Optional[Sequence[URL]] = None,
     ) -> "_AuthConfig":
@@ -389,29 +395,19 @@ class _AuthConfig:
             token_url=token_url,
             client_id=client_id,
             audience=audience,
+            headless_callback_url=headless_callback_url,
             success_redirect_url=success_redirect_url,
             callback_urls=callback_urls or cls.callback_urls,
         )
 
 
-class BaseNegotiator:
+class BaseNegotiator(abc.ABC):
     def __init__(self, config: _AuthConfig) -> None:
         self._config = config
 
+    @abc.abstractmethod
     async def get_code(self) -> AuthCode:
-        code = AuthCode()
-        app = create_auth_code_app(code, redirect_url=self._config.success_redirect_url)
-
-        async with create_app_server(
-            app, host=self._config.callback_host, ports=self._config.callback_ports
-        ) as url:
-            code.callback_url = url
-            code_callback_client = self._code_callback_client_factory(
-                url=self._config.auth_url,
-                client_id=self._config.client_id,
-                audience=self._config.audience,
-            )
-            return await code_callback_client.request(code)
+        pass
 
     async def refresh_token(self, token: Optional[_AuthToken] = None) -> _AuthToken:
         async with AuthTokenClient(

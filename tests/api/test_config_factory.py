@@ -107,6 +107,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
         )
         assert auth_config_good.is_initialized()
 
@@ -135,6 +136,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
         )
         assert not auth_config_bad.is_initialized()
 
@@ -164,6 +166,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
         )
         assert auth_config_bad.is_initialized()
 

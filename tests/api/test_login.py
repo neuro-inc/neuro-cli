@@ -315,6 +315,7 @@ async def auth_config(
         token_url=auth_server / "oauth/token",
         client_id=auth_client_id,
         audience="https://platform.dev.neuromation.io",
+        headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
         callback_urls=[URL(f"http://127.0.0.1:{port}")],
     )
 
@@ -386,6 +387,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -397,6 +399,7 @@ class TestAuthConfig:
             token_url=URL(),
             client_id="client_id",
             audience="audience",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -408,6 +411,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="",
             audience="audience",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -419,6 +423,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -430,6 +435,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
             callback_urls=[],
             success_redirect_url=URL("url"),
         )
@@ -441,10 +447,23 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
+            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=None,
         )
         assert auth_config.is_initialized() is True
+
+    def test_is_initialized__no_headless_callback_url(self) -> None:
+        auth_config = _AuthConfig(
+            auth_url=URL("url"),
+            token_url=URL("url"),
+            client_id="client_id",
+            audience="audience",
+            headless_callback_url=URL(),
+            callback_urls=(URL("url1"), URL("url2")),
+            success_redirect_url=None,
+        )
+        assert auth_config.is_initialized() is False
 
 
 class TestClusterConfig:
