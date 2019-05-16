@@ -138,7 +138,7 @@ class Storage(metaclass=NoPublicConstructor):
             async for data in resp.content.iter_any():
                 yield data
 
-    async def rm(self, uri: URL) -> None:
+    async def rm(self, uri: URL, *, recursive: bool = False) -> None:
         path = self._uri_to_path(uri)
         # TODO (asvetlov): add a minor protection against deleting everything from root
         # or user volume root, however force operation here should allow user to delete
@@ -150,6 +150,13 @@ class Storage(metaclass=NoPublicConstructor):
         # parts = path.split('/')
         # if final_path == root_data_path or final_path.parent == root_data_path:
         #     raise ValueError("Invalid path value.")
+
+        if not recursive:
+            stats = await self.stats(uri)
+            if stats.type is FileStatusType.DIRECTORY:
+                raise IsADirectoryError(
+                    errno.EISDIR, "Is a directory, use recursive remove", str(uri)
+                )
 
         url = self._config.cluster_config.storage_url / path
         url = url.with_query(op="DELETE")

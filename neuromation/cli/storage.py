@@ -29,22 +29,29 @@ def storage() -> None:
 
 @command()
 @click.argument("paths", nargs=-1, required=True)
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="remove directories and their contents recursively",
+)
 @async_cmd()
-async def rm(root: Root, paths: List[str]) -> None:
+async def rm(root: Root, paths: List[str], recursive: bool) -> None:
     """
     Remove files or directories.
 
     Examples:
 
-    neuro rm storage:///foo/bar/
-    neuro rm storage:/foo/bar/
-    neuro rm storage://{username}/foo/bar/
+    neuro rm storage:///foo/bar
+    neuro rm storage:/foo/bar
+    neuro rm storage://{username}/foo/bar
+    neuro rm --recursive storage://{username}/foo/
     """
     for path in paths:
         uri = uri_from_cli(path, root.username)
         log.info(f"Using path '{uri}'")
 
-        await root.client.storage.rm(uri)
+        await root.client.storage.rm(uri, recursive=recursive)
 
 
 @command()
