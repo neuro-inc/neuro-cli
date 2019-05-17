@@ -401,6 +401,15 @@ class _AuthConfig:
         )
 
 
+async def refresh_token(config: _AuthConfig, token: _AuthToken) -> _AuthToken:
+    async with AuthTokenClient(
+        url=config.token_url, client_id=config.client_id
+    ) as token_client:
+        if token.is_expired:
+            return await token_client.refresh(token)
+        return token
+
+
 class BaseNegotiator(abc.ABC):
     def __init__(self, config: _AuthConfig) -> None:
         self._config = config

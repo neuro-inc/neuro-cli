@@ -18,6 +18,7 @@ from .login import (
     _AuthToken,
     _ClusterConfig,
     get_server_config,
+    refresh_token,
 )
 
 
@@ -39,8 +40,7 @@ class Factory:
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
-        auth_negotiator = AuthNegotiator(config=config.auth_config)
-        new_token = await auth_negotiator.refresh_token(config.auth_token)
+        new_token = await refresh_token(config.auth_config, config.auth_token)
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)

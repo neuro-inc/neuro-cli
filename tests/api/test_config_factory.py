@@ -8,6 +8,7 @@ import yaml
 from aiohttp import web
 from yarl import URL
 
+import neuromation.api.config_factory
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
 from neuromation.api.jobs import Jobs
@@ -232,10 +233,14 @@ class TestConfigFileInteraction:
     ) -> None:
         new_token = str(uuid()) + "changed" * 10  # token must has other size
 
-        async def _refresh_token_mock(self: Any, token: str) -> _AuthToken:
+        async def _refresh_token_mock(
+            configf: _AuthConfig, token: _AuthToken
+        ) -> _AuthToken:
             return _AuthToken.create_non_expiring(new_token)
 
-        monkeypatch.setattr(AuthNegotiator, "refresh_token", _refresh_token_mock)
+        monkeypatch.setattr(
+            neuromation.api.config_factory, "refresh_token", _refresh_token_mock
+        )
         file_stat_before = config_file.stat()
         client = await Factory().get()
         await client.close()
