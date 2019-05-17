@@ -28,21 +28,28 @@ def storage() -> None:
 
 @command()
 @click.argument("path")
+@click.option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="remove directories and their contents recursively",
+)
 @async_cmd()
-async def rm(root: Root, path: str) -> None:
+async def rm(root: Root, path: str, recursive: bool) -> None:
     """
     Remove files or directories.
 
     Examples:
 
-    neuro rm storage:///foo/bar/
-    neuro rm storage:/foo/bar/
-    neuro rm storage://{username}/foo/bar/
+    neuro rm storage:///foo/bar
+    neuro rm storage:/foo/bar
+    neuro rm storage://{username}/foo/bar
+    neuro rm --recursive storage://{username}/foo/
     """
     uri = uri_from_cli(path, root.username)
     log.info(f"Using path '{uri}'")
 
-    await root.client.storage.rm(uri)
+    await root.client.storage.rm(uri, recursive=recursive)
 
 
 @command()
@@ -146,8 +153,14 @@ async def cp(
 
 @command()
 @click.argument("path")
+@click.option(
+    "-p",
+    "--parents",
+    is_flag=True,
+    help="No error if existing, make parent directories as needed",
+)
 @async_cmd()
-async def mkdir(root: Root, path: str) -> None:
+async def mkdir(root: Root, path: str, parents: bool) -> None:
     """
     Make directories.
     """
@@ -155,7 +168,7 @@ async def mkdir(root: Root, path: str) -> None:
     uri = uri_from_cli(path, root.username)
     log.info(f"Using path '{uri}'")
 
-    await root.client.storage.mkdirs(uri)
+    await root.client.storage.mkdirs(uri, parents=parents, exist_ok=parents)
 
 
 @command()

@@ -112,7 +112,7 @@ async def login_headless(root: Root, url: URL) -> None:
 
 
 @command()
-@async_cmd()
+@async_cmd(init_client=False)
 async def logout(root: Root) -> None:
     """
     Log out.

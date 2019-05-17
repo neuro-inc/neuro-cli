@@ -22,7 +22,6 @@ from .login import (
 
 
 WIN32 = sys.platform == "win32"
-MALFORMED_CONFIG_TEXT = "Malformed config. Please logout and login again."
 DEFAULT_CONFIG_PATH = "~/.nmrc"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
@@ -139,20 +138,19 @@ class Factory:
         try:
             api_url = URL(payload["url"])
             pypi_payload = payload["pypi"]
-        except (KeyError, TypeError, ValueError):
-            raise ConfigError(MALFORMED_CONFIG_TEXT)
+            auth_config = self._deserialize_auth_config(payload)
+            cluster_config = self._deserialize_cluster_config(payload)
+            auth_token = self._deserialize_auth_token(payload)
 
-        auth_config = self._deserialize_auth_config(payload)
-        cluster_config = self._deserialize_cluster_config(payload)
-        auth_token = self._deserialize_auth_token(payload)
-
-        return _Config(
-            auth_config=auth_config,
-            cluster_config=cluster_config,
-            auth_token=auth_token,
-            pypi=_PyPIVersion.from_config(pypi_payload),
-            url=api_url,
-        )
+            return _Config(
+                auth_config=auth_config,
+                cluster_config=cluster_config,
+                auth_token=auth_token,
+                pypi=_PyPIVersion.from_config(pypi_payload),
+                url=api_url,
+            )
+        except (AttributeError, KeyError, TypeError, ValueError):
+            raise ConfigError("Malformed config. Please logout and login again.")
 
     def _serialize_auth_config(self, auth_config: _AuthConfig) -> Dict[str, Any]:
         assert auth_config.is_initialized(), auth_config
@@ -181,9 +179,7 @@ class Factory:
         }
 
     def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
-        auth_config = payload.get("auth_config")
-        if not auth_config:
-            raise ConfigError(MALFORMED_CONFIG_TEXT)
+        auth_config = payload["auth_config"]
         success_redirect_url = auth_config.get("success_redirect_url")
         if success_redirect_url:
             success_redirect_url = URL(success_redirect_url)
@@ -198,9 +194,7 @@ class Factory:
         )
 
     def _deserialize_cluster_config(self, payload: Dict[str, Any]) -> _ClusterConfig:
-        cluster_config = payload.get("cluster_config")
-        if not cluster_config:
-            raise ConfigError(MALFORMED_CONFIG_TEXT)
+        cluster_config = payload["cluster_config"]
         return _ClusterConfig.create(
             registry_url=URL(cluster_config["registry_url"]),
             storage_url=URL(cluster_config["storage_url"]),
@@ -209,9 +203,7 @@ class Factory:
         )
 
     def _deserialize_auth_token(self, payload: Dict[str, Any]) -> _AuthToken:
-        auth_payload = payload.get("auth_token")
-        if auth_payload is None:
-            raise ConfigError(MALFORMED_CONFIG_TEXT)
+        auth_payload = payload["auth_token"]
         return _AuthToken(
             token=auth_payload["token"],
             expiration_time=auth_payload["expiration_time"],
