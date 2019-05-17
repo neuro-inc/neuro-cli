@@ -835,34 +835,8 @@ def test_job_exit_code(helper: Helper) -> None:
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
 
-    # Check it is in a running,pending job list now
-    captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
-    )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("  ")[0] for x in store_out_list]
-    assert job_id in jobs_updated
-
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING, JobStatus.FAILED)
-
-    # Check that it is in a running job list
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
-    # Check that description is in the list
-    assert description in store_out
-    assert command in store_out
-
-    # Check that no description is in the list if quite
-    captured = helper.run_cli(["job", "ls", "--status", "running", "-q"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert description not in store_out
-    assert command not in store_out
-
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
 
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
