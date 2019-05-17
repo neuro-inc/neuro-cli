@@ -39,7 +39,8 @@ class Factory:
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
-        new_token = await self._refresh_auth_token(config)
+        auth_negotiator = AuthNegotiator(config=config.auth_config)
+        new_token = await auth_negotiator.refresh_token(config.auth_token)
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)
@@ -209,10 +210,6 @@ class Factory:
             expiration_time=auth_payload["expiration_time"],
             refresh_token=auth_payload["refresh_token"],
         )
-
-    async def _refresh_auth_token(self, config: _Config) -> _AuthToken:
-        auth_negotiator = AuthNegotiator(config=config.auth_config)
-        return await auth_negotiator.refresh_token(config.auth_token)
 
     def _save(self, config: _Config) -> None:
         payload: Dict[str, Any] = dict()
