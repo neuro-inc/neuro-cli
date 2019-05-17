@@ -86,7 +86,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
 
 
 @command()
-@async_cmd()
+@async_cmd(init_client=False)
 async def logout(root: Root) -> None:
     """
     Log out.
