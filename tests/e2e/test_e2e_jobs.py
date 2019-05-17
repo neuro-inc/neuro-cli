@@ -794,3 +794,86 @@ def test_job_run(helper: Helper) -> None:
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+
+
+@pytest.mark.e2e
+def test_job_exit_code(helper: Helper) -> None:
+    # Remember original running jobs
+    captured = helper.run_cli(
+        ["job", "ls", "--status", "running", "--status", "pending"]
+    )
+    store_out_list = captured.out.split("\n")[1:]
+    jobs_orig = [x.split("  ")[0] for x in store_out_list]
+    description = "Test description for a job"
+    # Run a new job
+    command = 'bash -c "sleep 1s; false"'
+    captured = helper.run_cli(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "--http",
+            "80",
+            "--description",
+            description,
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
+
+    # Check it was not running before
+    assert job_id.startswith("job-")
+    assert job_id not in jobs_orig
+
+    # Check it is in a running,pending job list now
+    captured = helper.run_cli(
+        ["job", "ls", "--status", "running", "--status", "pending"]
+    )
+    store_out_list = captured.out.split("\n")[1:]
+    jobs_updated = [x.split("  ")[0] for x in store_out_list]
+    assert job_id in jobs_updated
+
+    # Wait until the job is running
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING, JobStatus.FAILED)
+
+    # Check that it is in a running job list
+    captured = helper.run_cli(["job", "ls", "--status", "running"])
+    store_out = captured.out
+    assert job_id in store_out
+    # Check that description is in the list
+    assert description in store_out
+    assert command in store_out
+
+    # Check that no description is in the list if quite
+    captured = helper.run_cli(["job", "ls", "--status", "running", "-q"])
+    store_out = captured.out
+    assert job_id in store_out
+    assert description not in store_out
+    assert command not in store_out
+
+    # Kill the job
+    captured = helper.run_cli(["job", "kill", job_id])
+
+    # Currently we check that the job is not running anymore
+    # TODO(adavydow): replace to succeeded check when racecon in
+    # platform-api fixed.
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+
+    # Check that it is not in a running job list anymore
+    captured = helper.run_cli(["job", "ls", "--status", "running"])
+    store_out = captured.out
+    assert job_id not in store_out
+
+    captured = helper.run_cli(["job", "status", job_id])
+    store_out = captured.out
+    assert "Exit code: 1" in store_out
