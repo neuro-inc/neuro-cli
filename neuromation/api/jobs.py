@@ -287,7 +287,7 @@ class JobDescription:
             created_at=res["history"].get("created_at", ""),
             started_at=res["history"].get("started_at", ""),
             finished_at=res["history"].get("finished_at", ""),
-            exit_code=res["history"].get("exit_code", None),
+            exit_code=res["history"].get("exit_code"),
         )
         http_url = URL(res.get("http_url", ""))
         http_url_named = URL(res.get("http_url_named", ""))
