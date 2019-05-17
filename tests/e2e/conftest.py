@@ -36,6 +36,7 @@ from neuromation.api import (
     JobStatus,
     ResourceNotFound,
     get as api_get,
+    login_with_token,
 )
 from neuromation.cli import main
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
