@@ -512,7 +512,11 @@ def nmrc_path(tmp_path: Path) -> Optional[Path]:
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
         nmrc_path = tmp_path / "conftest.nmrc"
-        run(login_with_token(e2e_test_token, "https://dev.neu.ro/api/v1"))
+        run(
+            login_with_token(
+                e2e_test_token, url=URL("https://dev.neu.ro/api/v1"), path=nmrc_path
+            )
+        )
         return nmrc_path
     else:
         return None
