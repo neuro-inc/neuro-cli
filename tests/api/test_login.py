@@ -18,6 +18,7 @@ from aiohttp.web import (
 )
 from yarl import URL
 
+from neuromation.api.core import DEFAULT_TIMEOUT
 from neuromation.api.login import (
     AuthCode,
     AuthException,
@@ -327,7 +328,7 @@ class TestTokenClient:
         code.callback_url = auth_config.callback_urls[0]
 
         async with AuthTokenClient(
-            auth_config.token_url, client_id=auth_client_id
+            auth_config.token_url, client_id=auth_client_id, timeout=DEFAULT_TIMEOUT
         ) as client:
             token = await client.request(code)
             assert token.token == "test_access_token"
@@ -342,7 +343,7 @@ class TestTokenClient:
         )
 
         async with AuthTokenClient(
-            auth_config.token_url, client_id=auth_client_id
+            auth_config.token_url, client_id=auth_client_id, timeout=DEFAULT_TIMEOUT
         ) as client:
             new_token = await client.refresh(token)
             assert new_token.token == "test_access_token_refreshed"
@@ -367,7 +368,9 @@ class TestTokenClient:
         server = await aiohttp_server(app)
         url = server.make_url("/oauth/token")
 
-        async with AuthTokenClient(url, client_id=client_id) as client:
+        async with AuthTokenClient(
+            url, client_id=client_id, timeout=DEFAULT_TIMEOUT
+        ) as client:
             with pytest.raises(AuthException, match="failed to get an access token."):
                 await client.request(code)
 
@@ -516,7 +519,9 @@ class TestClusterConfig:
 class TestAuthNegotiator:
     async def test_get_code(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
-            config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
+            config=auth_config,
+            timeout=DEFAULT_TIMEOUT,
+            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         code = await negotiator.get_code()
         assert await code.wait() == "test_code"
@@ -524,7 +529,9 @@ class TestAuthNegotiator:
 
     async def test_get_token(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
-            config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
+            config=auth_config,
+            timeout=DEFAULT_TIMEOUT,
+            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         token = await negotiator.refresh_token(token=None)
         assert token.token == "test_access_token"
@@ -532,7 +539,9 @@ class TestAuthNegotiator:
 
     async def test_refresh_token_noop(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
-            config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
+            config=auth_config,
+            timeout=DEFAULT_TIMEOUT,
+            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         token = await negotiator.refresh_token(token=None)
         assert token.token == "test_access_token"
@@ -545,7 +554,9 @@ class TestAuthNegotiator:
 
     async def test_refresh_token(self, auth_config: _AuthConfig) -> None:
         negotiator = AuthNegotiator(
-            config=auth_config, code_callback_client_factory=DummyAuthCodeCallbackClient
+            config=auth_config,
+            timeout=DEFAULT_TIMEOUT,
+            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         token = await negotiator.refresh_token(token=None)
         assert token.token == "test_access_token"

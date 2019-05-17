@@ -268,11 +268,13 @@ class _AuthToken:
 
 
 class AuthTokenClient:
-    def __init__(self, url: URL, client_id: str) -> None:
+    def __init__(
+        self, url: URL, client_id: str, timeout: aiohttp.ClientTimeout
+    ) -> None:
         self._url = url
         self._client_id = client_id
 
-        self._client = ClientSession()
+        self._client = ClientSession(timeout=timeout)
 
     async def close(self) -> None:
         await self._client.close()
@@ -401,9 +403,11 @@ class _AuthConfig:
         )
 
 
-async def refresh_token(config: _AuthConfig, token: _AuthToken) -> _AuthToken:
+async def refresh_token(
+    config: _AuthConfig, token: _AuthToken, timeout: aiohttp.ClientTimeout
+) -> _AuthToken:
     async with AuthTokenClient(
-        url=config.token_url, client_id=config.client_id
+        url=config.token_url, client_id=config.client_id, timeout=timeout
     ) as token_client:
         if token.is_expired:
             return await token_client.refresh(token)
@@ -411,8 +415,9 @@ async def refresh_token(config: _AuthConfig, token: _AuthToken) -> _AuthToken:
 
 
 class BaseNegotiator(abc.ABC):
-    def __init__(self, config: _AuthConfig) -> None:
+    def __init__(self, config: _AuthConfig, timeout: aiohttp.ClientTimeout) -> None:
         self._config = config
+        self._timeout = timeout
 
     @abc.abstractmethod
     async def get_code(self) -> AuthCode:
@@ -420,7 +425,9 @@ class BaseNegotiator(abc.ABC):
 
     async def refresh_token(self, token: Optional[_AuthToken] = None) -> _AuthToken:
         async with AuthTokenClient(
-            url=self._config.token_url, client_id=self._config.client_id
+            url=self._config.token_url,
+            client_id=self._config.client_id,
+            timeout=self._timeout,
         ) as token_client:
             if not token:
                 code = await self.get_code()
@@ -436,11 +443,12 @@ class AuthNegotiator(BaseNegotiator):
     def __init__(
         self,
         config: _AuthConfig,
+        timeout: aiohttp.ClientTimeout,
         code_callback_client_factory: Type[
             AuthCodeCallbackClient
         ] = WebBrowserAuthCodeCallbackClient,
     ) -> None:
-        super().__init__(config)
+        super().__init__(config, timeout)
         self._code_callback_client_factory = code_callback_client_factory
 
     async def get_code(self) -> AuthCode:
@@ -463,11 +471,12 @@ class HeadlessNegotiator(BaseNegotiator):
     def __init__(
         self,
         config: _AuthConfig,
+        timeout: aiohttp.ClientTimeout,
         code_callback_client_factory: Type[
             AuthCodeCallbackClient
         ] = HeadlessAuthCodeCallbackClient,
     ) -> None:
-        super().__init__(config)
+        super().__init__(config, timeout)
         self._code_callback_client_factory = code_callback_client_factory
 
     async def get_code(self) -> AuthCode:

@@ -40,7 +40,7 @@ class Factory:
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
-        new_token = await refresh_token(config.auth_config, config.auth_token)
+        new_token = await refresh_token(config.auth_config, config.auth_token, timeout)
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)
@@ -56,7 +56,7 @@ class Factory:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
         config_unauthorized = await get_server_config(url)
-        negotiator = AuthNegotiator(config_unauthorized.auth_config)
+        negotiator = AuthNegotiator(config_unauthorized.auth_config, timeout)
         auth_token = await negotiator.refresh_token()
 
         config_authorized = await get_server_config(url, token=auth_token.token)
@@ -80,7 +80,7 @@ class Factory:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
         config_unauthorized = await get_server_config(url)
-        negotiator = HeadlessNegotiator(config_unauthorized.auth_config)
+        negotiator = HeadlessNegotiator(config_unauthorized.auth_config, timeout)
         auth_token = await negotiator.refresh_token()
 
         config_authorized = await get_server_config(url, token=auth_token.token)

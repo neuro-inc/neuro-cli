@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Set
 from uuid import uuid4 as uuid
 
+import aiohttp
 import pytest
 import yaml
 from aiohttp import web
@@ -234,7 +235,7 @@ class TestConfigFileInteraction:
         new_token = str(uuid()) + "changed" * 10  # token must has other size
 
         async def _refresh_token_mock(
-            configf: _AuthConfig, token: _AuthToken
+            configf: _AuthConfig, token: _AuthToken, timeout: aiohttp.ClientTimeout
         ) -> _AuthToken:
             return _AuthToken.create_non_expiring(new_token)
 
