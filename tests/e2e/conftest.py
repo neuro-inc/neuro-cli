@@ -515,7 +515,10 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
         nmrc_path = tmp_path / "conftest.nmrc"
         run(
             login_with_token(
-                e2e_test_token, url=URL("https://dev.neu.ro/api/v1"), path=nmrc_path
+                e2e_test_token,
+                url=URL("https://dev.neu.ro/api/v1"),
+                path=nmrc_path,
+                timeout=CLIENT_TIMEOUT,
             )
         )
         return nmrc_path
