@@ -507,7 +507,7 @@ class Helper:
         return self._last_output
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def nmrc_path(tmp_path: Path) -> Optional[Path]:
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
