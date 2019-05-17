@@ -836,17 +836,7 @@ def test_job_exit_code(helper: Helper) -> None:
     assert job_id not in jobs_orig
 
     # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING, JobStatus.FAILED)
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
+    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
 
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
