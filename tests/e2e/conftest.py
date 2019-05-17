@@ -508,9 +508,10 @@ class Helper:
 
 
 @pytest.fixture(scope="session")
-def nmrc_path(tmp_path: Path) -> Optional[Path]:
+def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
+        tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
         run(
             login_with_token(
