@@ -44,7 +44,6 @@ from tests.e2e.utils import (
     FILE_SIZE_B,
     JOB_TINY_CONTAINER_PARAMS,
     NGINX_IMAGE_NAME,
-    RC_TEXT,
     JobWaitStateStopReached,
 )
 
@@ -512,10 +511,7 @@ def nmrc_path(tmp_path: Path) -> Optional[Path]:
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
         nmrc_path = tmp_path / "conftest.nmrc"
-
-        rc_text = RC_TEXT.format(token=e2e_test_token)
-        nmrc_path.write_text(rc_text)
-        nmrc_path.chmod(0o600)
+        run(login_with_token(e2e_test_token, "https://dev.neu.ro/api/v1"))
         return nmrc_path
     else:
         return None
