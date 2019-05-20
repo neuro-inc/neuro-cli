@@ -72,7 +72,8 @@ class AuthCode:
         return self._challenge_method
 
     def set_value(self, value: str) -> None:
-        self._future.set_result(value)
+        if not self._future.cancelled():
+            self._future.set_result(value)
 
     @property
     def callback_url(self) -> URL:
@@ -84,7 +85,8 @@ class AuthCode:
         self._callback_url = value
 
     def set_exception(self, exc: Exception) -> None:
-        self._future.set_exception(exc)
+        if not self._future.cancelled():
+            self._future.set_exception(exc)
 
     def cancel(self) -> None:
         self._future.cancel()
@@ -140,9 +142,14 @@ class HeadlessAuthCodeCallbackClient(AuthCodeCallbackClient):
         self._callback = callback
 
     async def _request(self, url: URL, code: AuthCode) -> None:
-        auth_code = await self._callback(url)
-        assert auth_code
-        code.set_value(auth_code)
+        try:
+            auth_code = await self._callback(url)
+            assert auth_code
+            code.set_value(auth_code)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            code.set_exception(exc)
 
 
 class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
