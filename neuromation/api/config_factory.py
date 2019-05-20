@@ -2,7 +2,7 @@ import os
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 import aiohttp
 import yaml
@@ -73,6 +73,7 @@ class Factory:
 
     async def login_headless(
         self,
+        callback: Callable[[URL], Awaitable[str]],
         *,
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
@@ -80,7 +81,9 @@ class Factory:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
         config_unauthorized = await get_server_config(url)
-        negotiator = HeadlessNegotiator(config_unauthorized.auth_config, timeout)
+        negotiator = HeadlessNegotiator(
+            config_unauthorized.auth_config, callback, timeout
+        )
         auth_token = await negotiator.refresh_token()
 
         config_authorized = await get_server_config(url, token=auth_token.token)

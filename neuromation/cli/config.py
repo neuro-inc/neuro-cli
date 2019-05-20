@@ -102,8 +102,21 @@ async def login_headless(root: Root, url: URL) -> None:
     Then user inputs a code displayed in a browser after successful login
     back in neuro command to finish the login process.
     """
+
+    async def login_callback(url: URL) -> str:
+        click.echo(f"Open {url} in a browser")
+        click.echo("Put the code displayed in a browser after successful login")
+        auth_code = input("Code (empty for exit)-> ")
+        if not auth_code:
+            sys.exit()
+
     try:
-        await api_login_headless(url=url, path=root.config_path, timeout=root.timeout)
+        await api_login_headless(
+            url=url,
+            callback=login_callback,
+            path=root.config_path,
+            timeout=root.timeout,
+        )
     except ConfigError:
         await api_logout(path=root.config_path)
         click.echo("You were successfully logged out.")

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import (
     Any,
     AsyncIterator,
+    Awaitable,
     Callable,
     Dict,
     List,
@@ -129,12 +130,19 @@ class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
 
 
 class HeadlessAuthCodeCallbackClient(AuthCodeCallbackClient):
+    def __init__(
+        self,
+        url: URL,
+        client_id: str,
+        audience: str,
+        callback: Callable[[URL], Awaitable[str]],
+    ) -> None:
+        super().__init__(url=url, client_id=client_id, audience=audience)
+        self._callback = callback
+
     async def _request(self, url: URL, code: AuthCode) -> None:
-        print(f"Open {url} in a browser")
-        print("Put the code displayed in a browser after successful login")
-        auth_code = input("Code (empty for exit)-> ")
-        if not auth_code:
-            sys.exit()
+        auth_code = await self._callback(url)
+        assert auth_code
         code.set_value(auth_code)
 
 
@@ -471,22 +479,21 @@ class HeadlessNegotiator(BaseNegotiator):
     def __init__(
         self,
         config: _AuthConfig,
+        callback: Callable[[URL], Awaitable[str]],
         timeout: aiohttp.ClientTimeout,
-        code_callback_client_factory: Type[
-            AuthCodeCallbackClient
-        ] = HeadlessAuthCodeCallbackClient,
     ) -> None:
         super().__init__(config, timeout)
-        self._code_callback_client_factory = code_callback_client_factory
+        self._callback = callback
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
         code.callback_url = self._config.headless_callback_url
 
-        code_callback_client = self._code_callback_client_factory(
+        code_callback_client = AuthCodeCallbackClient(
             url=self._config.auth_url,
             client_id=self._config.client_id,
             audience=self._config.audience,
+            callback=self._callback,
         )
         return await code_callback_client.request(code)
 

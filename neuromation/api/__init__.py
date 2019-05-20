@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Awaitable, Coroutine, Generator, Optional, Type
+from typing import Any, Awaitable, Callable, Coroutine, Generator, Optional, Type
 
 import aiohttp
 from yarl import URL
@@ -160,6 +160,7 @@ async def login_with_token(
 
 
 async def login_headless(
+    callback: Callable[[URL], Awaitable[str]],
     *,
     url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
