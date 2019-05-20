@@ -593,3 +593,13 @@ class TestHeadlessNegotiator:
         )
         code = await negotiator.get_code()
         assert await code.wait() == "test_code"
+
+    async def test_get_code_raises(self, auth_config: _AuthConfig) -> None:
+        async def callback(url: URL) -> str:
+            raise RuntimeError("callback error")
+
+        negotiator = HeadlessNegotiator(
+            config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
+        )
+        with pytest.raises(RuntimeError, match="callback error"):
+            await negotiator.get_code()
