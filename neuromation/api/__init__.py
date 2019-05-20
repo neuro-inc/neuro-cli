@@ -166,7 +166,7 @@ async def login_headless(
     path: Optional[Path] = None,
     timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
 ) -> None:
-    await Factory(path).login_headless(url=url, timeout=timeout)
+    await Factory(path).login_headless(callback, url=url, timeout=timeout)
 
 
 async def logout(*, path: Optional[Path] = None) -> None:
