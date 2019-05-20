@@ -25,6 +25,7 @@ from neuromation.api.login import (
     AuthNegotiator,
     AuthTokenClient,
     DummyAuthCodeCallbackClient,
+    HeadlessNegotiator,
     _AuthConfig,
     _AuthToken,
     _ClusterConfig,
@@ -316,7 +317,7 @@ async def auth_config(
         token_url=auth_server / "oauth/token",
         client_id=auth_client_id,
         audience="https://platform.dev.neuromation.io",
-        headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+        headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         callback_urls=[URL(f"http://127.0.0.1:{port}")],
     )
 
@@ -569,3 +570,25 @@ class TestAuthNegotiator:
         token = await negotiator.refresh_token(token=token)
         assert token.token == "test_access_token_refreshed"
         assert token.refresh_token == "test_refresh_token"
+
+
+class TestHeadlessNegotiator:
+    async def test_get_code(self, auth_config: _AuthConfig) -> None:
+        async def callback(url: URL) -> str:
+            assert url.with_query(None) == auth_config.auth_url
+
+            assert dict(url.query) == dict(
+                response_type='code',
+                code_challenge=mock.ANY,
+                code_challenge_method='S256',
+                client_id='test_client_id',
+                redirect_uri='https://dev.neu.ro/oauth/show-code',
+                scope='offline_access',
+                audience="https://platform.dev.neuromation.io")
+            return "test_code"
+
+        negotiator = HeadlessNegotiator(
+            config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
+        )
+        code = await negotiator.get_code()
+        assert await code.wait() == "test_code"
