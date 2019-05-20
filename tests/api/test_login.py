@@ -391,7 +391,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -403,7 +403,7 @@ class TestAuthConfig:
             token_url=URL(),
             client_id="client_id",
             audience="audience",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -415,7 +415,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="",
             audience="audience",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -427,7 +427,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=URL("url"),
         )
@@ -439,7 +439,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
             callback_urls=[],
             success_redirect_url=URL("url"),
         )
@@ -451,7 +451,7 @@ class TestAuthConfig:
             token_url=URL("url"),
             client_id="client_id",
             audience="audience",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
             callback_urls=(URL("url1"), URL("url2")),
             success_redirect_url=None,
         )

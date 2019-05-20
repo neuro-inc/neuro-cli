@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from typing import Any, List, Optional, Set
+from unittest import mock
 from uuid import uuid4 as uuid
 
 import aiohttp
@@ -57,7 +58,7 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
             "token_url": "https://test-neuromation.auth0.com/oauth/token",
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
-            "headless_callback_url": "https://https://dev.neu.ro/oauth/show-code",
+            "headless_callback_url": "https://dev.neu.ro/oauth/show-code",
             "callback_urls": [
                 "http://127.0.0.2:54540",
                 "http://127.0.0.2:54541",
@@ -110,7 +111,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         )
         assert auth_config_good.is_initialized()
 
@@ -139,7 +140,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         )
         assert not auth_config_bad.is_initialized()
 
@@ -169,7 +170,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
-            headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         )
         assert auth_config_bad.is_initialized()
 
@@ -296,6 +297,39 @@ class TestLoginWithToken:
 
     async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
         await Factory().login_with_token(token="tokenstr", url=mock_for_login)
+        nmrc_path = tmp_home / ".nmrc"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+        saved_config = Factory(nmrc_path)._read()
+        assert saved_config.auth_config.is_initialized()
+        assert saved_config.cluster_config.is_initialized()
+
+
+class TestHeadlessLogin:
+    async def test_login_headless_already_logged(self, config_file: Path) -> None:
+        async def callback(url: URL) -> str:
+            return ""
+
+        with pytest.raises(ConfigError, match=r"already exists"):
+            await Factory().login_headless(callback)
+
+    async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
+        async def callback(url: URL) -> str:
+            assert url.with_query(None) == URL(
+                "https://test-neuromation.auth0.com/authorize"
+            )
+
+            assert dict(url.query) == dict(
+                response_type="code",
+                code_challenge=mock.ANY,
+                code_challenge_method="S256",
+                client_id="banana",
+                redirect_uri="https://dev.neu.ro/oauth/show-code",
+                scope="offline_access",
+                audience="https://test.dev.neuromation.io",
+            )
+            return "test_code"
+
+        await Factory().login_headless(callback=callback, url=mock_for_login)
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "
         saved_config = Factory(nmrc_path)._read()

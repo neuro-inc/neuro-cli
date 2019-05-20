@@ -17,7 +17,7 @@ async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
-    headless_callback_url = "https://https://dev.neu.ro/oauth/show-code"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     callback_urls = [
         "http://127.0.0.1:54540",
         "http://127.0.0.1:54541",
@@ -66,7 +66,7 @@ async def test_get_server_config_no_callback_urls(
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
-    headless_callback_url = "https://https://dev.neu.ro/oauth/show-code"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neuromation.io"
     JSON = {
         "auth_url": auth_url,
@@ -110,7 +110,7 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
-    headless_callback_url = "https://https://dev.neu.ro/oauth/show-code"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neuromation.io"
     JSON = {
         "registry_url": registry_url,
