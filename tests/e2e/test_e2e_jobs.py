@@ -797,7 +797,7 @@ def test_job_run(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_exit_code(helper: Helper) -> None:
+def test_job_exit_code_success(helper: Helper) -> None:
     # Remember original running jobs
     captured = helper.run_cli(
         ["job", "ls", "--status", "running", "--status", "pending"]
@@ -806,7 +806,7 @@ def test_job_exit_code(helper: Helper) -> None:
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
     description = "Test description for a job"
     # Run a new job
-    command = 'bash -c "sleep 1s; false"'
+    command = 'bash -c "exit 0"'
     captured = helper.run_cli(
         [
             "job",
@@ -840,4 +840,51 @@ def test_job_exit_code(helper: Helper) -> None:
 
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
-    assert "Exit code: 1" in store_out
+    assert "Exit code: 0" in store_out
+
+
+@pytest.mark.e2e
+def test_job_exit_code_failure(helper: Helper) -> None:
+    # Remember original running jobs
+    captured = helper.run_cli(
+        ["job", "ls", "--status", "running", "--status", "pending"]
+    )
+    store_out_list = captured.out.split("\n")[1:]
+    jobs_orig = [x.split("  ")[0] for x in store_out_list]
+    description = "Test description for a job"
+    # Run a new job
+    command = 'bash -c "exit 12"'
+    captured = helper.run_cli(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "--http",
+            "80",
+            "--description",
+            description,
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
+
+    # Check it was not running before
+    assert job_id.startswith("job-")
+    assert job_id not in jobs_orig
+
+    # Wait until the job is running
+    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
+
+    captured = helper.run_cli(["job", "status", job_id])
+    store_out = captured.out
+    assert "Exit code: 12" in store_out
