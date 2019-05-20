@@ -836,7 +836,7 @@ def test_job_exit_code_success(helper: Helper) -> None:
     assert job_id not in jobs_orig
 
     # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
