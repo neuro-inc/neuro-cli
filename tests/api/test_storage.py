@@ -9,7 +9,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Client, FileStatus, FileStatusType
+from neuromation.api import Client, FileStatus, FileStatusType, IllegalArgumentError
 from tests import _RawTestServerFactory, _TestServerFactory
 
 
@@ -490,7 +490,7 @@ async def test_storage_open_directory(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        with pytest.raises(IsADirectoryError):
+        with pytest.raises((IsADirectoryError, IllegalArgumentError)):
             async for chunk in client.storage.open(URL("storage://~/folder")):
                 buf.extend(chunk)
         assert not buf
@@ -710,7 +710,7 @@ async def test_storage_download_regular_file_to_absent_file(
 
     file_name = local_file.as_uri()
     file_size = src_file.stat().st_size
-    progress.start.assert_called_with(file_name, 0)
+    progress.start.assert_called_with(file_name, 7)
     progress.progress.assert_called_with(file_name, file_size)
     progress.complete.assert_called_with(file_name)
 
