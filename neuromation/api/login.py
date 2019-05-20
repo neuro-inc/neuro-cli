@@ -489,7 +489,7 @@ class HeadlessNegotiator(BaseNegotiator):
         code = AuthCode()
         code.callback_url = self._config.headless_callback_url
 
-        code_callback_client = AuthCodeCallbackClient(
+        code_callback_client = HeadlessAuthCodeCallbackClient(
             url=self._config.auth_url,
             client_id=self._config.client_id,
             audience=self._config.audience,
