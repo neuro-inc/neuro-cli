@@ -578,13 +578,14 @@ class TestHeadlessNegotiator:
             assert url.with_query(None) == auth_config.auth_url
 
             assert dict(url.query) == dict(
-                response_type='code',
+                response_type="code",
                 code_challenge=mock.ANY,
-                code_challenge_method='S256',
-                client_id='test_client_id',
-                redirect_uri='https://dev.neu.ro/oauth/show-code',
-                scope='offline_access',
-                audience="https://platform.dev.neuromation.io")
+                code_challenge_method="S256",
+                client_id="test_client_id",
+                redirect_uri="https://dev.neu.ro/oauth/show-code",
+                scope="offline_access",
+                audience="https://platform.dev.neuromation.io",
+            )
             return "test_code"
 
         negotiator = HeadlessNegotiator(
