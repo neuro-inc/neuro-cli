@@ -525,9 +525,10 @@ neuro storage rm [OPTIONS] PATH
 
 ```bash
 
-neuro rm storage:///foo/bar/
-neuro rm storage:/foo/bar/
-neuro rm storage://{username}/foo/bar/
+neuro rm storage:///foo/bar
+neuro rm storage:/foo/bar
+neuro rm storage://{username}/foo/bar
+neuro rm --recursive storage://{username}/foo/
 
 ```
 
@@ -535,6 +536,7 @@ neuro rm storage://{username}/foo/bar/
 
 Name | Description|
 |----|------------|
+|_\-r, --recursive_|remove directories and their contents recursively|
 |_--help_|Show this message and exit.|
 
 
@@ -554,6 +556,7 @@ neuro storage mkdir [OPTIONS] PATH
 
 Name | Description|
 |----|------------|
+|_\-p, --parents_|No error if existing, make parent directories as needed|
 |_--help_|Show this message and exit.|
 
 
@@ -1413,9 +1416,10 @@ neuro rm [OPTIONS] PATH
 
 ```bash
 
-neuro rm storage:///foo/bar/
-neuro rm storage:/foo/bar/
-neuro rm storage://{username}/foo/bar/
+neuro rm storage:///foo/bar
+neuro rm storage:/foo/bar
+neuro rm storage://{username}/foo/bar
+neuro rm --recursive storage://{username}/foo/
 
 ```
 
@@ -1423,6 +1427,7 @@ neuro rm storage://{username}/foo/bar/
 
 Name | Description|
 |----|------------|
+|_\-r, --recursive_|remove directories and their contents recursively|
 |_--help_|Show this message and exit.|
 
 
@@ -1442,6 +1447,7 @@ neuro mkdir [OPTIONS] PATH
 
 Name | Description|
 |----|------------|
+|_\-p, --parents_|No error if existing, make parent directories as needed|
 |_--help_|Show this message and exit.|
 
 
