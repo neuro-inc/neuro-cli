@@ -4,7 +4,6 @@ import base64
 import errno
 import hashlib
 import secrets
-import sys
 import time
 import webbrowser
 from dataclasses import dataclass, field

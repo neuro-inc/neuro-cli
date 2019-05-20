@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -109,6 +110,7 @@ async def login_headless(root: Root, url: URL) -> None:
         auth_code = input("Code (empty for exit)-> ")
         if not auth_code:
             sys.exit()
+        return auth_code
 
     try:
         await api_login_headless(
