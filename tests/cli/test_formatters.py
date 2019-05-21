@@ -1180,7 +1180,13 @@ class TestConfigFormatter:
             User Configuration:
               User Name: user
               API URL: https://dev.neu.ro/api/v1
-              Docker Registry URL: https://registry-dev.neu.ro"""
+              Docker Registry URL: https://registry-dev.neu.ro
+              Resource Presets:
+                Name         #CPU  Memory #GPU  GPU Model
+                cpu-large       7   14336
+                cpu-small       7    2048
+                gpu-large       7   61440    1  nvidia-tesla-v100
+                gpu-small       7   30720    1  nvidia-tesla-k80"""
         )
 
 
