@@ -24,6 +24,7 @@ from neuromation.api.login import (
     AuthNegotiator,
     AuthTokenClient,
     DummyAuthCodeCallbackClient,
+    RunPreset,
     _AuthConfig,
     _AuthToken,
     _ClusterConfig,
@@ -454,6 +455,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
+            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
         )
         assert cluster_config.is_initialized() is True
 
@@ -463,6 +465,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
+            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
         )
         assert cluster_config.is_initialized() is False
 
@@ -472,6 +475,7 @@ class TestClusterConfig:
             storage_url=URL(),
             users_url=URL("value"),
             monitoring_url=URL("value"),
+            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
         )
         assert cluster_config.is_initialized() is False
 
@@ -481,6 +485,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL(),
             monitoring_url=URL("value"),
+            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
         )
         assert cluster_config.is_initialized() is False
 
@@ -490,6 +495,17 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL(),
+            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
+        )
+        assert cluster_config.is_initialized() is False
+
+    def test_is_initialized__no_resource_presets(self) -> None:
+        cluster_config = _ClusterConfig.create(
+            registry_url=URL("value"),
+            storage_url=URL("value"),
+            users_url=URL("value"),
+            monitoring_url=URL("value"),
+            resource_presets={},
         )
         assert cluster_config.is_initialized() is False
 

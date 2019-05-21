@@ -3,8 +3,6 @@ import logging
 import os
 import shlex
 import sys
-from dataclasses import dataclass
-from types import MappingProxyType
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import click
@@ -50,26 +48,6 @@ from .utils import (
 
 
 log = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class RunPreset:
-    cpu: float
-    memory: int
-    gpu: Optional[int]
-    gpu_model: Optional[str]
-
-
-RUN_PRESET = MappingProxyType(
-    {
-        "gpu-small": RunPreset(gpu=1, cpu=7, memory=30 * 1024, gpu_model=GPU_MODELS[0]),
-        "gpu-large": RunPreset(
-            gpu=1, cpu=7, memory=60 * 1024, gpu_model=GPU_MODELS[-1]
-        ),
-        "cpu-small": RunPreset(gpu=None, cpu=2, memory=2 * 1024, gpu_model=None),
-        "cpu-large": RunPreset(gpu=None, cpu=3, memory=14 * 1024, gpu_model=None),
-    }
-)
 
 
 def build_env(env: Sequence[str], env_file: str) -> Dict[str, str]:
@@ -490,15 +468,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option(
-    "-s",
-    "--preset",
-    metavar="PRESET",
-    type=click.Choice(list(RUN_PRESET)),
-    help="Predefined job profile",
-    default="gpu-small",
-    show_default=True,
-)
+@click.option("-s", "--preset", metavar="PRESET", help="Predefined job profile")
 @click.option(
     "-x/-X",
     "--extshm/--no-extshm",
@@ -607,7 +577,10 @@ async def run(
     # storage://neuromation is mounted as :/var/storage/neuromation as read-only.
     neuro run pytorch:latest --volume=HOME
     """
-    job_preset = RUN_PRESET[preset]
+    if preset:
+        job_preset = root.resource_presets[preset]
+    else:
+        job_preset = next(iter(root.resource_presets.values()))
 
     await run_job(
         root,

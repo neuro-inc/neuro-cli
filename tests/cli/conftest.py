@@ -9,7 +9,7 @@ from yarl import URL
 
 from neuromation.api import Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-from neuromation.api.login import _ClusterConfig
+from neuromation.api.login import RunPreset, _ClusterConfig
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
 from neuromation.cli.root import Root
@@ -27,6 +27,16 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
+        resource_presets={
+            "gpu-small": RunPreset(
+                cpu=7, memory=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+            ),
+            "gpu-large": RunPreset(
+                cpu=7, memory=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+            ),
+            "cpu-small": RunPreset(cpu=7, memory=2 * 1024),
+            "cpu-large": RunPreset(cpu=7, memory=14 * 1024),
+        },
     )
     config = _Config(
         auth_config=auth_config,
