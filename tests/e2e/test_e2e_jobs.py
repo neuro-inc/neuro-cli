@@ -121,6 +121,8 @@ def test_job_lifecycle(helper: Helper) -> None:
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
     assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
+    # Check correct exit code is returned
+    # assert "Exit code: 0" in store_out
 
     # Check job status by name
     captured = helper.run_cli(["job", "status", job_name])
@@ -768,7 +770,7 @@ def test_job_submit_http_auth(
 @pytest.mark.e2e
 def test_job_run(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "sleep 10m; false"'
+    command = 'bash -c "sleep 5; exit 101"'
     captured = helper.run_cli(
         [
             "job",
@@ -787,105 +789,12 @@ def test_job_run(helper: Helper) -> None:
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
-
     # Currently we check that the job is not running anymore
     # TODO(adavydow): replace to succeeded check when racecon in
     # platform-api fixed.
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-
-@pytest.mark.e2e
-@pytest.mark.skip("until https://github.com/neuromation/platform-api/pull/704 is deployed")
-def test_job_exit_code_success(helper: Helper) -> None:
-    # Remember original running jobs
-    captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
-    )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("  ")[0] for x in store_out_list]
-    description = "Test description for a job"
-    # Run a new job
-    command = 'bash -c "exit 0"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "--http",
-            "80",
-            "--description",
-            description,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    match = re.match("Job ID: (.+) Status:", captured.out)
-    assert match is not None
-    job_id = match.group(1)
-
-    # Check it was not running before
-    assert job_id.startswith("job-")
-    assert job_id not in jobs_orig
-
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
-
+    # Verify exit code is returned
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
-    assert "Exit code: 0" in store_out
-
-
-@pytest.mark.e2e
-def test_job_exit_code_failure(helper: Helper) -> None:
-    # Remember original running jobs
-    captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
-    )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("  ")[0] for x in store_out_list]
-    description = "Test description for a job"
-    # Run a new job
-    command = 'bash -c "exit 12"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "--http",
-            "80",
-            "--description",
-            description,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    match = re.match("Job ID: (.+) Status:", captured.out)
-    assert match is not None
-    job_id = match.group(1)
-
-    # Check it was not running before
-    assert job_id.startswith("job-")
-    assert job_id not in jobs_orig
-
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
-
-    captured = helper.run_cli(["job", "status", job_id])
-    store_out = captured.out
-    assert "Exit code: 12" in store_out
+    assert "Exit code: 101" in store_out
