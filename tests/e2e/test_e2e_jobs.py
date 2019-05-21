@@ -797,6 +797,7 @@ def test_job_run(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+@pytest.mark.skip("until https://github.com/neuromation/platform-api/pull/704 is deployed")
 def test_job_exit_code_success(helper: Helper) -> None:
     # Remember original running jobs
     captured = helper.run_cli(
