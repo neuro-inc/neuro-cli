@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional
 from uuid import uuid4 as uuid
 
 import pytest
@@ -10,8 +10,12 @@ from yarl import URL
 
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-from neuromation.api.jobs import Jobs
-from neuromation.api.login import AuthNegotiator, RunPreset, _ClusterConfig
+from neuromation.api.login import (
+    AuthException,
+    AuthNegotiator,
+    RunPreset,
+    _ClusterConfig,
+)
 from tests import _TestServerFactory
 
 
@@ -44,11 +48,6 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
     ) -> _AuthToken:
         return _AuthToken.create_non_expiring(str(uuid()))
 
-    async def _jobs_list_mock(
-        self: Any, statuses: Optional[Set[str]] = None, name: Optional[str] = None
-    ) -> List[str]:
-        return []
-
     async def _config_handler(request: web.Request) -> web.Response:
         config_json: Dict[str, Any] = {
             "auth_url": "https://test-neuromation.auth0.com/authorize",
@@ -63,7 +62,10 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
             "success_redirect_url": "https://neu.ro/#test",
         }
 
-        if "Authorization" in request.headers:
+        if (
+            "Authorization" in request.headers
+            and "incorrect" not in request.headers["Authorization"]
+        ):
             config_json.update(
                 {
                     "registry_url": "https://registry-dev.test.com",
@@ -95,7 +97,6 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
     srv = await aiohttp_server(app)
 
     monkeypatch.setattr(AuthNegotiator, "refresh_token", _refresh_token_mock)
-    monkeypatch.setattr(Jobs, "list", _jobs_list_mock)
 
     return srv.make_url("/")
 
@@ -310,6 +311,12 @@ class TestLoginWithToken:
         saved_config = Factory(nmrc_path)._read()
         assert saved_config.auth_config.is_initialized()
         assert saved_config.cluster_config.is_initialized()
+
+    async def test_incorrect_token(self, tmp_home: Path, mock_for_login: URL) -> None:
+        with pytest.raises(AuthException):
+            await Factory().login_with_token(token="incorrect", url=mock_for_login)
+        nmrc_path = tmp_home / ".nmrc"
+        assert not Path(nmrc_path).exists(), "Config file not written after login "
 
 
 class TestLogout:

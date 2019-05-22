@@ -490,4 +490,6 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                     for name, data in payload.get("resource_presets", {}).items()
                 },
             )
+            if headers and not cluster_config.is_initialized():
+                raise AuthException("Cannot authorize user")
             return _ServerConfig(cluster_config=cluster_config, auth_config=auth_config)

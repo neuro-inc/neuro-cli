@@ -255,6 +255,7 @@ class TestJobOutputFormatter:
                 created_at="2018-09-25T12:28:21.298672+00:00",
                 started_at="2018-09-25T12:28:59.759433+00:00",
                 finished_at="2018-09-25T12:28:59.759433+00:00",
+                exit_code=123,
             ),
             container=Container(
                 command="test-command",
@@ -283,6 +284,7 @@ class TestJobOutputFormatter:
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
             "===Description===\n"
             "ErrorDesc\n================="
         )
@@ -302,6 +304,7 @@ class TestJobOutputFormatter:
                 created_at="2018-09-25T12:28:21.298672+00:00",
                 started_at="2018-09-25T12:28:59.759433+00:00",
                 finished_at="2018-09-25T12:28:59.759433+00:00",
+                exit_code=321,
             ),
             container=Container(
                 command="test-command",
@@ -329,6 +332,7 @@ class TestJobOutputFormatter:
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 321\n"
             "===Description===\n"
             "ErrorDesc\n================="
         )

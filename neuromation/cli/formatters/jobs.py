@@ -119,6 +119,7 @@ class JobStatusFormatter:
             result += "\n" f"Started: {job_status.history.started_at}"
         if job_status.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
             result += "\n" f"Finished: {job_status.history.finished_at}"
+            result += "\n" f"Exit code: {job_status.history.exit_code}"
         if job_status.status == JobStatus.FAILED:
             result += "\n===Description===\n"
             result += f"{job_status.history.description}\n================="
