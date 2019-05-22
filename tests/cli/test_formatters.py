@@ -1183,10 +1183,10 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
                 Name         #CPU  Memory #GPU  GPU Model
-                cpu-large       7   14336
-                cpu-small       7    2048
+                gpu-small       7   30720    1  nvidia-tesla-k80
                 gpu-large       7   61440    1  nvidia-tesla-v100
-                gpu-small       7   30720    1  nvidia-tesla-k80"""
+                cpu-small       7    2048
+                cpu-large       7   14336"""
         )
 
 

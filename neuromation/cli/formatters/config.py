@@ -10,10 +10,16 @@ class ConfigFormatter:
         lines.append(style("API URL", bold=True) + f": {root.url}")
         lines.append(style("Docker Registry URL", bold=True) + f": {root.registry_url}")
         lines.append(style("Resource Presets", bold=True) + f":")
-        lines.append(f"  Name         #CPU  Memory #GPU  GPU Model")
-        for name, preset in root.resource_presets.items():
-            lines.append(f"  {name:12}  {preset.cpu:>3} {preset.memory:>7}  {preset.gpu or '':>3}  {preset.gpu_model or ''}".rstrip())
         indent = "  "
+        lines.append(f"{indent}Name         #CPU  Memory #GPU  GPU Model")
+        for name, preset in root.resource_presets.items():
+            lines.append(
+                (
+                    f"{indent}{name:12}  {preset.cpu:>3} {preset.memory:>7}"
+                    f"  {preset.gpu or '':>3}"
+                    f"  {preset.gpu_model or ''}"
+                ).rstrip()
+            )
         return (
             style("User Configuration", bold=True)
             + ":\n"

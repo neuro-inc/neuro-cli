@@ -72,19 +72,19 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
                     "monitoring_url": "https://monitoring-dev.test.com",
                     "resource_presets": {
                         "gpu-small": {
-                            "gpu": 1,
                             "cpu": 7,
-                            "memory": 30720,
+                            "memory": 30 * 1024,
+                            "gpu": 1,
                             "gpu_model": "nvidia-tesla-k80",
                         },
                         "gpu-large": {
-                            "gpu": 1,
                             "cpu": 7,
-                            "memory": 61440,
+                            "memory": 60 * 1024,
+                            "gpu": 1,
                             "gpu_model": "nvidia-tesla-v100",
                         },
-                        "cpu-small": {"cpu": 2, "memory": 2048},
-                        "cpu-large": {"cpu": 3, "memory": 14336},
+                        "cpu-small": {"cpu": 2, "memory": 2 * 1024},
+                        "cpu-large": {"cpu": 3, "memory": 14 * 1024},
                     },
                 }
             )

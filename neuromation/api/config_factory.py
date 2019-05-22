@@ -238,7 +238,7 @@ class Factory:
             with open(  # type: ignore
                 tmppath, "x", encoding="utf-8", opener=opener
             ) as f:
-                yaml.safe_dump(payload, f, default_flow_style=False)
+                yaml.safe_dump(payload, f, default_flow_style=False, sort_keys=False)
             os.replace(tmppath, self._path)
         except:  # noqa  # bare 'except' with 'raise' is legal
             try:
