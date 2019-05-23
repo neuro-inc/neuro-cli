@@ -244,10 +244,10 @@ class ContainerPayload:
 class JobStatusHistory:
     status: JobStatus
     reason: str
-    description: str
     created_at: str
     started_at: str
     finished_at: str
+    description: Optional[str] = None
     exit_code: Optional[int] = None
 
 
