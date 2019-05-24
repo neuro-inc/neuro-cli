@@ -558,6 +558,13 @@ def data(static_path: Path) -> Tuple[str, str]:
 
 
 @pytest.fixture(scope="session")
+def data2(static_path: Path) -> Tuple[str, str]:
+    folder = static_path / "data2"
+    folder.mkdir()
+    return generate_random_file(folder, FILE_SIZE_B // 3)
+
+
+@pytest.fixture(scope="session")
 def nested_data(static_path: Path) -> Tuple[str, str, str]:
     root_dir = static_path / "neested_data" / "nested"
     nested_dir = root_dir / "directory" / "for" / "test"

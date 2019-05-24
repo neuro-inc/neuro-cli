@@ -122,7 +122,7 @@ def test_e2e_shm_switch(switch: str, expected: bool, helper: Helper) -> None:
             UBUNTU_IMAGE_NAME, command, params, JobStatus.FAILED, JobStatus.SUCCEEDED
         )
         status = helper.job_info(job_id)
-        assert re.search(r"Exit code: 1", status.history.description)
+        assert status.history.exit_code == 1
     else:
         helper.run_job_and_wait_state(
             UBUNTU_IMAGE_NAME, command, params, JobStatus.SUCCEEDED, JobStatus.FAILED
