@@ -72,22 +72,24 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
                     "storage_url": "https://storage-dev.test.com",
                     "users_url": "https://users-dev.test.com",
                     "monitoring_url": "https://monitoring-dev.test.com",
-                    "resource_presets": {
-                        "gpu-small": {
+                    "resource_presets": [
+                        {
+                            "name": "gpu-small",
                             "cpu": 7,
-                            "memory": 30 * 1024,
+                            "memory_mb": 30 * 1024,
                             "gpu": 1,
                             "gpu_model": "nvidia-tesla-k80",
                         },
-                        "gpu-large": {
+                        {
+                            "name": "gpu-large",
                             "cpu": 7,
-                            "memory": 60 * 1024,
+                            "memory_mb": 60 * 1024,
                             "gpu": 1,
                             "gpu_model": "nvidia-tesla-v100",
                         },
-                        "cpu-small": {"cpu": 2, "memory": 2 * 1024},
-                        "cpu-large": {"cpu": 3, "memory": 14 * 1024},
-                    },
+                        {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                        {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                    ],
                 }
             )
         return web.json_response(config_json)
@@ -132,7 +134,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
-            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -161,7 +163,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
-            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -191,7 +193,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
-            resource_presets={"default": RunPreset(cpu=1, memory=2 * 1024)},
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert not cluster_config_good.is_initialized()
 

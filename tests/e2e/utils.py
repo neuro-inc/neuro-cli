@@ -28,22 +28,22 @@ cluster_config:
   resource_presets:
     gpu-small:
       cpu: 7
-      memory: 30720
+      memory_mb: 30720
       gpu: 1
       gpu_model: nvidia-tesla-k80
     gpu-large:
       cpu: 7
-      memory: 61440
+      memory_mb: 61440
       gpu: 1
       gpu_model: nvidia-tesla-v100
     cpu-small:
       cpu: 2
-      memory: 2048
+      memory_mb: 2048
       gpu: null
       gpu_model: null
     cpu-large:
       cpu: 3
-      memory: 14336
+      memory_mb: 14336
       gpu: null
       gpu_model: null
 url: https://dev.neu.ro/api/v1

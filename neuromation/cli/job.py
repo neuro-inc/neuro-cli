@@ -588,7 +588,7 @@ async def run(
         gpu=job_preset.gpu,
         gpu_model=job_preset.gpu_model,
         cpu=job_preset.cpu,
-        memory=job_preset.memory,
+        memory=job_preset.memory_mb,
         extshm=extshm,
         http=http,
         http_auth=http_auth,

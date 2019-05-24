@@ -15,7 +15,7 @@ class ConfigFormatter:
         for name, preset in root.resource_presets.items():
             lines.append(
                 (
-                    f"{indent}{name:12}  {preset.cpu:>3} {preset.memory:>7}"
+                    f"{indent}{name:12}  {preset.cpu:>3} {preset.memory_mb:>7}"
                     f"  {preset.gpu or '':>3}"
                     f"  {preset.gpu_model or ''}"
                 ).rstrip()

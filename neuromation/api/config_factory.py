@@ -156,7 +156,7 @@ class Factory:
     def _serialize_resource_preset(self, resource_preset: RunPreset) -> Dict[str, Any]:
         return {
             "cpu": resource_preset.cpu,
-            "memory": resource_preset.memory,
+            "memory_mb": resource_preset.memory_mb,
             "gpu": resource_preset.gpu,
             "gpu_model": resource_preset.gpu_model,
         }
@@ -191,7 +191,7 @@ class Factory:
     def _deserialize_resource_preset(self, payload: Dict[str, Any]) -> RunPreset:
         return RunPreset(
             cpu=payload["cpu"],
-            memory=payload["memory"],
+            memory_mb=payload["memory_mb"],
             gpu=payload.get("gpu"),
             gpu_model=payload.get("gpu_model"),
         )

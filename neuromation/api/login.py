@@ -314,7 +314,7 @@ class AuthTokenClient:
 @dataclass(frozen=True)
 class RunPreset:
     cpu: float
-    memory: int
+    memory_mb: int
     gpu: Optional[int] = None
     gpu_model: Optional[str] = None
 
@@ -481,13 +481,13 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                 users_url=URL(payload.get("users_url", "")),
                 monitoring_url=URL(payload.get("monitoring_url", "")),
                 resource_presets={
-                    name: RunPreset(
+                    data["name"]: RunPreset(
                         cpu=data["cpu"],
-                        memory=data["memory"],
+                        memory_mb=data["memory_mb"],
                         gpu=data.get("gpu"),
                         gpu_model=data.get("gpu_model"),
                     )
-                    for name, data in payload.get("resource_presets", {}).items()
+                    for data in payload.get("resource_presets", ())
                 },
             )
             if headers and not cluster_config.is_initialized():

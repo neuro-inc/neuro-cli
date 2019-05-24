@@ -39,13 +39,13 @@ def cluster_config() -> _ClusterConfig:
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
         resource_presets={
             "gpu-small": RunPreset(
-                cpu=7, memory=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
             ),
             "gpu-large": RunPreset(
-                cpu=7, memory=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
             ),
-            "cpu-small": RunPreset(cpu=7, memory=2 * 1024),
-            "cpu-large": RunPreset(cpu=7, memory=14 * 1024),
+            "cpu-small": RunPreset(cpu=7, memory_mb=2 * 1024),
+            "cpu-large": RunPreset(cpu=7, memory_mb=14 * 1024),
         },
     )
 
@@ -61,13 +61,13 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             users_url=url,
             resource_presets={
                 "gpu-small": RunPreset(
-                    cpu=7, memory=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                    cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
                 ),
                 "gpu-large": RunPreset(
-                    cpu=7, memory=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                    cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
                 ),
-                "cpu-small": RunPreset(cpu=7, memory=2 * 1024),
-                "cpu-large": RunPreset(cpu=7, memory=14 * 1024),
+                "cpu-small": RunPreset(cpu=7, memory_mb=2 * 1024),
+                "cpu-large": RunPreset(cpu=7, memory_mb=14 * 1024),
             },
         )
         config = _Config(

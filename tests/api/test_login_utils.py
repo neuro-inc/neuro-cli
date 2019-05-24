@@ -124,22 +124,24 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
         "client_id": client_id,
         "audience": audience,
         "success_redirect_url": success_redirect_url,
-        "resource_presets": {
-            "gpu-small": {
+        "resource_presets": [
+            {
+                "name": "gpu-small",
                 "cpu": 7,
-                "memory": 30 * 1024,
+                "memory_mb": 30 * 1024,
                 "gpu": 1,
                 "gpu_model": "nvidia-tesla-k80",
             },
-            "gpu-large": {
+            {
+                "name": "gpu-large",
                 "cpu": 7,
-                "memory": 60 * 1024,
+                "memory_mb": 60 * 1024,
                 "gpu": 1,
                 "gpu_model": "nvidia-tesla-v100",
             },
-            "cpu-small": {"cpu": 2, "memory": 2 * 1024},
-            "cpu-large": {"cpu": 3, "memory": 14 * 1024},
-        },
+            {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+            {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+        ],
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -166,13 +168,13 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
             monitoring_url=URL(monitoring_url),
             resource_presets={
                 "gpu-small": RunPreset(
-                    cpu=7, memory=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                    cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
                 ),
                 "gpu-large": RunPreset(
-                    cpu=7, memory=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                    cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
                 ),
-                "cpu-small": RunPreset(cpu=2, memory=2 * 1024),
-                "cpu-large": RunPreset(cpu=3, memory=14 * 1024),
+                "cpu-small": RunPreset(cpu=2, memory_mb=2 * 1024),
+                "cpu-large": RunPreset(cpu=3, memory_mb=14 * 1024),
             },
         ),
     )
