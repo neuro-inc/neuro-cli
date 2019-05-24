@@ -770,7 +770,7 @@ def test_job_submit_http_auth(
 @pytest.mark.e2e
 def test_job_run(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "sleep 5; exit 101"'
+    command = 'bash -c "exit 101"'
     captured = helper.run_cli(
         [
             "job",
@@ -787,12 +787,7 @@ def test_job_run(helper: Helper) -> None:
     job_id = captured.out
 
     # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
 
     # Verify exit code is returned
     captured = helper.run_cli(["job", "status", job_id])
