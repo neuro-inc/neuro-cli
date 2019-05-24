@@ -501,7 +501,7 @@ class Jobs(metaclass=NoPublicConstructor):
         command = [
             "ssh",
             "-NL",
-            f"{local_port}:{id}:{job_port}",
+            f"{local_port}:{job_status.internal_hostname}:{job_port}",
             "-o",
             f"ProxyCommand={proxy_command_str}",
             "-o",
