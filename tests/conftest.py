@@ -1,5 +1,6 @@
 from typing import Callable
 
+import aiohttp
 import pytest
 from jose import jwt
 from yarl import URL
@@ -58,6 +59,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             url=URL(url),
             cluster_config=cluster_config,
         )
-        return Client._create(config)
+        connector = aiohttp.TCPConnector()
+        return Client._create(connector, config)
 
     return go

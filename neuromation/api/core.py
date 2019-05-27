@@ -45,7 +45,7 @@ class _Core:
 
     def __init__(
         self,
-        connector: aiohttp.TCPConnector,
+        connector: aiohttp.BaseConnector,
         base_url: URL,
         token: str,
         timeout: aiohttp.ClientTimeout,
@@ -69,7 +69,7 @@ class _Core:
         }
 
     @property
-    def connector(self) -> aiohttp.TCPConnector:
+    def connector(self) -> aiohttp.BaseConnector:
         return self._connector
 
     @property

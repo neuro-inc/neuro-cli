@@ -1,10 +1,13 @@
+import asyncio
 import os
+import ssl
 import sys
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, Optional
 
 import aiohttp
+import certifi
 import yaml
 from yarl import URL
 
@@ -20,12 +23,24 @@ from .login import (
     get_server_config,
     refresh_token,
 )
+from .utils import _ContextManager
 
 
 WIN32 = sys.platform == "win32"
 DEFAULT_CONFIG_PATH = "~/.nmrc"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
+
+
+def _make_connector() -> _ContextManager[aiohttp.TCPConnector]:
+    return _ContextManager[aiohttp.TCPConnector](__make_connector())
+
+
+async def __make_connector() -> aiohttp.TCPConnector:
+    ssl_context = ssl.SSLContext()
+    ssl_context.load_verify_locations(capath=certifi.where())
+    connector = aiohttp.TCPConnector(ssl=ssl_context)
+    return connector
 
 
 class ConfigError(RuntimeError):
@@ -40,12 +55,22 @@ class Factory:
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
-        new_token = await refresh_token(config.auth_config, config.auth_token, timeout)
+        connector = await _make_connector()
+        try:
+            new_token = await refresh_token(
+                connector, config.auth_config, config.auth_token, timeout
+            )
+        except asyncio.CancelledError:
+            await connector.close()
+            raise
+        except Exception:
+            await connector.close()
+            raise
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)
-            return Client._create(new_config, timeout=timeout)
-        return Client._create(config, timeout=timeout)
+            return Client._create(connector, new_config, timeout=timeout)
+        return Client._create(connector, config, timeout=timeout)
 
     async def login(
         self,
@@ -55,9 +80,11 @@ class Factory:
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        async with aiohttp.TCPConnector() as connector:
+        async with _make_connector() as connector:
             config_unauthorized = await get_server_config(connector, url)
-            negotiator = AuthNegotiator(config_unauthorized.auth_config, timeout)
+            negotiator = AuthNegotiator(
+                connector, config_unauthorized.auth_config, timeout
+            )
             auth_token = await negotiator.refresh_token()
 
             config_authorized = await get_server_config(
@@ -81,10 +108,10 @@ class Factory:
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        async with aiohttp.TCPConnector() as connector:
+        async with _make_connector() as connector:
             config_unauthorized = await get_server_config(connector, url)
             negotiator = HeadlessNegotiator(
-                config_unauthorized.auth_config, callback, timeout
+                connector, config_unauthorized.auth_config, callback, timeout
             )
             auth_token = await negotiator.refresh_token()
 
@@ -109,7 +136,7 @@ class Factory:
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        async with aiohttp.TCPConnector() as connector:
+        async with _make_connector() as connector:
             server_config = await get_server_config(connector, url, token=token)
         config = _Config(
             auth_config=server_config.auth_config,

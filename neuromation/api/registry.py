@@ -17,7 +17,7 @@ class _Registry(_Core):
     """
 
     def __init__(
-        self, connector: aiohttp.TCPConnector, base_url: URL, token: str, username: str
+        self, connector: aiohttp.BaseConnector, base_url: URL, token: str, username: str
     ) -> None:
         self._username = username
         super().__init__(connector, base_url, token, TIMEOUT)

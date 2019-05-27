@@ -41,9 +41,7 @@ def config_file(
 
 @pytest.fixture
 async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -> URL:
-    async def _refresh_token_mock(
-        self: Any, token: Optional[_AuthToken] = None
-    ) -> _AuthToken:
+    async def _refresh_token_mock(*args: Any, **kwargs: Any) -> _AuthToken:
         return _AuthToken.create_non_expiring(str(uuid()))
 
     async def _config_handler(request: web.Request) -> web.Response:
@@ -232,7 +230,10 @@ class TestConfigFileInteraction:
         new_token = str(uuid()) + "changed" * 10  # token must has other size
 
         async def _refresh_token_mock(
-            configf: _AuthConfig, token: _AuthToken, timeout: aiohttp.ClientTimeout
+            connector: aiohttp.BaseConnector,
+            config: _AuthConfig,
+            token: _AuthToken,
+            timeout: aiohttp.ClientTimeout,
         ) -> _AuthToken:
             return _AuthToken.create_non_expiring(new_token)
 

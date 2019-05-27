@@ -2,6 +2,7 @@ import asyncio
 from typing import AsyncIterator, Optional
 from unittest import mock
 
+import aiohttp
 import pytest
 from aiohttp import ClientSession
 from aiohttp.test_utils import unused_port
@@ -34,6 +35,14 @@ from neuromation.api.login import (
     create_auth_code_app,
 )
 from tests import _TestServerFactory
+
+
+@pytest.fixture
+async def connector(
+    loop: asyncio.AbstractEventLoop
+) -> AsyncIterator[aiohttp.BaseConnector]:
+    async with aiohttp.TCPConnector() as connector:
+        yield connector
 
 
 class TestAuthCode:
@@ -323,20 +332,33 @@ async def auth_config(
 
 
 class TestTokenClient:
-    async def test_request(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
+    async def test_request(
+        self,
+        connector: aiohttp.BaseConnector,
+        auth_client_id: str,
+        auth_config: _AuthConfig,
+    ) -> None:
         code = AuthCode()
         code.set_value("test_code")
         code.callback_url = auth_config.callback_urls[0]
 
         async with AuthTokenClient(
-            auth_config.token_url, client_id=auth_client_id, timeout=DEFAULT_TIMEOUT
+            connector,
+            auth_config.token_url,
+            client_id=auth_client_id,
+            timeout=DEFAULT_TIMEOUT,
         ) as client:
             token = await client.request(code)
             assert token.token == "test_access_token"
             assert token.refresh_token == "test_refresh_token"
             assert not token.is_expired
 
-    async def test_refresh(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
+    async def test_refresh(
+        self,
+        connector: aiohttp.BaseConnector,
+        auth_client_id: str,
+        auth_config: _AuthConfig,
+    ) -> None:
         token = _AuthToken.create(
             token="test_access_token",
             expires_in=1234,
@@ -344,7 +366,10 @@ class TestTokenClient:
         )
 
         async with AuthTokenClient(
-            auth_config.token_url, client_id=auth_client_id, timeout=DEFAULT_TIMEOUT
+            connector,
+            auth_config.token_url,
+            client_id=auth_client_id,
+            timeout=DEFAULT_TIMEOUT,
         ) as client:
             new_token = await client.refresh(token)
             assert new_token.token == "test_access_token_refreshed"
@@ -352,7 +377,10 @@ class TestTokenClient:
             assert not token.is_expired
 
     async def test_forbidden(
-        self, aiohttp_server: _TestServerFactory, auth_config: _AuthConfig
+        self,
+        connector: aiohttp.BaseConnector,
+        aiohttp_server: _TestServerFactory,
+        auth_config: _AuthConfig,
     ) -> None:
         code = AuthCode()
         code.callback_url = auth_config.callback_urls[0]
@@ -370,7 +398,7 @@ class TestTokenClient:
         url = server.make_url("/oauth/token")
 
         async with AuthTokenClient(
-            url, client_id=client_id, timeout=DEFAULT_TIMEOUT
+            connector, url, client_id=client_id, timeout=DEFAULT_TIMEOUT
         ) as client:
             with pytest.raises(AuthException, match="failed to get an access token."):
                 await client.request(code)
@@ -518,8 +546,11 @@ class TestClusterConfig:
 
 
 class TestAuthNegotiator:
-    async def test_get_code(self, auth_config: _AuthConfig) -> None:
+    async def test_get_code(
+        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
+    ) -> None:
         negotiator = AuthNegotiator(
+            connector,
             config=auth_config,
             timeout=DEFAULT_TIMEOUT,
             code_callback_client_factory=DummyAuthCodeCallbackClient,
@@ -528,8 +559,11 @@ class TestAuthNegotiator:
         assert await code.wait() == "test_code"
         assert code.callback_url == auth_config.callback_urls[0]
 
-    async def test_get_token(self, auth_config: _AuthConfig) -> None:
+    async def test_get_token(
+        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
+    ) -> None:
         negotiator = AuthNegotiator(
+            connector,
             config=auth_config,
             timeout=DEFAULT_TIMEOUT,
             code_callback_client_factory=DummyAuthCodeCallbackClient,
@@ -538,8 +572,11 @@ class TestAuthNegotiator:
         assert token.token == "test_access_token"
         assert token.refresh_token == "test_refresh_token"
 
-    async def test_refresh_token_noop(self, auth_config: _AuthConfig) -> None:
+    async def test_refresh_token_noop(
+        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
+    ) -> None:
         negotiator = AuthNegotiator(
+            connector,
             config=auth_config,
             timeout=DEFAULT_TIMEOUT,
             code_callback_client_factory=DummyAuthCodeCallbackClient,
@@ -553,8 +590,11 @@ class TestAuthNegotiator:
         assert token.token == "test_access_token"
         assert token.refresh_token == "test_refresh_token"
 
-    async def test_refresh_token(self, auth_config: _AuthConfig) -> None:
+    async def test_refresh_token(
+        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
+    ) -> None:
         negotiator = AuthNegotiator(
+            connector,
             config=auth_config,
             timeout=DEFAULT_TIMEOUT,
             code_callback_client_factory=DummyAuthCodeCallbackClient,
@@ -573,7 +613,9 @@ class TestAuthNegotiator:
 
 
 class TestHeadlessNegotiator:
-    async def test_get_code(self, auth_config: _AuthConfig) -> None:
+    async def test_get_code(
+        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
+    ) -> None:
         async def callback(url: URL) -> str:
             assert url.with_query(None) == auth_config.auth_url
 
@@ -589,17 +631,19 @@ class TestHeadlessNegotiator:
             return "test_code"
 
         negotiator = HeadlessNegotiator(
-            config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
+            connector, config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
         )
         code = await negotiator.get_code()
         assert await code.wait() == "test_code"
 
-    async def test_get_code_raises(self, auth_config: _AuthConfig) -> None:
+    async def test_get_code_raises(
+        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
+    ) -> None:
         async def callback(url: URL) -> str:
             raise RuntimeError("callback error")
 
         negotiator = HeadlessNegotiator(
-            config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
+            connector, config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
         )
         with pytest.raises(RuntimeError, match="callback error"):
             await negotiator.get_code()
