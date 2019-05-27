@@ -1,0 +1,1 @@
+Changes in interpretation URIs with absolute path and without host name. `storage:///foo/bar` means now the same as `storage://foo/bar` instead of `storage://{currentuser}/foo/bar`, and `storage:///` can be used for access to the storage root directory.
