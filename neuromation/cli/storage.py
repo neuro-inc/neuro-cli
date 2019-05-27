@@ -3,8 +3,6 @@ from typing import List
 
 import click
 
-from neuromation.api.url_utils import uri_from_cli
-
 from .command_progress_report import ProgressBase
 from .formatters import (
     BaseFilesFormatter,
@@ -14,7 +12,7 @@ from .formatters import (
     VerticalColumnsFilesFormatter,
 )
 from .root import Root
-from .utils import async_cmd, command, group
+from .utils import async_cmd, command, group, parse_file_resource
 
 
 log = logging.getLogger(__name__)
@@ -48,7 +46,7 @@ async def rm(root: Root, paths: List[str], recursive: bool) -> None:
     neuro rm --recursive storage://{username}/foo/
     """
     for path in paths:
-        uri = uri_from_cli(path, root.username)
+        uri = parse_file_resource(path, root)
         log.info(f"Using path '{uri}'")
 
         await root.client.storage.rm(uri, recursive=recursive)
@@ -93,7 +91,7 @@ async def ls(
             else:
                 formatter = SimpleFilesFormatter(root.color)
 
-        uri = uri_from_cli(path, root.username)
+        uri = parse_file_resource(path, root)
         log.info(f"Using path '{uri}'")
 
         files = await root.client.storage.ls(uri)
@@ -129,11 +127,11 @@ async def cp(
     # explicit file:// scheme set
     neuro cp storage:///foo file:///foo
     """
-    dst = uri_from_cli(destination, root.username)
+    dst = parse_file_resource(destination, root)
     log.info(f"Using destination path: '{dst}'")
 
     for source in sources:
-        src = uri_from_cli(source, root.username)
+        src = parse_file_resource(source, root)
 
         progress_obj = ProgressBase.create_progress(progress)
 
@@ -172,7 +170,7 @@ async def mkdir(root: Root, paths: List[str], parents: bool) -> None:
     """
 
     for path in paths:
-        uri = uri_from_cli(path, root.username)
+        uri = parse_file_resource(path, root)
         log.info(f"Using path '{uri}'")
 
         await root.client.storage.mkdirs(uri, parents=parents, exist_ok=parents)
@@ -202,10 +200,10 @@ async def mv(root: Root, sources: List[str], destination: str) -> None:
     neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
     """
 
-    dst = uri_from_cli(destination, root.username)
+    dst = parse_file_resource(destination, root)
     log.info(f"Using destination path: '{dst}'")
     for source in sources:
-        src = uri_from_cli(source, root.username)
+        src = parse_file_resource(source, root)
         log.info(f"Using source path:      '{src}'")
 
         await root.client.storage.mv(src, dst)

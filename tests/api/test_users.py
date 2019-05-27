@@ -45,21 +45,6 @@ async def mocked_revoke_client(
 
 
 class TestUsersShare:
-    def test_permissions_from_cli(self) -> None:
-        with pytest.raises(ValueError, match=r"URI Scheme not specified"):
-            Permission.from_cli("bob", URL("scheme-less/resource"), Action.MANAGE)
-
-        with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
-            Permission.from_cli("bob", URL("http://neuromation.io"), Action.READ)
-
-        user_less_permission = Permission.from_cli(
-            "bob", URL("storage:resource"), Action.MANAGE
-        )
-        full_permission = Permission.from_cli(
-            "bob", URL("storage://bob/resource"), Action.MANAGE
-        )
-        assert user_less_permission == full_permission
-
     async def test_share_unknown_user(self, mocked_share_client: Client) -> None:
         with pytest.raises(ResourceNotFound):
             await mocked_share_client.users.share(

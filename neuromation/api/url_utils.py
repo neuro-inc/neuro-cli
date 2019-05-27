@@ -1,11 +1,17 @@
 import re
 import sys
 from pathlib import Path
+from typing import Sequence
 
 from yarl import URL
 
 
-def uri_from_cli(path_or_uri: str, username: str) -> URL:
+def uri_from_cli(
+    path_or_uri: str,
+    username: str,
+    *,
+    allowed_schemes: Sequence[str] = ("file", "storage"),
+) -> URL:
     uri = URL(path_or_uri)
     # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
     if not uri.scheme or len(uri.scheme) == 1:
@@ -13,14 +19,25 @@ def uri_from_cli(path_or_uri: str, username: str) -> URL:
         # URLs like "scheme:123".
         if re.fullmatch(r"[a-zA-Z0-9+\-.]{2,}:[0-9]+", path_or_uri):
             uri = URL(f"{path_or_uri}#")
-        elif re.fullmatch(r"[0-9]+", path_or_uri):
-            uri = URL(f"file:{path_or_uri}#")
-        else:
-            uri = URL(f"file:{path_or_uri}")
+        elif "file" in allowed_schemes:
+            if re.fullmatch(r"[0-9]+", path_or_uri):
+                uri = URL(f"file:{path_or_uri}#")
+            else:
+                uri = URL(f"file:{path_or_uri}")
+    if not uri.scheme:
+        raise ValueError(
+            f"URI Scheme not specified. "
+            f"Please specify one of {', '.join(allowed_schemes)}."
+        )
+    if uri.scheme not in allowed_schemes:
+        raise ValueError(
+            f"Unsupported URI scheme: {uri.scheme or 'Empty'}. "
+            f"Please specify one of {', '.join(allowed_schemes)}."
+        )
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
-    elif uri.scheme == "storage":
-        uri = normalize_storage_path_uri(uri, username)
+    else:
+        uri = _normalize_uri(uri, username)
     return uri
 
 
@@ -31,11 +48,14 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
             f"Invalid storage scheme '{uri.scheme}://' "
             "(only 'storage://' is allowed)"
         )
+    return _normalize_uri(uri, username)
 
+
+def _normalize_uri(uri: URL, username: str) -> URL:
     if not uri.host:
         if uri.path.startswith("~"):
             raise ValueError(f"Cannot expand user for {uri}")
-        uri = URL("storage://" + username + "/" + uri.path)
+        uri = URL(f"{uri.scheme}://{username}/{uri.path}")
     elif uri.host == "~":
         uri = uri.with_host(username)
     elif uri.host.startswith("~"):  # type: ignore

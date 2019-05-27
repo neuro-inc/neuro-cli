@@ -32,6 +32,7 @@ from neuromation.api import (
     JobDescription,
     Volume,
 )
+from neuromation.api.url_utils import uri_from_cli
 from neuromation.strings.parse import to_megabytes
 from neuromation.utils import run
 
@@ -363,6 +364,9 @@ async def resolve_job(client: Client, id_or_name: str) -> str:
     return job_id
 
 
+SHARE_SCHEMES = ("storage", "image", "job")
+
+
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
@@ -371,7 +375,15 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         parser = ImageNameParser(root.username, root.registry_url)
         image = parser.parse_as_neuro_image(uri, allow_tag=False)
         uri = image.as_url_str()
-    return URL(uri)
+
+    return uri_from_cli(uri, root.username, allowed_schemes=("storage", "image", "job"))
+
+
+def parse_file_resource(uri: str, root: Root) -> URL:
+    """ Parses the neuromation resource URI string.
+    Available schemes: file, storage.
+    """
+    return uri_from_cli(uri, root.username, allowed_schemes=("file", "storage"))
 
 
 def parse_permission_action(action: str) -> Action:
