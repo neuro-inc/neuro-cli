@@ -1,3 +1,4 @@
+import os
 from pathlib import Path, PurePath
 from typing import Tuple
 
@@ -118,3 +119,53 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
             ["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)],
             storage_retry=False,
         )
+
+
+@pytest.mark.e2e
+def test_copy_and_remove_multiple_files(
+    helper: Helper, data: _Data, data2: _Data, tmp_path: Path
+) -> None:
+    # case when copy happens with rename to 'different_name.txt'
+    srcfile, checksum = data
+    srcfile2, checksum2 = data2
+    srcname = os.path.basename(srcfile)
+    srcname2 = os.path.basename(srcfile2)
+
+    # Upload local files
+    captured = helper.run_cli(["storage", "cp", srcfile, srcfile2, helper.tmpstorage])
+    assert captured.out == ""
+
+    # Confirm files has been uploaded
+    helper.check_file_exists_on_storage(srcname, "", FILE_SIZE_B)
+    helper.check_file_exists_on_storage(srcname2, "", FILE_SIZE_B // 3)
+
+    # Download into local directory and confirm checksum
+    targetdir = tmp_path / "bar"
+    targetdir.mkdir()
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            f"{helper.tmpstorage}/{srcname}",
+            f"{helper.tmpstorage}/{srcname2}",
+            str(targetdir),
+        ]
+    )
+    assert helper.hash_hex(targetdir / srcname) == checksum
+    assert helper.hash_hex(targetdir / srcname2) == checksum2
+
+    # Remove the files from platform
+    captured = helper.run_cli(
+        [
+            "storage",
+            "rm",
+            f"{helper.tmpstorage}/{srcname}",
+            f"{helper.tmpstorage}/{srcname2}",
+        ],
+        storage_retry=False,
+    )
+    assert captured.out == ""
+
+    # Ensure files are not there
+    helper.check_file_absent_on_storage(srcname, "")
+    helper.check_file_absent_on_storage(srcname2, "")

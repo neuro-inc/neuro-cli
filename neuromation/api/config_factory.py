@@ -94,8 +94,6 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
         )
-        async with Client._create(config, timeout=timeout) as client:
-            await client.jobs.list()  # raises an exception if cannot login
         self._save(config)
 
     async def login_with_token(
@@ -115,8 +113,6 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
         )
-        async with Client._create(config, timeout=timeout) as client:
-            await client.jobs.list()  # raises an exception if cannot login
         self._save(config)
 
     async def logout(self) -> None:

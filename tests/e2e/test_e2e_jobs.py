@@ -121,6 +121,8 @@ def test_job_lifecycle(helper: Helper) -> None:
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
     assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
+    # Check correct exit code is returned
+    # assert "Exit code: 0" in store_out
 
     # Check job status by name
     captured = helper.run_cli(["job", "status", job_name])
@@ -768,7 +770,7 @@ def test_job_submit_http_auth(
 @pytest.mark.e2e
 def test_job_run(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "sleep 10m; false"'
+    command = 'bash -c "exit 101"'
     captured = helper.run_cli(
         [
             "job",
@@ -785,12 +787,9 @@ def test_job_run(helper: Helper) -> None:
     job_id = captured.out
 
     # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
 
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+    # Verify exit code is returned
+    captured = helper.run_cli(["job", "status", job_id])
+    store_out = captured.out
+    assert "Exit code: 101" in store_out

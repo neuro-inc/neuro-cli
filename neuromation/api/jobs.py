@@ -244,10 +244,11 @@ class ContainerPayload:
 class JobStatusHistory:
     status: JobStatus
     reason: str
-    description: str
     created_at: str
     started_at: str
     finished_at: str
+    description: Optional[str] = None
+    exit_code: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -286,6 +287,7 @@ class JobDescription:
             created_at=res["history"].get("created_at", ""),
             started_at=res["history"].get("started_at", ""),
             finished_at=res["history"].get("finished_at", ""),
+            exit_code=res["history"].get("exit_code"),
         )
         http_url = URL(res.get("http_url", ""))
         http_url_named = URL(res.get("http_url_named", ""))
@@ -499,7 +501,7 @@ class Jobs(metaclass=NoPublicConstructor):
         command = [
             "ssh",
             "-NL",
-            f"{local_port}:{id}:{job_port}",
+            f"{local_port}:{job_status.internal_hostname}:{job_port}",
             "-o",
             f"ProxyCommand={proxy_command_str}",
             "-o",
