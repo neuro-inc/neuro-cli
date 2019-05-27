@@ -514,8 +514,12 @@ class ConfigLoadException(Exception):
     pass
 
 
-async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerConfig:
-    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as client:
+async def get_server_config(
+    connector: aiohttp.BaseConnector, url: URL, token: Optional[str] = None
+) -> _ServerConfig:
+    async with aiohttp.ClientSession(
+        timeout=DEFAULT_TIMEOUT, connector=connector, connector_owner=False
+    ) as client:
         headers: Dict[str, str] = {}
         if token:
             headers["Authorization"] = f"Bearer {token}"

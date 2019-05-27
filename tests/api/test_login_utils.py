@@ -42,7 +42,8 @@ async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    config = await get_server_config(srv.make_url("/"))
+    async with aiohttp.TCPConnector() as connector:
+        config = await get_server_config(connector, srv.make_url("/"))
     assert config == _ServerConfig(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
@@ -85,7 +86,8 @@ async def test_get_server_config_no_callback_urls(
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    config = await get_server_config(srv.make_url("/"))
+    async with aiohttp.TCPConnector() as connector:
+        config = await get_server_config(connector, srv.make_url("/"))
     assert config == _ServerConfig(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
@@ -133,7 +135,10 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
     app.router.add_get("/config", handler)
     srv = await aiohttp_server(app)
 
-    config = await get_server_config(srv.make_url("/"), token="bananatoken")
+    async with aiohttp.TCPConnector() as connector:
+        config = await get_server_config(
+            connector, srv.make_url("/"), token="bananatoken"
+        )
     assert config == _ServerConfig(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
@@ -161,4 +166,5 @@ async def test_get_server_config__fail(aiohttp_server: _TestServerFactory) -> No
     srv = await aiohttp_server(app)
 
     with pytest.raises(RuntimeError, match="Unable to get server configuration: 500"):
-        await get_server_config(srv.make_url("/"))
+        async with aiohttp.TCPConnector() as connector:
+            await get_server_config(connector, srv.make_url("/"))
