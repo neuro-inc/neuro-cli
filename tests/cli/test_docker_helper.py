@@ -125,6 +125,16 @@ class TestCli:
         assert payload["credHelpers"] == {registry: "neuro", "some.com": "handler"}
         assert payload["test"] == "value"
 
+    def test_success_output_message(
+        self, run_cli: _RunCli, tmp_path: Path, config: _Config
+    ) -> None:
+        path = tmp_path / ".docker"
+        json_path = path / "config.json"
+        capture = run_cli(["config", "docker", "--docker-config", str(path)])
+        assert not capture.err
+        assert str(json_path) in capture.out
+        assert config.cluster_config.registry_url.host in capture.out
+
 
 class TestHelper:
     def test_no_params_use(self, run_dch: _RunDch) -> None:
