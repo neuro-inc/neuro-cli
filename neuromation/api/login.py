@@ -312,17 +312,33 @@ class AuthTokenClient:
 
 
 @dataclass(frozen=True)
+class RunPreset:
+    cpu: float
+    memory_mb: int
+    gpu: Optional[int] = None
+    gpu_model: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class _ClusterConfig:
     registry_url: URL
     storage_url: URL
     users_url: URL
     monitoring_url: URL
+    resource_presets: Dict[str, RunPreset]
 
     @classmethod
     def create(
-        cls, registry_url: URL, storage_url: URL, users_url: URL, monitoring_url: URL
+        cls,
+        registry_url: URL,
+        storage_url: URL,
+        users_url: URL,
+        monitoring_url: URL,
+        resource_presets: Dict[str, RunPreset],
     ) -> "_ClusterConfig":
-        return cls(registry_url, storage_url, users_url, monitoring_url)
+        return cls(
+            registry_url, storage_url, users_url, monitoring_url, resource_presets
+        )
 
     def is_initialized(self) -> bool:
         return bool(
@@ -330,6 +346,7 @@ class _ClusterConfig:
             and self.storage_url
             and self.users_url
             and self.monitoring_url
+            and self.resource_presets
         )
 
 
@@ -463,6 +480,15 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                 storage_url=URL(payload.get("storage_url", "")),
                 users_url=URL(payload.get("users_url", "")),
                 monitoring_url=URL(payload.get("monitoring_url", "")),
+                resource_presets={
+                    data["name"]: RunPreset(
+                        cpu=data["cpu"],
+                        memory_mb=data["memory_mb"],
+                        gpu=data.get("gpu"),
+                        gpu_model=data.get("gpu_model"),
+                    )
+                    for data in payload.get("resource_presets", ())
+                },
             )
             if headers and not cluster_config.is_initialized():
                 raise AuthException("Cannot authorize user")

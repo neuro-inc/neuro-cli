@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4 as uuid
 
 import pytest
@@ -10,7 +10,12 @@ from yarl import URL
 
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-from neuromation.api.login import AuthException, AuthNegotiator, _ClusterConfig
+from neuromation.api.login import (
+    AuthException,
+    AuthNegotiator,
+    RunPreset,
+    _ClusterConfig,
+)
 from tests import _TestServerFactory
 
 
@@ -44,7 +49,7 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
         return _AuthToken.create_non_expiring(str(uuid()))
 
     async def _config_handler(request: web.Request) -> web.Response:
-        config_json = {
+        config_json: Dict[str, Any] = {
             "auth_url": "https://test-neuromation.auth0.com/authorize",
             "token_url": "https://test-neuromation.auth0.com/oauth/token",
             "client_id": "banana",
@@ -67,6 +72,24 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
                     "storage_url": "https://storage-dev.test.com",
                     "users_url": "https://users-dev.test.com",
                     "monitoring_url": "https://monitoring-dev.test.com",
+                    "resource_presets": [
+                        {
+                            "name": "gpu-small",
+                            "cpu": 7,
+                            "memory_mb": 30 * 1024,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-k80",
+                        },
+                        {
+                            "name": "gpu-large",
+                            "cpu": 7,
+                            "memory_mb": 60 * 1024,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-v100",
+                        },
+                        {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                        {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                    ],
                 }
             )
         return web.json_response(config_json)
@@ -111,6 +134,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -139,6 +163,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -168,6 +193,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert not cluster_config_good.is_initialized()
 

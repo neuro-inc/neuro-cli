@@ -6,7 +6,7 @@ from yarl import URL
 
 from neuromation.api import Client
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-from neuromation.api.login import _ClusterConfig
+from neuromation.api.login import RunPreset, _ClusterConfig
 
 
 @pytest.fixture
@@ -37,6 +37,16 @@ def cluster_config() -> _ClusterConfig:
         storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
+        resource_presets={
+            "gpu-small": RunPreset(
+                cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+            ),
+            "gpu-large": RunPreset(
+                cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+            ),
+            "cpu-small": RunPreset(cpu=7, memory_mb=2 * 1024),
+            "cpu-large": RunPreset(cpu=7, memory_mb=14 * 1024),
+        },
     )
 
 
@@ -49,6 +59,16 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             monitoring_url=(url / "jobs"),
             storage_url=(url / "storage"),
             users_url=url,
+            resource_presets={
+                "gpu-small": RunPreset(
+                    cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                ),
+                "gpu-large": RunPreset(
+                    cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                ),
+                "cpu-small": RunPreset(cpu=7, memory_mb=2 * 1024),
+                "cpu-large": RunPreset(cpu=7, memory_mb=14 * 1024),
+            },
         )
         config = _Config(
             auth_config=auth_config,

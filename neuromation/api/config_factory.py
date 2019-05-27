@@ -13,6 +13,7 @@ from .config import _Config, _PyPIVersion
 from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
+    RunPreset,
     _AuthConfig,
     _AuthToken,
     _ClusterConfig,
@@ -139,13 +140,25 @@ class Factory:
 
     def _serialize_cluster_config(
         self, cluster_config: _ClusterConfig
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         assert cluster_config.is_initialized(), cluster_config
         return {
             "registry_url": str(cluster_config.registry_url),
             "storage_url": str(cluster_config.storage_url),
             "users_url": str(cluster_config.users_url),
             "monitoring_url": str(cluster_config.monitoring_url),
+            "resource_presets": {
+                name: self._serialize_resource_preset(resource_preset)
+                for name, resource_preset in cluster_config.resource_presets.items()
+            },
+        }
+
+    def _serialize_resource_preset(self, resource_preset: RunPreset) -> Dict[str, Any]:
+        return {
+            "cpu": resource_preset.cpu,
+            "memory_mb": resource_preset.memory_mb,
+            "gpu": resource_preset.gpu,
+            "gpu_model": resource_preset.gpu_model,
         }
 
     def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
@@ -169,6 +182,18 @@ class Factory:
             storage_url=URL(cluster_config["storage_url"]),
             users_url=URL(cluster_config["users_url"]),
             monitoring_url=URL(cluster_config["monitoring_url"]),
+            resource_presets={
+                name: self._deserialize_resource_preset(data)
+                for name, data in cluster_config.get("resource_presets", {}).items()
+            },
+        )
+
+    def _deserialize_resource_preset(self, payload: Dict[str, Any]) -> RunPreset:
+        return RunPreset(
+            cpu=payload["cpu"],
+            memory_mb=payload["memory_mb"],
+            gpu=payload.get("gpu"),
+            gpu_model=payload.get("gpu_model"),
         )
 
     def _deserialize_auth_token(self, payload: Dict[str, Any]) -> _AuthToken:
@@ -209,7 +234,7 @@ class Factory:
             with open(  # type: ignore
                 tmppath, "x", encoding="utf-8", opener=opener
             ) as f:
-                yaml.safe_dump(payload, f, default_flow_style=False)
+                yaml.safe_dump(payload, f, default_flow_style=False, sort_keys=False)
             os.replace(tmppath, self._path)
         except:  # noqa  # bare 'except' with 'raise' is legal
             try:

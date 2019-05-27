@@ -25,6 +25,27 @@ cluster_config:
   registry_url: https://registry-dev.neu.ro
   storage_url: https://dev.neu.ro/api/v1/storage
   users_url: https://dev.neu.ro/api/v1/users
+  resource_presets:
+    gpu-small:
+      cpu: 7
+      memory_mb: 30720
+      gpu: 1
+      gpu_model: nvidia-tesla-k80
+    gpu-large:
+      cpu: 7
+      memory_mb: 61440
+      gpu: 1
+      gpu_model: nvidia-tesla-v100
+    cpu-small:
+      cpu: 2
+      memory_mb: 2048
+      gpu: null
+      gpu_model: null
+    cpu-large:
+      cpu: 3
+      memory_mb: 14336
+      gpu: null
+      gpu_model: null
 url: https://dev.neu.ro/api/v1
 """
 

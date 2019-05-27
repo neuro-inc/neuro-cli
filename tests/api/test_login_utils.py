@@ -4,6 +4,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.api.login import (
+    RunPreset,
     _AuthConfig,
     _ClusterConfig,
     _ServerConfig,
@@ -51,7 +52,11 @@ async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
             success_redirect_url=URL(success_redirect_url),
         ),
         cluster_config=_ClusterConfig.create(
-            registry_url=URL(), storage_url=URL(), users_url=URL(), monitoring_url=URL()
+            registry_url=URL(),
+            storage_url=URL(),
+            users_url=URL(),
+            monitoring_url=URL(),
+            resource_presets={},
         ),
     )
 
@@ -90,7 +95,11 @@ async def test_get_server_config_no_callback_urls(
             success_redirect_url=URL(success_redirect_url),
         ),
         cluster_config=_ClusterConfig(
-            registry_url=URL(), storage_url=URL(), users_url=URL(), monitoring_url=URL()
+            registry_url=URL(),
+            storage_url=URL(),
+            users_url=URL(),
+            monitoring_url=URL(),
+            resource_presets={},
         ),
     )
 
@@ -115,6 +124,24 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
         "client_id": client_id,
         "audience": audience,
         "success_redirect_url": success_redirect_url,
+        "resource_presets": [
+            {
+                "name": "gpu-small",
+                "cpu": 7,
+                "memory_mb": 30 * 1024,
+                "gpu": 1,
+                "gpu_model": "nvidia-tesla-k80",
+            },
+            {
+                "name": "gpu-large",
+                "cpu": 7,
+                "memory_mb": 60 * 1024,
+                "gpu": 1,
+                "gpu_model": "nvidia-tesla-v100",
+            },
+            {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+            {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+        ],
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -139,6 +166,16 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
             storage_url=URL(storage_url),
             users_url=URL(users_url),
             monitoring_url=URL(monitoring_url),
+            resource_presets={
+                "gpu-small": RunPreset(
+                    cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                ),
+                "gpu-large": RunPreset(
+                    cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                ),
+                "cpu-small": RunPreset(cpu=2, memory_mb=2 * 1024),
+                "cpu-large": RunPreset(cpu=3, memory_mb=14 * 1024),
+            },
         ),
     )
 

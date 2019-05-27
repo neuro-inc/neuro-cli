@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import aiohttp
 from yarl import URL
@@ -9,6 +9,7 @@ from yarl import URL
 from neuromation.api import Client, get as api_get
 from neuromation.api.config import _Config
 from neuromation.api.config_factory import ConfigError
+from neuromation.api.login import RunPreset
 
 
 log = logging.getLogger(__name__)
@@ -60,6 +61,12 @@ class Root:
         if self._config is None or not self._config.cluster_config.is_initialized():
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.registry_url
+
+    @property
+    def resource_presets(self) -> Dict[str, RunPreset]:
+        if self._config is None or not self._config.cluster_config.is_initialized():
+            raise ConfigError("User is not registered, run 'neuro login'.")
+        return self._config.cluster_config.resource_presets
 
     @property
     def client(self) -> Client:
