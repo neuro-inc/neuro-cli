@@ -74,6 +74,7 @@ class Factory:
 
     async def login(
         self,
+        show_browser_cb: Callable[[URL], Awaitable[None]],
         *,
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
@@ -83,7 +84,7 @@ class Factory:
         async with _make_connector() as connector:
             config_unauthorized = await get_server_config(connector, url)
             negotiator = AuthNegotiator(
-                connector, config_unauthorized.auth_config, timeout
+                connector, config_unauthorized.auth_config, show_browser_cb, timeout
             )
             auth_token = await negotiator.refresh_token()
 
@@ -101,7 +102,7 @@ class Factory:
 
     async def login_headless(
         self,
-        callback: Callable[[URL], Awaitable[str]],
+        get_auth_code_cb: Callable[[URL], Awaitable[str]],
         *,
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
@@ -111,7 +112,7 @@ class Factory:
         async with _make_connector() as connector:
             config_unauthorized = await get_server_config(connector, url)
             negotiator = HeadlessNegotiator(
-                connector, config_unauthorized.auth_config, callback, timeout
+                connector, config_unauthorized.auth_config, get_auth_code_cb, timeout
             )
             auth_token = await negotiator.refresh_token()
 

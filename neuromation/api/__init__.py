@@ -93,12 +93,13 @@ async def _get(path: Optional[Path], timeout: aiohttp.ClientTimeout) -> Client:
 
 
 async def login(
+    show_browser_cb: Callable[[URL], Awaitable[None]],
     *,
     url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
     timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
 ) -> None:
-    await Factory(path).login(url=url, timeout=timeout)
+    await Factory(path).login(show_browser_cb, url=url, timeout=timeout)
 
 
 async def login_with_token(
@@ -112,13 +113,13 @@ async def login_with_token(
 
 
 async def login_headless(
-    callback: Callable[[URL], Awaitable[str]],
+    get_auth_code_cb: Callable[[URL], Awaitable[str]],
     *,
     url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
     timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
 ) -> None:
-    await Factory(path).login_headless(callback, url=url, timeout=timeout)
+    await Factory(path).login_headless(get_auth_code_cb, url=url, timeout=timeout)
 
 
 async def logout(*, path: Optional[Path] = None) -> None:

@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from unittest import mock
 from uuid import uuid4 as uuid
 
@@ -292,14 +292,18 @@ class TestConfigFileInteraction:
 
 
 class TestLogin:
+    async def show_dummy_browser(self, url: URL) -> None:
+        async with aiohttp.ClientSession() as client:
+            await client.get(url, allow_redirects=True)
+
     async def test_login_already_logged(self, config_file: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
-            await Factory().login()
+            await Factory().login(self.show_dummy_browser)
 
     async def test_normal_login(
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
-        await Factory().login(url=mock_for_login.make_url("/"))
+        await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "
         saved_config = Factory(nmrc_path)._read()
@@ -337,16 +341,16 @@ class TestLoginWithToken:
 
 class TestHeadlessLogin:
     async def test_login_headless_already_logged(self, config_file: Path) -> None:
-        async def callback(url: URL) -> str:
+        async def get_auth_code_cb(url: URL) -> str:
             return ""
 
         with pytest.raises(ConfigError, match=r"already exists"):
-            await Factory().login_headless(callback)
+            await Factory().login_headless(get_auth_code_cb)
 
     async def test_normal_login(
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
-        async def callback(url: URL) -> str:
+        async def get_auth_code_cb(url: URL) -> str:
             assert url.with_query(None) == URL(
                 "https://test-neuromation.auth0.com/authorize"
             )
@@ -363,7 +367,7 @@ class TestHeadlessLogin:
             return "test_code"
 
         await Factory().login_headless(
-            callback=callback, url=mock_for_login.make_url("/")
+            get_auth_code_cb, url=mock_for_login.make_url("/")
         )
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "

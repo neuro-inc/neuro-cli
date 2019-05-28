@@ -25,7 +25,6 @@ from neuromation.api.login import (
     AuthException,
     AuthNegotiator,
     AuthTokenClient,
-    DummyAuthCodeCallbackClient,
     HeadlessNegotiator,
     _AuthConfig,
     _AuthToken,
@@ -546,14 +545,18 @@ class TestClusterConfig:
 
 
 class TestAuthNegotiator:
+    async def show_dummy_browser(self, url: URL) -> None:
+        async with ClientSession() as client:
+            await client.get(url, allow_redirects=True)
+
     async def test_get_code(
         self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
     ) -> None:
         negotiator = AuthNegotiator(
             connector,
             config=auth_config,
+            show_browser_cb=self.show_dummy_browser,
             timeout=DEFAULT_TIMEOUT,
-            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         code = await negotiator.get_code()
         assert await code.wait() == "test_code"
@@ -565,8 +568,8 @@ class TestAuthNegotiator:
         negotiator = AuthNegotiator(
             connector,
             config=auth_config,
+            show_browser_cb=self.show_dummy_browser,
             timeout=DEFAULT_TIMEOUT,
-            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         token = await negotiator.refresh_token(token=None)
         assert token.token == "test_access_token"
@@ -578,8 +581,8 @@ class TestAuthNegotiator:
         negotiator = AuthNegotiator(
             connector,
             config=auth_config,
+            show_browser_cb=self.show_dummy_browser,
             timeout=DEFAULT_TIMEOUT,
-            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         token = await negotiator.refresh_token(token=None)
         assert token.token == "test_access_token"
@@ -596,8 +599,8 @@ class TestAuthNegotiator:
         negotiator = AuthNegotiator(
             connector,
             config=auth_config,
+            show_browser_cb=self.show_dummy_browser,
             timeout=DEFAULT_TIMEOUT,
-            code_callback_client_factory=DummyAuthCodeCallbackClient,
         )
         token = await negotiator.refresh_token(token=None)
         assert token.token == "test_access_token"
@@ -616,7 +619,7 @@ class TestHeadlessNegotiator:
     async def test_get_code(
         self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
     ) -> None:
-        async def callback(url: URL) -> str:
+        async def get_auth_code_cb(url: URL) -> str:
             assert url.with_query(None) == auth_config.auth_url
 
             assert dict(url.query) == dict(
@@ -631,7 +634,10 @@ class TestHeadlessNegotiator:
             return "test_code"
 
         negotiator = HeadlessNegotiator(
-            connector, config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
+            connector,
+            config=auth_config,
+            get_auth_code_cb=get_auth_code_cb,
+            timeout=DEFAULT_TIMEOUT,
         )
         code = await negotiator.get_code()
         assert await code.wait() == "test_code"
@@ -639,11 +645,14 @@ class TestHeadlessNegotiator:
     async def test_get_code_raises(
         self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
     ) -> None:
-        async def callback(url: URL) -> str:
+        async def get_auth_code_cb(url: URL) -> str:
             raise RuntimeError("callback error")
 
         negotiator = HeadlessNegotiator(
-            connector, config=auth_config, callback=callback, timeout=DEFAULT_TIMEOUT
+            connector,
+            config=auth_config,
+            get_auth_code_cb=get_auth_code_cb,
+            timeout=DEFAULT_TIMEOUT,
         )
         with pytest.raises(RuntimeError, match="callback error"):
             await negotiator.get_code()

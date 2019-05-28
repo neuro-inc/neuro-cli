@@ -5,7 +5,6 @@ import errno
 import hashlib
 import secrets
 import time
-import webbrowser
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -125,9 +124,18 @@ class AuthCodeCallbackClient(abc.ABC):
 
 
 class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
+    def __init__(
+        self,
+        url: URL,
+        client_id: str,
+        audience: str,
+        show_browser_cb: Callable[[URL], Awaitable[None]],
+    ) -> None:
+        super().__init__(url=url, client_id=client_id, audience=audience)
+        self._show_browser_cb = show_browser_cb
+
     async def _request(self, url: URL, code: AuthCode) -> None:
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, webbrowser.open_new, str(url))
+        await self._show_browser_cb(url)
 
 
 class HeadlessAuthCodeCallbackClient(AuthCodeCallbackClient):
@@ -136,26 +144,20 @@ class HeadlessAuthCodeCallbackClient(AuthCodeCallbackClient):
         url: URL,
         client_id: str,
         audience: str,
-        callback: Callable[[URL], Awaitable[str]],
+        get_auth_code_cb: Callable[[URL], Awaitable[str]],
     ) -> None:
         super().__init__(url=url, client_id=client_id, audience=audience)
-        self._callback = callback
+        self._get_auth_code_cb = get_auth_code_cb
 
     async def _request(self, url: URL, code: AuthCode) -> None:
         try:
-            auth_code = await self._callback(url)
+            auth_code = await self._get_auth_code_cb(url)
             assert auth_code
             code.set_value(auth_code)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             code.set_exception(exc)
-
-
-class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
-    async def _request(self, url: URL, code: AuthCode) -> None:
-        async with ClientSession() as client:
-            await client.get(url, allow_redirects=True)
 
 
 class AuthCodeCallbackHandler:
@@ -474,13 +476,11 @@ class AuthNegotiator(BaseNegotiator):
         self,
         connector: aiohttp.BaseConnector,
         config: _AuthConfig,
+        show_browser_cb: Callable[[URL], Awaitable[None]],
         timeout: aiohttp.ClientTimeout,
-        code_callback_client_factory: Type[
-            AuthCodeCallbackClient
-        ] = WebBrowserAuthCodeCallbackClient,
     ) -> None:
         super().__init__(connector, config, timeout)
-        self._code_callback_client_factory = code_callback_client_factory
+        self._show_browser_cb = show_browser_cb
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
@@ -490,10 +490,11 @@ class AuthNegotiator(BaseNegotiator):
             app, host=self._config.callback_host, ports=self._config.callback_ports
         ) as url:
             code.callback_url = url
-            code_callback_client = self._code_callback_client_factory(
+            code_callback_client = WebBrowserAuthCodeCallbackClient(
                 url=self._config.auth_url,
                 client_id=self._config.client_id,
                 audience=self._config.audience,
+                show_browser_cb=self._show_browser_cb,
             )
             return await code_callback_client.request(code)
 
@@ -503,11 +504,11 @@ class HeadlessNegotiator(BaseNegotiator):
         self,
         connector: aiohttp.BaseConnector,
         config: _AuthConfig,
-        callback: Callable[[URL], Awaitable[str]],
+        get_auth_code_cb: Callable[[URL], Awaitable[str]],
         timeout: aiohttp.ClientTimeout,
     ) -> None:
         super().__init__(connector, config, timeout)
-        self._callback = callback
+        self._get_auth_code_cb = get_auth_code_cb
 
     async def get_code(self) -> AuthCode:
         code = AuthCode()
@@ -517,7 +518,7 @@ class HeadlessNegotiator(BaseNegotiator):
             url=self._config.auth_url,
             client_id=self._config.client_id,
             audience=self._config.audience,
-            callback=self._callback,
+            get_auth_code_cb=self._get_auth_code_cb,
         )
         return await code_callback_client.request(code)
 

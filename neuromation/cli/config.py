@@ -1,6 +1,8 @@
+import asyncio
 import json
 import os
 import sys
+import webbrowser
 from pathlib import Path
 from typing import Any, Dict
 
@@ -54,12 +56,21 @@ async def login(root: Root, url: URL) -> None:
 
     URL is a platform entrypoint URL.
     """
+
+    async def show_browser(url: URL) -> None:
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, webbrowser.open_new, str(url))
+
     try:
-        await api_login(url=url, path=root.config_path, timeout=root.timeout)
+        await api_login(
+            show_browser, url=url, path=root.config_path, timeout=root.timeout
+        )
     except ConfigError:
         await api_logout(path=root.config_path)
         click.echo("You were successfully logged out.")
-        await api_login(url=url, path=root.config_path, timeout=root.timeout)
+        await api_login(
+            show_browser, url=url, path=root.config_path, timeout=root.timeout
+        )
     click.echo(f"Logged into {url}")
 
 
@@ -114,15 +125,14 @@ async def login_headless(root: Root, url: URL) -> None:
 
     try:
         await api_login_headless(
-            url=url,
-            callback=login_callback,
-            path=root.config_path,
-            timeout=root.timeout,
+            login_callback, url=url, path=root.config_path, timeout=root.timeout
         )
     except ConfigError:
         await api_logout(path=root.config_path)
         click.echo("You were successfully logged out.")
-        await api_login(url=url, path=root.config_path, timeout=root.timeout)
+        await api_login_headless(
+            login_callback, url=url, path=root.config_path, timeout=root.timeout
+        )
     click.echo(f"Logged into {url}")
 
 
