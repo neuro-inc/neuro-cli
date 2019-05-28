@@ -78,7 +78,7 @@ def normalize_local_path_uri(uri: URL) -> URL:
     path = path.expanduser()
     if path.parents and str(path.parents[0]).startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
-    path = path.absolute()
+    path = Path.cwd() / path
     ret = URL(path.as_uri())
     while ret.path.startswith("//"):
         ret = ret.with_path(ret.path[1:])
