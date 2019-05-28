@@ -4,7 +4,6 @@ from typing import Any, Optional
 import click
 
 from neuromation.api import Permission, SharedPermission
-from neuromation.api.users import uri_from_cli
 
 from .root import Root
 from .utils import (
@@ -43,9 +42,7 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
     try:
         uri_obj = parse_resource_for_sharing(uri, root)
         action_obj = parse_permission_action(permission)
-        permission_obj = Permission.from_cli(
-            username=root.username, uri=uri_obj, action=action_obj
-        )
+        permission_obj = Permission(uri=uri_obj, action=action_obj)
         log.info(f"Using resource '{permission_obj.uri}'")
 
         await root.client.users.share(user, permission_obj)
@@ -69,7 +66,6 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     """
     try:
         uri_obj = parse_resource_for_sharing(uri, root)
-        uri_obj = uri_from_cli(username=root.username, uri=uri_obj)
         log.info(f"Using resource '{uri_obj}'")
 
         await root.client.users.revoke(user, uri_obj)

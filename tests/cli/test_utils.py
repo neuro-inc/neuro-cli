@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Callable, Dict, Tuple
 
 import click
@@ -9,6 +10,7 @@ from neuromation.api import Action, Client
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
     LocalRemotePortParamType,
+    parse_file_resource,
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
@@ -179,22 +181,91 @@ async def test_resolve_job_id__server_error(
         assert resolved == job_id
 
 
-async def test_parse_resource_for_sharing_image_1_no_tag(root: Root) -> None:
+def test_parse_file_resource_no_scheme(root: Root) -> None:
+    parsed = parse_file_resource("scheme-less/resource", root)
+    assert parsed == URL((Path().cwd() / "scheme-less/resource").as_uri())
+    parsed = parse_file_resource("c:scheme-less/resource", root)
+    assert parsed == URL((Path().cwd() / "c:scheme-less/resource").as_uri())
+
+
+def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
+    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+        parse_file_resource("http://neuromation.io", root)
+    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+        parse_file_resource("image:ubuntu", root)
+
+
+def test_parse_file_resource_user_less(root: Root) -> None:
+    user_less_permission = parse_file_resource("storage:resource", root)
+    assert user_less_permission == URL(f"storage://{root.username}/resource")
+
+
+def test_parse_file_resource_with_user(root: Root) -> None:
+    full_permission = parse_file_resource(f"storage://{root.username}/resource", root)
+    assert full_permission == URL(f"storage://{root.username}/resource")
+    full_permission = parse_file_resource(f"storage://alice/resource", root)
+    assert full_permission == URL(f"storage://alice/resource")
+
+
+def test_parse_file_resource_with_tilde(root: Root) -> None:
+    parsed = parse_file_resource(f"storage://~/resource", root)
+    assert parsed == URL(f"storage://{root.username}/resource")
+
+
+def test_parse_resource_for_sharing_image_1_no_tag(root: Root) -> None:
     uri = "image://~/ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL("image://user/ubuntu")
+    assert parsed == URL(f"image://{root.username}/ubuntu")
 
 
-async def test_parse_resource_for_sharing_image_2_no_tag(root: Root) -> None:
+def test_parse_resource_for_sharing_image_2_no_tag(root: Root) -> None:
     uri = "image:ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL("image://user/ubuntu")
+    assert parsed == URL(f"image://{root.username}/ubuntu")
 
 
-async def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
+def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
     uri = "image://~/ubuntu:latest"
     with pytest.raises(ValueError, match="tag is not allowed"):
         parse_resource_for_sharing(uri, root)
+
+
+def test_parse_resource_for_sharing_no_scheme(root: Root) -> None:
+    with pytest.raises(ValueError, match=r"URI Scheme not specified"):
+        parse_resource_for_sharing("scheme-less/resource", root)
+
+
+def test_parse_resource_for_sharing_unsupported_scheme(root: Root) -> None:
+    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+        parse_resource_for_sharing("http://neuromation.io", root)
+    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+        parse_resource_for_sharing("file:///etc/password", root)
+    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+        parse_resource_for_sharing(r"c:scheme-less/resource", root)
+
+
+def test_parse_resource_for_sharing_user_less(root: Root) -> None:
+    user_less_permission = parse_resource_for_sharing("storage:resource", root)
+    assert user_less_permission == URL(f"storage://{root.username}/resource")
+
+
+def test_parse_resource_for_sharing_with_user(root: Root) -> None:
+    full_permission = parse_resource_for_sharing(
+        f"storage://{root.username}/resource", root
+    )
+    assert full_permission == URL(f"storage://{root.username}/resource")
+    full_permission = parse_resource_for_sharing(f"storage://alice/resource", root)
+    assert full_permission == URL(f"storage://alice/resource")
+
+
+def test_parse_resource_for_sharing_with_tilde(root: Root) -> None:
+    parsed = parse_resource_for_sharing(f"storage://~/resource", root)
+    assert parsed == URL(f"storage://{root.username}/resource")
+
+
+def test_parse_resource_for_sharing_with_tilde_relative(root: Root) -> None:
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        parse_resource_for_sharing(f"storage:~/resource", root)
 
 
 def test_parse_permission_action_read_lowercase() -> None:

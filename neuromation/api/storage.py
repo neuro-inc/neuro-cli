@@ -127,9 +127,6 @@ class Storage(metaclass=NoPublicConstructor):
             return FileStatus.from_api(res["FileStatus"])
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
-        stat = await self.stats(uri)
-        if not stat.is_file():
-            raise IsADirectoryError(uri)
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
@@ -269,7 +266,10 @@ class Storage(metaclass=NoPublicConstructor):
                 raise OSError(f"{path} should be a regular file")
         loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
-            size = 0  # TODO: display length hint for downloaded file
+            stat = await self.stats(src)
+            if not stat.is_file():
+                raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
+            size = stat.size
             if progress is not None:
                 progress.start(str(dst), size)
             pos = 0

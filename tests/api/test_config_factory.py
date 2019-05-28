@@ -1,8 +1,6 @@
-import abc
 import sys
 from pathlib import Path
-from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Any, Dict
 from unittest import mock
 from uuid import uuid4 as uuid
 
@@ -16,7 +14,7 @@ from yarl import URL
 import neuromation.api.config_factory
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-from neuromation.api.login import AuthException, AuthNegotiator, _ClusterConfig
+from neuromation.api.login import AuthException, RunPreset, _ClusterConfig
 from tests import _TestServerFactory
 
 
@@ -42,38 +40,15 @@ def config_file(
     return config_path
 
 
-class BaseFakeServer(abc.ABC):
-    def __init__(self):
-        app = web.Application()
-        app.router.add_get("/config", self.config_handler)
-        app.router.add_get("/oauth/show-code", self.show_code)
-        app.router.add_get("/authorize", self.authorize)
-        app.router.add_post("/oauth/token", self.token)
-        self._srv = _TestServer(app)
-
-    @property
-    def srv(self):
-        return self._srv
-
-    async def __aenter__(self) -> "BaseFakeServer":
-        await self._srv.__aenter__()
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
-    ) -> None:
-        await self._srv.__aexit__(exc_type, exc_value, traceback)
-
-    async def config_handler(self, request: web.Request) -> web.Response:
-        config_json = {
-            "auth_url": str(self._srv.make_url("/authorize")),
-            "token_url": str(self._srv.make_url("/oauth/token")),
+@pytest.fixture
+async def mock_for_login(aiohttp_server: _TestServerFactory) -> _TestServer:
+    async def config_handler(request: web.Request) -> web.Response:
+        config_json: Dict[str, Any] = {
+            "auth_url": str(srv.make_url("/authorize")),
+            "token_url": str(srv.make_url("/oauth/token")),
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
-            "headless_callback_url": str(self._srv.make_url("/oauth/show-code")),
+            "headless_callback_url": str(srv.make_url("/oauth/show-code")),
             "callback_urls": [
                 "http://127.0.0.2:54540",
                 "http://127.0.0.2:54541",
@@ -92,46 +67,51 @@ class BaseFakeServer(abc.ABC):
                     "storage_url": "https://storage-dev.test.com",
                     "users_url": "https://users-dev.test.com",
                     "monitoring_url": "https://monitoring-dev.test.com",
+                    "resource_presets": [
+                        {
+                            "name": "gpu-small",
+                            "cpu": 7,
+                            "memory_mb": 30 * 1024,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-k80",
+                        },
+                        {
+                            "name": "gpu-large",
+                            "cpu": 7,
+                            "memory_mb": 60 * 1024,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-v100",
+                        },
+                        {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                        {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                    ],
                 }
             )
         return web.json_response(config_json)
 
-    @abc.abstractmethod
-    async def show_code(self, request: web.Request) -> web.Response:
-        pass
-
-    @abc.abstractmethod
-    async def authorize(self, request: web.Request) -> web.Response:
-        pass
-
-    @abc.abstractmethod
-    async def token(self, request: web.Request) -> web.Response:
-        pass
-
-
-class BrowserFakeServer(BaseFakeServer):
-    async def show_code(self, request: web.Request) -> web.Response:
+    async def show_code(request: web.Request) -> web.Response:
         return web.json_response({})
 
-    async def authorize(self, request: web.Request) -> web.Response:
-        url = URL(request.query['redirect_uri']).with_query(code='test_auth_code')
+    async def authorize(request: web.Request) -> web.Response:
+        url = URL(request.query["redirect_uri"]).with_query(code="test_auth_code")
         raise web.HTTPSeeOther(location=url)
 
-    async def token(self, request: web.Request) -> web.Response:
-        return web.json_response({"access_token": "access_token",
-                                  "expires_in": 3600,
-                                  "refresh_token": "refresh_token"})
+    async def token(request: web.Request) -> web.Response:
+        return web.json_response(
+            {
+                "access_token": "access_token",
+                "expires_in": 3600,
+                "refresh_token": "refresh_token",
+            }
+        )
 
-
-@pytest.fixture
-async def mock_for_login(
-    monkeypatch: Any, aiohttp_server: _TestServerFactory
-) -> _TestServer:
-    async def _refresh_token_mock(*args: Any, **kwargs: Any) -> _AuthToken:
-        return _AuthToken.create_non_expiring(str(uuid()))
-
-    async with BrowserFakeServer() as server:
-        yield server.srv
+    app = web.Application()
+    app.router.add_get("/config", config_handler)
+    app.router.add_get("/oauth/show-code", show_code)
+    app.router.add_get("/authorize", authorize)
+    app.router.add_post("/oauth/token", token)
+    srv = await aiohttp_server(app)
+    return srv
 
 
 def _create_config(
@@ -166,6 +146,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -195,6 +176,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -225,6 +207,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
+            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
         )
         assert not cluster_config_good.is_initialized()
 
@@ -385,7 +368,7 @@ class TestHeadlessLogin:
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
         async def get_auth_code_cb(url: URL) -> str:
-            assert url.with_query(None) == mock_for_login.make_url('/authorize')
+            assert url.with_query(None) == mock_for_login.make_url("/authorize")
 
             assert dict(url.query) == dict(
                 response_type="code",
