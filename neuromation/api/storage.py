@@ -195,10 +195,16 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src)
-        if not path.exists():
-            raise FileNotFoundError(f"'{path}' does not exist")
-        if path.is_dir():
-            raise IsADirectoryError(f"'{path}' is a directory, use recursive copy")
+        try:
+            if not path.exists():
+                raise FileNotFoundError(f"'{path}' does not exist")
+            if path.is_dir():
+                raise IsADirectoryError(f"'{path}' is a directory, use recursive copy")
+        except OSError as e:
+            if getattr(e, "winerror", None) not in (1, 87):
+                raise
+            # Ignore stat errors for device files like NUL or CON on Windows.
+            # See https://bugs.python.org/issue37074
         if not dst.name:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
@@ -258,9 +264,16 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        if path.exists():
+        try:
             if path.is_dir():
                 path = path / src.name
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            if getattr(e, "winerror", None) not in (1, 87):
+                raise
+            # Ignore stat errors for device files like NUL or CON on Windows.
+            # See https://bugs.python.org/issue37074
         loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             stat = await self.stats(src)
