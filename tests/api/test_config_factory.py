@@ -1,6 +1,8 @@
+import abc
 import sys
 from pathlib import Path
-from typing import Any
+from types import TracebackType
+from typing import Any, Optional, Type
 from unittest import mock
 from uuid import uuid4 as uuid
 
@@ -40,20 +42,38 @@ def config_file(
     return config_path
 
 
-@pytest.fixture
-async def mock_for_login(
-    monkeypatch: Any, aiohttp_server: _TestServerFactory
-) -> _TestServer:
-    async def _refresh_token_mock(*args: Any, **kwargs: Any) -> _AuthToken:
-        return _AuthToken.create_non_expiring(str(uuid()))
+class BaseFakeServer(abc.ABC):
+    def __init__(self):
+        app = web.Application()
+        app.router.add_get("/config", self.config_handler)
+        app.router.add_get("/oauth/show-code", self.show_code)
+        app.router.add_get("/authorize", self.authorize)
+        app.router.add_post("/oauth/token", self.token)
+        self._srv = _TestServer(app)
 
-    async def config_handler(request: web.Request) -> web.Response:
+    @property
+    def srv(self):
+        return self._srv
+
+    async def __aenter__(self) -> "BaseFakeServer":
+        await self._srv.__aenter__()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        await self._srv.__aexit__(exc_type, exc_value, traceback)
+
+    async def config_handler(self, request: web.Request) -> web.Response:
         config_json = {
-            "auth_url": str(srv.make_url("/authorize")),
-            "token_url": str(srv.make_url("/oauth/token")),
+            "auth_url": str(self._srv.make_url("/authorize")),
+            "token_url": str(self._srv.make_url("/oauth/token")),
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
-            "headless_callback_url": str(srv.make_url("/oauth/show-code")),
+            "headless_callback_url": str(self._srv.make_url("/oauth/show-code")),
             "callback_urls": [
                 "http://127.0.0.2:54540",
                 "http://127.0.0.2:54541",
@@ -76,28 +96,42 @@ async def mock_for_login(
             )
         return web.json_response(config_json)
 
-    async def show_code(request: web.Request) -> web.Response:
-        breakpoint()
+    @abc.abstractmethod
+    async def show_code(self, request: web.Request) -> web.Response:
+        pass
+
+    @abc.abstractmethod
+    async def authorize(self, request: web.Request) -> web.Response:
+        pass
+
+    @abc.abstractmethod
+    async def token(self, request: web.Request) -> web.Response:
+        pass
+
+
+class BrowserFakeServer(BaseFakeServer):
+    async def show_code(self, request: web.Request) -> web.Response:
         return web.json_response({})
 
-    async def authorize(request: web.Request) -> web.Response:
-        breakpoint()
-        return web.json_response({})
+    async def authorize(self, request: web.Request) -> web.Response:
+        url = URL(request.query['redirect_uri']).with_query(code='test_auth_code')
+        raise web.HTTPSeeOther(location=url)
 
-    async def token(request: web.Request) -> web.Response:
-        breakpoint()
-        return web.json_response({})
+    async def token(self, request: web.Request) -> web.Response:
+        return web.json_response({"access_token": "access_token",
+                                  "expires_in": 3600,
+                                  "refresh_token": "refresh_token"})
 
-    app = web.Application()
-    app.router.add_get("/config", config_handler)
-    app.router.add_get("/oauth/show-code", show_code)
-    app.router.add_get("/authorize", authorize)
-    app.router.add_get("/oauth/token", token)
-    srv = await aiohttp_server(app)
 
-    monkeypatch.setattr(AuthNegotiator, "refresh_token", _refresh_token_mock)
+@pytest.fixture
+async def mock_for_login(
+    monkeypatch: Any, aiohttp_server: _TestServerFactory
+) -> _TestServer:
+    async def _refresh_token_mock(*args: Any, **kwargs: Any) -> _AuthToken:
+        return _AuthToken.create_non_expiring(str(uuid()))
 
-    return srv
+    async with BrowserFakeServer() as server:
+        yield server.srv
 
 
 def _create_config(
@@ -351,16 +385,14 @@ class TestHeadlessLogin:
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
         async def get_auth_code_cb(url: URL) -> str:
-            assert url.with_query(None) == URL(
-                "https://test-neuromation.auth0.com/authorize"
-            )
+            assert url.with_query(None) == mock_for_login.make_url('/authorize')
 
             assert dict(url.query) == dict(
                 response_type="code",
                 code_challenge=mock.ANY,
                 code_challenge_method="S256",
                 client_id="banana",
-                redirect_uri=mock_for_login.make_url("/oauth/show-code"),
+                redirect_uri=str(mock_for_login.make_url("/oauth/show-code")),
                 scope="offline_access",
                 audience="https://test.dev.neuromation.io",
             )
