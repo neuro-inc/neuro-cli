@@ -268,8 +268,8 @@ async def test_normalize_local_path_uri__tilde_in_relative_path_3(
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
-    assert _extract_path(url) == Path.cwd() / "path/to~file.txt"
-    assert str(url) == (Path.cwd() / "path/to~file.txt").as_uri().replace("%7E", "~")
+    assert _extract_path(url) == Path("path/to~file.txt").resolve()
+    assert str(url) == Path("path/to~file.txt").resolve().as_uri().replace("%7E", "~")
 
 
 async def test_normalize_storage_path_uri__tilde_in_absolute_path(
@@ -290,8 +290,10 @@ async def test_normalize_local_path_uri__tilde_in_absolute_path(
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
-    assert _extract_path(url) == Path.cwd() / "/~/path/to/file.txt"
-    assert str(url) == (Path.cwd() / "/~/path/to/file.txt").as_uri().replace("%7E", "~")
+    assert _extract_path(url) == Path("/~/path/to/file.txt").resolve()
+    assert str(url) == Path("/~/path/to/file.txt").resolve().as_uri().replace(
+        "%7E", "~"
+    )
 
 
 async def test_normalize_storage_path_uri__tilde_in_host(client: Client) -> None:
