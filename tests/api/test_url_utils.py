@@ -262,14 +262,14 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path_3(
 
 
 async def test_normalize_local_path_uri__tilde_in_relative_path_3(
-    fake_homedir: Path
+    fake_homedir: Path, pwd: Path
 ) -> None:
     url = URL("file:path/to~file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
-    assert _extract_path(url) == Path.cwd() / "path/to~file.txt"
-    assert str(url) == (Path.cwd() / "path/to~file.txt").as_uri().replace("%7E", "~")
+    assert _extract_path(url) == pwd / "path/to~file.txt"
+    assert str(url) == (pwd / "path/to~file.txt").as_uri().replace("%7E", "~")
 
 
 async def test_normalize_storage_path_uri__tilde_in_absolute_path(
@@ -284,14 +284,14 @@ async def test_normalize_storage_path_uri__tilde_in_absolute_path(
 
 
 async def test_normalize_local_path_uri__tilde_in_absolute_path(
-    fake_homedir: Path
+    fake_homedir: Path, pwd: Path
 ) -> None:
     url = URL("file:/~/path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
-    assert _extract_path(url) == Path.cwd() / "/~/path/to/file.txt"
-    assert str(url) == (Path.cwd() / "/~/path/to/file.txt").as_uri().replace("%7E", "~")
+    assert _extract_path(url) == pwd / "/~/path/to/file.txt"
+    assert str(url) == (pwd / "/~/path/to/file.txt").as_uri().replace("%7E", "~")
 
 
 async def test_normalize_storage_path_uri__tilde_in_host(client: Client) -> None:
