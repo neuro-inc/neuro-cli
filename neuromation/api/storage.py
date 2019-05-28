@@ -88,7 +88,7 @@ class Storage(metaclass=NoPublicConstructor):
             except ResourceNotFound:
                 pass
             else:
-                raise FileExistsError(errno.EEXIST, "File exists:", str(uri))
+                raise FileExistsError(errno.EEXIST, "File exists", str(uri))
 
         if not parents:
             parent = uri
@@ -100,7 +100,7 @@ class Storage(metaclass=NoPublicConstructor):
                     await self.stats(parent)
                 except ResourceNotFound:
                     raise FileNotFoundError(
-                        errno.ENOENT, "No such directory:", str(parent)
+                        errno.ENOENT, "No such directory", str(parent)
                     )
 
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
@@ -197,9 +197,11 @@ class Storage(metaclass=NoPublicConstructor):
         path = _extract_path(src)
         try:
             if not path.exists():
-                raise FileNotFoundError(f"'{path}' does not exist")
+                raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
             if path.is_dir():
-                raise IsADirectoryError(f"'{path}' is a directory, use recursive copy")
+                raise IsADirectoryError(
+                    errno.EISDIR, "Is a directory, use recursive copy", str(path)
+                )
         except OSError as e:
             if getattr(e, "winerror", None) not in (1, 87):
                 raise
@@ -219,9 +221,13 @@ class Storage(metaclass=NoPublicConstructor):
                 stats = await self.stats(dst.parent)
                 if not stats.is_dir():
                     # parent path should be a folder
-                    raise NotADirectoryError(dst.parent)
+                    raise NotADirectoryError(
+                        errno.ENOTDIR, "Not a directory", str(dst.parent)
+                    )
             except ResourceNotFound:
-                raise NotADirectoryError(dst.parent)
+                raise NotADirectoryError(
+                    errno.ENOTDIR, "Not a directory", str(dst.parent)
+                )
         await self.create(dst, self._iterate_file(path, progress=progress))
 
     async def upload_dir(
@@ -234,13 +240,13 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src).resolve()
         if not path.exists():
-            raise FileNotFoundError(f"{path} does not exist")
+            raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
         if not path.is_dir():
-            raise NotADirectoryError(f"{path} should be a directory")
+            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
         try:
             stat = await self.stats(dst)
             if not stat.is_dir():
-                raise NotADirectoryError(f"{dst} should be a directory")
+                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
         for child in path.iterdir():
