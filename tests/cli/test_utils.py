@@ -185,7 +185,7 @@ def test_parse_file_resource_no_scheme(root: Root) -> None:
     parsed = parse_file_resource("scheme-less/resource", root)
     assert parsed == URL((Path.cwd() / "scheme-less/resource").as_uri())
     parsed = parse_file_resource("c:scheme-less/resource", root)
-    assert parsed == URL(Path("c:scheme-less/resource").resolve().as_uri())
+    assert parsed == URL((Path("c:scheme-less").resolve() / "resource").as_uri())
 
 
 def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
