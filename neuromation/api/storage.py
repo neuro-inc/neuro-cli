@@ -2,6 +2,7 @@ import asyncio
 import enum
 import errno
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -174,9 +175,9 @@ class Storage(metaclass=NoPublicConstructor):
         self, src: Path, *, progress: Optional[AbstractProgress] = None
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
-        if progress is not None:
-            progress.start(str(src), src.stat().st_size)
         with src.open("rb") as stream:
+            if progress is not None:
+                progress.start(str(src), os.stat(stream.fileno()).st_size)
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
@@ -198,8 +199,6 @@ class Storage(metaclass=NoPublicConstructor):
             raise FileNotFoundError(f"'{path}' does not exist")
         if path.is_dir():
             raise IsADirectoryError(f"'{path}' is a directory, use recursive copy")
-        if not path.is_file():
-            raise OSError(f"'{path}' should be a regular file")
         if not dst.name:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
@@ -262,8 +261,6 @@ class Storage(metaclass=NoPublicConstructor):
         if path.exists():
             if path.is_dir():
                 path = path / src.name
-            elif not path.is_file():
-                raise OSError(f"{path} should be a regular file")
         loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             stat = await self.stats(src)

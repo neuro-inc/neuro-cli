@@ -1,4 +1,5 @@
 import errno
+import os
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
@@ -518,12 +519,24 @@ async def test_storage_upload_dir_doesnt_exist(make_client: _MakeClient) -> None
             )
 
 
-async def test_storage_upload_not_a_file(make_client: _MakeClient) -> None:
-    async with make_client("https://example.com") as client:
-        with pytest.raises(OSError):
-            await client.storage.upload_file(
-                URL("file:///dev/random"), URL("storage://host/path/to")
-            )
+async def test_storage_upload_not_a_file(
+    storage_server: Any, make_client: _MakeClient, storage_path: Path
+) -> None:
+    file_path = Path(os.devnull).absolute()
+    target_path = storage_path / "file.txt"
+    progress = mock.Mock()
+
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(
+            URL(file_path.as_uri()), URL("storage:file.txt"), progress=progress
+        )
+
+    uploaded = target_path.read_bytes()
+    assert uploaded == b""
+
+    progress.start.assert_called_with(str(file_path), 0)
+    progress.progress.assert_not_called()
+    progress.complete.assert_called_with(str(file_path))
 
 
 async def test_storage_upload_regular_file_to_existing_file_target(
@@ -784,10 +797,9 @@ async def test_storage_download_regular_file_to_non_file(
     storage_file.write_bytes(src_file.read_bytes())
 
     async with make_client(storage_server.make_url("/")) as client:
-        with pytest.raises(OSError):
-            await client.storage.download_file(
-                URL("storage:file.txt"), URL("file:///dev/null")
-            )
+        await client.storage.download_file(
+            URL("storage:file.txt"), URL(Path(os.devnull).absolute().as_uri())
+        )
 
 
 async def test_storage_download_dir(
