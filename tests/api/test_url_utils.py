@@ -275,7 +275,7 @@ async def test_normalize_local_path_uri__tilde_in_relative_path_3(
 async def test_normalize_storage_path_uri__tilde_in_absolute_path(
     client: Client
 ) -> None:
-    url = URL("storage:///~/path/to/file.txt")
+    url = URL("storage:/~/path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
     assert url.scheme == "storage"
     assert url.host == "user"
