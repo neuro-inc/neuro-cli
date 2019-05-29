@@ -1,5 +1,6 @@
 from typing import Callable
 
+import aiohttp
 import pytest
 from jose import jwt
 from yarl import URL
@@ -21,6 +22,7 @@ def auth_config() -> _AuthConfig:
         token_url=URL("https://dev-neuromation.auth0.com/oauth/token"),
         client_id="CLIENT-ID",
         audience="https://platform.dev.neuromation.io",
+        headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
         success_redirect_url=URL("https://neu.ro/#running-your-first-job"),
         callback_urls=[
             URL("http://127.0.0.1:54540"),
@@ -77,6 +79,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             url=URL(url),
             cluster_config=cluster_config,
         )
-        return Client._create(config)
+        connector = aiohttp.TCPConnector()
+        return Client._create(connector, config)
 
     return go

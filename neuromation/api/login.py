@@ -5,11 +5,11 @@ import errno
 import hashlib
 import secrets
 import time
-import webbrowser
 from dataclasses import dataclass, field
 from typing import (
     Any,
     AsyncIterator,
+    Awaitable,
     Callable,
     Dict,
     List,
@@ -71,7 +71,8 @@ class AuthCode:
         return self._challenge_method
 
     def set_value(self, value: str) -> None:
-        self._future.set_result(value)
+        if not self._future.cancelled():
+            self._future.set_result(value)
 
     @property
     def callback_url(self) -> URL:
@@ -83,7 +84,8 @@ class AuthCode:
         self._callback_url = value
 
     def set_exception(self, exc: Exception) -> None:
-        self._future.set_exception(exc)
+        if not self._future.cancelled():
+            self._future.set_exception(exc)
 
     def cancel(self) -> None:
         self._future.cancel()
@@ -112,25 +114,50 @@ class AuthCodeCallbackClient(abc.ABC):
             scope="offline_access",
             audience=self._audience,
         )
-        await self._request(url)
+        await self._request(url, code)
         await code.wait()
         return code
 
     @abc.abstractmethod
-    async def _request(self, url: URL) -> None:
+    async def _request(self, url: URL, code: AuthCode) -> None:
         pass
 
 
 class WebBrowserAuthCodeCallbackClient(AuthCodeCallbackClient):
-    async def _request(self, url: URL) -> None:
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, webbrowser.open_new, str(url))
+    def __init__(
+        self,
+        url: URL,
+        client_id: str,
+        audience: str,
+        show_browser_cb: Callable[[URL], Awaitable[None]],
+    ) -> None:
+        super().__init__(url=url, client_id=client_id, audience=audience)
+        self._show_browser_cb = show_browser_cb
+
+    async def _request(self, url: URL, code: AuthCode) -> None:
+        await self._show_browser_cb(url)
 
 
-class DummyAuthCodeCallbackClient(AuthCodeCallbackClient):
-    async def _request(self, url: URL) -> None:
-        async with ClientSession() as client:
-            await client.get(url, allow_redirects=True)
+class HeadlessAuthCodeCallbackClient(AuthCodeCallbackClient):
+    def __init__(
+        self,
+        url: URL,
+        client_id: str,
+        audience: str,
+        get_auth_code_cb: Callable[[URL], Awaitable[str]],
+    ) -> None:
+        super().__init__(url=url, client_id=client_id, audience=audience)
+        self._get_auth_code_cb = get_auth_code_cb
+
+    async def _request(self, url: URL, code: AuthCode) -> None:
+        try:
+            auth_code = await self._get_auth_code_cb(url)
+            assert auth_code
+            code.set_value(auth_code)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            code.set_exception(exc)
 
 
 class AuthCodeCallbackHandler:
@@ -257,11 +284,19 @@ class _AuthToken:
 
 
 class AuthTokenClient:
-    def __init__(self, url: URL, client_id: str) -> None:
+    def __init__(
+        self,
+        connector: aiohttp.BaseConnector,
+        url: URL,
+        client_id: str,
+        timeout: aiohttp.ClientTimeout,
+    ) -> None:
         self._url = url
         self._client_id = client_id
 
-        self._client = ClientSession()
+        self._client = ClientSession(
+            connector=connector, connector_owner=False, timeout=timeout
+        )
 
     async def close(self) -> None:
         await self._client.close()
@@ -358,6 +393,8 @@ class _AuthConfig:
     client_id: str
     audience: str
 
+    headless_callback_url: URL
+
     callback_urls: Sequence[URL] = (
         URL("http://127.0.0.1:54540"),
         URL("http://127.0.0.1:54541"),
@@ -376,7 +413,11 @@ class _AuthConfig:
 
     def is_initialized(self) -> bool:
         return bool(
-            self.auth_url and self.token_url and self.client_id and self.audience
+            self.auth_url
+            and self.token_url
+            and self.client_id
+            and self.audience
+            and self.headless_callback_url
         )
 
     @classmethod
@@ -386,6 +427,7 @@ class _AuthConfig:
         token_url: URL,
         client_id: str,
         audience: str,
+        headless_callback_url: URL,
         success_redirect_url: Optional[URL] = None,
         callback_urls: Optional[Sequence[URL]] = None,
     ) -> "_AuthConfig":
@@ -394,40 +436,47 @@ class _AuthConfig:
             token_url=token_url,
             client_id=client_id,
             audience=audience,
+            headless_callback_url=headless_callback_url,
             success_redirect_url=success_redirect_url,
             callback_urls=callback_urls or cls.callback_urls,
         )
 
 
-class AuthNegotiator:
+async def refresh_token(
+    connector: aiohttp.BaseConnector,
+    config: _AuthConfig,
+    token: _AuthToken,
+    timeout: aiohttp.ClientTimeout,
+) -> _AuthToken:
+    async with AuthTokenClient(
+        connector, url=config.token_url, client_id=config.client_id, timeout=timeout
+    ) as token_client:
+        if token.is_expired:
+            return await token_client.refresh(token)
+        return token
+
+
+class BaseNegotiator(abc.ABC):
     def __init__(
         self,
+        connector: aiohttp.BaseConnector,
         config: _AuthConfig,
-        code_callback_client_factory: Type[
-            AuthCodeCallbackClient
-        ] = WebBrowserAuthCodeCallbackClient,
+        timeout: aiohttp.ClientTimeout,
     ) -> None:
         self._config = config
-        self._code_callback_client_factory = code_callback_client_factory
+        self._timeout = timeout
+        self._connector = connector
 
+    @abc.abstractmethod
     async def get_code(self) -> AuthCode:
-        code = AuthCode()
-        app = create_auth_code_app(code, redirect_url=self._config.success_redirect_url)
-
-        async with create_app_server(
-            app, host=self._config.callback_host, ports=self._config.callback_ports
-        ) as url:
-            code.callback_url = url
-            code_callback_client = self._code_callback_client_factory(
-                url=self._config.auth_url,
-                client_id=self._config.client_id,
-                audience=self._config.audience,
-            )
-            return await code_callback_client.request(code)
+        pass
 
     async def refresh_token(self, token: Optional[_AuthToken] = None) -> _AuthToken:
         async with AuthTokenClient(
-            url=self._config.token_url, client_id=self._config.client_id
+            self._connector,
+            url=self._config.token_url,
+            client_id=self._config.client_id,
+            timeout=self._timeout,
         ) as token_client:
             if not token:
                 code = await self.get_code()
@@ -437,6 +486,58 @@ class AuthNegotiator:
                 return await token_client.refresh(token)
 
             return token
+
+
+class AuthNegotiator(BaseNegotiator):
+    def __init__(
+        self,
+        connector: aiohttp.BaseConnector,
+        config: _AuthConfig,
+        show_browser_cb: Callable[[URL], Awaitable[None]],
+        timeout: aiohttp.ClientTimeout,
+    ) -> None:
+        super().__init__(connector, config, timeout)
+        self._show_browser_cb = show_browser_cb
+
+    async def get_code(self) -> AuthCode:
+        code = AuthCode()
+        app = create_auth_code_app(code, redirect_url=self._config.success_redirect_url)
+
+        async with create_app_server(
+            app, host=self._config.callback_host, ports=self._config.callback_ports
+        ) as url:
+            code.callback_url = url
+            code_callback_client = WebBrowserAuthCodeCallbackClient(
+                url=self._config.auth_url,
+                client_id=self._config.client_id,
+                audience=self._config.audience,
+                show_browser_cb=self._show_browser_cb,
+            )
+            return await code_callback_client.request(code)
+
+
+class HeadlessNegotiator(BaseNegotiator):
+    def __init__(
+        self,
+        connector: aiohttp.BaseConnector,
+        config: _AuthConfig,
+        get_auth_code_cb: Callable[[URL], Awaitable[str]],
+        timeout: aiohttp.ClientTimeout,
+    ) -> None:
+        super().__init__(connector, config, timeout)
+        self._get_auth_code_cb = get_auth_code_cb
+
+    async def get_code(self) -> AuthCode:
+        code = AuthCode()
+        code.callback_url = self._config.headless_callback_url
+
+        code_callback_client = HeadlessAuthCodeCallbackClient(
+            url=self._config.auth_url,
+            client_id=self._config.client_id,
+            audience=self._config.audience,
+            get_auth_code_cb=self._get_auth_code_cb,
+        )
+        return await code_callback_client.request(code)
 
 
 @dataclass(frozen=True)
@@ -449,8 +550,12 @@ class ConfigLoadException(Exception):
     pass
 
 
-async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerConfig:
-    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as client:
+async def get_server_config(
+    connector: aiohttp.BaseConnector, url: URL, token: Optional[str] = None
+) -> _ServerConfig:
+    async with aiohttp.ClientSession(
+        timeout=DEFAULT_TIMEOUT, connector=connector, connector_owner=False
+    ) as client:
         headers: Dict[str, str] = {}
         if token:
             headers["Authorization"] = f"Bearer {token}"
@@ -467,6 +572,7 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                 if callback_urls is not None
                 else _AuthConfig.callback_urls
             )
+            headless_callback_url = URL(payload["headless_callback_url"])
             auth_config = _AuthConfig(
                 auth_url=URL(payload["auth_url"]),
                 token_url=URL(payload["token_url"]),
@@ -474,6 +580,7 @@ async def get_server_config(url: URL, token: Optional[str] = None) -> _ServerCon
                 audience=payload["audience"],
                 success_redirect_url=success_redirect_url,
                 callback_urls=callback_urls,
+                headless_callback_url=headless_callback_url,
             )
             cluster_config = _ClusterConfig(
                 registry_url=URL(payload.get("registry_url", "")),

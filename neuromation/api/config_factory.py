@@ -1,10 +1,13 @@
+import asyncio
 import os
+import ssl
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 import aiohttp
+import certifi
 import yaml
 from yarl import URL
 
@@ -13,18 +16,32 @@ from .config import _Config, _PyPIVersion
 from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
+    HeadlessNegotiator,
     RunPreset,
     _AuthConfig,
     _AuthToken,
     _ClusterConfig,
     get_server_config,
+    refresh_token,
 )
+from .utils import _ContextManager
 
 
 WIN32 = sys.platform == "win32"
 DEFAULT_CONFIG_PATH = "~/.nmrc"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
+
+
+def _make_connector() -> _ContextManager[aiohttp.TCPConnector]:
+    return _ContextManager[aiohttp.TCPConnector](__make_connector())
+
+
+async def __make_connector() -> aiohttp.TCPConnector:
+    ssl_context = ssl.SSLContext()
+    ssl_context.load_verify_locations(capath=certifi.where())
+    connector = aiohttp.TCPConnector(ssl=ssl_context)
+    return connector
 
 
 class ConfigError(RuntimeError):
@@ -39,26 +56,70 @@ class Factory:
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
-        new_token = await self._refresh_auth_token(config)
+        connector = await _make_connector()
+        try:
+            new_token = await refresh_token(
+                connector, config.auth_config, config.auth_token, timeout
+            )
+        except asyncio.CancelledError:
+            await connector.close()
+            raise
+        except Exception:
+            await connector.close()
+            raise
         if new_token != config.auth_token:
             new_config = replace(config, auth_token=new_token)
             self._save(new_config)
-            return Client._create(new_config, timeout=timeout)
-        return Client._create(config, timeout=timeout)
+            return Client._create(connector, new_config, timeout=timeout)
+        return Client._create(connector, config, timeout=timeout)
 
     async def login(
         self,
+        show_browser_cb: Callable[[URL], Awaitable[None]],
         *,
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        config_unauthorized = await get_server_config(url)
-        negotiator = AuthNegotiator(config_unauthorized.auth_config)
-        auth_token = await negotiator.refresh_token()
+        async with _make_connector() as connector:
+            config_unauthorized = await get_server_config(connector, url)
+            negotiator = AuthNegotiator(
+                connector, config_unauthorized.auth_config, show_browser_cb, timeout
+            )
+            auth_token = await negotiator.refresh_token()
 
-        config_authorized = await get_server_config(url, token=auth_token.token)
+            config_authorized = await get_server_config(
+                connector, url, token=auth_token.token
+            )
+        config = _Config(
+            auth_config=config_authorized.auth_config,
+            auth_token=auth_token,
+            cluster_config=config_authorized.cluster_config,
+            pypi=_PyPIVersion.create_uninitialized(),
+            url=url,
+        )
+        self._save(config)
+
+    async def login_headless(
+        self,
+        get_auth_code_cb: Callable[[URL], Awaitable[str]],
+        *,
+        url: URL = DEFAULT_API_URL,
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
+    ) -> None:
+        if self._path.exists():
+            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        async with _make_connector() as connector:
+            config_unauthorized = await get_server_config(connector, url)
+            negotiator = HeadlessNegotiator(
+                connector, config_unauthorized.auth_config, get_auth_code_cb, timeout
+            )
+            auth_token = await negotiator.refresh_token()
+
+            config_authorized = await get_server_config(
+                connector, url, token=auth_token.token
+            )
         config = _Config(
             auth_config=config_authorized.auth_config,
             auth_token=auth_token,
@@ -77,7 +138,8 @@ class Factory:
     ) -> None:
         if self._path.exists():
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
-        server_config = await get_server_config(url, token=token)
+        async with _make_connector() as connector:
+            server_config = await get_server_config(connector, url, token=token)
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
@@ -134,6 +196,7 @@ class Factory:
             "token_url": str(auth_config.token_url),
             "client_id": auth_config.client_id,
             "audience": auth_config.audience,
+            "headless_callback_url": str(auth_config.headless_callback_url),
             "success_redirect_url": success_redirect_url,
             "callback_urls": [str(u) for u in auth_config.callback_urls],
         }
@@ -171,6 +234,7 @@ class Factory:
             token_url=URL(auth_config["token_url"]),
             client_id=auth_config["client_id"],
             audience=auth_config["audience"],
+            headless_callback_url=auth_config["headless_callback_url"],
             success_redirect_url=success_redirect_url,
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
@@ -203,10 +267,6 @@ class Factory:
             expiration_time=auth_payload["expiration_time"],
             refresh_token=auth_payload["refresh_token"],
         )
-
-    async def _refresh_auth_token(self, config: _Config) -> _AuthToken:
-        auth_negotiator = AuthNegotiator(config=config.auth_config)
-        return await auth_negotiator.refresh_token(config.auth_token)
 
     def _save(self, config: _Config) -> None:
         payload: Dict[str, Any] = dict()

@@ -2,52 +2,6 @@ BLOCK_SIZE_MB = 16
 FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 GENERATION_TIMEOUT_SEC = 120
-RC_TEXT = """
-auth_config:
-  audience: https://platform.dev.neuromation.io
-  auth_url: https://dev-neuromation.auth0.com/authorize
-  callback_urls:
-  - http://127.0.0.1:54540
-  - http://127.0.0.1:54541
-  - http://127.0.0.1:54542
-  client_id: CLIENT-ID
-  success_redirect_url: https://neu.ro/#running-your-first-job
-  token_url: https://dev-neuromation.auth0.com/oauth/token
-auth_token:
-  expiration_time: 1713014496
-  refresh_token: refresh-token
-  token: {token}
-pypi:
-  check_timestamp: 0
-  pypi_version: 0.0.0
-cluster_config:
-  monitoring_url: https://dev.neu.ro/api/v1/jobs
-  registry_url: https://registry-dev.neu.ro
-  storage_url: https://dev.neu.ro/api/v1/storage
-  users_url: https://dev.neu.ro/api/v1/users
-  resource_presets:
-    gpu-small:
-      cpu: 7
-      memory_mb: 30720
-      gpu: 1
-      gpu_model: nvidia-tesla-k80
-    gpu-large:
-      cpu: 7
-      memory_mb: 61440
-      gpu: 1
-      gpu_model: nvidia-tesla-v100
-    cpu-small:
-      cpu: 2
-      memory_mb: 2048
-      gpu: null
-      gpu_model: null
-    cpu-large:
-      cpu: 3
-      memory_mb: 14336
-      gpu: null
-      gpu_model: null
-url: https://dev.neu.ro/api/v1
-"""
 
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
