@@ -36,6 +36,7 @@ from neuromation.api import (
     JobStatus,
     ResourceNotFound,
     get as api_get,
+    login_with_token,
 )
 from neuromation.cli import main
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
@@ -44,7 +45,6 @@ from tests.e2e.utils import (
     FILE_SIZE_B,
     JOB_TINY_CONTAINER_PARAMS,
     NGINX_IMAGE_NAME,
-    RC_TEXT,
     JobWaitStateStopReached,
 )
 
@@ -507,15 +507,20 @@ class Helper:
         return self._last_output
 
 
-@pytest.fixture()
-def nmrc_path(tmp_path: Path) -> Optional[Path]:
+@pytest.fixture(scope="session")
+def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
+        tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
-
-        rc_text = RC_TEXT.format(token=e2e_test_token)
-        nmrc_path.write_text(rc_text)
-        nmrc_path.chmod(0o600)
+        run(
+            login_with_token(
+                e2e_test_token,
+                url=URL("https://dev.neu.ro/api/v1"),
+                path=nmrc_path,
+                timeout=CLIENT_TIMEOUT,
+            )
+        )
         return nmrc_path
     else:
         return None

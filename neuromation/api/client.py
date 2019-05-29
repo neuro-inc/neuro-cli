@@ -1,9 +1,7 @@
-import ssl
 from types import TracebackType
 from typing import Optional, Type
 
 import aiohttp
-import certifi
 
 from .config import _Config
 from .core import DEFAULT_TIMEOUT, _Core
@@ -16,15 +14,17 @@ from .utils import NoPublicConstructor
 
 class Client(metaclass=NoPublicConstructor):
     def __init__(
-        self, config: _Config, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+        self,
+        connector: aiohttp.BaseConnector,
+        config: _Config,
+        *,
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
     ) -> None:
         config.check_initialized()
         self._config = config
-        self._ssl_context = ssl.SSLContext()
-        self._ssl_context.load_verify_locations(capath=certifi.where())
-        self._connector = aiohttp.TCPConnector(ssl=self._ssl_context)
+        self._connector = connector
         self._core = _Core(
-            self._connector, self._config.url, self._config.auth_token.token, timeout
+            connector, self._config.url, self._config.auth_token.token, timeout
         )
         self._jobs = Jobs._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
