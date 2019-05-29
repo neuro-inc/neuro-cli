@@ -1,21 +1,20 @@
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+from unittest import mock
 from uuid import uuid4 as uuid
 
+import aiohttp
 import pytest
 import yaml
 from aiohttp import web
+from aiohttp.test_utils import TestServer as _TestServer
 from yarl import URL
 
+import neuromation.api.config_factory
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
-from neuromation.api.login import (
-    AuthException,
-    AuthNegotiator,
-    RunPreset,
-    _ClusterConfig,
-)
+from neuromation.api.login import AuthException, RunPreset, _ClusterConfig
 from tests import _TestServerFactory
 
 
@@ -42,18 +41,14 @@ def config_file(
 
 
 @pytest.fixture
-async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -> URL:
-    async def _refresh_token_mock(
-        self: Any, token: Optional[_AuthToken] = None
-    ) -> _AuthToken:
-        return _AuthToken.create_non_expiring(str(uuid()))
-
-    async def _config_handler(request: web.Request) -> web.Response:
+async def mock_for_login(aiohttp_server: _TestServerFactory) -> _TestServer:
+    async def config_handler(request: web.Request) -> web.Response:
         config_json: Dict[str, Any] = {
-            "auth_url": "https://test-neuromation.auth0.com/authorize",
-            "token_url": "https://test-neuromation.auth0.com/oauth/token",
+            "auth_url": str(srv.make_url("/authorize")),
+            "token_url": str(srv.make_url("/oauth/token")),
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
+            "headless_callback_url": str(srv.make_url("/oauth/show-code")),
             "callback_urls": [
                 "http://127.0.0.2:54540",
                 "http://127.0.0.2:54541",
@@ -94,13 +89,29 @@ async def mock_for_login(monkeypatch: Any, aiohttp_server: _TestServerFactory) -
             )
         return web.json_response(config_json)
 
+    async def show_code(request: web.Request) -> web.Response:
+        return web.json_response({})
+
+    async def authorize(request: web.Request) -> web.Response:
+        url = URL(request.query["redirect_uri"]).with_query(code="test_auth_code")
+        raise web.HTTPSeeOther(location=url)
+
+    async def token(request: web.Request) -> web.Response:
+        return web.json_response(
+            {
+                "access_token": "access_token",
+                "expires_in": 3600,
+                "refresh_token": "refresh_token",
+            }
+        )
+
     app = web.Application()
-    app.router.add_get("/config", _config_handler)
+    app.router.add_get("/config", config_handler)
+    app.router.add_get("/oauth/show-code", show_code)
+    app.router.add_get("/authorize", authorize)
+    app.router.add_post("/oauth/token", token)
     srv = await aiohttp_server(app)
-
-    monkeypatch.setattr(AuthNegotiator, "refresh_token", _refresh_token_mock)
-
-    return srv.make_url("/")
+    return srv
 
 
 def _create_config(
@@ -126,6 +137,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         )
         assert auth_config_good.is_initialized()
 
@@ -155,6 +167,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         )
         assert not auth_config_bad.is_initialized()
 
@@ -185,6 +198,7 @@ class TestConfig:
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
+            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         )
         assert auth_config_bad.is_initialized()
 
@@ -250,10 +264,17 @@ class TestConfigFileInteraction:
     ) -> None:
         new_token = str(uuid()) + "changed" * 10  # token must has other size
 
-        async def _refresh_token_mock(self: Any, token: str) -> _AuthToken:
+        async def _refresh_token_mock(
+            connector: aiohttp.BaseConnector,
+            config: _AuthConfig,
+            token: _AuthToken,
+            timeout: aiohttp.ClientTimeout,
+        ) -> _AuthToken:
             return _AuthToken.create_non_expiring(new_token)
 
-        monkeypatch.setattr(AuthNegotiator, "refresh_token", _refresh_token_mock)
+        monkeypatch.setattr(
+            neuromation.api.config_factory, "refresh_token", _refresh_token_mock
+        )
         file_stat_before = config_file.stat()
         client = await Factory().get()
         await client.close()
@@ -288,12 +309,18 @@ class TestConfigFileInteraction:
 
 
 class TestLogin:
+    async def show_dummy_browser(self, url: URL) -> None:
+        async with aiohttp.ClientSession() as client:
+            await client.get(url, allow_redirects=True)
+
     async def test_login_already_logged(self, config_file: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
-            await Factory().login()
+            await Factory().login(self.show_dummy_browser)
 
-    async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
-        await Factory().login(url=mock_for_login)
+    async def test_normal_login(
+        self, tmp_home: Path, mock_for_login: _TestServer
+    ) -> None:
+        await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "
         saved_config = Factory(nmrc_path)._read()
@@ -306,19 +333,62 @@ class TestLoginWithToken:
         with pytest.raises(ConfigError, match=r"already exists"):
             await Factory().login_with_token(token="tokenstr")
 
-    async def test_normal_login(self, tmp_home: Path, mock_for_login: URL) -> None:
-        await Factory().login_with_token(token="tokenstr", url=mock_for_login)
+    async def test_normal_login(
+        self, tmp_home: Path, mock_for_login: _TestServer
+    ) -> None:
+        await Factory().login_with_token(
+            token="tokenstr", url=mock_for_login.make_url("/")
+        )
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "
         saved_config = Factory(nmrc_path)._read()
         assert saved_config.auth_config.is_initialized()
         assert saved_config.cluster_config.is_initialized()
 
-    async def test_incorrect_token(self, tmp_home: Path, mock_for_login: URL) -> None:
+    async def test_incorrect_token(
+        self, tmp_home: Path, mock_for_login: _TestServer
+    ) -> None:
         with pytest.raises(AuthException):
-            await Factory().login_with_token(token="incorrect", url=mock_for_login)
+            await Factory().login_with_token(
+                token="incorrect", url=mock_for_login.make_url("/")
+            )
         nmrc_path = tmp_home / ".nmrc"
         assert not Path(nmrc_path).exists(), "Config file not written after login "
+
+
+class TestHeadlessLogin:
+    async def test_login_headless_already_logged(self, config_file: Path) -> None:
+        async def get_auth_code_cb(url: URL) -> str:
+            return ""
+
+        with pytest.raises(ConfigError, match=r"already exists"):
+            await Factory().login_headless(get_auth_code_cb)
+
+    async def test_normal_login(
+        self, tmp_home: Path, mock_for_login: _TestServer
+    ) -> None:
+        async def get_auth_code_cb(url: URL) -> str:
+            assert url.with_query(None) == mock_for_login.make_url("/authorize")
+
+            assert dict(url.query) == dict(
+                response_type="code",
+                code_challenge=mock.ANY,
+                code_challenge_method="S256",
+                client_id="banana",
+                redirect_uri=str(mock_for_login.make_url("/oauth/show-code")),
+                scope="offline_access",
+                audience="https://test.dev.neuromation.io",
+            )
+            return "test_code"
+
+        await Factory().login_headless(
+            get_auth_code_cb, url=mock_for_login.make_url("/")
+        )
+        nmrc_path = tmp_home / ".nmrc"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+        saved_config = Factory(nmrc_path)._read()
+        assert saved_config.auth_config.is_initialized()
+        assert saved_config.cluster_config.is_initialized()
 
 
 class TestLogout:
