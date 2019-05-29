@@ -30,6 +30,8 @@ build: &build
             . .venv/bin/activate
             make lint
 
+      - setup_remote_docker
+
       - run:
           name: run unit tests
           command: |
@@ -37,7 +39,6 @@ build: &build
             . .venv/bin/activate
             make test
 
-      - setup_remote_docker
       - run:
           name: run e2e tests
           command: |
