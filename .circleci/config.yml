@@ -28,14 +28,14 @@ build: &build
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
-	    make lint
+            make lint
 
       - run:
           name: run unit tests
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
-	    make test
+            make test
 
       - setup_remote_docker
       - run:
@@ -49,7 +49,7 @@ build: &build
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
-	    make coverage
+            make coverage
 
 
 version: 2
