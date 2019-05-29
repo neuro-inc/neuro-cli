@@ -572,12 +572,12 @@ async def get_server_config(
                 if callback_urls is not None
                 else _AuthConfig.callback_urls
             )
-            headless_callback_url = URL(payload["headless_callback_url"])
+            headless_callback_url = URL(payload.get("headless_callback_url", ""))
             auth_config = _AuthConfig(
-                auth_url=URL(payload["auth_url"]),
-                token_url=URL(payload["token_url"]),
-                client_id=payload["client_id"],
-                audience=payload["audience"],
+                auth_url=URL(payload.get("auth_url", "")),
+                token_url=URL(payload.get("token_url", "")),
+                client_id=payload.get("client_id", ""),
+                audience=payload.get("audience", ""),
                 success_redirect_url=success_redirect_url,
                 callback_urls=callback_urls,
                 headless_callback_url=headless_callback_url,

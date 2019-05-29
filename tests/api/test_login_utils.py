@@ -1,3 +1,5 @@
+from typing import Dict
+
 import aiohttp
 import pytest
 from aiohttp import web
@@ -11,6 +13,40 @@ from neuromation.api.login import (
     get_server_config,
 )
 from tests import _TestServerFactory
+
+
+async def test_get_server_config_empty(aiohttp_server: _TestServerFactory) -> None:
+    JSON: Dict[str, str] = {}
+
+    async def handler(request: web.Request) -> web.Response:
+        assert "Authorization" not in request.headers
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/config", handler)
+    srv = await aiohttp_server(app)
+
+    async with aiohttp.TCPConnector() as connector:
+        config = await get_server_config(connector, srv.make_url("/"))
+
+    assert config == _ServerConfig(
+        auth_config=_AuthConfig(
+            auth_url=URL(),
+            token_url=URL(),
+            client_id="",
+            audience="",
+            headless_callback_url=URL(),
+            callback_urls=_AuthConfig.callback_urls,
+            success_redirect_url=None,
+        ),
+        cluster_config=_ClusterConfig(
+            registry_url=URL(),
+            storage_url=URL(),
+            users_url=URL(),
+            monitoring_url=URL(),
+            resource_presets={},
+        ),
+    )
 
 
 async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
