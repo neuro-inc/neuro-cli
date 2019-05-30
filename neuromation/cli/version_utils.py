@@ -1,34 +1,37 @@
 import abc
 import asyncio
+import dataclasses
 import logging
 import ssl
 import time
 import types
-from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type
 
 import aiohttp
 import certifi
 import pkg_resources
+from yarl import URL
 
 from neuromation.api.config import _PyPIVersion
-from neuromation.api.config_factory import Factory
 
 
 log = logging.getLogger(__name__)
 
 
 class AbstractVersionChecker(abc.ABC):
+    def __init__(self, pypi_version: _PyPIVersion) -> None:
+        self._version = pypi_version
+
+    @property
+    def version(self) -> _PyPIVersion:
+        return self._version
+
     @abc.abstractmethod
     async def close(self) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
     async def run(self) -> None:  # pragma: no cover
-        pass
-
-    @abc.abstractmethod
-    async def update_latest_version(self) -> None:  # pragma: no cover
         pass
 
 
@@ -39,19 +42,15 @@ class DummyVersionChecker(AbstractVersionChecker):
     async def run(self) -> None:
         pass
 
-    async def update_latest_version(self) -> None:  # pragma: no cover
-        # the method is not used actually but present here for consistency
-        pass
-
 
 class VersionChecker(AbstractVersionChecker):
     def __init__(
         self,
-        config_path: Path,
+        pypi_version: _PyPIVersion,
         connector: Optional[aiohttp.TCPConnector] = None,
         timer: Callable[[], float] = time.time,
     ) -> None:
-        self._config_path = config_path
+        self._version = pypi_version
         if connector is None:
             ssl_context = ssl.SSLContext()
             ssl_context.load_verify_locations(capath=certifi.where())
@@ -75,8 +74,10 @@ class VersionChecker(AbstractVersionChecker):
 
     async def run(self) -> None:
         try:
-            async with self:
-                await self.update_latest_version()
+            loop = asyncio.get_event_loop()
+            task1 = loop.create_task(self._update_self_version())
+            task2 = loop.create_task(self._update_certifi_version())
+            await asyncio.gather(task1, task2)
         except asyncio.CancelledError:
             raise
         except aiohttp.ClientConnectionError:
@@ -84,12 +85,18 @@ class VersionChecker(AbstractVersionChecker):
         except Exception:  # pragma: no cover
             log.exception("Error on fetching data from PyPI")
 
-    async def update_latest_version(self) -> None:
+    async def _update_self_version(self) -> None:
         pypi_version = await self._fetch_pypi("neuromation")
-        # Direct config overriding here is a little ugly
-        # Let's refactor it later (maybe with sqlite DB usage)
-        Factory(self._config_path)._update_last_checked_version(
-            pypi_version, int(self._timer())
+        self._version = dataclasses.replace(
+            self._version, pypi_version=pypi_version, check_timestamp=self._timer()
+        )
+
+    async def _update_certifi_version(self) -> None:
+        pypi_version = await self._fetch_pypi("certifi")
+        self._version = dataclasses.replace(
+            self._version,
+            certifi_pypi_version=pypi_version,
+            certifi_check_timestamp=self._timer(),
         )
 
     async def _fetch_pypi(self, package: str) -> Any:

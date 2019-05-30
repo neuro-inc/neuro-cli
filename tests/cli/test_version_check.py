@@ -1,7 +1,6 @@
 import asyncio
 import socket
 import ssl
-from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -12,7 +11,7 @@ from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
 
-from neuromation.api import Factory
+from neuromation.api.config import _PyPIVersion
 from neuromation.cli.version_utils import VersionChecker
 
 
@@ -224,99 +223,105 @@ def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
 
 
 async def test__fetch_pypi(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
 ) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
-    async with VersionChecker(config_path=nmrc_path, connector=connector) as checker:
-        version = await checker._fetch_pypi()
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        version = await checker._fetch_pypi("neuromation")
         assert version == pkg_resources.parse_version("0.2.1")
 
 
 async def test__fetch_pypi_no_releases(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
 ) -> None:
     pypi_server.response = (200, {})
 
-    async with VersionChecker(config_path=nmrc_path, connector=connector) as checker:
-        version = await checker._fetch_pypi()
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        version = await checker._fetch_pypi("neuromation")
         assert version == pkg_resources.parse_version("0.0.0")
 
 
 async def test__fetch_pypi_non_200(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
 ) -> None:
     pypi_server.response = (403, {"Status": "Forbidden"})
 
-    async with VersionChecker(config_path=nmrc_path, connector=connector) as checker:
-        version = await checker._fetch_pypi()
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        version = await checker._fetch_pypi("neuromation")
         assert version == pkg_resources.parse_version("0.0.0")
 
 
 async def test_update_latest_version(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
 ) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
-    async with VersionChecker(config_path=nmrc_path, connector=connector) as checker:
-        await checker.update_latest_version()
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        await checker._update_self_version()
+        assert checker.version.pypi_version == pkg_resources.parse_version("0.2.1")
 
-    cfg = Factory(nmrc_path)._read()
-    assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.2.1")
 
-
-async def test_run(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
-) -> None:
+async def test_run(pypi_server: FakePyPI, connector: aiohttp.TCPConnector) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
-    checker = VersionChecker(config_path=nmrc_path, connector=connector)
-    await checker.run()
-
-    cfg = Factory(nmrc_path)._read()
-    assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.2.1")
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        await checker.run()
+        assert checker.version.pypi_version == pkg_resources.parse_version("0.2.1")
 
 
 async def test_run_cancelled(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
 ) -> None:
     loop = asyncio.get_event_loop()
     pypi_server.response = (200, PYPI_JSON)
 
-    checker = VersionChecker(config_path=nmrc_path, connector=connector)
-    task = loop.create_task(checker.run())
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
-
-    cfg = Factory(nmrc_path)._read()
-    assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        task = loop.create_task(checker.run())
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert checker.version.pypi_version == pkg_resources.parse_version("0.0.0")
 
 
 async def test_run_cancelled_with_delay(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector, nmrc_path: Path
+    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
 ) -> None:
     loop = asyncio.get_event_loop()
     pypi_server.response = (200, PYPI_JSON)
 
-    checker = VersionChecker(config_path=nmrc_path, connector=connector)
-    task = loop.create_task(checker.run())
-    await asyncio.sleep(0)
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        task = loop.create_task(checker.run())
+        await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
 
-    cfg = Factory(nmrc_path)._read()
-    assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
+        assert checker.version.pypi_version == pkg_resources.parse_version("0.0.0")
 
 
-async def test_run_no_server(nmrc_path: Path) -> None:
+async def test_run_no_server() -> None:
     port = unused_port()
     resolver = FakeResolver({"pypi.org": port})
     connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)
 
-    checker = VersionChecker(config_path=nmrc_path, connector=connector)
-    await checker.run()
+    async with VersionChecker(
+        _PyPIVersion.create_uninitialized(), connector=connector
+    ) as checker:
+        await checker.run()
 
-    cfg = Factory(nmrc_path)._read()
-    assert cfg.pypi.pypi_version == pkg_resources.parse_version("0.0.0")
+        assert checker.version.pypi_version == pkg_resources.parse_version("0.0.0")

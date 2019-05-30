@@ -23,7 +23,7 @@ class _PyPIVersion:
     certifi_pypi_version: Any
     certifi_check_timestamp: int
 
-    def warn_if_has_newer_version(self, check_neuromation=True) -> None:
+    def warn_if_has_newer_version(self, check_neuromation: bool = True) -> None:
         if check_neuromation:
             current = pkg_resources.parse_version(neuromation.__version__)
             if current < self.pypi_version:
@@ -37,7 +37,8 @@ class _PyPIVersion:
                     f"the '{update_command}' command.\n"
                 )
 
-        certifi_current = pkg_resources.parse_version(certifi.__version__)
+        certifi_version = certifi.__version__  # type: ignore
+        certifi_current = pkg_resources.parse_version(certifi_version)
         if certifi_current < self.certifi_pypi_version:
             update_command = "pip install --upgrade certifi"
             log.error(
@@ -54,7 +55,7 @@ class _PyPIVersion:
 
     @classmethod
     def create_uninitialized(cls) -> "_PyPIVersion":
-        return cls(cls.NO_VERSION, 0)
+        return cls(cls.NO_VERSION, 0, cls.NO_VERSION, 0)
 
     @classmethod
     def from_config(cls, data: Dict[str, Any]) -> "_PyPIVersion":

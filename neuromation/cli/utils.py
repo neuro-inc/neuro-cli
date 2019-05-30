@@ -60,15 +60,18 @@ async def _run_async_function(
     if init_client:
         await root.init_client()
 
+    version = root._config.pypi
+
+    version.warn_if_has_newer_version(not root.disable_pypi_version_check)
+
     if root.disable_pypi_version_check:
-        version_checker = DummyVersionChecker()
+        version_checker = DummyVersionChecker(version)
     else:
-        root._config.pypi.warn_if_has_newer_version()
         # (ASvetlov) This branch is not tested intentionally
         # Don't want to fetch PyPI from unit tests
         # Later the checker initialization code will be refactored
         # as a part of config reimplementation
-        version_checker = VersionChecker()  # pragma: no cover
+        version_checker = VersionChecker(version)  # pragma: no cover
     task = loop.create_task(version_checker.run())
 
     try:

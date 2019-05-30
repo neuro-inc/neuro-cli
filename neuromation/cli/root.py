@@ -27,9 +27,8 @@ class Root:
     _client: Optional[Client] = None
 
     @property
-    def _config(self) -> Optional[_Config]:
-        if self._client is None:
-            return None
+    def _config(self) -> _Config:
+        assert self._client is not None
         return self._client._config
 
     @property

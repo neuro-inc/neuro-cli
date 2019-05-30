@@ -156,7 +156,12 @@ class TestConfig:
                 token="token", expiration_time=10, refresh_token="ok"
             ),
             cluster_config=cluster_config_good,
-            pypi=_PyPIVersion(pypi_version="1.2.3", check_timestamp=20),
+            pypi=_PyPIVersion(
+                pypi_version="1.2.3",
+                check_timestamp=20,
+                certifi_pypi_version="3.4.5",
+                certifi_check_timestamp=40,
+            ),
             url=URL("https://dev.neu.ro"),
         )
         config.check_initialized()  # check no exceptions
@@ -186,7 +191,12 @@ class TestConfig:
                 token="token", expiration_time=10, refresh_token="ok"
             ),
             cluster_config=cluster_config_good,
-            pypi=_PyPIVersion(pypi_version="1.2.3", check_timestamp=20),
+            pypi=_PyPIVersion(
+                pypi_version="1.2.3",
+                check_timestamp=20,
+                certifi_pypi_version="3.4.5",
+                certifi_check_timestamp=40,
+            ),
             url=URL("https://dev.neu.ro"),
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
@@ -217,7 +227,12 @@ class TestConfig:
                 token="token", expiration_time=10, refresh_token="ok"
             ),
             cluster_config=cluster_config_good,
-            pypi=_PyPIVersion(pypi_version="1.2.3", check_timestamp=20),
+            pypi=_PyPIVersion(
+                pypi_version="1.2.3",
+                check_timestamp=20,
+                certifi_pypi_version="3.4.5",
+                certifi_check_timestamp=40,
+            ),
             url=URL("https://dev.neu.ro"),
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
