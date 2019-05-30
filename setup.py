@@ -36,9 +36,9 @@ setup(
         "humanize>=0.5",
         "psutil>=5.5.0",
         "typing_extensions>=3.7.2",
-        # should upgrade the version after every certify release.
-        # This is very serious security point
-        "certifi>=2019.3.9",
+        # certifi has no version requirement
+        # CLI raises a warning for outdated package instead
+        "certifi,
     ],
     include_package_data=True,
     description="Neuromation Platform API client",
