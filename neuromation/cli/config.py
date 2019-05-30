@@ -179,6 +179,11 @@ async def docker(root: Root, docker_config: str) -> None:
     with json_path.open("w") as file:
         json.dump(payload, file, indent=2)
 
+    json_path_str = f"{json_path}"
+    registry_str = click.style(f"{registry}", bold=True)
+    click.echo(f"Configuration file {json_path_str} updated.")
+    click.echo(f"You can use docker client with neuro registry: {registry_str}")
+
 
 config.add_command(login)
 config.add_command(login_with_token)
