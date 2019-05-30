@@ -26,7 +26,6 @@
 	* [neuro config](#neuro-config)
 		* [neuro config login](#neuro-config-login)
 		* [neuro config login-with-token](#neuro-config-login-with-token)
-		* [neuro config login-headless](#neuro-config-login-headless)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config docker](#neuro-config-docker)
@@ -193,7 +192,7 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined job profile  \[default: gpu-small]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
@@ -331,31 +330,12 @@ Name | Description|
 
 ### neuro job port-forward
 
-Forward port\(s) of a running job to local port\(s).<br/>
+Forward port\(s) of a running job to local port\(s).
 
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
-```
-
-**Examples:**
-
-```bash
-
-# Forward local port 2080 to port 80 of job's container.
-# You can use http://localhost:2080 in browser to access job's served http
-neuro job port-forward my-fastai-job 2080:80
-
-# Forward local port 2222 to job's port 22
-# Then copy all data from container's folder '/data' to current folder
-# (please run second command in other terminal)
-neuro job port-forward my-job-with-ssh-server 2222:22
-rsync -avxzhe ssh -p 2222 root@localhost:/data .
-
-# Forward few ports at once
-neuro job port-forward my-job- 2080:80 2222:22 2000:100
-
+neuro job port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
 ```
 
 **Options:**
@@ -457,12 +437,12 @@ Name | Description|
 
 ### neuro storage cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
 
 **Usage:**
 
 ```bash
-neuro storage cp [OPTIONS] SOURCES... DESTINATION
+neuro storage cp [OPTIONS] SOURCE DESTINATION
 ```
 
 **Examples:**
@@ -497,7 +477,7 @@ List directory contents.<br/><br/>By default PATH is equal user`s home dir \(sto
 **Usage:**
 
 ```bash
-neuro storage ls [OPTIONS] [PATHS]...
+neuro storage ls [OPTIONS] [PATH]
 ```
 
 **Options:**
@@ -519,17 +499,16 @@ Remove files or directories.<br/>
 **Usage:**
 
 ```bash
-neuro storage rm [OPTIONS] PATHS...
+neuro storage rm [OPTIONS] PATH
 ```
 
 **Examples:**
 
 ```bash
 
-neuro rm storage:///foo/bar
-neuro rm storage:/foo/bar
-neuro rm storage://{username}/foo/bar
-neuro rm --recursive storage://{username}/foo/
+neuro rm storage:///foo/bar/
+neuro rm storage:/foo/bar/
+neuro rm storage://{username}/foo/bar/
 
 ```
 
@@ -537,7 +516,6 @@ neuro rm --recursive storage://{username}/foo/
 
 Name | Description|
 |----|------------|
-|_\-r, --recursive_|remove directories and their contents recursively|
 |_--help_|Show this message and exit.|
 
 
@@ -550,14 +528,13 @@ Make directories.
 **Usage:**
 
 ```bash
-neuro storage mkdir [OPTIONS] PATHS...
+neuro storage mkdir [OPTIONS] PATH
 ```
 
 **Options:**
 
 Name | Description|
 |----|------------|
-|_\-p, --parents_|No error if existing, make parent directories as needed|
 |_--help_|Show this message and exit.|
 
 
@@ -570,7 +547,7 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro storage mv [OPTIONS] SOURCES... DESTINATION
+neuro storage mv [OPTIONS] SOURCE DESTINATION
 ```
 
 **Examples:**
@@ -726,7 +703,6 @@ Name | Description|
 |---|---|
 | _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
 | _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuromation Platform with token |
-| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuromation Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
@@ -762,25 +738,6 @@ Log into Neuromation Platform with token.<br/><br/>TOKEN is authentication token
 
 ```bash
 neuro config login-with-token [OPTIONS] TOKEN [URL]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config login-headless
-
-Log into Neuromation Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back<br/>in neuro command to finish the login process.
-
-**Usage:**
-
-```bash
-neuro config login-headless [OPTIONS] [URL]
 ```
 
 **Options:**
@@ -1096,7 +1053,7 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined job profile  \[default: gpu-small]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http INTEGER_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
@@ -1234,31 +1191,12 @@ Name | Description|
 
 ## neuro port-forward
 
-Forward port\(s) of a running job to local port\(s).<br/>
+Forward port\(s) of a running job to local port\(s).
 
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
-```
-
-**Examples:**
-
-```bash
-
-# Forward local port 2080 to port 80 of job's container.
-# You can use http://localhost:2080 in browser to access job's served http
-neuro job port-forward my-fastai-job 2080:80
-
-# Forward local port 2222 to job's port 22
-# Then copy all data from container's folder '/data' to current folder
-# (please run second command in other terminal)
-neuro job port-forward my-job-with-ssh-server 2222:22
-rsync -avxzhe ssh -p 2222 root@localhost:/data .
-
-# Forward few ports at once
-neuro job port-forward my-job- 2080:80 2222:22 2000:100
-
+neuro port-forward [OPTIONS] JOB [LOCAL_REMOTE_PORT]...
 ```
 
 **Options:**
@@ -1368,12 +1306,12 @@ Name | Description|
 
 ## neuro cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
+Copy files and directories.<br/><br/>Either SOURCE or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/>
 
 **Usage:**
 
 ```bash
-neuro cp [OPTIONS] SOURCES... DESTINATION
+neuro cp [OPTIONS] SOURCE DESTINATION
 ```
 
 **Examples:**
@@ -1408,7 +1346,7 @@ List directory contents.<br/><br/>By default PATH is equal user`s home dir \(sto
 **Usage:**
 
 ```bash
-neuro ls [OPTIONS] [PATHS]...
+neuro ls [OPTIONS] [PATH]
 ```
 
 **Options:**
@@ -1430,17 +1368,16 @@ Remove files or directories.<br/>
 **Usage:**
 
 ```bash
-neuro rm [OPTIONS] PATHS...
+neuro rm [OPTIONS] PATH
 ```
 
 **Examples:**
 
 ```bash
 
-neuro rm storage:///foo/bar
-neuro rm storage:/foo/bar
-neuro rm storage://{username}/foo/bar
-neuro rm --recursive storage://{username}/foo/
+neuro rm storage:///foo/bar/
+neuro rm storage:/foo/bar/
+neuro rm storage://{username}/foo/bar/
 
 ```
 
@@ -1448,7 +1385,6 @@ neuro rm --recursive storage://{username}/foo/
 
 Name | Description|
 |----|------------|
-|_\-r, --recursive_|remove directories and their contents recursively|
 |_--help_|Show this message and exit.|
 
 
@@ -1461,14 +1397,13 @@ Make directories.
 **Usage:**
 
 ```bash
-neuro mkdir [OPTIONS] PATHS...
+neuro mkdir [OPTIONS] PATH
 ```
 
 **Options:**
 
 Name | Description|
 |----|------------|
-|_\-p, --parents_|No error if existing, make parent directories as needed|
 |_--help_|Show this message and exit.|
 
 
@@ -1481,7 +1416,7 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro mv [OPTIONS] SOURCES... DESTINATION
+neuro mv [OPTIONS] SOURCE DESTINATION
 ```
 
 **Examples:**
