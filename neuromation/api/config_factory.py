@@ -61,17 +61,17 @@ class Factory:
             new_token = await refresh_token(
                 connector, config.auth_config, config.auth_token, timeout
             )
-        except asyncio.CancelledError:
+            if new_token != config.auth_token:
+                new_config = replace(config, auth_token=new_token)
+                # _save() may raise malformed config exception
+                # Should close connector in this case
+                self._save(new_config)
+                config = new_config
+        except (asyncio.CancelledError, Exception):
             await connector.close()
             raise
-        except Exception:
-            await connector.close()
-            raise
-        if new_token != config.auth_token:
-            new_config = replace(config, auth_token=new_token)
-            self._save(new_config)
-            return Client._create(connector, new_config, timeout=timeout)
-        return Client._create(connector, config, timeout=timeout)
+        else:
+            return Client._create(connector, config, timeout=timeout)
 
     async def login(
         self,
@@ -187,7 +187,8 @@ class Factory:
             raise ConfigError("Malformed config. Please logout and login again.")
 
     def _serialize_auth_config(self, auth_config: _AuthConfig) -> Dict[str, Any]:
-        assert auth_config.is_initialized(), auth_config
+        if not auth_config.is_initialized():
+            raise ValueError("auth config part is not initialized")
         success_redirect_url = None
         if auth_config.success_redirect_url:
             success_redirect_url = str(auth_config.success_redirect_url)
@@ -204,7 +205,8 @@ class Factory:
     def _serialize_cluster_config(
         self, cluster_config: _ClusterConfig
     ) -> Dict[str, Any]:
-        assert cluster_config.is_initialized(), cluster_config
+        if not cluster_config.is_initialized():
+            raise ValueError("cluster config part is not initialized")
         return {
             "registry_url": str(cluster_config.registry_url),
             "storage_url": str(cluster_config.storage_url),
@@ -269,18 +271,21 @@ class Factory:
         )
 
     def _save(self, config: _Config) -> None:
-        payload: Dict[str, Any] = dict()
-        payload["url"] = str(config.url)
-        payload["auth_config"] = self._serialize_auth_config(config.auth_config)
-        payload["cluster_config"] = self._serialize_cluster_config(
-            config.cluster_config
-        )
-        payload["auth_token"] = {
-            "token": config.auth_token.token,
-            "expiration_time": config.auth_token.expiration_time,
-            "refresh_token": config.auth_token.refresh_token,
-        }
-        payload["pypi"] = config.pypi.to_config()
+        payload: Dict[str, Any] = {}
+        try:
+            payload["url"] = str(config.url)
+            payload["auth_config"] = self._serialize_auth_config(config.auth_config)
+            payload["cluster_config"] = self._serialize_cluster_config(
+                config.cluster_config
+            )
+            payload["auth_token"] = {
+                "token": config.auth_token.token,
+                "expiration_time": config.auth_token.expiration_time,
+                "refresh_token": config.auth_token.refresh_token,
+            }
+            payload["pypi"] = config.pypi.to_config()
+        except (AttributeError, KeyError, TypeError, ValueError):
+            raise ConfigError("Malformed config. Please logout and login again.")
 
         # atomically rewrite the config file
         tmppath = f"{self._path}.new{os.getpid()}"
