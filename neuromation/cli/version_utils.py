@@ -85,17 +85,18 @@ class VersionChecker(AbstractVersionChecker):
             log.exception("Error on fetching data from PyPI")
 
     async def update_latest_version(self) -> None:
-        pypi_version = await self._fetch_pypi()
+        pypi_version = await self._fetch_pypi("neuromation")
         # Direct config overriding here is a little ugly
         # Let's refactor it later (maybe with sqlite DB usage)
         Factory(self._config_path)._update_last_checked_version(
             pypi_version, int(self._timer())
         )
 
-    async def _fetch_pypi(self) -> Any:
-        async with self._session.get("https://pypi.org/pypi/neuromation/json") as resp:
+    async def _fetch_pypi(self, package: str) -> Any:
+        url = URL(f"https://pypi.org/pypi/{package}/json")
+        async with self._session.get(url) as resp:
             if resp.status != 200:
-                log.debug("%s status on fetching PyPI", resp.status)
+                log.debug("%s status on fetching %s", resp.status, url)
                 return _PyPIVersion.NO_VERSION
             data = await resp.json()
         return self._get_max_version(data)
