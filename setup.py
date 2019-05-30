@@ -38,7 +38,7 @@ setup(
         "typing_extensions>=3.7.2",
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
-        "certifi,
+        "certifi",
     ],
     include_package_data=True,
     description="Neuromation Platform API client",
