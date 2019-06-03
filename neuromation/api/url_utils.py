@@ -52,15 +52,26 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
 
 
 def _normalize_uri(uri: URL, username: str) -> URL:
+    path = uri.path
     if not uri.host:
-        if uri.path.startswith("~"):
+        if path.startswith("~"):
             raise ValueError(f"Cannot expand user for {uri}")
-        uri = URL(f"{uri.scheme}://{username}/{uri.path}")
-    elif uri.host == "~":
+        if not path.startswith("/"):
+            uri = URL(f"{uri.scheme}://{username}/{path}")
+        else:
+            path = uri.path.lstrip("/")
+            if path:
+                uri = URL(f"{uri.scheme}://{path}")
+    if uri.host == "~":
         uri = uri.with_host(username)
-    elif uri.host.startswith("~"):  # type: ignore
+    elif uri.host and uri.host.startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
-    uri = uri.with_path(uri.path.lstrip("/"))
+
+    path = uri.path
+    if path.startswith("/"):
+        path = uri.path.lstrip("/")
+        if path or uri.host:
+            uri = uri.with_path(path)
 
     return uri
 
