@@ -307,8 +307,3 @@ class Factory:
             except FileNotFoundError:
                 pass
             raise
-
-    def _update_last_checked_version(self, version: _PyPIVersion) -> None:
-        config = self._read()
-        new_config = replace(config, pypi=version)
-        self._save(new_config)

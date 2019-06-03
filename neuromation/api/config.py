@@ -2,11 +2,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict
 
-import certifi
 import pkg_resources
 from yarl import URL
-
-import neuromation
 
 from .login import _AuthConfig, _AuthToken, _ClusterConfig
 
@@ -22,36 +19,6 @@ class _PyPIVersion:
     check_timestamp: int
     certifi_pypi_version: Any
     certifi_check_timestamp: int
-
-    def warn_if_has_newer_version(self, check_neuromation: bool = True) -> None:
-        if check_neuromation:
-            current = pkg_resources.parse_version(neuromation.__version__)
-            if current < self.pypi_version:
-                update_command = "pip install --upgrade neuromation"
-                log.warning(
-                    f"You are using Neuromation Platform Client {current}, "
-                    f"however {self.pypi_version} is available. "
-                )
-                log.warning(
-                    f"You should consider upgrading via "
-                    f"the '{update_command}' command.\n"
-                )
-
-        certifi_version = certifi.__version__  # type: ignore
-        certifi_current = pkg_resources.parse_version(certifi_version)
-        if certifi_current < self.certifi_pypi_version:
-            update_command = "pip install --upgrade certifi"
-            log.error(
-                f"You system has a serious security breach!!!\n"
-                f"Used Root Certificates are outdated, "
-                f"it can be used as an attack vector.\n"
-                f"You are using certifi {current}, "
-                f"however {self.pypi_version} is available. "
-            )
-            log.error(
-                f"You should consider upgrading certifi package, "
-                f"e.g. '{update_command}'\n"
-            )
 
     @classmethod
     def create_uninitialized(cls) -> "_PyPIVersion":
