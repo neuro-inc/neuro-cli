@@ -5,8 +5,6 @@ from typing import Any, Dict
 import pkg_resources
 from yarl import URL
 
-import neuromation
-
 from .login import _AuthConfig, _AuthToken, _ClusterConfig
 
 
@@ -19,23 +17,12 @@ class _PyPIVersion:
 
     pypi_version: Any
     check_timestamp: int
-
-    def warn_if_has_newer_version(self) -> None:
-        current = pkg_resources.parse_version(neuromation.__version__)
-        if current < self.pypi_version:
-            update_command = "pip install --upgrade neuromation"
-            log.warning(
-                f"You are using Neuromation Platform Client version {current}, "
-                f"however version {self.pypi_version} is available. "
-            )
-            log.warning(
-                f"You should consider upgrading via the '{update_command}' command."
-            )
-            log.warning("")  # tailing endline
+    certifi_pypi_version: Any
+    certifi_check_timestamp: int
 
     @classmethod
     def create_uninitialized(cls) -> "_PyPIVersion":
-        return cls(cls.NO_VERSION, 0)
+        return cls(cls.NO_VERSION, 0, cls.NO_VERSION, 0)
 
     @classmethod
     def from_config(cls, data: Dict[str, Any]) -> "_PyPIVersion":
@@ -46,12 +33,28 @@ class _PyPIVersion:
             # config has invalid/missing data, ignore it
             pypi_version = cls.NO_VERSION
             check_timestamp = 0
-        return cls(pypi_version=pypi_version, check_timestamp=check_timestamp)
+        try:
+            certifi_pypi_version = pkg_resources.parse_version(
+                data["certifi_pypi_version"]
+            )
+            certifi_check_timestamp = int(data["certifi_check_timestamp"])
+        except (KeyError, TypeError, ValueError):
+            # config has invalid/missing data, ignore it
+            certifi_pypi_version = cls.NO_VERSION
+            certifi_check_timestamp = 0
+        return cls(
+            pypi_version=pypi_version,
+            check_timestamp=check_timestamp,
+            certifi_pypi_version=certifi_pypi_version,
+            certifi_check_timestamp=certifi_check_timestamp,
+        )
 
     def to_config(self) -> Dict[str, Any]:
         return {
             "pypi_version": str(self.pypi_version),
             "check_timestamp": int(self.check_timestamp),
+            "certifi_pypi_version": str(self.certifi_pypi_version),
+            "certifi_check_timestamp": int(self.certifi_check_timestamp),
         }
 
 

@@ -6,7 +6,7 @@ from typing import Dict, Optional, Tuple
 import aiohttp
 from yarl import URL
 
-from neuromation.api import Client, get as api_get
+from neuromation.api import Client, Factory
 from neuromation.api.config import _Config
 from neuromation.api.config_factory import ConfigError
 from neuromation.api.login import RunPreset
@@ -25,11 +25,11 @@ class Root:
     config_path: Path
 
     _client: Optional[Client] = None
+    _factory: Optional[Factory] = None
 
     @property
-    def _config(self) -> Optional[_Config]:
-        if self._client is None:
-            return None
+    def _config(self) -> _Config:
+        assert self._client is not None
         return self._client._config
 
     @property
@@ -74,7 +74,8 @@ class Root:
         return self._client
 
     async def init_client(self) -> None:
-        client = await api_get(path=self.config_path, timeout=self.timeout)
+        self._factory = Factory(path=self.config_path)
+        client = await self._factory.get(timeout=self.timeout)
 
         self._client = client
 

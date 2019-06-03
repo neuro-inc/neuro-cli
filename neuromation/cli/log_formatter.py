@@ -31,7 +31,7 @@ class ConsoleHandler(logging.StreamHandler):
             return
         try:
             msg = self.format(record)
-            click.echo(msg + self.terminator, err=True)
+            click.echo(msg, err=True)
             self.flush()
         except Exception:  # pragma: no cover
             self.handleError(record)

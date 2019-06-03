@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import logging
 import re
 import shlex
@@ -19,10 +20,13 @@ from typing import (
     cast,
 )
 
+import certifi
 import click
+import pkg_resources
 from click import BadParameter
 from yarl import URL
 
+import neuromation
 from neuromation.api import (
     Action,
     Client,
@@ -32,6 +36,7 @@ from neuromation.api import (
     JobDescription,
     Volume,
 )
+from neuromation.api.config import _PyPIVersion
 from neuromation.api.url_utils import uri_from_cli
 from neuromation.strings.parse import to_megabytes
 from neuromation.utils import run
@@ -47,6 +52,39 @@ _T = TypeVar("_T")
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 
 
+def warn_if_has_newer_version(
+    version: _PyPIVersion, check_neuromation: bool = True
+) -> None:
+    if check_neuromation:
+        current = pkg_resources.parse_version(neuromation.__version__)
+        if current < version.pypi_version:
+            update_command = "pip install --upgrade neuromation"
+            click.secho(
+                f"You are using Neuromation Platform Client {current}, "
+                f"however {version.pypi_version} is available.\n"
+                f"You should consider upgrading via "
+                f"the '{update_command}' command.",
+                err=True,
+                fg="yellow",
+            )
+
+    certifi_version = certifi.__version__  # type: ignore
+    certifi_current = pkg_resources.parse_version(certifi_version)
+    if certifi_current < version.certifi_pypi_version:
+        update_command = "pip install --upgrade certifi"
+        click.secho(
+            f"You system has a serious security breach!!!\n"
+            f"Used Root Certificates are outdated, "
+            f"they can be used as an attack vector.\n"
+            f"You are using certifi {current}, "
+            f"however {version.pypi_version} is available.\n"
+            f"You should consider upgrading certifi package, "
+            f"e.g. '{update_command}'",
+            err=True,
+            fg="red",
+        )
+
+
 async def _run_async_function(
     init_client: bool,
     func: Callable[..., Awaitable[_T]],
@@ -57,19 +95,22 @@ async def _run_async_function(
     loop = asyncio.get_event_loop()
     version_checker: AbstractVersionChecker
 
-    if True:  # root.disable_pypi_version_check:
-        version_checker = DummyVersionChecker()
+    if init_client:
+        await root.init_client()
+
+    version = root._config.pypi
+
+    warn_if_has_newer_version(version, not root.disable_pypi_version_check)
+
+    if root.disable_pypi_version_check:
+        version_checker = DummyVersionChecker(version)
     else:
-        root.pypi.warn_if_has_newer_version()
         # (ASvetlov) This branch is not tested intentionally
         # Don't want to fetch PyPI from unit tests
         # Later the checker initialization code will be refactored
         # as a part of config reimplementation
-        version_checker = VersionChecker()  # pragma: no cover
+        version_checker = VersionChecker(version)  # pragma: no cover
     task = loop.create_task(version_checker.run())
-
-    if init_client:
-        await root.init_client()
 
     try:
         return await func(root, *args, **kwargs)
@@ -79,6 +120,13 @@ async def _run_async_function(
             await task
         with suppress(asyncio.CancelledError):
             await version_checker.close()
+
+        if version_checker.version != root._config.pypi:
+            # Update pypi section
+            config = dataclasses.replace(root._config, pypi=version_checker.version)
+            factory = root._factory
+            assert factory is not None
+            factory._save(config)
 
         await root.close()
 
