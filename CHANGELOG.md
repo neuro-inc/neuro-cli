@@ -5,6 +5,35 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.6.3 (2019-06-03)
+===============================
+
+Features
+--------
+
+
+- Changes in `neuro store mkdir` behavior: fails if the directory already exists or parent directories do not exist. Add option `--parents` to make parent directories as needed and ignore existing directories. ([#131](https://github.com/neuromation/platform-api-clients/issues/131))
+
+- Changes in `neuro store rm` behavior: removes only files by default, add option `--recursive` to remove directories. ([#354](https://github.com/neuromation/platform-api-clients/issues/354))
+
+- Storage commands (`neuro storage ls`, `neuro storage cp`, `neuro storage mv`, `neuro storage rm`) accept now variable number of arguments. This allows to copy or remove several files by one command. ([#784](https://github.com/neuromation/platform-api-clients/issues/784))
+
+- Implement `neuro config login-headless` command. ([#793](https://github.com/neuromation/platform-api-clients/issues/793))
+
+- Changes in interpretation URIs with absolute path and without host name. `storage:///foo/bar` means now the same as `storage://foo/bar` instead of `storage://{currentuser}/foo/bar`, and `storage:///` can be used for access to the storage root directory. ([#808](https://github.com/neuromation/platform-api-clients/issues/808))
+
+- `neuro storage cp` now supports copying to/from non-regular files like character devices and named pipes. In particular this allows to output the file to the stdout or get the input from the stdin (`/dev/stdout` and `/dev/stdin` on Linux, `CON` on Windows). ([#813](https://github.com/neuromation/platform-api-clients/issues/813))
+
+- Relax certifi required version. Raise a warning if the package should be updated. ([#819](https://github.com/neuromation/platform-api-clients/issues/819))
+
+
+Bugfixes
+--------
+
+
+- Allow to logout even if config file is broken. ([#792](https://github.com/neuromation/platform-api-clients/issues/792))
+
+
 Neuromation 19.5.13 (2019-05-13)
 ================================
 

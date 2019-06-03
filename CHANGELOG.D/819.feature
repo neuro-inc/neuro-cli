@@ -1,1 +1,0 @@
-Relax certifi required version. Raise a warning if the package is updated.
