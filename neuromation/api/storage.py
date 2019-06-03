@@ -2,6 +2,7 @@ import asyncio
 import enum
 import errno
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -174,9 +175,9 @@ class Storage(metaclass=NoPublicConstructor):
         self, src: Path, *, progress: Optional[AbstractProgress] = None
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
-        if progress is not None:
-            progress.start(str(src), src.stat().st_size)
         with src.open("rb") as stream:
+            if progress is not None:
+                progress.start(str(src), os.stat(stream.fileno()).st_size)
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
@@ -194,14 +195,18 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src)
-        if not path.exists():
-            raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
-        if path.is_dir():
-            raise IsADirectoryError(
-                errno.EISDIR, "Is a directory, use recursive copy", str(path)
-            )
-        if not path.is_file():
-            raise OSError(errno.EINVAL, "Not a regular file", str(path))
+        try:
+            if not path.exists():
+                raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
+            if path.is_dir():
+                raise IsADirectoryError(
+                    errno.EISDIR, "Is a directory, use recursive copy", str(path)
+                )
+        except OSError as e:
+            if getattr(e, "winerror", None) not in (1, 87):
+                raise
+            # Ignore stat errors for device files like NUL or CON on Windows.
+            # See https://bugs.python.org/issue37074
         if not dst.name:
             # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
             dst = dst / src.name
@@ -265,11 +270,16 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        if path.exists():
+        try:
             if path.is_dir():
                 path = path / src.name
-            elif not path.is_file():
-                raise OSError(errno.EINVAL, "Not a regular file", str(path))
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            if getattr(e, "winerror", None) not in (1, 87):
+                raise
+            # Ignore stat errors for device files like NUL or CON on Windows.
+            # See https://bugs.python.org/issue37074
         loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             stat = await self.stats(src)
