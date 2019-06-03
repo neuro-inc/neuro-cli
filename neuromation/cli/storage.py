@@ -117,6 +117,9 @@ async def cp(
     Either SOURCES or DESTINATION should have storage:// scheme.
     If scheme is omitted, file:// scheme is assumed.
 
+    Use /dev/stdin and /dev/stdout file names to copy a file from terminal
+    and print the content of file on the storage to console.
+
     Examples:
 
     # copy local file ./foo into remote storage root
