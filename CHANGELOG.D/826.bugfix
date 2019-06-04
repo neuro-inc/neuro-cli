@@ -1,0 +1,1 @@
+Don't run version checks if config is not loaded by CLI command.

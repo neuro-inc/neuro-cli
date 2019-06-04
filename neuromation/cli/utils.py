@@ -98,35 +98,38 @@ async def _run_async_function(
     if init_client:
         await root.init_client()
 
-    version = root._config.pypi
+        version = root._config.pypi
 
-    warn_if_has_newer_version(version, not root.disable_pypi_version_check)
+        warn_if_has_newer_version(version, not root.disable_pypi_version_check)
 
-    if root.disable_pypi_version_check:
-        version_checker = DummyVersionChecker(version)
+        if root.disable_pypi_version_check:
+            version_checker = DummyVersionChecker(version)
+        else:
+            # (ASvetlov) This branch is not tested intentionally
+            # Don't want to fetch PyPI from unit tests
+            # Later the checker initialization code will be refactored
+            # as a part of config reimplementation
+            version_checker = VersionChecker(version)  # pragma: no cover
+        task: Optional["asyncio.Task[None]"] = loop.create_task(version_checker.run())
     else:
-        # (ASvetlov) This branch is not tested intentionally
-        # Don't want to fetch PyPI from unit tests
-        # Later the checker initialization code will be refactored
-        # as a part of config reimplementation
-        version_checker = VersionChecker(version)  # pragma: no cover
-    task = loop.create_task(version_checker.run())
+        task = None
 
     try:
         return await func(root, *args, **kwargs)
     finally:
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
-        with suppress(asyncio.CancelledError):
-            await version_checker.close()
+        if task is not None:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+            with suppress(asyncio.CancelledError):
+                await version_checker.close()
 
-        if version_checker.version != root._config.pypi:
-            # Update pypi section
-            config = dataclasses.replace(root._config, pypi=version_checker.version)
-            factory = root._factory
-            assert factory is not None
-            factory._save(config)
+            if version_checker.version != root._config.pypi:
+                # Update pypi section
+                config = dataclasses.replace(root._config, pypi=version_checker.version)
+                factory = root._factory
+                assert factory is not None
+                factory._save(config)
 
         await root.close()
 
