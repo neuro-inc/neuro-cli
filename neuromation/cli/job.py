@@ -4,9 +4,10 @@ import os
 import shlex
 import sys
 import webbrowser
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Any
 
 import click
+from attr import Factory
 
 from neuromation.api import (
     Container,
@@ -17,7 +18,7 @@ from neuromation.api import (
     JobStatus,
     Resources,
     Volume,
-)
+    CONFIG_ENV_NAME)
 
 from .defaults import (
     GPU_MODELS,
@@ -226,7 +227,7 @@ async def submit(
         http=http,
         http_auth=http_auth,
         cmd=cmd,
-        volume=volume,
+        inject_config_volume=volume,
         env=env,
         env_file=env_file,
         preemptible=preemptible,
@@ -565,6 +566,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option(
+    "-c",
+    "--inject-config/--no-inject-config",
+    default=False,
+    show_default=True,
+    help="Share neuro config file with the job",
+)
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def run(
@@ -582,6 +590,7 @@ async def run(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    inject_config: bool,
     browse: bool,
 ) -> None:
     """
@@ -614,13 +623,14 @@ async def run(
         http=http,
         http_auth=http_auth,
         cmd=cmd,
-        volume=volume,
+        inject_config_volume=volume,
         env=env,
         env_file=env_file,
         preemptible=preemptible,
         name=name,
         description=description,
         wait_start=wait_start,
+        inject_config=inject_config,
         browse=browse,
     )
 
@@ -653,13 +663,14 @@ async def run_job(
     http: Optional[int],
     http_auth: Optional[bool],
     cmd: Sequence[str],
-    volume: Sequence[str],
+    inject_config_volume: Sequence[str],
     env: Sequence[str],
     env_file: str,
     preemptible: bool,
     name: Optional[str],
     description: str,
     wait_start: bool,
+    inject_config: bool,
     browse: bool,
 ) -> None:
     if http_auth is None:
@@ -685,7 +696,7 @@ async def run_job(
     resources = Resources(memory, cpu, gpu, gpu_model, extshm)
 
     volumes: Set[Volume] = set()
-    for v in volume:
+    for v in inject_config_volume:
         if v == "HOME":
             volumes.add(
                 root.client.jobs.parse_volume("storage://~:/var/storage/home:rw")
@@ -703,6 +714,25 @@ async def run_job(
             "Using volumes: \n"
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
+
+    if inject_config:
+        # store the Neuro CLI config on the storage under some random path
+        config_file = root.config_path
+        storage_path = "storage://nmrc"
+        random_local_path = "/.random-local-path"
+        await root.client.storage.upload_file(config_file, storage_path)
+
+        # specify a container volume and mount the storage path into a specific container path
+        data: Dict[str, Any] = {"src_storage_uri": storage_path,
+                                "dst_path": random_local_path,
+                                "read_only": True,
+                                }
+        inject_config_volume = Volume.from_api(data)
+        volumes.add(inject_config_volume)
+
+        # set the corresponding env var with the path to the config
+        # set its value to random_local_path
+        config_env_name = CONFIG_ENV_NAME
 
     container = Container(
         image=image.as_repo_str(),

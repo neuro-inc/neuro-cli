@@ -54,6 +54,9 @@ class Factory:
             path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
         self._path = path.expanduser()
 
+    async def config_path(self) -> Path:
+        return self._path
+
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
         connector = await _make_connector()
