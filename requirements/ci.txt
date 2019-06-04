@@ -18,4 +18,4 @@ pytest-testmon==0.9.16
 towncrier==19.2.0
 asynctest==0.12.4
 cryptography==2.6.1  # temporary pin the version until trusme fixes deprecation warning
-trustme==0.5.1
+trustme==0.5.2
