@@ -110,7 +110,7 @@ async def _run_async_function(
             # Later the checker initialization code will be refactored
             # as a part of config reimplementation
             version_checker = VersionChecker(version)  # pragma: no cover
-        task = loop.create_task(version_checker.run())
+        task: Optional["Task[None]"] = loop.create_task(version_checker.run())
     else:
         task = None
 
