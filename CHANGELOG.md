@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.6.4 (2019-06-04)
+===============================
+
+Bugfixes
+--------
+
+
+- Don't run version checks if config is not loaded by CLI command. ([#826](https://github.com/neuromation/platform-api-clients/issues/826))
+
+
 Neuromation 19.6.3 (2019-06-03)
 ===============================
 
