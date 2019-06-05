@@ -1,0 +1,1 @@
+Relax pyyaml version requirement to don't force users to upgrade it if pyyaml was installed by anaconda or another non-pip installer.
