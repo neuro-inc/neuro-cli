@@ -4,7 +4,7 @@ import ssl
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 import aiohttp
 import certifi
@@ -257,7 +257,9 @@ class Factory:
             ),
         )
 
-    def _deserialize_resource_preset(self, payload: Dict[str, Any]) -> RunPreset:
+    def _deserialize_resource_preset(
+        self, payload: Dict[str, Any]
+    ) -> Tuple[str, RunPreset]:
         return (
             payload["name"],
             RunPreset(
