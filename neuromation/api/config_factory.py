@@ -175,6 +175,10 @@ class Factory:
             auth_config = self._deserialize_auth_config(payload)
             cluster_config = self._deserialize_cluster_config(payload)
             auth_token = self._deserialize_auth_token(payload)
+            cookie_session = payload.get("cookie_session", "")
+            cookie_timestamp = payload.get("cookie_timestamp", 0)
+            if cookie_timestamp < time.time() - COOKIE_SAVE_TIME:
+                cookie_session = ""
 
             return _Config(
                 auth_config=auth_config,
@@ -182,6 +186,7 @@ class Factory:
                 auth_token=auth_token,
                 pypi=_PyPIVersion.from_config(pypi_payload),
                 url=api_url,
+                cookie_session=cookie_session,
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")

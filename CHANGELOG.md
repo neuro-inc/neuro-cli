@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.6.5 (2019-06-05)
+===============================
+
+Bugfixes
+--------
+
+
+- Relax pyyaml version requirement to don't force users to upgrade it if pyyaml was installed by anaconda or another non-pip installer. ([#828](https://github.com/neuromation/platform-api-clients/issues/828))
+
+
 Neuromation 19.6.4 (2019-06-04)
 ===============================
 
