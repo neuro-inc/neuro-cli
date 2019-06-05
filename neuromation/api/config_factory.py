@@ -212,14 +212,17 @@ class Factory:
             "storage_url": str(cluster_config.storage_url),
             "users_url": str(cluster_config.users_url),
             "monitoring_url": str(cluster_config.monitoring_url),
-            "resource_presets": {
-                name: self._serialize_resource_preset(resource_preset)
+            "resource_presets": [
+                self._serialize_resource_preset(name, resource_preset)
                 for name, resource_preset in cluster_config.resource_presets.items()
-            },
+            ],
         }
 
-    def _serialize_resource_preset(self, resource_preset: RunPreset) -> Dict[str, Any]:
+    def _serialize_resource_preset(
+        self, name: str, resource_preset: RunPreset
+    ) -> Dict[str, Any]:
         return {
+            "name": name,
             "cpu": resource_preset.cpu,
             "memory_mb": resource_preset.memory_mb,
             "gpu": resource_preset.gpu,
@@ -248,18 +251,21 @@ class Factory:
             storage_url=URL(cluster_config["storage_url"]),
             users_url=URL(cluster_config["users_url"]),
             monitoring_url=URL(cluster_config["monitoring_url"]),
-            resource_presets={
-                name: self._deserialize_resource_preset(data)
-                for name, data in cluster_config.get("resource_presets", {}).items()
-            },
+            resource_presets=dict(
+                self._deserialize_resource_preset(data)
+                for data in cluster_config.get("resource_presets", [])
+            ),
         )
 
     def _deserialize_resource_preset(self, payload: Dict[str, Any]) -> RunPreset:
-        return RunPreset(
-            cpu=payload["cpu"],
-            memory_mb=payload["memory_mb"],
-            gpu=payload.get("gpu"),
-            gpu_model=payload.get("gpu_model"),
+        return (
+            payload["name"],
+            RunPreset(
+                cpu=payload["cpu"],
+                memory_mb=payload["memory_mb"],
+                gpu=payload.get("gpu"),
+                gpu_model=payload.get("gpu_model"),
+            ),
         )
 
     def _deserialize_auth_token(self, payload: Dict[str, Any]) -> _AuthToken:
