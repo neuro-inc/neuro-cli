@@ -65,6 +65,7 @@ class _Config:
     cluster_config: _ClusterConfig
     pypi: _PyPIVersion
     url: URL
+    cookie_session: str
 
     def check_initialized(self) -> None:
         if (
