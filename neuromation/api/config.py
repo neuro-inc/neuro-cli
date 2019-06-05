@@ -59,12 +59,28 @@ class _PyPIVersion:
 
 
 @dataclass(frozen=True)
+class CookieSession:
+    cookie: str
+    timestamp: int
+
+    def from_config(cls, data: Dict[str, Any]) -> 'CookieSession':
+        return cls(cookie, timestamp)
+
+    def to_config(self) -> Dict[str, Any]:
+        return {
+            "cookie": self.cookie,
+            "timestamp": self.timestamp,
+        }
+
+
+@dataclass(frozen=True)
 class _Config:
     auth_config: _AuthConfig
     auth_token: _AuthToken
     cluster_config: _ClusterConfig
     pypi: _PyPIVersion
     url: URL
+    cookie_session: CookieSession
 
     def check_initialized(self) -> None:
         if (
