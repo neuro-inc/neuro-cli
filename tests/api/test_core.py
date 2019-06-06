@@ -1,6 +1,7 @@
 import ssl
 import sys
-from typing import AsyncIterator, Callable
+from http.cookies import Morsel  # noqa
+from typing import AsyncIterator, Callable, Optional
 
 import aiohttp
 import certifi
@@ -25,11 +26,13 @@ _ApiFactory = Callable[[URL], AsyncContextManager[_Core]]
 @pytest.fixture
 async def api_factory() -> AsyncIterator[_ApiFactory]:
     @asynccontextmanager
-    async def factory(url: URL) -> AsyncIterator[_Core]:
+    async def factory(
+        url: URL, cookie: Optional["Morsel[str]"]=None
+    ) -> AsyncIterator[_Core]:
         ssl_context = ssl.SSLContext()
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
-        api = _Core(connector, url, "token", DEFAULT_TIMEOUT)
+        api = _Core(connector, url, "token", cookie, DEFAULT_TIMEOUT)
         yield api
         await api.close()
         await connector.close()

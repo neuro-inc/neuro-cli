@@ -1,5 +1,5 @@
 import logging
-from http.cookies import Morsel
+from http.cookies import Morsel  # noqa
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp

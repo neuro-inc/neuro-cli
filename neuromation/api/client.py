@@ -1,5 +1,6 @@
 import time
-from http.cookies import Morsel, SimpleCookie
+from http.cookies import Morsel  # noqa
+from http.cookies import SimpleCookie
 from types import TracebackType
 from typing import Optional, Type
 

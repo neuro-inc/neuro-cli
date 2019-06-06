@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from http.cookies import Morsel
+from http.cookies import Morsel  # noqa
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
