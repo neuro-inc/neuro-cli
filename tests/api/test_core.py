@@ -21,7 +21,7 @@ else:
     from async_generator import asynccontextmanager
 
 
-_ApiFactory = Callable[[URL], AsyncContextManager[_Core]]
+_ApiFactory = Callable[[URL, Optional["Morsel[str]"]], AsyncContextManager[_Core]]
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ async def test_relative_url(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/")) as api:
+    async with api_factory(srv.make_url("/"), None) as api:
         relative_url = URL("test")
         async with api.request(method="GET", url=relative_url) as resp:
             assert resp.status == 200
@@ -67,7 +67,7 @@ async def test_absolute_url(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/")) as api:
+    async with api_factory(srv.make_url("/"), None) as api:
         absolute_url = srv.make_url("test")
         async with api.request(method="GET", url=absolute_url) as resp:
             assert resp.status == 200
@@ -83,7 +83,7 @@ async def test_raise_for_status_no_error_message(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/")) as api:
+    async with api_factory(srv.make_url("/"), None) as api:
         with pytest.raises(IllegalArgumentError, match="^400: Bad Request$"):
             async with api.request(method="GET", url=URL("test")):
                 pass
@@ -101,7 +101,7 @@ async def test_raise_for_status_contains_error_message(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/")) as api:
+    async with api_factory(srv.make_url("/"), None) as api:
         with pytest.raises(IllegalArgumentError, match=f"^{ERROR_MSG}$"):
             async with api.request(method="GET", url=URL("test")):
                 pass
