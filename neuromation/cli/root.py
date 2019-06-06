@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from http.cookies import Morsel
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -82,3 +83,8 @@ class Root:
     async def close(self) -> None:
         if self._client is not None:
             await self._client.close()
+
+    def get_session_cookie(self) -> Optional["Morsel[str]"]:
+        if self._client is None:
+            return None
+        return self._client._get_session_cookie()

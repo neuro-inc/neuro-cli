@@ -4,6 +4,7 @@ import logging
 import re
 import shlex
 import sys
+import time
 from contextlib import suppress
 from functools import wraps
 from typing import (
@@ -36,7 +37,7 @@ from neuromation.api import (
     JobDescription,
     Volume,
 )
-from neuromation.api.config import _PyPIVersion
+from neuromation.api.config import _CookieSession, _PyPIVersion
 from neuromation.api.url_utils import uri_from_cli
 from neuromation.strings.parse import to_megabytes
 from neuromation.utils import run
@@ -117,6 +118,7 @@ async def _run_async_function(
     try:
         return await func(root, *args, **kwargs)
     finally:
+        new_config = None
         if task is not None:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -126,10 +128,25 @@ async def _run_async_function(
 
             if version_checker.version != root._config.pypi:
                 # Update pypi section
-                config = dataclasses.replace(root._config, pypi=version_checker.version)
-                factory = root._factory
-                assert factory is not None
-                factory._save(config)
+                new_config = dataclasses.replace(
+                    root._config, pypi=version_checker.version
+                )
+
+        cookie = root.get_session_cookie()
+        if cookie is not None:
+            if new_config is None:
+                new_config = root._config
+            new_config = dataclasses.replace(
+                new_config,
+                cookie_session=_CookieSession(
+                    cookie=cookie.value, timestamp=int(time.time())
+                ),
+            )
+
+        if new_config is not None:
+            factory = root._factory
+            assert factory is not None
+            factory._save(new_config)
 
         await root.close()
 
