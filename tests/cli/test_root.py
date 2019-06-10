@@ -3,7 +3,7 @@ import dataclasses
 import aiohttp
 import pytest
 
-from neuromation.cli.root import Root, ConfigError
+from neuromation.cli.root import ConfigError, Root
 
 
 @pytest.fixture
