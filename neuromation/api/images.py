@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 import aiodocker
 import aiohttp
+import attr
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
@@ -173,6 +174,9 @@ class Images(metaclass=NoPublicConstructor):
         return local_image
 
     async def ls(self) -> List[URL]:
-        async with self._registry.request("GET", URL("_catalog")) as resp:
+        timeout = attr.evolve(self._registry.timeout, sock_read=None)
+        async with self._registry.request(
+            "GET", URL("_catalog"), timeout=timeout
+        ) as resp:
             ret = await resp.json()
             return [URL(name) for name in ret["repositories"]]
