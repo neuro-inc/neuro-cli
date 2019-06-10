@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.6.10 (2019-06-10)
+================================
+
+Bugfixes
+--------
+
+
+- Improve storage operations stability by supporting sticky sessions. ([#832](https://github.com/neuromation/platform-api-clients/issues/832))
+
+
 Neuromation 19.6.5 (2019-06-05)
 ===============================
 
