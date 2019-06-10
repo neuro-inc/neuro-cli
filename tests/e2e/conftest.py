@@ -53,7 +53,6 @@ JOB_TIMEOUT = 60 * 5
 JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 60 * 5
 JOB_OUTPUT_SLEEP_SECONDS = 2
-STORAGE_MAX_WAIT = 60
 CLI_MAX_WAIT = 180
 NETWORK_TIMEOUT = 60.0 * 3
 CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIMEOUT)
@@ -162,20 +161,14 @@ class Helper:
         loop = asyncio.get_event_loop()
         t0 = loop.time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            while loop.time() - t0 < STORAGE_MAX_WAIT:
-                try:
-                    files = await client.storage.ls(url)
-                except ResourceNotFound:
-                    await asyncio.sleep(1)
-                    continue
-                for file in files:
-                    if (
-                        file.type == FileStatusType.FILE
-                        and file.name == name
-                        and file.size == size
-                    ):
-                        return
-                await asyncio.sleep(1)
+            files = await client.storage.ls(url)
+            for file in files:
+                if (
+                    file.type == FileStatusType.FILE
+                    and file.name == name
+                    and file.size == size
+                ):
+                    return
         raise AssertionError(f"File {name} with size {size} not found in {url}")
 
     @run_async
@@ -184,16 +177,10 @@ class Helper:
         loop = asyncio.get_event_loop()
         t0 = loop.time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            while loop.time() - t0 < STORAGE_MAX_WAIT:
-                try:
-                    files = await client.storage.ls(url)
-                except ResourceNotFound:
-                    await asyncio.sleep(1)
-                    continue
-                for file in files:
-                    if file.type == FileStatusType.DIRECTORY and file.path == name:
-                        return
-                await asyncio.sleep(1)
+            files = await client.storage.ls(url)
+            for file in files:
+                if file.type == FileStatusType.DIRECTORY and file.path == name:
+                    return
         raise AssertionError(f"Dir {name} not found in {url}")
 
     @run_async
@@ -226,27 +213,10 @@ class Helper:
             target = tmpdir
             target_file = join(tmpdir, name)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            delay = 5  # need a relative big initial delay to synchronize 16MB file
-            await asyncio.sleep(delay)
-            for i in range(5):
-                try:
-                    await client.storage.download_file(
-                        url / name, URL("file:" + target)
-                    )
-                except ResourceNotFound:
-                    # the file was not synchronized between platform storage nodes
-                    # need to try again
-                    await asyncio.sleep(delay)
-                    delay *= 2
-                try:
-                    assert self.hash_hex(target_file) == checksum
-                    return
-                except AssertionError:
-                    # the file was not synchronized between platform storage nodes
-                    # need to try again
-                    await asyncio.sleep(delay)
-                    delay *= 2
-            raise AssertionError("checksum test failed for {url}")
+            await client.storage.download_file(
+                url / name, URL("file:" + target)
+            )
+            assert self.hash_hex(target_file) == checksum, "checksum test failed for {url}"
 
     @run_async
     async def check_create_dir_on_storage(self, path: str, **kwargs: bool) -> None:
@@ -265,16 +235,8 @@ class Helper:
     @run_async
     async def check_rm_file_on_storage(self, name: str, path: str) -> None:
         url = URL(self.tmpstorage + path)
-        delay = 0.5
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            for i in range(10):
-                try:
-                    await client.storage.rm(url / name)
-                except ResourceNotFound:
-                    await asyncio.sleep(delay)
-                    delay *= 2
-                else:
-                    return
+            await client.storage.rm(url / name)
 
     @run_async
     async def check_upload_file_to_storage(
