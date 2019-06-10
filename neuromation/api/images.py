@@ -173,10 +173,6 @@ class Images(metaclass=NoPublicConstructor):
         return local_image
 
     async def ls(self) -> List[URL]:
-        # timeout = attr.evolve(self._registry.timeout, sock_read=None)
-        timeout = None
-        async with self._registry.request(
-            "GET", URL("_catalog"), timeout=timeout
-        ) as resp:
+        async with self._registry.request("GET", URL("_catalog")) as resp:
             ret = await resp.json()
             return [URL(name) for name in ret["repositories"]]
