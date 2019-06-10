@@ -1,4 +1,5 @@
 import logging
+from http.cookies import Morsel  # noqa
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
@@ -48,6 +49,7 @@ class _Core:
         connector: aiohttp.BaseConnector,
         base_url: URL,
         token: str,
+        cookie: Optional["Morsel[str]"],
         timeout: aiohttp.ClientTimeout,
     ) -> None:
         self._connector = connector
@@ -60,6 +62,10 @@ class _Core:
             timeout=timeout,
             headers=self._auth_headers(),
         )
+        if cookie is not None:
+            self._session.cookie_jar.update_cookies(  # type: ignore
+                {"NEURO_SESSION": cookie}
+            )
         self._exception_map = {
             400: IllegalArgumentError,
             401: AuthenticationError,

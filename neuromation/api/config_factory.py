@@ -12,7 +12,7 @@ import yaml
 from yarl import URL
 
 from .client import Client
-from .config import _Config, _PyPIVersion
+from .config import _Config, _CookieSession, _PyPIVersion
 from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
@@ -98,6 +98,7 @@ class Factory:
             cluster_config=config_authorized.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
+            cookie_session=_CookieSession.create_uninitialized(),
         )
         self._save(config)
 
@@ -126,6 +127,7 @@ class Factory:
             cluster_config=config_authorized.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
+            cookie_session=_CookieSession.create_uninitialized(),
         )
         self._save(config)
 
@@ -146,6 +148,7 @@ class Factory:
             cluster_config=server_config.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
+            cookie_session=_CookieSession.create_uninitialized(),
         )
         self._save(config)
 
@@ -175,6 +178,9 @@ class Factory:
             auth_config = self._deserialize_auth_config(payload)
             cluster_config = self._deserialize_cluster_config(payload)
             auth_token = self._deserialize_auth_token(payload)
+            cookie_session = _CookieSession.from_config(
+                payload.get("cookie_session", {})
+            )
 
             return _Config(
                 auth_config=auth_config,
@@ -182,6 +188,7 @@ class Factory:
                 auth_token=auth_token,
                 pypi=_PyPIVersion.from_config(pypi_payload),
                 url=api_url,
+                cookie_session=cookie_session,
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
@@ -292,6 +299,7 @@ class Factory:
                 "refresh_token": config.auth_token.refresh_token,
             }
             payload["pypi"] = config.pypi.to_config()
+            payload["cookie_session"] = config.cookie_session.to_config()
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
 

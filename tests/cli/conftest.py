@@ -8,7 +8,13 @@ import pytest
 from yarl import URL
 
 from neuromation.api import Factory
-from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
+from neuromation.api.config import (
+    _AuthConfig,
+    _AuthToken,
+    _Config,
+    _CookieSession,
+    _PyPIVersion,
+)
 from neuromation.api.login import RunPreset, _ClusterConfig
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
@@ -44,6 +50,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         cluster_config=cluster_config,
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
+        cookie_session=_CookieSession.create_uninitialized(),
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path

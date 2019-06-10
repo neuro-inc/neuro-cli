@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from http.cookies import Morsel  # noqa
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -34,7 +35,7 @@ class Root:
 
     @property
     def auth(self) -> Optional[str]:
-        if self._config is not None:
+        if self._client is not None:
             return self._config.auth_token.token
         return None
 
@@ -46,25 +47,25 @@ class Root:
 
     @property
     def username(self) -> str:
-        if self._config is None:
+        if self._client is None:
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.auth_token.username
 
     @property
     def url(self) -> URL:
-        if self._config is None:
+        if self._client is None:
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.url
 
     @property
     def registry_url(self) -> URL:
-        if self._config is None or not self._config.cluster_config.is_initialized():
+        if self._client is None or not self._config.cluster_config.is_initialized():
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.registry_url
 
     @property
     def resource_presets(self) -> Dict[str, RunPreset]:
-        if self._config is None or not self._config.cluster_config.is_initialized():
+        if self._client is None or not self._config.cluster_config.is_initialized():
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.resource_presets
 
@@ -82,3 +83,8 @@ class Root:
     async def close(self) -> None:
         if self._client is not None:
             await self._client.close()
+
+    def get_session_cookie(self) -> Optional["Morsel[str]"]:
+        if self._client is None:
+            return None
+        return self._client._get_session_cookie()

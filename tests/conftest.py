@@ -6,7 +6,13 @@ from jose import jwt
 from yarl import URL
 
 from neuromation.api import Client
-from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _PyPIVersion
+from neuromation.api.config import (
+    _AuthConfig,
+    _AuthToken,
+    _Config,
+    _CookieSession,
+    _PyPIVersion,
+)
 from neuromation.api.login import RunPreset, _ClusterConfig
 
 
@@ -78,6 +84,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             pypi=_PyPIVersion.create_uninitialized(),
             url=URL(url),
             cluster_config=cluster_config,
+            cookie_session=_CookieSession.create_uninitialized(),
         )
         connector = aiohttp.TCPConnector()
         return Client._create(connector, config)
