@@ -34,7 +34,6 @@ from neuromation.api import (
     FileStatusType,
     JobDescription,
     JobStatus,
-    ResourceNotFound,
     get as api_get,
     login_with_token,
 )
@@ -158,8 +157,6 @@ class Helper:
         self, name: str, path: str, size: int
     ) -> None:
         url = URL(self.tmpstorage + path)
-        loop = asyncio.get_event_loop()
-        t0 = loop.time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
             for file in files:
@@ -174,8 +171,6 @@ class Helper:
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str) -> None:
         url = URL(self.tmpstorage + path)
-        loop = asyncio.get_event_loop()
-        t0 = loop.time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
             for file in files:
@@ -213,10 +208,10 @@ class Helper:
             target = tmpdir
             target_file = join(tmpdir, name)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.download_file(
-                url / name, URL("file:" + target)
-            )
-            assert self.hash_hex(target_file) == checksum, "checksum test failed for {url}"
+            await client.storage.download_file(url / name, URL("file:" + target))
+            assert (
+                self.hash_hex(target_file) == checksum
+            ), "checksum test failed for {url}"
 
     @run_async
     async def check_create_dir_on_storage(self, path: str, **kwargs: bool) -> None:
