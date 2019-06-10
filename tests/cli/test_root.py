@@ -36,6 +36,11 @@ def test_url_uninitialized(root_uninitialized: Root) -> None:
         root_uninitialized.url
 
 
+def test_registry_url_uninitialized(root_uninitialized: Root) -> None:
+    with pytest.raises(ConfigError):
+        root_uninitialized.registry_url
+
+
 def test_resource_presets_uninitialized(root_uninitialized: Root) -> None:
     with pytest.raises(ConfigError):
         root_uninitialized.resource_presets
