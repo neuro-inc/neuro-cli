@@ -73,7 +73,7 @@ _init-readme:
 e2e:
 	pytest \
 	    -n auto --forked --timeout=300 \
-		-v
+		-v \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -87,7 +87,7 @@ _e2e:
 	pytest \
 	    -n auto --forked \
 	    --timeout=570 --timeout_method=thread\
-		-v
+		-v \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
