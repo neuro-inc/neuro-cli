@@ -7,7 +7,6 @@ from typing import Dict, List, Optional
 
 import aiodocker
 import aiohttp
-import attr
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
