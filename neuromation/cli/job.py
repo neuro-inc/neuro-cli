@@ -3,11 +3,13 @@ import logging
 import os
 import shlex
 import sys
+import uuid
 import webbrowser
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Any
 
 import click
 from attr import Factory
+from yarl import URL
 
 from neuromation.api import (
     Container,
@@ -568,7 +570,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 )
 @click.option(
     "-c",
-    "--inject-config/--no-inject-config",
+    "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
     help="Share neuro config file with the job",
@@ -715,24 +717,23 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    if inject_config:
+    if pass_config:
         # store the Neuro CLI config on the storage under some random path
-        config_file = root.config_path
-        storage_path = "storage://nmrc"
-        random_local_path = "/.random-local-path"
+        config_file = URL(root.config_path.expanduser().resolve().as_uri())
+        random_path = f'{uuid.uuid4()}-nmrc'
+        storage_path = URL(f"storage://{username}/{random_path}")
+        random_local_path = f"/var/storage/{random_path}"
         await root.client.storage.upload_file(config_file, storage_path)
 
         # specify a container volume and mount the storage path into a specific container path
-        data: Dict[str, Any] = {"src_storage_uri": storage_path,
-                                "dst_path": random_local_path,
+        data: Dict[str, Any] = {"src_storage_uri": str(storage_path),
+                                "dst_path": str(random_local_path),
                                 "read_only": True,
                                 }
         inject_config_volume = Volume.from_api(data)
         volumes.add(inject_config_volume)
 
-        # set the corresponding env var with the path to the config
-        # set its value to random_local_path
-        config_env_name = CONFIG_ENV_NAME
+        env_dict[CONFIG_ENV_NAME] = random_local_path
 
     container = Container(
         image=image.as_repo_str(),
