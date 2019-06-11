@@ -810,6 +810,7 @@ def test_job_run(helper: Helper) -> None:
     store_out = captured.out
     assert "Exit code: 101" in store_out
 
+
 @pytest.mark.e2e
 def test_pass_config(helper: Helper) -> None:
     # Run a new job

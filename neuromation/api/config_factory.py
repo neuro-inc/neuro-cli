@@ -54,9 +54,6 @@ class Factory:
             path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
         self._path = path.expanduser()
 
-    async def config_path(self) -> Path:
-        return self._path
-
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         config = self._read()
         connector = await _make_connector()
@@ -167,7 +164,11 @@ class Factory:
             raise ConfigError(f"Config {self._path} is not a regular file")
 
         stat = self._path.stat()
-        if not WIN32 and stat.st_mode & 0o777 != 0o600 and Path.home() in self._path.parents:
+        if (
+            not WIN32
+            and stat.st_mode & 0o777 != 0o600
+            and Path.home() in self._path.parents
+        ):
             raise ConfigError(
                 f"Config file {self._path} has compromised permission bits, "
                 f"run 'chmod 600 {self._path}' first"

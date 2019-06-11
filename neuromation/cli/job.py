@@ -8,10 +8,10 @@ import webbrowser
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Any
 
 import click
-from attr import Factory
 from yarl import URL
 
 from neuromation.api import (
+    CONFIG_ENV_NAME,
     Container,
     DockerImage,
     HTTPPort,
@@ -20,7 +20,7 @@ from neuromation.api import (
     JobStatus,
     Resources,
     Volume,
-    CONFIG_ENV_NAME)
+)
 
 from .defaults import (
     GPU_MODELS,
@@ -237,6 +237,7 @@ async def submit(
         description=description,
         wait_start=wait_start,
         browse=browse,
+        pass_config=False,
     )
 
 
@@ -720,18 +721,19 @@ async def run_job(
     if pass_config:
         # store the Neuro CLI config on the storage under some random path
         config_file = URL(root.config_path.expanduser().resolve().as_uri())
-        random_path = f'{uuid.uuid4()}-nmrc'
+        random_path = f"{uuid.uuid4()}-nmrc"
         storage_path = URL(f"storage://{username}/{random_path}")
         random_local_path = f"/var/storage/{random_path}"
         await root.client.storage.upload_file(config_file, storage_path)
 
-        # specify a container volume and mount the storage path into a specific container path
-        data: Dict[str, Any] = {"src_storage_uri": str(storage_path),
-                                "dst_path": str(random_local_path),
-                                "read_only": True,
-                                }
-        volume = Volume.from_api(data)
-        volumes.add(volume)
+        # specify a container volume and mount the storage path
+        # into specific container path
+        data: Dict[str, Any] = {
+            "src_storage_uri": str(storage_path),
+            "dst_path": str(random_local_path),
+            "read_only": True,
+        }
+        volumes.add(Volume.from_api(data))
 
         env_dict[CONFIG_ENV_NAME] = random_local_path
 
