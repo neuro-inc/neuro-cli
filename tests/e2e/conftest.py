@@ -466,7 +466,7 @@ class Helper:
         return self._last_output
 
 
-async def _get_storage_cookie(nmrc_path: Path) -> None:
+async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
     async with api_get(timeout=CLIENT_TIMEOUT, path=nmrc_path) as client:
         await client.storage.ls(URL("storage:/"))
         cookie = client._get_session_cookie()
@@ -497,6 +497,8 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
         run(_get_storage_cookie(nmrc_path))
         return nmrc_path
     else:
+        # Update storage cookie
+        run(_get_storage_cookie(None))
         return None
 
 
