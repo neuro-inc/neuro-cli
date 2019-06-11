@@ -468,7 +468,7 @@ class Helper:
 
 async def _get_storage_cookie(nmrc_path: Path) -> None:
     async with api_get(timeout=CLIENT_TIMEOUT, path=nmrc_path) as client:
-        await client.storage.ls(URL("storage:"))
+        await client.storage.ls(URL("storage:/"))
         cookie = client._get_session_cookie()
         if cookie is not None:
             new_config = dataclasses.replace(
