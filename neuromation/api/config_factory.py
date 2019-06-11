@@ -167,7 +167,7 @@ class Factory:
             raise ConfigError(f"Config {self._path} is not a regular file")
 
         stat = self._path.stat()
-        if not WIN32 and stat.st_mode & 0o777 != 0o600:
+        if not WIN32 and stat.st_mode & 0o777 != 0o600 and Path.home() in self._path.parents:
             raise ConfigError(
                 f"Config file {self._path} has compromised permission bits, "
                 f"run 'chmod 600 {self._path}' first"
