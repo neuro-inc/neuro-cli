@@ -229,7 +229,7 @@ async def submit(
         http=http,
         http_auth=http_auth,
         cmd=cmd,
-        inject_config_volume=volume,
+        volume=volume,
         env=env,
         env_file=env_file,
         preemptible=preemptible,
@@ -625,7 +625,7 @@ async def run(
         http=http,
         http_auth=http_auth,
         cmd=cmd,
-        inject_config_volume=volume,
+        volume=volume,
         env=env,
         env_file=env_file,
         preemptible=preemptible,
@@ -665,7 +665,7 @@ async def run_job(
     http: Optional[int],
     http_auth: Optional[bool],
     cmd: Sequence[str],
-    inject_config_volume: Sequence[str],
+    volume: Sequence[str],
     env: Sequence[str],
     env_file: str,
     preemptible: bool,
@@ -698,7 +698,7 @@ async def run_job(
     resources = Resources(memory, cpu, gpu, gpu_model, extshm)
 
     volumes: Set[Volume] = set()
-    for v in inject_config_volume:
+    for v in volume:
         if v == "HOME":
             volumes.add(
                 root.client.jobs.parse_volume("storage://~:/var/storage/home:rw")
@@ -730,8 +730,8 @@ async def run_job(
                                 "dst_path": str(random_local_path),
                                 "read_only": True,
                                 }
-        inject_config_volume = Volume.from_api(data)
-        volumes.add(inject_config_volume)
+        volume = Volume.from_api(data)
+        volumes.add(volume)
 
         env_dict[CONFIG_ENV_NAME] = random_local_path
 
