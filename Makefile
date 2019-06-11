@@ -72,7 +72,8 @@ _init-readme:
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n auto --forked --timeout=300 \
+	    -n auto --forked \
+	    --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -85,7 +86,7 @@ e2e:
 _e2e:
 	pytest \
 	    -n auto --forked \
-	    --timeout=570 --timeout_method=thread\
+	    --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -99,7 +100,7 @@ _e2e:
 _e2e_win:
 	pytest \
 		-n 4 \
-		--timeout=570 --timeout_method=thread\
+		--timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
