@@ -810,6 +810,34 @@ def test_job_run(helper: Helper) -> None:
     store_out = captured.out
     assert "Exit code: 101" in store_out
 
+@pytest.mark.e2e
+def test_pass_config(helper: Helper) -> None:
+    # Run a new job
+    command = 'bash -c "neuro config show"'
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-q",
+            "-s",
+            "cpu-small",
+            "--non-preemptible",
+            "--no-wait-start",
+            "--pass-config",
+            "anayden/neuro-cli",
+            command,
+        ]
+    )
+    job_id = captured.out
+
+    # Wait until the job is running
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+
+    # Verify exit code is returned
+    captured = helper.run_cli(["job", "status", job_id])
+    store_out = captured.out
+    assert "Exit code: 0" in store_out
+
 
 @pytest.mark.parametrize("http_auth", ["--http-auth", "--no-http-auth"])
 @pytest.mark.e2e
