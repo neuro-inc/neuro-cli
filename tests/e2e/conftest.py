@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import hashlib
 import logging
 import os
@@ -37,6 +38,7 @@ from neuromation.api import (
     get as api_get,
     login_with_token,
 )
+from neuromation.api.config import _CookieSession
 from neuromation.cli import main
 from neuromation.cli.const import EX_IOERR, EX_OK, EX_OSFILE
 from neuromation.utils import run
@@ -464,6 +466,20 @@ class Helper:
         return self._last_output
 
 
+async def _get_storage_cookie(nmrc_path: Path) -> None:
+    async with api_get(timeout=CLIENT_TIMEOUT, path=nmrc_path) as client:
+        await client.storage.ls(URL("storage:"))
+        cookie = client._get_session_cookie()
+        if cookie is not None:
+            new_config = dataclasses.replace(
+                client._config,
+                cookie_session=_CookieSession(
+                    cookie=cookie.value, timestamp=int(time())
+                ),
+            )
+            Factory(nmrc_path)._save(new_config)
+
+
 @pytest.fixture(scope="session")
 def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
     e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
@@ -478,6 +494,7 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
                 timeout=CLIENT_TIMEOUT,
             )
         )
+        run(_get_storage_cookie(nmrc_path))
         return nmrc_path
     else:
         return None
