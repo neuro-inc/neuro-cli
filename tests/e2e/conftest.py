@@ -4,6 +4,7 @@ import hashlib
 import logging
 import os
 import re
+import subprocess
 import sys
 from collections import namedtuple
 from contextlib import suppress
@@ -103,15 +104,13 @@ def run_async(coro: Any) -> Callable[..., Any]:
 
 
 class Helper:
-    def __init__(self, nmrc_path: Path, capfd: Any, tmp_path: Path) -> None:
+    def __init__(self, nmrc_path: Path, tmp_path: Path) -> None:
         self._nmrc_path = nmrc_path
-        self._capfd = capfd
         self._tmp = tmp_path
         self._tmpstorage = "storage:" + str(uuid()) + "/"
         self._closed = False
         self._executed_jobs: List[str] = []
         self.mkdir("")
-        self._last_output: SysCap = SysCap("", "")
 
     def close(self) -> None:
         if not self._closed:
@@ -360,61 +359,45 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(self, arguments: List[str], storage_retry: bool = True) -> SysCap:
+    def run_cli(self, arguments: List[str]) -> SysCap:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
-        self._capfd.readouterr()
 
         t0 = time()
         delay = 0.5
         while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
-            try:
-                args = []
-                if self._nmrc_path:
-                    args.append(f"--neuromation-config={self._nmrc_path}")
+            args = [
+                "neuro",
+                "--show-traceback",
+                "--disable-pypi-version-check",
+                "--color=no",
+                f"--network-timeout={NETWORK_TIMEOUT}",
+            ]
 
-                main(
-                    args
-                    + [
-                        "--show-traceback",
-                        "--disable-pypi-version-check",
-                        "--color=no",
-                        f"--network-timeout={NETWORK_TIMEOUT}",
-                    ]
-                    + arguments
-                )
-            except SystemExit as exc:
-                if exc.code == EX_IOERR:
-                    # network problem
-                    sleep(delay)
-                    delay *= 2
-                    continue
-                elif (
-                    exc.code == EX_OSFILE
-                    and arguments
-                    and arguments[0] == "storage"
-                    and storage_retry
-                ):
-                    # NFS storage has a lag between pushing data on one storage API node
-                    # and fetching it on other node
-                    # retry is the only way to avoid it
-                    sleep(delay)
-                    delay *= 2
-                    continue
-                elif exc.code != EX_OK:
-                    raise
-            finally:
-                out, err = self._capfd.readouterr()
-                if any(
-                    " ".join(arguments).startswith(start)
-                    for start in ("submit", "job submit", "run", "job run")
-                ):
-                    match = job_id_pattern.search(out)
-                    if match:
-                        self._executed_jobs.append(match.group(1))
-                output = SysCap(out.strip(), err.strip())
-                self._last_output = output
-            return output
+            if self._nmrc_path:
+                args.append(f"--neuromation-config={self._nmrc_path}")
+
+            # 5 min timeout is overkill
+            proc = subprocess.run(
+                args + arguments, timeout=300, encoding="utf8", capture_output=True
+            )
+            if proc.returncode == EX_IOERR:
+                # network problem
+                sleep(delay)
+                delay *= 2
+                continue
+            else:
+                proc.check_returncode()
+            out = proc.stdout
+            err = proc.stderr
+            if any(
+                " ".join(arguments).startswith(start)
+                for start in ("submit", "job submit", "run", "job run")
+            ):
+                match = job_id_pattern.search(out)
+                if match:
+                    self._executed_jobs.append(match.group(1))
+            return SysCap(out.strip(), err.strip())
         else:
             raise TestRetriesExceeded(
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
@@ -462,9 +445,6 @@ class Helper:
                     request_info=resp.request_info,
                 )
 
-    def get_last_output(self) -> SysCap:
-        return self._last_output
-
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
     async with api_get(timeout=CLIENT_TIMEOUT, path=nmrc_path) as client:
@@ -503,10 +483,8 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
 
 
 @pytest.fixture
-def helper(
-    capfd: Any, monkeypatch: Any, tmp_path: Path, nmrc_path: Path
-) -> Iterator[Helper]:
-    ret = Helper(nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
+def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
+    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
     yield ret
     ret.close()
 

@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+import subprocess
 from pathlib import Path
 from time import sleep, time
 from typing import Any, AsyncIterator, Callable, Dict, Iterator, Tuple
@@ -457,11 +458,11 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
             ["job", "exec", "--no-key-check", "--timeout=60", job_id, "false"]
         )
-    assert cm.value.code == 1
+    assert cm.value.returncode == 1
 
 
 @pytest.mark.e2e
@@ -488,9 +489,9 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["job", "exec", "--no-key-check", "--timeout=60", job_id])
-    assert cm.value.code == 2
+    assert cm.value.returncode == 2
 
 
 @pytest.mark.e2e
@@ -547,11 +548,11 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
             ["job", "exec", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
         )
-    assert cm.value.code == 1
+    assert cm.value.returncode == 1
 
 
 @pytest.mark.e2e
@@ -586,11 +587,11 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
             ["job", "exec", "--no-key-check", "--timeout=60", "job_id", "true"]
         )
-    assert cm.value.code == 127
+    assert cm.value.returncode == 127
 
 
 @pytest.mark.e2e
@@ -618,11 +619,11 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
     helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
             ["job", "exec", "--no-key-check", "--timeout=60", job_id, "true"]
         )
-    assert cm.value.code == 127
+    assert cm.value.returncode == 127
 
 
 @pytest.fixture
