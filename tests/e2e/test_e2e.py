@@ -1,7 +1,7 @@
 import errno
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from uuid import uuid4
 
 import pytest
@@ -51,7 +51,7 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_job_top(helper: Helper) -> None:
-    def split_non_empty_parts(line: str, sep) -> List[str]:
+    def split_non_empty_parts(line: str, sep: str) -> List[str]:
         return [part.strip() for part in line.split(sep) if part.strip()]
 
     bash_script = (
