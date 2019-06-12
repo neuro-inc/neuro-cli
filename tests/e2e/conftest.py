@@ -503,9 +503,7 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
 
 
 @pytest.fixture
-def helper(
-    capfd: Any, tmp_path: Path, nmrc_path: Path
-) -> Iterator[Helper]:
+def helper(capfd: Any, tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, capfd=capfd, tmp_path=tmp_path)
     yield ret
     ret.close()
