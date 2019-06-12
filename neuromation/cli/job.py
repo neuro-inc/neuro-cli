@@ -254,16 +254,34 @@ async def submit(
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
+@click.option(
+    "--timeout",
+    default=0,
+    type=float,
+    show_default=True,
+    help="Maximum allowed time for executing the command, 0 for no timeout",
+)
 @async_cmd()
 async def exec(
-    root: Root, job: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
+    root: Root,
+    job: str,
+    tty: bool,
+    no_key_check: bool,
+    cmd: Sequence[str],
+    timeout: float,
 ) -> None:
     """
     Execute command in a running job.
     """
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
-    retcode = await root.client.jobs.exec(id, cmd, tty=tty, no_key_check=no_key_check)
+    retcode = await root.client.jobs.exec(
+        id,
+        cmd,
+        tty=tty,
+        no_key_check=no_key_check,
+        timeout=timeout if timeout else None,
+    )
     sys.exit(retcode)
 
 

@@ -324,6 +324,7 @@ Name | Description|
 |----|------------|
 |_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
 
@@ -1227,6 +1228,7 @@ Name | Description|
 |----|------------|
 |_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
 
