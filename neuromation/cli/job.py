@@ -132,7 +132,7 @@ def job() -> None:
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
-    default=True,
+    default=False,
     show_default=True,
 )
 @click.option(
@@ -495,7 +495,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
-    default=True,
+    default=False,
     show_default=True,
 )
 @click.option(
