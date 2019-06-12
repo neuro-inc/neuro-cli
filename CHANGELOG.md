@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.6.12 (2019-06-12)
+================================
+
+Features
+--------
+
+
+- Make non-preemtible mode default. ([#829](https://github.com/neuromation/platform-api-clients/issues/829))
+
+
 Neuromation 19.6.10 (2019-06-10)
 ================================
 
