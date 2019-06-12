@@ -174,9 +174,7 @@ def test_images_push_with_specified_name(
 
 
 @pytest.mark.e2e
-def test_docker_helper(
-    helper: Helper, image: str, tag: str, nmrc_path: Path
-) -> None:
+def test_docker_helper(helper: Helper, image: str, tag: str, nmrc_path: Path) -> None:
     helper.run_cli(["config", "docker"])
 
     env = {CONFIG_ENV_NAME: str(nmrc_path or DEFAULT_CONFIG_PATH)}
@@ -185,14 +183,14 @@ def test_docker_helper(
     full_tag = f"{registry}/{username}/{image}"
     tag_cmd = f"docker tag {image} {full_tag}"
     result = subprocess.run(
-        tag_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env,
+        tag_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env
     )
     assert (
         not result.returncode
     ), f"Command {tag_cmd} failed: {result.stdout} {result.stderr} "
     push_cmd = f"docker push {full_tag}"
     result = subprocess.run(
-        push_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env,
+        push_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env
     )
     assert (
         not result.returncode
