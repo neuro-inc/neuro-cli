@@ -132,7 +132,7 @@ def job() -> None:
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
-    default=True,
+    default=False,
     show_default=True,
 )
 @click.option(
@@ -254,16 +254,34 @@ async def submit(
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
+@click.option(
+    "--timeout",
+    default=0,
+    type=float,
+    show_default=True,
+    help="Maximum allowed time for executing the command, 0 for no timeout",
+)
 @async_cmd()
 async def exec(
-    root: Root, job: str, tty: bool, no_key_check: bool, cmd: Sequence[str]
+    root: Root,
+    job: str,
+    tty: bool,
+    no_key_check: bool,
+    cmd: Sequence[str],
+    timeout: float,
 ) -> None:
     """
     Execute command in a running job.
     """
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
-    retcode = await root.client.jobs.exec(id, tty, no_key_check, cmd)
+    retcode = await root.client.jobs.exec(
+        id,
+        cmd,
+        tty=tty,
+        no_key_check=no_key_check,
+        timeout=timeout if timeout else None,
+    )
     sys.exit(retcode)
 
 
@@ -309,7 +327,7 @@ async def port_forward(
         tasks.append(
             loop.create_task(
                 root.client.jobs.port_forward(
-                    job_id, no_key_check, local_port, job_port
+                    job_id, local_port, job_port, no_key_check=no_key_check
                 )
             )
         )
@@ -495,7 +513,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
-    default=True,
+    default=False,
     show_default=True,
 )
 @click.option(

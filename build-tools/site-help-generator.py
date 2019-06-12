@@ -204,6 +204,8 @@ def main(target_dir):
     target_path = Path(target_dir)
     EXCLUDES = ("00",)
     for child in target_path.iterdir():
+        if child.suffix != ".md":
+            continue
         if child.name.startswith(EXCLUDES):
             continue
         child.unlink()

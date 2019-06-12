@@ -15,6 +15,7 @@ from typing import (
     SupportsInt,
 )
 
+import async_timeout
 import attr
 from aiohttp import WSServerHandshakeError
 from multidict import MultiDict
@@ -428,7 +429,15 @@ class Jobs(metaclass=NoPublicConstructor):
                 raise ValueError(f"Job not found. Job Id = {id}")
             raise
 
-    async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
+    async def exec(
+        self,
+        id: str,
+        cmd: List[str],
+        *,
+        tty: bool = False,
+        no_key_check: bool = False,
+        timeout: Optional[float] = None,
+    ) -> int:
         try:
             job_status = await self.status(id)
         except IllegalArgumentError as e:
@@ -459,14 +468,15 @@ class Jobs(metaclass=NoPublicConstructor):
         command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
         proc = await asyncio.create_subprocess_exec(*command)
         try:
-            return await proc.wait()
+            async with async_timeout.timeout(timeout):
+                return await proc.wait()
         finally:
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
     async def port_forward(
-        self, id: str, no_key_check: bool, local_port: int, job_port: int
+        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
     ) -> int:
         try:
             job_status = await self.status(id)
