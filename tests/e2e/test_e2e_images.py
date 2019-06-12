@@ -174,10 +174,7 @@ def test_images_push_with_specified_name(
 
 
 @pytest.mark.e2e
-def test_docker_helper(
-    helper: Helper, image: str, tag: str, nmrc_path: Path, monkeypatch: Any
-) -> None:
-    monkeypatch.setenv(CONFIG_ENV_NAME, str(nmrc_path or DEFAULT_CONFIG_PATH))
+def test_docker_helper(helper: Helper, image: str, tag: str) -> None:
     helper.run_cli(["config", "docker"])
     registry = helper.registry_url.host
     username = helper.username
