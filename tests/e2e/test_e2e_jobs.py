@@ -700,7 +700,7 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
         # We test client instead of run_cli as asyncio subprocesses do
         # not work if run from thread other than main.
         forwarder = loop.create_task(
-            client.jobs.port_forward(nginx_job_async[0], True, port, 80)
+            client.jobs.port_forward(nginx_job_async[0], port, 80, no_key_check=True)
         )
         await asyncio.sleep(loop_sleep)
 

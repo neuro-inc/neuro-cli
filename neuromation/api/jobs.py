@@ -428,7 +428,9 @@ class Jobs(metaclass=NoPublicConstructor):
                 raise ValueError(f"Job not found. Job Id = {id}")
             raise
 
-    async def exec(self, id: str, tty: bool, no_key_check: bool, cmd: List[str]) -> int:
+    async def exec(
+        self, id: str, cmd: List[str], *, tty: bool = False, no_key_check: bool = False
+    ) -> int:
         try:
             job_status = await self.status(id)
         except IllegalArgumentError as e:
@@ -466,7 +468,7 @@ class Jobs(metaclass=NoPublicConstructor):
             await asyncio.sleep(0.1)
 
     async def port_forward(
-        self, id: str, no_key_check: bool, local_port: int, job_port: int
+        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
     ) -> int:
         try:
             job_status = await self.status(id)

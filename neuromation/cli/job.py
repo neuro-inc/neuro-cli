@@ -263,7 +263,7 @@ async def exec(
     """
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
-    retcode = await root.client.jobs.exec(id, tty, no_key_check, cmd)
+    retcode = await root.client.jobs.exec(id, cmd, tty=tty, no_key_check=no_key_check)
     sys.exit(retcode)
 
 
@@ -309,7 +309,7 @@ async def port_forward(
         tasks.append(
             loop.create_task(
                 root.client.jobs.port_forward(
-                    job_id, no_key_check, local_port, job_port
+                    job_id, local_port, job_port, no_key_check=no_key_check
                 )
             )
         )
