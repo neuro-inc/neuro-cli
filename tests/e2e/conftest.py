@@ -378,7 +378,11 @@ class Helper:
 
             # 5 min timeout is overkill
             proc = subprocess.run(
-                args + arguments, timeout=300, encoding="utf8", capture_output=True
+                args + arguments,
+                timeout=300,
+                encoding="utf8",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
             if proc.returncode == EX_IOERR:
                 # network problem
