@@ -10,7 +10,7 @@ import aiodocker
 import pytest
 from yarl import URL
 
-from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus
+from neuromation.api import JobStatus
 from tests.e2e import Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
