@@ -3,6 +3,7 @@ from http.cookies import Morsel  # noqa
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
+import attr
 from aiohttp import WSMessage
 from yarl import URL
 
@@ -106,6 +107,8 @@ class _Core:
         log.debug("Fetch [%s] %s", method, url)
         if timeout is None:
             timeout = self._timeout
+        if timeout.sock_read is not None:
+            timeout = attr.evolve(timeout, total=3 * 60)
         async with self._session.request(
             method,
             url,
