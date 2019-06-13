@@ -1,3 +1,4 @@
+import subprocess
 from typing import Any
 from uuid import uuid4
 
@@ -9,7 +10,7 @@ from tests.e2e import Helper
 def revoke(helper: Helper, uri: str, username: str) -> None:
     try:
         helper.run_cli(["acl", "revoke", uri, username])
-    except SystemExit:  # let's ignore any possible errors
+    except subprocess.CalledProcessError:  # let's ignore any possible errors
         pass
 
 
@@ -92,14 +93,13 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
 @pytest.mark.e2e
 def test_revoke_no_effect(helper: Helper) -> None:
     uri = f"storage://{helper.username}/{uuid4()}"
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["acl", "revoke", uri, "public"])
-    assert cm.value.code == 127
-    captured = helper.get_last_output()
+    assert cm.value.returncode == 127
     expected_out = "Operation has no effect."
-    assert expected_out in captured.out
+    assert expected_out in cm.value.stdout
     expected_err = f"Using resource '{uri}'"
-    assert expected_err in captured.err
+    assert expected_err in cm.value.stderr
 
 
 @pytest.mark.e2e
@@ -124,9 +124,8 @@ def test_grant_image_no_tag(request: Any, helper: Helper) -> None:
 def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
     uri = f"image://{helper.username}/{uuid4()}:latest"
     another_test_user = "test2"
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         request.addfinalizer(lambda: revoke(helper, uri, another_test_user))
         helper.run_cli(["acl", "grant", uri, another_test_user, "read"])
-    assert cm.value.code == 127
-    last_out = helper.get_last_output().out
-    assert "tag is not allowed" in last_out
+    assert cm.value.returncode == 127
+    assert "tag is not allowed" in cm.value.stdout

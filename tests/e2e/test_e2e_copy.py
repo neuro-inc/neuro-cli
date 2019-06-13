@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pathlib import Path, PurePath
 from typing import Tuple
 
@@ -80,10 +81,9 @@ def test_copy_local_to_platform_single_file_3(helper: Helper, data: _Data) -> No
     srcfile, checksum = data
 
     # Upload local file to non existing directory
-    with pytest.raises(SystemExit, match=str(EX_OSFILE)):
+    with pytest.raises(subprocess.CalledProcessError, match=str(EX_OSFILE)):
         captured = helper.run_cli(
-            ["storage", "cp", srcfile, helper.tmpstorage + "/non_existing_dir/"],
-            storage_retry=False,
+            ["storage", "cp", srcfile, helper.tmpstorage + "/non_existing_dir/"]
         )
         assert not captured.err
         assert captured.out == ""
@@ -97,15 +97,14 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
     helper: Helper, tmp_path: Path
 ) -> None:
     # Try downloading non existing file
-    with pytest.raises(SystemExit, match=str(EX_OSFILE)):
+    with pytest.raises(subprocess.CalledProcessError, match=str(EX_OSFILE)):
         helper.run_cli(
             [
                 "storage",
                 "cp",
                 helper.tmpstorage + "/not-exist-foo",
                 str(tmp_path / "not-exist-bar"),
-            ],
-            storage_retry=False,
+            ]
         )
 
 
@@ -114,11 +113,8 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
     helper: Helper, tmp_path: Path
 ) -> None:
     # Try downloading non existing file
-    with pytest.raises(SystemExit, match=str(EX_OSFILE)):
-        helper.run_cli(
-            ["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)],
-            storage_retry=False,
-        )
+    with pytest.raises(subprocess.CalledProcessError, match=str(EX_OSFILE)):
+        helper.run_cli(["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)])
 
 
 @pytest.mark.e2e
@@ -161,8 +157,7 @@ def test_copy_and_remove_multiple_files(
             "rm",
             f"{helper.tmpstorage}/{srcname}",
             f"{helper.tmpstorage}/{srcname2}",
-        ],
-        storage_retry=False,
+        ]
     )
     assert captured.out == ""
 

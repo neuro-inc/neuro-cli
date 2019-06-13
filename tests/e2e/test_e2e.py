@@ -1,7 +1,7 @@
 import errno
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from uuid import uuid4
 
 import pytest
@@ -51,8 +51,8 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_job_top(helper: Helper) -> None:
-    def split_non_empty_parts(line: str, separator: Optional[str] = None) -> List[str]:
-        return [part.strip() for part in line.split(separator) if part.strip()]
+    def split_non_empty_parts(line: str, sep: str) -> List[str]:
+        return [part.strip() for part in line.split(sep) if part.strip()]
 
     bash_script = (
         "COUNTER=0; while [[ ! -f /data/dummy ]] && [[ $COUNTER -lt 100 ]]; "
@@ -74,8 +74,8 @@ def test_e2e_job_top(helper: Helper) -> None:
 
     captured = helper.run_cli(["job", "top", job_name])
 
-    header_line, top_line = split_non_empty_parts(captured.out, separator="\n")
-    header_parts = split_non_empty_parts(header_line, separator="\t")
+    header, *lines = split_non_empty_parts(captured.out, sep="\n")
+    header_parts = split_non_empty_parts(header, sep="\t")
     assert header_parts == [
         "TIMESTAMP",
         "CPU",
@@ -84,24 +84,25 @@ def test_e2e_job_top(helper: Helper) -> None:
         "GPU_MEMORY (MB)",
     ]
 
-    line_parts = split_non_empty_parts(top_line, separator="\t")
-    timestamp_pattern_parts = [
-        ("weekday", "[A-Z][a-z][a-z]"),
-        ("month", "[A-Z][a-z][a-z]"),
-        ("day", r"\d+"),
-        ("day", r"\d\d:\d\d:\d\d"),
-        ("year", "2019"),
-    ]
-    timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
-    expected_parts = [
-        ("timestamp", timestamp_pattern),
-        ("cpu", r"\d.\d\d\d"),
-        ("memory", r"\d.\d\d\d"),
-        ("gpu", "0"),
-        ("gpu memory", "0"),
-    ]
-    for actual, (description, pattern) in zip(line_parts, expected_parts):
-        assert re.match(pattern, actual) is not None, f"error in matching {description}"
+    for line in lines:
+        line_parts = split_non_empty_parts(line, sep="\t")
+        timestamp_pattern_parts = [
+            ("weekday", "[A-Z][a-z][a-z]"),
+            ("month", "[A-Z][a-z][a-z]"),
+            ("day", r"\d+"),
+            ("day", r"\d\d:\d\d:\d\d"),
+            ("year", "2019"),
+        ]
+        timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
+        expected_parts = [
+            ("timestamp", timestamp_pattern),
+            ("cpu", r"\d.\d\d\d"),
+            ("memory", r"\d.\d\d\d"),
+            ("gpu", "0"),
+            ("gpu memory", "0"),
+        ]
+        for actual, (descr, pattern) in zip(line_parts, expected_parts):
+            assert re.match(pattern, actual) is not None, f"error in matching {descr}"
 
 
 @pytest.mark.e2e
