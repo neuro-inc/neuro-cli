@@ -825,14 +825,14 @@ def test_pass_config(helper: Helper) -> None:
             "--non-preemptible",
             "--no-wait-start",
             "--pass-config",
-            "anayden/neuro-cli",
+            "image://spbrspo/anayden/neuro-cli",
             command,
         ]
     )
     job_id = captured.out
 
     # Wait until the job is running
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
     # Verify exit code is returned
     captured = helper.run_cli(["job", "status", job_id])

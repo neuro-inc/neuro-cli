@@ -720,22 +720,27 @@ async def run_job(
 
     if pass_config:
         # store the Neuro CLI config on the storage under some random path
-        config_file = URL(root.config_path.expanduser().resolve().as_uri())
-        random_path = f"{uuid.uuid4()}-nmrc"
-        storage_path = URL(f"storage://{username}/{random_path}")
-        random_local_path = f"/var/storage/{random_path}"
-        await root.client.storage.upload_file(config_file, storage_path)
+        nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
+        random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
+
+        storage_nmrc_folder = f"storage://{username}/nmrc/"
+        storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
+
+        local_nmrc_folder = "/var/storage/nmrc/"
+        local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
+
+        await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
 
         # specify a container volume and mount the storage path
         # into specific container path
         data: Dict[str, Any] = {
-            "src_storage_uri": str(storage_path),
-            "dst_path": str(random_local_path),
-            "read_only": True,
+            "src_storage_uri": storage_nmrc_folder,
+            "dst_path": local_nmrc_folder,
+            "read_only": False,
         }
         volumes.add(Volume.from_api(data))
 
-        env_dict[CONFIG_ENV_NAME] = random_local_path
+        env_dict[CONFIG_ENV_NAME] = local_nmrc_path
 
     container = Container(
         image=image.as_repo_str(),
