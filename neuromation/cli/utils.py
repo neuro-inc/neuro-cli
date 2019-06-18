@@ -77,8 +77,8 @@ def warn_if_has_newer_version(
             f"You system has a serious security breach!!!\n"
             f"Used Root Certificates are outdated, "
             f"they can be used as an attack vector.\n"
-            f"You are using certifi {current}, "
-            f"however {version.pypi_version} is available.\n"
+            f"You are using certifi {certifi_current}, "
+            f"however {version.certifi_pypi_version} is available.\n"
             f"You should consider upgrading certifi package, "
             f"e.g. '{update_command}'",
             err=True,
