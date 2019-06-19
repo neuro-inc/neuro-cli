@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Root:
+    quiet: bool
     color: bool
     tty: bool
     terminal_size: Tuple[int, int]

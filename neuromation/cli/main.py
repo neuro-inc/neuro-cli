@@ -38,7 +38,7 @@ if sys.platform == "win32":
 log = logging.getLogger(__name__)
 
 
-def setup_logging(verbose: int, color: bool) -> None:
+def setup_logging(verbosity_level: int, color: bool) -> None:
     root_logger = logging.getLogger()
     handler = ConsoleHandler()
     root_logger.addHandler(handler)
@@ -49,10 +49,10 @@ def setup_logging(verbose: int, color: bool) -> None:
     else:
         format_class = logging.Formatter
 
-    if not verbose:
+    if not verbosity_level:
         handler.setFormatter(format_class())
         loglevel = logging.ERROR
-    elif verbose <= 1:
+    elif verbosity_level <= 1:
         handler.setFormatter(format_class())
         loglevel = logging.INFO
     else:
@@ -172,8 +172,9 @@ def cli(
     ctx.color = real_color
     if quiet:
         verbose = 0
-    setup_logging(verbose=verbose, color=real_color)
+    setup_logging(verbosity_level=verbose, color=real_color)
     root = Root(
+        quiet=quiet,
         color=real_color,
         tty=tty,
         terminal_size=shutil.get_terminal_size(),

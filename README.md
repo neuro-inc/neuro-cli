@@ -201,7 +201,6 @@ Name | Description|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Add optional description in free format|
-|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -246,7 +245,6 @@ Name | Description|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
-|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -283,7 +281,6 @@ Name | Description|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
-|_\-q, --quiet_|Print only Job ID|
 |_\-w, --wide_|Do not cut long lines for terminal width|
 |_--help_|Show this message and exit.|
 
@@ -669,7 +666,6 @@ neuro push alpine image://myfriend/alpine:shared
 
 Name | Description|
 |----|------------|
-|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -699,7 +695,6 @@ neuro pull image://username/my-alpine:production alpine:from-registry
 
 Name | Description|
 |----|------------|
-|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -1105,7 +1100,6 @@ Name | Description|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Add optional description in free format|
-|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1150,7 +1144,6 @@ Name | Description|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
-|_\-q, --quiet_|Run command in quiet mode \(print only job id)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1187,7 +1180,6 @@ Name | Description|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
-|_\-q, --quiet_|Print only Job ID|
 |_\-w, --wide_|Do not cut long lines for terminal width|
 |_--help_|Show this message and exit.|
 
@@ -1553,7 +1545,6 @@ neuro push alpine image://myfriend/alpine:shared
 
 Name | Description|
 |----|------------|
-|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 
@@ -1583,7 +1574,6 @@ neuro pull image://username/my-alpine:production alpine:from-registry
 
 Name | Description|
 |----|------------|
-|_\-q, --quiet_||
 |_--help_|Show this message and exit.|
 
 

@@ -59,6 +59,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
 @pytest.fixture()
 async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterator[Root]:
     root = Root(
+        quiet=False,
         color=False,
         tty=False,
         terminal_size=(80, 24),

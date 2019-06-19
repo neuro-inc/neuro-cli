@@ -9,6 +9,7 @@ from neuromation.cli.root import ConfigError, Root
 @pytest.fixture
 def root_uninitialized() -> Root:
     return Root(
+        quiet=False,
         color=False,
         tty=False,
         terminal_size=(80, 25),
