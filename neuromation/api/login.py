@@ -3,7 +3,6 @@ import asyncio
 import base64
 import errno
 import hashlib
-import json
 import secrets
 import time
 from dataclasses import dataclass, field
