@@ -1,0 +1,1 @@
+Added the `--quiet` option which makes the output of `neuro` commands quiet (errors will still be output to the stderr, use redirection `2>/dev/null` to suppress the output to the stderr completely). It have a precedence over `--verbose`.
