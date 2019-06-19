@@ -729,6 +729,7 @@ async def run_job(
         local_nmrc_folder = "/var/storage/nmrc/"
         local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
 
+        await root.client.storage.mkdirs(storage_nmrc_path, parent=True, exist_ok=True)
         await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
 
         # specify a container volume and mount the storage path
