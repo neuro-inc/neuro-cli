@@ -181,6 +181,13 @@ def job() -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option(
+    "-c",
+    "--pass-config/--no-pass-config",
+    default=False,
+    show_default=True,
+    help="Upload neuro config to the job",
+)
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def submit(
@@ -201,6 +208,7 @@ async def submit(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     """
@@ -236,8 +244,9 @@ async def submit(
         name=name,
         description=description,
         wait_start=wait_start,
+        pass_config=pass_config,
         browse=browse,
-        pass_config=False,
+        pass_config=pass_config,
     )
 
 
