@@ -242,8 +242,8 @@ update-deps-fast:
 
 .PHONY: build
 build:
-	docker build -f tests/e2e/assets/neuromation-client/Dockerfile -t anayden/neuro-cli .
+	docker build -f tests/e2e/assets/neuromation-client/Dockerfile -t neuro-cli-e2e-test .
 
 .PHONY: push
 push:
-	neuro push anayden/neuro-cli
+	neuro push neuro-cli-e2e-test

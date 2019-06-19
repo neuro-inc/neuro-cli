@@ -825,7 +825,7 @@ def test_pass_config(helper: Helper) -> None:
             "--non-preemptible",
             "--no-wait-start",
             "--pass-config",
-            "image://spbrspo/anayden/neuro-cli",
+            "image://spbrspo/neuro-cli-e2e-test",
             command,
         ]
     )
