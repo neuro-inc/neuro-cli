@@ -738,6 +738,8 @@ async def run_job(
         local_nmrc_folder = "/var/storage/nmrc/"
         local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
 
+        click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
+        click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
         await root.client.storage.mkdirs(
             URL(storage_nmrc_folder), parents=True, exist_ok=True
         )

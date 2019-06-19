@@ -837,7 +837,6 @@ def test_pass_config(helper: Helper) -> None:
     # Verify exit code is returned
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
-    print(store_out)
     assert "Exit code: 0" in store_out
 
 
