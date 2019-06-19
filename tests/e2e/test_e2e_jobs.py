@@ -29,14 +29,14 @@ def test_job_lifecycle(helper: Helper) -> None:
     job_name = f"job-{os.urandom(5).hex()}"
 
     # Kill another active jobs with same name, if any
-    captured = helper.run_cli(["job", "ls", "--name", job_name, "-q"])
+    captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
     if captured.out:
         jobs_same_name = captured.out.split("\n")
         assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
         job_id = jobs_same_name[0]
         helper.run_cli(["job", "kill", job_name])
         helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-        captured = helper.run_cli(["job", "ls", "--name", job_name, "-q"])
+        captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
         assert not captured.out
 
     # Remember original running jobs
@@ -94,7 +94,7 @@ def test_job_lifecycle(helper: Helper) -> None:
     assert command in store_out
 
     # Check that no command is in the list if quite
-    captured = helper.run_cli(["job", "ls", "--status", "running", "-q"])
+    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
     store_out = captured.out
     assert job_id in store_out
     assert command not in store_out
@@ -190,7 +190,7 @@ def test_job_description(helper: Helper) -> None:
     assert command in store_out
 
     # Check that no description is in the list if quite
-    captured = helper.run_cli(["job", "ls", "--status", "running", "-q"])
+    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
     store_out = captured.out
     assert job_id in store_out
     assert description not in store_out
@@ -366,6 +366,7 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
         [
+            "-q",
             "job",
             "submit",
             "-m",
@@ -382,7 +383,6 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
             str(env_file),
             "--non-preemptible",
             "--no-wait-start",
-            "-q",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -788,9 +788,9 @@ def test_job_run(helper: Helper) -> None:
     command = 'bash -c "exit 101"'
     captured = helper.run_cli(
         [
+            "-q",
             "job",
             "run",
-            "-q",
             "-s",
             "cpu-small",
             "--non-preemptible",
