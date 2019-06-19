@@ -574,7 +574,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
-    help="Share neuro config file with the job",
+    help="Upload neuro config to the job",
 )
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
