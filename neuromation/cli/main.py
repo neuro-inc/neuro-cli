@@ -49,12 +49,15 @@ def setup_logging(verbose: int, color: bool) -> None:
     else:
         format_class = logging.Formatter
 
-    if verbose:
-        handler.setFormatter(format_class("%(name)s.%(funcName)s: %(message)s"))
-        loglevel = logging.DEBUG
-    else:
+    if not verbose:
+        handler.setFormatter(format_class())
+        loglevel = logging.ERROR
+    elif verbose <= 1:
         handler.setFormatter(format_class())
         loglevel = logging.INFO
+    else:
+        handler.setFormatter(format_class("%(name)s.%(funcName)s: %(message)s"))
+        loglevel = logging.DEBUG
 
     handler.setLevel(loglevel)
 
@@ -92,7 +95,10 @@ def print_options(
 
 
 @click.group(cls=MainGroup, invoke_without_command=True)
-@click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
+@click.option(
+    "-v", "--verbose", count=True, type=int, default=1, help="Enable verbose mode."
+)
+@click.option("-q", "--quiet", is_flag=True, help="Enable quiet mode.")
 @click.option(
     "--neuromation-config",
     type=click.Path(dir_okay=False),
@@ -138,6 +144,7 @@ def print_options(
 def cli(
     ctx: click.Context,
     verbose: int,
+    quiet: bool,
     neuromation_config: str,
     show_traceback: bool,
     color: str,
@@ -163,6 +170,8 @@ def cli(
     if real_color is None:
         real_color = tty
     ctx.color = real_color
+    if quiet:
+        verbose = 0
     setup_logging(verbose=verbose, color=real_color)
     root = Root(
         color=real_color,
