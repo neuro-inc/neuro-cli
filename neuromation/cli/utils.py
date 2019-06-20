@@ -74,9 +74,7 @@ def warn_if_has_newer_version(
     if certifi_current < version.certifi_pypi_version:
         update_command = "pip install --upgrade certifi"
         click.secho(
-            f"You system has a serious security breach!!!\n"
-            f"Used Root Certificates are outdated, "
-            f"they can be used as an attack vector.\n"
+            f"Your root certificates are out of date.\n"
             f"You are using certifi {certifi_current}, "
             f"however {version.certifi_pypi_version} is available.\n"
             f"You should consider upgrading certifi package, "
