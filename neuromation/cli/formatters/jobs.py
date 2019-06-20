@@ -9,7 +9,7 @@ from typing import Iterable, Iterator, List, Mapping
 
 import humanize
 from click import style, unstyle
-from dateutil.parser import isoparse  # type: ignore
+from dateutil.parser import isoparse
 
 from neuromation.api import (
     ImageNameParser,
