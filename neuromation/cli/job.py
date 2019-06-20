@@ -41,6 +41,7 @@ from .utils import (
     alias,
     async_cmd,
     command,
+    deprecated_quiet_option,
     group,
     resolve_job,
     volume_to_verbose_str,
@@ -150,6 +151,7 @@ def job() -> None:
     metavar="DESC",
     help="Optional job description in free format",
 )
+@deprecated_quiet_option
 @click.option(
     "-v",
     "--volume",
@@ -370,6 +372,7 @@ async def logs(root: Root, job: str) -> None:
     metavar="DESCRIPTION",
     help="Filter out jobs by description (exact match)",
 )
+@deprecated_quiet_option
 @click.option(
     "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
 )
@@ -520,6 +523,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     metavar="DESC",
     help="Add optional description in free format",
 )
+@deprecated_quiet_option
 @click.option(
     "-v",
     "--volume",

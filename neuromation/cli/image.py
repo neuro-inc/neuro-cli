@@ -6,7 +6,7 @@ from neuromation.api import DockerImageOperation, ImageNameParser
 from neuromation.cli.formatters import DockerImageProgress
 
 from .root import Root
-from .utils import async_cmd, command, group
+from .utils import async_cmd, command, deprecated_quiet_option, group
 
 
 log = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ def image() -> None:
 @command()
 @click.argument("image_name")
 @click.argument("remote_image_name", required=False)
+@deprecated_quiet_option
 @async_cmd()
 async def push(root: Root, image_name: str, remote_image_name: str) -> None:
     """
@@ -65,6 +66,7 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
 @command()
 @click.argument("image_name")
 @click.argument("local_image_name", required=False)
+@deprecated_quiet_option
 @async_cmd()
 async def pull(root: Root, image_name: str, local_image_name: str) -> None:
     """
