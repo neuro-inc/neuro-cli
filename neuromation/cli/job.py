@@ -3,6 +3,7 @@ import logging
 import os
 import shlex
 import sys
+import webbrowser
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import click
@@ -11,6 +12,7 @@ from neuromation.api import (
     DockerImage,
     Image,
     ImageNameParser,
+    JobDescription,
     JobStatus,
     NetworkPortForwarding,
     Resources,
@@ -182,6 +184,7 @@ def job() -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def submit(
     root: Root,
@@ -202,6 +205,7 @@ async def submit(
     description: str,
     quiet: bool,
     wait_start: bool,
+    browse: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -237,6 +241,7 @@ async def submit(
         description=description,
         quiet=quiet,
         wait_start=wait_start,
+        browse=browse,
     )
 
 
@@ -444,6 +449,18 @@ async def status(root: Root, job: str) -> None:
 @command()
 @click.argument("job")
 @async_cmd()
+async def browse(root: Root, job: str) -> None:
+    """
+    Opens a job's URL in a web browser.
+    """
+    id = await resolve_job(root.client, job)
+    res = await root.client.jobs.status(id)
+    browse_job(root, res)
+
+
+@command()
+@click.argument("job")
+@async_cmd()
 async def top(root: Root, job: str) -> None:
     """
     Display GPU/CPU/Memory usage.
@@ -563,6 +580,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def run(
     root: Root,
@@ -580,6 +598,7 @@ async def run(
     description: str,
     quiet: bool,
     wait_start: bool,
+    browse: bool,
 ) -> None:
     """
     Run an image with predefined configuration.
@@ -619,6 +638,7 @@ async def run(
         description=description,
         quiet=quiet,
         wait_start=wait_start,
+        browse=browse,
     )
 
 
@@ -631,6 +651,7 @@ job.add_command(port_forward)
 job.add_command(logs)
 job.add_command(kill)
 job.add_command(top)
+job.add_command(browse)
 
 
 job.add_command(alias(ls, "list", hidden=True))
@@ -657,6 +678,7 @@ async def run_job(
     description: str,
     quiet: bool,
     wait_start: bool,
+    browse: bool,
 ) -> None:
     username = root.username
 
@@ -704,8 +726,20 @@ async def run_job(
     )
     click.echo(JobFormatter(quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=quiet)
+    if browse:
+        wait_start = True
     while wait_start and job.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         job = await root.client.jobs.status(job.id)
         progress(job)
     progress.close()
+    if browse:
+        browse_job(root, job)
+
+
+def browse_job(root: Root, job: JobDescription) -> None:
+    url = job.http_url
+    if url.scheme not in ("http", "https"):
+        raise RuntimeError(f"Cannot open job URL: {url}")
+    log.info(f"Open job URL: {url}")
+    webbrowser.open(str(url))
