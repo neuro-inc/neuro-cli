@@ -223,10 +223,7 @@ class TestConfigFileInteraction:
         reason="Windows does not supports UNIX-like permissions",
     )
     async def test_file_permissions_not_in_home_folder(
-        self,
-        tmpdir: LocalPath,
-        auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        self, tmpdir: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
     ) -> None:
         config_path = Path(tmpdir) / "test.nmrc"
         _create_config(config_path, auth_config, cluster_config)

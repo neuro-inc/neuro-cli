@@ -738,8 +738,11 @@ async def run_job(
         local_nmrc_folder = "/var/storage/nmrc/"
         local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
 
-        click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
-        click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
+        if not quiet:
+            click.echo(
+                f"Temporary config file created on storage: {storage_nmrc_path}."
+            )
+            click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
         await root.client.storage.mkdirs(
             URL(storage_nmrc_folder), parents=True, exist_ok=True
         )
@@ -754,6 +757,10 @@ async def run_job(
         }
         volumes.add(Volume.from_api(data))
 
+        if CONFIG_ENV_NAME in env_dict:
+            raise EnvironmentError(
+                f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
+            )
         env_dict[CONFIG_ENV_NAME] = local_nmrc_path
 
     container = Container(
