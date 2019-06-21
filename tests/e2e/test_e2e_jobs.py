@@ -5,7 +5,6 @@ import re
 import subprocess
 import sys
 import tarfile
-import uuid
 from pathlib import Path
 from time import sleep, time
 from typing import Any, AsyncIterator, Callable, Dict, Iterator, Tuple
