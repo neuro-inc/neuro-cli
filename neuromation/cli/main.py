@@ -13,7 +13,7 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
-from neuromation.cli.root import DEFAULT_VERBOSITY, Root
+from neuromation.cli.root import Root
 
 from . import completion, config, image, job, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
@@ -49,18 +49,18 @@ def setup_logging(verbosity: int, color: bool) -> None:
     else:
         format_class = logging.Formatter
 
-    if verbosity <= 3:
+    if verbosity <= 1:
         formatter = format_class()
     else:
         formatter = format_class("%(name)s.%(funcName)s: %(message)s")
 
-    if verbosity <= 0:
+    if verbosity < -1:
         loglevel = logging.CRITICAL
-    elif verbosity == 1:
+    elif verbosity == -1:
         loglevel = logging.ERROR
-    elif verbosity == 2:
+    elif verbosity == 0:
         loglevel = logging.INFO
-    elif verbosity == 3:
+    elif verbosity == 1:
         loglevel = logging.WARNING
     else:
         loglevel = logging.DEBUG
@@ -107,13 +107,15 @@ def print_options(
     "--verbose",
     count=True,
     type=int,
-    default=1,
+    default=0,
     help="Give more output. Option is additive, and can be used up to 2 times.",
 )
 @click.option(
     "-q",
     "--quiet",
-    is_flag=True,
+    count=True,
+    type=int,
+    default=0,
     help="Give less output. Option is additive, and can be used up to 2 times.",
 )
 @click.option(
@@ -187,7 +189,7 @@ def cli(
     if real_color is None:
         real_color = tty
     ctx.color = real_color
-    verbosity = verbose - quiet + DEFAULT_VERBOSITY
+    verbosity = verbose - quiet
     setup_logging(verbosity=verbosity, color=real_color)
     root = Root(
         verbosity=verbosity,
