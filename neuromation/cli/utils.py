@@ -337,7 +337,7 @@ class MainGroup(Group):
 
         rows = []
         for subcommand, cmd in grp:
-            help = cmd.get_short_help_str(limit)  # type: ignore
+            help = cmd.get_short_help_str(limit)
             rows.append((subcommand, help))
 
         if rows:

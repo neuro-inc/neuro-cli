@@ -12,5 +12,5 @@ humanize==0.5.1
 # upgrade setup.py after pinning certtifi to new version
 certifi==2019.6.16
 psutil==5.6.3
-typing_extensions==3.7.2
+typing_extensions==3.7.4
 -e .
