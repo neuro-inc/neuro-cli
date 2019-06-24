@@ -182,7 +182,7 @@ def job() -> None:
     help="Wait for a job start or failure",
 )
 @click.option(
-    "-c",
+    "-C",
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
@@ -579,7 +579,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Wait for a job start or failure",
 )
 @click.option(
-    "-c",
+    "-C",
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
