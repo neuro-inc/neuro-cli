@@ -239,11 +239,3 @@ update-deps-fast: REQUIREMENTS_CHANGED:=$(shell git diff --name-status --diff-fi
 update-deps-fast:
 	@ [ -z "${REQUIREMENTS_CHANGED}" ] || (make update-deps)
 
-
-.PHONY: build
-build:
-	docker build -f tests/e2e/assets/neuromation-client/Dockerfile -t neuro-cli-e2e-test .
-
-.PHONY: push
-push:
-	neuro push neuro-cli-e2e-test
