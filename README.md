@@ -83,8 +83,8 @@ neuro [OPTIONS] COMMAND [ARGS]...
 
 Name | Description|
 |----|------------|
-|_\-v, --verbose_|Enable verbose mode.|
-|_\-q, --quiet_|Enable quiet mode.|
+|_\-v, --verbose_|Give more output. Option is additive, and can be used up to 2 times.|
+|_\-q, --quiet_|Give less output. Option is additive, and can be used up to 2 times.|
 |_\--neuromation-config PATH_|Path to config file.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|

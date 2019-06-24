@@ -519,7 +519,7 @@ def do_deprecated_quiet(
     ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
 ) -> Any:
     if value and not ctx.obj.quiet:
-        ctx.obj.quiet = True
+        ctx.obj.verbosity = 0
         click.echo(
             click.style(
                 "DeprecationWarning: "

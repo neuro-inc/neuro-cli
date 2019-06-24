@@ -1,1 +1,1 @@
-Added the global `--quiet` option which replaces `--quiet` options in `neuro image` and `neuro job` commands and  makes the output of all `neuro` commands quiet (errors will still be output to the stderr, use redirection `2>/dev/null` to suppress the output to the stderr completely). It have a precedence over `--verbose`.
+Added the global `--quiet` option, opposite to `--verbose`. Both options are additive. The `--quite` options for `neuro job` and `neuro image` are deprecated now.

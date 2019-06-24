@@ -13,7 +13,7 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
-from neuromation.cli.root import Root
+from neuromation.cli.root import DEFAULT_VERBOSITY, Root
 
 from . import completion, config, image, job, share, storage
 from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
@@ -38,7 +38,7 @@ if sys.platform == "win32":
 log = logging.getLogger(__name__)
 
 
-def setup_logging(verbosity_level: int, color: bool) -> None:
+def setup_logging(verbosity: int, color: bool) -> None:
     root_logger = logging.getLogger()
     handler = ConsoleHandler()
     root_logger.addHandler(handler)
@@ -49,16 +49,23 @@ def setup_logging(verbosity_level: int, color: bool) -> None:
     else:
         format_class = logging.Formatter
 
-    if not verbosity_level:
-        handler.setFormatter(format_class())
-        loglevel = logging.ERROR
-    elif verbosity_level <= 1:
-        handler.setFormatter(format_class())
-        loglevel = logging.INFO
+    if verbosity <= 3:
+        formatter = format_class()
     else:
-        handler.setFormatter(format_class("%(name)s.%(funcName)s: %(message)s"))
+        formatter = format_class("%(name)s.%(funcName)s: %(message)s")
+
+    if verbosity <= 0:
+        loglevel = logging.CRITICAL
+    elif verbosity == 1:
+        loglevel = logging.ERROR
+    elif verbosity == 2:
+        loglevel = logging.INFO
+    elif verbosity == 3:
+        loglevel = logging.WARNING
+    else:
         loglevel = logging.DEBUG
 
+    handler.setFormatter(formatter)
     handler.setLevel(loglevel)
 
 
@@ -96,9 +103,19 @@ def print_options(
 
 @click.group(cls=MainGroup, invoke_without_command=True)
 @click.option(
-    "-v", "--verbose", count=True, type=int, default=1, help="Enable verbose mode."
+    "-v",
+    "--verbose",
+    count=True,
+    type=int,
+    default=1,
+    help="Give more output. Option is additive, and can be used up to 2 times.",
 )
-@click.option("-q", "--quiet", is_flag=True, help="Enable quiet mode.")
+@click.option(
+    "-q",
+    "--quiet",
+    is_flag=True,
+    help="Give less output. Option is additive, and can be used up to 2 times.",
+)
 @click.option(
     "--neuromation-config",
     type=click.Path(dir_okay=False),
@@ -170,11 +187,10 @@ def cli(
     if real_color is None:
         real_color = tty
     ctx.color = real_color
-    if quiet:
-        verbose = 0
-    setup_logging(verbosity_level=verbose, color=real_color)
+    verbosity = verbose - quiet + DEFAULT_VERBOSITY
+    setup_logging(verbosity=verbosity, color=real_color)
     root = Root(
-        quiet=quiet,
+        verbosity=verbosity,
         color=real_color,
         tty=tty,
         terminal_size=shutil.get_terminal_size(),

@@ -16,9 +16,11 @@ from neuromation.api.login import RunPreset
 log = logging.getLogger(__name__)
 
 
+DEFAULT_VERBOSITY = 2
+
+
 @dataclass
 class Root:
-    quiet: bool
     color: bool
     tty: bool
     terminal_size: Tuple[int, int]
@@ -28,11 +30,16 @@ class Root:
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
+    verbosity: int = DEFAULT_VERBOSITY
 
     @property
     def _config(self) -> _Config:
         assert self._client is not None
         return self._client._config
+
+    @property
+    def quiet(self) -> bool:
+        return self.verbosity <= 0
 
     @property
     def auth(self) -> Optional[str]:
