@@ -826,19 +826,41 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
             "-s",
             "cpu-small",
             "--non-preemptible",
-            "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             "true",
         ]
     )
     job_id = captured.out
 
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
-
     captured = helper.run_cli(["job", "browse", job_id])
     assert "Browsing https://job-" in captured.out
     assert "Open job URL: https://job-" in captured.err
+
+
+@pytest.mark.e2e
+def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
+    job_name = f"namedjob-{os.urandom(5).hex()}"
+
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-q",
+            "-s",
+            "cpu-small",
+            "--non-preemptible",
+            "--name",
+            job_name,
+            UBUNTU_IMAGE_NAME,
+            "true",
+        ]
+    )
+    job_id = captured.out
+
+    captured = helper.run_cli(["job", "browse", job_id])
+    assert f"Browsing https://{job_name}--{helper.username}" in captured.out
+    assert f"Open job URL: https://{job_name}--{helper.username}" in captured.err
 
 
 @pytest.mark.e2e
@@ -852,7 +874,6 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
             "-s",
             "cpu-small",
             "--non-preemptible",
-            "--no-wait-start",
             "--browse",
             UBUNTU_IMAGE_NAME,
             "true",
@@ -878,7 +899,6 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
             "--http",
             "80",
             "--non-preemptible",
-            "--no-wait-start",
             "--browse",
             UBUNTU_IMAGE_NAME,
             "true",

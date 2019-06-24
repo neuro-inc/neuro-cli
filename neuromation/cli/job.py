@@ -455,7 +455,7 @@ async def browse(root: Root, job: str) -> None:
     """
     id = await resolve_job(root.client, job)
     res = await root.client.jobs.status(id)
-    browse_job(root, res)
+    await browse_job(root, res)
 
 
 @command()
@@ -680,6 +680,9 @@ async def run_job(
     wait_start: bool,
     browse: bool,
 ) -> None:
+    if browse and not wait_start:
+        raise ValueError("Cannot use --browse and --no-wait-start together")
+
     username = root.username
 
     env_dict = build_env(env, env_file)
@@ -726,20 +729,19 @@ async def run_job(
     )
     click.echo(JobFormatter(quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=quiet)
-    if browse:
-        wait_start = True
     while wait_start and job.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         job = await root.client.jobs.status(job.id)
         progress(job)
     progress.close()
     if browse:
-        browse_job(root, job)
+        await browse_job(root, job)
 
 
-def browse_job(root: Root, job: JobDescription) -> None:
-    url = job.http_url
+async def browse_job(root: Root, job: JobDescription) -> None:
+    url = job.http_url_named or job.http_url
     if url.scheme not in ("http", "https"):
         raise RuntimeError(f"Cannot open job URL: {url}")
     log.info(f"Open job URL: {url}")
-    webbrowser.open(str(url))
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, webbrowser.open, str(url))
