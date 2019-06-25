@@ -736,6 +736,9 @@ class TestRegistry:
             ret = await client.images.ls()
         assert ret == [URL(image) for image in JSON["repositories"]]
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="aiodocker doens't support Windows pipes yet"
+    )
     async def test_ls_repositories(
         self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
     ) -> None:
