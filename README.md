@@ -13,6 +13,7 @@
 		* [neuro job logs](#neuro-job-logs)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job top](#neuro-job-top)
+		* [neuro job browse](#neuro-job-browse)
 	* [neuro storage](#neuro-storage)
 		* [neuro storage cp](#neuro-storage-cp)
 		* [neuro storage ls](#neuro-storage-ls)
@@ -164,6 +165,7 @@ Name | Description|
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
+| _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 
 
 
@@ -205,6 +207,7 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
 
@@ -250,6 +253,7 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
 
@@ -415,6 +419,25 @@ Display GPU/CPU/Memory usage.
 
 ```bash
 neuro job top [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job browse
+
+Opens a job's URL in a web browser.
+
+**Usage:**
+
+```bash
+neuro job browse [OPTIONS] JOB
 ```
 
 **Options:**
@@ -1109,6 +1132,7 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
 
@@ -1154,6 +1178,7 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
 
