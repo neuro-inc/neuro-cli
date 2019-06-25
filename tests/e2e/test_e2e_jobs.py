@@ -808,3 +808,101 @@ def test_job_run(helper: Helper) -> None:
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
     assert "Exit code: 101" in store_out
+
+
+@pytest.fixture
+def fakebrowser(monkeypatch: Any) -> None:
+    monkeypatch.setitem(os.environ, "BROWSER", "echo Browsing %s")
+
+
+@pytest.mark.e2e
+def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-q",
+            "-s",
+            "cpu-small",
+            "--non-preemptible",
+            UBUNTU_IMAGE_NAME,
+            "true",
+        ]
+    )
+    job_id = captured.out
+
+    captured = helper.run_cli(["job", "browse", job_id])
+    assert "Browsing https://job-" in captured.out
+    assert "Open job URL: https://job-" in captured.err
+
+
+@pytest.mark.e2e
+def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
+    job_name = f"namedjob-{os.urandom(5).hex()}"
+
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-q",
+            "-s",
+            "cpu-small",
+            "--non-preemptible",
+            "--name",
+            job_name,
+            UBUNTU_IMAGE_NAME,
+            "true",
+        ]
+    )
+    job_id = captured.out
+
+    captured = helper.run_cli(["job", "browse", job_id])
+    assert f"Browsing https://{job_name}--{helper.username}" in captured.out
+    assert f"Open job URL: https://{job_name}--{helper.username}" in captured.err
+
+
+@pytest.mark.e2e
+def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-q",
+            "-s",
+            "cpu-small",
+            "--non-preemptible",
+            "--browse",
+            UBUNTU_IMAGE_NAME,
+            "true",
+        ]
+    )
+    assert "Browsing https://job-" in captured.out
+    assert "Open job URL: https://job-" in captured.err
+
+
+@pytest.mark.e2e
+def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "job",
+            "submit",
+            "-m",
+            "20M",
+            "-c",
+            "0.1",
+            "-g",
+            "0",
+            "--http",
+            "80",
+            "--non-preemptible",
+            "--browse",
+            UBUNTU_IMAGE_NAME,
+            "true",
+        ]
+    )
+    assert "Browsing https://job-" in captured.out
+    assert "Open job URL: https://job-" in captured.err
