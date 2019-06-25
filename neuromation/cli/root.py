@@ -27,11 +27,16 @@ class Root:
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
+    verbosity: int = 0
 
     @property
     def _config(self) -> _Config:
         assert self._client is not None
         return self._client._config
+
+    @property
+    def quiet(self) -> bool:
+        return self.verbosity < 0
 
     @property
     def auth(self) -> Optional[str]:

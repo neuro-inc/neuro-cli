@@ -38,7 +38,7 @@ if sys.platform == "win32":
 log = logging.getLogger(__name__)
 
 
-def setup_logging(verbose: int, color: bool) -> None:
+def setup_logging(verbosity: int, color: bool) -> None:
     root_logger = logging.getLogger()
     handler = ConsoleHandler()
     root_logger.addHandler(handler)
@@ -49,13 +49,23 @@ def setup_logging(verbose: int, color: bool) -> None:
     else:
         format_class = logging.Formatter
 
-    if verbose:
-        handler.setFormatter(format_class("%(name)s.%(funcName)s: %(message)s"))
-        loglevel = logging.DEBUG
+    if verbosity <= 1:
+        formatter = format_class()
     else:
-        handler.setFormatter(format_class())
-        loglevel = logging.INFO
+        formatter = format_class("%(name)s.%(funcName)s: %(message)s")
 
+    if verbosity < -1:
+        loglevel = logging.CRITICAL
+    elif verbosity == -1:
+        loglevel = logging.ERROR
+    elif verbosity == 0:
+        loglevel = logging.INFO
+    elif verbosity == 1:
+        loglevel = logging.WARNING
+    else:
+        loglevel = logging.DEBUG
+
+    handler.setFormatter(formatter)
     handler.setLevel(loglevel)
 
 
@@ -92,7 +102,22 @@ def print_options(
 
 
 @click.group(cls=MainGroup, invoke_without_command=True)
-@click.option("-v", "--verbose", count=True, type=int, help="Enable verbose mode.")
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    type=int,
+    default=0,
+    help="Give more output. Option is additive, and can be used up to 2 times.",
+)
+@click.option(
+    "-q",
+    "--quiet",
+    count=True,
+    type=int,
+    default=0,
+    help="Give less output. Option is additive, and can be used up to 2 times.",
+)
 @click.option(
     "--neuromation-config",
     type=click.Path(dir_okay=False),
@@ -138,6 +163,7 @@ def print_options(
 def cli(
     ctx: click.Context,
     verbose: int,
+    quiet: bool,
     neuromation_config: str,
     show_traceback: bool,
     color: str,
@@ -163,8 +189,10 @@ def cli(
     if real_color is None:
         real_color = tty
     ctx.color = real_color
-    setup_logging(verbose=verbose, color=real_color)
+    verbosity = verbose - quiet
+    setup_logging(verbosity=verbosity, color=real_color)
     root = Root(
+        verbosity=verbosity,
         color=real_color,
         tty=tty,
         terminal_size=shutil.get_terminal_size(),

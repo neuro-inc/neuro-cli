@@ -6,7 +6,7 @@ from neuromation.api import DockerImageOperation, ImageNameParser
 from neuromation.cli.formatters import DockerImageProgress
 
 from .root import Root
-from .utils import async_cmd, command, group
+from .utils import async_cmd, command, deprecated_quiet_option, group
 
 
 log = logging.getLogger(__name__)
@@ -22,11 +22,9 @@ def image() -> None:
 @command()
 @click.argument("image_name")
 @click.argument("remote_image_name", required=False)
-@click.option("-q", "--quiet", is_flag=True)
+@deprecated_quiet_option
 @async_cmd()
-async def push(
-    root: Root, image_name: str, remote_image_name: str, quiet: bool
-) -> None:
+async def push(root: Root, image_name: str, remote_image_name: str) -> None:
     """
     Push an image to platform registry.
 
@@ -57,7 +55,7 @@ async def push(
         input_image=local_img.as_local_str(),
         output_image=remote_img.as_url_str(),
         tty=root.tty,
-        quiet=quiet,
+        quiet=root.quiet,
     )
 
     result_remote_image = await root.client.images.push(local_img, remote_img, progress)
@@ -68,9 +66,9 @@ async def push(
 @command()
 @click.argument("image_name")
 @click.argument("local_image_name", required=False)
-@click.option("-q", "--quiet", is_flag=True)
+@deprecated_quiet_option
 @async_cmd()
-async def pull(root: Root, image_name: str, local_image_name: str, quiet: bool) -> None:
+async def pull(root: Root, image_name: str, local_image_name: str) -> None:
     """
     Pull an image from platform registry.
 
@@ -100,7 +98,7 @@ async def pull(root: Root, image_name: str, local_image_name: str, quiet: bool) 
         input_image=remote_img.as_url_str(),
         output_image=local_img.as_local_str(),
         tty=root.tty,
-        quiet=quiet,
+        quiet=root.quiet,
     )
     result_local_image = await root.client.images.pull(remote_img, local_img, progress)
     progress.close()

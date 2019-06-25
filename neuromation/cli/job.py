@@ -43,6 +43,7 @@ from .utils import (
     alias,
     async_cmd,
     command,
+    deprecated_quiet_option,
     group,
     resolve_job,
     volume_to_verbose_str,
@@ -152,9 +153,7 @@ def job() -> None:
     metavar="DESC",
     help="Optional job description in free format",
 )
-@click.option(
-    "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
-)
+@deprecated_quiet_option
 @click.option(
     "-v",
     "--volume",
@@ -203,7 +202,6 @@ async def submit(
     preemptible: bool,
     name: Optional[str],
     description: str,
-    quiet: bool,
     wait_start: bool,
     browse: bool,
 ) -> None:
@@ -239,7 +237,6 @@ async def submit(
         preemptible=preemptible,
         name=name,
         description=description,
-        quiet=quiet,
         wait_start=wait_start,
         browse=browse,
     )
@@ -380,18 +377,13 @@ async def logs(root: Root, job: str) -> None:
     metavar="DESCRIPTION",
     help="Filter out jobs by description (exact match)",
 )
-@click.option("-q", "--quiet", is_flag=True, help="Print only Job ID")
+@deprecated_quiet_option
 @click.option(
     "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
 )
 @async_cmd()
 async def ls(
-    root: Root,
-    status: Sequence[str],
-    name: str,
-    description: str,
-    quiet: bool,
-    wide: bool,
+    root: Root, status: Sequence[str], name: str, description: str, wide: bool
 ) -> None:
     """
     List all jobs.
@@ -420,7 +412,7 @@ async def ls(
 
     jobs.sort(key=lambda job: job.history.created_at)
 
-    if quiet:
+    if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
         if wide or not root.tty:
@@ -548,9 +540,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     metavar="DESC",
     help="Add optional description in free format",
 )
-@click.option(
-    "-q", "--quiet", is_flag=True, help="Run command in quiet mode (print only job id)"
-)
+@deprecated_quiet_option
 @click.option(
     "-v",
     "--volume",
@@ -596,7 +586,6 @@ async def run(
     preemptible: bool,
     name: Optional[str],
     description: str,
-    quiet: bool,
     wait_start: bool,
     browse: bool,
 ) -> None:
@@ -636,7 +625,6 @@ async def run(
         preemptible=preemptible,
         name=name,
         description=description,
-        quiet=quiet,
         wait_start=wait_start,
         browse=browse,
     )
@@ -676,7 +664,6 @@ async def run_job(
     preemptible: bool,
     name: Optional[str],
     description: str,
-    quiet: bool,
     wait_start: bool,
     browse: bool,
 ) -> None:
@@ -690,10 +677,8 @@ async def run_job(
     cmd = " ".join(cmd) if cmd is not None else None
     log.debug(f'cmd="{cmd}"')
 
-    # TODO (ajuszkowski 01-Feb-19) process --quiet globally to set up logger+click
-    if not quiet:
-        log.info(f"Using image '{image.as_url_str()}'")
-        log.debug(f"IMAGE: {image}")
+    log.info(f"Using image '{image.as_url_str()}'")
+    log.debug(f"IMAGE: {image}")
     image_obj = Image(image=image.as_repo_str(), command=cmd)
 
     network = NetworkPortForwarding.from_cli(http, http_auth)
@@ -711,7 +696,7 @@ async def run_job(
         else:
             volumes.add(Volume.from_cli(username, v))
 
-    if volumes and not quiet:
+    if volumes:
         log.info(
             "Using volumes: \n"
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
@@ -727,8 +712,8 @@ async def run_job(
         description=description,
         env=env_dict,
     )
-    click.echo(JobFormatter(quiet)(job))
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=quiet)
+    click.echo(JobFormatter(root.quiet)(job))
+    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     while wait_start and job.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         job = await root.client.jobs.status(job.id)

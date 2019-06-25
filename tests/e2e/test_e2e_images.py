@@ -110,11 +110,11 @@ def test_images_complete_lifecycle(
     # Execute image and check result
     captured = helper.run_cli(
         [
+            "-q",
             "submit",
             str(image_url),
             "-g",
             "0",
-            "-q",
             "--non-preemptible",
             "--no-wait-start",
         ]
