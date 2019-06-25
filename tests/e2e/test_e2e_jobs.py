@@ -820,9 +820,9 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
         [
+            "-q",
             "job",
             "run",
-            "-q",
             "-s",
             "cpu-small",
             "--non-preemptible",
@@ -844,9 +844,9 @@ def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
         [
+            "-q",
             "job",
             "run",
-            "-q",
             "-s",
             "cpu-small",
             "--non-preemptible",
@@ -870,7 +870,6 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
         [
             "job",
             "run",
-            "-q",
             "-s",
             "cpu-small",
             "--non-preemptible",
