@@ -223,25 +223,6 @@ class Container:
 
 
 @dataclass(frozen=True)
-class ContainerPayload:
-    image: str
-    command: Optional[str]
-    http: Optional[Mapping[str, int]]
-    resources: Resources
-    env: Optional[Mapping[str, str]] = None
-
-    def to_primitive(self) -> Dict[str, Any]:
-        primitive = {"image": self.image, "resources": self.resources.to_api()}
-        if self.command:
-            primitive["command"] = self.command
-        if self.http:
-            primitive["http"] = self.http
-        if self.env:
-            primitive["env"] = self.env
-        return primitive
-
-
-@dataclass(frozen=True)
 class JobStatusHistory:
     status: JobStatus
     reason: str
