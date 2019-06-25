@@ -527,7 +527,7 @@ def do_deprecated_quiet(
             ),
             err=True,
         )
-        # Patch the logger as it was set up with verbosity_level=0.
+        # Patch the logger as it was set up with verbosity=-2.
         root_logger = logging.getLogger()
         handler = root_logger.handlers[-1]
         assert handler.formatter
