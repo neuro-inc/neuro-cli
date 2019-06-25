@@ -175,4 +175,11 @@ class Images(metaclass=NoPublicConstructor):
     async def ls(self) -> List[URL]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
             ret = await resp.json()
-            return [URL(name) for name in ret["repositories"]]
+            result = []
+            for name in ret["repositories"]:
+                if str(name).startswith("image://"):
+                    url = URL(name)
+                else:
+                    url = URL(f"image://{name}")
+                result.append(url)
+            return result

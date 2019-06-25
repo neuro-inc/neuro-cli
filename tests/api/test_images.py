@@ -718,7 +718,7 @@ class TestRegistry:
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doens't support Windows pipes yet"
     )
-    async def test_ls(
+    async def test_ls_images(
         self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
     ) -> None:
         JSON = {"repositories": ["image://bob/alpine", "image://jill/bananas"]}
@@ -735,3 +735,22 @@ class TestRegistry:
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
         assert ret == [URL(image) for image in JSON["repositories"]]
+
+    async def test_ls_repositories(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
+        JSON = {"repositories": ["bob/alpine", "jill/bananas"]}
+        expected_urls = ["image://bob/alpine", "image://jill/bananas"]
+
+        async def handler(request: web.Request) -> web.Response:
+            return web.json_response(JSON)
+
+        app = web.Application()
+        app.router.add_get("/v2/_catalog", handler)
+
+        srv = await aiohttp_server(app)
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+        async with make_client(url, registry_url=registry_url) as client:
+            ret = await client.images.ls()
+        assert ret == [URL(image) for image in expected_urls]
