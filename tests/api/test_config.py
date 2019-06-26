@@ -83,18 +83,17 @@ class TestConfig:
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
         )
-        with pytest.raises(ValueError, match="Missing server configuration"):
-            config.check_initialized()
+        config.check_initialized()  # check no exceptions
 
     def test_check_initialized_bad_cluster_config(self) -> None:
-        auth_config_bad = _AuthConfig.create(
+        auth_config_good = _AuthConfig.create(
             auth_url=URL("auth_url"),
             token_url=URL("http://token"),
             client_id="client-id",
             audience="everyone",
             headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         )
-        assert auth_config_bad.is_initialized()
+        assert auth_config_good.is_initialized()
 
         cluster_config_good = _ClusterConfig.create(
             registry_url=URL(),  # empty
@@ -106,7 +105,7 @@ class TestConfig:
         assert not cluster_config_good.is_initialized()
 
         config = _Config(
-            auth_config=auth_config_bad,
+            auth_config=auth_config_good,
             auth_token=_AuthToken(
                 token="token", expiration_time=10, refresh_token="ok"
             ),

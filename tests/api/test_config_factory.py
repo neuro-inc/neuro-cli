@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict
 from unittest import mock
 from uuid import uuid4 as uuid
 
@@ -47,77 +47,101 @@ def config_file(
 
 
 @pytest.fixture
-async def mock_for_login(aiohttp_server: _TestServerFactory) -> _TestServer:
-    async def config_handler(request: web.Request) -> web.Response:
-        config_json: Dict[str, Any] = {
-            "auth_url": str(srv.make_url("/authorize")),
-            "token_url": str(srv.make_url("/oauth/token")),
-            "client_id": "banana",
-            "audience": "https://test.dev.neuromation.io",
-            "headless_callback_url": str(srv.make_url("/oauth/show-code")),
-            "callback_urls": [
-                "http://127.0.0.2:54540",
-                "http://127.0.0.2:54541",
-                "http://127.0.0.2:54542",
-            ],
-            "success_redirect_url": "https://neu.ro/#test",
-        }
+async def mock_for_login_factory(
+    aiohttp_server: _TestServerFactory
+) -> AsyncIterator[Callable[[bool], Awaitable[_TestServer]]]:
+    async def _f(has_oauth_config: bool) -> _TestServer:
+        async def config_handler(request: web.Request) -> web.Response:
+            config_json: Dict[str, Any] = {}
 
-        if (
-            "Authorization" in request.headers
-            and "incorrect" not in request.headers["Authorization"]
-        ):
-            config_json.update(
+            if has_oauth_config:
+                config_json.update(
+                    {
+                        "auth_url": str(srv.make_url("/authorize")),
+                        "token_url": str(srv.make_url("/oauth/token")),
+                        "client_id": "banana",
+                        "audience": "https://test.dev.neuromation.io",
+                        "headless_callback_url": str(srv.make_url("/oauth/show-code")),
+                        "callback_urls": [
+                            "http://127.0.0.2:54540",
+                            "http://127.0.0.2:54541",
+                            "http://127.0.0.2:54542",
+                        ],
+                        "success_redirect_url": "https://neu.ro/#test",
+                    }
+                )
+
+            if (
+                "Authorization" in request.headers
+                and "incorrect" not in request.headers["Authorization"]
+            ):
+                config_json.update(
+                    {
+                        "registry_url": "https://registry-dev.test.com",
+                        "storage_url": "https://storage-dev.test.com",
+                        "users_url": "https://users-dev.test.com",
+                        "monitoring_url": "https://monitoring-dev.test.com",
+                        "resource_presets": [
+                            {
+                                "name": "gpu-small",
+                                "cpu": 7,
+                                "memory_mb": 30 * 1024,
+                                "gpu": 1,
+                                "gpu_model": "nvidia-tesla-k80",
+                            },
+                            {
+                                "name": "gpu-large",
+                                "cpu": 7,
+                                "memory_mb": 60 * 1024,
+                                "gpu": 1,
+                                "gpu_model": "nvidia-tesla-v100",
+                            },
+                            {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                            {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                        ],
+                    }
+                )
+            return web.json_response(config_json)
+
+        async def show_code(request: web.Request) -> web.Response:
+            return web.json_response({})
+
+        async def authorize(request: web.Request) -> web.Response:
+            url = URL(request.query["redirect_uri"]).with_query(code="test_auth_code")
+            raise web.HTTPSeeOther(location=url)
+
+        async def token(request: web.Request) -> web.Response:
+            return web.json_response(
                 {
-                    "registry_url": "https://registry-dev.test.com",
-                    "storage_url": "https://storage-dev.test.com",
-                    "users_url": "https://users-dev.test.com",
-                    "monitoring_url": "https://monitoring-dev.test.com",
-                    "resource_presets": [
-                        {
-                            "name": "gpu-small",
-                            "cpu": 7,
-                            "memory_mb": 30 * 1024,
-                            "gpu": 1,
-                            "gpu_model": "nvidia-tesla-k80",
-                        },
-                        {
-                            "name": "gpu-large",
-                            "cpu": 7,
-                            "memory_mb": 60 * 1024,
-                            "gpu": 1,
-                            "gpu_model": "nvidia-tesla-v100",
-                        },
-                        {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-                        {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
-                    ],
+                    "access_token": "access_token",
+                    "expires_in": 3600,
+                    "refresh_token": "refresh_token",
                 }
             )
-        return web.json_response(config_json)
 
-    async def show_code(request: web.Request) -> web.Response:
-        return web.json_response({})
+        app = web.Application()
+        app.router.add_get("/config", config_handler)
+        app.router.add_get("/oauth/show-code", show_code)
+        app.router.add_get("/authorize", authorize)
+        app.router.add_post("/oauth/token", token)
+        srv = await aiohttp_server(app)
+        return srv
 
-    async def authorize(request: web.Request) -> web.Response:
-        url = URL(request.query["redirect_uri"]).with_query(code="test_auth_code")
-        raise web.HTTPSeeOther(location=url)
+    yield _f
 
-    async def token(request: web.Request) -> web.Response:
-        return web.json_response(
-            {
-                "access_token": "access_token",
-                "expires_in": 3600,
-                "refresh_token": "refresh_token",
-            }
-        )
 
-    app = web.Application()
-    app.router.add_get("/config", config_handler)
-    app.router.add_get("/oauth/show-code", show_code)
-    app.router.add_get("/authorize", authorize)
-    app.router.add_post("/oauth/token", token)
-    srv = await aiohttp_server(app)
-    return srv
+@pytest.fixture
+async def mock_for_login(
+    mock_for_login_factory: Callable[..., Awaitable[_TestServer]]
+) -> _TestServer:
+    return await mock_for_login_factory(has_oauth_config=True)
+
+
+@pytest.fixture
+async def mock_for_login_no_oauth(
+    mock_for_login_factory: Callable[..., Awaitable[_TestServer]]
+) -> _TestServer:
+    return await mock_for_login_factory(has_oauth_config=False)
 
 
 def _create_config(
@@ -240,6 +264,14 @@ class TestLogin:
         assert saved_config.auth_config.is_initialized()
         assert saved_config.cluster_config.is_initialized()
 
+    async def test_login_missing_oauth_configuration(
+        self, tmp_home: Path, mock_for_login_no_oauth: _TestServer
+    ) -> None:
+        with pytest.raises(ConfigError, match="Cannot get server configuration"):
+            await Factory().login(
+                self.show_dummy_browser, url=mock_for_login_no_oauth.make_url("/")
+            )
+
 
 class TestLoginWithToken:
     async def test_login_with_token_already_logged(self, config_file: Path) -> None:
@@ -302,6 +334,17 @@ class TestHeadlessLogin:
         saved_config = Factory(nmrc_path)._read()
         assert saved_config.auth_config.is_initialized()
         assert saved_config.cluster_config.is_initialized()
+
+    async def test_login_headless_missing_oauth_configuration(
+        self, tmp_home: Path, mock_for_login_no_oauth: _TestServer
+    ) -> None:
+        async def get_auth_code_cb(url: URL) -> str:
+            return ""
+
+        with pytest.raises(ConfigError, match="Cannot get server configuration"):
+            await Factory().login_headless(
+                get_auth_code_cb, url=mock_for_login_no_oauth.make_url("/")
+            )
 
 
 class TestLogout:

@@ -630,6 +630,26 @@ class TestAuthNegotiator:
         assert token.token == "test_access_token_refreshed"
         assert token.refresh_token == "test_refresh_token"
 
+    def test_cannot_create_from_uninitialized_config(
+        self, connector: aiohttp.BaseConnector
+    ) -> None:
+        auth_config_bad = _AuthConfig.create(
+            auth_url=URL(),
+            token_url=URL(),
+            client_id="",
+            audience="",
+            headless_callback_url=URL(),
+        )
+        assert not auth_config_bad.is_initialized()
+
+        with pytest.raises(AssertionError, match="auth config is not initialized"):
+            AuthNegotiator(
+                connector,
+                config=auth_config_bad,
+                show_browser_cb=self.show_dummy_browser,
+                timeout=DEFAULT_TIMEOUT,
+            )
+
 
 class TestHeadlessNegotiator:
     async def test_get_code(
@@ -672,3 +692,26 @@ class TestHeadlessNegotiator:
         )
         with pytest.raises(RuntimeError, match="callback error"):
             await negotiator.get_code()
+
+    def test_cannot_create_from_uninitialized_config(
+        self, connector: aiohttp.BaseConnector
+    ) -> None:
+        async def get_auth_code_cb(url: URL) -> str:
+            pass
+
+        auth_config_bad = _AuthConfig.create(
+            auth_url=URL(),
+            token_url=URL(),
+            client_id="",
+            audience="",
+            headless_callback_url=URL(),
+        )
+        assert not auth_config_bad.is_initialized()
+
+        with pytest.raises(AssertionError, match="auth config is not initialized"):
+            HeadlessNegotiator(
+                connector,
+                config=auth_config_bad,
+                get_auth_code_cb=get_auth_code_cb,
+                timeout=DEFAULT_TIMEOUT,
+            )

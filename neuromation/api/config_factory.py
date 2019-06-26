@@ -84,6 +84,8 @@ class Factory:
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
         async with _make_connector() as connector:
             config_unauthorized = await get_server_config(connector, url)
+            if not config_unauthorized.auth_config.is_initialized():
+                raise ConfigError("Cannot get server configuration")
             negotiator = AuthNegotiator(
                 connector, config_unauthorized.auth_config, show_browser_cb, timeout
             )
@@ -113,6 +115,8 @@ class Factory:
             raise ConfigError(f"Config file {self._path} already exists. Please logout")
         async with _make_connector() as connector:
             config_unauthorized = await get_server_config(connector, url)
+            if not config_unauthorized.auth_config.is_initialized():
+                raise ConfigError("Cannot get server configuration")
             negotiator = HeadlessNegotiator(
                 connector, config_unauthorized.auth_config, get_auth_code_cb, timeout
             )

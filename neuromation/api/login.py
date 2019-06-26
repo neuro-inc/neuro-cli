@@ -463,6 +463,7 @@ class BaseNegotiator(abc.ABC):
         config: _AuthConfig,
         timeout: aiohttp.ClientTimeout,
     ) -> None:
+        assert config.is_initialized(), "auth config is not initialized"
         self._config = config
         self._timeout = timeout
         self._connector = connector

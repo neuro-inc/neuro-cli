@@ -87,8 +87,6 @@ class _Config:
     cookie_session: _CookieSession
 
     def check_initialized(self) -> None:
-        if (
-            not self.auth_config.is_initialized()
-            or not self.cluster_config.is_initialized()
-        ):
+        # `cluster_config` is required
+        if not self.cluster_config.is_initialized():
             raise ValueError("Missing server configuration, need to login")
