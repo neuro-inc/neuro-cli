@@ -172,14 +172,20 @@ class Images(metaclass=NoPublicConstructor):
 
         return local_image
 
-    async def ls(self) -> List[URL]:
+    async def ls(self) -> Dict[URL, List[str]]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
             ret = await resp.json()
-            result = []
-            for name in ret["repositories"]:
-                if name.startswith("image://"):
-                    url = URL(name)
+            result = {}
+            for repo in ret["repositories"]:
+                if repo.startswith("image://"):
+                    name = str(repo)[8:] # len("image://") = 8
+                    url = URL(repo)
                 else:
-                    url = URL(f"image://{name}")
-                result.append(url)
+                    name = repo
+                    url = URL(f"image://{repo}")
+                result[url] = []
+                async with self._registry.request("GET", URL(f"{name}/tags/list")) as tags_resp:
+                    ret = tags_resp.json()
+                    for tag in ret["tags"]:
+                        result[url].append(tag)
             return result
