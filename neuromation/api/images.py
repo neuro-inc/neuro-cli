@@ -177,7 +177,7 @@ class Images(metaclass=NoPublicConstructor):
             ret = await resp.json()
             result = []
             for name in ret["repositories"]:
-                if str(name).startswith("image://"):
+                if name.startswith("image://"):
                     url = URL(name)
                 else:
                     url = URL(f"image://{name}")
