@@ -313,15 +313,19 @@ def main(args: Optional[List[str]] = None) -> None:
     except NotImplementedError as error:
         LOG_ERROR(f"{error}")
         sys.exit(EX_SOFTWARE)
+
     except FileNotFoundError as error:
         LOG_ERROR(f"File not found ({error})")
         sys.exit(EX_OSFILE)
+
     except NotADirectoryError as error:
         LOG_ERROR(f"{error}")
         sys.exit(EX_OSFILE)
+
     except PermissionError as error:
         LOG_ERROR(f"Cannot access file ({error})")
         sys.exit(EX_NOPERM)
+
     except OSError as error:
         LOG_ERROR(f"I/O Error ({error})")
         sys.exit(EX_IOERR)
@@ -329,11 +333,14 @@ def main(args: Optional[List[str]] = None) -> None:
     except KeyboardInterrupt:
         LOG_ERROR("Aborting.")
         sys.exit(130)
+
     except ValueError as e:
-        print(e)
+        LOG_ERROR(e)
         sys.exit(127)
+
     except SystemExit:
         raise
+
     except Exception as e:
         LOG_ERROR(f"{e}")
         sys.exit(1)
