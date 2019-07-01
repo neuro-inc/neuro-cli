@@ -721,20 +721,33 @@ class TestRegistry:
     async def test_ls_images(
         self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
     ) -> None:
-        JSON = {"repositories": ["image://bob/alpine", "image://jill/bananas"]}
+        images_json = {"repositories": ["image://bob/alpine", "image://jill/bananas"]}
+        bob_tags_json: Dict[str, str] = {}
+        jill_tags_json = {"name": "jill/bananas", "tags": ["first", "second", "latest"]}
 
-        async def handler(request: web.Request) -> web.Response:
-            return web.json_response(JSON)
+        async def catalog_handler(request: web.Request) -> web.Response:
+            return web.json_response(images_json)
+
+        async def tags_handler(request: web.Request) -> web.Response:
+            if "alpine" in request.url.path:
+                return web.json_response(bob_tags_json)
+            if "bananas" in request.url.path:
+                return web.json_response(jill_tags_json)
+            return web.json_response({})
 
         app = web.Application()
-        app.router.add_get("/v2/_catalog", handler)
+        app.router.add_get("/v2/_catalog", catalog_handler)
+        app.router.add_get("/v2/bob/alpine/tags/list", tags_handler)
+        app.router.add_get("/v2/jill/bananas/tags/list", tags_handler)
 
         srv = await aiohttp_server(app)
         url = "http://platform"
         registry_url = srv.make_url("/v2/")
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
-        assert ret == [URL(image) for image in JSON["repositories"]]
+        assert list(ret.keys()) == [URL(image) for image in images_json["repositories"]]
+        assert ret[URL("image://bob/alpine")] == []
+        assert ret[URL("image://jill/bananas")] == jill_tags_json["tags"]
 
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
@@ -742,18 +755,31 @@ class TestRegistry:
     async def test_ls_repositories(
         self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
     ) -> None:
-        JSON = {"repositories": ["bob/alpine", "jill/bananas"]}
+        images_json = {"repositories": ["bob/alpine", "jill/bananas"]}
         expected_urls = ["image://bob/alpine", "image://jill/bananas"]
+        bob_tags_json: Dict[str, str] = {}
+        jill_tags_json = {"name": "jill/bananas", "tags": ["first", "second", "latest"]}
 
-        async def handler(request: web.Request) -> web.Response:
-            return web.json_response(JSON)
+        async def catalog_handler(request: web.Request) -> web.Response:
+            return web.json_response(images_json)
+
+        async def tags_handler(request: web.Request) -> web.Response:
+            if "alpine" in request.url.path:
+                return web.json_response(bob_tags_json)
+            if "bananas" in request.url.path:
+                return web.json_response(jill_tags_json)
+            return web.json_response({})
 
         app = web.Application()
-        app.router.add_get("/v2/_catalog", handler)
+        app.router.add_get("/v2/_catalog", catalog_handler)
+        app.router.add_get("/v2/bob/alpine/tags/list", tags_handler)
+        app.router.add_get("/v2/jill/bananas/tags/list", tags_handler)
 
         srv = await aiohttp_server(app)
         url = "http://platform"
         registry_url = srv.make_url("/v2/")
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
-        assert ret == [URL(image) for image in expected_urls]
+        assert list(ret.keys()) == [URL(image) for image in expected_urls]
+        assert ret[URL("image://bob/alpine")] == []
+        assert ret[URL("image://jill/bananas")] == jill_tags_json["tags"]

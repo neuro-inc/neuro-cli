@@ -187,7 +187,7 @@ class Images(metaclass=NoPublicConstructor):
                 async with self._registry.request(
                     "GET", URL(f"{name}/tags/list")
                 ) as tags_resp:
-                    ret = tags_resp.json()
-                    for tag in ret["tags"]:
+                    ret = await tags_resp.json()
+                    for tag in ret.get("tags", []):
                         result[url].append(tag)
             return result
