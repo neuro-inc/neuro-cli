@@ -22,31 +22,31 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     another_test_user = "test2"
 
     request.addfinalizer(lambda: revoke(helper, uri, "public"))
-    captured = helper.run_cli(["acl", "grant", uri, "public", "read"])
+    captured = helper.run_cli(["-v", "acl", "grant", uri, "public", "read"])
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
     request.addfinalizer(lambda: revoke(helper, uri2, another_test_user))
-    captured = helper.run_cli(["acl", "grant", uri2, another_test_user, "write"])
+    captured = helper.run_cli(["-v", "acl", "grant", uri2, another_test_user, "write"])
     assert captured.out == ""
     expected_err2 = f"Using resource '{uri2}'"
     assert expected_err2 in captured.err
 
-    captured = helper.run_cli(["acl", "list"])
+    captured = helper.run_cli(["-v", "acl", "list"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"storage://{helper.username} manage" in result
     assert f"user://{helper.username} read" in result
 
-    captured = helper.run_cli(["acl", "list", "--scheme", "storage"])
+    captured = helper.run_cli(["-v", "acl", "list", "--scheme", "storage"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"storage://{helper.username} manage" in result
     for line in result:
         assert line.startswith("storage://")
 
-    captured = helper.run_cli(["acl", "list", "--shared"])
+    captured = helper.run_cli(["-v", "acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" in result
@@ -55,7 +55,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
         assert not line.startswith("storage://{helper.username} ")
         assert not line.endswith(f" {helper.username}")
 
-    captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "storage"])
+    captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "storage"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" in result
@@ -64,7 +64,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
         assert not line.startswith("storage://{helper.username} ")
         assert not line.endswith(f" {helper.username}")
 
-    captured = helper.run_cli(["acl", "list", "--shared", "--scheme", "image"])
+    captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "image"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri2} write {another_test_user}" in result
@@ -72,15 +72,15 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
         assert line.startswith("image://")
         assert not line.endswith(f" {helper.username}")
 
-    captured = helper.run_cli(["acl", "revoke", uri, "public"])
+    captured = helper.run_cli(["-v", "acl", "revoke", uri, "public"])
     assert captured.out == ""
     assert expected_err in captured.err
 
-    captured = helper.run_cli(["acl", "revoke", uri2, another_test_user])
+    captured = helper.run_cli(["-v", "acl", "revoke", uri2, another_test_user])
     assert captured.out == ""
     assert expected_err2 in captured.err
 
-    captured = helper.run_cli(["acl", "list", "--shared"])
+    captured = helper.run_cli(["-v", "acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" not in result
@@ -94,7 +94,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
 def test_revoke_no_effect(helper: Helper) -> None:
     uri = f"storage://{helper.username}/{uuid4()}"
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["acl", "revoke", uri, "public"])
+        helper.run_cli(["-v", "acl", "revoke", uri, "public"])
     assert cm.value.returncode == 127
     expected_out = "Operation has no effect."
     assert expected_out in cm.value.stdout
@@ -110,12 +110,14 @@ def test_grant_image_no_tag(request: Any, helper: Helper) -> None:
     another_test_user = "test2"
 
     request.addfinalizer(lambda: revoke(helper, rel_uri, another_test_user))
-    captured = helper.run_cli(["acl", "grant", rel_uri, another_test_user, "read"])
+    captured = helper.run_cli(
+        ["-v", "acl", "grant", rel_uri, another_test_user, "read"]
+    )
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
 
-    captured = helper.run_cli(["acl", "revoke", rel_uri, another_test_user])
+    captured = helper.run_cli(["-v", "acl", "revoke", rel_uri, another_test_user])
     assert captured.out == ""
     assert expected_err in captured.err
 
