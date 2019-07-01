@@ -5,7 +5,7 @@ import shlex
 import sys
 import uuid
 import webbrowser
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Any
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import click
 from yarl import URL
@@ -246,7 +246,6 @@ async def submit(
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
-        pass_config=pass_config,
     )
 
 
@@ -602,7 +601,7 @@ async def run(
     name: Optional[str],
     description: str,
     wait_start: bool,
-    inject_config: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     """
@@ -642,7 +641,7 @@ async def run(
         name=name,
         description=description,
         wait_start=wait_start,
-        inject_config=inject_config,
+        pass_config=pass_config,
         browse=browse,
     )
 
@@ -682,7 +681,7 @@ async def run_job(
     name: Optional[str],
     description: str,
     wait_start: bool,
-    inject_config: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     if http_auth is None:
@@ -738,7 +737,7 @@ async def run_job(
         local_nmrc_folder = "/var/storage/nmrc/"
         local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
 
-        if not quiet:
+        if not root.quiet:
             click.echo(
                 f"Temporary config file created on storage: {storage_nmrc_path}."
             )

@@ -209,8 +209,6 @@ Name | Description|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\-C, --pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
-|_\-c, --pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
-|_\-c, --pass-config / --no-pass-config_|Share neuro config file with the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
