@@ -1,7 +1,8 @@
 import logging
-from typing import List
+from typing import Optional, Sequence
 
 import click
+from yarl import URL
 
 from .command_progress_report import ProgressBase
 from .formatters import (
@@ -34,7 +35,7 @@ def storage() -> None:
     help="remove directories and their contents recursively",
 )
 @async_cmd()
-async def rm(root: Root, paths: List[str], recursive: bool) -> None:
+async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
     """
     Remove files or directories.
 
@@ -69,7 +70,7 @@ async def rm(root: Root, paths: List[str], recursive: bool) -> None:
 )
 @async_cmd()
 async def ls(
-    root: Root, paths: List[str], human_readable: bool, format_long: bool, sort: str
+    root: Root, paths: Sequence[str], human_readable: bool, format_long: bool, sort: str
 ) -> None:
     """
     List directory contents.
@@ -103,13 +104,32 @@ async def ls(
 
 
 @command()
-@click.argument("sources", nargs=-1, required=True)
-@click.argument("destination")
+@click.argument("sources", nargs=-1, required=False)
+@click.argument("destination", required=False)
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
+@click.option(
+    "-t",
+    "--target-directory",
+    metavar="DIRECTORY",
+    default=None,
+    help="Copy all SOURCES into DIRECTORY",
+)
+@click.option(
+    "-T",
+    "--no-target-directory",
+    is_flag=True,
+    help="Treat DESTINATION as a normal file",
+)
 @click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
 @async_cmd()
 async def cp(
-    root: Root, sources: List[str], destination: str, recursive: bool, progress: bool
+    root: Root,
+    sources: Sequence[str],
+    destination: str,
+    recursive: bool,
+    target_directory: str,
+    no_target_directory: bool,
+    progress: bool,
 ) -> None:
     """
     Copy files and directories.
@@ -130,14 +150,44 @@ async def cp(
     # explicit file:// scheme set
     neuro cp storage:///foo file:///foo
     """
-    dst = parse_file_resource(destination, root)
-    log.info(f"Using destination path: '{dst}'")
+    target_dir: Optional[URL]
+    dst: Optional[URL]
+    if target_directory:
+        if no_target_directory:
+            raise click.UsageError(
+                "Cannot combine --target-directory (-t) and --no-target-directory (-T)"
+            )
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        sources = *sources, destination
+        target_dir = parse_file_resource(target_directory, root)
+        dst = None
+    else:
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"DESTINATION"'
+            )
+        if not sources:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        dst = parse_file_resource(destination, root)
+        if not no_target_directory and await root.client.storage.is_dir(dst):
+            target_dir = dst
+            dst = None
+        else:
+            target_dir = None
 
     for source in sources:
         src = parse_file_resource(source, root)
 
         progress_obj = ProgressBase.create_progress(progress)
 
+        if target_dir:
+            dst = target_dir / src.name
+        assert dst
         if src.scheme == "file" and dst.scheme == "storage":
             log.info(f"Using source path:      '{src}'")
             if recursive:
@@ -167,7 +217,7 @@ async def cp(
     help="No error if existing, make parent directories as needed",
 )
 @async_cmd()
-async def mkdir(root: Root, paths: List[str], parents: bool) -> None:
+async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     """
     Make directories.
     """
@@ -183,7 +233,7 @@ async def mkdir(root: Root, paths: List[str], parents: bool) -> None:
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
 @async_cmd()
-async def mv(root: Root, sources: List[str], destination: str) -> None:
+async def mv(root: Root, sources: Sequence[str], destination: str) -> None:
     """
     Move or rename files and directories.
 

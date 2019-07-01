@@ -14,14 +14,13 @@ _Data = Tuple[str, str]
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_0(helper: Helper, data: _Data) -> None:
+def test_copy_local_file_to_platform_directory(helper: Helper, data: _Data) -> None:
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
     helper.check_create_dir_on_storage("folder")
     # Upload local file to existing directory
-    # case when copy happens with the trailing '/'
-    helper.check_upload_file_to_storage(None, "folder/", srcfile)  # tmpstorage/
+    helper.run_cli(["storage", "cp", srcfile, helper.tmpstorage + "/folder"])
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
@@ -34,15 +33,15 @@ def test_copy_local_to_platform_single_file_0(helper: Helper, data: _Data) -> No
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_1(helper: Helper, data: _Data) -> None:
-    # case when copy happens without the trailing '/'
+def test_copy_local_file_to_platform_directory_explicit(
+    helper: Helper, data: _Data
+) -> None:
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
     helper.check_create_dir_on_storage("folder")
-
     # Upload local file to existing directory
-    helper.check_upload_file_to_storage(None, "folder", srcfile)
+    helper.run_cli(["storage", "cp", "-t", helper.tmpstorage + "/folder", srcfile])
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
@@ -55,14 +54,47 @@ def test_copy_local_to_platform_single_file_1(helper: Helper, data: _Data) -> No
 
 
 @pytest.mark.e2e
-def test_copy_local_to_platform_single_file_2(helper: Helper, data: _Data) -> None:
+def test_copy_local_single_file_to_platform_file(helper: Helper, data: _Data) -> None:
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
     helper.check_create_dir_on_storage("folder")
-    # Upload local file to existing directory
-    helper.check_upload_file_to_storage("different_name.txt", "folder", srcfile)
+    # Upload local file to platform
+    helper.run_cli(
+        ["storage", "cp", srcfile, helper.tmpstorage + "/folder/different_name.txt"]
+    )
+
+    # Ensure file is there
+    helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
+    helper.check_file_absent_on_storage(file_name, "folder")
+
+    # Remove the file from platform
+    helper.check_rm_file_on_storage("different_name.txt", "folder")
+
+    # Ensure file is not there
+    helper.check_file_absent_on_storage("different_name.txt", "folder")
+
+
+@pytest.mark.e2e
+def test_copy_local_single_file_to_platform_file_explicit(
+    helper: Helper, data: _Data
+) -> None:
+    # case when copy happens with rename to 'different_name.txt'
+    srcfile, checksum = data
+    file_name = str(PurePath(srcfile).name)
+
+    helper.check_create_dir_on_storage("folder")
+    # Upload local file to platform
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-T",
+            srcfile,
+            helper.tmpstorage + "/folder/different_name.txt",
+        ]
+    )
 
     # Ensure file is there
     helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
@@ -115,6 +147,36 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
     # Try downloading non existing file
     with pytest.raises(subprocess.CalledProcessError, match=str(EX_OSFILE)):
         helper.run_cli(["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)])
+
+
+@pytest.mark.e2e
+def test_e2e_copy_no_sources_no_destination(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "cp"])
+    assert 'Missing argument "DESTINATION"' in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_copy_no_sources(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "cp", helper.tmpstorage])
+    assert 'Missing argument "SOURCES..."' in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_copy_no_sources_target_directory(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "cp", "-t", helper.tmpstorage])
+    assert 'Missing argument "SOURCES..."' in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_copy_target_directory_no_target_directory(
+    helper: Helper, tmp_path: Path
+) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "cp", "-t", helper.tmpstorage, "-T", str(tmp_path)])
+    assert "Cannot combine" in cm.value.stderr
 
 
 @pytest.mark.e2e

@@ -127,6 +127,18 @@ class Storage(metaclass=NoPublicConstructor):
             res = await resp.json()
             return FileStatus.from_api(res["FileStatus"])
 
+    async def is_dir(self, uri: URL) -> bool:
+        if uri.scheme == "storage":
+            try:
+                stat = await self.stats(uri)
+                return stat.is_dir()
+            except ResourceNotFound:
+                pass
+        elif uri.scheme == "file":
+            path = _extract_path(uri)
+            return path.is_dir()
+        return False
+
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
@@ -207,14 +219,10 @@ class Storage(metaclass=NoPublicConstructor):
                 raise
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
-        if not dst.name:
-            # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
-            dst = dst / src.name
         try:
             stats = await self.stats(dst)
             if stats.is_dir():
-                # target exists and it is a folder
-                dst = dst / src.name
+                raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
         except ResourceNotFound:
             # target doesn't exist, lookup for parent dir
             try:
@@ -233,9 +241,6 @@ class Storage(metaclass=NoPublicConstructor):
     async def upload_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> None:
-        if not dst.name:
-            # /dst/ ==> /dst for recursive copy
-            dst = dst / src.name
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src).resolve()
@@ -270,16 +275,6 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        try:
-            if path.is_dir():
-                path = path / src.name
-        except FileNotFoundError:
-            pass
-        except OSError as e:
-            if getattr(e, "winerror", None) not in (1, 87):
-                raise
-            # Ignore stat errors for device files like NUL or CON on Windows.
-            # See https://bugs.python.org/issue37074
         loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             stat = await self.stats(src)

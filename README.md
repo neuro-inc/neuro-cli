@@ -487,7 +487,7 @@ Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have s
 **Usage:**
 
 ```bash
-neuro storage cp [OPTIONS] SOURCES... DESTINATION
+neuro storage cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -509,6 +509,8 @@ neuro cp storage:///foo file:///foo
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
 |_--help_|Show this message and exit.|
 
@@ -1401,7 +1403,7 @@ Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have s
 **Usage:**
 
 ```bash
-neuro cp [OPTIONS] SOURCES... DESTINATION
+neuro cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -1423,6 +1425,8 @@ neuro cp storage:///foo file:///foo
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
 |_--help_|Show this message and exit.|
 
