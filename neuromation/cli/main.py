@@ -59,9 +59,9 @@ def setup_logging(verbosity: int, color: bool) -> None:
     elif verbosity == -1:
         loglevel = logging.ERROR
     elif verbosity == 0:
-        loglevel = logging.INFO
-    elif verbosity == 1:
         loglevel = logging.WARNING
+    elif verbosity == 1:
+        loglevel = logging.INFO
     else:
         loglevel = logging.DEBUG
 
