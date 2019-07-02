@@ -10,11 +10,11 @@ import click
 
 from neuromation.api import (
     DockerImage,
+    HTTPPort,
     Image,
     ImageNameParser,
     JobDescription,
     JobStatus,
-    NetworkPortForwarding,
     Resources,
     Volume,
 )
@@ -685,7 +685,6 @@ async def run_job(
     log.debug(f"IMAGE: {image}")
     image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    network = NetworkPortForwarding.from_cli(http, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
     volumes: Set[Volume] = set()
@@ -709,7 +708,7 @@ async def run_job(
     job = await root.client.jobs.submit(
         image=image_obj,
         resources=resources,
-        network=network,
+        http=HTTPPort(http, http_auth) if http else None,
         volumes=list(volumes) if volumes else None,
         is_preemptible=preemptible,
         name=name,
