@@ -5,11 +5,11 @@ from aiohttp import web
 
 from neuromation.api import (
     Client,
+    HTTPPort,
     Image,
     JobDescription,
     JobStatus,
     JobTelemetry,
-    NetworkPortForwarding,
     ResourceNotFound,
     Resources,
     Volume,
@@ -382,7 +382,6 @@ async def test_job_submit(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -395,7 +394,7 @@ async def test_job_submit(
         ret = await client.jobs.submit(
             image=image,
             resources=resources,
-            network=network,
+            http=HTTPPort(8181),
             volumes=volumes,
             is_preemptible=False,
         )
@@ -478,7 +477,6 @@ async def test_job_submit_with_name_and_description(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -491,7 +489,7 @@ async def test_job_submit_with_name_and_description(
         ret = await client.jobs.submit(
             image=image,
             resources=resources,
-            network=network,
+            http=HTTPPort(8181),
             volumes=volumes,
             is_preemptible=False,
             name="test-job-name",
@@ -562,12 +560,11 @@ async def test_job_submit_no_volumes(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         ret = await client.jobs.submit(
             image=image,
             resources=resources,
-            network=network,
+            http=HTTPPort(8181),
             volumes=None,
             is_preemptible=False,
             name="test-job-name",
@@ -651,7 +648,6 @@ async def test_job_submit_preemptible(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        network = NetworkPortForwarding({"http": 8181})
         resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -664,7 +660,7 @@ async def test_job_submit_preemptible(
         ret = await client.jobs.submit(
             image=image,
             resources=resources,
-            network=network,
+            http=HTTPPort(8181),
             volumes=volumes,
             is_preemptible=True,
             name="test-job-name",
