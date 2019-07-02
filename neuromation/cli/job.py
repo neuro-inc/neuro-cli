@@ -182,7 +182,6 @@ def job() -> None:
     help="Wait for a job start or failure",
 )
 @click.option(
-    "-C",
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
@@ -578,7 +577,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Wait for a job start or failure",
 )
 @click.option(
-    "-C",
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
@@ -727,40 +725,7 @@ async def run_job(
         )
 
     if pass_config:
-        # store the Neuro CLI config on the storage under some random path
-        nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
-        random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-
-        storage_nmrc_folder = f"storage://{username}/nmrc/"
-        storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
-
-        local_nmrc_folder = "/var/storage/nmrc/"
-        local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
-
-        if not root.quiet:
-            click.echo(
-                f"Temporary config file created on storage: {storage_nmrc_path}."
-            )
-            click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
-        await root.client.storage.mkdirs(
-            URL(storage_nmrc_folder), parents=True, exist_ok=True
-        )
-        await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
-
-        # specify a container volume and mount the storage path
-        # into specific container path
-        data: Dict[str, Any] = {
-            "src_storage_uri": storage_nmrc_folder,
-            "dst_path": local_nmrc_folder,
-            "read_only": False,
-        }
-        volumes.add(Volume.from_api(data))
-
-        if CONFIG_ENV_NAME in env_dict:
-            raise EnvironmentError(
-                f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
-            )
-        env_dict[CONFIG_ENV_NAME] = local_nmrc_path
+        await upload_and_map_config(env_dict, root, username, volumes)
 
     container = Container(
         image=image.as_repo_str(),
@@ -783,6 +748,40 @@ async def run_job(
     progress.close()
     if browse:
         await browse_job(root, job)
+
+
+async def upload_and_map_config(
+    env_dict: Dict[str, str], root: Root, username: str, volumes: Set[Volume]
+) -> None:
+    if CONFIG_ENV_NAME in env_dict:
+        raise ValueError(
+            f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
+        )
+
+    # store the Neuro CLI config on the storage under some random path
+    nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
+    random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
+    storage_nmrc_folder = f"storage://{username}/nmrc/"
+    storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
+    local_nmrc_folder = "/var/storage/nmrc/"
+    local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
+    if not root.quiet:
+        click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
+        click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
+    await root.client.storage.mkdirs(
+        URL(storage_nmrc_folder), parents=True, exist_ok=True
+    )
+    await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
+    # specify a container volume and mount the storage path
+    # into specific container path
+    data: Dict[str, Any] = {
+        "src_storage_uri": storage_nmrc_folder,
+        "dst_path": local_nmrc_folder,
+        "read_only": False,
+    }
+    volumes.add(Volume.from_api(data))
+
+    env_dict[CONFIG_ENV_NAME] = local_nmrc_path
 
 
 async def browse_job(root: Root, job: JobDescription) -> None:
