@@ -685,7 +685,7 @@ async def run_job(
     log.debug(f"IMAGE: {image}")
     image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    network = NetworkPortForwarding.from_cli(http, bool(http_auth))
+    network = NetworkPortForwarding.from_cli(http, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
     volumes: Set[Volume] = set()
