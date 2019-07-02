@@ -115,15 +115,6 @@ class HTTPPort:
     port: int
     requires_auth: bool = True
 
-    def to_api(self) -> Dict[str, Any]:
-        return {"port": self.port, "requires_auth": self.requires_auth}
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "HTTPPort":
-        return HTTPPort(
-            port=data.get("port", -1), requires_auth=data.get("requires_auth", False)
-        )
-
 
 @dataclass(frozen=True)
 class Container:
@@ -141,7 +132,7 @@ class Container:
             image=data["image"],
             resources=_resources_from_api(data["resources"]),
             command=data.get("command", None),
-            http=HTTPPort.from_api(data["http"]) if "http" in data else None,
+            http=_http_port_from_api(data["http"]) if "http" in data else None,
             env=data.get("env", dict()),
             volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
         )
@@ -154,7 +145,7 @@ class Container:
         if self.command:
             primitive["command"] = self.command
         if self.http:
-            primitive["http"] = self.http.to_api()
+            primitive["http"] = _http_port_to_api(self.http)
         if self.env:
             primitive["env"] = self.env
         if self.volumes:
@@ -476,4 +467,14 @@ def _resources_from_api(data: Dict[str, Any]) -> Resources:
         shm=data.get("shm", None),
         gpu=data.get("gpu", None),
         gpu_model=data.get("gpu_model", None),
+    )
+
+
+def _http_port_to_api(port: HTTPPort) -> Dict[str, Any]:
+    return {"port": port.port, "requires_auth": port.requires_auth}
+
+
+def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
+    return HTTPPort(
+        port=data.get("port", -1), requires_auth=data.get("requires_auth", False)
     )
