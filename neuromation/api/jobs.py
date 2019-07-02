@@ -38,23 +38,6 @@ class Resources:
     ) -> "Resources":
         return cls(memory, cpu, gpu, extshm, gpu_model)
 
-    def to_api(self) -> Dict[str, Any]:
-        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
-        if self.gpu:
-            value["gpu"] = self.gpu
-            value["gpu_model"] = self.gpu_model  # type: ignore
-        return value
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "Resources":
-        return Resources(
-            memory_mb=data["memory_mb"],
-            cpu=data["cpu"],
-            shm=data.get("shm", None),
-            gpu=data.get("gpu", None),
-            gpu_model=data.get("gpu_model", None),
-        )
-
 
 @dataclass(frozen=True)
 class Image:
@@ -156,7 +139,7 @@ class Container:
     def from_api(cls, data: Dict[str, Any]) -> "Container":
         return Container(
             image=data["image"],
-            resources=Resources.from_api(data["resources"]),
+            resources=_resources_from_api(data["resources"]),
             command=data.get("command", None),
             http=HTTPPort.from_api(data["http"]) if "http" in data else None,
             env=data.get("env", dict()),
@@ -166,7 +149,7 @@ class Container:
     def to_api(self) -> Dict[str, Any]:
         primitive: Dict[str, Any] = {
             "image": self.image,
-            "resources": self.resources.to_api(),
+            "resources": _resources_to_api(self.resources),
         }
         if self.command:
             primitive["command"] = self.command
@@ -472,3 +455,25 @@ class Jobs(metaclass=NoPublicConstructor):
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
+
+
+def _resources_to_api(resources: Resources) -> Dict[str, Any]:
+    value = {
+        "memory_mb": resources.memory_mb,
+        "cpu": resources.cpu,
+        "shm": resources.shm,
+    }
+    if resources.gpu:
+        value["gpu"] = resources.gpu
+        value["gpu_model"] = resources.gpu_model  # type: ignore
+    return value
+
+
+def _resources_from_api(data: Dict[str, Any]) -> Resources:
+    return Resources(
+        memory_mb=data["memory_mb"],
+        cpu=data["cpu"],
+        shm=data.get("shm", None),
+        gpu=data.get("gpu", None),
+        gpu_model=data.get("gpu_model", None),
+    )
