@@ -130,7 +130,7 @@ class Volume:
 @dataclass(frozen=True)
 class HTTPPort:
     port: int
-    requires_auth: bool = False
+    requires_auth: bool = True
 
     def to_api(self) -> Dict[str, Any]:
         return {"port": self.port, "requires_auth": self.requires_auth}
