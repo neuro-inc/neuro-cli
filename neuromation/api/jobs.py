@@ -3,17 +3,7 @@ import enum
 import json
 import shlex
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    SupportsInt,
-)
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
 
 import async_timeout
 import attr
@@ -73,12 +63,12 @@ class NetworkPortForwarding:
 
     @classmethod
     def from_cli(
-        cls, http: SupportsInt, http_auth: bool = False
+        cls, http: Optional[int], http_auth: bool = False
     ) -> Optional["NetworkPortForwarding"]:
         net = None
         ports: Dict[str, int] = {}
         if http:
-            ports["http"] = int(http)
+            ports["http"] = http
         if ports:
             net = NetworkPortForwarding(ports=ports, http_auth=http_auth)
         return net
