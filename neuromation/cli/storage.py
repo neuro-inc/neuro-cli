@@ -49,7 +49,8 @@ async def rm(root: Root, paths: List[str], recursive: bool) -> None:
         uri = parse_file_resource(path, root)
 
         await root.client.storage.rm(uri, recursive=recursive)
-        log.info(f"removed {str(uri)!r}")
+        if root.verbosity > 0:
+            click.echo(f"removed {str(uri)!r}")
 
 
 @command()
@@ -92,7 +93,8 @@ async def ls(
                 formatter = SimpleFilesFormatter(root.color)
 
         uri = parse_file_resource(path, root)
-        log.info(f"List of '{uri}':")
+        if root.verbosity > 0:
+            click.echo(f"List of {str(uri)!r}:")
 
         files = await root.client.storage.ls(uri)
 
@@ -137,16 +139,25 @@ async def cp(
 
         progress_obj = ProgressBase.create_progress(progress)
 
+        echo = click.echo if root.verbosity > 0 else None
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
-                await root.client.storage.upload_dir(src, dst, progress=progress_obj)
+                await root.client.storage.upload_dir(
+                    src, dst, progress=progress_obj, echo=echo
+                )
             else:
-                await root.client.storage.upload_file(src, dst, progress=progress_obj)
+                await root.client.storage.upload_file(
+                    src, dst, progress=progress_obj, echo=echo
+                )
         elif src.scheme == "storage" and dst.scheme == "file":
             if recursive:
-                await root.client.storage.download_dir(src, dst, progress=progress_obj)
+                await root.client.storage.download_dir(
+                    src, dst, progress=progress_obj, echo=echo
+                )
             else:
-                await root.client.storage.download_file(src, dst, progress=progress_obj)
+                await root.client.storage.download_file(
+                    src, dst, progress=progress_obj, echo=echo
+                )
         else:
             raise RuntimeError(
                 f"Copy operation of the file with scheme '{src.scheme}'"
@@ -173,7 +184,8 @@ async def mkdir(root: Root, paths: List[str], parents: bool) -> None:
         uri = parse_file_resource(path, root)
 
         await root.client.storage.mkdirs(uri, parents=parents, exist_ok=parents)
-        log.info(f"created directory {str(uri)!r}")
+        if root.verbosity > 0:
+            click.echo(f"created directory {str(uri)!r}")
 
 
 @command()
@@ -205,7 +217,8 @@ async def mv(root: Root, sources: List[str], destination: str) -> None:
         src = parse_file_resource(source, root)
 
         await root.client.storage.mv(src, dst)
-        log.info(f"{str(src)!r} -> {str(dst)!r}")
+        if root.verbosity > 0:
+            click.echo(f"{str(src)!r} -> {str(dst)!r}")
 
 
 storage.add_command(cp)

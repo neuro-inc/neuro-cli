@@ -5,7 +5,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 
 import attr
 from yarl import URL
@@ -22,6 +22,8 @@ from .utils import NoPublicConstructor
 
 
 log = logging.getLogger(__name__)
+
+Printer = Callable[[str], None]
 
 
 class FileStatusType(str, enum.Enum):
@@ -190,7 +192,12 @@ class Storage(metaclass=NoPublicConstructor):
                 progress.complete(str(src))
 
     async def upload_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractProgress] = None,
+        echo: Optional[Printer] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
@@ -229,10 +236,16 @@ class Storage(metaclass=NoPublicConstructor):
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
         await self.create(dst, self._iterate_file(path, progress=progress))
-        log.info(f"{str(path)!r} -> {str(dst)!r}")
+        if echo is not None:
+            echo(f"{str(path)!r} -> {str(dst)!r}")
 
     async def upload_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractProgress] = None,
+        echo: Optional[Printer] = None,
     ) -> None:
         if not dst.name:
             # /dst/ ==> /dst for recursive copy
@@ -250,7 +263,8 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
-        log.info(f"{str(path)!r} -> {str(dst)!r}")
+        if echo is not None:
+            echo(f"{str(path)!r} -> {str(dst)!r}")
         for child in path.iterdir():
             if child.is_file():
                 await self.upload_file(
@@ -267,7 +281,12 @@ class Storage(metaclass=NoPublicConstructor):
                 log.warning("Cannot upload %s", child)  # pragma: no cover
 
     async def download_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractProgress] = None,
+        echo: Optional[Printer] = None,
     ) -> None:
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
@@ -298,16 +317,23 @@ class Storage(metaclass=NoPublicConstructor):
                 await loop.run_in_executor(None, stream.write, chunk)
             if progress is not None:
                 progress.complete(str(dst))
-        log.info(f"{str(src)!r} -> {str(path)!r}")
+        if echo is not None:
+            echo(f"{str(src)!r} -> {str(path)!r}")
 
     async def download_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractProgress] = None,
+        echo: Optional[Printer] = None,
     ) -> None:
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
-        log.info(f"{str(src)!r} -> {str(path)!r}")
+        if echo is not None:
+            echo(f"{str(src)!r} -> {str(path)!r}")
         for child in await self.ls(src):
             if child.is_file():
                 await self.download_file(
