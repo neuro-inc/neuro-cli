@@ -657,8 +657,17 @@ async def run_job(
     wait_start: bool,
     browse: bool,
 ) -> None:
+    if http_auth is None:
+        http_auth = True
+    elif not http:
+        if http_auth:
+            raise click.UsageError("--http-auth requires --http")
+        else:
+            raise click.UsageError("--no-http-auth requires --http")
+    if browse and not http:
+        raise click.UsageError("--browse requires --http")
     if browse and not wait_start:
-        raise ValueError("Cannot use --browse and --no-wait-start together")
+        raise click.UsageError("Cannot use --browse and --no-wait-start together")
 
     username = root.username
 
@@ -671,13 +680,6 @@ async def run_job(
     log.debug(f"IMAGE: {image}")
     image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    if http_auth is None:
-        http_auth = True
-    elif http is None:
-        if http_auth:
-            raise click.UsageError("--http-auth requires --http")
-        else:
-            raise click.UsageError("--no-http-auth requires --http")
     network = NetworkPortForwarding.from_cli(http, bool(http_auth))
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
