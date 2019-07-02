@@ -198,7 +198,7 @@ Name | Description|
 |----|------------|
 |_\-s, --preset PRESET_|Predefined job profile|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_--http PORT_|Enable HTTP port forwarding to container|
+|_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
@@ -1123,7 +1123,7 @@ Name | Description|
 |----|------------|
 |_\-s, --preset PRESET_|Predefined job profile|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_--http PORT_|Enable HTTP port forwarding to container|
+|_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|

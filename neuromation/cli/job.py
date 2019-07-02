@@ -500,7 +500,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Request extended '/dev/shm' space",
 )
 @click.option(
-    "--http", type=int, metavar="PORT", help="Enable HTTP port forwarding to container"
+    "--http",
+    type=int,
+    metavar="PORT",
+    default=80,
+    show_default=True,
+    help="Enable HTTP port forwarding to container",
 )
 @click.option(
     "--http-auth/--no-http-auth",
@@ -567,7 +572,7 @@ async def run(
     image: DockerImage,
     preset: str,
     extshm: bool,
-    http: Optional[int],
+    http: int,
     http_auth: Optional[bool],
     cmd: Sequence[str],
     volume: Sequence[str],

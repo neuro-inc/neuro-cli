@@ -835,27 +835,6 @@ def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
     assert f"{http_auth} requires --http" in cm.value.stderr
 
 
-@pytest.mark.parametrize("http_auth", ["--http-auth", "--no-http-auth"])
-@pytest.mark.e2e
-def test_job_run_bad_http_auth(helper: Helper, http_auth: str) -> None:
-    with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(
-            [
-                "job",
-                "run",
-                "-s",
-                "cpu-small",
-                http_auth,
-                "--non-preemptible",
-                "--no-wait-start",
-                UBUNTU_IMAGE_NAME,
-                "true",
-            ]
-        )
-    assert cm.value.returncode == 2
-    assert f"{http_auth} requires --http" in cm.value.stderr
-
-
 @pytest.fixture
 def fakebrowser(monkeypatch: Any) -> None:
     monkeypatch.setitem(os.environ, "BROWSER", "echo Browsing %s")
@@ -871,8 +850,6 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
             "run",
             "-s",
             "cpu-small",
-            "--http",
-            "80",
             "--non-preemptible",
             UBUNTU_IMAGE_NAME,
             "true",
@@ -897,8 +874,6 @@ def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
             "run",
             "-s",
             "cpu-small",
-            "--http",
-            "80",
             "--non-preemptible",
             "--name",
             job_name,
@@ -923,8 +898,6 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
             "run",
             "-s",
             "cpu-small",
-            "--http",
-            "80",
             "--non-preemptible",
             "--browse",
             UBUNTU_IMAGE_NAME,
