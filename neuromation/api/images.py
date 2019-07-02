@@ -179,7 +179,7 @@ class Images(metaclass=NoPublicConstructor):
             result: Dict[URL, List[str]] = {}
             for repo in ret["repositories"]:
                 if repo.startswith(prefix):
-                    name = str(repo)[len(prefix):]
+                    name = str(repo)[len(prefix) :]
                     url = URL(repo)
                 else:
                     name = repo
