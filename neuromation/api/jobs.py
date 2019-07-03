@@ -3,7 +3,7 @@ import enum
 import json
 import shlex
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Set
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
 
 import async_timeout
 import attr
@@ -71,8 +71,7 @@ class Container:
     resources: Resources
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
-    # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
-    env: Dict[str, str] = field(default_factory=dict)
+    env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
 
 
@@ -148,6 +147,18 @@ class Jobs(metaclass=NoPublicConstructor):
             volumes=volumes,
         )
 
+        return await self.run(
+            container, name=name, description=description, is_preemptible=is_preemptible
+        )
+
+    async def run(
+        self,
+        container: Container,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_preemptible: bool = False,
+    ) -> JobDescription:
         url = URL("jobs")
         payload: Dict[str, Any] = {
             "container": _container_to_api(container),

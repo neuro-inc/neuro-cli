@@ -569,8 +569,7 @@ class TestSimpleJobsFormatter:
                     finished_at="2018-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="ubuntu:latest",
-                    resources=Resources(16, 0.1, 0, None, False),
+                    image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -589,8 +588,7 @@ class TestSimpleJobsFormatter:
                     finished_at="2018-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="ubuntu:latest",
-                    resources=Resources(16, 0.1, 0, None, False),
+                    image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -625,9 +623,7 @@ class TestTabularJobRow:
                 finished_at="2017-03-04T12:28:59.759433+00:00",
             ),
             container=Container(
-                image=image,
-                resources=Resources(16, 0.1, 0, None, False),
-                command="ls",
+                image=image, resources=Resources(16, 0.1, 0, None, False), command="ls"
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -703,9 +699,7 @@ class TestTabularJobsFormatter:
                 finished_at=datetime.fromtimestamp(time.time() - 1).isoformat(),
             ),
             container=Container(
-                image="i:l",
-                resources=Resources(16, 0.1, 0, None, False),
-                command="c",
+                image="i:l", resources=Resources(16, 0.1, 0, None, False), command="c"
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -1141,9 +1135,7 @@ class TestFilesFormatter:
 
 class TestResourcesFormatter:
     def test_tiny_container(self) -> None:
-        resources = Resources(
-            cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=False
-        )
+        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=False)
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
@@ -1164,9 +1156,7 @@ class TestResourcesFormatter:
         )
 
     def test_shm_container(self) -> None:
-        resources = Resources(
-            cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True
-        )
+        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True)
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
