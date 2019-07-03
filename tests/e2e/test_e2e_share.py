@@ -96,7 +96,7 @@ def test_revoke_no_effect(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["-v", "acl", "revoke", uri, "public"])
     assert cm.value.returncode == 127
-    expected_out = "Operation has no effect."
+    expected_out = "Operation has no effect"
     assert expected_out in cm.value.stdout
     expected_err = f"Using resource '{uri}'"
     assert expected_err in cm.value.stderr
