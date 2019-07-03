@@ -4,15 +4,19 @@ from typing import Optional
 
 class AbstractProgress(abc.ABC):
     @abc.abstractmethod
-    def start(self, file: str, size: int) -> None:  # pragma: no cover
+    def start(self, src: str, dst: str, size: int) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def complete(self, file: str) -> None:  # pragma: no cover
+    def complete(self, src: str, dst: str) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def progress(self, file: str, current: int) -> None:  # pragma: no cover
+    def progress(self, src: str, dst: str, current: int) -> None:  # pragma: no cover
+        pass
+
+    @abc.abstractmethod
+    def mkdir(self, src: str, dst: str) -> None:  # pragma: no cover
         pass
 
 

@@ -7,31 +7,47 @@ from neuromation.cli.command_progress_report import (
 
 
 def test_progress_factory_none() -> None:
-    progress = ProgressBase.create_progress(False)
+    progress = ProgressBase.create_progress(False, False)
+    assert progress is None
+
+
+def test_progress_factory_verbose() -> None:
+    progress = ProgressBase.create_progress(False, True)
     assert isinstance(progress, ProgressBase)
 
 
 def test_progress_factory_percent() -> None:
-    progress = ProgressBase.create_progress(True)
+    progress = ProgressBase.create_progress(True, False)
     assert isinstance(progress, StandardPrintPercentOnly)
 
 
 def test_simple_progress(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
-    file_name = "abc"
+    src = "abc"
+    dst = "xyz"
 
-    report.start(file_name, 100)
+    report.start(src, dst, 600)
     captured = capsys.readouterr()
-    assert captured.out == f"Starting file {file_name}.\n"
+    assert captured.out == f"Start copying {src!r} -> {dst!r}.\n"
 
-    report.progress(file_name, 50)
+    report.progress(src, dst, 300)
     captured = capsys.readouterr()
-    assert captured.out == f"\r{file_name}: 50.00%."
+    assert captured.out == f"\r{src!r} -> {dst!r}: 50.00%."
 
-    report.progress(file_name, 75)
+    report.progress(src, dst, 400)
     captured = capsys.readouterr()
-    assert captured.out == f"\r{file_name}: 75.00%."
+    assert captured.out == f"\r{src!r} -> {dst!r}: 66.67%."
 
-    report.complete(file_name)
+    report.complete(src, dst)
     captured = capsys.readouterr()
-    assert captured.out == f"\rFile {file_name} upload complete.\n"
+    assert captured.out == f"\rFile {src!r} -> {dst!r} copying completed.\n"
+
+
+def test_mkdir(capsys: Any) -> None:
+    report = StandardPrintPercentOnly()
+    src = "abc"
+    dst = "xyz"
+
+    report.mkdir(src, dst)
+    captured = capsys.readouterr()
+    assert captured.out == f"Copy directory {src!r} -> {dst!r}.\n"

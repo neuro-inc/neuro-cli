@@ -5,7 +5,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 
 import attr
 from yarl import URL
@@ -22,6 +22,8 @@ from .utils import NoPublicConstructor
 
 
 log = logging.getLogger(__name__)
+
+Printer = Callable[[str], None]
 
 
 class FileStatusType(str, enum.Enum):
@@ -172,22 +174,22 @@ class Storage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, *, progress: Optional[AbstractProgress] = None
+        self, src: Path, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         with src.open("rb") as stream:
             if progress is not None:
-                progress.start(str(src), os.stat(stream.fileno()).st_size)
+                progress.start(str(src), str(dst), os.stat(stream.fileno()).st_size)
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
                 if progress is not None:
-                    progress.progress(str(src), pos)
+                    progress.progress(str(src), str(dst), pos)
                 yield chunk
                 chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
                 pos += len(chunk)
             if progress is not None:
-                progress.complete(str(src))
+                progress.complete(str(src), str(dst))
 
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
@@ -228,7 +230,7 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
-        await self.create(dst, self._iterate_file(path, progress=progress))
+        await self.create(dst, self._iterate_file(path, dst, progress=progress))
 
     async def upload_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
@@ -249,6 +251,8 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
+        if progress is not None:
+            progress.mkdir(str(path), str(dst))
         for child in path.iterdir():
             if child.is_file():
                 await self.upload_file(
@@ -287,15 +291,15 @@ class Storage(metaclass=NoPublicConstructor):
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
             size = stat.size
             if progress is not None:
-                progress.start(str(dst), size)
+                progress.start(str(src), str(path), size)
             pos = 0
             async for chunk in self.open(src):
                 pos += len(chunk)
                 if progress is not None:
-                    progress.progress(str(dst), pos)
+                    progress.progress(str(src), str(path), pos)
                 await loop.run_in_executor(None, stream.write, chunk)
             if progress is not None:
-                progress.complete(str(dst))
+                progress.complete(str(src), str(path))
 
     async def download_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
@@ -304,6 +308,8 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
+        if progress is not None:
+            progress.mkdir(str(src), str(path))
         for child in await self.ls(src):
             if child.is_file():
                 await self.download_file(
