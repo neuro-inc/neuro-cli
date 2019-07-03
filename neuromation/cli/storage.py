@@ -48,9 +48,10 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
     """
     for path in paths:
         uri = parse_file_resource(path, root)
-        log.info(f"Using path '{uri}'")
 
         await root.client.storage.rm(uri, recursive=recursive)
+        if root.verbosity > 0:
+            click.echo(f"removed {str(uri)!r}")
 
 
 @command()
@@ -93,7 +94,8 @@ async def ls(
                 formatter = SimpleFilesFormatter(root.color)
 
         uri = parse_file_resource(path, root)
-        log.info(f"Using path '{uri}'")
+        if root.verbosity > 0:
+            click.echo(f"List of {str(uri)!r}:")
 
         files = await root.client.storage.ls(uri)
 
@@ -183,19 +185,17 @@ async def cp(
     for source in sources:
         src = parse_file_resource(source, root)
 
-        progress_obj = ProgressBase.create_progress(progress)
+        progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
 
         if target_dir:
             dst = target_dir / src.name
         assert dst
         if src.scheme == "file" and dst.scheme == "storage":
-            log.info(f"Using source path:      '{src}'")
             if recursive:
                 await root.client.storage.upload_dir(src, dst, progress=progress_obj)
             else:
                 await root.client.storage.upload_file(src, dst, progress=progress_obj)
         elif src.scheme == "storage" and dst.scheme == "file":
-            log.info(f"Using source path:      '{src}'")
             if recursive:
                 await root.client.storage.download_dir(src, dst, progress=progress_obj)
             else:
@@ -224,9 +224,10 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 
     for path in paths:
         uri = parse_file_resource(path, root)
-        log.info(f"Using path '{uri}'")
 
         await root.client.storage.mkdirs(uri, parents=parents, exist_ok=parents)
+        if root.verbosity > 0:
+            click.echo(f"created directory {str(uri)!r}")
 
 
 @command()
@@ -254,12 +255,12 @@ async def mv(root: Root, sources: Sequence[str], destination: str) -> None:
     """
 
     dst = parse_file_resource(destination, root)
-    log.info(f"Using destination path: '{dst}'")
     for source in sources:
         src = parse_file_resource(source, root)
-        log.info(f"Using source path:      '{src}'")
 
         await root.client.storage.mv(src, dst)
+        if root.verbosity > 0:
+            click.echo(f"{str(src)!r} -> {str(dst)!r}")
 
 
 storage.add_command(cp)

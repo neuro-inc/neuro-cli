@@ -31,7 +31,6 @@ from .jobs import (
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
-    NetworkPortForwarding,
     Resources,
     Volume,
 )
@@ -52,7 +51,6 @@ __all__ = (
     "JobStatus",
     "JobStatusHistory",
     "JobTelemetry",
-    "NetworkPortForwarding",
     "Resources",
     "Volume",
     "HTTPPort",

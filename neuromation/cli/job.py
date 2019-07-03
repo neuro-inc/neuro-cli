@@ -10,11 +10,11 @@ import click
 
 from neuromation.api import (
     DockerImage,
+    HTTPPort,
     Image,
     ImageNameParser,
     JobDescription,
     JobStatus,
-    NetworkPortForwarding,
     Resources,
     Volume,
 )
@@ -123,13 +123,14 @@ def job() -> None:
     show_default=True,
     help="Request extended '/dev/shm' space",
 )
-@click.option("--http", type=int, help="Enable HTTP port forwarding to container")
+@click.option(
+    "--http", type=int, metavar="PORT", help="Enable HTTP port forwarding to container"
+)
 @click.option(
     "--http-auth/--no-http-auth",
     is_flag=True,
-    help="Enable HTTP authentication for forwarded HTTP port",
-    default=True,
-    show_default=True,
+    help="Enable HTTP authentication for forwarded HTTP port  [default: True]",
+    default=None,
 )
 @click.option(
     "--preemptible/--non-preemptible",
@@ -139,13 +140,7 @@ def job() -> None:
     show_default=True,
 )
 @click.option(
-    "-n",
-    "--name",
-    metavar="NAME",
-    type=str,
-    help="Optional job name",
-    default=None,
-    show_default=True,
+    "-n", "--name", metavar="NAME", type=str, help="Optional job name", default=None
 )
 @click.option(
     "-d",
@@ -193,8 +188,8 @@ async def submit(
     cpu: float,
     memory: int,
     extshm: bool,
-    http: int,
-    http_auth: bool,
+    http: Optional[int],
+    http_auth: Optional[bool],
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
@@ -507,6 +502,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @click.option(
     "--http",
     type=int,
+    metavar="PORT",
     default=80,
     show_default=True,
     help="Enable HTTP port forwarding to container",
@@ -514,9 +510,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @click.option(
     "--http-auth/--no-http-auth",
     is_flag=True,
-    help="Enable HTTP authentication for forwarded HTTP port",
-    default=True,
-    show_default=True,
+    help="Enable HTTP authentication for forwarded HTTP port  [default: True]",
+    default=None,
 )
 @click.option(
     "--preemptible/--non-preemptible",
@@ -578,7 +573,7 @@ async def run(
     preset: str,
     extshm: bool,
     http: int,
-    http_auth: bool,
+    http_auth: Optional[bool],
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
@@ -655,8 +650,8 @@ async def run_job(
     cpu: float,
     memory: int,
     extshm: bool,
-    http: int,
-    http_auth: bool,
+    http: Optional[int],
+    http_auth: Optional[bool],
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
@@ -667,8 +662,17 @@ async def run_job(
     wait_start: bool,
     browse: bool,
 ) -> None:
+    if http_auth is None:
+        http_auth = True
+    elif not http:
+        if http_auth:
+            raise click.UsageError("--http-auth requires --http")
+        else:
+            raise click.UsageError("--no-http-auth requires --http")
+    if browse and not http:
+        raise click.UsageError("--browse requires --http")
     if browse and not wait_start:
-        raise ValueError("Cannot use --browse and --no-wait-start together")
+        raise click.UsageError("Cannot use --browse and --no-wait-start together")
 
     username = root.username
 
@@ -681,7 +685,6 @@ async def run_job(
     log.debug(f"IMAGE: {image}")
     image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    network = NetworkPortForwarding.from_cli(http, http_auth)
     resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
 
     volumes: Set[Volume] = set()
@@ -705,7 +708,7 @@ async def run_job(
     job = await root.client.jobs.submit(
         image=image_obj,
         resources=resources,
-        network=network,
+        http=HTTPPort(http, http_auth) if http else None,
         volumes=list(volumes) if volumes else None,
         is_preemptible=preemptible,
         name=name,

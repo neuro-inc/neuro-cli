@@ -3,17 +3,7 @@ import enum
 import json
 import shlex
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    SupportsInt,
-)
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Set
 
 import async_timeout
 import attr
@@ -64,24 +54,6 @@ class Resources:
             gpu=data.get("gpu", None),
             gpu_model=data.get("gpu_model", None),
         )
-
-
-@dataclass(frozen=True)
-class NetworkPortForwarding:
-    ports: Mapping[str, int]
-    http_auth: bool = True
-
-    @classmethod
-    def from_cli(
-        cls, http: SupportsInt, http_auth: bool = False
-    ) -> Optional["NetworkPortForwarding"]:
-        net = None
-        ports: Dict[str, int] = {}
-        if http:
-            ports["http"] = int(http)
-        if ports:
-            net = NetworkPortForwarding(ports=ports, http_auth=http_auth)
-        return net
 
 
 @dataclass(frozen=True)
@@ -158,31 +130,16 @@ class Volume:
 @dataclass(frozen=True)
 class HTTPPort:
     port: int
-    health_check_path: Optional[str] = None
-    requires_auth: bool = False
+    requires_auth: bool = True
 
     def to_api(self) -> Dict[str, Any]:
-        ret: Dict[str, Any] = {"port": self.port, "requires_auth": self.requires_auth}
-        if self.health_check_path is not None:
-            ret["health_check_path"] = self.health_check_path
-        return ret
+        return {"port": self.port, "requires_auth": self.requires_auth}
 
     @classmethod
     def from_api(cls, data: Dict[str, Any]) -> "HTTPPort":
         return HTTPPort(
-            port=data.get("port", -1),
-            health_check_path=data.get("health_check_path"),
-            requires_auth=data.get("requires_auth", False),
+            port=data.get("port", -1), requires_auth=data.get("requires_auth", False)
         )
-
-
-def network_to_api(network: Optional["NetworkPortForwarding"]) -> Optional[HTTPPort]:
-    http = None
-    if network and "http" in network.ports:
-        http = HTTPPort.from_api(
-            {"port": network.ports["http"], "requires_auth": network.http_auth}
-        )
-    return http
 
 
 @dataclass(frozen=True)
@@ -321,14 +278,13 @@ class Jobs(metaclass=NoPublicConstructor):
         *,
         image: Image,
         resources: Resources,
-        network: Optional[NetworkPortForwarding] = None,
+        http: Optional[HTTPPort] = None,
         volumes: Optional[List[Volume]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_preemptible: bool = False,
         env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
-        http = network_to_api(network)
         if env is None:
             real_env: Dict[str, str] = {}
         else:
