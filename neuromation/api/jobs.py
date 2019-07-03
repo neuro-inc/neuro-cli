@@ -24,8 +24,8 @@ class Resources:
     memory_mb: int
     cpu: float
     gpu: Optional[int]
-    shm: Optional[bool]
     gpu_model: Optional[str]
+    shm: Optional[bool]
 
     @classmethod
     def create(
@@ -36,7 +36,7 @@ class Resources:
         memory: int,
         extshm: bool,
     ) -> "Resources":
-        return cls(memory, cpu, gpu, extshm, gpu_model)
+        return cls(memory, cpu, gpu, gpu_model, extshm)
 
 
 @dataclass(frozen=True)

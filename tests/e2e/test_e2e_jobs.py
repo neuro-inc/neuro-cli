@@ -666,7 +666,7 @@ async def nginx_job_async(
         )
         job = await client.jobs.submit(
             image=Image(NGINX_IMAGE_NAME, command=command),
-            resources=Resources.create(0.1, None, None, 20, True),
+            resources=Resources(20, 0.1, None, None, True),
             is_preemptible=False,
             volumes=None,
             description="test NGINX job",

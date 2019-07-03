@@ -382,7 +382,7 @@ async def test_job_submit(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
@@ -477,7 +477,7 @@ async def test_job_submit_with_name_and_description(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
@@ -560,7 +560,7 @@ async def test_job_submit_no_volumes(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
         ret = await client.jobs.submit(
             image=image,
             resources=resources,
@@ -648,7 +648,7 @@ async def test_job_submit_preemptible(
 
     async with make_client(srv.make_url("/")) as client:
         image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(

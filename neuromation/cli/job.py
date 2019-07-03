@@ -679,7 +679,7 @@ async def run_job(
     log.debug(f"IMAGE: {image}")
     image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+    resources = Resources(memory, cpu, gpu, gpu_model, extshm)
 
     volumes: Set[Volume] = set()
     for v in volume:
