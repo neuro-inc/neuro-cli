@@ -126,32 +126,6 @@ class Container:
     env: Dict[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
 
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "Container":
-        return Container(
-            image=data["image"],
-            resources=_resources_from_api(data["resources"]),
-            command=data.get("command", None),
-            http=_http_port_from_api(data["http"]) if "http" in data else None,
-            env=data.get("env", dict()),
-            volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
-        )
-
-    def to_api(self) -> Dict[str, Any]:
-        primitive: Dict[str, Any] = {
-            "image": self.image,
-            "resources": _resources_to_api(self.resources),
-        }
-        if self.command:
-            primitive["command"] = self.command
-        if self.http:
-            primitive["http"] = _http_port_to_api(self.http)
-        if self.env:
-            primitive["env"] = self.env
-        if self.volumes:
-            primitive["volumes"] = [v.to_api() for v in self.volumes]
-        return primitive
-
 
 @dataclass(frozen=True)
 class JobStatusHistory:
@@ -189,7 +163,7 @@ class JobDescription:
 
     @classmethod
     def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
-        container = Container.from_api(res["container"])
+        container = _container_from_api(res["container"])
         owner = res["owner"]
         name = res.get("name")
         description = res.get("description")
@@ -278,7 +252,7 @@ class Jobs(metaclass=NoPublicConstructor):
 
         url = URL("jobs")
         payload: Dict[str, Any] = {
-            "container": container.to_api(),
+            "container": _container_to_api(container),
             "is_preemptible": is_preemptible,
         }
         if name:
@@ -478,3 +452,30 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
     return HTTPPort(
         port=data.get("port", -1), requires_auth=data.get("requires_auth", False)
     )
+
+
+def _container_from_api(data: Dict[str, Any]) -> Container:
+    return Container(
+        image=data["image"],
+        resources=_resources_from_api(data["resources"]),
+        command=data.get("command", None),
+        http=_http_port_from_api(data["http"]) if "http" in data else None,
+        env=data.get("env", dict()),
+        volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
+    )
+
+
+def _container_to_api(container: Container) -> Dict[str, Any]:
+    primitive: Dict[str, Any] = {
+        "image": container.image,
+        "resources": _resources_to_api(container.resources),
+    }
+    if container.command:
+        primitive["command"] = container.command
+    if container.http:
+        primitive["http"] = _http_port_to_api(container.http)
+    if container.env:
+        primitive["env"] = container.env
+    if container.volumes:
+        primitive["volumes"] = [v.to_api() for v in container.volumes]
+    return primitive
