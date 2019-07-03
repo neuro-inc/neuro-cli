@@ -114,13 +114,6 @@ class JobDescription:
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
-    def jump_host(self) -> Optional[str]:
-        ssh_hostname = self.ssh_server.host
-        if ssh_hostname is None:
-            return None
-        ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
-        return ssh_hostname
-
 
 @dataclass(frozen=True)
 class JobTelemetry:
