@@ -27,17 +27,6 @@ class Resources:
     gpu_model: Optional[str]
     shm: Optional[bool]
 
-    @classmethod
-    def create(
-        cls,
-        cpu: float,
-        gpu: Optional[int],
-        gpu_model: Optional[str],
-        memory: int,
-        extshm: bool,
-    ) -> "Resources":
-        return cls(memory, cpu, gpu, gpu_model, extshm)
-
 
 @dataclass(frozen=True)
 class Image:
