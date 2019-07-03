@@ -9,6 +9,7 @@ import pytest
 import yaml
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
+from jose import jwt
 from yarl import URL
 
 import neuromation.api.config_factory
@@ -25,11 +26,6 @@ from tests import _TestServerFactory
 
 
 @pytest.fixture
-def token() -> str:
-    return str(uuid())
-
-
-@pytest.fixture
 def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
     monkeypatch.setattr(Path, "home", lambda: tmp_path)  # Like as it's not enough
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -39,10 +35,10 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 
 @pytest.fixture
 def config_file(
-    tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+    tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: _ClusterConfig
 ) -> Path:
     config_path = tmp_home / ".nmrc"
-    _create_config(config_path, auth_config, cluster_config)
+    _create_config(config_path, token, auth_config, cluster_config)
     return config_path
 
 
@@ -121,9 +117,11 @@ async def mock_for_login(aiohttp_server: _TestServerFactory) -> _TestServer:
 
 
 def _create_config(
-    nmrc_path: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+    nmrc_path: Path,
+    token: str,
+    auth_config: _AuthConfig,
+    cluster_config: _ClusterConfig,
 ) -> str:
-    token = str(uuid())
     config = _Config(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
@@ -148,26 +146,40 @@ class TestConfigFileInteraction:
             await Factory().get()
 
     async def test_default_path(
-        self, tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+        self,
+        tmp_home: Path,
+        token: str,
+        auth_config: _AuthConfig,
+        cluster_config: _ClusterConfig,
     ) -> None:
-        token = _create_config(tmp_home / ".nmrc", auth_config, cluster_config)
+        token = _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
         assert client._config.auth_token.token == token
 
     async def test_shorten_path(
-        self, tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+        self,
+        tmp_home: Path,
+        token: str,
+        auth_config: _AuthConfig,
+        cluster_config: _ClusterConfig,
     ) -> None:
-        token = _create_config(tmp_home / "test.nmrc", auth_config, cluster_config)
+        token = _create_config(
+            tmp_home / "test.nmrc", token, auth_config, cluster_config
+        )
         client = await Factory(Path("~/test.nmrc")).get()
         await client.close()
         assert client._config.auth_token.token == token
 
     async def test_full_path(
-        self, tmp_home: Path, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+        self,
+        tmp_home: Path,
+        token: str,
+        auth_config: _AuthConfig,
+        cluster_config: _ClusterConfig,
     ) -> None:
         config_path = tmp_home / "test.nmrc"
-        token = _create_config(config_path, auth_config, cluster_config)
+        token = _create_config(config_path, token, auth_config, cluster_config)
         client = await Factory(config_path).get()
         await client.close()
         assert client._config.auth_token.token == token
@@ -175,7 +187,7 @@ class TestConfigFileInteraction:
     async def test_token_autorefreshing(
         self, config_file: Path, monkeypatch: Any
     ) -> None:
-        new_token = str(uuid()) + "changed" * 10  # token must has other size
+        new_token = jwt.encode({"identity": "new_user"}, "secret", algorithm="HS256")
 
         async def _refresh_token_mock(
             connector: aiohttp.BaseConnector,

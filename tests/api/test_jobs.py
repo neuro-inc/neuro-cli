@@ -673,9 +673,10 @@ async def test_job_submit_preemptible(
 @pytest.mark.parametrize(
     "volume", ["storage:///", ":", "::::", "", "storage:///data/:/data/rest:wrong"]
 )
-def test_volume_from_str_fail(volume: str) -> None:
-    with pytest.raises(ValueError):
-        Volume.from_cli("testuser", volume)
+async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        with pytest.raises(ValueError):
+            client.jobs.parse_volume(volume)
 
 
 def create_job_response(
@@ -813,40 +814,46 @@ class TestVolumeParsing:
     @pytest.mark.parametrize(
         "volume_param", ["dir", "storage://dir", "storage://dir:/var/www:rw:ro"]
     )
-    def test_incorrect_params_count(self, volume_param: str) -> None:
-        with pytest.raises(ValueError, match=r"Invalid volume specification"):
-            Volume.from_cli("bob", volume_param)
+    async def test_incorrect_params_count(
+        self, volume_param: str, make_client: _MakeClient
+    ) -> None:
+        async with make_client("https://example.com") as client:
+            with pytest.raises(ValueError, match=r"Invalid volume specification"):
+                client.jobs.parse_volume(volume_param)
 
     @pytest.mark.parametrize(
         "volume_param", ["storage://dir:/var/www:write", "storage://dir:/var/www:"]
     )
-    def test_incorrect_mode(self, volume_param: str) -> None:
-        with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
-            Volume.from_cli("bob", volume_param)
+    async def test_incorrect_mode(
+        self, volume_param: str, make_client: _MakeClient
+    ) -> None:
+        async with make_client("https://example.com") as client:
+            with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
+                client.jobs.parse_volume(volume_param)
 
     @pytest.mark.parametrize(
         "volume_param,volume",
         [
             (
-                "storage://bob/dir:/var/www",
+                "storage://user/dir:/var/www",
                 Volume(
-                    storage_path="storage://bob/dir",
+                    storage_path="storage://user/dir",
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://bob/dir:/var/www:rw",
+                "storage://user/dir:/var/www:rw",
                 Volume(
-                    storage_path="storage://bob/dir",
+                    storage_path="storage://user/dir",
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://bob:/var/www:ro",
+                "storage://user:/var/www:ro",
                 Volume(
-                    storage_path="storage://bob",
+                    storage_path="storage://user",
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -854,7 +861,7 @@ class TestVolumeParsing:
             (
                 "storage://~/:/var/www:ro",
                 Volume(
-                    storage_path="storage://bob",
+                    storage_path="storage://user",
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -862,7 +869,7 @@ class TestVolumeParsing:
             (
                 "storage:dir:/var/www:ro",
                 Volume(
-                    storage_path="storage://bob/dir",
+                    storage_path="storage://user/dir",
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -870,15 +877,18 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_path="storage://bob",
+                    storage_path="storage://user",
                     container_path="/var/www",
                     read_only=True,
                 ),
             ),
         ],
     )
-    def test_positive(self, volume_param: str, volume: Volume) -> None:
-        assert Volume.from_cli("bob", volume_param) == volume
+    async def test_positive(
+        self, volume_param: str, volume: Volume, make_client: _MakeClient
+    ) -> None:
+        async with make_client("https://example.com") as client:
+            assert client.jobs.parse_volume(volume_param) == volume
 
 
 async def test_list_filter_by_name_and_statuses(

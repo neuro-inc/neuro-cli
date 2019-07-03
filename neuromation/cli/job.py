@@ -670,8 +670,6 @@ async def run_job(
     if browse and not wait_start:
         raise ValueError("Cannot use --browse and --no-wait-start together")
 
-    username = root.username
-
     env_dict = build_env(env, env_file)
 
     cmd = " ".join(cmd) if cmd is not None else None
@@ -686,14 +684,16 @@ async def run_job(
     volumes: Set[Volume] = set()
     for v in volume:
         if v == "HOME":
-            volumes.add(Volume.from_cli(username, "storage://~:/var/storage/home:rw"))
             volumes.add(
-                Volume.from_cli(
-                    username, "storage://neuromation:/var/storage/neuromation:ro"
+                root.client.jobs.parse_volume("storage://~:/var/storage/home:rw")
+            )
+            volumes.add(
+                root.client.jobs.parse_volume(
+                    "storage://neuromation:/var/storage/neuromation:ro"
                 )
             )
         else:
-            volumes.add(Volume.from_cli(username, v))
+            volumes.add(root.client.jobs.parse_volume(v))
 
     if volumes:
         log.info(

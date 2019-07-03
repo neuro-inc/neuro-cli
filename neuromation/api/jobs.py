@@ -69,27 +69,6 @@ class Volume:
     container_path: str
     read_only: bool
 
-    @classmethod
-    def from_cli(cls, username: str, volume: str) -> "Volume":
-        parts = volume.split(":")
-
-        read_only = False
-        if len(parts) == 4:
-            if parts[-1] not in ["ro", "rw"]:
-                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
-            read_only = parts.pop() == "ro"
-        elif len(parts) != 3:
-            raise ValueError(f"Invalid volume specification '{volume}'")
-
-        container_path = parts.pop()
-        storage_path = normalize_storage_path_uri(URL(":".join(parts)), username)
-
-        return Volume(
-            storage_path=str(storage_path),
-            container_path=container_path,
-            read_only=read_only,
-        )
-
 
 @dataclass(frozen=True)
 class HTTPPort:
@@ -153,9 +132,10 @@ class JobTelemetry:
 
 
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: _Config, username: str) -> None:
         self._core = core
         self._config = config
+        self._username = username
 
     async def submit(
         self,
@@ -356,6 +336,26 @@ class Jobs(metaclass=NoPublicConstructor):
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
+
+    def parse_volume(self, volume: str) -> Volume:
+        parts = volume.split(":")
+
+        read_only = False
+        if len(parts) == 4:
+            if parts[-1] not in ["ro", "rw"]:
+                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
+            read_only = parts.pop() == "ro"
+        elif len(parts) != 3:
+            raise ValueError(f"Invalid volume specification '{volume}'")
+
+        container_path = parts.pop()
+        storage_path = normalize_storage_path_uri(URL(":".join(parts)), self._username)
+
+        return Volume(
+            storage_path=str(storage_path),
+            container_path=container_path,
+            read_only=read_only,
+        )
 
 
 #  ############## Internal helpers ###################
