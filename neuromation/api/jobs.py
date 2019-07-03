@@ -69,25 +69,6 @@ class Volume:
     container_path: str
     read_only: bool
 
-    def to_api(self) -> Dict[str, Any]:
-        resp: Dict[str, Any] = {
-            "src_storage_uri": self.storage_path,
-            "dst_path": self.container_path,
-            "read_only": bool(self.read_only),
-        }
-        return resp
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "Volume":
-        storage_path = data["src_storage_uri"]
-        container_path = data["dst_path"]
-        read_only = data.get("read_only", True)
-        return Volume(
-            storage_path=storage_path,
-            container_path=container_path,
-            read_only=read_only,
-        )
-
     @classmethod
     def from_cli(cls, username: str, volume: str) -> "Volume":
         parts = volume.split(":")
@@ -419,7 +400,7 @@ def _container_from_api(data: Dict[str, Any]) -> Container:
         command=data.get("command", None),
         http=_http_port_from_api(data["http"]) if "http" in data else None,
         env=data.get("env", dict()),
-        volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
+        volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
     )
 
 
@@ -435,7 +416,7 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
     if container.env:
         primitive["env"] = container.env
     if container.volumes:
-        primitive["volumes"] = [v.to_api() for v in container.volumes]
+        primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
     return primitive
 
 
@@ -481,4 +462,22 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
         timestamp=value["timestamp"],
         gpu_duty_cycle=value.get("gpu_duty_cycle"),
         gpu_memory=value.get("gpu_memory"),
+    )
+
+
+def _volume_to_api(volume: Volume) -> Dict[str, Any]:
+    resp: Dict[str, Any] = {
+        "src_storage_uri": volume.storage_path,
+        "dst_path": volume.container_path,
+        "read_only": bool(volume.read_only),
+    }
+    return resp
+
+
+def _volume_from_api(data: Dict[str, Any]) -> Volume:
+    storage_path = data["src_storage_uri"]
+    container_path = data["dst_path"]
+    read_only = data.get("read_only", True)
+    return Volume(
+        storage_path=storage_path, container_path=container_path, read_only=read_only
     )
