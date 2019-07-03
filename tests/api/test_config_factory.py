@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 from unittest import mock
-from uuid import uuid4 as uuid
 
 import aiohttp
 import pytest
