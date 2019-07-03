@@ -12,7 +12,7 @@ import pytest
 from aiohttp.test_utils import unused_port
 from yarl import URL
 
-from neuromation.api import Image, JobStatus, Resources, get as api_get
+from neuromation.api import Container, JobStatus, Resources, get as api_get
 from neuromation.utils import run as run_async
 from tests.e2e import Helper
 
@@ -664,13 +664,14 @@ async def nginx_job_async(
             f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
             f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
-        job = await client.jobs.submit(
-            image=Image(NGINX_IMAGE_NAME, command=command),
+        container = Container(
+            image=NGINX_IMAGE_NAME,
+            command=command,
             resources=Resources(20, 0.1, None, None, True),
-            is_preemptible=False,
-            volumes=None,
-            description="test NGINX job",
-            env={},
+        )
+
+        job = await client.jobs.run(
+            container, is_preemptible=False, description="test NGINX job"
         )
         try:
             for i in range(60):

@@ -5,8 +5,8 @@ from aiohttp import web
 
 from neuromation.api import (
     Client,
+    Container,
     HTTPPort,
-    Image,
     JobStatus,
     JobTelemetry,
     ResourceNotFound,
@@ -381,7 +381,6 @@ async def test_job_submit(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -391,13 +390,14 @@ async def test_job_submit(
                 False,
             ),
         ]
-        ret = await client.jobs.submit(
-            image=image,
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
-            http=HTTPPort(8181),
             volumes=volumes,
-            is_preemptible=False,
+            http=HTTPPort(8181),
         )
+        ret = await client.jobs.run(container=container, is_preemptible=False)
 
     assert ret == _job_description_from_api(JSON)
 
@@ -476,7 +476,6 @@ async def test_job_submit_with_name_and_description(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -486,11 +485,15 @@ async def test_job_submit_with_name_and_description(
                 False,
             ),
         ]
-        ret = await client.jobs.submit(
-            image=image,
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
-            http=HTTPPort(8181),
             volumes=volumes,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(
+            container,
             is_preemptible=False,
             name="test-job-name",
             description="job description",
@@ -518,7 +521,7 @@ async def test_job_submit_no_volumes(
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
             "resources": {
-                "cpu": 1.0,
+                "cpu": 7,
                 "memory_mb": 16384,
                 "gpu": 1,
                 "shm": False,
@@ -540,7 +543,7 @@ async def test_job_submit_no_volumes(
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
                     "memory_mb": 16384,
-                    "cpu": 7.0,
+                    "cpu": 7,
                     "shm": True,
                     "gpu": 1,
                     "gpu_model": "test-gpu-model",
@@ -559,13 +562,15 @@ async def test_job_submit_no_volumes(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
-        ret = await client.jobs.submit(
-            image=image,
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
             http=HTTPPort(8181),
-            volumes=None,
+        )
+        ret = await client.jobs.run(
+            container,
             is_preemptible=False,
             name="test-job-name",
             description="job description",
@@ -647,7 +652,6 @@ async def test_job_submit_preemptible(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
@@ -657,11 +661,15 @@ async def test_job_submit_preemptible(
                 False,
             ),
         ]
-        ret = await client.jobs.submit(
-            image=image,
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
-            http=HTTPPort(8181),
             volumes=volumes,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(
+            container,
             is_preemptible=True,
             name="test-job-name",
             description="job description",

@@ -9,9 +9,9 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 import click
 
 from neuromation.api import (
+    Container,
     DockerImage,
     HTTPPort,
-    Image,
     ImageNameParser,
     JobDescription,
     JobStatus,
@@ -677,7 +677,6 @@ async def run_job(
 
     log.info(f"Using image '{image.as_url_str()}'")
     log.debug(f"IMAGE: {image}")
-    image_obj = Image(image=image.as_repo_str(), command=cmd)
 
     resources = Resources(memory, cpu, gpu, gpu_model, extshm)
 
@@ -701,15 +700,17 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    job = await root.client.jobs.submit(
-        image=image_obj,
-        resources=resources,
+    container = Container(
+        image=image.as_repo_str(),
+        command=cmd,
         http=HTTPPort(http, http_auth) if http else None,
-        volumes=list(volumes) if volumes else None,
-        is_preemptible=preemptible,
-        name=name,
-        description=description,
+        resources=resources,
         env=env_dict,
+        volumes=list(volumes),
+    )
+
+    job = await root.client.jobs.run(
+        container, is_preemptible=preemptible, name=name, description=description
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)

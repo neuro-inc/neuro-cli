@@ -28,12 +28,6 @@ class Resources:
     shm: Optional[bool]
 
 
-@dataclass(frozen=True)
-class Image:
-    image: str
-    command: Optional[str]
-
-
 class JobStatus(str, enum.Enum):
     """An Enum subclass that represents job statuses.
     PENDING: a job is being created and scheduled. This includes finding (and
@@ -117,39 +111,6 @@ class Jobs(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
         self._username = username
-
-    async def submit(
-        self,
-        *,
-        image: Image,
-        resources: Resources,
-        http: Optional[HTTPPort] = None,
-        volumes: Optional[List[Volume]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        is_preemptible: bool = False,
-        env: Optional[Dict[str, str]] = None,
-    ) -> JobDescription:
-        if env is None:
-            real_env: Dict[str, str] = {}
-        else:
-            real_env = env
-        if volumes is not None:
-            volumes = volumes
-        else:
-            volumes = []
-        container = Container(
-            image=image.image,
-            command=image.command,
-            http=http,
-            resources=resources,
-            env=real_env,
-            volumes=volumes,
-        )
-
-        return await self.run(
-            container, name=name, description=description, is_preemptible=is_preemptible
-        )
 
     async def run(
         self,
