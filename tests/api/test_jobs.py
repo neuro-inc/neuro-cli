@@ -7,13 +7,13 @@ from neuromation.api import (
     Client,
     HTTPPort,
     Image,
-    JobDescription,
     JobStatus,
     JobTelemetry,
     ResourceNotFound,
     Resources,
     Volume,
 )
+from neuromation.api.jobs import _job_description_from_api
 from tests import _TestServerFactory
 
 
@@ -249,7 +249,7 @@ async def test_status_failed(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
 async def test_status_with_ssh_and_http(
@@ -308,7 +308,7 @@ async def test_status_with_ssh_and_http(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
 async def test_job_submit(
@@ -399,7 +399,7 @@ async def test_job_submit(
             is_preemptible=False,
         )
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
 async def test_job_submit_with_name_and_description(
@@ -495,7 +495,7 @@ async def test_job_submit_with_name_and_description(
             name="test-job-name",
             description="job description",
         )
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
 async def test_job_submit_no_volumes(
@@ -571,7 +571,7 @@ async def test_job_submit_no_volumes(
             description="job description",
         )
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
 async def test_job_submit_preemptible(
@@ -667,7 +667,7 @@ async def test_job_submit_preemptible(
             description="job description",
         )
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
 @pytest.mark.parametrize(
@@ -732,7 +732,7 @@ async def test_list_no_filter(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list()
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == job_descriptions
 
 
@@ -768,7 +768,7 @@ async def test_list_filter_by_name(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(name=name_1)
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == job_descriptions[:3]
 
 
@@ -805,7 +805,7 @@ async def test_list_filter_by_statuses(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses)
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == [job for job in job_descriptions if job.status in statuses]
 
 
@@ -919,5 +919,5 @@ async def test_list_filter_by_name_and_statuses(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses, name=name)
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == job_descriptions[:2]

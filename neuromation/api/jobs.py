@@ -161,41 +161,6 @@ class JobDescription:
         ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
         return ssh_hostname
 
-    @classmethod
-    def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
-        container = _container_from_api(res["container"])
-        owner = res["owner"]
-        name = res.get("name")
-        description = res.get("description")
-        history = JobStatusHistory(
-            status=JobStatus(res["history"].get("status", "unknown")),
-            reason=res["history"].get("reason", ""),
-            description=res["history"].get("description", ""),
-            created_at=res["history"].get("created_at", ""),
-            started_at=res["history"].get("started_at", ""),
-            finished_at=res["history"].get("finished_at", ""),
-            exit_code=res["history"].get("exit_code"),
-        )
-        http_url = URL(res.get("http_url", ""))
-        http_url_named = URL(res.get("http_url_named", ""))
-        ssh_server = URL(res.get("ssh_server", ""))
-        internal_hostname = res.get("internal_hostname", None)
-        return JobDescription(
-            status=JobStatus(res["status"]),
-            id=res["id"],
-            owner=owner,
-            history=history,
-            container=container,
-            is_preemptible=res["is_preemptible"],
-            name=name,
-            description=description,
-            http_url=http_url,
-            http_url_named=http_url_named,
-            ssh_server=ssh_server,
-            ssh_auth_server=URL(res["ssh_auth_server"]),
-            internal_hostname=internal_hostname,
-        )
-
 
 @dataclass(frozen=True)
 class JobTelemetry:
@@ -261,7 +226,7 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
-            return JobDescription.from_api(res)
+            return _job_description_from_api(res)
 
     async def list(
         self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
@@ -275,7 +240,7 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         async with self._core.request("GET", url, params=params) as resp:
             ret = await resp.json()
-            return [JobDescription.from_api(j) for j in ret["jobs"]]
+            return [_job_description_from_api(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
@@ -298,7 +263,7 @@ class Jobs(metaclass=NoPublicConstructor):
         url = URL(f"jobs/{id}")
         async with self._core.request("GET", url) as resp:
             ret = await resp.json()
-            return JobDescription.from_api(ret)
+            return _job_description_from_api(ret)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = self._config.cluster_config.monitoring_url / f"{id}/top"
@@ -479,3 +444,38 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
     if container.volumes:
         primitive["volumes"] = [v.to_api() for v in container.volumes]
     return primitive
+
+
+def _job_description_from_api(res: Dict[str, Any]) -> JobDescription:
+    container = _container_from_api(res["container"])
+    owner = res["owner"]
+    name = res.get("name")
+    description = res.get("description")
+    history = JobStatusHistory(
+        status=JobStatus(res["history"].get("status", "unknown")),
+        reason=res["history"].get("reason", ""),
+        description=res["history"].get("description", ""),
+        created_at=res["history"].get("created_at", ""),
+        started_at=res["history"].get("started_at", ""),
+        finished_at=res["history"].get("finished_at", ""),
+        exit_code=res["history"].get("exit_code"),
+    )
+    http_url = URL(res.get("http_url", ""))
+    http_url_named = URL(res.get("http_url_named", ""))
+    ssh_server = URL(res.get("ssh_server", ""))
+    internal_hostname = res.get("internal_hostname", None)
+    return JobDescription(
+        status=JobStatus(res["status"]),
+        id=res["id"],
+        owner=owner,
+        history=history,
+        container=container,
+        is_preemptible=res["is_preemptible"],
+        name=name,
+        description=description,
+        http_url=http_url,
+        http_url_named=http_url_named,
+        ssh_server=ssh_server,
+        ssh_auth_server=URL(res["ssh_auth_server"]),
+        internal_hostname=internal_hostname,
+    )
