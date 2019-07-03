@@ -155,7 +155,7 @@ class Jobs(metaclass=NoPublicConstructor):
 
     async def monitor(
         self, id: str
-    ) -> Any:  # real type is async generator with data chunks
+    ) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.monitoring_url / f"{id}/log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
