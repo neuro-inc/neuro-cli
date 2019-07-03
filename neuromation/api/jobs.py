@@ -170,16 +170,6 @@ class JobTelemetry:
     gpu_duty_cycle: Optional[int] = None
     gpu_memory: Optional[float] = None
 
-    @classmethod
-    def from_api(cls, value: Dict[str, Any]) -> "JobTelemetry":
-        return cls(
-            cpu=value["cpu"],
-            memory=value["memory"],
-            timestamp=value["timestamp"],
-            gpu_duty_cycle=value.get("gpu_duty_cycle"),
-            gpu_memory=value.get("gpu_memory"),
-        )
-
 
 class Jobs(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
@@ -270,7 +260,7 @@ class Jobs(metaclass=NoPublicConstructor):
         try:
             received_any = False
             async for resp in self._core.ws_connect(url):
-                yield JobTelemetry.from_api(resp.json())  # type: ignore
+                yield _job_telemetry_from_api(resp.json())  # type: ignore
                 received_any = True
             if not received_any:
                 raise ValueError(f"Job is not running. Job Id = {id}")
@@ -387,6 +377,9 @@ class Jobs(metaclass=NoPublicConstructor):
             await asyncio.sleep(0.1)
 
 
+#  ############## Internal helpers ###################
+
+
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:
     value = {
         "memory_mb": resources.memory_mb,
@@ -478,4 +471,14 @@ def _job_description_from_api(res: Dict[str, Any]) -> JobDescription:
         ssh_server=ssh_server,
         ssh_auth_server=URL(res["ssh_auth_server"]),
         internal_hostname=internal_hostname,
+    )
+
+
+def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
+    return JobTelemetry(
+        cpu=value["cpu"],
+        memory=value["memory"],
+        timestamp=value["timestamp"],
+        gpu_duty_cycle=value.get("gpu_duty_cycle"),
+        gpu_memory=value.get("gpu_memory"),
     )
