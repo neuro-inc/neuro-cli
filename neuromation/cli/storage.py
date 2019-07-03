@@ -137,27 +137,18 @@ async def cp(
     for source in sources:
         src = parse_file_resource(source, root)
 
-        progress_obj = ProgressBase.create_progress(progress)
+        progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
 
-        echo = click.echo if root.verbosity > 0 else None
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
-                await root.client.storage.upload_dir(
-                    src, dst, progress=progress_obj, echo=echo
-                )
+                await root.client.storage.upload_dir(src, dst, progress=progress_obj)
             else:
-                await root.client.storage.upload_file(
-                    src, dst, progress=progress_obj, echo=echo
-                )
+                await root.client.storage.upload_file(src, dst, progress=progress_obj)
         elif src.scheme == "storage" and dst.scheme == "file":
             if recursive:
-                await root.client.storage.download_dir(
-                    src, dst, progress=progress_obj, echo=echo
-                )
+                await root.client.storage.download_dir(src, dst, progress=progress_obj)
             else:
-                await root.client.storage.download_file(
-                    src, dst, progress=progress_obj, echo=echo
-                )
+                await root.client.storage.download_file(src, dst, progress=progress_obj)
         else:
             raise RuntimeError(
                 f"Copy operation of the file with scheme '{src.scheme}'"
