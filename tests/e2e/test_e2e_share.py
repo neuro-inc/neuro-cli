@@ -96,10 +96,8 @@ def test_revoke_no_effect(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["-v", "acl", "revoke", uri, "public"])
     assert cm.value.returncode == 127
-    expected_out = "Operation has no effect."
-    assert expected_out in cm.value.stdout
-    expected_err = f"Using resource '{uri}'"
-    assert expected_err in cm.value.stderr
+    assert "Operation has no effect" in cm.value.stderr
+    assert f"Using resource '{uri}'" in cm.value.stderr
 
 
 @pytest.mark.e2e
@@ -130,4 +128,4 @@ def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
         request.addfinalizer(lambda: revoke(helper, uri, another_test_user))
         helper.run_cli(["acl", "grant", uri, another_test_user, "read"])
     assert cm.value.returncode == 127
-    assert "tag is not allowed" in cm.value.stdout
+    assert "tag is not allowed" in cm.value.stderr

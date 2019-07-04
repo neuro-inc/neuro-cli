@@ -811,6 +811,31 @@ def test_job_run(helper: Helper) -> None:
     assert "Exit code: 101" in store_out
 
 
+@pytest.mark.parametrize("http_auth", ["--http-auth", "--no-http-auth"])
+@pytest.mark.e2e
+def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(
+            [
+                "job",
+                "submit",
+                "-m",
+                "20M",
+                "-c",
+                "0.1",
+                "-g",
+                "0",
+                http_auth,
+                "--non-preemptible",
+                "--no-wait-start",
+                UBUNTU_IMAGE_NAME,
+                "true",
+            ]
+        )
+    assert cm.value.returncode == 2
+    assert f"{http_auth} requires --http" in cm.value.stderr
+
+
 @pytest.fixture
 def fakebrowser(monkeypatch: Any) -> None:
     monkeypatch.setitem(os.environ, "BROWSER", "echo Browsing %s")
