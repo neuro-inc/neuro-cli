@@ -3,7 +3,7 @@ import enum
 import json
 import shlex
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Set
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
 
 import async_timeout
 import attr
@@ -24,46 +24,13 @@ class Resources:
     memory_mb: int
     cpu: float
     gpu: Optional[int]
-    shm: Optional[bool]
     gpu_model: Optional[str]
-
-    @classmethod
-    def create(
-        cls,
-        cpu: float,
-        gpu: Optional[int],
-        gpu_model: Optional[str],
-        memory: int,
-        extshm: bool,
-    ) -> "Resources":
-        return cls(memory, cpu, gpu, extshm, gpu_model)
-
-    def to_api(self) -> Dict[str, Any]:
-        value = {"memory_mb": self.memory_mb, "cpu": self.cpu, "shm": self.shm}
-        if self.gpu:
-            value["gpu"] = self.gpu
-            value["gpu_model"] = self.gpu_model  # type: ignore
-        return value
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "Resources":
-        return Resources(
-            memory_mb=data["memory_mb"],
-            cpu=data["cpu"],
-            shm=data.get("shm", None),
-            gpu=data.get("gpu", None),
-            gpu_model=data.get("gpu_model", None),
-        )
-
-
-@dataclass(frozen=True)
-class Image:
-    image: str
-    command: Optional[str]
+    shm: Optional[bool]
 
 
 class JobStatus(str, enum.Enum):
     """An Enum subclass that represents job statuses.
+
     PENDING: a job is being created and scheduled. This includes finding (and
     possibly waiting for) sufficient amount of resources, pulling an image
     from a registry etc.
@@ -86,60 +53,11 @@ class Volume:
     container_path: str
     read_only: bool
 
-    def to_api(self) -> Dict[str, Any]:
-        resp: Dict[str, Any] = {
-            "src_storage_uri": self.storage_path,
-            "dst_path": self.container_path,
-            "read_only": bool(self.read_only),
-        }
-        return resp
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "Volume":
-        storage_path = data["src_storage_uri"]
-        container_path = data["dst_path"]
-        read_only = data.get("read_only", True)
-        return Volume(
-            storage_path=storage_path,
-            container_path=container_path,
-            read_only=read_only,
-        )
-
-    @classmethod
-    def from_cli(cls, username: str, volume: str) -> "Volume":
-        parts = volume.split(":")
-
-        read_only = False
-        if len(parts) == 4:
-            if parts[-1] not in ["ro", "rw"]:
-                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
-            read_only = parts.pop() == "ro"
-        elif len(parts) != 3:
-            raise ValueError(f"Invalid volume specification '{volume}'")
-
-        container_path = parts.pop()
-        storage_path = normalize_storage_path_uri(URL(":".join(parts)), username)
-
-        return Volume(
-            storage_path=str(storage_path),
-            container_path=container_path,
-            read_only=read_only,
-        )
-
 
 @dataclass(frozen=True)
 class HTTPPort:
     port: int
     requires_auth: bool = True
-
-    def to_api(self) -> Dict[str, Any]:
-        return {"port": self.port, "requires_auth": self.requires_auth}
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "HTTPPort":
-        return HTTPPort(
-            port=data.get("port", -1), requires_auth=data.get("requires_auth", False)
-        )
 
 
 @dataclass(frozen=True)
@@ -148,35 +66,8 @@ class Container:
     resources: Resources
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
-    # TODO (ASvetlov): replace mutable Dict and List with immutable Mapping and Sequence
-    env: Dict[str, str] = field(default_factory=dict)
+    env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
-
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> "Container":
-        return Container(
-            image=data["image"],
-            resources=Resources.from_api(data["resources"]),
-            command=data.get("command", None),
-            http=HTTPPort.from_api(data["http"]) if "http" in data else None,
-            env=data.get("env", dict()),
-            volumes=[Volume.from_api(v) for v in data.get("volumes", [])],
-        )
-
-    def to_api(self) -> Dict[str, Any]:
-        primitive: Dict[str, Any] = {
-            "image": self.image,
-            "resources": self.resources.to_api(),
-        }
-        if self.command:
-            primitive["command"] = self.command
-        if self.http:
-            primitive["http"] = self.http.to_api()
-        if self.env:
-            primitive["env"] = self.env
-        if self.volumes:
-            primitive["volumes"] = [v.to_api() for v in self.volumes]
-        return primitive
 
 
 @dataclass(frozen=True)
@@ -206,48 +97,6 @@ class JobDescription:
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
-    def jump_host(self) -> Optional[str]:
-        ssh_hostname = self.ssh_server.host
-        if ssh_hostname is None:
-            return None
-        ssh_hostname = ".".join(ssh_hostname.split(".")[1:])
-        return ssh_hostname
-
-    @classmethod
-    def from_api(cls, res: Dict[str, Any]) -> "JobDescription":
-        container = Container.from_api(res["container"])
-        owner = res["owner"]
-        name = res.get("name")
-        description = res.get("description")
-        history = JobStatusHistory(
-            status=JobStatus(res["history"].get("status", "unknown")),
-            reason=res["history"].get("reason", ""),
-            description=res["history"].get("description", ""),
-            created_at=res["history"].get("created_at", ""),
-            started_at=res["history"].get("started_at", ""),
-            finished_at=res["history"].get("finished_at", ""),
-            exit_code=res["history"].get("exit_code"),
-        )
-        http_url = URL(res.get("http_url", ""))
-        http_url_named = URL(res.get("http_url_named", ""))
-        ssh_server = URL(res.get("ssh_server", ""))
-        internal_hostname = res.get("internal_hostname", None)
-        return JobDescription(
-            status=JobStatus(res["status"]),
-            id=res["id"],
-            owner=owner,
-            history=history,
-            container=container,
-            is_preemptible=res["is_preemptible"],
-            name=name,
-            description=description,
-            http_url=http_url,
-            http_url_named=http_url_named,
-            ssh_server=ssh_server,
-            ssh_auth_server=URL(res["ssh_auth_server"]),
-            internal_hostname=internal_hostname,
-        )
-
 
 @dataclass(frozen=True)
 class JobTelemetry:
@@ -257,54 +106,24 @@ class JobTelemetry:
     gpu_duty_cycle: Optional[int] = None
     gpu_memory: Optional[float] = None
 
-    @classmethod
-    def from_api(cls, value: Dict[str, Any]) -> "JobTelemetry":
-        return cls(
-            cpu=value["cpu"],
-            memory=value["memory"],
-            timestamp=value["timestamp"],
-            gpu_duty_cycle=value.get("gpu_duty_cycle"),
-            gpu_memory=value.get("gpu_memory"),
-        )
-
 
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: _Config, username: str) -> None:
         self._core = core
         self._config = config
+        self._username = username
 
-    async def submit(
+    async def run(
         self,
+        container: Container,
         *,
-        image: Image,
-        resources: Resources,
-        http: Optional[HTTPPort] = None,
-        volumes: Optional[List[Volume]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_preemptible: bool = False,
-        env: Optional[Dict[str, str]] = None,
     ) -> JobDescription:
-        if env is None:
-            real_env: Dict[str, str] = {}
-        else:
-            real_env = env
-        if volumes is not None:
-            volumes = volumes
-        else:
-            volumes = []
-        container = Container(
-            image=image.image,
-            command=image.command,
-            http=http,
-            resources=resources,
-            env=real_env,
-            volumes=volumes,
-        )
-
         url = URL("jobs")
         payload: Dict[str, Any] = {
-            "container": container.to_api(),
+            "container": _container_to_api(container),
             "is_preemptible": is_preemptible,
         }
         if name:
@@ -313,7 +132,7 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
-            return JobDescription.from_api(res)
+            return _job_description_from_api(res)
 
     async def list(
         self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
@@ -327,7 +146,7 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         async with self._core.request("GET", url, params=params) as resp:
             ret = await resp.json()
-            return [JobDescription.from_api(j) for j in ret["jobs"]]
+            return [_job_description_from_api(j) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
@@ -335,9 +154,7 @@ class Jobs(metaclass=NoPublicConstructor):
             # an error is raised for status >= 400
             return None  # 201 status code
 
-    async def monitor(
-        self, id: str
-    ) -> Any:  # real type is async generator with data chunks
+    async def monitor(self, id: str) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.monitoring_url / f"{id}/log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
@@ -350,14 +167,14 @@ class Jobs(metaclass=NoPublicConstructor):
         url = URL(f"jobs/{id}")
         async with self._core.request("GET", url) as resp:
             ret = await resp.json()
-            return JobDescription.from_api(ret)
+            return _job_description_from_api(ret)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = self._config.cluster_config.monitoring_url / f"{id}/top"
         try:
             received_any = False
             async for resp in self._core.ws_connect(url):
-                yield JobTelemetry.from_api(resp.json())  # type: ignore
+                yield _job_telemetry_from_api(resp.json())  # type: ignore
                 received_any = True
             if not received_any:
                 raise ValueError(f"Job is not running. Job Id = {id}")
@@ -472,3 +289,148 @@ class Jobs(metaclass=NoPublicConstructor):
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
+
+    def parse_volume(self, volume: str) -> Volume:
+        parts = volume.split(":")
+
+        read_only = False
+        if len(parts) == 4:
+            if parts[-1] not in ["ro", "rw"]:
+                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
+            read_only = parts.pop() == "ro"
+        elif len(parts) != 3:
+            raise ValueError(f"Invalid volume specification '{volume}'")
+
+        container_path = parts.pop()
+        storage_path = normalize_storage_path_uri(URL(":".join(parts)), self._username)
+
+        return Volume(
+            storage_path=str(storage_path),
+            container_path=container_path,
+            read_only=read_only,
+        )
+
+
+#  ############## Internal helpers ###################
+
+
+def _resources_to_api(resources: Resources) -> Dict[str, Any]:
+    value = {
+        "memory_mb": resources.memory_mb,
+        "cpu": resources.cpu,
+        "shm": resources.shm,
+    }
+    if resources.gpu:
+        value["gpu"] = resources.gpu
+        value["gpu_model"] = resources.gpu_model  # type: ignore
+    return value
+
+
+def _resources_from_api(data: Dict[str, Any]) -> Resources:
+    return Resources(
+        memory_mb=data["memory_mb"],
+        cpu=data["cpu"],
+        shm=data.get("shm", None),
+        gpu=data.get("gpu", None),
+        gpu_model=data.get("gpu_model", None),
+    )
+
+
+def _http_port_to_api(port: HTTPPort) -> Dict[str, Any]:
+    return {"port": port.port, "requires_auth": port.requires_auth}
+
+
+def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
+    return HTTPPort(
+        port=data.get("port", -1), requires_auth=data.get("requires_auth", False)
+    )
+
+
+def _container_from_api(data: Dict[str, Any]) -> Container:
+    return Container(
+        image=data["image"],
+        resources=_resources_from_api(data["resources"]),
+        command=data.get("command", None),
+        http=_http_port_from_api(data["http"]) if "http" in data else None,
+        env=data.get("env", dict()),
+        volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
+    )
+
+
+def _container_to_api(container: Container) -> Dict[str, Any]:
+    primitive: Dict[str, Any] = {
+        "image": container.image,
+        "resources": _resources_to_api(container.resources),
+    }
+    if container.command:
+        primitive["command"] = container.command
+    if container.http:
+        primitive["http"] = _http_port_to_api(container.http)
+    if container.env:
+        primitive["env"] = container.env
+    if container.volumes:
+        primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+    return primitive
+
+
+def _job_description_from_api(res: Dict[str, Any]) -> JobDescription:
+    container = _container_from_api(res["container"])
+    owner = res["owner"]
+    name = res.get("name")
+    description = res.get("description")
+    history = JobStatusHistory(
+        status=JobStatus(res["history"].get("status", "unknown")),
+        reason=res["history"].get("reason", ""),
+        description=res["history"].get("description", ""),
+        created_at=res["history"].get("created_at", ""),
+        started_at=res["history"].get("started_at", ""),
+        finished_at=res["history"].get("finished_at", ""),
+        exit_code=res["history"].get("exit_code"),
+    )
+    http_url = URL(res.get("http_url", ""))
+    http_url_named = URL(res.get("http_url_named", ""))
+    ssh_server = URL(res.get("ssh_server", ""))
+    internal_hostname = res.get("internal_hostname", None)
+    return JobDescription(
+        status=JobStatus(res["status"]),
+        id=res["id"],
+        owner=owner,
+        history=history,
+        container=container,
+        is_preemptible=res["is_preemptible"],
+        name=name,
+        description=description,
+        http_url=http_url,
+        http_url_named=http_url_named,
+        ssh_server=ssh_server,
+        ssh_auth_server=URL(res["ssh_auth_server"]),
+        internal_hostname=internal_hostname,
+    )
+
+
+def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
+    return JobTelemetry(
+        cpu=value["cpu"],
+        memory=value["memory"],
+        timestamp=value["timestamp"],
+        gpu_duty_cycle=value.get("gpu_duty_cycle"),
+        gpu_memory=value.get("gpu_memory"),
+    )
+
+
+def _volume_to_api(volume: Volume) -> Dict[str, Any]:
+    resp: Dict[str, Any] = {
+        "src_storage_uri": volume.storage_path,
+        "dst_path": volume.container_path,
+        "read_only": bool(volume.read_only),
+    }
+    return resp
+
+
+def _volume_from_api(data: Dict[str, Any]) -> Volume:
+    storage_path = data["src_storage_uri"]
+    container_path = data["dst_path"]
+    read_only = data.get("read_only", True)
+    return Volume(
+        storage_path=storage_path, container_path=container_path, read_only=read_only
+    )

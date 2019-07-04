@@ -1,8 +1,9 @@
-from neuromation.api import FileStatus, FileStatusType
+from neuromation.api import FileStatusType
+from neuromation.api.storage import _file_status_from_api
 
 
 def test_from_api() -> None:
-    stat = FileStatus.from_api(
+    stat = _file_status_from_api(
         {
             "path": "name",
             "type": "FILE",
@@ -19,7 +20,7 @@ def test_from_api() -> None:
 
 
 def test_file() -> None:
-    stat = FileStatus.from_api(
+    stat = _file_status_from_api(
         {
             "path": "name",
             "type": "FILE",
@@ -34,7 +35,7 @@ def test_file() -> None:
 
 
 def test_is_dir() -> None:
-    stat = FileStatus.from_api(
+    stat = _file_status_from_api(
         {
             "path": "name",
             "type": "DIRECTORY",
@@ -49,7 +50,7 @@ def test_is_dir() -> None:
 
 
 def test_name() -> None:
-    stat = FileStatus.from_api(
+    stat = _file_status_from_api(
         {
             "path": "name",
             "type": "FILE",

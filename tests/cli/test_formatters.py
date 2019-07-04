@@ -68,7 +68,7 @@ def job_descr_no_name() -> JobDescription:
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
         container=Container(
-            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, 16, False)
+            image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
         ),
         ssh_auth_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -91,7 +91,7 @@ def job_descr() -> JobDescription:
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
         container=Container(
-            image="ubuntu:latest", resources=Resources.create(0.1, 0, None, 16, False)
+            image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
         ),
         ssh_auth_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -192,7 +192,7 @@ class TestJobStartProgress:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, 16, False),
+                resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=False,
@@ -260,7 +260,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, 16, False),
+                resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_auth_server=URL("ssh-auth"),
@@ -309,7 +309,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, 16, False),
+                resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_auth_server=URL("ssh-auth"),
@@ -353,7 +353,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, 16, False),
+                resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -390,7 +390,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image="test-image",
                 command="test-command",
-                resources=Resources.create(0.1, 0, None, 16, False),
+                resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -427,7 +427,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image="test-image",
                 command="test-command",
-                resources=Resources.create(0.1, 0, None, 16, False),
+                resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -466,7 +466,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image="test-image",
-                resources=Resources.create(0.1, 0, None, 16, False),
+                resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=False,
@@ -569,8 +569,7 @@ class TestSimpleJobsFormatter:
                     finished_at="2018-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="ubuntu:latest",
-                    resources=Resources.create(0.1, 0, None, 16, False),
+                    image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -589,8 +588,7 @@ class TestSimpleJobsFormatter:
                     finished_at="2018-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="ubuntu:latest",
-                    resources=Resources.create(0.1, 0, None, 16, False),
+                    image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -625,9 +623,7 @@ class TestTabularJobRow:
                 finished_at="2017-03-04T12:28:59.759433+00:00",
             ),
             container=Container(
-                image=image,
-                resources=Resources.create(0.1, 0, None, 16, False),
-                command="ls",
+                image=image, resources=Resources(16, 0.1, 0, None, False), command="ls"
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -703,9 +699,7 @@ class TestTabularJobsFormatter:
                 finished_at=datetime.fromtimestamp(time.time() - 1).isoformat(),
             ),
             container=Container(
-                image="i:l",
-                resources=Resources.create(0.1, 0, None, 16, False),
-                command="c",
+                image="i:l", resources=Resources(16, 0.1, 0, None, False), command="c"
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -745,7 +739,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image="some-image-name:with-long-tag",
-                    resources=Resources.create(0.1, 0, None, 16, False),
+                    resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
                 ssh_auth_server=URL("ssh-auth"),
@@ -767,7 +761,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image="some-image-name:with-long-tag",
-                    resources=Resources.create(0.1, 0, None, 16, False),
+                    resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
                 ssh_auth_server=URL("ssh-auth"),
@@ -1141,9 +1135,7 @@ class TestFilesFormatter:
 
 class TestResourcesFormatter:
     def test_tiny_container(self) -> None:
-        resources = Resources.create(
-            cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=False
-        )
+        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=False)
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
@@ -1152,8 +1144,8 @@ class TestResourcesFormatter:
         )
 
     def test_gpu_container(self) -> None:
-        resources = Resources.create(
-            cpu=2, gpu=1, gpu_model="nvidia-tesla-p4", memory=1024, extshm=False
+        resources = Resources(
+            cpu=2, gpu=1, gpu_model="nvidia-tesla-p4", memory_mb=1024, shm=False
         )
         resource_formatter = ResourcesFormatter()
         assert (
@@ -1164,9 +1156,7 @@ class TestResourcesFormatter:
         )
 
     def test_shm_container(self) -> None:
-        resources = Resources.create(
-            cpu=0.1, gpu=0, gpu_model=None, memory=16, extshm=True
-        )
+        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True)
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"

@@ -9,9 +9,9 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 import click
 
 from neuromation.api import (
+    Container,
     DockerImage,
     HTTPPort,
-    Image,
     ImageNameParser,
     JobDescription,
     JobStatus,
@@ -674,8 +674,6 @@ async def run_job(
     if browse and not wait_start:
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
 
-    username = root.username
-
     env_dict = build_env(env, env_file)
 
     cmd = " ".join(cmd) if cmd is not None else None
@@ -683,21 +681,22 @@ async def run_job(
 
     log.info(f"Using image '{image.as_url_str()}'")
     log.debug(f"IMAGE: {image}")
-    image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+    resources = Resources(memory, cpu, gpu, gpu_model, extshm)
 
     volumes: Set[Volume] = set()
     for v in volume:
         if v == "HOME":
-            volumes.add(Volume.from_cli(username, "storage://~:/var/storage/home:rw"))
             volumes.add(
-                Volume.from_cli(
-                    username, "storage://neuromation:/var/storage/neuromation:ro"
+                root.client.jobs.parse_volume("storage://~:/var/storage/home:rw")
+            )
+            volumes.add(
+                root.client.jobs.parse_volume(
+                    "storage://neuromation:/var/storage/neuromation:ro"
                 )
             )
         else:
-            volumes.add(Volume.from_cli(username, v))
+            volumes.add(root.client.jobs.parse_volume(v))
 
     if volumes:
         log.info(
@@ -705,15 +704,17 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    job = await root.client.jobs.submit(
-        image=image_obj,
-        resources=resources,
+    container = Container(
+        image=image.as_repo_str(),
+        command=cmd,
         http=HTTPPort(http, http_auth) if http else None,
-        volumes=list(volumes) if volumes else None,
-        is_preemptible=preemptible,
-        name=name,
-        description=description,
+        resources=resources,
         env=env_dict,
+        volumes=list(volumes),
+    )
+
+    job = await root.client.jobs.run(
+        container, is_preemptible=preemptible, name=name, description=description
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)

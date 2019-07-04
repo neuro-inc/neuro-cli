@@ -49,16 +49,6 @@ class FileStatus:
     def name(self) -> str:
         return Path(self.path).name
 
-    @classmethod
-    def from_api(cls, values: Dict[str, Any]) -> "FileStatus":
-        return cls(
-            path=values["path"],
-            type=FileStatusType(values["type"]),
-            size=int(values["length"]),
-            modification_time=int(values["modificationTime"]),
-            permission=values["permission"],
-        )
-
 
 class Storage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
@@ -77,7 +67,7 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url) as resp:
             res = await resp.json()
             return [
-                FileStatus.from_api(status)
+                _file_status_from_api(status)
                 for status in res["FileStatuses"]["FileStatus"]
             ]
 
@@ -127,7 +117,7 @@ class Storage(metaclass=NoPublicConstructor):
 
         async with self._core.request("GET", url) as resp:
             res = await resp.json()
-            return FileStatus.from_api(res["FileStatus"])
+            return _file_status_from_api(res["FileStatus"])
 
     async def _is_dir(self, uri: URL) -> bool:
         if uri.scheme == "storage":
@@ -316,3 +306,13 @@ class Storage(metaclass=NoPublicConstructor):
                 )
             else:
                 log.warning("Cannot download %s", child)  # pragma: no cover
+
+
+def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
+    return FileStatus(
+        path=values["path"],
+        type=FileStatusType(values["type"]),
+        size=int(values["length"]),
+        modification_time=int(values["modificationTime"]),
+        permission=values["permission"],
+    )
