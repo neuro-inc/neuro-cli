@@ -1,1 +1,0 @@
-The output of "storage" commands in verbose mode is now more similar to the output of corresponding POSIX command. In particular ``neuro -v storage cp -r`` outputs a line for every copied file or directory.

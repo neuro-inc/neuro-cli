@@ -5,6 +5,31 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.7.4 (2019-07-04)
+===============================
+
+Features
+--------
+
+
+- Implemented `neuro job browse`. Added the `--browse` flag to `neuro job submit` and `neuro job run`. ([#571](https://github.com/neuromation/platform-api-clients/issues/571))
+
+- Added the global `--quiet` option, opposite to `--verbose`. Both options are additive. The `--quite` options for `neuro job` and `neuro image` are deprecated now. ([#848](https://github.com/neuromation/platform-api-clients/issues/848))
+
+- Drop `neuromation.api.NetworkPortForwarding` for the sake of `neuromation.api.HTTPPort` ([#861](https://github.com/neuromation/platform-api-clients/issues/861))
+
+- The output of "storage" commands in verbose mode is now more similar to the output of corresponding POSIX command. In particular ``neuro -v storage cp -r`` outputs a line for every copied file or directory. ([#869](https://github.com/neuromation/platform-api-clients/issues/869))
+
+- The behavior of the `neuro storage cp` is now closer to the behavior of the `cp` command.  It now copies files inside the target directory if it exists and copies a file under the new name otherwise.  Added also options `--target-directory` (`-t`) and `--no-target-directory` (`-T`). ([#870](https://github.com/neuromation/platform-api-clients/issues/870))
+
+
+Bugfixes
+--------
+
+
+- Fix certifi upgrade suggestion text. ([#845](https://github.com/neuromation/platform-api-clients/issues/845))
+
+
 Neuromation 19.6.12 (2019-06-12)
 ================================
 
