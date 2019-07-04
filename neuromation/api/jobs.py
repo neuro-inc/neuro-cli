@@ -154,9 +154,7 @@ class Jobs(metaclass=NoPublicConstructor):
             # an error is raised for status >= 400
             return None  # 201 status code
 
-    async def monitor(
-        self, id: str
-    ) -> AsyncIterator[bytes]:
+    async def monitor(self, id: str) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.monitoring_url / f"{id}/log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
