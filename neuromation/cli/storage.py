@@ -176,7 +176,7 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if not no_target_directory and await root.client.storage.is_dir(dst):
+        if not no_target_directory and await root.client.storage._is_dir(dst):
             target_dir = dst
             dst = None
         else:

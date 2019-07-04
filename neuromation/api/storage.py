@@ -129,7 +129,7 @@ class Storage(metaclass=NoPublicConstructor):
             res = await resp.json()
             return FileStatus.from_api(res["FileStatus"])
 
-    async def is_dir(self, uri: URL) -> bool:
+    async def _is_dir(self, uri: URL) -> bool:
         if uri.scheme == "storage":
             try:
                 stat = await self.stats(uri)
