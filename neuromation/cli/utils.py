@@ -73,13 +73,14 @@ def warn_if_has_newer_version(
     certifi_version = certifi.__version__  # type: ignore
     certifi_current = pkg_resources.parse_version(certifi_version)
     if certifi_current < version.certifi_pypi_version:
-        update_command = "pip install --upgrade certifi"
+        pip_update_command = "pip install --upgrade certifi"
+        conda_update_command = "conda update certifi"
         click.secho(
             f"Your root certificates are out of date.\n"
             f"You are using certifi {certifi_current}, "
             f"however {version.certifi_pypi_version} is available.\n"
             f"You should consider upgrading certifi package, "
-            f"e.g. '{update_command}'",
+            f"e.g. '{pip_update_command}' or '{conda_update_command}'.",
             err=True,
             fg="red",
         )
