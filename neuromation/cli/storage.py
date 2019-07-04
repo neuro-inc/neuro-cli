@@ -176,7 +176,11 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if not no_target_directory and await root.client.storage._is_dir(dst):
+        if no_target_directory:
+            if len(sources) > 1:
+                raise click.UsageError(f"Extra operand after {sources[1]!r}")
+            target_dir = None
+        elif await root.client.storage._is_dir(dst):
             target_dir = dst
             dst = None
         else:

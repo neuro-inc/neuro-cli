@@ -180,6 +180,17 @@ def test_e2e_copy_target_directory_no_target_directory(
 
 
 @pytest.mark.e2e
+def test_e2e_copy_no_target_directory_extra_operand(
+    helper: Helper, tmp_path: Path
+) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(
+            ["storage", "cp", "-T", str(tmp_path), helper.tmpstorage, str(tmp_path)]
+        )
+    assert "Extra operand after " in cm.value.stderr
+
+
+@pytest.mark.e2e
 def test_copy_and_remove_multiple_files(
     helper: Helper, data: _Data, data2: _Data, tmp_path: Path
 ) -> None:
