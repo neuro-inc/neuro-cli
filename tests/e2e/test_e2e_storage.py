@@ -345,3 +345,124 @@ def test_e2e_copy_recursive_to_platform(
 
     # And confirm
     helper.check_dir_absent_on_storage("nested", "")
+
+
+@pytest.mark.e2e
+def test_e2e_rename(helper: Helper) -> None:
+    helper.check_create_dir_on_storage("folder")
+    helper.run_cli(
+        [
+            "storage",
+            "mv",
+            helper.tmpstorage + "folder",
+            helper.tmpstorage + "otherfolder",
+        ]
+    )
+    helper.check_dir_absent_on_storage("folder", "")
+    helper.check_dir_exists_on_storage("otherfolder", "")
+
+
+@pytest.mark.e2e
+def test_e2e_move_to_directory(helper: Helper) -> None:
+    helper.check_create_dir_on_storage("folder")
+    helper.check_create_dir_on_storage("otherfolder")
+    helper.run_cli(
+        [
+            "storage",
+            "mv",
+            helper.tmpstorage + "folder",
+            helper.tmpstorage + "otherfolder",
+        ]
+    )
+    helper.check_dir_absent_on_storage("folder", "")
+    helper.check_dir_exists_on_storage("otherfolder", "")
+    helper.check_dir_exists_on_storage("folder", "otherfolder")
+
+
+@pytest.mark.e2e
+def test_e2e_move_to_directory_explicitly(helper: Helper) -> None:
+    helper.check_create_dir_on_storage("folder")
+    helper.check_create_dir_on_storage("otherfolder")
+    helper.run_cli(
+        [
+            "storage",
+            "mv",
+            "-t",
+            helper.tmpstorage + "otherfolder",
+            helper.tmpstorage + "folder",
+        ]
+    )
+    helper.check_dir_absent_on_storage("folder", "")
+    helper.check_dir_exists_on_storage("otherfolder", "")
+    helper.check_dir_exists_on_storage("folder", "otherfolder")
+
+
+@pytest.mark.e2e
+def test_e2e_move_content_to_directory(helper: Helper) -> None:
+    helper.check_create_dir_on_storage("folder")
+    helper.check_create_dir_on_storage("folder/subfolder")
+    helper.check_create_dir_on_storage("otherfolder")
+    helper.run_cli(
+        [
+            "storage",
+            "mv",
+            "-T",
+            helper.tmpstorage + "folder",
+            helper.tmpstorage + "otherfolder",
+        ]
+    )
+    helper.check_dir_absent_on_storage("folder", "")
+    helper.check_dir_exists_on_storage("subfolder", "otherfolder")
+
+
+@pytest.mark.e2e
+def test_e2e_move_no_sources_no_destination(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "mv"])
+    assert 'Missing argument "DESTINATION"' in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_move_no_sources(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "mv", helper.tmpstorage])
+    assert 'Missing argument "SOURCES..."' in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_move_no_sources_target_directory(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "mv", "-t", helper.tmpstorage])
+    assert 'Missing argument "SOURCES..."' in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_move_target_directory_no_target_directory(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(
+            [
+                "storage",
+                "mv",
+                "-t",
+                helper.tmpstorage + "/foo",
+                "-T",
+                helper.tmpstorage + "/bar",
+            ]
+        )
+    assert "Cannot combine" in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_move_no_target_directory_extra_operand(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(
+            [
+                "storage",
+                "mv",
+                "-T",
+                helper.tmpstorage + "/foo",
+                helper.tmpstorage + "/bar",
+                helper.tmpstorage + "/baz",
+            ]
+        )
+    assert "Extra operand after " in cm.value.stderr
