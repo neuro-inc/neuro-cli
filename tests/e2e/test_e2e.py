@@ -1,7 +1,5 @@
-import errno
 import re
-from pathlib import Path
-from typing import List, Tuple
+from typing import List
 from uuid import uuid4
 
 import pytest
@@ -9,7 +7,7 @@ import pytest
 import neuromation
 from neuromation.api import JobStatus
 from tests.e2e import Helper
-from tests.e2e.utils import FILE_SIZE_B, JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
+from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
@@ -40,13 +38,6 @@ def test_print_config_token(helper: Helper) -> None:
     captured = helper.run_cli(["config", "show-token"])
     assert not captured.err
     assert captured.out  # some secure information was printed
-
-
-@pytest.mark.e2e
-def test_empty_directory_ls_output(helper: Helper) -> None:
-    # Ensure output of ls - empty directory shall print nothing.
-    captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
-    assert not captured.out
 
 
 @pytest.mark.e2e
@@ -128,70 +119,3 @@ def test_e2e_shm_switch(switch: str, expected: bool, helper: Helper) -> None:
         helper.run_job_and_wait_state(
             UBUNTU_IMAGE_NAME, command, params, JobStatus.SUCCEEDED, JobStatus.FAILED
         )
-
-
-@pytest.mark.e2e
-def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> None:
-    srcfile, checksum = data
-
-    # Create directory for the test
-    helper.check_create_dir_on_storage("folder")
-
-    # Upload local file
-    helper.check_upload_file_to_storage("foo", "folder", str(srcfile))
-
-    # Confirm file has been uploaded
-    helper.check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
-
-    # Download into local file and confirm checksum
-    helper.check_file_on_storage_checksum(
-        "foo", "folder", checksum, str(tmp_path), "bar"
-    )
-
-    # Download into deeper local dir and confirm checksum
-    localdir = tmp_path / "baz"
-    localdir.mkdir()
-    helper.check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
-
-    # Rename file on the storage
-    helper.check_rename_file_on_storage("foo", "folder", "bar", "folder")
-    helper.check_file_exists_on_storage("bar", "folder", FILE_SIZE_B)
-
-    # Rename directory on the storage
-    helper.check_rename_directory_on_storage("folder", "folder2")
-    helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
-
-    # Non-recursive removing should not have any effect
-    with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
-        helper.check_rmdir_on_storage("folder2", recursive=False)
-    assert cm.value.errno == errno.EISDIR
-    helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
-
-    # Remove test dir
-    helper.check_rmdir_on_storage("folder2", recursive=True)
-
-    # And confirm
-    helper.check_dir_absent_on_storage("folder2", "")
-
-
-@pytest.mark.e2e
-def test_e2e_storage_mkdir(helper: Helper) -> None:
-    helper.check_create_dir_on_storage("folder")
-    helper.check_dir_exists_on_storage("folder", "")
-
-    # Create existing directory
-    with pytest.raises(OSError):
-        helper.check_create_dir_on_storage("folder")
-    helper.check_create_dir_on_storage("folder", exist_ok=True)
-
-    # Create a subdirectory in existing directory
-    helper.check_create_dir_on_storage("folder/subfolder")
-    helper.check_dir_exists_on_storage("subfolder", "folder")
-
-    # Create a subdirectory in non-existing directory
-    with pytest.raises(OSError):
-        helper.check_create_dir_on_storage("parent/child")
-    helper.check_dir_absent_on_storage("parent", "")
-    helper.check_create_dir_on_storage("parent/child", parents=True)
-    helper.check_dir_exists_on_storage("parent", "")
-    helper.check_dir_exists_on_storage("child", "parent")

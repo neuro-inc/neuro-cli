@@ -1,3 +1,4 @@
+import errno
 import os
 import subprocess
 from pathlib import Path, PurePath
@@ -11,6 +12,80 @@ from tests.e2e.utils import FILE_SIZE_B
 
 
 _Data = Tuple[str, str]
+
+
+@pytest.mark.e2e
+def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> None:
+    srcfile, checksum = data
+
+    # Create directory for the test
+    helper.check_create_dir_on_storage("folder")
+
+    # Upload local file
+    helper.check_upload_file_to_storage("foo", "folder", str(srcfile))
+
+    # Confirm file has been uploaded
+    helper.check_file_exists_on_storage("foo", "folder", FILE_SIZE_B)
+
+    # Download into local file and confirm checksum
+    helper.check_file_on_storage_checksum(
+        "foo", "folder", checksum, str(tmp_path), "bar"
+    )
+
+    # Download into deeper local dir and confirm checksum
+    localdir = tmp_path / "baz"
+    localdir.mkdir()
+    helper.check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
+
+    # Rename file on the storage
+    helper.check_rename_file_on_storage("foo", "folder", "bar", "folder")
+    helper.check_file_exists_on_storage("bar", "folder", FILE_SIZE_B)
+
+    # Rename directory on the storage
+    helper.check_rename_directory_on_storage("folder", "folder2")
+    helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
+
+    # Non-recursive removing should not have any effect
+    with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
+        helper.check_rmdir_on_storage("folder2", recursive=False)
+    assert cm.value.errno == errno.EISDIR
+    helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
+
+    # Remove test dir
+    helper.check_rmdir_on_storage("folder2", recursive=True)
+
+    # And confirm
+    helper.check_dir_absent_on_storage("folder2", "")
+
+
+@pytest.mark.e2e
+def test_empty_directory_ls_output(helper: Helper) -> None:
+    # Ensure output of ls - empty directory shall print nothing.
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
+    assert not captured.out
+
+
+@pytest.mark.e2e
+def test_e2e_mkdir(helper: Helper) -> None:
+    helper.check_create_dir_on_storage("folder")
+    helper.check_dir_exists_on_storage("folder", "")
+
+    # Create existing directory
+    with pytest.raises(OSError):
+        helper.check_create_dir_on_storage("folder")
+    helper.check_create_dir_on_storage("folder", exist_ok=True)
+
+    # Create a subdirectory in existing directory
+    helper.check_create_dir_on_storage("folder/subfolder")
+    helper.check_dir_exists_on_storage("subfolder", "folder")
+
+    # Create a subdirectory in non-existing directory
+    with pytest.raises(OSError):
+        helper.check_create_dir_on_storage("parent/child")
+    helper.check_dir_absent_on_storage("parent", "")
+    helper.check_create_dir_on_storage("parent/child", parents=True)
+    helper.check_dir_exists_on_storage("parent", "")
+    helper.check_dir_exists_on_storage("child", "parent")
 
 
 @pytest.mark.e2e
@@ -237,3 +312,36 @@ def test_copy_and_remove_multiple_files(
     # Ensure files are not there
     helper.check_file_absent_on_storage(srcname, "")
     helper.check_file_absent_on_storage(srcname2, "")
+
+
+@pytest.mark.e2e
+def test_e2e_copy_recursive_to_platform(
+    helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path
+) -> None:
+    srcfile, checksum, dir_path = nested_data
+    target_file_name = Path(srcfile).name
+
+    # Upload local file
+    captured = helper.run_cli(["storage", "cp", "-r", dir_path, helper.tmpstorage])
+    # stderr has logs like "Using path ..."
+    # assert not captured.err
+    assert not captured.out
+
+    helper.check_file_exists_on_storage(
+        target_file_name, f"nested/directory/for/test", FILE_SIZE_B
+    )
+
+    # Download into local directory and confirm checksum
+    targetdir = tmp_path / "bar"
+    targetdir.mkdir()
+    helper.run_cli(["storage", "cp", "-r", f"{helper.tmpstorage}", str(targetdir)])
+    targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
+    print("source file", srcfile)
+    print("target file", targetfile)
+    assert helper.hash_hex(targetfile) == checksum
+
+    # Remove test dir
+    helper.check_rmdir_on_storage("nested")
+
+    # And confirm
+    helper.check_dir_absent_on_storage("nested", "")
