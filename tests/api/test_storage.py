@@ -571,14 +571,12 @@ async def test_storage_upload_regular_file_to_existing_dir(
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
     folder.mkdir()
-    target_path = folder / "file.txt"
 
     async with make_client(storage_server.make_url("/")) as client:
-        await client.storage.upload_file(URL(file_path.as_uri()), URL("storage:folder"))
-
-    expected = file_path.read_bytes()
-    uploaded = target_path.read_bytes()
-    assert uploaded == expected
+        with pytest.raises(IsADirectoryError):
+            await client.storage.upload_file(
+                URL(file_path.as_uri()), URL("storage:folder")
+            )
 
 
 async def test_storage_upload_regular_file_to_existing_file(
@@ -606,16 +604,12 @@ async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
     folder.mkdir()
-    target_path = folder / "file.txt"
 
     async with make_client(storage_server.make_url("/")) as client:
-        await client.storage.upload_file(
-            URL(file_path.as_uri()), URL("storage:folder/")
-        )
-
-    expected = file_path.read_bytes()
-    uploaded = target_path.read_bytes()
-    assert uploaded == expected
+        with pytest.raises(IsADirectoryError):
+            await client.storage.upload_file(
+                URL(file_path.as_uri()), URL("storage:folder/")
+            )
 
 
 async def test_storage_upload_regular_file_to_existing_non_dir(
@@ -701,7 +695,7 @@ async def test_storage_upload_recursive_slash_ending(
         await client.storage.upload_dir(
             URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder/")
         )
-    diff = dircmp(DATA_FOLDER / "nested", target_dir / "nested")  # type: ignore
+    diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
     assert not calc_diff(diff)  # type: ignore
 
 
@@ -762,16 +756,12 @@ async def test_storage_download_regular_file_to_dir(
     storage_file.write_bytes(src_file.read_bytes())
     local_dir = tmp_path / "local"
     local_dir.mkdir()
-    local_file = local_dir / "file.txt"
 
     async with make_client(storage_server.make_url("/")) as client:
-        await client.storage.download_file(
-            URL("storage:file.txt"), URL(local_dir.as_uri())
-        )
-
-    expected = src_file.read_bytes()
-    downloaded = local_file.read_bytes()
-    assert downloaded == expected
+        with pytest.raises((IsADirectoryError, PermissionError)):
+            await client.storage.download_file(
+                URL("storage:file.txt"), URL(local_dir.as_uri())
+            )
 
 
 async def test_storage_download_regular_file_to_dir_slash_ended(
@@ -782,16 +772,12 @@ async def test_storage_download_regular_file_to_dir_slash_ended(
     storage_file.write_bytes(src_file.read_bytes())
     local_dir = tmp_path / "local"
     local_dir.mkdir()
-    local_file = local_dir / "file.txt"
 
     async with make_client(storage_server.make_url("/")) as client:
-        await client.storage.download_file(
-            URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
-        )
-
-    expected = src_file.read_bytes()
-    downloaded = local_file.read_bytes()
-    assert downloaded == expected
+        with pytest.raises((IsADirectoryError, PermissionError)):
+            await client.storage.download_file(
+                URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
+            )
 
 
 async def test_storage_download_regular_file_to_non_file(
