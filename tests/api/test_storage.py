@@ -758,7 +758,7 @@ async def test_storage_download_regular_file_to_dir(
     local_dir.mkdir()
 
     async with make_client(storage_server.make_url("/")) as client:
-        with pytest.raises(IsADirectoryError):
+        with pytest.raises((IsADirectoryError, PermissionError)):
             await client.storage.download_file(
                 URL("storage:file.txt"), URL(local_dir.as_uri())
             )
@@ -774,7 +774,7 @@ async def test_storage_download_regular_file_to_dir_slash_ended(
     local_dir.mkdir()
 
     async with make_client(storage_server.make_url("/")) as client:
-        with pytest.raises(IsADirectoryError):
+        with pytest.raises((IsADirectoryError, PermissionError)):
             await client.storage.download_file(
                 URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
             )
