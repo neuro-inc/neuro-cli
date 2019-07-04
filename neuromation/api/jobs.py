@@ -30,6 +30,7 @@ class Resources:
 
 class JobStatus(str, enum.Enum):
     """An Enum subclass that represents job statuses.
+
     PENDING: a job is being created and scheduled. This includes finding (and
     possibly waiting for) sufficient amount of resources, pulling an image
     from a registry etc.
