@@ -145,21 +145,21 @@ async def cp(
 
     # copy local files into remote storage root
     neuro cp foo.txt bar/baz.dat storage:
-    neuro cp -t storage: foo.txt bar/baz.dat
+    neuro cp foo.txt bar/baz.dat -t storage:
 
     # copy local directory `foo` into existing remote directory `bar`
-    neuro cp -r -t storage:bar foo
+    neuro cp -r foo -t storage:bar
 
     # copy the content of local directory `foo` into existing remote
     # directory `bar`
-    neuro cp -T storage:foo storage:bar
+    neuro cp -r -T storage:foo storage:bar
 
     # download remote file `foo.txt` into local file `/tmp/foo.txt` with
     # explicit file:// scheme set
     neuro cp storage:foo.txt file:///tmp/foo.txt
     neuro cp -T storage:foo.txt file:///tmp/foo.txt
     neuro cp storage:foo.txt file:///tmp
-    neuro cp -t file:///tmp storage:foo.txt
+    neuro cp storage:foo.txt -t file:///tmp
 
     # download other user's remote file into the current directory
     neuro cp storage://{username}/foo.txt .
@@ -285,7 +285,7 @@ async def mv(
 
     # move remote files into existing remote directory
     neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
-    neuro mv -t storage:dst storage:foo.txt storage:bar/baz.dat
+    neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
 
     # move the content of remote directory into other existing
     # remote directory
