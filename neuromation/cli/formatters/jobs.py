@@ -318,6 +318,19 @@ class JobStartProgress:
     def close(self) -> None:
         pass
 
+    def _get_status_details_message(self, job: JobDescription) -> str:
+        if job.history.reason:
+            reason = job.history.reason
+        elif job.status == JobStatus.PENDING:
+            reason = "Initializing"
+        else:
+            reason = ""
+        description = job.history.description or ""
+        msg = reason
+        if description:
+            msg += f" ({description})"
+        return msg
+
 
 class DetailedJobStartProgress(JobStartProgress):
     def __init__(self, color: bool):
@@ -335,14 +348,9 @@ class DetailedJobStartProgress(JobStartProgress):
         new_time = time.time()
         dt = new_time - self._time
         msg = "Status: " + format_job_status(job.status)
-        if job.history.reason:
-            reason = job.history.reason
-        elif job.status == JobStatus.PENDING:
-            reason = "Initializing"
-        else:
-            reason = ""
-        if reason:
-            msg += " " + style(reason, bold=True)
+        status_details = self._get_status_details_message(job)
+        if status_details:
+            msg += " " + style(status_details, bold=True)
         if not self._color:
             msg = unstyle(msg)
         if msg != self._prev:
@@ -364,14 +372,9 @@ class StreamJobStartProgress(JobStartProgress):
 
     def __call__(self, job: JobDescription) -> None:
         msg = f"Status: {job.status}"
-        if job.history.reason:
-            reason = job.history.reason
-        elif job.status == JobStatus.PENDING:
-            reason = "Initializing"
-        else:
-            reason = ""
-        if reason:
-            msg += " " + reason
+        status_details = self._get_status_details_message(job)
+        if status_details:
+            msg += " " + status_details
         if msg != self._prev:
             self._printer.print(msg)
             self._prev = msg

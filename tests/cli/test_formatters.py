@@ -219,9 +219,9 @@ class TestJobStartProgress:
         assert err == ""
         assert f"{JobStatus.PENDING}" in out
         assert f"{JobStatus.RUNNING}" in out
-        assert "reason" in out
+        assert "reason (ErrorDesc)" in out
         assert out.count(f"{JobStatus.PENDING}") == 1
-        assert CSI not in out
+        assert CSI not in out, repr(out)
 
     def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=True, color=True, quiet=False)
@@ -233,7 +233,7 @@ class TestJobStartProgress:
         assert err == ""
         assert f"{JobStatus.PENDING}" in out
         assert f"{JobStatus.RUNNING}" in out
-        assert "reason" in out
+        assert "reason (ErrorDesc)" in out
         assert out.count(f"{JobStatus.PENDING}") != 1
         assert CSI in out
 
@@ -1189,7 +1189,7 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PULL, "input", "output", tty=True, quiet=True
         )
-        formatter("message1")
+        formatter("messagetest_no_tty1")
         formatter("message2", "layer1")
         formatter.close()
         out, err = capfd.readouterr()
