@@ -221,7 +221,7 @@ class TestJobStartProgress:
         assert f"{JobStatus.RUNNING}" in out
         assert "reason (ErrorDesc)" in out
         assert out.count(f"{JobStatus.PENDING}") == 1
-        assert CSI not in out, repr(out)
+        assert CSI not in out
 
     def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=True, color=True, quiet=False)
