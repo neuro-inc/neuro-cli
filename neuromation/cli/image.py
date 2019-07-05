@@ -114,8 +114,7 @@ async def ls(root: Root) -> None:
 
     images = await root.client.images.ls()
     for image in images:
-        for tag in images[image]:
-            click.echo(f"{image}:{tag}")
+        click.echo(image)
 
 
 image.add_command(ls)

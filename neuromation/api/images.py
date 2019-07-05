@@ -172,23 +172,22 @@ class Images(metaclass=NoPublicConstructor):
 
         return local_image
 
-    async def ls(self) -> Dict[URL, List[str]]:
+    async def ls(self) -> List[URL]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
             ret = await resp.json()
             prefix = "image://"
-            result: Dict[URL, List[str]] = {}
+            result: List[URL] = []
             for repo in ret["repositories"]:
                 if repo.startswith(prefix):
-                    name = str(repo)[len(prefix) :]
                     url = URL(repo)
                 else:
-                    name = repo
                     url = URL(f"{prefix}{repo}")
-                result[url] = []
-                async with self._registry.request(
-                    "GET", URL(f"{name}/tags/list")
-                ) as tags_resp:
-                    ret = await tags_resp.json()
-                    for tag in ret.get("tags", []):
-                        result[url].append(tag)
+                result.append(url)
             return result
+
+    async def tags(self, image: URL) -> List[str]:
+        prefix = "image://"
+        name = str(image)[len(prefix) :]
+        async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
+            ret = await resp.json()
+            return [tag for tag in ret.get("tags", [])]

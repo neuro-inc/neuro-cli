@@ -87,7 +87,8 @@ def test_images_complete_lifecycle(
     image_urls = [URL(line) for line in captured.out.splitlines() if line]
     for url in image_urls:
         assert url.scheme == "image"
-    assert image_url in image_urls
+    image_url_without_tag = image_url.with_path(image_url.path.replace(f":{tag}", ""))
+    assert image_url_without_tag in image_urls
 
     # delete local
     loop.run_until_complete(docker.images.delete(image, force=True))
@@ -147,11 +148,12 @@ def test_images_push_with_specified_name(
     # assert not captured.err
     image_pushed_full_str = f"image://{helper.username}/{pushed_no_tag}:{tag}"
     assert captured.out.endswith(image_pushed_full_str)
+    image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
 
     # Check if image available on registry
     captured = helper.run_cli(["image", "ls"])
     image_urls = captured.out.splitlines()
-    assert image_pushed_full_str in image_urls
+    assert image_url_without_tag in image_urls
 
     # check locally
     docker_ls_output = loop.run_until_complete(docker.images.list())
