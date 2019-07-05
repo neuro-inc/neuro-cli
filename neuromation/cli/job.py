@@ -3,12 +3,15 @@ import logging
 import os
 import shlex
 import sys
+import uuid
 import webbrowser
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import click
+from yarl import URL
 
 from neuromation.api import (
+    CONFIG_ENV_NAME,
     Container,
     DockerImage,
     HTTPPort,
@@ -18,6 +21,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.api.jobs import _volume_from_api
 
 from .defaults import (
     GPU_MODELS,
@@ -178,6 +182,12 @@ def job() -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option(
+    "--pass-config/--no-pass-config",
+    default=False,
+    show_default=True,
+    help="Upload neuro config to the job",
+)
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def submit(
@@ -198,6 +208,7 @@ async def submit(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     """
@@ -233,6 +244,7 @@ async def submit(
         name=name,
         description=description,
         wait_start=wait_start,
+        pass_config=pass_config,
         browse=browse,
     )
 
@@ -565,6 +577,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option(
+    "--pass-config/--no-pass-config",
+    default=False,
+    show_default=True,
+    help="Upload neuro config to the job",
+)
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def run(
@@ -582,6 +600,7 @@ async def run(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     """
@@ -621,6 +640,7 @@ async def run(
         name=name,
         description=description,
         wait_start=wait_start,
+        pass_config=pass_config,
         browse=browse,
     )
 
@@ -660,6 +680,7 @@ async def run_job(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     if http_auth is None:
@@ -704,6 +725,9 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
+    if pass_config:
+        await upload_and_map_config(env_dict, root, volumes)
+
     container = Container(
         image=image.as_repo_str(),
         command=cmd,
@@ -725,6 +749,40 @@ async def run_job(
     progress.close()
     if browse:
         await browse_job(root, job)
+
+
+async def upload_and_map_config(
+    env_dict: Dict[str, str], root: Root, volumes: Set[Volume]
+) -> None:
+    if CONFIG_ENV_NAME in env_dict:
+        raise ValueError(
+            f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
+        )
+
+    # store the Neuro CLI config on the storage under some random path
+    nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
+    random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
+    storage_nmrc_folder = f"storage://{root.username}/nmrc/"
+    storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
+    local_nmrc_folder = "/var/storage/nmrc/"
+    local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
+    if not root.quiet:
+        click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
+        click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
+    await root.client.storage.mkdirs(
+        URL(storage_nmrc_folder), parents=True, exist_ok=True
+    )
+    await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
+    # specify a container volume and mount the storage path
+    # into specific container path
+    data: Dict[str, Any] = {
+        "src_storage_uri": storage_nmrc_folder,
+        "dst_path": local_nmrc_folder,
+        "read_only": False,
+    }
+    volumes.add(_volume_from_api(data))
+
+    env_dict[CONFIG_ENV_NAME] = local_nmrc_path
 
 
 async def browse_job(root: Root, job: JobDescription) -> None:

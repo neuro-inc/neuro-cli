@@ -217,6 +217,24 @@ class TestConfigFileInteraction:
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Windows does not supports UNIX-like permissions",
+    )
+    async def test_file_permissions_not_in_home_folder(
+        self,
+        tmpdir: Path,
+        token: str,
+        auth_config: _AuthConfig,
+        cluster_config: _ClusterConfig,
+    ) -> None:
+        config_path = Path(tmpdir) / "test.nmrc"
+        _create_config(config_path, token, auth_config, cluster_config)
+        config_path.chmod(0o644)
+        client = await Factory(config_path).get()
+        await client.close()
+        assert client
+
     async def test_mailformed_config(self, config_file: Path) -> None:
         # await Factory().login(url=mock_for_login)
         # config_file = tmp_home / ".nmrc"
