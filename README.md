@@ -498,21 +498,23 @@ neuro storage cp [OPTIONS] [SOURCES]... [DESTINATION]
 
 # copy local files into remote storage root
 neuro cp foo.txt bar/baz.dat storage:
-neuro cp -t storage: foo.txt bar/baz.dat
+neuro cp foo.txt bar/baz.dat -t storage:
 
-# copy local directory foo into remote directory bar
-neuro cp -r -t storage:bar foo
+# copy local directory `foo` into existing remote directory `bar`
+neuro cp -r foo -t storage:bar
 
-# move the content of local directory foo into remote directory bar
-neuro mv -T storage:foo storage:bar
+# copy the content of local directory `foo` into existing remote
+# directory `bar`
+neuro cp -r -T storage:foo storage:bar
 
-# download remote file foo.txt into local file /tmp/foo with
+# download remote file `foo.txt` into local file `/tmp/foo.txt` with
 # explicit file:// scheme set
-neuro cp storage:foo.txt file:///tmp/foo
-neuro cp -T storage:foo.txt file:///tmp/foo
-neuro cp -t file:///tmp storage:foo.txt
+neuro cp storage:foo.txt file:///tmp/foo.txt
+neuro cp -T storage:foo.txt file:///tmp/foo.txt
+neuro cp storage:foo.txt file:///tmp
+neuro cp storage:foo.txt -t file:///tmp
 
-# download other user's remote file into current directory
+# download other user's remote file into the current directory
 neuro cp storage://{username}/foo.txt .
 
 ```
@@ -532,7 +534,7 @@ Name | Description|
 
 ### neuro storage ls
 
-List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
+List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
 
 **Usage:**
 
@@ -620,11 +622,12 @@ neuro storage mv [OPTIONS] [SOURCES]... [DESTINATION]
 neuro mv storage:foo.txt storage:bar/baz.dat
 neuro mv -T storage:foo.txt storage:bar/baz.dat
 
-# move remote files into remote directory
+# move remote files into existing remote directory
 neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
-neuro mv -t storage:dst storage:foo.txt storage:bar/baz.dat
+neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
 
-# move the content of remote directory into other remote directory
+# move the content of remote directory into other existing
+# remote directory
 neuro mv -T storage:foo storage:bar
 
 # move remote file into other user's directory
@@ -1437,21 +1440,23 @@ neuro cp [OPTIONS] [SOURCES]... [DESTINATION]
 
 # copy local files into remote storage root
 neuro cp foo.txt bar/baz.dat storage:
-neuro cp -t storage: foo.txt bar/baz.dat
+neuro cp foo.txt bar/baz.dat -t storage:
 
-# copy local directory foo into remote directory bar
-neuro cp -r -t storage:bar foo
+# copy local directory `foo` into existing remote directory `bar`
+neuro cp -r foo -t storage:bar
 
-# move the content of local directory foo into remote directory bar
-neuro mv -T storage:foo storage:bar
+# copy the content of local directory `foo` into existing remote
+# directory `bar`
+neuro cp -r -T storage:foo storage:bar
 
-# download remote file foo.txt into local file /tmp/foo with
+# download remote file `foo.txt` into local file `/tmp/foo.txt` with
 # explicit file:// scheme set
-neuro cp storage:foo.txt file:///tmp/foo
-neuro cp -T storage:foo.txt file:///tmp/foo
-neuro cp -t file:///tmp storage:foo.txt
+neuro cp storage:foo.txt file:///tmp/foo.txt
+neuro cp -T storage:foo.txt file:///tmp/foo.txt
+neuro cp storage:foo.txt file:///tmp
+neuro cp storage:foo.txt -t file:///tmp
 
-# download other user's remote file into current directory
+# download other user's remote file into the current directory
 neuro cp storage://{username}/foo.txt .
 
 ```
@@ -1471,7 +1476,7 @@ Name | Description|
 
 ## neuro ls
 
-List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
+List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
 
 **Usage:**
 
@@ -1559,11 +1564,12 @@ neuro mv [OPTIONS] [SOURCES]... [DESTINATION]
 neuro mv storage:foo.txt storage:bar/baz.dat
 neuro mv -T storage:foo.txt storage:bar/baz.dat
 
-# move remote files into remote directory
+# move remote files into existing remote directory
 neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
-neuro mv -t storage:dst storage:foo.txt storage:bar/baz.dat
+neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
 
-# move the content of remote directory into other remote directory
+# move the content of remote directory into other existing
+# remote directory
 neuro mv -T storage:foo storage:bar
 
 # move remote file into other user's directory
