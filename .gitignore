@@ -12,3 +12,4 @@ dist
 .mypy_cache
 .tmontmp
 .testmondata
+tests/e2e/assets/neuro-cli.tar

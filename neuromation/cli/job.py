@@ -21,6 +21,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.api.jobs import _volume_from_api
 
 from .defaults import (
     GPU_MODELS,
@@ -725,7 +726,7 @@ async def run_job(
         )
 
     if pass_config:
-        await upload_and_map_config(env_dict, root, username, volumes)
+        await upload_and_map_config(env_dict, root, volumes)
 
     container = Container(
         image=image.as_repo_str(),
@@ -751,7 +752,7 @@ async def run_job(
 
 
 async def upload_and_map_config(
-    env_dict: Dict[str, str], root: Root, username: str, volumes: Set[Volume]
+    env_dict: Dict[str, str], root: Root, volumes: Set[Volume]
 ) -> None:
     if CONFIG_ENV_NAME in env_dict:
         raise ValueError(
@@ -761,7 +762,7 @@ async def upload_and_map_config(
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-    storage_nmrc_folder = f"storage://{username}/nmrc/"
+    storage_nmrc_folder = f"storage://{root.username}/nmrc/"
     storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
     local_nmrc_folder = "/var/storage/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
@@ -779,7 +780,7 @@ async def upload_and_map_config(
         "dst_path": local_nmrc_folder,
         "read_only": False,
     }
-    volumes.add(Volume.from_api(data))
+    volumes.add(_volume_from_api(data))
 
     env_dict[CONFIG_ENV_NAME] = local_nmrc_path
 
