@@ -9,7 +9,6 @@ import yaml
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
 from jose import jwt
-from py._path.local import LocalPath  # type: ignore
 from yarl import URL
 
 import neuromation.api.config_factory
