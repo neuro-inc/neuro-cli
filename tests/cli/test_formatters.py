@@ -1189,7 +1189,7 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PULL, "input", "output", tty=True, quiet=True
         )
-        formatter("messagetest_no_tty1")
+        formatter("message")
         formatter("message2", "layer1")
         formatter.close()
         out, err = capfd.readouterr()
