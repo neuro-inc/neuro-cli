@@ -1,6 +1,7 @@
 import logging
 
 import click
+from yarl import URL
 
 from neuromation.api import DockerImageOperation, ImageNameParser
 from neuromation.cli.formatters import DockerImageProgress
@@ -29,7 +30,7 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
     Push an image to platform registry.
 
     Remote image must be URL with image:// scheme.
-    Image names can contains tag. If tags not specified 'latest' will
+    Image names can contain tag. If tags not specified 'latest' will
     be used as value.
 
     Examples:
@@ -117,6 +118,27 @@ async def ls(root: Root) -> None:
         click.echo(image)
 
 
+@command()
+@click.argument("image_name")
+@async_cmd()
+async def tags(root: Root, image_name: str) -> None:
+    """
+    List tags for image in platform registry.
+
+    Image name must be URL with image:// scheme.
+
+    Examples:
+
+    neuro image tags image://myfriend/alpine:shared
+
+    """
+
+    tags = await root.client.images.tags(URL(image_name))
+    for tag in tags:
+        click.echo(tag)
+
+
 image.add_command(ls)
 image.add_command(push)
 image.add_command(pull)
+image.add_command(tags)
