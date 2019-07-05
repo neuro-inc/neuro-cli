@@ -127,9 +127,9 @@ async def ls(
 async def cp(
     root: Root,
     sources: Sequence[str],
-    destination: str,
+    destination: Optional[str],
     recursive: bool,
-    target_directory: str,
+    target_directory: Optional[str],
     no_target_directory: bool,
     progress: bool,
 ) -> None:
@@ -235,10 +235,29 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 
 
 @command()
-@click.argument("sources", nargs=-1, required=True)
-@click.argument("destination")
+@click.argument("sources", nargs=-1, required=False)
+@click.argument("destination", required=False)
+@click.option(
+    "-t",
+    "--target-directory",
+    metavar="DIRECTORY",
+    default=None,
+    help="Copy all SOURCES into DIRECTORY",
+)
+@click.option(
+    "-T",
+    "--no-target-directory",
+    is_flag=True,
+    help="Treat DESTINATION as a normal file",
+)
 @async_cmd()
-async def mv(root: Root, sources: Sequence[str], destination: str) -> None:
+async def mv(
+    root: Root,
+    sources: Sequence[str],
+    destination: Optional[str],
+    target_directory: Optional[str],
+    no_target_directory: bool,
+) -> None:
     """
     Move or rename files and directories.
 
@@ -257,11 +276,46 @@ async def mv(root: Root, sources: Sequence[str], destination: str) -> None:
     neuro mv storage://{username}/foo/ storage://{username}/bar/
     neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
     """
+    target_dir: Optional[URL]
+    dst: Optional[URL]
+    if target_directory:
+        if no_target_directory:
+            raise click.UsageError(
+                "Cannot combine --target-directory (-t) and --no-target-directory (-T)"
+            )
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        sources = *sources, destination
+        target_dir = parse_file_resource(target_directory, root)
+        dst = None
+    else:
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"DESTINATION"'
+            )
+        if not sources:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        dst = parse_file_resource(destination, root)
+        if no_target_directory:
+            if len(sources) > 1:
+                raise click.UsageError(f"Extra operand after {sources[1]!r}")
+            target_dir = None
+        elif await root.client.storage._is_dir(dst):
+            target_dir = dst
+            dst = None
+        else:
+            target_dir = None
 
-    dst = parse_file_resource(destination, root)
     for source in sources:
         src = parse_file_resource(source, root)
 
+        if target_dir:
+            dst = target_dir / src.name
+        assert dst
         await root.client.storage.mv(src, dst)
         if root.verbosity > 0:
             click.echo(f"{str(src)!r} -> {str(dst)!r}")

@@ -599,7 +599,7 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro storage mv [OPTIONS] SOURCES... DESTINATION
+neuro storage mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -620,6 +620,8 @@ neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
 
 Name | Description|
 |----|------------|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|
 
 
@@ -1517,7 +1519,7 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro mv [OPTIONS] SOURCES... DESTINATION
+neuro mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -1538,6 +1540,8 @@ neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
 
 Name | Description|
 |----|------------|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|
 
 
