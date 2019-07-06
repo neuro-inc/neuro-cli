@@ -1,1 +1,1 @@
-The behavior of the `neuro storage mv` is now closer to the behavior of the `mv` command.  It now movies files inside the target directory if it exists and movies a file under the new name otherwise.  Added also options `--target-directory` (`-t`) and `--no-target-directory` (`-T`).
+The behavior of `neuro storage mv` is now closer to the behavior of the `mv` command.  It moves now files inside the target directory if it exists and moves a file under the new name otherwise.  Added also options `--target-directory` (`-t`) and `--no-target-directory` (`-T`).
