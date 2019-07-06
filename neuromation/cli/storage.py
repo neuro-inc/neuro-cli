@@ -41,8 +41,7 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
 
     Examples:
 
-    neuro rm storage:///foo/bar
-    neuro rm storage:/foo/bar
+    neuro rm storage:foo/bar
     neuro rm storage://{username}/foo/bar
     neuro rm --recursive storage://{username}/foo/
     """
@@ -76,10 +75,10 @@ async def ls(
     """
     List directory contents.
 
-    By default PATH is equal user`s home dir (storage:)
+    By default PATH is equal user's home dir (storage:)
     """
     if not paths:
-        paths = ["storage://~"]
+        paths = ["storage:"]
     for path in paths:
         if format_long:
             formatter: BaseFilesFormatter = LongFilesFormatter(
@@ -144,13 +143,26 @@ async def cp(
 
     Examples:
 
-    # copy local file ./foo into remote storage root
-    neuro cp ./foo storage:///
-    neuro cp ./foo storage:/
+    # copy local files into remote storage root
+    neuro cp foo.txt bar/baz.dat storage:
+    neuro cp foo.txt bar/baz.dat -t storage:
 
-    # download remote file foo into local file foo with
+    # copy local directory `foo` into existing remote directory `bar`
+    neuro cp -r foo -t storage:bar
+
+    # copy the content of local directory `foo` into existing remote
+    # directory `bar`
+    neuro cp -r -T storage:foo storage:bar
+
+    # download remote file `foo.txt` into local file `/tmp/foo.txt` with
     # explicit file:// scheme set
-    neuro cp storage:///foo file:///foo
+    neuro cp storage:foo.txt file:///tmp/foo.txt
+    neuro cp -T storage:foo.txt file:///tmp/foo.txt
+    neuro cp storage:foo.txt file:///tmp
+    neuro cp storage:foo.txt -t file:///tmp
+
+    # download other user's remote file into the current directory
+    neuro cp storage://{username}/foo.txt .
     """
     target_dir: Optional[URL]
     dst: Optional[URL]
@@ -265,16 +277,25 @@ async def mv(
     file or directory existing on the storage, and DESTINATION must contain
     the full path to the target file or directory.
 
-
     Examples:
 
-    # move or rename remote file
-    neuro mv storage://{username}/foo.txt storage://{username}/bar.txt
-    neuro mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+    # move and rename remote file
+    neuro mv storage:foo.txt storage:bar/baz.dat
+    neuro mv -T storage:foo.txt storage:bar/baz.dat
 
-    # move or rename remote directory
-    neuro mv storage://{username}/foo/ storage://{username}/bar/
-    neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+    # move remote files into existing remote directory
+    neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
+    neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
+
+    # move the content of remote directory into other existing
+    # remote directory
+    neuro mv -T storage:foo storage:bar
+
+    # move remote file into other user's directory
+    neuro mv storage:foo.txt storage://{username}/bar.dat
+
+    # move remote file from other user's directory
+    neuro mv storage://{username}/foo.txt storage:bar.dat
     """
     target_dir: Optional[URL]
     dst: Optional[URL]
