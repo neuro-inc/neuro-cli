@@ -120,6 +120,7 @@ class Jobs(metaclass=NoPublicConstructor):
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_preemptible: bool = False,
+        schedule_timeout: Optional[float] = None,
     ) -> JobDescription:
         url = URL("jobs")
         payload: Dict[str, Any] = {
@@ -130,6 +131,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["name"] = name
         if description:
             payload["description"] = description
+        if schedule_timeout:
+            payload["schedule_timeout"] = schedule_timeout
         async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
             return _job_description_from_api(res)
