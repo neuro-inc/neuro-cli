@@ -47,9 +47,6 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
     else:
         remote_img = parser.convert_to_neuro_image(local_img)
 
-    log.debug(f"LOCAL: '{local_img}'")
-    log.debug(f"REMOTE: '{remote_img}'")
-
     progress = DockerImageProgress.create(
         type=DockerImageOperation.PUSH,
         input_image=local_img.as_local_str(),
@@ -58,7 +55,9 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
         quiet=root.quiet,
     )
 
-    result_remote_image = await root.client.images.push(local_img, remote_img, progress)
+    result_remote_image = await root.client.images.push(
+        local_img, remote_img, progress=progress
+    )
     click.echo(result_remote_image.as_url_str())
 
 
@@ -89,9 +88,6 @@ async def pull(root: Root, image_name: str, local_image_name: str) -> None:
     else:
         local_img = parser.convert_to_docker_image(remote_img)
 
-    log.debug(f"REMOTE: '{remote_img}'")
-    log.debug(f"LOCAL: '{local_img}'")
-
     progress = DockerImageProgress.create(
         type=DockerImageOperation.PULL,
         input_image=remote_img.as_url_str(),
@@ -99,7 +95,9 @@ async def pull(root: Root, image_name: str, local_image_name: str) -> None:
         tty=root.tty,
         quiet=root.quiet,
     )
-    result_local_image = await root.client.images.pull(remote_img, local_img, progress)
+    result_local_image = await root.client.images.pull(
+        remote_img, local_img, progress=progress
+    )
     click.echo(result_local_image.as_local_str())
 
 
