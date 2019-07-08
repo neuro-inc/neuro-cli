@@ -1,8 +1,10 @@
 import asyncio
 import enum
 import errno
+import fnmatch
 import logging
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional
@@ -70,6 +72,62 @@ class Storage(metaclass=NoPublicConstructor):
                 _file_status_from_api(status)
                 for status in res["FileStatuses"]["FileStatus"]
             ]
+
+    async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
+        if not _has_magic(uri.path):
+            yield uri
+            return
+        basename = uri.name
+        glob_in_dir: Callable[[URL, str, bool], AsyncIterator[URL]]
+        if not _has_magic(basename):
+            glob_in_dir = self._glob0
+        elif not _isrecursive(basename):
+            glob_in_dir = self._glob1
+        else:
+            glob_in_dir = self._glob2
+        async for parent in self.glob(uri.parent, dironly=True):
+            async for x in glob_in_dir(parent, basename, dironly):
+                yield x
+
+    async def _glob2(
+        self, parent: URL, pattern: str, dironly: bool
+    ) -> AsyncIterator[URL]:
+        assert _isrecursive(pattern)
+        yield parent
+        async for x in self._rlistdir(parent, dironly):
+            yield x
+
+    async def _glob1(
+        self, parent: URL, pattern: str, dironly: bool
+    ) -> AsyncIterator[URL]:
+        allow_hidden = _ishidden(pattern)
+        match = re.compile(fnmatch.translate(pattern)).fullmatch
+        async for name in self._iterdir(parent, dironly):
+            if (allow_hidden or not _ishidden(name)) and match(name):
+                yield parent / name
+
+    async def _glob0(
+        self, parent: URL, basename: str, dironly: bool
+    ) -> AsyncIterator[URL]:
+        uri = parent / basename
+        try:
+            await self.stats(uri)
+        except ResourceNotFound:
+            return
+        yield uri
+
+    async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[str]:
+        for stat in await self.ls(uri):
+            if not dironly or stat.is_dir():
+                yield stat.path
+
+    async def _rlistdir(self, uri: URL, dironly: bool) -> AsyncIterator[URL]:
+        async for name in self._iterdir(uri, dironly):
+            if not _ishidden(name):
+                x = uri / name
+                yield x
+                async for y in self._rlistdir(x, dironly):
+                    yield y
 
     async def mkdirs(
         self, uri: URL, *, parents: bool = False, exist_ok: bool = False
@@ -306,6 +364,21 @@ class Storage(metaclass=NoPublicConstructor):
                 )
             else:
                 log.warning("Cannot download %s", child)  # pragma: no cover
+
+
+_magic_check = re.compile("(?:[*?[])")
+
+
+def _has_magic(s: str) -> bool:
+    return _magic_check.search(s) is not None
+
+
+def _ishidden(name: str) -> bool:
+    return name.startswith(".")
+
+
+def _isrecursive(pattern: str) -> bool:
+    return pattern == "**"
 
 
 def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:

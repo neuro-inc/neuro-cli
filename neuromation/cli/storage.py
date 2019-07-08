@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Sequence
+from typing import AsyncIterator, Optional, Sequence
 
 import click
 from yarl import URL
@@ -34,6 +34,13 @@ def storage() -> None:
     is_flag=True,
     help="remove directories and their contents recursively",
 )
+@click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in SOURCES with scheme 'storage'",
+)
 @async_cmd()
 async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
     """
@@ -44,13 +51,14 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
     neuro rm storage:foo/bar
     neuro rm storage://{username}/foo/bar
     neuro rm --recursive storage://{username}/foo/
+    neuro rm storage:foo/**/*.tmp
     """
     for path in paths:
         uri = parse_file_resource(path, root)
-
-        await root.client.storage.rm(uri, recursive=recursive)
-        if root.verbosity > 0:
-            click.echo(f"removed {str(uri)!r}")
+        async for uri in _expand(uri, root, glob):
+            await root.client.storage.rm(uri, recursive=recursive)
+            if root.verbosity > 0:
+                click.echo(f"removed {str(uri)!r}")
 
 
 @command()
@@ -105,9 +113,30 @@ async def ls(
 
 
 @command()
+@click.argument("paths", nargs=-1, required=False)
+@async_cmd()
+async def glob(root: Root, paths: Sequence[str]) -> None:
+    """
+    Expand glob patterns.
+    """
+    for path in paths:
+        uri = parse_file_resource(path, root)
+        log.info(f"Using pattern {str(uri)!r}:")
+        async for file in root.client.storage.glob(uri):
+            click.echo(file)
+
+
+@command()
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
+@click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in SOURCES with scheme 'storage'",
+)
 @click.option(
     "-t",
     "--target-directory",
@@ -128,6 +157,7 @@ async def cp(
     sources: Sequence[str],
     destination: Optional[str],
     recursive: bool,
+    glob: bool,
     target_directory: Optional[str],
     no_target_directory: bool,
     progress: bool,
@@ -163,6 +193,9 @@ async def cp(
 
     # download other user's remote file into the current directory
     neuro cp storage://{username}/foo.txt .
+
+    # download only files with extension `.out` into the current directory
+    neuro cp storage:results/*.out .
     """
     target_dir: Optional[URL]
     dst: Optional[URL]
@@ -212,10 +245,15 @@ async def cp(
             else:
                 await root.client.storage.upload_file(src, dst, progress=progress_obj)
         elif src.scheme == "storage" and dst.scheme == "file":
-            if recursive:
-                await root.client.storage.download_dir(src, dst, progress=progress_obj)
-            else:
-                await root.client.storage.download_file(src, dst, progress=progress_obj)
+            async for src in _expand(src, root, glob):
+                if recursive:
+                    await root.client.storage.download_dir(
+                        src, dst, progress=progress_obj
+                    )
+                else:
+                    await root.client.storage.download_file(
+                        src, dst, progress=progress_obj
+                    )
         else:
             raise RuntimeError(
                 f"Copy operation of the file with scheme '{src.scheme}'"
@@ -249,6 +287,13 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 @command()
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
+@click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in SOURCES with scheme 'storage'",
+)
 @click.option(
     "-t",
     "--target-directory",
@@ -333,17 +378,29 @@ async def mv(
 
     for source in sources:
         src = parse_file_resource(source, root)
+        async for src in _expand(src, root, glob):
+            if target_dir:
+                dst = target_dir / src.name
+            assert dst
+            await root.client.storage.mv(src, dst)
+            if root.verbosity > 0:
+                click.echo(f"{str(src)!r} -> {str(dst)!r}")
 
-        if target_dir:
-            dst = target_dir / src.name
-        assert dst
-        await root.client.storage.mv(src, dst)
-        if root.verbosity > 0:
-            click.echo(f"{str(src)!r} -> {str(dst)!r}")
+
+def _expand(uri: URL, root: Root, glob: bool) -> AsyncIterator[URL]:
+    if glob:
+        return root.client.storage.glob(uri)
+    else:
+        return _no_glob(uri)
+
+
+async def _no_glob(uri: URL) -> AsyncIterator[URL]:
+    yield uri
 
 
 storage.add_command(cp)
 storage.add_command(ls)
+storage.add_command(glob)
 storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
