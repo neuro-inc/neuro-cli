@@ -129,7 +129,7 @@ async def tags(root: Root, image_name: str) -> None:
 
     Examples:
 
-    neuro image tags image://myfriend/alpine:shared
+    neuro image tags image://myfriend/alpine
 
     """
 

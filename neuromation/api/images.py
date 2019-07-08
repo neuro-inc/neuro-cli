@@ -187,7 +187,9 @@ class Images(metaclass=NoPublicConstructor):
 
     async def tags(self, image: URL) -> List[str]:
         prefix = "image://"
+        if not str(image).startswith(prefix):
+            raise ValueError("Image name must start with the 'image://' scheme")
         name = str(image)[len(prefix) :]
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
-            return [tag for tag in ret.get("tags", [])]
+            return ret.get("tags", [])

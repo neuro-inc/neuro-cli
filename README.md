@@ -748,7 +748,7 @@ neuro image tags [OPTIONS] IMAGE_NAME
 
 ```bash
 
-neuro image tags image://myfriend/alpine:shared
+neuro image tags image://myfriend/alpine
 
 ```
 

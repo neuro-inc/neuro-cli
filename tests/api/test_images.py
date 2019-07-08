@@ -757,3 +757,16 @@ class TestRegistry:
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
         assert ret == [URL(image) for image in expected_urls]
+
+    async def test_images_with_no_prefix(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
+        app = web.Application()
+        srv = await aiohttp_server(app)
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+        async with make_client(url, registry_url=registry_url) as client:
+            with pytest.raises(
+                ValueError, match="Image name must start with the 'image://' scheme"
+            ):
+                await client.images.tags(URL("someimage"))
