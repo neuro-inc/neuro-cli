@@ -233,7 +233,8 @@ class TestJobStartProgress:
         assert err == ""
         assert f"{JobStatus.PENDING}" in out
         assert f"{JobStatus.RUNNING}" in out
-        assert "reason (ErrorDesc)" in out
+        assert "reason" in out
+        assert "(ErrorDesc)" in out
         assert out.count(f"{JobStatus.PENDING}") != 1
         assert CSI in out
 
