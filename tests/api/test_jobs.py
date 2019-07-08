@@ -738,14 +738,6 @@ async def test_job_run_schedule_timeout(
 
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
-        volumes: List[Volume] = [
-            Volume("storage://test-user/path_read_only", "/container/read_only", True),
-            Volume(
-                "storage://test-user/path_read_write",
-                "/container/path_read_write",
-                False,
-            ),
-        ]
         container = Container(
             image="submit-image-name", command="submit-command", resources=resources
         )
