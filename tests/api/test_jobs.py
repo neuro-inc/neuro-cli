@@ -678,6 +678,82 @@ async def test_job_submit_preemptible(
     assert ret == _job_description_from_api(JSON)
 
 
+async def test_job_submit_schedule_timeout(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+        "schedule_timeout": 5,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "resources": {
+                    "memory_mb": 16384,
+                    "cpu": 7,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+            },
+            "is_preemptible": False,
+            "schedule_timeout": 5,
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        volumes: List[Volume] = [
+            Volume("storage://test-user/path_read_only", "/container/read_only", True),
+            Volume(
+                "storage://test-user/path_read_write",
+                "/container/path_read_write",
+                False,
+            ),
+        ]
+        container = Container(
+            image="submit-image-name", command="submit-command", resources=resources
+        )
+        ret = await client.jobs.run(container=container, schedule_timeout=5)
+
+    assert ret == _job_description_from_api(JSON)
+
+
 @pytest.mark.parametrize(
     "volume", ["storage:///", ":", "::::", "", "storage:///data/:/data/rest:wrong"]
 )
