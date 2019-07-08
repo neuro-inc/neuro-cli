@@ -15,9 +15,6 @@ from neuromation.api import (
     ImageNameParser,
 )
 from neuromation.api.images import (
-    STATUS_CUSTOM_ERROR,
-    STATUS_FORBIDDEN,
-    STATUS_NOT_FOUND,
     DockerImage,
 )
 from neuromation.cli.formatters import DockerImageProgress
@@ -586,7 +583,7 @@ class TestImages:
         self, patched_tag: Any, make_client: _MakeClient, progress: DockerImageProgress
     ) -> None:
         patched_tag.side_effect = DockerError(
-            STATUS_NOT_FOUND, {"message": "Mocked error"}
+            404, {"message": "Mocked error"}
         )
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
         async with make_client("https://api.localhost.localdomain") as client:
@@ -604,7 +601,7 @@ class TestImages:
     ) -> None:
         patched_tag.return_value = True
         patched_push.side_effect = DockerError(
-            STATUS_FORBIDDEN, {"message": "Mocked error"}
+            403, {"message": "Mocked error"}
         )
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
         async with make_client("https://api.localhost.localdomain") as client:
@@ -631,7 +628,7 @@ class TestImages:
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
                 await client.images.push(image, image, progress)
-        assert exc_info.value.status == STATUS_CUSTOM_ERROR
+        assert exc_info.value.status == 900
         assert exc_info.value.message == "Mocked message"
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
@@ -658,7 +655,7 @@ class TestImages:
         self, patched_pull: Any, make_client: _MakeClient, progress: DockerImageProgress
     ) -> None:
         patched_pull.side_effect = DockerError(
-            STATUS_NOT_FOUND, {"message": "Mocked error"}
+            404, {"message": "Mocked error"}
         )
         async with make_client("https://api.localhost.localdomain") as client:
             image = self.parser.parse_as_neuro_image(
@@ -672,7 +669,7 @@ class TestImages:
         self, patched_pull: Any, make_client: _MakeClient, progress: DockerImageProgress
     ) -> None:
         patched_pull.side_effect = DockerError(
-            STATUS_FORBIDDEN, {"message": "Mocked error"}
+            403, {"message": "Mocked error"}
         )
         image = self.parser.parse_as_neuro_image(f"image://bob/image:not-your-bananas")
         async with make_client("https://api.localhost.localdomain") as client:
@@ -691,7 +688,7 @@ class TestImages:
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
                 await client.images.pull(image, image, progress)
-        assert exc_info.value.status == STATUS_CUSTOM_ERROR
+        assert exc_info.value.status == 900
         assert exc_info.value.message == "Mocked message"
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")

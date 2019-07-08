@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from yarl import URL
 
-from .images import IMAGE_SCHEME, DockerImage
+from .images import DockerImage
 
 
 class ImageNameParser:
@@ -40,9 +40,7 @@ class ImageNameParser:
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
-        return image.startswith(f"{IMAGE_SCHEME}:") or image.startswith(
-            f"{self._registry}/"
-        )
+        return image.startswith("image:") or image.startswith(f"{self._registry}/")
 
     def convert_to_neuro_image(self, image: DockerImage) -> DockerImage:
         return DockerImage(
@@ -67,7 +65,7 @@ class ImageNameParser:
         return image_normalized
 
     def has_tag(self, image: str) -> bool:
-        prefix = f"{IMAGE_SCHEME}:"
+        prefix = "image:"
         if image.startswith(prefix):
             image = image.lstrip(prefix).lstrip("/")
         name, tag = self._split_image_name(image, default_tag=None)
@@ -85,9 +83,7 @@ class ImageNameParser:
 
     def _parse_as_docker_image(self, image: str) -> DockerImage:
         if self.is_in_neuro_registry(image):
-            raise ValueError(
-                f"scheme '{IMAGE_SCHEME}://' is not allowed for docker images"
-            )
+            raise ValueError("scheme 'image://' is not allowed for docker images")
         name, tag = self._split_image_name(image, self.default_tag)
         return DockerImage(name=name, tag=tag)
 
@@ -95,21 +91,19 @@ class ImageNameParser:
         self, image: str, default_tag: Optional[str]
     ) -> DockerImage:
         if not self.is_in_neuro_registry(image):
-            raise ValueError(
-                f"scheme '{IMAGE_SCHEME}://' is required for remote images"
-            )
+            raise ValueError("scheme 'image://' is required for remote images")
 
         url = URL(image)
         if not url.scheme:
             parts = url.path.split("/")
             url = url.build(
-                scheme=IMAGE_SCHEME,
+                scheme="image",
                 host=parts[1],
                 path="/".join([""] + parts[2:]),
                 query=url.query,
             )
         else:
-            assert url.scheme == IMAGE_SCHEME, f"invalid image scheme: '{url.scheme}'"
+            assert url.scheme == "image", f"invalid image scheme: '{url.scheme}'"
 
         self._check_allowed_uri_elements(url)
 

@@ -17,13 +17,7 @@ from .registry import _Registry
 from .utils import NoPublicConstructor
 
 
-STATUS_FORBIDDEN = 403
-STATUS_NOT_FOUND = 404
-STATUS_CUSTOM_ERROR = 900
-
 log = logging.getLogger(__name__)
-
-IMAGE_SCHEME = "image"
 
 
 class DockerImageOperation(str, Enum):
@@ -44,7 +38,7 @@ class DockerImage:
         return bool(self.registry and self.owner)
 
     def as_url_str(self) -> str:
-        pre = f"{IMAGE_SCHEME}://{self.owner}/" if self.is_in_neuro_registry() else ""
+        pre = f"image://{self.owner}/" if self.is_in_neuro_registry() else ""
         post = f":{self.tag}" if self.tag else ""
         return pre + self.name + post
 
@@ -70,7 +64,7 @@ class Images(metaclass=NoPublicConstructor):
                 r".*Either DOCKER_HOST or local sockets are not available.*", f"{error}"
             ):
                 raise DockerError(
-                    STATUS_CUSTOM_ERROR,
+                    900,
                     {
                         "message": "Docker engine is not available. "
                         "Please specify DOCKER_HOST variable "
@@ -105,7 +99,7 @@ class Images(metaclass=NoPublicConstructor):
         try:
             await self._docker.images.tag(local_image.as_local_str(), repo)
         except DockerError as error:
-            if error.status == STATUS_NOT_FOUND:
+            if error.status == 404:
                 raise ValueError(
                     f"Image {local_image.as_local_str()} was not found "
                     "in your local docker images"
@@ -116,7 +110,7 @@ class Images(metaclass=NoPublicConstructor):
             )
         except DockerError as error:
             # TODO check this part when registry fixed
-            if error.status == STATUS_FORBIDDEN:
+            if error.status == 403:
                 raise AuthorizationError(
                     f"Access denied {remote_image.as_url_str()}"
                 ) from error
@@ -124,7 +118,7 @@ class Images(metaclass=NoPublicConstructor):
         async for obj in stream:
             if "error" in obj.keys():
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                raise DockerError(STATUS_CUSTOM_ERROR, error_details)
+                raise DockerError(900, error_details)
             elif "id" in obj.keys() and obj["id"] != remote_image.tag:
                 if "progress" in obj.keys():
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
@@ -146,12 +140,12 @@ class Images(metaclass=NoPublicConstructor):
             )
             self._temporary_images.append(repo)
         except DockerError as error:
-            if error.status == STATUS_NOT_FOUND:
+            if error.status == 404:
                 raise ValueError(
                     f"Image {remote_image.as_url_str()} was not found " "in registry"
                 ) from error
             # TODO check this part when registry fixed
-            elif error.status == STATUS_FORBIDDEN:
+            elif error.status == 403:
                 raise AuthorizationError(
                     f"Access denied {remote_image.as_url_str()}"
                 ) from error
@@ -160,7 +154,7 @@ class Images(metaclass=NoPublicConstructor):
         async for obj in stream:
             if "error" in obj.keys():
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                raise DockerError(STATUS_CUSTOM_ERROR, error_details)
+                raise DockerError(900, error_details)
             elif "id" in obj.keys() and obj["id"] != remote_image.tag:
                 if "progress" in obj.keys():
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
