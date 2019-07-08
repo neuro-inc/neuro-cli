@@ -1,0 +1,1 @@
+Add `neuro image tags` command to list all tags for a given image
