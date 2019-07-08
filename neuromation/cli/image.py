@@ -3,11 +3,11 @@ import logging
 import click
 from yarl import URL
 
-from neuromation.api import DockerImageOperation, ImageNameParser
+from neuromation.api import DockerImage, DockerImageOperation, ImageNameParser
 from neuromation.cli.formatters import DockerImageProgress
 
 from .root import Root
-from .utils import async_cmd, command, deprecated_quiet_option, group
+from .utils import ImageType, async_cmd, command, deprecated_quiet_option, group
 
 
 log = logging.getLogger(__name__)
@@ -119,9 +119,9 @@ async def ls(root: Root) -> None:
 
 
 @command()
-@click.argument("image")
+@click.argument("image", type=ImageType())
 @async_cmd()
-async def tags(root: Root, image: str) -> None:
+async def tags(root: Root, image: DockerImage) -> None:
     """
     List tags for image in platform registry.
 
@@ -130,10 +130,10 @@ async def tags(root: Root, image: str) -> None:
     Examples:
 
     neuro image tags image://myfriend/alpine
-
+    neuro image tags image:myimage
     """
 
-    tags = await root.client.images.tags(URL(image))
+    tags = await root.client.images.tags(image)
     for tag in tags:
         click.echo(tag)
 

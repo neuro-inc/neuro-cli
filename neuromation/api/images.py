@@ -57,6 +57,12 @@ class DockerImage:
         post = f":{self.tag}" if self.tag else ""
         return self.name + post
 
+    def as_api_str(self) -> str:
+        if self.owner:
+            return f"{self.owner}/{self.name}"
+        else:
+            return self.name
+
 
 class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
@@ -185,11 +191,8 @@ class Images(metaclass=NoPublicConstructor):
                 result.append(url)
             return result
 
-    async def tags(self, image: URL) -> List[str]:
-        prefix = "image://"
-        if not str(image).startswith(prefix):
-            raise ValueError("Image name must start with the 'image://' scheme")
-        name = str(image)[len(prefix) :]
+    async def tags(self, image: DockerImage) -> List[str]:
+        name = image.as_api_str()
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
             return ret.get("tags", [])

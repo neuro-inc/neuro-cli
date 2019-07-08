@@ -741,7 +741,7 @@ List tags for image in platform registry.<br/><br/>Image name must be URL with i
 **Usage:**
 
 ```bash
-neuro image tags [OPTIONS] IMAGE_NAME
+neuro image tags [OPTIONS] IMAGE
 ```
 
 **Examples:**
@@ -749,6 +749,7 @@ neuro image tags [OPTIONS] IMAGE_NAME
 ```bash
 
 neuro image tags image://myfriend/alpine
+neuro image tags image:myimage
 
 ```
 

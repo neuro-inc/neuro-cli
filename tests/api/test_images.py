@@ -520,6 +520,7 @@ class TestDockerImage:
         assert image.as_url_str() == "image://me/ubuntu"
         assert image.as_repo_str() == "registry.io/me/ubuntu"
         assert image.as_local_str() == "ubuntu"
+        assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_in_neuro_registry_tag_yes(self) -> None:
         image = DockerImage(
@@ -528,18 +529,21 @@ class TestDockerImage:
         assert image.as_url_str() == "image://me/ubuntu:v10.04"
         assert image.as_repo_str() == "registry.io/me/ubuntu:v10.04"
         assert image.as_local_str() == "ubuntu:v10.04"
+        assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
         image = DockerImage(name="ubuntu", tag=None, owner=None, registry=None)
         assert image.as_url_str() == "ubuntu"
         assert image.as_repo_str() == "ubuntu"
         assert image.as_local_str() == "ubuntu"
+        assert image.as_api_str() == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
         image = DockerImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
         assert image.as_url_str() == "ubuntu:v10.04"
         assert image.as_repo_str() == "ubuntu:v10.04"
         assert image.as_local_str() == "ubuntu:v10.04"
+        assert image.as_api_str() == "ubuntu"
 
 
 @pytest.mark.usefixtures("patch_docker_host")
@@ -757,16 +761,3 @@ class TestRegistry:
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
         assert ret == [URL(image) for image in expected_urls]
-
-    async def test_images_with_no_prefix(
-        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
-    ) -> None:
-        app = web.Application()
-        srv = await aiohttp_server(app)
-        url = "http://platform"
-        registry_url = srv.make_url("/v2/")
-        async with make_client(url, registry_url=registry_url) as client:
-            with pytest.raises(
-                ValueError, match="Image name must start with the 'image://' scheme"
-            ):
-                await client.images.tags(URL("someimage"))

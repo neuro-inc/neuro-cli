@@ -139,6 +139,10 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
     assert tag in captured.out
 
+    image_full_str_latest_tag = image_full_str.replace(f":{tag}", ":latest")
+    captured = helper.run_cli(["image", "tags", image_full_str_latest_tag])
+    assert tag in captured.out
+
 
 @pytest.mark.e2e
 def test_images_push_with_specified_name(
