@@ -1,6 +1,6 @@
+import contextlib
 import logging
 import re
-import contextlib
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional
@@ -144,7 +144,8 @@ class Images(metaclass=NoPublicConstructor):
             except DockerError as error:
                 if error.status == 404:
                     raise ValueError(
-                        f"Image {remote_image.as_url_str()} was not found " "in registry"
+                        f"Image {remote_image.as_url_str()} was not found "
+                        "in registry"
                     ) from error
                 # TODO check this part when registry fixed
                 elif error.status == 403:
