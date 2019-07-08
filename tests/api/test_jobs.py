@@ -311,7 +311,7 @@ async def test_status_with_ssh_and_http(
     assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit(
+async def test_job_run(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -402,7 +402,7 @@ async def test_job_submit(
     assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit_with_name_and_description(
+async def test_job_run_with_name_and_description(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -501,7 +501,7 @@ async def test_job_submit_with_name_and_description(
     assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit_no_volumes(
+async def test_job_run_no_volumes(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -579,7 +579,7 @@ async def test_job_submit_no_volumes(
     assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit_preemptible(
+async def test_job_run_preemptible(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -678,7 +678,7 @@ async def test_job_submit_preemptible(
     assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit_schedule_timeout(
+async def test_job_run_schedule_timeout(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
