@@ -1,7 +1,6 @@
 import logging
 
 import click
-from yarl import URL
 
 from neuromation.api import DockerImage, DockerImageOperation, ImageNameParser
 from neuromation.cli.formatters import DockerImageProgress
