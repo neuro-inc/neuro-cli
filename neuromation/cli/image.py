@@ -119,9 +119,9 @@ async def ls(root: Root) -> None:
 
 
 @command()
-@click.argument("image_name")
+@click.argument("image")
 @async_cmd()
-async def tags(root: Root, image_name: str) -> None:
+async def tags(root: Root, image: str) -> None:
     """
     List tags for image in platform registry.
 
@@ -133,7 +133,7 @@ async def tags(root: Root, image_name: str) -> None:
 
     """
 
-    tags = await root.client.images.tags(URL(image_name))
+    tags = await root.client.images.tags(URL(image))
     for tag in tags:
         click.echo(tag)
 
