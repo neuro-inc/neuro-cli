@@ -9,14 +9,13 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.api import (
+    AbstractDockerImageProgress,
     AuthorizationError,
     Client,
     DockerImageOperation,
     ImageNameParser,
 )
-from neuromation.api.images import (
-    DockerImage,
-)
+from neuromation.api.images import DockerImage
 from neuromation.cli.formatters import DockerImageProgress
 from tests import _TestServerFactory
 
@@ -544,7 +543,7 @@ class TestImages:
     parser = ImageNameParser(default_user="bob", registry_url=URL("https://reg.neu.ro"))
 
     @pytest.fixture()
-    def progress(self) -> DockerImageProgress:
+    def progress(self) -> AbstractDockerImageProgress:
         return DockerImageProgress.create(
             type=DockerImageOperation.PULL,
             input_image="inp",
@@ -582,9 +581,7 @@ class TestImages:
     async def test_push_non_existent_image(
         self, patched_tag: Any, make_client: _MakeClient, progress: DockerImageProgress
     ) -> None:
-        patched_tag.side_effect = DockerError(
-            404, {"message": "Mocked error"}
-        )
+        patched_tag.side_effect = DockerError(404, {"message": "Mocked error"})
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(ValueError, match=r"not found"):
@@ -600,9 +597,7 @@ class TestImages:
         progress: DockerImageProgress,
     ) -> None:
         patched_tag.return_value = True
-        patched_push.side_effect = DockerError(
-            403, {"message": "Mocked error"}
-        )
+        patched_push.side_effect = DockerError(403, {"message": "Mocked error"})
         image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):
@@ -654,9 +649,7 @@ class TestImages:
     async def test_pull_non_existent_image(
         self, patched_pull: Any, make_client: _MakeClient, progress: DockerImageProgress
     ) -> None:
-        patched_pull.side_effect = DockerError(
-            404, {"message": "Mocked error"}
-        )
+        patched_pull.side_effect = DockerError(404, {"message": "Mocked error"})
         async with make_client("https://api.localhost.localdomain") as client:
             image = self.parser.parse_as_neuro_image(
                 f"image://bob/image:no-bananas-here"
@@ -668,9 +661,7 @@ class TestImages:
     async def test_pull_image_from_foreign_repo(
         self, patched_pull: Any, make_client: _MakeClient, progress: DockerImageProgress
     ) -> None:
-        patched_pull.side_effect = DockerError(
-            403, {"message": "Mocked error"}
-        )
+        patched_pull.side_effect = DockerError(403, {"message": "Mocked error"})
         image = self.parser.parse_as_neuro_image(f"image://bob/image:not-your-bananas")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):

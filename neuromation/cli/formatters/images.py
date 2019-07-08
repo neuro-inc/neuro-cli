@@ -5,9 +5,6 @@ from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
 class DockerImageProgress(AbstractDockerImageProgress):
-    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
-        pass
-
     @classmethod
     def create(
         cls,
@@ -16,9 +13,9 @@ class DockerImageProgress(AbstractDockerImageProgress):
         output_image: str,
         tty: bool,
         quiet: bool,
-    ) -> "DockerImageProgress":
+    ) -> AbstractDockerImageProgress:
         if quiet:
-            progress = DockerImageProgress()
+            progress: AbstractDockerImageProgress = QuietDockerImageProgress()
         elif tty:
             progress = DetailedDockerImageProgress()
         else:
@@ -33,6 +30,14 @@ class DockerImageProgress(AbstractDockerImageProgress):
             progress(f"Using local image '{output_image}'")
             progress("Pulling image...")
         return progress
+
+
+class QuietDockerImageProgress(DockerImageProgress):
+    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
 
 
 class DetailedDockerImageProgress(DockerImageProgress):
