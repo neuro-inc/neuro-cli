@@ -236,18 +236,20 @@ async def cp(
 
         progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
 
-        assert dst
-        if src.scheme == "file" and dst.scheme == "storage":
+        async for src in _expand(src, root, glob and src.scheme == "storage"):
             if target_dir:
                 dst = target_dir / src.name
-            if recursive:
-                await root.client.storage.upload_dir(src, dst, progress=progress_obj)
-            else:
-                await root.client.storage.upload_file(src, dst, progress=progress_obj)
-        elif src.scheme == "storage" and dst.scheme == "file":
-            async for src in _expand(src, root, glob):
-                if target_dir:
-                    dst = target_dir / src.name
+            assert dst
+            if src.scheme == "file" and dst.scheme == "storage":
+                if recursive:
+                    await root.client.storage.upload_dir(
+                        src, dst, progress=progress_obj
+                    )
+                else:
+                    await root.client.storage.upload_file(
+                        src, dst, progress=progress_obj
+                    )
+            elif src.scheme == "storage" and dst.scheme == "file":
                 if recursive:
                     await root.client.storage.download_dir(
                         src, dst, progress=progress_obj
@@ -256,12 +258,12 @@ async def cp(
                     await root.client.storage.download_file(
                         src, dst, progress=progress_obj
                     )
-        else:
-            raise RuntimeError(
-                f"Copy operation of the file with scheme '{src.scheme}'"
-                f" to the file with scheme '{dst.scheme}'"
-                f" is not supported"
-            )
+            else:
+                raise RuntimeError(
+                    f"Copy operation of the file with scheme '{src.scheme}'"
+                    f" to the file with scheme '{dst.scheme}'"
+                    f" is not supported"
+                )
 
 
 @command()
