@@ -24,6 +24,7 @@
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
 		* [neuro image pull](#neuro-image-pull)
+		* [neuro image tags](#neuro-image-tags)
 	* [neuro config](#neuro-config)
 		* [neuro config login](#neuro-config-login)
 		* [neuro config login-with-token](#neuro-config-login-with-token)
@@ -673,6 +674,7 @@ Name | Description|
 | _[neuro image ls](#neuro-image-ls)_| List images |
 | _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
+| _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
 
 
 
@@ -698,7 +700,7 @@ Name | Description|
 
 ### neuro image push
 
-Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contains tag.<br/>If tags not specified 'latest' will be used as value.<br/>
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag.<br/>If tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
@@ -751,6 +753,34 @@ neuro pull image://username/my-alpine:production alpine:from-registry
 Name | Description|
 |----|------------|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro image tags
+
+List tags for image in platform registry.<br/><br/>Image name must be URL with image:// scheme.<br/>
+
+**Usage:**
+
+```bash
+neuro image tags [OPTIONS] IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro image tags image://myfriend/alpine
+neuro image tags image:myimage
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
@@ -1612,7 +1642,7 @@ Name | Description|
 
 ## neuro push
 
-Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contains tag.<br/>If tags not specified 'latest' will be used as value.<br/>
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag.<br/>If tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
