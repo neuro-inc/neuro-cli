@@ -327,8 +327,10 @@ class JobStartProgress:
             reason = ""
         description = job.history.description or ""
         msg = reason
+        if reason:
+            msg += " "
         if description:
-            msg += f" ({description})"
+            msg += f"({description})"
         return msg
 
 
