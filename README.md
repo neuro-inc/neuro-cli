@@ -605,7 +605,7 @@ neuro rm storage:foo/**/*.tmp
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|remove directories and their contents recursively|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with scheme 'storage'  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -1554,7 +1554,7 @@ neuro rm storage:foo/**/*.tmp
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|remove directories and their contents recursively|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with scheme 'storage'  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
 
 

@@ -39,10 +39,10 @@ def storage() -> None:
     is_flag=True,
     default=True,
     show_default=True,
-    help="Expand glob patterns in SOURCES with scheme 'storage'",
+    help="Expand glob patterns in PATHS",
 )
 @async_cmd()
-async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
+async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> None:
     """
     Remove files or directories.
 
@@ -236,16 +236,18 @@ async def cp(
 
         progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
 
-        if target_dir:
-            dst = target_dir / src.name
         assert dst
         if src.scheme == "file" and dst.scheme == "storage":
+            if target_dir:
+                dst = target_dir / src.name
             if recursive:
                 await root.client.storage.upload_dir(src, dst, progress=progress_obj)
             else:
                 await root.client.storage.upload_file(src, dst, progress=progress_obj)
         elif src.scheme == "storage" and dst.scheme == "file":
             async for src in _expand(src, root, glob):
+                if target_dir:
+                    dst = target_dir / src.name
                 if recursive:
                     await root.client.storage.download_dir(
                         src, dst, progress=progress_obj
@@ -312,6 +314,7 @@ async def mv(
     root: Root,
     sources: Sequence[str],
     destination: Optional[str],
+    glob: bool,
     target_directory: Optional[str],
     no_target_directory: bool,
 ) -> None:
