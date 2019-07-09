@@ -107,7 +107,6 @@ class Images(metaclass=NoPublicConstructor):
 
         if progress is None:
             progress = _DummyProgress()
-
         progress.start(local_image.as_local_str(), remote_image.as_url_str())
 
         with contextlib.closing(progress):
@@ -140,7 +139,7 @@ class Images(metaclass=NoPublicConstructor):
                         message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                     else:
                         message = f"{obj['id']}: {obj['status']}"
-                    progress(message, obj["id"])
+                    progress.progress(message, obj["id"])
             return remote_image
 
     async def pull(
@@ -155,7 +154,7 @@ class Images(metaclass=NoPublicConstructor):
 
         if progress is None:
             progress = _DummyProgress()
-            progress.start(remote_image.as_url_str(), local_image.as_local_str())
+        progress.start(remote_image.as_url_str(), local_image.as_local_str())
 
         with contextlib.closing(progress):
             repo = remote_image.as_repo_str()
@@ -186,7 +185,7 @@ class Images(metaclass=NoPublicConstructor):
                         message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                     else:
                         message = f"{obj['id']}: {obj['status']}"
-                    progress(message, obj["id"])
+                    progress.progress(message, obj["id"])
 
             await self._docker.images.tag(repo, local_image.as_local_str())
 
@@ -216,7 +215,7 @@ class _DummyProgress(AbstractDockerImageProgress):
     def start(self, src: str, dst: str) -> None:
         pass
 
-    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def progress(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 
     def close(self) -> None:

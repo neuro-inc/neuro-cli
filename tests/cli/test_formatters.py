@@ -1191,8 +1191,8 @@ class TestDockerImageProgress:
             DockerImageOperation.PULL, tty=True, quiet=True
         )
         formatter.start("input", "output")
-        formatter("message1")
-        formatter("message2", "layer1")
+        formatter.progress("message1")
+        formatter.progress("message2", "layer1")
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
@@ -1203,9 +1203,9 @@ class TestDockerImageProgress:
             DockerImageOperation.PUSH, tty=False, quiet=False
         )
         formatter.start("input:latest", "image://bob/output:stream")
-        formatter("message1")
-        formatter("message2", "layer1")
-        formatter("message3", "layer1")
+        formatter.progress("message1")
+        formatter.progress("message2", "layer1")
+        formatter.progress("message3", "layer1")
 
         formatter.close()
         out, err = capfd.readouterr()
@@ -1221,9 +1221,9 @@ class TestDockerImageProgress:
             DockerImageOperation.PUSH, tty=True, quiet=False
         )
         formatter.start("input:latest", "image://bob/output:stream")
-        formatter("message1")
-        formatter("message2", "layer1")
-        formatter("message3", "layer1")
+        formatter.progress("message1")
+        formatter.progress("message2", "layer1")
+        formatter.progress("message3", "layer1")
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
