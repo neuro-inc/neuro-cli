@@ -127,6 +127,7 @@ def test_images_complete_lifecycle(
     helper.check_job_output(job_id, re.escape(tag))
 
 
+@pytest.mark.e2e
 def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     # push image
     captured = helper.run_cli(["image", "push", image])
