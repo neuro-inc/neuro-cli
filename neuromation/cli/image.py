@@ -2,8 +2,8 @@ import logging
 
 import click
 
-from neuromation.api import DockerImage, DockerImageOperation, ImageNameParser
-from neuromation.cli.formatters import DockerImageProgress
+from neuromation.api import DockerImage, ImageNameParser
+from neuromation.cli.formatters import DockerImageOperation, DockerImageProgress
 
 from .root import Root
 from .utils import ImageType, async_cmd, command, deprecated_quiet_option, group

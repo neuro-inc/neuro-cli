@@ -1,7 +1,13 @@
+from enum import Enum
 from typing import Dict
 
-from neuromation.api import AbstractDockerImageProgress, DockerImageOperation
+from neuromation.api import AbstractDockerImageProgress
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
+
+
+class DockerImageOperation(str, Enum):
+    PUSH = "push"
+    PULL = "pull"
 
 
 class DockerImageProgress(AbstractDockerImageProgress):

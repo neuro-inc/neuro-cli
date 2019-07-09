@@ -2,7 +2,6 @@ import contextlib
 import logging
 import re
 from dataclasses import dataclass
-from enum import Enum
 from typing import Dict, List, Optional
 
 import aiodocker
@@ -18,11 +17,6 @@ from .utils import NoPublicConstructor
 
 
 log = logging.getLogger(__name__)
-
-
-class DockerImageOperation(str, Enum):
-    PUSH = "push"
-    PULL = "pull"
 
 
 @dataclass(frozen=True)

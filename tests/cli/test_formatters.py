@@ -10,7 +10,6 @@ from yarl import URL
 
 from neuromation.api import (
     Container,
-    DockerImageOperation,
     FileStatus,
     FileStatusType,
     HTTPPort,
@@ -24,6 +23,7 @@ from neuromation.api import (
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
+    DockerImageOperation,
     DockerImageProgress,
     JobFormatter,
     JobStartProgress,

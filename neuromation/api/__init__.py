@@ -22,7 +22,7 @@ from .core import (
     IllegalArgumentError,
     ResourceNotFound,
 )
-from .images import DockerImage, DockerImageOperation
+from .images import DockerImage
 from .jobs import (
     Container,
     HTTPPort,
@@ -43,7 +43,6 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
-    "DockerImageOperation",
     "ImageNameParser",
     "JobDescription",
     "JobStatus",
