@@ -155,6 +155,162 @@ async def test_storage_ls(
     ]
 
 
+async def test_storage_glob(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler_home(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/"
+        assert request.query == {"op": "LISTSTATUS"}
+        return web.json_response(
+            {
+                "FileStatuses": {
+                    "FileStatus": [
+                        {
+                            "path": "folder",
+                            "length": 0,
+                            "type": "DIRECTORY",
+                            "modificationTime": 0,
+                            "permission": "read",
+                        }
+                    ]
+                }
+            }
+        )
+
+    async def handler_folder(request: web.Request) -> web.Response:
+        assert request.path.rstrip("/") == "/storage/user/folder"
+        assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
+        if request.query["op"] == "GETFILESTATUS":
+            return web.json_response(
+                {
+                    "FileStatus": {
+                        "path": "/user/folder",
+                        "type": "DIRECTORY",
+                        "length": 0,
+                        "modificationTime": 0,
+                        "permission": "read",
+                    }
+                }
+            )
+        elif request.query["op"] == "LISTSTATUS":
+            return web.json_response(
+                {
+                    "FileStatuses": {
+                        "FileStatus": [
+                            {
+                                "path": "foo",
+                                "length": 1024,
+                                "type": "FILE",
+                                "modificationTime": 0,
+                                "permission": "read",
+                            },
+                            {
+                                "path": "bar",
+                                "length": 0,
+                                "type": "DIRECTORY",
+                                "modificationTime": 0,
+                                "permission": "read",
+                            },
+                        ]
+                    }
+                }
+            )
+
+    async def handler_foo(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/folder/foo"
+        assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/folder/foo",
+                    "length": 1024,
+                    "type": "FILE",
+                    "modificationTime": 0,
+                    "permission": "read",
+                }
+            }
+        )
+
+    async def handler_bar(request: web.Request) -> web.Response:
+        assert request.path.rstrip("/") == "/storage/user/folder/bar"
+        if request.query["op"] == "GETFILESTATUS":
+            return web.json_response(
+                {
+                    "FileStatus": {
+                        "path": "/user/folder/bar",
+                        "length": 0,
+                        "type": "DIRECTORY",
+                        "modificationTime": 0,
+                        "permission": "read",
+                    }
+                }
+            )
+        elif request.query["op"] == "LISTSTATUS":
+            return web.json_response(
+                {
+                    "FileStatuses": {
+                        "FileStatus": [
+                            {
+                                "path": "baz",
+                                "length": 0,
+                                "type": "FILE",
+                                "modificationTime": 0,
+                                "permission": "read",
+                            }
+                        ]
+                    }
+                }
+            )
+
+    app = web.Application()
+    app.router.add_get("/storage/user", handler_home)
+    app.router.add_get("/storage/user/", handler_home)
+    app.router.add_get("/storage/user/folder", handler_folder)
+    app.router.add_get("/storage/user/folder/", handler_folder)
+    app.router.add_get("/storage/user/folder/foo", handler_foo)
+    app.router.add_get("/storage/user/folder/foo/", handler_foo)
+    app.router.add_get("/storage/user/folder/bar", handler_bar)
+    app.router.add_get("/storage/user/folder/bar/", handler_bar)
+
+    srv = await aiohttp_server(app)
+
+    async def glob(pattern: str) -> List[URL]:
+        return [uri async for uri in client.storage.glob(URL(pattern))]
+
+    async with make_client(srv.make_url("/")) as client:
+        assert await glob("storage:folder") == [URL("storage:folder")]
+        assert await glob("storage:folder/") == [URL("storage:folder/")]
+        assert await glob("storage:folder/*") == [
+            URL("storage:folder/foo"),
+            URL("storage:folder/bar"),
+        ]
+        assert await glob("storage:folder/foo") == [URL("storage:folder/foo")]
+        assert await glob("storage:folder/[a-d]*") == [URL("storage:folder/bar")]
+        assert await glob("storage:folder/*/") == [URL("storage:folder/bar/")]
+        assert await glob("storage:*") == [URL("storage:folder")]
+        assert await glob("storage:**") == [
+            URL("storage:"),
+            URL("storage:folder"),
+            URL("storage:folder/foo"),
+            URL("storage:folder/bar"),
+            URL("storage:folder/bar/baz"),
+        ]
+        assert await glob("storage:*/foo") == [URL("storage:folder/foo")]
+        assert await glob("storage:*/f*") == [URL("storage:folder/foo")]
+        assert await glob("storage:**/foo") == [URL("storage:folder/foo")]
+        assert await glob("storage:**/f*") == [
+            URL("storage:folder"),
+            URL("storage:folder/foo"),
+        ]
+        assert await glob("storage:**/f*/") == [URL("storage:folder/")]
+        assert await glob("storage:**/b*") == [
+            URL("storage:folder/bar"),
+            URL("storage:folder/bar/baz"),
+        ]
+        assert await glob("storage:**/b*/") == [URL("storage:folder/bar/")]
+
+
 async def test_storage_rm_file(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:

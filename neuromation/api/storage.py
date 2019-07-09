@@ -102,7 +102,8 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> AsyncIterator[URL]:
         allow_hidden = _ishidden(pattern)
         match = re.compile(fnmatch.translate(pattern)).fullmatch
-        async for name in self._iterdir(parent, dironly):
+        async for stat in self._iterdir(parent, dironly):
+            name = stat.path
             if (allow_hidden or not _ishidden(name)) and match(name):
                 yield parent / name
 
@@ -116,18 +117,20 @@ class Storage(metaclass=NoPublicConstructor):
             return
         yield uri
 
-    async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[str]:
+    async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[FileStatus]:
         for stat in await self.ls(uri):
             if not dironly or stat.is_dir():
-                yield stat.path
+                yield stat
 
     async def _rlistdir(self, uri: URL, dironly: bool) -> AsyncIterator[URL]:
-        async for name in self._iterdir(uri, dironly):
+        async for stat in self._iterdir(uri, dironly):
+            name = stat.path
             if not _ishidden(name):
                 x = uri / name
                 yield x
-                async for y in self._rlistdir(x, dironly):
-                    yield y
+                if stat.is_dir():
+                    async for y in self._rlistdir(x, dironly):
+                        yield y
 
     async def mkdirs(
         self, uri: URL, *, parents: bool = False, exist_ok: bool = False
