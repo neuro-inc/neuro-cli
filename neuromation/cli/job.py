@@ -187,6 +187,7 @@ def job() -> None:
     help="Upload neuro config to the job",
 )
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@click.option("--attach", is_flag=True, help="Display job's logs and return error code")
 @async_cmd()
 async def submit(
     root: Root,
@@ -208,6 +209,7 @@ async def submit(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
+    attach: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -224,7 +226,10 @@ async def submit(
     neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
       pytorch:latest
     """
-    await run_job(
+    if attach and not wait_start:
+        raise click.UsageError("--attach requires --wait-start")
+
+    job = await run_job(
         root,
         image=image,
         gpu=gpu,
@@ -245,6 +250,12 @@ async def submit(
         pass_config=pass_config,
         browse=browse,
     )
+
+    if attach:
+        await _print_logs(root, job.id)
+        res = await root.client.jobs.status(job.id)
+        click.echo(f"Exit code: {res.history.exit_code}")
+        sys.exit(res.history.exit_code)
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
@@ -361,7 +372,11 @@ async def logs(root: Root, job: str) -> None:
     Print the logs for a container.
     """
     id = await resolve_job(root.client, job)
-    async for chunk in root.client.jobs.monitor(id):
+    await _print_logs(root, id)
+
+
+async def _print_logs(root: Root, job: str) -> None:
+    async for chunk in root.client.jobs.monitor(job):
         if not chunk:
             break
         click.echo(chunk.decode(errors="ignore"), nl=False)
@@ -589,6 +604,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Upload neuro config to the job",
 )
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@click.option("--attach", is_flag=True, help="Display job's logs and return error code")
 @async_cmd()
 async def run(
     root: Root,
@@ -607,6 +623,7 @@ async def run(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
+    attach: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -628,8 +645,10 @@ async def run(
     job_preset = root.resource_presets[preset]
 
     log.info(f"Using preset '{preset}': {job_preset}")
+    if attach and not wait_start:
+        raise click.UsageError("--attach requires --wait-start")
 
-    await run_job(
+    job = await run_job(
         root,
         image=image,
         gpu=job_preset.gpu,
@@ -650,6 +669,12 @@ async def run(
         pass_config=pass_config,
         browse=browse,
     )
+
+    if attach:
+        await _print_logs(root, job.id)
+        res = await root.client.jobs.status(job.id)
+        click.echo(f"Exit code: {res.history.exit_code}")
+        sys.exit(res.history.exit_code)
 
 
 job.add_command(run)
@@ -689,7 +714,7 @@ async def run_job(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
-) -> None:
+) -> JobDescription:
     if http_auth is None:
         http_auth = True
     elif not http:
@@ -759,6 +784,7 @@ async def run_job(
     progress.close()
     if browse:
         await browse_job(root, job)
+    return job
 
 
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
