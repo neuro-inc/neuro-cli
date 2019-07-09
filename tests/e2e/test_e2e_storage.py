@@ -483,7 +483,7 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
             "storage",
             "cp",
             "-r",
-            f"file://{tmp_path!s}/f*",
+            tmp_path.as_uri() + "/f*",
             helper.tmpstorage + "/folder",
         ]
     )
@@ -541,7 +541,7 @@ def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
             "cp",
             "-r",
             "--no-glob",
-            f"file://{tmp_path!s}/[d]",
+            tmp_path.as_uri() + "/[d]",
             helper.tmpstorage + "/d",
         ]
     )
