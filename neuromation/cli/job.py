@@ -8,6 +8,7 @@ import webbrowser
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import click
+from click import Context
 from yarl import URL
 
 from neuromation.api import (
@@ -226,10 +227,7 @@ async def submit(
     neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
       pytorch:latest
     """
-    if attach and not wait_start:
-        raise click.UsageError("--attach requires --wait-start")
-
-    job = await run_job(
+    await run_job(
         root,
         image=image,
         gpu=gpu,
@@ -249,13 +247,8 @@ async def submit(
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
+        attach=attach,
     )
-
-    if attach:
-        await _print_logs(root, job.id)
-        res = await root.client.jobs.status(job.id)
-        click.echo(f"Exit code: {res.history.exit_code}")
-        sys.exit(res.history.exit_code)
 
 
 @command(context_settings=dict(ignore_unknown_options=True))
@@ -606,7 +599,9 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @click.option("--attach", is_flag=True, help="Display job's logs and return error code")
 @async_cmd()
+@click.pass_context
 async def run(
+    ctx: Context,
     root: Root,
     image: RemoteImage,
     preset: str,
@@ -646,9 +641,9 @@ async def run(
 
     log.info(f"Using preset '{preset}': {job_preset}")
     if attach and not wait_start:
-        raise click.UsageError("--attach requires --wait-start")
+        raise click.UsageError("Cannot use --attach and --no-wait-start together")
 
-    job = await run_job(
+    await run_job(
         root,
         image=image,
         gpu=job_preset.gpu,
@@ -668,13 +663,8 @@ async def run(
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
+        attach=attach,
     )
-
-    if attach:
-        await _print_logs(root, job.id)
-        res = await root.client.jobs.status(job.id)
-        click.echo(f"Exit code: {res.history.exit_code}")
-        sys.exit(res.history.exit_code)
 
 
 job.add_command(run)
@@ -714,6 +704,7 @@ async def run_job(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
+    attach: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -726,6 +717,8 @@ async def run_job(
         raise click.UsageError("--browse requires --http")
     if browse and not wait_start:
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
+    if attach and not wait_start:
+        raise click.UsageError("Cannot use --attach and --no-wait-start together")
 
     env_dict = build_env(env, env_file)
 
@@ -784,6 +777,13 @@ async def run_job(
     progress.close()
     if browse:
         await browse_job(root, job)
+
+    if attach:
+        await _print_logs(root, job.id)
+        res = await root.client.jobs.status(job.id)
+        click.echo(f"Exit code: {res.history.exit_code}")
+        sys.exit(res.history.exit_code)
+
     return job
 
 
