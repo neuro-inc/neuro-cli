@@ -508,7 +508,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     metavar="PRESET",
     help=(
         "Predefined resource configuration (to see available values, "
-        "type `neuro config show`)"
+        "run `neuro config show`)"
     ),
 )
 @click.option(
