@@ -22,6 +22,10 @@ class AbstractProgress(abc.ABC):
 
 class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
+    def start(self, src: str, dst: str) -> None:
+        pass
+
+    @abc.abstractmethod
     def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 

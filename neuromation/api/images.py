@@ -101,6 +101,9 @@ class Images(metaclass=NoPublicConstructor):
 
         if progress is None:
             progress = _DummyProgress()
+
+        progress.start(local_image.as_local_str(), remote_image.as_url_str())
+
         with contextlib.closing(progress):
             repo = remote_image.as_repo_str()
             try:
@@ -146,6 +149,8 @@ class Images(metaclass=NoPublicConstructor):
 
         if progress is None:
             progress = _DummyProgress()
+            progress.start(remote_image.as_url_str(), local_image.as_local_str())
+
         with contextlib.closing(progress):
             repo = remote_image.as_repo_str()
             try:
@@ -195,6 +200,9 @@ class Images(metaclass=NoPublicConstructor):
 
 
 class _DummyProgress(AbstractDockerImageProgress):
+    def start(self, src: str, dst: str) -> None:
+        pass
+
     def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
         pass
 

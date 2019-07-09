@@ -1187,8 +1187,9 @@ class TestConfigFormatter:
 class TestDockerImageProgress:
     def test_quiet(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(
-            DockerImageOperation.PULL, "input", "output", tty=True, quiet=True
+            DockerImageOperation.PULL, tty=True, quiet=True
         )
+        formatter.start("input", "output")
         formatter("message1")
         formatter("message2", "layer1")
         formatter.close()
@@ -1198,12 +1199,9 @@ class TestDockerImageProgress:
 
     def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH,
-            "input:latest",
-            "image://bob/output:stream",
-            tty=False,
-            quiet=False,
+            DockerImageOperation.PUSH, tty=False, quiet=False
         )
+        formatter.start("input:latest", "image://bob/output:stream")
         formatter("message1")
         formatter("message2", "layer1")
         formatter("message3", "layer1")
@@ -1219,12 +1217,9 @@ class TestDockerImageProgress:
 
     def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH,
-            "input:latest",
-            "image://bob/output:stream",
-            tty=True,
-            quiet=False,
+            DockerImageOperation.PUSH, tty=True, quiet=False
         )
+        formatter.start("input:latest", "image://bob/output:stream")
         formatter("message1")
         formatter("message2", "layer1")
         formatter("message3", "layer1")
