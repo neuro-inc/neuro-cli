@@ -160,8 +160,8 @@ def job() -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation:/var/storage/neuromation:ro",
+    "`--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw "
+    "--volume storage://neuromation:/var/storage/neuromation:ro`",
 )
 @click.option(
     "-e",
@@ -553,7 +553,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "-d",
     "--description",
     metavar="DESC",
-    help="Add optional description in free format",
+    help="Optional job description in free format",
 )
 @deprecated_quiet_option
 @click.option(
@@ -563,8 +563,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation:/var/storage/neuromation:ro",
+    "`--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw "
+    "--volume storage://neuromation:/var/storage/neuromation:ro`",
 )
 @click.option(
     "-e",
@@ -612,7 +612,7 @@ async def run(
     browse: bool,
 ) -> None:
     """
-    Run a job with predefined machine configuration.
+    Run a job with predefined resources configuration.
 
     IMAGE container image name.
 
@@ -620,10 +620,11 @@ async def run(
 
     Examples:
 
-    # Starts a container pytorch:latest with two paths mounted.
-    # Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
-    # storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-    neuro run pytorch:latest --volume=HOME
+    # Starts a container pytorch:latest on a machine with smaller GPU resources
+    # (see exact values in `neuro config show`) and with two volumes mounted:
+    # - volume `storage://~`           --> `/var/storage/home` (in read-write mode),
+    # - volume `storage://neuromation` --> `/var/storage/neuromation` (read-only).
+    neuro run --preset=gpu-small --volume=HOME pytorch:latest
     """
     if preset:
         job_preset = root.resource_presets[preset]
