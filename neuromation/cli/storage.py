@@ -219,17 +219,17 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if no_target_directory:
-            if len(sources) > 1:
-                raise click.UsageError(f"Extra operand after {sources[1]!r}")
+        if no_target_directory or not await root.client.storage._is_dir(dst):
             target_dir = None
-        elif await root.client.storage._is_dir(dst):
+        else:
             target_dir = dst
             dst = None
-        else:
-            target_dir = None
 
-    for src in await _expand(sources, root, glob):
+    srcs = await _expand(sources, root, glob)
+    if no_target_directory and len(srcs) > 1:
+        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
+
+    for src in srcs:
         if target_dir:
             dst = target_dir / src.name
         assert dst
@@ -359,17 +359,17 @@ async def mv(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if no_target_directory:
-            if len(sources) > 1:
-                raise click.UsageError(f"Extra operand after {sources[1]!r}")
+        if no_target_directory or not await root.client.storage._is_dir(dst):
             target_dir = None
-        elif await root.client.storage._is_dir(dst):
+        else:
             target_dir = dst
             dst = None
-        else:
-            target_dir = None
 
-    for src in await _expand(sources, root, glob):
+    srcs = await _expand(sources, root, glob)
+    if no_target_directory and len(srcs) > 1:
+        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
+
+    for src in srcs:
         if target_dir:
             dst = target_dir / src.name
         assert dst
