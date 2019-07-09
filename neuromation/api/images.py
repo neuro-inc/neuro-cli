@@ -51,6 +51,12 @@ class DockerImage:
         post = f":{self.tag}" if self.tag else ""
         return self.name + post
 
+    def as_api_str(self) -> str:
+        if self.owner:
+            return f"{self.owner}/{self.name}"
+        else:
+            return self.name
+
 
 class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
@@ -189,14 +195,21 @@ class Images(metaclass=NoPublicConstructor):
     async def ls(self) -> List[URL]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
             ret = await resp.json()
-            result = []
-            for name in ret["repositories"]:
-                if name.startswith("image://"):
-                    url = URL(name)
+            prefix = "image://"
+            result: List[URL] = []
+            for repo in ret["repositories"]:
+                if repo.startswith(prefix):
+                    url = URL(repo)
                 else:
-                    url = URL(f"image://{name}")
+                    url = URL(f"{prefix}{repo}")
                 result.append(url)
             return result
+
+    async def tags(self, image: DockerImage) -> List[str]:
+        name = image.as_api_str()
+        async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
+            ret = await resp.json()
+            return ret.get("tags", [])
 
 
 class _DummyProgress(AbstractDockerImageProgress):
