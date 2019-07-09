@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 @group()
 def acl() -> None:
     """
-    Access Control List (ACL) management.
+    Access Control List management.
     """
 
 
