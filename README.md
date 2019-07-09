@@ -105,7 +105,7 @@ Name | Description|
 | _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
-| _[neuro acl](#neuro-acl)_| Access Control List \(ACL) management |
+| _[neuro acl](#neuro-acl)_| Access Control List management |
 
 
 **Commands:**
@@ -1019,7 +1019,7 @@ Name | Description|
 
 ## neuro acl
 
-Access Control List \(ACL) management.
+Access Control List management.
 
 **Usage:**
 
