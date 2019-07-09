@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 
 class AbstractProgress(abc.ABC):
@@ -26,7 +25,7 @@ class AbstractDockerImageProgress(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def progress(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def progress(self, message: str, layer_id: str) -> None:
         pass
 
     @abc.abstractmethod

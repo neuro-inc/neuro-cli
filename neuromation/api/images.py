@@ -215,7 +215,7 @@ class _DummyProgress(AbstractDockerImageProgress):
     def start(self, src: str, dst: str) -> None:
         pass
 
-    def progress(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def progress(self, message: str, layer_id: str) -> None:
         pass
 
     def close(self) -> None:

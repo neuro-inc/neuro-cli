@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict
 
 from neuromation.api import AbstractDockerImageProgress, DockerImageOperation
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
@@ -25,7 +25,7 @@ class QuietDockerImageProgress(DockerImageProgress):
     def start(self, src: str, dst: str) -> None:
         pass
 
-    def progress(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def progress(self, message: str, layer_id: str) -> None:
         pass
 
     def close(self) -> None:
@@ -48,7 +48,7 @@ class DetailedDockerImageProgress(DockerImageProgress):
             self._printer.print(f"Using local image '{dst}'")
             self._printer.print("Pulling image...")
 
-    def progress(self, message: str, layer_id: Optional[str] = None) -> None:
+    def progress(self, message: str, layer_id: str) -> None:
         if layer_id:
             if layer_id in self._mapping.keys():
                 lineno = self._mapping[layer_id]
@@ -79,7 +79,7 @@ class StreamDockerImageProgress(DockerImageProgress):
             self._printer.print(f"Using local image '{dst}'")
             self._printer.print("Pulling image...")
 
-    def progress(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def progress(self, message: str, layer_id: str) -> None:
         if layer_id:
             self._printer.tick()
         else:
