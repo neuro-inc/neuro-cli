@@ -188,8 +188,8 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-# - volume `storage://~`           --> `/var/storage/home` (in read-write mode),
-# - volume `storage://neuromation` --> `/var/storage/neuromation` (read-only).
+#   storage://~           --> /var/storage/home (in read-write mode),
+#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 ```
@@ -206,7 +206,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. `\--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw --volume storage://neuromation:/var/storage/neuromation:ro`|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
@@ -253,7 +253,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. `\--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw --volume storage://neuromation:/var/storage/neuromation:ro`|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
@@ -1171,8 +1171,8 @@ neuro run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-# - volume `storage://~`           --> `/var/storage/home` (in read-write mode),
-# - volume `storage://neuromation` --> `/var/storage/neuromation` (read-only).
+#   storage://~           --> /var/storage/home (in read-write mode),
+#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 ```
@@ -1189,7 +1189,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. `\--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw --volume storage://neuromation:/var/storage/neuromation:ro`|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
@@ -1236,7 +1236,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. `\--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw --volume storage://neuromation:/var/storage/neuromation:ro`|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|

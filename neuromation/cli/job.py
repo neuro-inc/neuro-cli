@@ -160,8 +160,8 @@ def job() -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    "`--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw "
-    "--volume storage://neuromation:/var/storage/neuromation:ro`",
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation:/var/storage/neuromation:ro",
 )
 @click.option(
     "-e",
@@ -563,8 +563,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    "`--volume=HOME` is an alias for `--volume storage://~:/var/storage/home:rw "
-    "--volume storage://neuromation:/var/storage/neuromation:ro`",
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation:/var/storage/neuromation:ro",
 )
 @click.option(
     "-e",
@@ -622,8 +622,8 @@ async def run(
 
     # Starts a container pytorch:latest on a machine with smaller GPU resources
     # (see exact values in `neuro config show`) and with two volumes mounted:
-    # - volume `storage://~`           --> `/var/storage/home` (in read-write mode),
-    # - volume `storage://neuromation` --> `/var/storage/neuromation` (read-only).
+    #   storage://~           --> /var/storage/home (in read-write mode),
+    #   storage://neuromation --> /var/storage/neuromation (in read-only mode).
     neuro run --preset=gpu-small --volume=HOME pytorch:latest
     """
     if not preset:
