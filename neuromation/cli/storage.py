@@ -1,5 +1,5 @@
 import logging
-from typing import AsyncIterator, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import click
 from yarl import URL
@@ -53,12 +53,10 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     neuro rm --recursive storage://{username}/foo/
     neuro rm storage:foo/**/*.tmp
     """
-    for path in paths:
-        uri = parse_file_resource(path, root)
-        async for uri in _expand(uri, root, glob):
-            await root.client.storage.rm(uri, recursive=recursive)
-            if root.verbosity > 0:
-                click.echo(f"removed {str(uri)!r}")
+    for uri in await _expand(paths, root, glob):
+        await root.client.storage.rm(uri, recursive=recursive)
+        if root.verbosity > 0:
+            click.echo(f"removed {str(uri)!r}")
 
 
 @command()
@@ -231,39 +229,29 @@ async def cp(
         else:
             target_dir = None
 
-    for source in sources:
-        src = parse_file_resource(source, root)
+    for src in await _expand(sources, root, glob):
+        if target_dir:
+            dst = target_dir / src.name
+        assert dst
 
         progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
 
-        async for src in _expand(src, root, glob and src.scheme == "storage"):
-            if target_dir:
-                dst = target_dir / src.name
-            assert dst
-            if src.scheme == "file" and dst.scheme == "storage":
-                if recursive:
-                    await root.client.storage.upload_dir(
-                        src, dst, progress=progress_obj
-                    )
-                else:
-                    await root.client.storage.upload_file(
-                        src, dst, progress=progress_obj
-                    )
-            elif src.scheme == "storage" and dst.scheme == "file":
-                if recursive:
-                    await root.client.storage.download_dir(
-                        src, dst, progress=progress_obj
-                    )
-                else:
-                    await root.client.storage.download_file(
-                        src, dst, progress=progress_obj
-                    )
+        if src.scheme == "file" and dst.scheme == "storage":
+            if recursive:
+                await root.client.storage.upload_dir(src, dst, progress=progress_obj)
             else:
-                raise RuntimeError(
-                    f"Copy operation of the file with scheme '{src.scheme}'"
-                    f" to the file with scheme '{dst.scheme}'"
-                    f" is not supported"
-                )
+                await root.client.storage.upload_file(src, dst, progress=progress_obj)
+        elif src.scheme == "storage" and dst.scheme == "file":
+            if recursive:
+                await root.client.storage.download_dir(src, dst, progress=progress_obj)
+            else:
+                await root.client.storage.download_file(src, dst, progress=progress_obj)
+        else:
+            raise RuntimeError(
+                f"Copy operation of the file with scheme '{src.scheme}'"
+                f" to the file with scheme '{dst.scheme}'"
+                f" is not supported"
+            )
 
 
 @command()
@@ -381,26 +369,25 @@ async def mv(
         else:
             target_dir = None
 
-    for source in sources:
-        src = parse_file_resource(source, root)
-        async for src in _expand(src, root, glob):
-            if target_dir:
-                dst = target_dir / src.name
-            assert dst
-            await root.client.storage.mv(src, dst)
-            if root.verbosity > 0:
-                click.echo(f"{str(src)!r} -> {str(dst)!r}")
+    for src in await _expand(sources, root, glob):
+        if target_dir:
+            dst = target_dir / src.name
+        assert dst
+        await root.client.storage.mv(src, dst)
+        if root.verbosity > 0:
+            click.echo(f"{str(src)!r} -> {str(dst)!r}")
 
 
-def _expand(uri: URL, root: Root, glob: bool) -> AsyncIterator[URL]:
-    if glob:
-        return root.client.storage.glob(uri)
-    else:
-        return _no_glob(uri)
-
-
-async def _no_glob(uri: URL) -> AsyncIterator[URL]:
-    yield uri
+async def _expand(paths: Sequence[str], root: Root, glob: bool) -> List[URL]:
+    uris = []
+    for path in paths:
+        uri = parse_file_resource(path, root)
+        if glob and uri.scheme == "storage":
+            async for file in root.client.storage.glob(uri):
+                uris.append(file)
+        else:
+            uris.append(uri)
+    return uris
 
 
 storage.add_command(cp)
