@@ -318,6 +318,19 @@ class JobStartProgress:
     def close(self) -> None:
         pass
 
+    def _get_status_reason_message(self, job: JobDescription) -> str:
+        if job.history.reason:
+            return job.history.reason
+        elif job.status == JobStatus.PENDING:
+            return "Initializing"
+        return ""
+
+    def _get_status_description_message(self, job: JobDescription) -> str:
+        description = job.history.description or ""
+        if description:
+            return f"({description})"
+        return ""
+
 
 class DetailedJobStartProgress(JobStartProgress):
     def __init__(self, color: bool):
@@ -335,14 +348,13 @@ class DetailedJobStartProgress(JobStartProgress):
         new_time = time.time()
         dt = new_time - self._time
         msg = "Status: " + format_job_status(job.status)
-        if job.history.reason:
-            reason = job.history.reason
-        elif job.status == JobStatus.PENDING:
-            reason = "Initializing"
-        else:
-            reason = ""
+        reason = self._get_status_reason_message(job)
         if reason:
             msg += " " + style(reason, bold=True)
+        description = self._get_status_description_message(job)
+        if description:
+            msg += " " + description
+
         if not self._color:
             msg = unstyle(msg)
         if msg != self._prev:
@@ -364,14 +376,13 @@ class StreamJobStartProgress(JobStartProgress):
 
     def __call__(self, job: JobDescription) -> None:
         msg = f"Status: {job.status}"
-        if job.history.reason:
-            reason = job.history.reason
-        elif job.status == JobStatus.PENDING:
-            reason = "Initializing"
-        else:
-            reason = ""
+        reason = self._get_status_reason_message(job)
         if reason:
             msg += " " + reason
+        description = self._get_status_description_message(job)
+        if description:
+            msg += " " + description
+
         if msg != self._prev:
             self._printer.print(msg)
             self._prev = msg
