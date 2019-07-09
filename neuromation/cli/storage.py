@@ -111,14 +111,14 @@ async def ls(
 
 
 @command()
-@click.argument("paths", nargs=-1, required=False)
+@click.argument("patterns", nargs=-1, required=False)
 @async_cmd()
-async def glob(root: Root, paths: Sequence[str]) -> None:
+async def glob(root: Root, patterns: Sequence[str]) -> None:
     """
-    Expand glob patterns.
+    List resources that match PATTERNS.
     """
-    for path in paths:
-        uri = parse_file_resource(path, root)
+    for pattern in patterns:
+        uri = parse_file_resource(pattern, root)
         log.info(f"Using pattern {str(uri)!r}:")
         async for file in root.client.storage.glob(uri):
             click.echo(file)

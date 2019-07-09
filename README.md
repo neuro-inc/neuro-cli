@@ -476,7 +476,7 @@ Name | Description|
 |---|---|
 | _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
 | _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
-| _[neuro storage glob](#neuro-storage-glob)_| Expand glob patterns |
+| _[neuro storage glob](#neuro-storage-glob)_| List resources that match PATTERNS |
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
@@ -562,12 +562,12 @@ Name | Description|
 
 ### neuro storage glob
 
-Expand glob patterns.
+List resources that match PATTERNS.
 
 **Usage:**
 
 ```bash
-neuro storage glob [OPTIONS] [PATHS]...
+neuro storage glob [OPTIONS] [PATTERNS]...
 ```
 
 **Options:**
