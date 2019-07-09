@@ -502,7 +502,15 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option("-s", "--preset", metavar="PRESET", help="Predefined job profile")
+@click.option(
+    "-s",
+    "--preset",
+    metavar="PRESET",
+    help=(
+        "Predefined resource configuration (to see available values, "
+        "type `neuro config show`)"
+    ),
+)
 @click.option(
     "-x/-X",
     "--extshm/--no-extshm",
@@ -604,7 +612,7 @@ async def run(
     browse: bool,
 ) -> None:
     """
-    Run an image with predefined configuration.
+    Run a job with predefined machine configuration.
 
     IMAGE container image name.
 

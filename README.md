@@ -113,7 +113,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
-| _[neuro run](#neuro-run)_| Run an image with predefined configuration |
+| _[neuro run](#neuro-run)_| Run a job with predefined machine configuration |
 | _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
@@ -158,7 +158,7 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro job run](#neuro-job-run)_| Run an image with predefined configuration |
+| _[neuro job run](#neuro-job-run)_| Run a job with predefined machine configuration |
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
@@ -174,7 +174,7 @@ Name | Description|
 
 ### neuro job run
 
-Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined machine configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -197,7 +197,7 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined resource preset \(to see available values, type `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
@@ -1156,7 +1156,7 @@ Name | Description|
 
 ## neuro run
 
-Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined machine configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -1179,7 +1179,7 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined resource preset \(to see available values, type `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
