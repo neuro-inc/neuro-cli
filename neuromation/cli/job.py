@@ -626,10 +626,11 @@ async def run(
     # - volume `storage://neuromation` --> `/var/storage/neuromation` (read-only).
     neuro run --preset=gpu-small --volume=HOME pytorch:latest
     """
-    if preset:
-        job_preset = root.resource_presets[preset]
-    else:
-        job_preset = next(iter(root.resource_presets.values()))
+    if not preset:
+        preset = next(iter(root.resource_presets.keys()))
+    job_preset = root.resource_presets[preset]
+
+    log.info(f"Using preset '{preset}': {job_preset}")
 
     await run_job(
         root,
