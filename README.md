@@ -529,7 +529,7 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with scheme 'storage'  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
@@ -669,7 +669,7 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 Name | Description|
 |----|------------|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with scheme 'storage'  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|
@@ -1497,7 +1497,7 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with scheme 'storage'  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
@@ -1618,7 +1618,7 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 Name | Description|
 |----|------------|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with scheme 'storage'  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|

@@ -1,3 +1,4 @@
+import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 from typing import List, Optional, Sequence
 
@@ -133,7 +134,7 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     is_flag=True,
     default=True,
     show_default=True,
-    help="Expand glob patterns in SOURCES with scheme 'storage'",
+    help="Expand glob patterns in SOURCES with explicit scheme",
 )
 @click.option(
     "-t",
@@ -225,7 +226,7 @@ async def cp(
             target_dir = dst
             dst = None
 
-    srcs = await _expand(sources, root, glob)
+    srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
@@ -284,7 +285,7 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     is_flag=True,
     default=True,
     show_default=True,
-    help="Expand glob patterns in SOURCES with scheme 'storage'",
+    help="Expand glob patterns in SOURCES",
 )
 @click.option(
     "-t",
@@ -378,13 +379,21 @@ async def mv(
             click.echo(f"{str(src)!r} -> {str(dst)!r}")
 
 
-async def _expand(paths: Sequence[str], root: Root, glob: bool) -> List[URL]:
+async def _expand(
+    paths: Sequence[str], root: Root, glob: bool, allow_file: bool = False
+) -> List[URL]:
     uris = []
     for path in paths:
         uri = parse_file_resource(path, root)
-        if glob and uri.scheme == "storage":
-            async for file in root.client.storage.glob(uri):
-                uris.append(file)
+        if glob and globmodule.has_magic(uri.path):
+            if uri.scheme == "storage":
+                async for file in root.client.storage.glob(uri):
+                    uris.append(file)
+            elif allow_file and path.startswith("file:"):
+                for path in globmodule.iglob(uri.path, recursive=True):
+                    uris.append(uri.with_path(path))
+            else:
+                uris.append(uri)
         else:
             uris.append(uri)
     return uris

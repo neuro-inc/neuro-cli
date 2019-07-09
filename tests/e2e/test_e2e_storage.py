@@ -478,7 +478,17 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
     (folder / "foo").write_bytes(b"foo")
     (folder / "bar").write_bytes(b"bar")
     (folder / "baz").write_bytes(b"baz")
-    helper.run_cli(["storage", "cp", "-r", str(folder), helper.tmpstorage + "/folder"])
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            f"file://{tmp_path!s}/f*",
+            helper.tmpstorage + "/folder",
+        ]
+    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    assert sorted(captured.out.splitlines()) == ["bar", "baz", "foo", "subfolder"]
 
     # Move files with pattern
     helper.run_cli(
@@ -521,11 +531,20 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
     # Create files and directories and copy them to storage
-    dir = tmp_path / "d"
+    dir = tmp_path / "[d]"
     dir.mkdir()
     (dir / "f").write_bytes(b"f")
     (dir / "[df]").write_bytes(b"[df]")
-    helper.run_cli(["storage", "cp", "-r", str(dir), helper.tmpstorage + "/d"])
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--no-glob",
+            f"file://{tmp_path!s}/[d]",
+            helper.tmpstorage + "/d",
+        ]
+    )
 
     # Move files with literal path
     helper.run_cli(
