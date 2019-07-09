@@ -215,6 +215,8 @@ async def test_storage_glob(
                     }
                 }
             )
+        else:
+            raise web.HTTPInternalServerError
 
     async def handler_foo(request: web.Request) -> web.Response:
         assert request.path == "/storage/user/folder/foo"
@@ -262,6 +264,8 @@ async def test_storage_glob(
                     }
                 }
             )
+        else:
+            raise web.HTTPInternalServerError
 
     app = web.Application()
     app.router.add_get("/storage/user", handler_home)
