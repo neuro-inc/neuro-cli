@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from yarl import URL
 
-from .images import DockerImage
+from .images import DockerImage, LocalImage
 
 
 class ImageNameParser:
@@ -17,7 +17,7 @@ class ImageNameParser:
             )
         self._registry = registry_url.host
 
-    def parse_as_docker_image(self, image: str) -> DockerImage:
+    def parse_as_docker_image(self, image: str) -> LocalImage:
         try:
             self._validate_image_name(image)
             return self._parse_as_docker_image(image)
@@ -42,7 +42,7 @@ class ImageNameParser:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
         return image.startswith("image:") or image.startswith(f"{self._registry}/")
 
-    def convert_to_neuro_image(self, image: DockerImage) -> DockerImage:
+    def convert_to_neuro_image(self, image: LocalImage) -> DockerImage:
         return DockerImage(
             name=image.name,
             tag=image.tag,
@@ -50,16 +50,17 @@ class ImageNameParser:
             registry=self._registry,
         )
 
-    def convert_to_docker_image(self, image: DockerImage) -> DockerImage:
-        return DockerImage(name=image.name, tag=image.tag)
+    def convert_to_docker_image(self, image: DockerImage) -> LocalImage:
+        return LocalImage(name=image.name, tag=image.tag)
 
     def normalize(self, image: str) -> str:
         try:
             if self.is_in_neuro_registry(image):
-                parsed_image = self.parse_as_neuro_image(image)
+                remote_image = self.parse_as_neuro_image(image)
+                image_normalized = remote_image.as_url_str()
             else:
-                parsed_image = self.parse_as_docker_image(image)
-            image_normalized = parsed_image.as_url_str()
+                local_image = self.parse_as_docker_image(image)
+                image_normalized = str(local_image)
         except ValueError:
             image_normalized = image
         return image_normalized
@@ -81,11 +82,11 @@ class ImageNameParser:
                 "ambiguous value: valid as both local and remote image name"
             )
 
-    def _parse_as_docker_image(self, image: str) -> DockerImage:
+    def _parse_as_docker_image(self, image: str) -> LocalImage:
         if self.is_in_neuro_registry(image):
             raise ValueError("scheme 'image://' is not allowed for docker images")
         name, tag = self._split_image_name(image, self.default_tag)
-        return DockerImage(name=name, tag=tag)
+        return LocalImage(name=name, tag=tag)
 
     def _parse_as_neuro_image(
         self, image: str, default_tag: Optional[str]

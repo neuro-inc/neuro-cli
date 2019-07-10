@@ -36,6 +36,7 @@ from neuromation.api import (
     Factory,
     ImageNameParser,
     JobDescription,
+    LocalImage,
     Volume,
 )
 from neuromation.api.config import _CookieSession, _PyPIVersion
@@ -463,6 +464,27 @@ def parse_permission_action(action: str) -> Action:
         )
 
 
+class LocalImageType(click.ParamType):
+    name = "local_image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> LocalImage:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        config = Factory(root.config_path)._read()
+        image_parser = ImageNameParser(
+            config.auth_token.username, config.cluster_config.registry_url
+        )
+        if image_parser.is_in_neuro_registry(value):
+            raise click.BadParameter(
+                "Remote image cannot be used as local one", ctx, param, self.name
+            )
+        else:
+            parsed_image = image_parser.parse_as_docker_image(value)
+        return parsed_image
+
+
 class ImageType(click.ParamType):
     name = "image"
 
@@ -478,7 +500,9 @@ class ImageType(click.ParamType):
         if image_parser.is_in_neuro_registry(value):
             parsed_image = image_parser.parse_as_neuro_image(value)
         else:
-            parsed_image = image_parser.parse_as_docker_image(value)
+            raise click.BadParameter(
+                "Local image cannot be used in as remote one", ctx, param, self.name
+            )
         return parsed_image
 
 

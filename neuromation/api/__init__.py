@@ -22,7 +22,7 @@ from .core import (
     IllegalArgumentError,
     ResourceNotFound,
 )
-from .images import DockerImage
+from .images import DockerImage, LocalImage
 from .jobs import (
     Container,
     HTTPPort,
@@ -68,6 +68,7 @@ __all__ = (
     "AbstractDockerImageProgress",
     "ImageNameParser",
     "DockerImage",
+    "LocalImage",
     "Factory",
     "get",
     "login",

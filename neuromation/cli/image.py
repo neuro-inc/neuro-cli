@@ -90,7 +90,7 @@ async def pull(root: Root, image_name: str, local_image_name: str) -> None:
     result_local_image = await root.client.images.pull(
         remote_img, local_img, progress=progress
     )
-    click.echo(result_local_image.as_local_str())
+    click.echo(str(result_local_image))
 
 
 @command()

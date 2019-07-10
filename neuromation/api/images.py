@@ -20,8 +20,6 @@ log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-# TODO (ajuszkowski, 20-feb-2019): rename this class: docker-images refer to both local
-# images and images in docker hub, and neuro-images refer to an image in neuro registry
 class DockerImage:
     name: str
     tag: Optional[str] = None
@@ -41,15 +39,25 @@ class DockerImage:
         pre = f"{self.registry}/{self.owner}/" if self.is_in_neuro_registry() else ""
         return pre + self.as_local_str()
 
-    def as_local_str(self) -> str:
-        post = f":{self.tag}" if self.tag else ""
-        return self.name + post
-
     def as_api_str(self) -> str:
         if self.owner:
             return f"{self.owner}/{self.name}"
         else:
             return self.name
+
+    def as_local_str(self) -> str:
+        post = f":{self.tag}" if self.tag else ""
+        return self.name + post
+
+
+@dataclass(frozen=True)
+class LocalImage:
+    name: str
+    tag: Optional[str] = None
+
+    def __str__(self) -> str:
+        post = f":{self.tag}" if self.tag else ""
+        return self.name + post
 
 
 class Images(metaclass=NoPublicConstructor):
@@ -91,26 +99,27 @@ class Images(metaclass=NoPublicConstructor):
 
     async def push(
         self,
-        local_image: DockerImage,
+        local_image: LocalImage,
         remote_image: DockerImage,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> DockerImage:
-        log.debug(f"LOCAL: '{local_image}'")
+        local_str = str(local_image)
+        log.debug(f"LOCAL: '{local_str}'")
         log.debug(f"REMOTE: '{remote_image}'")
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(local_image.as_local_str(), remote_image.as_url_str())
+        progress.start(local_str, remote_image.as_url_str())
 
         with contextlib.closing(progress):
             repo = remote_image.as_repo_str()
             try:
-                await self._docker.images.tag(local_image.as_local_str(), repo)
+                await self._docker.images.tag(local_str, repo)
             except DockerError as error:
                 if error.status == 404:
                     raise ValueError(
-                        f"Image {local_image.as_local_str()} was not found "
+                        f"Image {local_str} was not found "
                         "in your local docker images"
                     ) from error
             try:
@@ -139,16 +148,17 @@ class Images(metaclass=NoPublicConstructor):
     async def pull(
         self,
         remote_image: DockerImage,
-        local_image: DockerImage,
+        local_image: LocalImage,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
-    ) -> DockerImage:
+    ) -> LocalImage:
+        local_str = str(local_image)
         log.debug(f"REMOTE: '{remote_image}'")
-        log.debug(f"LOCAL: '{local_image}'")
+        log.debug(f"LOCAL: '{local_str}'")
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(remote_image.as_url_str(), local_image.as_local_str())
+        progress.start(remote_image.as_url_str(), local_str)
 
         with contextlib.closing(progress):
             repo = remote_image.as_repo_str()
@@ -181,7 +191,7 @@ class Images(metaclass=NoPublicConstructor):
                         message = f"{obj['id']}: {obj['status']}"
                     progress.progress(message, obj["id"])
 
-            await self._docker.images.tag(repo, local_image.as_local_str())
+            await self._docker.images.tag(repo, local_str)
 
             return local_image
 
