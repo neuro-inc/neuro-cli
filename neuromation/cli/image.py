@@ -3,7 +3,7 @@ from typing import Optional
 
 import click
 
-from neuromation.api import ImageNameParser, RemoteImage
+from neuromation.api import RemoteImage
 from neuromation.cli.formatters import DockerImageOperation, DockerImageProgress
 
 from .root import Root
@@ -25,7 +25,7 @@ def image() -> None:
 @click.argument("remote_image_name", required=False)
 @deprecated_quiet_option
 @async_cmd()
-async def push(root: Root, image_name: str, remote_image_name: Optional[str]) -> None:
+async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
     """
     Push an image to platform registry.
 
@@ -41,19 +41,12 @@ async def push(root: Root, image_name: str, remote_image_name: Optional[str]) ->
 
     """
 
-    parser = ImageNameParser(root.username, root.registry_url)
-    local_img = parser.parse_as_docker_image(image_name)
-    if remote_image_name:
-        remote_img = parser.parse_as_neuro_image(remote_image_name)
-    else:
-        remote_img = parser.convert_to_neuro_image(local_img)
-
     progress = DockerImageProgress.create(
         type=DockerImageOperation.PUSH, tty=root.tty, quiet=root.quiet
     )
 
     result_remote_image = await root.client.images.push(
-        local_img, remote_img, progress=progress
+        local_image, remote_image, progress=progress
     )
     click.echo(result_remote_image.as_url_str())
 
@@ -63,7 +56,7 @@ async def push(root: Root, image_name: str, remote_image_name: Optional[str]) ->
 @click.argument("local_image_name", required=False)
 @deprecated_quiet_option
 @async_cmd()
-async def pull(root: Root, image_name: str, local_image_name: Optional[str]) -> None:
+async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
     """
     Pull an image from platform registry.
 
@@ -78,18 +71,11 @@ async def pull(root: Root, image_name: str, local_image_name: Optional[str]) -> 
 
     """
 
-    parser = ImageNameParser(root.username, root.registry_url)
-    remote_img = parser.parse_as_neuro_image(image_name)
-    if local_image_name:
-        local_img = parser.parse_as_docker_image(local_image_name)
-    else:
-        local_img = parser.convert_to_docker_image(remote_img)
-
     progress = DockerImageProgress.create(
         type=DockerImageOperation.PULL, tty=root.tty, quiet=root.quiet
     )
     result_local_image = await root.client.images.pull(
-        remote_img, local_img, progress=progress
+        remote_image, local_image, progress=progress
     )
     click.echo(str(result_local_image))
 
