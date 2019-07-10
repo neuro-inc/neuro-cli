@@ -478,8 +478,9 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
     (folder / "foo").write_bytes(b"foo")
     (folder / "bar").write_bytes(b"bar")
     (folder / "baz").write_bytes(b"baz")
-    helper.run_cli(
+    captured = helper.run_cli(
         [
+            "-v",
             "storage",
             "cp",
             "-r",
@@ -487,6 +488,7 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
             helper.tmpstorage + "/folder",
         ]
     )
+    print(captured.out)
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
     assert sorted(captured.out.splitlines()) == ["bar", "baz", "foo", "subfolder"]
 
