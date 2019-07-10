@@ -5,7 +5,7 @@ import shlex
 import sys
 import uuid
 import webbrowser
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import click
 from yarl import URL
@@ -20,7 +20,6 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.api.jobs import _volume_from_api
 from neuromation.api.parsing_utils import _ImageNameParser
 
 from .defaults import (
@@ -719,14 +718,20 @@ async def run_job(
         else:
             volumes.add(root.client.jobs.parse_volume(v))
 
+    if pass_config:
+        if CONFIG_ENV_NAME in env_dict:
+            raise ValueError(
+                f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
+            )
+        env_var, secret_volume = await upload_and_map_config(root)
+        env_dict[CONFIG_ENV_NAME] = env_var
+        volumes.add(secret_volume)
+
     if volumes:
         log.info(
             "Using volumes: \n"
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
-
-    if pass_config:
-        await upload_and_map_config(env_dict, root, volumes)
 
     container = Container(
         image=image.as_repo_str(),
@@ -751,13 +756,7 @@ async def run_job(
         await browse_job(root, job)
 
 
-async def upload_and_map_config(
-    env_dict: Dict[str, str], root: Root, volumes: Set[Volume]
-) -> None:
-    if CONFIG_ENV_NAME in env_dict:
-        raise ValueError(
-            f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
-        )
+async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
@@ -775,14 +774,14 @@ async def upload_and_map_config(
     await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
     # specify a container volume and mount the storage path
     # into specific container path
-    data: Dict[str, Any] = {
-        "src_storage_uri": storage_nmrc_folder,
-        "dst_path": local_nmrc_folder,
-        "read_only": False,
-    }
-    volumes.add(_volume_from_api(data))
-
-    env_dict[CONFIG_ENV_NAME] = local_nmrc_path
+    return (
+        local_nmrc_path,
+        Volume(
+            storage_path=storage_nmrc_folder,
+            container_path=local_nmrc_folder,
+            read_only=False,
+        ),
+    )
 
 
 async def browse_job(root: Root, job: JobDescription) -> None:
