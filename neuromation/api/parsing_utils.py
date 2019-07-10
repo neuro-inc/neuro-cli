@@ -11,17 +11,17 @@ class RemoteImage:
     owner: Optional[str] = None
     registry: Optional[str] = None
 
-    def is_in_neuro_registry(self) -> bool:
+    def _is_in_neuro_registry(self) -> bool:
         return bool(self.registry and self.owner)
 
     def as_url_str(self) -> str:
-        pre = f"image://{self.owner}/" if self.is_in_neuro_registry() else ""
+        pre = f"image://{self.owner}/" if self._is_in_neuro_registry() else ""
         post = f":{self.tag}" if self.tag else ""
         return pre + self.name + post
 
     def as_repo_str(self) -> str:
         # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
-        pre = f"{self.registry}/{self.owner}/" if self.is_in_neuro_registry() else ""
+        pre = f"{self.registry}/{self.owner}/" if self._is_in_neuro_registry() else ""
         return pre + self.as_local_str()
 
     def as_api_str(self) -> str:
