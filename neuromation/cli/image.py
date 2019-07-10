@@ -48,7 +48,7 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
     result_remote_image = await root.client.images.push(
         local_image, remote_image, progress=progress
     )
-    click.echo(result_remote_image.as_url_str())
+    click.echo(result_remote_image)
 
 
 @command()
@@ -77,7 +77,7 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     result_local_image = await root.client.images.pull(
         remote_image, local_image, progress=progress
     )
-    click.echo(str(result_local_image))
+    click.echo(result_local_image)
 
 
 @command()

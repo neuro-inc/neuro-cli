@@ -442,7 +442,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     if uri.startswith("image:"):
         parser = ImageNameParser(root.username, root.registry_url)
         image = parser.parse_as_neuro_image(uri, allow_tag=False)
-        uri = image.as_url_str()
+        uri = str(image)
 
     return uri_from_cli(uri, root.username, allowed_schemes=("storage", "image", "job"))
 

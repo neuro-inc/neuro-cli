@@ -438,7 +438,7 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_with_registry_prefix(self) -> None:
         image = self.parser.parse_as_neuro_image("reg.neu.ro/user/image:tag")
-        assert image.as_url_str() == "image://user/image:tag"
+        assert str(image) == "image://user/image:tag"
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self) -> None:
         image = "something/docker.io/library/ubuntu:v10.04"
@@ -504,24 +504,24 @@ class TestImageParser:
 class TestRemoteImage:
     def test_as_str_in_neuro_registry_tag_none(self) -> None:
         image = RemoteImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
-        assert image.as_url_str() == "image://me/ubuntu"
+        assert str(image) == "image://me/ubuntu"
         assert image.as_repo_str() == "registry.io/me/ubuntu"
 
     def test_as_str_in_neuro_registry_tag_yes(self) -> None:
         image = RemoteImage(
             name="ubuntu", tag="v10.04", owner="me", registry="registry.io"
         )
-        assert image.as_url_str() == "image://me/ubuntu:v10.04"
+        assert str(image) == "image://me/ubuntu:v10.04"
         assert image.as_repo_str() == "registry.io/me/ubuntu:v10.04"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
         image = RemoteImage(name="ubuntu", tag=None, owner=None, registry=None)
-        assert image.as_url_str() == "ubuntu"
+        assert str(image) == "ubuntu"
         assert image.as_repo_str() == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
         image = RemoteImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
-        assert image.as_url_str() == "ubuntu:v10.04"
+        assert str(image) == "ubuntu:v10.04"
         assert image.as_repo_str() == "ubuntu:v10.04"
 
 

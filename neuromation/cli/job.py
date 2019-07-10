@@ -700,7 +700,7 @@ async def run_job(
     cmd = " ".join(cmd) if cmd is not None else None
     log.debug(f'cmd="{cmd}"')
 
-    log.info(f"Using image '{image.as_url_str()}'")
+    log.info(f"Using image '{image}'")
     log.debug(f"IMAGE: {image}")
 
     resources = Resources(memory, cpu, gpu, gpu_model, extshm)

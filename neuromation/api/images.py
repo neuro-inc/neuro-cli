@@ -68,19 +68,20 @@ class Images(metaclass=NoPublicConstructor):
         )
         if isinstance(local_image, str):
             local_image = parser.parse_as_docker_image(local_image)
-        local_str = str(local_image)
 
         if remote_image is None:
             remote_image = parser.convert_to_neuro_image(local_image)
         elif isinstance(remote_image, str):
             remote_image = parser.parse_as_neuro_image(remote_image)
 
+        local_str = str(local_image)
+        remote_str = str(remote_image)
         log.debug(f"LOCAL: '{local_str}'")
-        log.debug(f"REMOTE: '{remote_image}'")
+        log.debug(f"REMOTE: '{remote_str}'")
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(local_str, remote_image.as_url_str())
+        progress.start(local_str, remote_str)
 
         with contextlib.closing(progress):
             repo = remote_image.as_repo_str()
@@ -99,9 +100,7 @@ class Images(metaclass=NoPublicConstructor):
             except DockerError as error:
                 # TODO check this part when registry fixed
                 if error.status == 403:
-                    raise AuthorizationError(
-                        f"Access denied {remote_image.as_url_str()}"
-                    ) from error
+                    raise AuthorizationError(f"Access denied {remote_str}") from error
                 raise  # pragma: no cover
             async for obj in stream:
                 if "error" in obj.keys():
@@ -134,13 +133,14 @@ class Images(metaclass=NoPublicConstructor):
             local_image = parser.parse_as_docker_image(local_image)
 
         local_str = str(local_image)
+        remote_str = str(remote_image)
 
-        log.debug(f"REMOTE: '{remote_image}'")
+        log.debug(f"REMOTE: '{remote_str}'")
         log.debug(f"LOCAL: '{local_str}'")
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(remote_image.as_url_str(), local_str)
+        progress.start(remote_str, local_str)
 
         with contextlib.closing(progress):
             repo = remote_image.as_repo_str()
@@ -152,14 +152,11 @@ class Images(metaclass=NoPublicConstructor):
             except DockerError as error:
                 if error.status == 404:
                     raise ValueError(
-                        f"Image {remote_image.as_url_str()} was not found "
-                        "in registry"
+                        f"Image {remote_str} was not found " "in registry"
                     ) from error
                 # TODO check this part when registry fixed
                 elif error.status == 403:
-                    raise AuthorizationError(
-                        f"Access denied {remote_image.as_url_str()}"
-                    ) from error
+                    raise AuthorizationError(f"Access denied {remote_str}") from error
                 raise  # pragma: no cover
 
             async for obj in stream:

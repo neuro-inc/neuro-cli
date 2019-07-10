@@ -14,7 +14,7 @@ class RemoteImage:
     def _is_in_neuro_registry(self) -> bool:
         return bool(self.registry and self.owner)
 
-    def as_url_str(self) -> str:
+    def __str__(self) -> str:
         pre = f"image://{self.owner}/" if self._is_in_neuro_registry() else ""
         post = f":{self.tag}" if self.tag else ""
         return pre + self.name + post
@@ -88,7 +88,7 @@ class ImageNameParser:
         try:
             if self.is_in_neuro_registry(image):
                 remote_image = self.parse_as_neuro_image(image)
-                image_normalized = remote_image.as_url_str()
+                image_normalized = str(remote_image)
             else:
                 local_image = self.parse_as_docker_image(image)
                 image_normalized = str(local_image)
