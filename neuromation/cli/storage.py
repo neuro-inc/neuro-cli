@@ -385,6 +385,7 @@ async def _expand(
     uris = []
     for path in paths:
         uri = parse_file_resource(path, root)
+        log.info(f"Expand {uri!r}")
         if glob and globmodule.has_magic(uri.path):
             if uri.scheme == "storage":
                 async for file in root.client.storage.glob(uri):
