@@ -467,9 +467,7 @@ class TestImageParser:
             name="ubuntu", tag="latest", owner="artem", registry="reg.com"
         )
         docker_image = self.parser.convert_to_docker_image(neuro_image)
-        assert docker_image == LocalImage(
-            name="ubuntu", tag="latest"
-        )
+        assert docker_image == LocalImage(name="ubuntu", tag="latest")
 
     def test_convert_to_neuro_image(self) -> None:
         docker_image = LocalImage(name="ubuntu", tag="latest")
@@ -600,9 +598,7 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_push.return_value = error_generator()
-        image = self.parser.parse_as_neuro_image(
-            "image://bob/image:bananas-wrong-food"
-        )
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-wrong-food")
         local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:

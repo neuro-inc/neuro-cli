@@ -478,7 +478,7 @@ class LocalImageType(click.ParamType):
         )
         if image_parser.is_in_neuro_registry(value):
             raise click.BadParameter(
-                "Remote image cannot be used as local one", ctx, param, self.name
+                "remote image cannot be used as local", ctx, param, self.name
             )
         else:
             parsed_image = image_parser.parse_as_docker_image(value)
@@ -498,12 +498,10 @@ class ImageType(click.ParamType):
             config.auth_token.username, config.cluster_config.registry_url
         )
         if image_parser.is_in_neuro_registry(value):
-            parsed_image = image_parser.parse_as_neuro_image(value)
+            return image_parser.parse_as_neuro_image(value)
         else:
-            raise click.BadParameter(
-                "Local image cannot be used in as remote one", ctx, param, self.name
-            )
-        return parsed_image
+            img = image_parser.parse_as_docker_image(value)
+            return DockerImage(img.name, img.tag)
 
 
 class LocalRemotePortParamType(click.ParamType):
