@@ -198,7 +198,7 @@ neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, type `neuro config show`)|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
@@ -1181,7 +1181,7 @@ neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, type `neuro config show`)|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
