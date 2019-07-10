@@ -21,8 +21,8 @@ def image() -> None:
 
 
 @command()
-@click.argument("image_name")
-@click.argument("remote_image_name", required=False)
+@click.argument("local_image")
+@click.argument("remote_image", required=False)
 @deprecated_quiet_option
 @async_cmd()
 async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
@@ -52,8 +52,8 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 
 
 @command()
-@click.argument("image_name")
-@click.argument("local_image_name", required=False)
+@click.argument("remote_image")
+@click.argument("local_image", required=False)
 @deprecated_quiet_option
 @async_cmd()
 async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
