@@ -22,17 +22,14 @@ class RemoteImage:
     def as_repo_str(self) -> str:
         # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
         pre = f"{self.registry}/{self.owner}/" if self._is_in_neuro_registry() else ""
-        return pre + self.as_local_str()
+        post = f":{self.tag}" if self.tag else ""
+        return pre + self.name + post
 
     def as_api_str(self) -> str:
         if self.owner:
             return f"{self.owner}/{self.name}"
         else:
             return self.name
-
-    def as_local_str(self) -> str:
-        post = f":{self.tag}" if self.tag else ""
-        return self.name + post
 
 
 @dataclass(frozen=True)

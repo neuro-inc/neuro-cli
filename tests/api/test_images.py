@@ -506,7 +506,6 @@ class TestRemoteImage:
         image = RemoteImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
         assert image.as_url_str() == "image://me/ubuntu"
         assert image.as_repo_str() == "registry.io/me/ubuntu"
-        assert image.as_local_str() == "ubuntu"
         assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_in_neuro_registry_tag_yes(self) -> None:
@@ -515,21 +514,18 @@ class TestRemoteImage:
         )
         assert image.as_url_str() == "image://me/ubuntu:v10.04"
         assert image.as_repo_str() == "registry.io/me/ubuntu:v10.04"
-        assert image.as_local_str() == "ubuntu:v10.04"
         assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
         image = RemoteImage(name="ubuntu", tag=None, owner=None, registry=None)
         assert image.as_url_str() == "ubuntu"
         assert image.as_repo_str() == "ubuntu"
-        assert image.as_local_str() == "ubuntu"
         assert image.as_api_str() == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
         image = RemoteImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
         assert image.as_url_str() == "ubuntu:v10.04"
         assert image.as_repo_str() == "ubuntu:v10.04"
-        assert image.as_local_str() == "ubuntu:v10.04"
         assert image.as_api_str() == "ubuntu"
 
 
