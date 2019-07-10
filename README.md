@@ -114,7 +114,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
-| _[neuro run](#neuro-run)_| Run an image with predefined configuration |
+| _[neuro run](#neuro-run)_| Run a job with predefined resources configuration |
 | _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
@@ -159,7 +159,7 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro job run](#neuro-job-run)_| Run an image with predefined configuration |
+| _[neuro job run](#neuro-job-run)_| Run a job with predefined resources configuration |
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
@@ -175,7 +175,7 @@ Name | Description|
 
 ### neuro job run
 
-Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined resources configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -187,10 +187,11 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 
 ```bash
 
-# Starts a container pytorch:latest with two paths mounted.
-# Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
-# storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-neuro run pytorch:latest --volume=HOME
+# Starts a container pytorch:latest on a machine with smaller GPU resources
+# (see exact values in `neuro config show`) and with two volumes mounted:
+#   storage://~           --> /var/storage/home (in read-write mode),
+#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 ```
 
@@ -198,13 +199,13 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
-|_\-d, --description DESC_|Add optional description in free format|
+|_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
@@ -1184,7 +1185,7 @@ Name | Description|
 
 ## neuro run
 
-Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined resources configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -1196,10 +1197,11 @@ neuro run [OPTIONS] IMAGE [CMD]...
 
 ```bash
 
-# Starts a container pytorch:latest with two paths mounted.
-# Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
-# storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-neuro run pytorch:latest --volume=HOME
+# Starts a container pytorch:latest on a machine with smaller GPU resources
+# (see exact values in `neuro config show`) and with two volumes mounted:
+#   storage://~           --> /var/storage/home (in read-write mode),
+#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 ```
 
@@ -1207,13 +1209,13 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
-|_\-d, --description DESC_|Add optional description in free format|
+|_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|

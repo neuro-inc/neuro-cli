@@ -502,7 +502,15 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option("-s", "--preset", metavar="PRESET", help="Predefined job profile")
+@click.option(
+    "-s",
+    "--preset",
+    metavar="PRESET",
+    help=(
+        "Predefined resource configuration (to see available values, "
+        "run `neuro config show`)"
+    ),
+)
 @click.option(
     "-x/-X",
     "--extshm/--no-extshm",
@@ -545,7 +553,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "-d",
     "--description",
     metavar="DESC",
-    help="Add optional description in free format",
+    help="Optional job description in free format",
 )
 @deprecated_quiet_option
 @click.option(
@@ -604,7 +612,7 @@ async def run(
     browse: bool,
 ) -> None:
     """
-    Run an image with predefined configuration.
+    Run a job with predefined resources configuration.
 
     IMAGE container image name.
 
@@ -612,15 +620,17 @@ async def run(
 
     Examples:
 
-    # Starts a container pytorch:latest with two paths mounted.
-    # Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
-    # storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-    neuro run pytorch:latest --volume=HOME
+    # Starts a container pytorch:latest on a machine with smaller GPU resources
+    # (see exact values in `neuro config show`) and with two volumes mounted:
+    #   storage://~           --> /var/storage/home (in read-write mode),
+    #   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+    neuro run --preset=gpu-small --volume=HOME pytorch:latest
     """
-    if preset:
-        job_preset = root.resource_presets[preset]
-    else:
-        job_preset = next(iter(root.resource_presets.values()))
+    if not preset:
+        preset = next(iter(root.resource_presets.keys()))
+    job_preset = root.resource_presets[preset]
+
+    log.info(f"Using preset '{preset}': {job_preset}")
 
     await run_job(
         root,
