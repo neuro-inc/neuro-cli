@@ -5,6 +5,8 @@ from typing import List, Optional, Sequence
 import click
 from yarl import URL
 
+from neuromation.api.url_utils import _extract_path
+
 from .command_progress_report import ProgressBase
 from .formatters import (
     BaseFilesFormatter,
@@ -386,13 +388,14 @@ async def _expand(
     for path in paths:
         uri = parse_file_resource(path, root)
         log.info(f"Expand {uri!r}")
-        if glob and globmodule.has_magic(uri.path):
+        uri_path = str(_extract_path(uri))
+        if glob and globmodule.has_magic(uri_path):
             if uri.scheme == "storage":
                 async for file in root.client.storage.glob(uri):
                     uris.append(file)
             elif allow_file and path.startswith("file:"):
-                for path in globmodule.iglob(uri.path, recursive=True):
-                    uris.append(uri.with_path(path))
+                for p in globmodule.iglob(uri_path, recursive=True):
+                    uris.append(uri.with_path(p))
             else:
                 uris.append(uri)
         else:
