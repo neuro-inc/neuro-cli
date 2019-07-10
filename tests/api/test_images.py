@@ -128,17 +128,17 @@ class TestImageParser:
         image = "http://ubuntu"
         parsed = self.parser.parse_as_docker_image(image)
         # instead of parser, the docker client will fail
-        assert parsed == DockerImage(name="http", tag="//ubuntu")
+        assert parsed == LocalImage(name="http", tag="//ubuntu")
 
     def test_parse_as_docker_image_no_tag(self) -> None:
         image = "ubuntu"
         parsed = self.parser.parse_as_docker_image(image)
-        assert parsed == DockerImage(name="ubuntu", tag="latest")
+        assert parsed == LocalImage(name="ubuntu", tag="latest")
 
     def test_parse_as_docker_image_with_tag(self) -> None:
         image = "ubuntu:v10.04"
         parsed = self.parser.parse_as_docker_image(image)
-        assert parsed == DockerImage(name="ubuntu", tag="v10.04")
+        assert parsed == LocalImage(name="ubuntu", tag="v10.04")
 
     def test_parse_as_docker_image_2_tag_fail(self) -> None:
         image = "ubuntu:v10.04:LTS"
@@ -467,8 +467,8 @@ class TestImageParser:
             name="ubuntu", tag="latest", owner="artem", registry="reg.com"
         )
         docker_image = self.parser.convert_to_docker_image(neuro_image)
-        assert docker_image == DockerImage(
-            name="ubuntu", tag="latest", owner=None, registry=None
+        assert docker_image == LocalImage(
+            name="ubuntu", tag="latest"
         )
 
     def test_convert_to_neuro_image(self) -> None:
@@ -548,8 +548,8 @@ class TestImages:
     async def test_unavailable_docker(
         self, patched_init: Any, make_client: _MakeClient
     ) -> None:
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
                 await client.images.pull(image, local_image)
@@ -560,8 +560,8 @@ class TestImages:
     async def test_unknown_docker_error(
         self, patched_init: Any, make_client: _MakeClient
     ) -> None:
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(ValueError, match=r"something went wrong"):
                 await client.images.pull(image, local_image)
@@ -571,8 +571,8 @@ class TestImages:
         self, patched_tag: Any, make_client: _MakeClient
     ) -> None:
         patched_tag.side_effect = DockerError(404, {"message": "Mocked error"})
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-no-more")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(ValueError, match=r"not found"):
                 await client.images.push(local_image, image)
@@ -584,8 +584,8 @@ class TestImages:
     ) -> None:
         patched_tag.return_value = True
         patched_push.side_effect = DockerError(403, {"message": "Mocked error"})
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-no-more")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):
                 await client.images.push(local_image, image)
@@ -601,9 +601,9 @@ class TestImages:
         patched_tag.return_value = True
         patched_push.return_value = error_generator()
         image = self.parser.parse_as_neuro_image(
-            f"image://bob/image:bananas-wrong-food"
+            "image://bob/image:bananas-wrong-food"
         )
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
                 await client.images.push(local_image, image)
@@ -620,8 +620,8 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-is-here")
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-is-here")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             result = await client.images.push(local_image, image)
         assert result == image
@@ -633,9 +633,9 @@ class TestImages:
         patched_pull.side_effect = DockerError(404, {"message": "Mocked error"})
         async with make_client("https://api.localhost.localdomain") as client:
             image = self.parser.parse_as_neuro_image(
-                f"image://bob/image:no-bananas-here"
+                "image://bob/image:no-bananas-here"
             )
-            local_image = self.parser.parse_as_docker_image(f"image:bananas")
+            local_image = self.parser.parse_as_docker_image("bananas:latest")
             with pytest.raises(ValueError, match=r"not found"):
                 await client.images.pull(image, local_image)
 
@@ -644,8 +644,8 @@ class TestImages:
         self, patched_pull: Any, make_client: _MakeClient
     ) -> None:
         patched_pull.side_effect = DockerError(403, {"message": "Mocked error"})
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:not-your-bananas")
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:not-your-bananas")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):
                 await client.images.pull(image, local_image)
@@ -658,7 +658,7 @@ class TestImages:
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_pull.return_value = error_generator()
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:nuts-here")
+        image = self.parser.parse_as_neuro_image("image://bob/image:nuts-here")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
                 await client.images.pull(image, image)
@@ -675,11 +675,11 @@ class TestImages:
 
         patched_tag.return_value = True
         patched_pull.return_value = message_generator()
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
-        local_image = self.parser.parse_as_docker_image(f"image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas")
+        local_image = self.parser.parse_as_docker_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             result = await client.images.pull(image, local_image)
-        assert result == image
+        assert result == local_image
 
 
 class TestRegistry:
