@@ -1,8 +1,48 @@
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from yarl import URL
 
-from .images import LocalImage, RemoteImage
+
+@dataclass(frozen=True)
+class RemoteImage:
+    name: str
+    tag: Optional[str] = None
+    owner: Optional[str] = None
+    registry: Optional[str] = None
+
+    def is_in_neuro_registry(self) -> bool:
+        return bool(self.registry and self.owner)
+
+    def as_url_str(self) -> str:
+        pre = f"image://{self.owner}/" if self.is_in_neuro_registry() else ""
+        post = f":{self.tag}" if self.tag else ""
+        return pre + self.name + post
+
+    def as_repo_str(self) -> str:
+        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
+        pre = f"{self.registry}/{self.owner}/" if self.is_in_neuro_registry() else ""
+        return pre + self.as_local_str()
+
+    def as_api_str(self) -> str:
+        if self.owner:
+            return f"{self.owner}/{self.name}"
+        else:
+            return self.name
+
+    def as_local_str(self) -> str:
+        post = f":{self.tag}" if self.tag else ""
+        return self.name + post
+
+
+@dataclass(frozen=True)
+class LocalImage:
+    name: str
+    tag: Optional[str] = None
+
+    def __str__(self) -> str:
+        post = f":{self.tag}" if self.tag else ""
+        return self.name + post
 
 
 class ImageNameParser:

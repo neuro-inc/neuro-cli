@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import click
 
@@ -24,7 +25,7 @@ def image() -> None:
 @click.argument("remote_image_name", required=False)
 @deprecated_quiet_option
 @async_cmd()
-async def push(root: Root, image_name: str, remote_image_name: str) -> None:
+async def push(root: Root, image_name: str, remote_image_name: Optional[str]) -> None:
     """
     Push an image to platform registry.
 
@@ -62,7 +63,7 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
 @click.argument("local_image_name", required=False)
 @deprecated_quiet_option
 @async_cmd()
-async def pull(root: Root, image_name: str, local_image_name: str) -> None:
+async def pull(root: Root, image_name: str, local_image_name: Optional[str]) -> None:
     """
     Pull an image from platform registry.
 

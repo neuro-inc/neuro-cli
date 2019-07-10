@@ -1,7 +1,6 @@
 import contextlib
 import logging
 import re
-from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 import aiodocker
@@ -12,52 +11,12 @@ from yarl import URL
 from .abc import AbstractDockerImageProgress
 from .config import _Config
 from .core import AuthorizationError, _Core
+from .parsing_utils import ImageNameParser, LocalImage, RemoteImage
 from .registry import _Registry
 from .utils import NoPublicConstructor
 
 
 log = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class RemoteImage:
-    name: str
-    tag: Optional[str] = None
-    owner: Optional[str] = None
-    registry: Optional[str] = None
-
-    def is_in_neuro_registry(self) -> bool:
-        return bool(self.registry and self.owner)
-
-    def as_url_str(self) -> str:
-        pre = f"image://{self.owner}/" if self.is_in_neuro_registry() else ""
-        post = f":{self.tag}" if self.tag else ""
-        return pre + self.name + post
-
-    def as_repo_str(self) -> str:
-        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
-        pre = f"{self.registry}/{self.owner}/" if self.is_in_neuro_registry() else ""
-        return pre + self.as_local_str()
-
-    def as_api_str(self) -> str:
-        if self.owner:
-            return f"{self.owner}/{self.name}"
-        else:
-            return self.name
-
-    def as_local_str(self) -> str:
-        post = f":{self.tag}" if self.tag else ""
-        return self.name + post
-
-
-@dataclass(frozen=True)
-class LocalImage:
-    name: str
-    tag: Optional[str] = None
-
-    def __str__(self) -> str:
-        post = f":{self.tag}" if self.tag else ""
-        return self.name + post
 
 
 class Images(metaclass=NoPublicConstructor):
@@ -100,11 +59,18 @@ class Images(metaclass=NoPublicConstructor):
     async def push(
         self,
         local_image: LocalImage,
-        remote_image: RemoteImage,
+        remote_image: Optional[RemoteImage] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> RemoteImage:
+        parser = ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
         local_str = str(local_image)
+
+        if remote_image is None:
+            remote_image = parser.convert_to_neuro_image(local_image)
+
         log.debug(f"LOCAL: '{local_str}'")
         log.debug(f"REMOTE: '{remote_image}'")
 
@@ -148,11 +114,18 @@ class Images(metaclass=NoPublicConstructor):
     async def pull(
         self,
         remote_image: RemoteImage,
-        local_image: LocalImage,
+        local_image: Optional[LocalImage] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> LocalImage:
+        parser = ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
+        if local_image is None:
+            local_image = parser.convert_to_docker_image(remote_image)
+
         local_str = str(local_image)
+
         log.debug(f"REMOTE: '{remote_image}'")
         log.debug(f"LOCAL: '{local_str}'")
 
