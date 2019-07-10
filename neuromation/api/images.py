@@ -191,7 +191,10 @@ class Images(metaclass=NoPublicConstructor):
             return result
 
     async def tags(self, image: RemoteImage) -> List[str]:
-        name = image.as_api_str()
+        if image.owner:
+            name = f"{image.owner}/{image.name}"
+        else:
+            name = image.name
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
             return ret.get("tags", [])

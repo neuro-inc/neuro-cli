@@ -25,12 +25,6 @@ class RemoteImage:
         post = f":{self.tag}" if self.tag else ""
         return pre + self.name + post
 
-    def as_api_str(self) -> str:
-        if self.owner:
-            return f"{self.owner}/{self.name}"
-        else:
-            return self.name
-
 
 @dataclass(frozen=True)
 class LocalImage:
