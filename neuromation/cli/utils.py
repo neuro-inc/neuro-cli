@@ -32,11 +32,11 @@ import neuromation
 from neuromation.api import (
     Action,
     Client,
-    DockerImage,
     Factory,
     ImageNameParser,
     JobDescription,
     LocalImage,
+    RemoteImage,
     Volume,
 )
 from neuromation.api.config import _CookieSession, _PyPIVersion
@@ -490,7 +490,7 @@ class ImageType(click.ParamType):
 
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> DockerImage:
+    ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
@@ -501,7 +501,7 @@ class ImageType(click.ParamType):
             return image_parser.parse_as_neuro_image(value)
         else:
             img = image_parser.parse_as_docker_image(value)
-            return DockerImage(img.name, img.tag)
+            return RemoteImage(img.name, img.tag)
 
 
 class LocalRemotePortParamType(click.ParamType):

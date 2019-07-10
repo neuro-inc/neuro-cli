@@ -13,11 +13,11 @@ from yarl import URL
 from neuromation.api import (
     CONFIG_ENV_NAME,
     Container,
-    DockerImage,
     HTTPPort,
     ImageNameParser,
     JobDescription,
     JobStatus,
+    RemoteImage,
     Resources,
     Volume,
 )
@@ -192,7 +192,7 @@ def job() -> None:
 @async_cmd()
 async def submit(
     root: Root,
-    image: DockerImage,
+    image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
     cpu: float,
@@ -587,7 +587,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @async_cmd()
 async def run(
     root: Root,
-    image: DockerImage,
+    image: RemoteImage,
     preset: str,
     extshm: bool,
     http: int,
@@ -664,7 +664,7 @@ job.add_command(alias(logs, "monitor", hidden=True))
 async def run_job(
     root: Root,
     *,
-    image: DockerImage,
+    image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
     cpu: float,

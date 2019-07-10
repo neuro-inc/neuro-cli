@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from yarl import URL
 
-from .images import DockerImage, LocalImage
+from .images import LocalImage, RemoteImage
 
 
 class ImageNameParser:
@@ -24,7 +24,7 @@ class ImageNameParser:
         except ValueError as e:
             raise ValueError(f"Invalid docker image '{image}': {e}") from e
 
-    def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> DockerImage:
+    def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> RemoteImage:
         try:
             self._validate_image_name(image)
             tag: Optional[str]
@@ -42,15 +42,15 @@ class ImageNameParser:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
         return image.startswith("image:") or image.startswith(f"{self._registry}/")
 
-    def convert_to_neuro_image(self, image: LocalImage) -> DockerImage:
-        return DockerImage(
+    def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
+        return RemoteImage(
             name=image.name,
             tag=image.tag,
             owner=self._default_user,
             registry=self._registry,
         )
 
-    def convert_to_docker_image(self, image: DockerImage) -> LocalImage:
+    def convert_to_docker_image(self, image: RemoteImage) -> LocalImage:
         return LocalImage(name=image.name, tag=image.tag)
 
     def normalize(self, image: str) -> str:
@@ -90,7 +90,7 @@ class ImageNameParser:
 
     def _parse_as_neuro_image(
         self, image: str, default_tag: Optional[str]
-    ) -> DockerImage:
+    ) -> RemoteImage:
         if not self.is_in_neuro_registry(image):
             raise ValueError("scheme 'image://' is required for remote images")
 
@@ -111,7 +111,7 @@ class ImageNameParser:
         registry = self._registry
         owner = self._default_user if not url.host or url.host == "~" else url.host
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
-        return DockerImage(name=name, tag=tag, registry=registry, owner=owner)
+        return RemoteImage(name=name, tag=tag, registry=registry, owner=owner)
 
     def _split_image_name(
         self, image: str, default_tag: Optional[str] = None

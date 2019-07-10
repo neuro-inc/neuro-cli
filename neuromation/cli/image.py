@@ -2,7 +2,7 @@ import logging
 
 import click
 
-from neuromation.api import DockerImage, ImageNameParser
+from neuromation.api import ImageNameParser, RemoteImage
 from neuromation.cli.formatters import DockerImageOperation, DockerImageProgress
 
 from .root import Root
@@ -108,7 +108,7 @@ async def ls(root: Root) -> None:
 @command()
 @click.argument("image", type=ImageType())
 @async_cmd()
-async def tags(root: Root, image: DockerImage) -> None:
+async def tags(root: Root, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.
 

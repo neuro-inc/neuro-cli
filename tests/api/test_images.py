@@ -9,7 +9,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuromation.api import AuthorizationError, Client, ImageNameParser
-from neuromation.api.images import DockerImage, LocalImage
+from neuromation.api.images import LocalImage, RemoteImage
 from tests import _TestServerFactory
 
 
@@ -222,84 +222,84 @@ class TestImageParser:
     def test_parse_as_neuro_image_with_scheme_with_user_with_tag(self) -> None:
         image = "image://bob/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_with_user_with_tag_2(self) -> None:
         image = "image://bob/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_with_user_no_tag(self) -> None:
         image = "image://bob/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_with_user_no_tag_2(self) -> None:
         image = "image://bob/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag(self) -> None:
         image = "image:ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag_2(self) -> None:
         image = "image:library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag(self) -> None:
         image = "image:ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag_2(self) -> None:
         image = "image:library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag(self) -> None:
         image = "image:/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag_2(self) -> None:
         image = "image:/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag(self) -> None:
         image = "image:/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag_2(self) -> None:
         image = "image:/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
@@ -316,84 +316,84 @@ class TestImageParser:
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag(self) -> None:
         image = "image:///ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag_2(self) -> None:
         image = "image:///library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag(self) -> None:
         image = "image:///ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag_2(self) -> None:
         image = "image:///library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag(self) -> None:
         image = "image:////ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag_2(self) -> None:
         image = "image:////library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag(self) -> None:
         image = "image:////ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag_2(self) -> None:
         image = "image:////library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag(self) -> None:
         image = "image://~/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag_2(self) -> None:
         image = "image://~/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag(self) -> None:
         image = "image://~/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag_2(self) -> None:
         image = "image://~/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
@@ -448,7 +448,7 @@ class TestImageParser:
     def test_parse_as_neuro_image_allow_tag_false_with_scheme_no_tag(self) -> None:
         image = "image:ubuntu"
         parsed = self.parser.parse_as_neuro_image(image, allow_tag=False)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag=None, owner="alice", registry="reg.neu.ro"
         )
 
@@ -463,7 +463,7 @@ class TestImageParser:
             self.parser.parse_as_neuro_image(image, allow_tag=False)
 
     def test_convert_to_docker_image(self) -> None:
-        neuro_image = DockerImage(
+        neuro_image = RemoteImage(
             name="ubuntu", tag="latest", owner="artem", registry="reg.com"
         )
         docker_image = self.parser.convert_to_docker_image(neuro_image)
@@ -472,7 +472,7 @@ class TestImageParser:
     def test_convert_to_neuro_image(self) -> None:
         docker_image = LocalImage(name="ubuntu", tag="latest")
         neuro_image = self.parser.convert_to_neuro_image(docker_image)
-        assert neuro_image == DockerImage(
+        assert neuro_image == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
@@ -501,16 +501,16 @@ class TestImageParser:
             self.parser.parse_as_docker_image(url)
 
 
-class TestDockerImage:
+class TestRemoteImage:
     def test_as_str_in_neuro_registry_tag_none(self) -> None:
-        image = DockerImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
+        image = RemoteImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
         assert image.as_url_str() == "image://me/ubuntu"
         assert image.as_repo_str() == "registry.io/me/ubuntu"
         assert image.as_local_str() == "ubuntu"
         assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_in_neuro_registry_tag_yes(self) -> None:
-        image = DockerImage(
+        image = RemoteImage(
             name="ubuntu", tag="v10.04", owner="me", registry="registry.io"
         )
         assert image.as_url_str() == "image://me/ubuntu:v10.04"
@@ -519,14 +519,14 @@ class TestDockerImage:
         assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
-        image = DockerImage(name="ubuntu", tag=None, owner=None, registry=None)
+        image = RemoteImage(name="ubuntu", tag=None, owner=None, registry=None)
         assert image.as_url_str() == "ubuntu"
         assert image.as_repo_str() == "ubuntu"
         assert image.as_local_str() == "ubuntu"
         assert image.as_api_str() == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
-        image = DockerImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
+        image = RemoteImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
         assert image.as_url_str() == "ubuntu:v10.04"
         assert image.as_repo_str() == "ubuntu:v10.04"
         assert image.as_local_str() == "ubuntu:v10.04"

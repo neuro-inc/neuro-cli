@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class DockerImage:
+class RemoteImage:
     name: str
     tag: Optional[str] = None
     owner: Optional[str] = None
@@ -100,10 +100,10 @@ class Images(metaclass=NoPublicConstructor):
     async def push(
         self,
         local_image: LocalImage,
-        remote_image: DockerImage,
+        remote_image: RemoteImage,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
-    ) -> DockerImage:
+    ) -> RemoteImage:
         local_str = str(local_image)
         log.debug(f"LOCAL: '{local_str}'")
         log.debug(f"REMOTE: '{remote_image}'")
@@ -147,7 +147,7 @@ class Images(metaclass=NoPublicConstructor):
 
     async def pull(
         self,
-        remote_image: DockerImage,
+        remote_image: RemoteImage,
         local_image: LocalImage,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
@@ -208,7 +208,7 @@ class Images(metaclass=NoPublicConstructor):
                 result.append(url)
             return result
 
-    async def tags(self, image: DockerImage) -> List[str]:
+    async def tags(self, image: RemoteImage) -> List[str]:
         name = image.as_api_str()
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
