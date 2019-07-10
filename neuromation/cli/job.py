@@ -734,7 +734,7 @@ async def run_job(
         )
 
     container = Container(
-        image=image.as_repo_str(),
+        image=image,
         command=cmd,
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,

@@ -497,11 +497,7 @@ class ImageType(click.ParamType):
         image_parser = _ImageNameParser(
             config.auth_token.username, config.cluster_config.registry_url
         )
-        if image_parser.is_in_neuro_registry(value):
-            return image_parser.parse_as_neuro_image(value)
-        else:
-            img = image_parser.parse_as_docker_image(value)
-            return RemoteImage(img.name, img.tag)
+        return image_parser.parse_remote(value)
 
 
 class LocalRemotePortParamType(click.ParamType):

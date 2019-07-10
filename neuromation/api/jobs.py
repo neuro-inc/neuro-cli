@@ -15,6 +15,7 @@ from neuromation.utils import kill_proc_tree
 
 from .config import _Config
 from .core import IllegalArgumentError, _Core
+from .parsing_utils import RemoteImage, _ImageNameParser
 from .url_utils import normalize_storage_path_uri
 from .utils import NoPublicConstructor
 
@@ -62,7 +63,7 @@ class HTTPPort:
 
 @dataclass(frozen=True)
 class Container:
-    image: str
+    image: RemoteImage
     resources: Resources
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
@@ -133,9 +134,12 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
+        parser = _ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
         async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
-            return _job_description_from_api(res)
+            return _job_description_from_api(res, parser)
 
     async def list(
         self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
@@ -147,9 +151,12 @@ class Jobs(metaclass=NoPublicConstructor):
                 params.add("status", status.value)
         if name:
             params.add("name", name)
+        parser = _ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
         async with self._core.request("GET", url, params=params) as resp:
             ret = await resp.json()
-            return [_job_description_from_api(j) for j in ret["jobs"]]
+            return [_job_description_from_api(j, parser) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
@@ -168,9 +175,12 @@ class Jobs(metaclass=NoPublicConstructor):
 
     async def status(self, id: str) -> JobDescription:
         url = URL(f"jobs/{id}")
+        parser = _ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
         async with self._core.request("GET", url) as resp:
             ret = await resp.json()
-            return _job_description_from_api(ret)
+            return _job_description_from_api(ret, parser)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = self._config.cluster_config.monitoring_url / f"{id}/top"
@@ -349,9 +359,9 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
     )
 
 
-def _container_from_api(data: Dict[str, Any]) -> Container:
+def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Container:
     return Container(
-        image=data["image"],
+        image=parser.parse_remote(data["image"]),
         resources=_resources_from_api(data["resources"]),
         command=data.get("command", None),
         http=_http_port_from_api(data["http"]) if "http" in data else None,
@@ -362,7 +372,7 @@ def _container_from_api(data: Dict[str, Any]) -> Container:
 
 def _container_to_api(container: Container) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {
-        "image": container.image,
+        "image": container.image.as_repo_str(),
         "resources": _resources_to_api(container.resources),
     }
     if container.command:
@@ -376,8 +386,10 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
     return primitive
 
 
-def _job_description_from_api(res: Dict[str, Any]) -> JobDescription:
-    container = _container_from_api(res["container"])
+def _job_description_from_api(
+    res: Dict[str, Any], parser: _ImageNameParser
+) -> JobDescription:
+    container = _container_from_api(res["container"], parser)
     owner = res["owner"]
     name = res.get("name")
     description = res.get("description")

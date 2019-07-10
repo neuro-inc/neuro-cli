@@ -191,7 +191,6 @@ class TabularJobRow:
     def from_job(
         cls, job: JobDescription, image_parser: _ImageNameParser
     ) -> "TabularJobRow":
-        image_normalized = image_parser.normalize(job.container.image)
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -208,7 +207,7 @@ class TabularJobRow:
             name=job.name if job.name else "",
             status=job.status,
             when=when_humanized,
-            image=image_normalized,
+            image=str(job.container.image),
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
         )

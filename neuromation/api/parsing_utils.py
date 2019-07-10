@@ -69,6 +69,13 @@ class _ImageNameParser:
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
 
+    def parse_remote(self, value: str) -> RemoteImage:
+        if self.is_in_neuro_registry(value):
+            return self.parse_as_neuro_image(value)
+        else:
+            img = self.parse_as_docker_image(value)
+            return RemoteImage(img.name, img.tag)
+
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
         return image.startswith("image:") or image.startswith(f"{self._registry}/")
