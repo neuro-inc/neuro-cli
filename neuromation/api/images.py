@@ -1,7 +1,7 @@
 import contextlib
 import logging
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import aiodocker
 import aiohttp
@@ -58,18 +58,22 @@ class Images(metaclass=NoPublicConstructor):
 
     async def push(
         self,
-        local_image: LocalImage,
-        remote_image: Optional[RemoteImage] = None,
+        local_image: Union[LocalImage, str],
+        remote_image: Optional[Union[RemoteImage, str]] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> RemoteImage:
         parser = ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
+        if isinstance(local_image, str):
+            local_image = parser.parse_as_docker_image(local_image)
         local_str = str(local_image)
 
         if remote_image is None:
             remote_image = parser.convert_to_neuro_image(local_image)
+        elif isinstance(remote_image, str):
+            remote_image = parser.parse_as_neuro_image(remote_image)
 
         log.debug(f"LOCAL: '{local_str}'")
         log.debug(f"REMOTE: '{remote_image}'")
@@ -113,16 +117,21 @@ class Images(metaclass=NoPublicConstructor):
 
     async def pull(
         self,
-        remote_image: RemoteImage,
-        local_image: Optional[LocalImage] = None,
+        remote_image: Union[RemoteImage, str],
+        local_image: Optional[Union[LocalImage, str]] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> LocalImage:
         parser = ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
+        if isinstance(remote_image, str):
+            remote_image = parser.parse_as_neuro_image(remote_image)
+
         if local_image is None:
             local_image = parser.convert_to_docker_image(remote_image)
+        elif isinstance(local_image, str):
+            local_image = parser.parse_as_docker_image(local_image)
 
         local_str = str(local_image)
 
