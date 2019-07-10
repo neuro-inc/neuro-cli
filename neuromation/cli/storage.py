@@ -1,8 +1,11 @@
+import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 import click
 from yarl import URL
+
+from neuromation.api.url_utils import _extract_path
 
 from .command_progress_report import ProgressBase
 from .formatters import (
@@ -34,8 +37,15 @@ def storage() -> None:
     is_flag=True,
     help="remove directories and their contents recursively",
 )
+@click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in PATHS",
+)
 @async_cmd()
-async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
+async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> None:
     """
     Remove files or directories.
 
@@ -44,10 +54,9 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool) -> None:
     neuro rm storage:foo/bar
     neuro rm storage://{username}/foo/bar
     neuro rm --recursive storage://{username}/foo/
+    neuro rm storage:foo/**/*.tmp
     """
-    for path in paths:
-        uri = parse_file_resource(path, root)
-
+    for uri in await _expand(paths, root, glob):
         await root.client.storage.rm(uri, recursive=recursive)
         if root.verbosity > 0:
             click.echo(f"removed {str(uri)!r}")
@@ -105,9 +114,30 @@ async def ls(
 
 
 @command()
+@click.argument("patterns", nargs=-1, required=False)
+@async_cmd()
+async def glob(root: Root, patterns: Sequence[str]) -> None:
+    """
+    List resources that match PATTERNS.
+    """
+    for pattern in patterns:
+        uri = parse_file_resource(pattern, root)
+        log.info(f"Using pattern {str(uri)!r}:")
+        async for file in root.client.storage.glob(uri):
+            click.echo(file)
+
+
+@command()
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
+@click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in SOURCES with explicit scheme",
+)
 @click.option(
     "-t",
     "--target-directory",
@@ -128,6 +158,7 @@ async def cp(
     sources: Sequence[str],
     destination: Optional[str],
     recursive: bool,
+    glob: bool,
     target_directory: Optional[str],
     no_target_directory: bool,
     progress: bool,
@@ -163,6 +194,9 @@ async def cp(
 
     # download other user's remote file into the current directory
     neuro cp storage://{username}/foo.txt .
+
+    # download only files with extension `.out` into the current directory
+    neuro cp storage:results/*.out .
     """
     target_dir: Optional[URL]
     dst: Optional[URL]
@@ -188,24 +222,23 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if no_target_directory:
-            if len(sources) > 1:
-                raise click.UsageError(f"Extra operand after {sources[1]!r}")
+        if no_target_directory or not await root.client.storage._is_dir(dst):
             target_dir = None
-        elif await root.client.storage._is_dir(dst):
+        else:
             target_dir = dst
             dst = None
-        else:
-            target_dir = None
 
-    for source in sources:
-        src = parse_file_resource(source, root)
+    srcs = await _expand(sources, root, glob, allow_file=True)
+    if no_target_directory and len(srcs) > 1:
+        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
-        progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
-
+    for src in srcs:
         if target_dir:
             dst = target_dir / src.name
         assert dst
+
+        progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
+
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
                 await root.client.storage.upload_dir(src, dst, progress=progress_obj)
@@ -250,6 +283,13 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
 @click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in SOURCES",
+)
+@click.option(
     "-t",
     "--target-directory",
     metavar="DIRECTORY",
@@ -267,6 +307,7 @@ async def mv(
     root: Root,
     sources: Sequence[str],
     destination: Optional[str],
+    glob: bool,
     target_directory: Optional[str],
     no_target_directory: bool,
 ) -> None:
@@ -321,19 +362,17 @@ async def mv(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if no_target_directory:
-            if len(sources) > 1:
-                raise click.UsageError(f"Extra operand after {sources[1]!r}")
+        if no_target_directory or not await root.client.storage._is_dir(dst):
             target_dir = None
-        elif await root.client.storage._is_dir(dst):
+        else:
             target_dir = dst
             dst = None
-        else:
-            target_dir = None
 
-    for source in sources:
-        src = parse_file_resource(source, root)
+    srcs = await _expand(sources, root, glob)
+    if no_target_directory and len(srcs) > 1:
+        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
+    for src in srcs:
         if target_dir:
             dst = target_dir / src.name
         assert dst
@@ -342,8 +381,31 @@ async def mv(
             click.echo(f"{str(src)!r} -> {str(dst)!r}")
 
 
+async def _expand(
+    paths: Sequence[str], root: Root, glob: bool, allow_file: bool = False
+) -> List[URL]:
+    uris = []
+    for path in paths:
+        uri = parse_file_resource(path, root)
+        log.info(f"Expand {uri!r}")
+        uri_path = str(_extract_path(uri))
+        if glob and globmodule.has_magic(uri_path):
+            if uri.scheme == "storage":
+                async for file in root.client.storage.glob(uri):
+                    uris.append(file)
+            elif allow_file and path.startswith("file:"):
+                for p in globmodule.iglob(uri_path, recursive=True):
+                    uris.append(uri.with_path(p))
+            else:
+                uris.append(uri)
+        else:
+            uris.append(uri)
+    return uris
+
+
 storage.add_command(cp)
 storage.add_command(ls)
+storage.add_command(glob)
 storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)

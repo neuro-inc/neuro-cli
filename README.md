@@ -17,6 +17,7 @@
 	* [neuro storage](#neuro-storage)
 		* [neuro storage cp](#neuro-storage-cp)
 		* [neuro storage ls](#neuro-storage-ls)
+		* [neuro storage glob](#neuro-storage-glob)
 		* [neuro storage rm](#neuro-storage-rm)
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
@@ -476,6 +477,7 @@ Name | Description|
 |---|---|
 | _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
 | _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
+| _[neuro storage glob](#neuro-storage-glob)_| List resources that match PATTERNS |
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
@@ -518,6 +520,9 @@ neuro cp storage:foo.txt -t file:///tmp
 # download other user's remote file into the current directory
 neuro cp storage://{username}/foo.txt .
 
+# download only files with extension `.out` into the current directory
+neuro cp storage:results/*.out .
+
 ```
 
 **Options:**
@@ -525,6 +530,7 @@ neuro cp storage://{username}/foo.txt .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
@@ -555,6 +561,25 @@ Name | Description|
 
 
 
+### neuro storage glob
+
+List resources that match PATTERNS.
+
+**Usage:**
+
+```bash
+neuro storage glob [OPTIONS] [PATTERNS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro storage rm
 
 Remove files or directories.<br/>
@@ -572,6 +597,7 @@ neuro storage rm [OPTIONS] PATHS...
 neuro rm storage:foo/bar
 neuro rm storage://{username}/foo/bar
 neuro rm --recursive storage://{username}/foo/
+neuro rm storage:foo/**/*.tmp
 
 ```
 
@@ -580,6 +606,7 @@ neuro rm --recursive storage://{username}/foo/
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|remove directories and their contents recursively|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -643,6 +670,7 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 Name | Description|
 |----|------------|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|
@@ -1489,6 +1517,9 @@ neuro cp storage:foo.txt -t file:///tmp
 # download other user's remote file into the current directory
 neuro cp storage://{username}/foo.txt .
 
+# download only files with extension `.out` into the current directory
+neuro cp storage:results/*.out .
+
 ```
 
 **Options:**
@@ -1496,6 +1527,7 @@ neuro cp storage://{username}/foo.txt .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
@@ -1543,6 +1575,7 @@ neuro rm [OPTIONS] PATHS...
 neuro rm storage:foo/bar
 neuro rm storage://{username}/foo/bar
 neuro rm --recursive storage://{username}/foo/
+neuro rm storage:foo/**/*.tmp
 
 ```
 
@@ -1551,6 +1584,7 @@ neuro rm --recursive storage://{username}/foo/
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|remove directories and their contents recursively|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -1614,6 +1648,7 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 Name | Description|
 |----|------------|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|

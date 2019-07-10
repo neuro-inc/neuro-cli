@@ -5,6 +5,7 @@ from pathlib import Path, PurePath
 from typing import Tuple
 
 import pytest
+from yarl import URL
 
 from neuromation.cli.const import EX_OSFILE
 from tests.e2e import Helper
@@ -466,3 +467,101 @@ def test_e2e_move_no_target_directory_extra_operand(helper: Helper) -> None:
             ]
         )
     assert "Extra operand after " in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "subfolder").mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    (folder / "baz").write_bytes(b"baz")
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            tmp_path.as_uri() + "/f*",
+            helper.tmpstorage + "/folder",
+        ]
+    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    assert sorted(captured.out.splitlines()) == ["bar", "baz", "foo", "subfolder"]
+
+    # Move files with pattern
+    helper.run_cli(
+        [
+            "storage",
+            "mv",
+            helper.tmpstorage + "/folder/[bf]*",
+            helper.tmpstorage + "/folder/subfolder",
+        ]
+    )
+    captured = helper.run_cli(
+        ["storage", "ls", helper.tmpstorage + "/folder/subfolder"]
+    )
+    assert sorted(captured.out.splitlines()) == ["bar", "baz", "foo"]
+
+    # Download files with pattern
+    download = tmp_path / "download"
+    download.mkdir()
+    helper.run_cli(["storage", "cp", helper.tmpstorage + "/**/b*", str(download)])
+    assert sorted(download.iterdir()) == [download / "bar", download / "baz"]
+
+    # Remove files with pattern
+    helper.run_cli(["storage", "rm", helper.tmpstorage + "/**/b*"])
+    captured = helper.run_cli(
+        ["storage", "ls", helper.tmpstorage + "/folder/subfolder"]
+    )
+    assert sorted(captured.out.splitlines()) == ["foo"]
+
+    # Test subcommand "glob"
+    captured = helper.run_cli(["storage", "glob", helper.tmpstorage + "/**"])
+    prefix = f"storage://{helper.username}/{URL(helper.tmpstorage).path}"
+    assert sorted(captured.out.splitlines()) == [
+        prefix,
+        prefix + "folder",
+        prefix + "folder/subfolder",
+        prefix + "folder/subfolder/foo",
+    ]
+
+
+@pytest.mark.e2e
+def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    dir = tmp_path / "[d]"
+    dir.mkdir()
+    (dir / "f").write_bytes(b"f")
+    (dir / "[df]").write_bytes(b"[df]")
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--no-glob",
+            tmp_path.as_uri() + "/[d]",
+            helper.tmpstorage + "/d",
+        ]
+    )
+
+    # Move files with literal path
+    helper.run_cli(
+        ["storage", "mv", "--no-glob", helper.tmpstorage + "/d/[df]", helper.tmpstorage]
+    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
+    assert sorted(captured.out.splitlines()) == ["[df]", "d"]
+
+    # Download files with literal path
+    download = tmp_path / "download"
+    download.mkdir()
+    helper.run_cli(
+        ["storage", "cp", "--no-glob", helper.tmpstorage + "/[df]", str(download)]
+    )
+    assert sorted(download.iterdir()) == [download / "[df]"]
+
+    # Remove files with literal path
+    helper.run_cli(["storage", "rm", "--no-glob", helper.tmpstorage + "/[df]"])
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
+    assert sorted(captured.out.splitlines()) == ["d"]
