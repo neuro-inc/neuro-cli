@@ -8,8 +8,9 @@ from aiodocker.exceptions import DockerError
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import AuthorizationError, Client, ImageNameParser
+from neuromation.api import AuthorizationError, Client
 from neuromation.api.images import LocalImage, RemoteImage
+from neuromation.api.parsing_utils import _ImageNameParser
 from tests import _TestServerFactory
 
 
@@ -25,7 +26,7 @@ def patch_docker_host() -> Iterator[None]:
 
 
 class TestImageParser:
-    parser = ImageNameParser(
+    parser = _ImageNameParser(
         default_user="alice", registry_url=URL("https://reg.neu.ro")
     )
 
@@ -67,7 +68,7 @@ class TestImageParser:
         ],
     )
     def test_get_registry_hostname(self, registry_url: str) -> None:
-        parser = ImageNameParser(default_user="alice", registry_url=URL(registry_url))
+        parser = _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
         assert parser._registry == "reg.neu.ro"
 
     @pytest.mark.parametrize(
@@ -78,7 +79,7 @@ class TestImageParser:
         self, registry_url: str
     ) -> None:
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
-            ImageNameParser(default_user="alice", registry_url=URL(registry_url))
+            _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
 
     def test_split_image_name_no_colon(self) -> None:
         splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
@@ -527,7 +528,7 @@ class TestRemoteImage:
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
-    parser = ImageNameParser(
+    parser = _ImageNameParser(
         default_user="user", registry_url=URL("https://registry-dev.neu.ro")
     )
 

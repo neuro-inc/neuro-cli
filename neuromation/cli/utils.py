@@ -33,13 +33,13 @@ from neuromation.api import (
     Action,
     Client,
     Factory,
-    ImageNameParser,
     JobDescription,
     LocalImage,
     RemoteImage,
     Volume,
 )
 from neuromation.api.config import _CookieSession, _PyPIVersion
+from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import uri_from_cli
 from neuromation.strings.parse import to_megabytes
 from neuromation.utils import run
@@ -440,7 +440,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
-        parser = ImageNameParser(root.username, root.registry_url)
+        parser = _ImageNameParser(root.username, root.registry_url)
         image = parser.parse_as_neuro_image(uri, allow_tag=False)
         uri = str(image)
 
@@ -473,7 +473,7 @@ class LocalImageType(click.ParamType):
         assert ctx is not None
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
-        image_parser = ImageNameParser(
+        image_parser = _ImageNameParser(
             config.auth_token.username, config.cluster_config.registry_url
         )
         if image_parser.is_in_neuro_registry(value):
@@ -494,7 +494,7 @@ class ImageType(click.ParamType):
         assert ctx is not None
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
-        image_parser = ImageNameParser(
+        image_parser = _ImageNameParser(
             config.auth_token.username, config.cluster_config.registry_url
         )
         if image_parser.is_in_neuro_registry(value):

@@ -11,13 +11,8 @@ import humanize
 from click import style, unstyle
 from dateutil.parser import isoparse
 
-from neuromation.api import (
-    ImageNameParser,
-    JobDescription,
-    JobStatus,
-    JobTelemetry,
-    Resources,
-)
+from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
+from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -194,7 +189,7 @@ class TabularJobRow:
 
     @classmethod
     def from_job(
-        cls, job: JobDescription, image_parser: ImageNameParser
+        cls, job: JobDescription, image_parser: _ImageNameParser
     ) -> "TabularJobRow":
         image_normalized = image_parser.normalize(job.container.image)
         if job.status == JobStatus.PENDING:
@@ -220,7 +215,7 @@ class TabularJobRow:
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, image_parser: ImageNameParser):
+    def __init__(self, width: int, image_parser: _ImageNameParser):
         self.width = width
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],

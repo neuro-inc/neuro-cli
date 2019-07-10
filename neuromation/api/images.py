@@ -11,7 +11,7 @@ from yarl import URL
 from .abc import AbstractDockerImageProgress
 from .config import _Config
 from .core import AuthorizationError, _Core
-from .parsing_utils import ImageNameParser, LocalImage, RemoteImage
+from .parsing_utils import LocalImage, RemoteImage, _ImageNameParser
 from .registry import _Registry
 from .utils import NoPublicConstructor
 
@@ -63,7 +63,7 @@ class Images(metaclass=NoPublicConstructor):
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> RemoteImage:
-        parser = ImageNameParser(
+        parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
         if isinstance(local_image, str):
@@ -121,7 +121,7 @@ class Images(metaclass=NoPublicConstructor):
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> LocalImage:
-        parser = ImageNameParser(
+        parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
         if isinstance(remote_image, str):

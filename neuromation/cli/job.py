@@ -14,7 +14,6 @@ from neuromation.api import (
     CONFIG_ENV_NAME,
     Container,
     HTTPPort,
-    ImageNameParser,
     JobDescription,
     JobStatus,
     RemoteImage,
@@ -22,6 +21,7 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.jobs import _volume_from_api
+from neuromation.api.parsing_utils import _ImageNameParser
 
 from .defaults import (
     GPU_MODELS,
@@ -426,7 +426,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        image_parser = ImageNameParser(root.username, root.registry_url)
+        image_parser = _ImageNameParser(root.username, root.registry_url)
         formatter = TabularJobsFormatter(width, image_parser)
 
     for line in formatter(jobs):

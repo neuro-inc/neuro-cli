@@ -13,13 +13,13 @@ from neuromation.api import (
     FileStatus,
     FileStatusType,
     HTTPPort,
-    ImageNameParser,
     JobDescription,
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
     Resources,
 )
+from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
@@ -604,7 +604,7 @@ class TestSimpleJobsFormatter:
 
 
 class TestTabularJobRow:
-    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def _job_descr_with_status(
         self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
@@ -672,7 +672,7 @@ class TestTabularJobRow:
 
 class TestTabularJobsFormatter:
     columns = ["ID", "NAME", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
-    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def test_empty(self) -> None:
         formatter = TabularJobsFormatter(0, self.image_parser)

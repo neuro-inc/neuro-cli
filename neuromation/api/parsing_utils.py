@@ -36,7 +36,7 @@ class LocalImage:
         return self.name + post
 
 
-class ImageNameParser:
+class _ImageNameParser:
     default_tag = "latest"
 
     def __init__(self, default_user: str, registry_url: URL):
