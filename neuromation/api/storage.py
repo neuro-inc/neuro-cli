@@ -404,7 +404,7 @@ class _DummyProgress(AbstractStorageProgress):
         pass
 
     def complete(self, src: str, dst: str) -> None:
-        print(f"{src!r} -> {dst!r}")
+        pass
 
     def progress(self, src: str, dst: str, current: int) -> None:
         pass
