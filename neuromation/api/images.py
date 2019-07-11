@@ -1,6 +1,7 @@
 import contextlib
 import logging
 import re
+from dataclasses import replace
 from typing import Dict, List, Optional, Union
 
 import aiodocker
@@ -174,27 +175,29 @@ class Images(metaclass=NoPublicConstructor):
 
             return local_image
 
-    async def ls(self) -> List[URL]:
+    async def ls(self) -> List[RemoteImage]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
+            parser = _ImageNameParser(
+                self._config.auth_token.username,
+                self._config.cluster_config.registry_url,
+            )
             ret = await resp.json()
             prefix = "image://"
-            result: List[URL] = []
+            result: List[RemoteImage] = []
             for repo in ret["repositories"]:
-                if repo.startswith(prefix):
-                    url = URL(repo)
-                else:
-                    url = URL(f"{prefix}{repo}")
-                result.append(url)
+                if not repo.startswith(prefix):
+                    repo = prefix + repo
+                result.append(parser.parse_as_neuro_image(repo))
             return result
 
-    async def tags(self, image: RemoteImage) -> List[str]:
+    async def tags(self, image: RemoteImage) -> List[RemoteImage]:
         if image.owner:
             name = f"{image.owner}/{image.name}"
         else:
             name = image.name
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
-            return ret.get("tags", [])
+            return [replace(image, tag=tag) for tag in ret.get("tags", [])]
 
 
 class _DummyProgress(AbstractDockerImageProgress):

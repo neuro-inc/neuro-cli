@@ -759,7 +759,10 @@ class TestRegistry:
         registry_url = srv.make_url("/v2/")
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
-        assert ret == [URL(image) for image in JSON["repositories"]]
+        assert set(ret) == {
+            RemoteImage("alpine", "latest", owner="bob", registry="127.0.0.1"),
+            RemoteImage("bananas", "latest", owner="jill", registry="127.0.0.1"),
+        }
 
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
@@ -781,4 +784,7 @@ class TestRegistry:
         registry_url = srv.make_url("/v2/")
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
-        assert ret == [URL(image) for image in expected_urls]
+        assert set(ret) == {
+            RemoteImage("alpine", "latest", owner="bob", registry="127.0.0.1"),
+            RemoteImage("bananas", "latest", owner="jill", registry="127.0.0.1"),
+        }
