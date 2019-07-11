@@ -79,12 +79,13 @@ def warn_if_has_newer_version(
             f"Your root certificates are out of date.\n"
             f"You are using certifi {certifi_current}, "
             f"however {version.certifi_pypi_version} is available.\n"
-            f"You should consider upgrading certifi package, "
-            f"e.g. '{pip_update_command}' or '{conda_update_command}'.",
+            f"Please consider upgrading certifi package, e.g.\n"
+            f"    {pip_update_command}\n"
+            f"or\n"
+            f"    {conda_update_command}",
             err=True,
             fg="red",
         )
-
 
 async def _run_async_function(
     init_client: bool,
