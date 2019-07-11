@@ -21,13 +21,13 @@ class AbstractProgress(abc.ABC):
 
 class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
-    def start(self, src: str, dst: str) -> None:
+    def start(self, src: str, dst: str) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def progress(self, message: str, layer_id: str) -> None:
+    def progress(self, message: str, layer_id: str) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def close(self) -> None:
+    def close(self) -> None:  # pragma: no cover
         pass
