@@ -22,7 +22,6 @@ from .core import (
     IllegalArgumentError,
     ResourceNotFound,
 )
-from .images import DockerImage, DockerImageOperation
 from .jobs import (
     Container,
     HTTPPort,
@@ -33,7 +32,7 @@ from .jobs import (
     Resources,
     Volume,
 )
-from .parsing_utils import ImageNameParser
+from .parsing_utils import LocalImage, RemoteImage
 from .storage import FileStatus, FileStatusType
 from .users import Action, Permission, SharedPermission
 from .utils import _ContextManager
@@ -43,8 +42,6 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
-    "DockerImageOperation",
-    "ImageNameParser",
     "JobDescription",
     "JobStatus",
     "JobStatusHistory",
@@ -68,7 +65,8 @@ __all__ = (
     "AbstractProgress",
     "AbstractDockerImageProgress",
     "ImageNameParser",
-    "DockerImage",
+    "RemoteImage",
+    "LocalImage",
     "Factory",
     "get",
     "login",

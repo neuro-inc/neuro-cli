@@ -16,7 +16,7 @@ import pytest
 from aiohttp.test_utils import unused_port
 from yarl import URL
 
-from neuromation.api import Container, JobStatus, Resources, get as api_get
+from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.utils import run as run_async
 from tests.e2e import Helper
 
@@ -670,7 +670,7 @@ async def nginx_job_async(
             f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         container = Container(
-            image=NGINX_IMAGE_NAME,
+            image=RemoteImage("nginx", "latest"),
             command=command,
             resources=Resources(20, 0.1, None, None, True),
         )

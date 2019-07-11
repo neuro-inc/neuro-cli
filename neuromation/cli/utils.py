@@ -32,13 +32,14 @@ import neuromation
 from neuromation.api import (
     Action,
     Client,
-    DockerImage,
     Factory,
-    ImageNameParser,
     JobDescription,
+    LocalImage,
+    RemoteImage,
     Volume,
 )
 from neuromation.api.config import _CookieSession, _PyPIVersion
+from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import uri_from_cli
 from neuromation.strings.parse import to_megabytes
 from neuromation.utils import run
@@ -439,9 +440,9 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
-        parser = ImageNameParser(root.username, root.registry_url)
+        parser = _ImageNameParser(root.username, root.registry_url)
         image = parser.parse_as_neuro_image(uri, allow_tag=False)
-        uri = image.as_url_str()
+        uri = str(image)
 
     return uri_from_cli(uri, root.username, allowed_schemes=("storage", "image", "job"))
 
@@ -463,23 +464,40 @@ def parse_permission_action(action: str) -> Action:
         )
 
 
+class LocalImageType(click.ParamType):
+    name = "local_image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> LocalImage:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        config = Factory(root.config_path)._read()
+        image_parser = _ImageNameParser(
+            config.auth_token.username, config.cluster_config.registry_url
+        )
+        if image_parser.is_in_neuro_registry(value):
+            raise click.BadParameter(
+                "remote image cannot be used as local", ctx, param, self.name
+            )
+        else:
+            parsed_image = image_parser.parse_as_local_image(value)
+        return parsed_image
+
+
 class ImageType(click.ParamType):
     name = "image"
 
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> DockerImage:
+    ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
-        image_parser = ImageNameParser(
+        image_parser = _ImageNameParser(
             config.auth_token.username, config.cluster_config.registry_url
         )
-        if image_parser.is_in_neuro_registry(value):
-            parsed_image = image_parser.parse_as_neuro_image(value)
-        else:
-            parsed_image = image_parser.parse_as_docker_image(value)
-        return parsed_image
+        return image_parser.parse_remote(value)
 
 
 class LocalRemotePortParamType(click.ParamType):

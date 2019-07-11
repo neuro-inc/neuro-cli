@@ -8,19 +8,9 @@ from aiodocker.exceptions import DockerError
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import (
-    AuthorizationError,
-    Client,
-    DockerImageOperation,
-    ImageNameParser,
-)
-from neuromation.api.images import (
-    STATUS_CUSTOM_ERROR,
-    STATUS_FORBIDDEN,
-    STATUS_NOT_FOUND,
-    DockerImage,
-)
-from neuromation.cli.formatters import DockerImageProgress
+from neuromation.api import AuthorizationError, Client
+from neuromation.api.images import LocalImage, RemoteImage
+from neuromation.api.parsing_utils import _ImageNameParser
 from tests import _TestServerFactory
 
 
@@ -36,7 +26,7 @@ def patch_docker_host() -> Iterator[None]:
 
 
 class TestImageParser:
-    parser = ImageNameParser(
+    parser = _ImageNameParser(
         default_user="alice", registry_url=URL("https://reg.neu.ro")
     )
 
@@ -78,7 +68,7 @@ class TestImageParser:
         ],
     )
     def test_get_registry_hostname(self, registry_url: str) -> None:
-        parser = ImageNameParser(default_user="alice", registry_url=URL(registry_url))
+        parser = _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
         assert parser._registry == "reg.neu.ro"
 
     @pytest.mark.parametrize(
@@ -89,7 +79,7 @@ class TestImageParser:
         self, registry_url: str
     ) -> None:
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
-            ImageNameParser(default_user="alice", registry_url=URL(registry_url))
+            _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
 
     def test_split_image_name_no_colon(self) -> None:
         splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
@@ -118,43 +108,43 @@ class TestImageParser:
         with pytest.raises(ValueError, match="no image name specified"):
             self.parser.parse_as_neuro_image(url)
 
-    def test_parse_as_docker_image_empty_fail(self) -> None:
+    def test_parse_as_local_image_empty_fail(self) -> None:
         image = ""
         with pytest.raises(ValueError, match="empty image name"):
-            self.parser.parse_as_docker_image(image)
+            self.parser.parse_as_local_image(image)
 
-    def test_parse_as_docker_image_dash_fail(self) -> None:
+    def test_parse_as_local_image_dash_fail(self) -> None:
         image = "-zxc"
         with pytest.raises(ValueError, match="image cannot start with dash"):
-            self.parser.parse_as_docker_image(image)
+            self.parser.parse_as_local_image(image)
 
-    def test_parse_as_docker_image_with_image_scheme_fail(self) -> None:
+    def test_parse_as_local_image_with_image_scheme_fail(self) -> None:
         image = "image://ubuntu"
         with pytest.raises(
-            ValueError, match="scheme 'image://' is not allowed for docker images"
+            ValueError, match="scheme 'image://' is not allowed for local images"
         ):
-            self.parser.parse_as_docker_image(image)
+            self.parser.parse_as_local_image(image)
 
-    def test_parse_as_docker_image_with_other_scheme_ok(self) -> None:
+    def test_parse_as_local_image_with_other_scheme_ok(self) -> None:
         image = "http://ubuntu"
-        parsed = self.parser.parse_as_docker_image(image)
+        parsed = self.parser.parse_as_local_image(image)
         # instead of parser, the docker client will fail
-        assert parsed == DockerImage(name="http", tag="//ubuntu")
+        assert parsed == LocalImage(name="http", tag="//ubuntu")
 
-    def test_parse_as_docker_image_no_tag(self) -> None:
+    def test_parse_as_local_image_no_tag(self) -> None:
         image = "ubuntu"
-        parsed = self.parser.parse_as_docker_image(image)
-        assert parsed == DockerImage(name="ubuntu", tag="latest")
+        parsed = self.parser.parse_as_local_image(image)
+        assert parsed == LocalImage(name="ubuntu", tag="latest")
 
-    def test_parse_as_docker_image_with_tag(self) -> None:
+    def test_parse_as_local_image_with_tag(self) -> None:
         image = "ubuntu:v10.04"
-        parsed = self.parser.parse_as_docker_image(image)
-        assert parsed == DockerImage(name="ubuntu", tag="v10.04")
+        parsed = self.parser.parse_as_local_image(image)
+        assert parsed == LocalImage(name="ubuntu", tag="v10.04")
 
-    def test_parse_as_docker_image_2_tag_fail(self) -> None:
+    def test_parse_as_local_image_2_tag_fail(self) -> None:
         image = "ubuntu:v10.04:LTS"
         with pytest.raises(ValueError, match="too many tags"):
-            self.parser.parse_as_docker_image(image)
+            self.parser.parse_as_local_image(image)
 
     # public method: parse_remote
 
@@ -233,84 +223,84 @@ class TestImageParser:
     def test_parse_as_neuro_image_with_scheme_with_user_with_tag(self) -> None:
         image = "image://bob/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_with_user_with_tag_2(self) -> None:
         image = "image://bob/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_with_user_no_tag(self) -> None:
         image = "image://bob/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_with_user_no_tag_2(self) -> None:
         image = "image://bob/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="bob", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag(self) -> None:
         image = "image:ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_no_tag_2(self) -> None:
         image = "image:library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag(self) -> None:
         image = "image:ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_user_with_tag_2(self) -> None:
         image = "image:library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag(self) -> None:
         image = "image:/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag_2(self) -> None:
         image = "image:/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag(self) -> None:
         image = "image:/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag_2(self) -> None:
         image = "image:/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
@@ -327,84 +317,84 @@ class TestImageParser:
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag(self) -> None:
         image = "image:///ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag_2(self) -> None:
         image = "image:///library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag(self) -> None:
         image = "image:///ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag_2(self) -> None:
         image = "image:///library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag(self) -> None:
         image = "image:////ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag_2(self) -> None:
         image = "image:////library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag(self) -> None:
         image = "image:////ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag_2(self) -> None:
         image = "image:////library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag(self) -> None:
         image = "image://~/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag_2(self) -> None:
         image = "image://~/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag(self) -> None:
         image = "image://~/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag_2(self) -> None:
         image = "image://~/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
@@ -449,7 +439,7 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_with_registry_prefix(self) -> None:
         image = self.parser.parse_as_neuro_image("reg.neu.ro/user/image:tag")
-        assert image.as_url_str() == "image://user/image:tag"
+        assert str(image) == "image://user/image:tag"
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self) -> None:
         image = "something/docker.io/library/ubuntu:v10.04"
@@ -459,7 +449,7 @@ class TestImageParser:
     def test_parse_as_neuro_image_allow_tag_false_with_scheme_no_tag(self) -> None:
         image = "image:ubuntu"
         parsed = self.parser.parse_as_neuro_image(image, allow_tag=False)
-        assert parsed == DockerImage(
+        assert parsed == RemoteImage(
             name="ubuntu", tag=None, owner="alice", registry="reg.neu.ro"
         )
 
@@ -473,19 +463,17 @@ class TestImageParser:
         with pytest.raises(ValueError, match="tag is not allowed"):
             self.parser.parse_as_neuro_image(image, allow_tag=False)
 
-    def test_convert_to_docker_image(self) -> None:
-        neuro_image = DockerImage(
+    def test_convert_to_local_image(self) -> None:
+        neuro_image = RemoteImage(
             name="ubuntu", tag="latest", owner="artem", registry="reg.com"
         )
-        docker_image = self.parser.convert_to_docker_image(neuro_image)
-        assert docker_image == DockerImage(
-            name="ubuntu", tag="latest", owner=None, registry=None
-        )
+        local_image = self.parser.convert_to_local_image(neuro_image)
+        assert local_image == LocalImage(name="ubuntu", tag="latest")
 
     def test_convert_to_neuro_image(self) -> None:
-        docker_image = DockerImage(name="ubuntu", tag="latest")
-        neuro_image = self.parser.convert_to_neuro_image(docker_image)
-        assert neuro_image == DockerImage(
+        local_image = LocalImage(name="ubuntu", tag="latest")
+        neuro_image = self.parser.convert_to_neuro_image(local_image)
+        assert neuro_image == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
@@ -493,7 +481,7 @@ class TestImageParser:
         image = "image://~/ubuntu"
         assert self.parser.normalize(image) == "image://alice/ubuntu:latest"
 
-    def test_normalize_is_docker_image(self) -> None:
+    def test_normalize_is_local_image(self) -> None:
         image = "docker.io/library/ubuntu"
         assert self.parser.normalize(image) == "docker.io/library/ubuntu:latest"
 
@@ -508,57 +496,41 @@ class TestImageParser:
         with pytest.raises(ValueError, match="ambiguous value"):
             self.parser.parse_as_neuro_image(url)
 
-    def test_parse_as_docker_image__ambiguous_case__fail(self) -> None:
+    def test_parse_as_local_image__ambiguous_case__fail(self) -> None:
         url = "image:latest"
         with pytest.raises(ValueError, match="ambiguous value"):
-            self.parser.parse_as_docker_image(url)
+            self.parser.parse_as_local_image(url)
 
 
-class TestDockerImage:
+class TestRemoteImage:
     def test_as_str_in_neuro_registry_tag_none(self) -> None:
-        image = DockerImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
-        assert image.as_url_str() == "image://me/ubuntu"
+        image = RemoteImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
+        assert str(image) == "image://me/ubuntu"
         assert image.as_repo_str() == "registry.io/me/ubuntu"
-        assert image.as_local_str() == "ubuntu"
-        assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_in_neuro_registry_tag_yes(self) -> None:
-        image = DockerImage(
+        image = RemoteImage(
             name="ubuntu", tag="v10.04", owner="me", registry="registry.io"
         )
-        assert image.as_url_str() == "image://me/ubuntu:v10.04"
+        assert str(image) == "image://me/ubuntu:v10.04"
         assert image.as_repo_str() == "registry.io/me/ubuntu:v10.04"
-        assert image.as_local_str() == "ubuntu:v10.04"
-        assert image.as_api_str() == "me/ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
-        image = DockerImage(name="ubuntu", tag=None, owner=None, registry=None)
-        assert image.as_url_str() == "ubuntu"
+        image = RemoteImage(name="ubuntu", tag=None, owner=None, registry=None)
+        assert str(image) == "ubuntu"
         assert image.as_repo_str() == "ubuntu"
-        assert image.as_local_str() == "ubuntu"
-        assert image.as_api_str() == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
-        image = DockerImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
-        assert image.as_url_str() == "ubuntu:v10.04"
+        image = RemoteImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
+        assert str(image) == "ubuntu:v10.04"
         assert image.as_repo_str() == "ubuntu:v10.04"
-        assert image.as_local_str() == "ubuntu:v10.04"
-        assert image.as_api_str() == "ubuntu"
 
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
-    parser = ImageNameParser(default_user="bob", registry_url=URL("https://reg.neu.ro"))
-
-    @pytest.fixture()
-    def progress(self) -> DockerImageProgress:
-        return DockerImageProgress.create(
-            type=DockerImageOperation.PULL,
-            input_image="inp",
-            output_image="outp",
-            tty=False,
-            quiet=True,
-        )
+    parser = _ImageNameParser(
+        default_user="user", registry_url=URL("https://registry-dev.neu.ro")
+    )
 
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__",
@@ -567,155 +539,170 @@ class TestImages:
         ),
     )
     async def test_unavailable_docker(
-        self, patched_init: Any, make_client: _MakeClient, progress: DockerImageProgress
+        self, patched_init: Any, make_client: _MakeClient
     ) -> None:
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
-                await client.images.pull(image, image, progress)
+                await client.images.pull(image, local_image)
 
     @asynctest.mock.patch(
         "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
     )
     async def test_unknown_docker_error(
-        self, patched_init: Any, make_client: _MakeClient, progress: DockerImageProgress
+        self, patched_init: Any, make_client: _MakeClient
     ) -> None:
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(ValueError, match=r"something went wrong"):
-                await client.images.pull(image, image, progress)
+                await client.images.pull(image, local_image)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     async def test_push_non_existent_image(
-        self, patched_tag: Any, make_client: _MakeClient, progress: DockerImageProgress
+        self, patched_tag: Any, make_client: _MakeClient
     ) -> None:
-        patched_tag.side_effect = DockerError(
-            STATUS_NOT_FOUND, {"message": "Mocked error"}
-        )
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
+        patched_tag.side_effect = DockerError(404, {"message": "Mocked error"})
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-no-more")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(ValueError, match=r"not found"):
-                await client.images.push(image, image, progress)
+                await client.images.push(local_image, image)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_to_foreign_repo(
-        self,
-        patched_push: Any,
-        patched_tag: Any,
-        make_client: _MakeClient,
-        progress: DockerImageProgress,
+        self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
         patched_tag.return_value = True
-        patched_push.side_effect = DockerError(
-            STATUS_FORBIDDEN, {"message": "Mocked error"}
-        )
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-no-more")
+        patched_push.side_effect = DockerError(403, {"message": "Mocked error"})
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-no-more")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):
-                await client.images.push(image, image, progress)
+                await client.images.push(local_image, image)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_with_docker_api_error(
-        self,
-        patched_push: Any,
-        patched_tag: Any,
-        make_client: _MakeClient,
-        progress: DockerImageProgress,
+        self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
         async def error_generator() -> AsyncIterator[Dict[str, Any]]:
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_tag.return_value = True
         patched_push.return_value = error_generator()
-        image = self.parser.parse_as_neuro_image(
-            f"image://bob/image:bananas-wrong-food"
-        )
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-wrong-food")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
-                await client.images.push(image, image, progress)
-        assert exc_info.value.status == STATUS_CUSTOM_ERROR
+                await client.images.push(local_image, image)
+        assert exc_info.value.status == 900
         assert exc_info.value.message == "Mocked message"
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.push")
     async def test_success_push_image(
-        self,
-        patched_push: Any,
-        patched_tag: Any,
-        make_client: _MakeClient,
-        progress: DockerImageProgress,
+        self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
         async def message_generator() -> AsyncIterator[Dict[str, Any]]:
             yield {}
 
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas-is-here")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas-is-here")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
-            result = await client.images.push(image, image, progress)
+            result = await client.images.push(local_image, image)
+        assert result == image
+
+    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
+    async def test_success_push_image_no_target(
+        self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
+    ) -> None:
+        async def message_generator() -> AsyncIterator[Dict[str, Any]]:
+            yield {}
+
+        patched_tag.return_value = True
+        patched_push.return_value = message_generator()
+        image = self.parser.parse_as_neuro_image("image://user/bananas:latest")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
+        async with make_client("https://api.localhost.localdomain") as client:
+            result = await client.images.push(local_image)
         assert result == image
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_non_existent_image(
-        self, patched_pull: Any, make_client: _MakeClient, progress: DockerImageProgress
+        self, patched_pull: Any, make_client: _MakeClient
     ) -> None:
-        patched_pull.side_effect = DockerError(
-            STATUS_NOT_FOUND, {"message": "Mocked error"}
-        )
+        patched_pull.side_effect = DockerError(404, {"message": "Mocked error"})
         async with make_client("https://api.localhost.localdomain") as client:
             image = self.parser.parse_as_neuro_image(
-                f"image://bob/image:no-bananas-here"
+                "image://bob/image:no-bananas-here"
             )
+            local_image = self.parser.parse_as_local_image("bananas:latest")
             with pytest.raises(ValueError, match=r"not found"):
-                await client.images.pull(image, image, progress)
+                await client.images.pull(image, local_image)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_image_from_foreign_repo(
-        self, patched_pull: Any, make_client: _MakeClient, progress: DockerImageProgress
+        self, patched_pull: Any, make_client: _MakeClient
     ) -> None:
-        patched_pull.side_effect = DockerError(
-            STATUS_FORBIDDEN, {"message": "Mocked error"}
-        )
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:not-your-bananas")
+        patched_pull.side_effect = DockerError(403, {"message": "Mocked error"})
+        image = self.parser.parse_as_neuro_image("image://bob/image:not-your-bananas")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(AuthorizationError):
-                await client.images.pull(image, image, progress)
+                await client.images.pull(image, local_image)
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_image_with_docker_api_error(
-        self, patched_pull: Any, make_client: Any, progress: DockerImageProgress
+        self, patched_pull: Any, make_client: Any
     ) -> None:
         async def error_generator() -> AsyncIterator[Dict[str, Any]]:
             yield {"error": True, "errorDetail": {"message": "Mocked message"}}
 
         patched_pull.return_value = error_generator()
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:nuts-here")
+        image = self.parser.parse_as_neuro_image("image://bob/image:nuts-here")
         async with make_client("https://api.localhost.localdomain") as client:
             with pytest.raises(DockerError) as exc_info:
-                await client.images.pull(image, image, progress)
-        assert exc_info.value.status == STATUS_CUSTOM_ERROR
+                await client.images.pull(image, image)
+        assert exc_info.value.status == 900
         assert exc_info.value.message == "Mocked message"
 
     @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_success_pull_image(
-        self,
-        patched_pull: Any,
-        patched_tag: Any,
-        make_client: _MakeClient,
-        progress: DockerImageProgress,
+        self, patched_pull: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
         async def message_generator() -> AsyncIterator[Dict[str, Any]]:
             yield {}
 
         patched_tag.return_value = True
         patched_pull.return_value = message_generator()
-        image = self.parser.parse_as_neuro_image(f"image://bob/image:bananas")
+        image = self.parser.parse_as_neuro_image("image://bob/image:bananas")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
-            result = await client.images.pull(image, image, progress)
-        assert result == image
+            result = await client.images.pull(image, local_image)
+        assert result == local_image
+
+    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
+    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
+    async def test_success_pull_image_no_target(
+        self, patched_pull: Any, patched_tag: Any, make_client: _MakeClient
+    ) -> None:
+        async def message_generator() -> AsyncIterator[Dict[str, Any]]:
+            yield {}
+
+        patched_tag.return_value = True
+        patched_pull.return_value = message_generator()
+        image = self.parser.parse_as_neuro_image("image://bob/bananas:latest")
+        local_image = self.parser.parse_as_local_image("bananas:latest")
+        async with make_client("https://api.localhost.localdomain") as client:
+            result = await client.images.pull(image)
+        assert result == local_image
 
 
 class TestRegistry:
@@ -738,7 +725,10 @@ class TestRegistry:
         registry_url = srv.make_url("/v2/")
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
-        assert ret == [URL(image) for image in JSON["repositories"]]
+        assert set(ret) == {
+            RemoteImage("alpine", "latest", owner="bob", registry="127.0.0.1"),
+            RemoteImage("bananas", "latest", owner="jill", registry="127.0.0.1"),
+        }
 
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
@@ -747,7 +737,6 @@ class TestRegistry:
         self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
     ) -> None:
         JSON = {"repositories": ["bob/alpine", "jill/bananas"]}
-        expected_urls = ["image://bob/alpine", "image://jill/bananas"]
 
         async def handler(request: web.Request) -> web.Response:
             return web.json_response(JSON)
@@ -760,4 +749,7 @@ class TestRegistry:
         registry_url = srv.make_url("/v2/")
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
-        assert ret == [URL(image) for image in expected_urls]
+        assert set(ret) == {
+            RemoteImage("alpine", "latest", owner="bob", registry="127.0.0.1"),
+            RemoteImage("bananas", "latest", owner="jill", registry="127.0.0.1"),
+        }

@@ -10,20 +10,21 @@ from yarl import URL
 
 from neuromation.api import (
     Container,
-    DockerImageOperation,
     FileStatus,
     FileStatusType,
     HTTPPort,
-    ImageNameParser,
     JobDescription,
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
+    RemoteImage,
     Resources,
 )
+from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
+    DockerImageOperation,
     DockerImageProgress,
     JobFormatter,
     JobStartProgress,
@@ -68,7 +69,8 @@ def job_descr_no_name() -> JobDescription:
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
         container=Container(
-            image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
+            image=RemoteImage("ubuntu", "latest"),
+            resources=Resources(16, 0.1, 0, None, False),
         ),
         ssh_auth_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -91,7 +93,8 @@ def job_descr() -> JobDescription:
             finished_at="2018-09-25T12:28:59.759433+00:00",
         ),
         container=Container(
-            image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
+            image=RemoteImage("ubuntu", "latest"),
+            resources=Resources(16, 0.1, 0, None, False),
         ),
         ssh_auth_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -191,7 +194,7 @@ class TestJobStartProgress:
             ),
             container=Container(
                 command="test-command",
-                image="test-image",
+                image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
@@ -260,7 +263,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image="test-image",
+                image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -309,7 +312,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image="test-image",
+                image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -353,7 +356,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image="test-image",
+                image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
@@ -389,7 +392,7 @@ class TestJobOutputFormatter:
                 finished_at="",
             ),
             container=Container(
-                image="test-image",
+                image=RemoteImage("test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False),
             ),
@@ -426,7 +429,7 @@ class TestJobOutputFormatter:
                 finished_at="",
             ),
             container=Container(
-                image="test-image",
+                image=RemoteImage("test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False),
             ),
@@ -466,7 +469,7 @@ class TestJobOutputFormatter:
             ssh_server=URL("ssh://local.host.test:22/"),
             container=Container(
                 command="test-command",
-                image="test-image",
+                image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
             ssh_auth_server=URL("ssh-auth"),
@@ -570,7 +573,8 @@ class TestSimpleJobsFormatter:
                     finished_at="2018-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
+                    image=RemoteImage("ubuntu", "latest"),
+                    resources=Resources(16, 0.1, 0, None, False),
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -589,7 +593,8 @@ class TestSimpleJobsFormatter:
                     finished_at="2018-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="ubuntu:latest", resources=Resources(16, 0.1, 0, None, False)
+                    image=RemoteImage("ubuntu", "latest"),
+                    resources=Resources(16, 0.1, 0, None, False),
                 ),
                 ssh_auth_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -604,11 +609,12 @@ class TestSimpleJobsFormatter:
 
 
 class TestTabularJobRow:
-    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def _job_descr_with_status(
         self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
     ) -> JobDescription:
+        remote_image = self.image_parser.parse_remote(image)
         return JobDescription(
             status=status,
             id="job-1f5ab792-e534-4bb4-be56-8af1ce722692",
@@ -624,7 +630,9 @@ class TestTabularJobRow:
                 finished_at="2017-03-04T12:28:59.759433+00:00",
             ),
             container=Container(
-                image=image, resources=Resources(16, 0.1, 0, None, False), command="ls"
+                image=remote_image,
+                resources=Resources(16, 0.1, 0, None, False),
+                command="ls",
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -632,14 +640,13 @@ class TestTabularJobRow:
 
     def test_with_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name="job-name"),
-            self.image_parser,
+            self._job_descr_with_status(JobStatus.RUNNING, name="job-name")
         )
         assert row.name == "job-name"
 
     def test_without_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name=None), self.image_parser
+            self._job_descr_with_status(JobStatus.RUNNING, name=None)
         )
         assert row.name == ""
 
@@ -653,9 +660,7 @@ class TestTabularJobRow:
         ],
     )
     def test_status_date_relation(self, status: JobStatus, date: str) -> None:
-        row = TabularJobRow.from_job(
-            self._job_descr_with_status(status), self.image_parser
-        )
+        row = TabularJobRow.from_job(self._job_descr_with_status(status))
         assert row.status == f"{status}"
         assert row.when == date
 
@@ -663,8 +668,7 @@ class TestTabularJobRow:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
                 JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red"
-            ),
-            self.image_parser,
+            )
         )
         assert row.image == "image://bob/swiss-box:red"
         assert row.name == ""
@@ -672,15 +676,15 @@ class TestTabularJobRow:
 
 class TestTabularJobsFormatter:
     columns = ["ID", "NAME", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
-    image_parser = ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def test_empty(self) -> None:
-        formatter = TabularJobsFormatter(0, self.image_parser)
+        formatter = TabularJobsFormatter(0)
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)]
 
     def test_width_cutting(self) -> None:
-        formatter = TabularJobsFormatter(10, self.image_parser)
+        formatter = TabularJobsFormatter(10)
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)[:10]]
 
@@ -700,12 +704,14 @@ class TestTabularJobsFormatter:
                 finished_at=datetime.fromtimestamp(time.time() - 1).isoformat(),
             ),
             container=Container(
-                image="i:l", resources=Resources(16, 0.1, 0, None, False), command="c"
+                image=RemoteImage("i", "l"),
+                resources=Resources(16, 0.1, 0, None, False),
+                command="c",
             ),
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
         )
-        formatter = TabularJobsFormatter(0, self.image_parser)
+        formatter = TabularJobsFormatter(0)
         result = [item for item in formatter([job])]
         assert result in [
             [
@@ -739,7 +745,7 @@ class TestTabularJobsFormatter:
                     finished_at="2017-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="some-image-name:with-long-tag",
+                    image=RemoteImage("some-image-name", "with-long-tag"),
                     resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
@@ -761,7 +767,7 @@ class TestTabularJobsFormatter:
                     finished_at="2017-09-25T12:28:59.759433+00:00",
                 ),
                 container=Container(
-                    image="some-image-name:with-long-tag",
+                    image=RemoteImage("some-image-name", "with-long-tag"),
                     resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
@@ -769,7 +775,7 @@ class TestTabularJobsFormatter:
                 is_preemptible=True,
             ),
         ]
-        formatter = TabularJobsFormatter(0, self.image_parser)
+        formatter = TabularJobsFormatter(0)
         result = [item for item in formatter(jobs)]
         assert result == [
             "ID                                        NAME   STATUS   WHEN         IMAGE            DESCRIPTION                           COMMAND",  # noqa: E501
@@ -1188,10 +1194,10 @@ class TestConfigFormatter:
 class TestDockerImageProgress:
     def test_quiet(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(
-            DockerImageOperation.PULL, "input", "output", tty=True, quiet=True
+            DockerImageOperation.PULL, tty=True, quiet=True
         )
-        formatter("message1")
-        formatter("message2", "layer1")
+        formatter.start("input", "output")
+        formatter.progress("message1", "layer1")
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
@@ -1199,36 +1205,28 @@ class TestDockerImageProgress:
 
     def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH,
-            "input:latest",
-            "image://bob/output:stream",
-            tty=False,
-            quiet=False,
+            DockerImageOperation.PUSH, tty=False, quiet=False
         )
-        formatter("message1")
-        formatter("message2", "layer1")
-        formatter("message3", "layer1")
+        formatter.start("input:latest", "image://bob/output:stream")
+        formatter.progress("message1", "layer1")
+        formatter.progress("message2", "layer1")
 
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
         assert "image://bob/output:stream" in out
-        assert "message1" in out
+        assert "message1" not in out
         assert "message2" not in out
         assert CSI not in out
 
     def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH,
-            "input:latest",
-            "image://bob/output:stream",
-            tty=True,
-            quiet=False,
+            DockerImageOperation.PUSH, tty=True, quiet=False
         )
-        formatter("message1")
-        formatter("message2", "layer1")
-        formatter("message3", "layer1")
+        formatter.start("input:latest", "image://bob/output:stream")
+        formatter.progress("message1", "layer1")
+        formatter.progress("message2", "layer1")
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
@@ -1236,5 +1234,4 @@ class TestDockerImageProgress:
         assert "image://bob/output:stream" in out
         assert "message1" in out
         assert "message2" in out
-        assert "message3" in out
         assert CSI in out

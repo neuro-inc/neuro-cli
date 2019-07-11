@@ -1,46 +1,60 @@
-from typing import Dict, Optional
+from enum import Enum
+from typing import Dict
 
-from neuromation.api import AbstractDockerImageProgress, DockerImageOperation
+from neuromation.api import AbstractDockerImageProgress
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
-class DockerImageProgress(AbstractDockerImageProgress):
-    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
-        pass
+class DockerImageOperation(str, Enum):
+    PUSH = "push"
+    PULL = "pull"
 
+
+class DockerImageProgress(AbstractDockerImageProgress):
     @classmethod
     def create(
-        cls,
-        type: DockerImageOperation,
-        input_image: str,
-        output_image: str,
-        tty: bool,
-        quiet: bool,
-    ) -> "DockerImageProgress":
+        cls, type: DockerImageOperation, tty: bool, quiet: bool
+    ) -> AbstractDockerImageProgress:
         if quiet:
-            progress = DockerImageProgress()
+            progress: AbstractDockerImageProgress = QuietDockerImageProgress(type)
         elif tty:
-            progress = DetailedDockerImageProgress()
+            progress = DetailedDockerImageProgress(type)
         else:
-            progress = StreamDockerImageProgress()
-
-        if type == DockerImageOperation.PUSH:
-            progress(f"Using local image '{input_image}'")
-            progress(f"Using remote image '{output_image}'")
-            progress("Pushing image...")
-        elif type == DockerImageOperation.PULL:
-            progress(f"Using remote image '{input_image}'")
-            progress(f"Using local image '{output_image}'")
-            progress("Pulling image...")
+            progress = StreamDockerImageProgress(type)
         return progress
+
+    def __init__(self, type: DockerImageOperation) -> None:
+        self._type = type
+
+
+class QuietDockerImageProgress(DockerImageProgress):
+    def start(self, src: str, dst: str) -> None:
+        pass
+
+    def progress(self, message: str, layer_id: str) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
 
 
 class DetailedDockerImageProgress(DockerImageProgress):
-    def __init__(self) -> None:
+    def __init__(self, type: DockerImageOperation) -> None:
+        super().__init__(type)
         self._mapping: Dict[str, int] = {}
         self._printer = TTYPrinter()
 
-    def __call__(self, message: str, layer_id: Optional[str] = None) -> None:
+    def start(self, src: str, dst: str) -> None:
+        if self._type == DockerImageOperation.PUSH:
+            self._printer.print(f"Using local image '{src}'")
+            self._printer.print(f"Using remote image '{dst}'")
+            self._printer.print("Pushing image...")
+        elif self._type == DockerImageOperation.PULL:
+            self._printer.print(f"Using remote image '{src}'")
+            self._printer.print(f"Using local image '{dst}'")
+            self._printer.print("Pulling image...")
+
+    def progress(self, message: str, layer_id: str) -> None:
         if layer_id:
             if layer_id in self._mapping.keys():
                 lineno = self._mapping[layer_id]
@@ -57,11 +71,21 @@ class DetailedDockerImageProgress(DockerImageProgress):
 
 
 class StreamDockerImageProgress(DockerImageProgress):
-    def __init__(self) -> None:
+    def __init__(self, type: DockerImageOperation) -> None:
+        super().__init__(type)
         self._printer = StreamPrinter()
-        pass
 
-    def __call__(self, message: str, layer_id: Optional["str"] = None) -> None:
+    def start(self, src: str, dst: str) -> None:
+        if self._type == DockerImageOperation.PUSH:
+            self._printer.print(f"Using local image '{src}'")
+            self._printer.print(f"Using remote image '{dst}'")
+            self._printer.print("Pushing image...")
+        elif self._type == DockerImageOperation.PULL:
+            self._printer.print(f"Using remote image '{src}'")
+            self._printer.print(f"Using local image '{dst}'")
+            self._printer.print("Pulling image...")
+
+    def progress(self, message: str, layer_id: str) -> None:
         if layer_id:
             self._printer.tick()
         else:

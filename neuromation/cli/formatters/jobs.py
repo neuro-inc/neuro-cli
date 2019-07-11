@@ -11,13 +11,7 @@ import humanize
 from click import style, unstyle
 from dateutil.parser import isoparse
 
-from neuromation.api import (
-    ImageNameParser,
-    JobDescription,
-    JobStatus,
-    JobTelemetry,
-    Resources,
-)
+from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -193,10 +187,7 @@ class TabularJobRow:
     command: str
 
     @classmethod
-    def from_job(
-        cls, job: JobDescription, image_parser: ImageNameParser
-    ) -> "TabularJobRow":
-        image_normalized = image_parser.normalize(job.container.image)
+    def from_job(cls, job: JobDescription) -> "TabularJobRow":
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -213,14 +204,14 @@ class TabularJobRow:
             name=job.name if job.name else "",
             status=job.status,
             when=when_humanized,
-            image=image_normalized,
+            image=str(job.container.image),
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
         )
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, image_parser: ImageNameParser):
+    def __init__(self, width: int):
         self.width = width
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
@@ -231,7 +222,6 @@ class TabularJobsFormatter(BaseJobsFormatter):
             "description": [11, 50],
             "command": [7, 0],
         }
-        self.image_parser = image_parser
 
     def _positions(self, rows: Iterable[TabularJobRow]) -> Mapping[str, int]:
         positions = {}
@@ -256,7 +246,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[TabularJobRow] = []
         for job in jobs:
-            rows.append(TabularJobRow.from_job(job, self.image_parser))
+            rows.append(TabularJobRow.from_job(job))
         header = TabularJobRow(
             id="ID",
             name="NAME",

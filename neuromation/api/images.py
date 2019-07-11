@@ -1,8 +1,6 @@
-import logging
+import contextlib
 import re
-from contextlib import suppress
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import replace
 from typing import Dict, List, Optional
 
 import aiodocker
@@ -13,55 +11,9 @@ from yarl import URL
 from .abc import AbstractDockerImageProgress
 from .config import _Config
 from .core import AuthorizationError, _Core
+from .parsing_utils import LocalImage, RemoteImage, _ImageNameParser
 from .registry import _Registry
 from .utils import NoPublicConstructor
-
-
-STATUS_FORBIDDEN = 403
-STATUS_NOT_FOUND = 404
-STATUS_CUSTOM_ERROR = 900
-
-log = logging.getLogger(__name__)
-
-IMAGE_SCHEME = "image"
-
-
-class DockerImageOperation(str, Enum):
-    PUSH = "push"
-    PULL = "pull"
-
-
-@dataclass(frozen=True)
-# TODO (ajuszkowski, 20-feb-2019): rename this class: docker-images refer to both local
-# images and images in docker hub, and neuro-images refer to an image in neuro registry
-class DockerImage:
-    name: str
-    tag: Optional[str] = None
-    owner: Optional[str] = None
-    registry: Optional[str] = None
-
-    def is_in_neuro_registry(self) -> bool:
-        return bool(self.registry and self.owner)
-
-    def as_url_str(self) -> str:
-        pre = f"{IMAGE_SCHEME}://{self.owner}/" if self.is_in_neuro_registry() else ""
-        post = f":{self.tag}" if self.tag else ""
-        return pre + self.name + post
-
-    def as_repo_str(self) -> str:
-        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
-        pre = f"{self.registry}/{self.owner}/" if self.is_in_neuro_registry() else ""
-        return pre + self.as_local_str()
-
-    def as_local_str(self) -> str:
-        post = f":{self.tag}" if self.tag else ""
-        return self.name + post
-
-    def as_api_str(self) -> str:
-        if self.owner:
-            return f"{self.owner}/{self.name}"
-        else:
-            return self.name
 
 
 class Images(metaclass=NoPublicConstructor):
@@ -76,7 +28,7 @@ class Images(metaclass=NoPublicConstructor):
                 r".*Either DOCKER_HOST or local sockets are not available.*", f"{error}"
             ):
                 raise DockerError(
-                    STATUS_CUSTOM_ERROR,
+                    900,
                     {
                         "message": "Docker engine is not available. "
                         "Please specify DOCKER_HOST variable "
@@ -91,9 +43,9 @@ class Images(metaclass=NoPublicConstructor):
             self._config.auth_token.username,
         )
 
-    async def close(self) -> None:
+    async def _close(self) -> None:
         for image in self._temporary_images:
-            with suppress(DockerError, aiohttp.ClientError):
+            with contextlib.suppress(DockerError, aiohttp.ClientError):
                 await self._docker.images.delete(image)
         await self._docker.close()
         await self._registry.close()
@@ -103,18 +55,32 @@ class Images(metaclass=NoPublicConstructor):
 
     async def push(
         self,
-        local_image: DockerImage,
-        remote_image: DockerImage,
-        progress: AbstractDockerImageProgress,
-    ) -> DockerImage:
+        local_image: LocalImage,
+        remote_image: Optional[RemoteImage] = None,
+        *,
+        progress: Optional[AbstractDockerImageProgress] = None,
+    ) -> RemoteImage:
+        if remote_image is None:
+            parser = _ImageNameParser(
+                self._config.auth_token.username,
+                self._config.cluster_config.registry_url,
+            )
+            remote_image = parser.convert_to_neuro_image(local_image)
+
+        local_str = str(local_image)
+        remote_str = str(remote_image)
+
+        if progress is None:
+            progress = _DummyProgress()
+        progress.start(local_str, remote_str)
+
         repo = remote_image.as_repo_str()
         try:
-            await self._docker.images.tag(local_image.as_local_str(), repo)
+            await self._docker.images.tag(local_str, repo)
         except DockerError as error:
-            if error.status == STATUS_NOT_FOUND:
+            if error.status == 404:
                 raise ValueError(
-                    f"Image {local_image.as_local_str()} was not found "
-                    "in your local docker images"
+                    f"Image {local_str} was not found " "in your local docker images"
                 ) from error
         try:
             stream = await self._docker.images.push(
@@ -122,29 +88,42 @@ class Images(metaclass=NoPublicConstructor):
             )
         except DockerError as error:
             # TODO check this part when registry fixed
-            if error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(
-                    f"Access denied {remote_image.as_url_str()}"
-                ) from error
+            if error.status == 403:
+                raise AuthorizationError(f"Access denied {remote_str}") from error
             raise  # pragma: no cover
         async for obj in stream:
             if "error" in obj.keys():
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                raise DockerError(STATUS_CUSTOM_ERROR, error_details)
+                raise DockerError(900, error_details)
             elif "id" in obj.keys() and obj["id"] != remote_image.tag:
                 if "progress" in obj.keys():
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress(message, obj["id"])
+                progress.progress(message, obj["id"])
         return remote_image
 
     async def pull(
         self,
-        remote_image: DockerImage,
-        local_image: DockerImage,
-        progress: AbstractDockerImageProgress,
-    ) -> DockerImage:
+        remote_image: RemoteImage,
+        local_image: Optional[LocalImage] = None,
+        *,
+        progress: Optional[AbstractDockerImageProgress] = None,
+    ) -> LocalImage:
+        if local_image is None:
+            parser = _ImageNameParser(
+                self._config.auth_token.username,
+                self._config.cluster_config.registry_url,
+            )
+            local_image = parser.convert_to_local_image(remote_image)
+
+        local_str = str(local_image)
+        remote_str = str(remote_image)
+
+        if progress is None:
+            progress = _DummyProgress()
+        progress.start(remote_str, local_str)
+
         repo = remote_image.as_repo_str()
         try:
             stream = await self._docker.pull(
@@ -152,47 +131,61 @@ class Images(metaclass=NoPublicConstructor):
             )
             self._temporary_images.append(repo)
         except DockerError as error:
-            if error.status == STATUS_NOT_FOUND:
+            if error.status == 404:
                 raise ValueError(
-                    f"Image {remote_image.as_url_str()} was not found " "in registry"
+                    f"Image {remote_str} was not found " "in registry"
                 ) from error
             # TODO check this part when registry fixed
-            elif error.status == STATUS_FORBIDDEN:
-                raise AuthorizationError(
-                    f"Access denied {remote_image.as_url_str()}"
-                ) from error
+            elif error.status == 403:
+                raise AuthorizationError(f"Access denied {remote_str}") from error
             raise  # pragma: no cover
 
         async for obj in stream:
             if "error" in obj.keys():
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                raise DockerError(STATUS_CUSTOM_ERROR, error_details)
+                raise DockerError(900, error_details)
             elif "id" in obj.keys() and obj["id"] != remote_image.tag:
                 if "progress" in obj.keys():
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress(message, obj["id"])
+                progress.progress(message, obj["id"])
 
-        await self._docker.images.tag(repo, local_image.as_local_str())
+        await self._docker.images.tag(repo, local_str)
 
         return local_image
 
-    async def ls(self) -> List[URL]:
+    async def ls(self) -> List[RemoteImage]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
+            parser = _ImageNameParser(
+                self._config.auth_token.username,
+                self._config.cluster_config.registry_url,
+            )
             ret = await resp.json()
             prefix = "image://"
-            result: List[URL] = []
+            result: List[RemoteImage] = []
             for repo in ret["repositories"]:
-                if repo.startswith(prefix):
-                    url = URL(repo)
-                else:
-                    url = URL(f"{prefix}{repo}")
-                result.append(url)
+                if not repo.startswith(prefix):
+                    repo = prefix + repo
+                result.append(parser.parse_as_neuro_image(repo))
             return result
 
-    async def tags(self, image: DockerImage) -> List[str]:
-        name = image.as_api_str()
+    async def tags(self, image: RemoteImage) -> List[RemoteImage]:
+        if image.owner:
+            name = f"{image.owner}/{image.name}"
+        else:
+            name = image.name
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
-            return ret.get("tags", [])
+            return [replace(image, tag=tag) for tag in ret.get("tags", [])]
+
+
+class _DummyProgress(AbstractDockerImageProgress):
+    def start(self, src: str, dst: str) -> None:
+        pass
+
+    def progress(self, message: str, layer_id: str) -> None:
+        pass
+
+    def close(self) -> None:
+        pass

@@ -1,9 +1,11 @@
+import contextlib
 import logging
+from typing import Optional
 
 import click
 
-from neuromation.api import DockerImage, DockerImageOperation, ImageNameParser
-from neuromation.cli.formatters import DockerImageProgress
+from neuromation.api import LocalImage, RemoteImage
+from neuromation.cli.formatters import DockerImageOperation, DockerImageProgress
 
 from .root import Root
 from .utils import ImageType, async_cmd, command, deprecated_quiet_option, group
@@ -20,11 +22,11 @@ def image() -> None:
 
 
 @command()
-@click.argument("image_name")
-@click.argument("remote_image_name", required=False)
+@click.argument("local_image")
+@click.argument("remote_image", required=False)
 @deprecated_quiet_option
 @async_cmd()
-async def push(root: Root, image_name: str, remote_image_name: str) -> None:
+async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
     """
     Push an image to platform registry.
 
@@ -40,35 +42,27 @@ async def push(root: Root, image_name: str, remote_image_name: str) -> None:
 
     """
 
-    parser = ImageNameParser(root.username, root.registry_url)
-    local_img = parser.parse_as_docker_image(image_name)
-    if remote_image_name:
-        remote_img = parser.parse_as_neuro_image(remote_image_name)
-    else:
-        remote_img = parser.convert_to_neuro_image(local_img)
-
-    log.debug(f"LOCAL: '{local_img}'")
-    log.debug(f"REMOTE: '{remote_img}'")
-
     progress = DockerImageProgress.create(
-        type=DockerImageOperation.PUSH,
-        input_image=local_img.as_local_str(),
-        output_image=remote_img.as_url_str(),
-        tty=root.tty,
-        quiet=root.quiet,
+        type=DockerImageOperation.PUSH, tty=root.tty, quiet=root.quiet
     )
-
-    result_remote_image = await root.client.images.push(local_img, remote_img, progress)
-    progress.close()
-    click.echo(result_remote_image.as_url_str())
+    local_obj = root.client.parse.local_image(local_image)
+    if remote_image is not None:
+        remote_obj: Optional[RemoteImage] = root.client.parse.remote_image(remote_image)
+    else:
+        remote_obj = None
+    with contextlib.closing(progress):
+        result_remote_image = await root.client.images.push(
+            local_obj, remote_obj, progress=progress
+        )
+    click.echo(result_remote_image)
 
 
 @command()
-@click.argument("image_name")
-@click.argument("local_image_name", required=False)
+@click.argument("remote_image")
+@click.argument("local_image", required=False)
 @deprecated_quiet_option
 @async_cmd()
-async def pull(root: Root, image_name: str, local_image_name: str) -> None:
+async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
     """
     Pull an image from platform registry.
 
@@ -83,26 +77,19 @@ async def pull(root: Root, image_name: str, local_image_name: str) -> None:
 
     """
 
-    parser = ImageNameParser(root.username, root.registry_url)
-    remote_img = parser.parse_as_neuro_image(image_name)
-    if local_image_name:
-        local_img = parser.parse_as_docker_image(local_image_name)
-    else:
-        local_img = parser.convert_to_docker_image(remote_img)
-
-    log.debug(f"REMOTE: '{remote_img}'")
-    log.debug(f"LOCAL: '{local_img}'")
-
     progress = DockerImageProgress.create(
-        type=DockerImageOperation.PULL,
-        input_image=remote_img.as_url_str(),
-        output_image=local_img.as_local_str(),
-        tty=root.tty,
-        quiet=root.quiet,
+        type=DockerImageOperation.PULL, tty=root.tty, quiet=root.quiet
     )
-    result_local_image = await root.client.images.pull(remote_img, local_img, progress)
-    progress.close()
-    click.echo(result_local_image.as_local_str())
+    remote_obj = root.client.parse.remote_image(remote_image)
+    if local_image is not None:
+        local_obj: Optional[LocalImage] = root.client.parse.local_image(local_image)
+    else:
+        local_obj = None
+    with contextlib.closing(progress):
+        result_local_image = await root.client.images.pull(
+            remote_obj, local_obj, progress=progress
+        )
+    click.echo(result_local_image)
 
 
 @command()
@@ -120,7 +107,7 @@ async def ls(root: Root) -> None:
 @command()
 @click.argument("image", type=ImageType())
 @async_cmd()
-async def tags(root: Root, image: DockerImage) -> None:
+async def tags(root: Root, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.
 

@@ -10,6 +10,7 @@ from .config import _Config
 from .core import DEFAULT_TIMEOUT, _Core
 from .images import Images
 from .jobs import Jobs
+from .parser import Parser
 from .storage import Storage
 from .users import Users
 from .utils import NoPublicConstructor
@@ -42,15 +43,16 @@ class Client(metaclass=NoPublicConstructor):
         self._core = _Core(
             connector, self._config.url, self._config.auth_token.token, cookie, timeout
         )
-        self._jobs = Jobs._create(self._core, self._config, self.username)
+        self._jobs = Jobs._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core)
+        self._parser = Parser._create(self._config, self.username)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
         await self._core.close()
         if self._images is not None:
-            await self._images.close()
+            await self._images._close()
         await self._connector.close()
 
     async def __aenter__(self) -> "Client":
@@ -85,6 +87,10 @@ class Client(metaclass=NoPublicConstructor):
         if self._images is None:
             self._images = Images._create(self._core, self._config)
         return self._images
+
+    @property
+    def parse(self) -> Parser:
+        return self._parser
 
     def _get_session_cookie(self) -> Optional["Morsel[str]"]:
         for cookie in self._core._session.cookie_jar:

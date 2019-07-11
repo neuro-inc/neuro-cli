@@ -734,7 +734,7 @@ Push an image to platform registry.<br/><br/>Remote image must be URL with image
 **Usage:**
 
 ```bash
-neuro image push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
+neuro image push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
 ```
 
 **Examples:**
@@ -764,7 +764,7 @@ Pull an image from platform registry.<br/><br/>Remote image name must be URL wit
 **Usage:**
 
 ```bash
-neuro image pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
+neuro image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
 ```
 
 **Examples:**
@@ -1684,7 +1684,7 @@ Push an image to platform registry.<br/><br/>Remote image must be URL with image
 **Usage:**
 
 ```bash
-neuro push [OPTIONS] IMAGE_NAME [REMOTE_IMAGE_NAME]
+neuro push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
 ```
 
 **Examples:**
@@ -1714,7 +1714,7 @@ Pull an image from platform registry.<br/><br/>Remote image name must be URL wit
 **Usage:**
 
 ```bash
-neuro pull [OPTIONS] IMAGE_NAME [LOCAL_IMAGE_NAME]
+neuro pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
 ```
 
 **Examples:**

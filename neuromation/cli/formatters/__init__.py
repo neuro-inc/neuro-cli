@@ -1,5 +1,5 @@
 from .config import ConfigFormatter
-from .images import DockerImageProgress
+from .images import DockerImageOperation, DockerImageProgress
 from .jobs import (
     BaseJobsFormatter,
     JobFormatter,
@@ -33,4 +33,5 @@ __all__ = [
     "VerticalColumnsFilesFormatter",
     "FilesSorter",
     "DockerImageProgress",
+    "DockerImageOperation",
 ]

@@ -1,11 +1,42 @@
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from yarl import URL
 
-from .images import IMAGE_SCHEME, DockerImage
+
+@dataclass(frozen=True)
+class RemoteImage:
+    name: str
+    tag: Optional[str] = None
+    owner: Optional[str] = None
+    registry: Optional[str] = None
+
+    def _is_in_neuro_registry(self) -> bool:
+        return bool(self.registry and self.owner)
+
+    def __str__(self) -> str:
+        pre = f"image://{self.owner}/" if self._is_in_neuro_registry() else ""
+        post = f":{self.tag}" if self.tag else ""
+        return pre + self.name + post
+
+    def as_repo_str(self) -> str:
+        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
+        pre = f"{self.registry}/{self.owner}/" if self._is_in_neuro_registry() else ""
+        post = f":{self.tag}" if self.tag else ""
+        return pre + self.name + post
 
 
-class ImageNameParser:
+@dataclass(frozen=True)
+class LocalImage:
+    name: str
+    tag: Optional[str] = None
+
+    def __str__(self) -> str:
+        post = f":{self.tag}" if self.tag else ""
+        return self.name + post
+
+
+class _ImageNameParser:
     default_tag = "latest"
 
     def __init__(self, default_user: str, registry_url: URL):
@@ -17,14 +48,14 @@ class ImageNameParser:
             )
         self._registry = registry_url.host
 
-    def parse_as_docker_image(self, image: str) -> DockerImage:
+    def parse_as_local_image(self, image: str) -> LocalImage:
         try:
             self._validate_image_name(image)
-            return self._parse_as_docker_image(image)
+            return self._parse_as_local_image(image)
         except ValueError as e:
-            raise ValueError(f"Invalid docker image '{image}': {e}") from e
+            raise ValueError(f"Invalid local image '{image}': {e}") from e
 
-    def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> DockerImage:
+    def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> RemoteImage:
         try:
             self._validate_image_name(image)
             tag: Optional[str]
@@ -38,36 +69,42 @@ class ImageNameParser:
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
 
+    def parse_remote(self, value: str) -> RemoteImage:
+        if self.is_in_neuro_registry(value):
+            return self.parse_as_neuro_image(value)
+        else:
+            img = self.parse_as_local_image(value)
+            return RemoteImage(img.name, img.tag)
+
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
-        return image.startswith(f"{IMAGE_SCHEME}:") or image.startswith(
-            f"{self._registry}/"
-        )
+        return image.startswith("image:") or image.startswith(f"{self._registry}/")
 
-    def convert_to_neuro_image(self, image: DockerImage) -> DockerImage:
-        return DockerImage(
+    def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
+        return RemoteImage(
             name=image.name,
             tag=image.tag,
             owner=self._default_user,
             registry=self._registry,
         )
 
-    def convert_to_docker_image(self, image: DockerImage) -> DockerImage:
-        return DockerImage(name=image.name, tag=image.tag)
+    def convert_to_local_image(self, image: RemoteImage) -> LocalImage:
+        return LocalImage(name=image.name, tag=image.tag)
 
     def normalize(self, image: str) -> str:
         try:
             if self.is_in_neuro_registry(image):
-                parsed_image = self.parse_as_neuro_image(image)
+                remote_image = self.parse_as_neuro_image(image)
+                image_normalized = str(remote_image)
             else:
-                parsed_image = self.parse_as_docker_image(image)
-            image_normalized = parsed_image.as_url_str()
+                local_image = self.parse_as_local_image(image)
+                image_normalized = str(local_image)
         except ValueError:
             image_normalized = image
         return image_normalized
 
     def has_tag(self, image: str) -> bool:
-        prefix = f"{IMAGE_SCHEME}:"
+        prefix = "image:"
         if image.startswith(prefix):
             image = image.lstrip(prefix).lstrip("/")
         name, tag = self._split_image_name(image, default_tag=None)
@@ -83,40 +120,36 @@ class ImageNameParser:
                 "ambiguous value: valid as both local and remote image name"
             )
 
-    def _parse_as_docker_image(self, image: str) -> DockerImage:
+    def _parse_as_local_image(self, image: str) -> LocalImage:
         if self.is_in_neuro_registry(image):
-            raise ValueError(
-                f"scheme '{IMAGE_SCHEME}://' is not allowed for docker images"
-            )
+            raise ValueError("scheme 'image://' is not allowed for local images")
         name, tag = self._split_image_name(image, self.default_tag)
-        return DockerImage(name=name, tag=tag)
+        return LocalImage(name=name, tag=tag)
 
     def _parse_as_neuro_image(
         self, image: str, default_tag: Optional[str]
-    ) -> DockerImage:
+    ) -> RemoteImage:
         if not self.is_in_neuro_registry(image):
-            raise ValueError(
-                f"scheme '{IMAGE_SCHEME}://' is required for remote images"
-            )
+            raise ValueError("scheme 'image://' is required for remote images")
 
         url = URL(image)
         if not url.scheme:
             parts = url.path.split("/")
             url = url.build(
-                scheme=IMAGE_SCHEME,
+                scheme="image",
                 host=parts[1],
                 path="/".join([""] + parts[2:]),
                 query=url.query,
             )
         else:
-            assert url.scheme == IMAGE_SCHEME, f"invalid image scheme: '{url.scheme}'"
+            assert url.scheme == "image", f"invalid image scheme: '{url.scheme}'"
 
         self._check_allowed_uri_elements(url)
 
         registry = self._registry
         owner = self._default_user if not url.host or url.host == "~" else url.host
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
-        return DockerImage(name=name, tag=tag, registry=registry, owner=owner)
+        return RemoteImage(name=name, tag=tag, registry=registry, owner=owner)
 
     def _split_image_name(
         self, image: str, default_tag: Optional[str] = None
