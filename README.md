@@ -17,6 +17,7 @@
 	* [neuro storage](#neuro-storage)
 		* [neuro storage cp](#neuro-storage-cp)
 		* [neuro storage ls](#neuro-storage-ls)
+		* [neuro storage glob](#neuro-storage-glob)
 		* [neuro storage rm](#neuro-storage-rm)
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
@@ -24,6 +25,7 @@
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
 		* [neuro image pull](#neuro-image-pull)
+		* [neuro image tags](#neuro-image-tags)
 	* [neuro config](#neuro-config)
 		* [neuro config login](#neuro-config-login)
 		* [neuro config login-with-token](#neuro-config-login-with-token)
@@ -104,7 +106,7 @@ Name | Description|
 | _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
-| _[neuro acl](#neuro-acl)_| ACL operations |
+| _[neuro acl](#neuro-acl)_| Access Control List management |
 
 
 **Commands:**
@@ -112,7 +114,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
-| _[neuro run](#neuro-run)_| Run an image with predefined configuration |
+| _[neuro run](#neuro-run)_| Run a job with predefined resources configuration |
 | _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
@@ -157,7 +159,7 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro job run](#neuro-job-run)_| Run an image with predefined configuration |
+| _[neuro job run](#neuro-job-run)_| Run a job with predefined resources configuration |
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
@@ -173,7 +175,7 @@ Name | Description|
 
 ### neuro job run
 
-Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined resources configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -185,10 +187,11 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 
 ```bash
 
-# Starts a container pytorch:latest with two paths mounted.
-# Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
-# storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-neuro run pytorch:latest --volume=HOME
+# Starts a container pytorch:latest on a machine with smaller GPU resources
+# (see exact values in `neuro config show`) and with two volumes mounted:
+#   storage://~           --> /var/storage/home (in read-write mode),
+#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 ```
 
@@ -196,18 +199,19 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
-|_\-d, --description DESC_|Add optional description in free format|
+|_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
@@ -254,6 +258,7 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
@@ -473,6 +478,7 @@ Name | Description|
 |---|---|
 | _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
 | _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
+| _[neuro storage glob](#neuro-storage-glob)_| List resources that match PATTERNS |
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
@@ -487,20 +493,36 @@ Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have s
 **Usage:**
 
 ```bash
-neuro storage cp [OPTIONS] SOURCES... DESTINATION
+neuro storage cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
 
 ```bash
 
-# copy local file ./foo into remote storage root
-neuro cp ./foo storage:///
-neuro cp ./foo storage:/
+# copy local files into remote storage root
+neuro cp foo.txt bar/baz.dat storage:
+neuro cp foo.txt bar/baz.dat -t storage:
 
-# download remote file foo into local file foo with
+# copy local directory `foo` into existing remote directory `bar`
+neuro cp -r foo -t storage:bar
+
+# copy the content of local directory `foo` into existing remote
+# directory `bar`
+neuro cp -r -T storage:foo storage:bar
+
+# download remote file `foo.txt` into local file `/tmp/foo.txt` with
 # explicit file:// scheme set
-neuro cp storage:///foo file:///foo
+neuro cp storage:foo.txt file:///tmp/foo.txt
+neuro cp -T storage:foo.txt file:///tmp/foo.txt
+neuro cp storage:foo.txt file:///tmp
+neuro cp storage:foo.txt -t file:///tmp
+
+# download other user's remote file into the current directory
+neuro cp storage://{username}/foo.txt .
+
+# download only files with extension `.out` into the current directory
+neuro cp storage:results/*.out .
 
 ```
 
@@ -509,6 +531,9 @@ neuro cp storage:///foo file:///foo
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
 |_--help_|Show this message and exit.|
 
@@ -517,7 +542,7 @@ Name | Description|
 
 ### neuro storage ls
 
-List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
+List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
 
 **Usage:**
 
@@ -537,6 +562,25 @@ Name | Description|
 
 
 
+### neuro storage glob
+
+List resources that match PATTERNS.
+
+**Usage:**
+
+```bash
+neuro storage glob [OPTIONS] [PATTERNS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro storage rm
 
 Remove files or directories.<br/>
@@ -551,10 +595,10 @@ neuro storage rm [OPTIONS] PATHS...
 
 ```bash
 
-neuro rm storage:///foo/bar
-neuro rm storage:/foo/bar
+neuro rm storage:foo/bar
 neuro rm storage://{username}/foo/bar
 neuro rm --recursive storage://{username}/foo/
+neuro rm storage:foo/**/*.tmp
 
 ```
 
@@ -563,6 +607,7 @@ neuro rm --recursive storage://{username}/foo/
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|remove directories and their contents recursively|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -595,20 +640,30 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro storage mv [OPTIONS] SOURCES... DESTINATION
+neuro storage mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
 
 ```bash
 
-# move or rename remote file
-neuro mv storage://{username}/foo.txt storage://{username}/bar.txt
-neuro mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+# move and rename remote file
+neuro mv storage:foo.txt storage:bar/baz.dat
+neuro mv -T storage:foo.txt storage:bar/baz.dat
 
-# move or rename remote directory
-neuro mv storage://{username}/foo/ storage://{username}/bar/
-neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+# move remote files into existing remote directory
+neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
+neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
+
+# move the content of remote directory into other existing
+# remote directory
+neuro mv -T storage:foo storage:bar
+
+# move remote file into other user's directory
+neuro mv storage:foo.txt storage://{username}/bar.dat
+
+# move remote file from other user's directory
+neuro mv storage://{username}/foo.txt storage:bar.dat
 
 ```
 
@@ -616,6 +671,9 @@ neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
 
 Name | Description|
 |----|------------|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|
 
 
@@ -645,6 +703,7 @@ Name | Description|
 | _[neuro image ls](#neuro-image-ls)_| List images |
 | _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
+| _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
 
 
 
@@ -670,7 +729,7 @@ Name | Description|
 
 ### neuro image push
 
-Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contains tag.<br/>If tags not specified 'latest' will be used as value.<br/>
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag.<br/>If tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
@@ -723,6 +782,34 @@ neuro pull image://username/my-alpine:production alpine:from-registry
 Name | Description|
 |----|------------|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro image tags
+
+List tags for image in platform registry.<br/><br/>Image name must be URL with image:// scheme.<br/>
+
+**Usage:**
+
+```bash
+neuro image tags [OPTIONS] IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro image tags image://myfriend/alpine
+neuro image tags image:myimage
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
@@ -961,7 +1048,7 @@ Name | Description|
 
 ## neuro acl
 
-ACL operations.
+Access Control List management.
 
 **Usage:**
 
@@ -1098,7 +1185,7 @@ Name | Description|
 
 ## neuro run
 
-Run an image with predefined configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined resources configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
 
 **Usage:**
 
@@ -1110,10 +1197,11 @@ neuro run [OPTIONS] IMAGE [CMD]...
 
 ```bash
 
-# Starts a container pytorch:latest with two paths mounted.
-# Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
-# storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-neuro run pytorch:latest --volume=HOME
+# Starts a container pytorch:latest on a machine with smaller GPU resources
+# (see exact values in `neuro config show`) and with two volumes mounted:
+#   storage://~           --> /var/storage/home (in read-write mode),
+#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 ```
 
@@ -1121,18 +1209,19 @@ neuro run pytorch:latest --volume=HOME
 
 Name | Description|
 |----|------------|
-|_\-s, --preset PRESET_|Predefined job profile|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
-|_\-d, --description DESC_|Add optional description in free format|
+|_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
@@ -1179,6 +1268,7 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--help_|Show this message and exit.|
 
@@ -1401,20 +1491,36 @@ Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have s
 **Usage:**
 
 ```bash
-neuro cp [OPTIONS] SOURCES... DESTINATION
+neuro cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
 
 ```bash
 
-# copy local file ./foo into remote storage root
-neuro cp ./foo storage:///
-neuro cp ./foo storage:/
+# copy local files into remote storage root
+neuro cp foo.txt bar/baz.dat storage:
+neuro cp foo.txt bar/baz.dat -t storage:
 
-# download remote file foo into local file foo with
+# copy local directory `foo` into existing remote directory `bar`
+neuro cp -r foo -t storage:bar
+
+# copy the content of local directory `foo` into existing remote
+# directory `bar`
+neuro cp -r -T storage:foo storage:bar
+
+# download remote file `foo.txt` into local file `/tmp/foo.txt` with
 # explicit file:// scheme set
-neuro cp storage:///foo file:///foo
+neuro cp storage:foo.txt file:///tmp/foo.txt
+neuro cp -T storage:foo.txt file:///tmp/foo.txt
+neuro cp storage:foo.txt file:///tmp
+neuro cp storage:foo.txt -t file:///tmp
+
+# download other user's remote file into the current directory
+neuro cp storage://{username}/foo.txt .
+
+# download only files with extension `.out` into the current directory
+neuro cp storage:results/*.out .
 
 ```
 
@@ -1423,6 +1529,9 @@ neuro cp storage:///foo file:///foo
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-p, --progress_|Show progress, off by default|
 |_--help_|Show this message and exit.|
 
@@ -1431,7 +1540,7 @@ Name | Description|
 
 ## neuro ls
 
-List directory contents.<br/><br/>By default PATH is equal user`s home dir \(storage:)
+List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
 
 **Usage:**
 
@@ -1465,10 +1574,10 @@ neuro rm [OPTIONS] PATHS...
 
 ```bash
 
-neuro rm storage:///foo/bar
-neuro rm storage:/foo/bar
+neuro rm storage:foo/bar
 neuro rm storage://{username}/foo/bar
 neuro rm --recursive storage://{username}/foo/
+neuro rm storage:foo/**/*.tmp
 
 ```
 
@@ -1477,6 +1586,7 @@ neuro rm --recursive storage://{username}/foo/
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|remove directories and their contents recursively|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -1509,20 +1619,30 @@ Move or rename files and directories.<br/><br/>SOURCE must contain path to the f
 **Usage:**
 
 ```bash
-neuro mv [OPTIONS] SOURCES... DESTINATION
+neuro mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
 
 ```bash
 
-# move or rename remote file
-neuro mv storage://{username}/foo.txt storage://{username}/bar.txt
-neuro mv storage://{username}/foo.txt storage://~/bar/baz/foo.txt
+# move and rename remote file
+neuro mv storage:foo.txt storage:bar/baz.dat
+neuro mv -T storage:foo.txt storage:bar/baz.dat
 
-# move or rename remote directory
-neuro mv storage://{username}/foo/ storage://{username}/bar/
-neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
+# move remote files into existing remote directory
+neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
+neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
+
+# move the content of remote directory into other existing
+# remote directory
+neuro mv -T storage:foo storage:bar
+
+# move remote file into other user's directory
+neuro mv storage:foo.txt storage://{username}/bar.dat
+
+# move remote file from other user's directory
+neuro mv storage://{username}/foo.txt storage:bar.dat
 
 ```
 
@@ -1530,6 +1650,9 @@ neuro mv storage://{username}/foo/ storage://{username}/bar/baz/foo/
 
 Name | Description|
 |----|------------|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_--help_|Show this message and exit.|
 
 
@@ -1556,7 +1679,7 @@ Name | Description|
 
 ## neuro push
 
-Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contains tag.<br/>If tags not specified 'latest' will be used as value.<br/>
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag.<br/>If tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 

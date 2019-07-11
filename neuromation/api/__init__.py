@@ -26,7 +26,6 @@ from .images import DockerImage, DockerImageOperation
 from .jobs import (
     Container,
     HTTPPort,
-    Image,
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -45,7 +44,6 @@ __all__ = (
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
     "DockerImageOperation",
-    "Image",
     "ImageNameParser",
     "JobDescription",
     "JobStatus",

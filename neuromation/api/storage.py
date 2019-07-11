@@ -1,8 +1,10 @@
 import asyncio
 import enum
 import errno
+import fnmatch
 import logging
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional
@@ -49,16 +51,6 @@ class FileStatus:
     def name(self) -> str:
         return Path(self.path).name
 
-    @classmethod
-    def from_api(cls, values: Dict[str, Any]) -> "FileStatus":
-        return cls(
-            path=values["path"],
-            type=FileStatusType(values["type"]),
-            size=int(values["length"]),
-            modification_time=int(values["modificationTime"]),
-            permission=values["permission"],
-        )
-
 
 class Storage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
@@ -77,9 +69,68 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url) as resp:
             res = await resp.json()
             return [
-                FileStatus.from_api(status)
+                _file_status_from_api(status)
                 for status in res["FileStatuses"]["FileStatus"]
             ]
+
+    async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
+        if not _has_magic(uri.path):
+            yield uri
+            return
+        basename = uri.name
+        glob_in_dir: Callable[[URL, str, bool], AsyncIterator[URL]]
+        if not _has_magic(basename):
+            glob_in_dir = self._glob0
+        elif not _isrecursive(basename):
+            glob_in_dir = self._glob1
+        else:
+            glob_in_dir = self._glob2
+        async for parent in self.glob(uri.parent, dironly=True):
+            async for x in glob_in_dir(parent, basename, dironly):
+                yield x
+
+    async def _glob2(
+        self, parent: URL, pattern: str, dironly: bool
+    ) -> AsyncIterator[URL]:
+        assert _isrecursive(pattern)
+        yield parent
+        async for x in self._rlistdir(parent, dironly):
+            yield x
+
+    async def _glob1(
+        self, parent: URL, pattern: str, dironly: bool
+    ) -> AsyncIterator[URL]:
+        allow_hidden = _ishidden(pattern)
+        match = re.compile(fnmatch.translate(pattern)).fullmatch
+        async for stat in self._iterdir(parent, dironly):
+            name = stat.path
+            if (allow_hidden or not _ishidden(name)) and match(name):
+                yield parent / name
+
+    async def _glob0(
+        self, parent: URL, basename: str, dironly: bool
+    ) -> AsyncIterator[URL]:
+        uri = parent / basename
+        try:
+            await self.stats(uri)
+        except ResourceNotFound:
+            return
+        yield uri
+
+    async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[FileStatus]:
+        for stat in await self.ls(uri):
+            if not dironly or stat.is_dir():
+                yield stat
+
+    async def _rlistdir(self, uri: URL, dironly: bool) -> AsyncIterator[URL]:
+        async for stat in self._iterdir(uri, dironly):
+            name = stat.path
+            if not _ishidden(name):
+                x = uri / name
+                yield x
+                if stat.is_dir():
+                    async for y in self._rlistdir(x, dironly):
+                        yield y
 
     async def mkdirs(
         self, uri: URL, *, parents: bool = False, exist_ok: bool = False
@@ -127,7 +178,19 @@ class Storage(metaclass=NoPublicConstructor):
 
         async with self._core.request("GET", url) as resp:
             res = await resp.json()
-            return FileStatus.from_api(res["FileStatus"])
+            return _file_status_from_api(res["FileStatus"])
+
+    async def _is_dir(self, uri: URL) -> bool:
+        if uri.scheme == "storage":
+            try:
+                stat = await self.stats(uri)
+                return stat.is_dir()
+            except ResourceNotFound:
+                pass
+        elif uri.scheme == "file":
+            path = _extract_path(uri)
+            return path.is_dir()
+        return False
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
@@ -209,14 +272,10 @@ class Storage(metaclass=NoPublicConstructor):
                 raise
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
-        if not dst.name:
-            # file:src/file.txt -> storage:dst/ ==> storage:dst/file.txt
-            dst = dst / src.name
         try:
             stats = await self.stats(dst)
             if stats.is_dir():
-                # target exists and it is a folder
-                dst = dst / src.name
+                raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
         except ResourceNotFound:
             # target doesn't exist, lookup for parent dir
             try:
@@ -235,9 +294,6 @@ class Storage(metaclass=NoPublicConstructor):
     async def upload_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
     ) -> None:
-        if not dst.name:
-            # /dst/ ==> /dst for recursive copy
-            dst = dst / src.name
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src).resolve()
@@ -274,16 +330,6 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        try:
-            if path.is_dir():
-                path = path / src.name
-        except FileNotFoundError:
-            pass
-        except OSError as e:
-            if getattr(e, "winerror", None) not in (1, 87):
-                raise
-            # Ignore stat errors for device files like NUL or CON on Windows.
-            # See https://bugs.python.org/issue37074
         loop = asyncio.get_event_loop()
         with path.open("wb") as stream:
             stat = await self.stats(src)
@@ -321,3 +367,28 @@ class Storage(metaclass=NoPublicConstructor):
                 )
             else:
                 log.warning("Cannot download %s", child)  # pragma: no cover
+
+
+_magic_check = re.compile("(?:[*?[])")
+
+
+def _has_magic(s: str) -> bool:
+    return _magic_check.search(s) is not None
+
+
+def _ishidden(name: str) -> bool:
+    return name.startswith(".")
+
+
+def _isrecursive(pattern: str) -> bool:
+    return pattern == "**"
+
+
+def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
+    return FileStatus(
+        path=values["path"],
+        type=FileStatusType(values["type"]),
+        size=int(values["length"]),
+        modification_time=int(values["modificationTime"]),
+        permission=values["permission"],
+    )

@@ -238,3 +238,4 @@ release:
 update-deps-fast: REQUIREMENTS_CHANGED:=$(shell git diff --name-status --diff-filter=d $(FROM) $(TO) . |  awk '{if ($$NF ~ "$(DEPS_REGEXP)") print substr($$NF, 8)}')
 update-deps-fast:
 	@ [ -z "${REQUIREMENTS_CHANGED}" ] || (make update-deps)
+

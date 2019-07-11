@@ -3,21 +3,25 @@ import logging
 import os
 import shlex
 import sys
+import uuid
 import webbrowser
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import click
+from yarl import URL
 
 from neuromation.api import (
+    CONFIG_ENV_NAME,
+    Container,
     DockerImage,
     HTTPPort,
-    Image,
     ImageNameParser,
     JobDescription,
     JobStatus,
     Resources,
     Volume,
 )
+from neuromation.api.jobs import _volume_from_api
 
 from .defaults import (
     GPU_MODELS,
@@ -178,6 +182,12 @@ def job() -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option(
+    "--pass-config/--no-pass-config",
+    default=False,
+    show_default=True,
+    help="Upload neuro config to the job",
+)
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def submit(
@@ -198,6 +208,7 @@ async def submit(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     """
@@ -233,6 +244,7 @@ async def submit(
         name=name,
         description=description,
         wait_start=wait_start,
+        pass_config=pass_config,
         browse=browse,
     )
 
@@ -490,7 +502,15 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option("-s", "--preset", metavar="PRESET", help="Predefined job profile")
+@click.option(
+    "-s",
+    "--preset",
+    metavar="PRESET",
+    help=(
+        "Predefined resource configuration (to see available values, "
+        "run `neuro config show`)"
+    ),
+)
 @click.option(
     "-x/-X",
     "--extshm/--no-extshm",
@@ -533,7 +553,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "-d",
     "--description",
     metavar="DESC",
-    help="Add optional description in free format",
+    help="Optional job description in free format",
 )
 @deprecated_quiet_option
 @click.option(
@@ -565,6 +585,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Wait for a job start or failure",
 )
+@click.option(
+    "--pass-config/--no-pass-config",
+    default=False,
+    show_default=True,
+    help="Upload neuro config to the job",
+)
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @async_cmd()
 async def run(
@@ -582,10 +608,11 @@ async def run(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     """
-    Run an image with predefined configuration.
+    Run a job with predefined resources configuration.
 
     IMAGE container image name.
 
@@ -593,15 +620,17 @@ async def run(
 
     Examples:
 
-    # Starts a container pytorch:latest with two paths mounted.
-    # Directory storage://<USERNAME> is mounted as /var/storage/home in read-write mode,
-    # storage://neuromation is mounted as :/var/storage/neuromation as read-only.
-    neuro run pytorch:latest --volume=HOME
+    # Starts a container pytorch:latest on a machine with smaller GPU resources
+    # (see exact values in `neuro config show`) and with two volumes mounted:
+    #   storage://~           --> /var/storage/home (in read-write mode),
+    #   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+    neuro run --preset=gpu-small --volume=HOME pytorch:latest
     """
-    if preset:
-        job_preset = root.resource_presets[preset]
-    else:
-        job_preset = next(iter(root.resource_presets.values()))
+    if not preset:
+        preset = next(iter(root.resource_presets.keys()))
+    job_preset = root.resource_presets[preset]
+
+    log.info(f"Using preset '{preset}': {job_preset}")
 
     await run_job(
         root,
@@ -621,6 +650,7 @@ async def run(
         name=name,
         description=description,
         wait_start=wait_start,
+        pass_config=pass_config,
         browse=browse,
     )
 
@@ -660,6 +690,7 @@ async def run_job(
     name: Optional[str],
     description: str,
     wait_start: bool,
+    pass_config: bool,
     browse: bool,
 ) -> None:
     if http_auth is None:
@@ -674,8 +705,6 @@ async def run_job(
     if browse and not wait_start:
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
 
-    username = root.username
-
     env_dict = build_env(env, env_file)
 
     cmd = " ".join(cmd) if cmd is not None else None
@@ -683,21 +712,22 @@ async def run_job(
 
     log.info(f"Using image '{image.as_url_str()}'")
     log.debug(f"IMAGE: {image}")
-    image_obj = Image(image=image.as_repo_str(), command=cmd)
 
-    resources = Resources.create(cpu, gpu, gpu_model, memory, extshm)
+    resources = Resources(memory, cpu, gpu, gpu_model, extshm)
 
     volumes: Set[Volume] = set()
     for v in volume:
         if v == "HOME":
-            volumes.add(Volume.from_cli(username, "storage://~:/var/storage/home:rw"))
             volumes.add(
-                Volume.from_cli(
-                    username, "storage://neuromation:/var/storage/neuromation:ro"
+                root.client.jobs.parse_volume("storage://~:/var/storage/home:rw")
+            )
+            volumes.add(
+                root.client.jobs.parse_volume(
+                    "storage://neuromation:/var/storage/neuromation:ro"
                 )
             )
         else:
-            volumes.add(Volume.from_cli(username, v))
+            volumes.add(root.client.jobs.parse_volume(v))
 
     if volumes:
         log.info(
@@ -705,15 +735,20 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    job = await root.client.jobs.submit(
-        image=image_obj,
-        resources=resources,
+    if pass_config:
+        await upload_and_map_config(env_dict, root, volumes)
+
+    container = Container(
+        image=image.as_repo_str(),
+        command=cmd,
         http=HTTPPort(http, http_auth) if http else None,
-        volumes=list(volumes) if volumes else None,
-        is_preemptible=preemptible,
-        name=name,
-        description=description,
+        resources=resources,
         env=env_dict,
+        volumes=list(volumes),
+    )
+
+    job = await root.client.jobs.run(
+        container, is_preemptible=preemptible, name=name, description=description
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -724,6 +759,40 @@ async def run_job(
     progress.close()
     if browse:
         await browse_job(root, job)
+
+
+async def upload_and_map_config(
+    env_dict: Dict[str, str], root: Root, volumes: Set[Volume]
+) -> None:
+    if CONFIG_ENV_NAME in env_dict:
+        raise ValueError(
+            f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
+        )
+
+    # store the Neuro CLI config on the storage under some random path
+    nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
+    random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
+    storage_nmrc_folder = f"storage://{root.username}/nmrc/"
+    storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
+    local_nmrc_folder = "/var/storage/nmrc/"
+    local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
+    if not root.quiet:
+        click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
+        click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
+    await root.client.storage.mkdirs(
+        URL(storage_nmrc_folder), parents=True, exist_ok=True
+    )
+    await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
+    # specify a container volume and mount the storage path
+    # into specific container path
+    data: Dict[str, Any] = {
+        "src_storage_uri": storage_nmrc_folder,
+        "dst_path": local_nmrc_folder,
+        "read_only": False,
+    }
+    volumes.add(_volume_from_api(data))
+
+    env_dict[CONFIG_ENV_NAME] = local_nmrc_path
 
 
 async def browse_job(root: Root, job: JobDescription) -> None:

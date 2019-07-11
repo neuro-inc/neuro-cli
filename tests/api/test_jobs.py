@@ -5,15 +5,15 @@ from aiohttp import web
 
 from neuromation.api import (
     Client,
+    Container,
     HTTPPort,
-    Image,
-    JobDescription,
     JobStatus,
     JobTelemetry,
     ResourceNotFound,
     Resources,
     Volume,
 )
+from neuromation.api.jobs import _job_description_from_api
 from tests import _TestServerFactory
 
 
@@ -249,7 +249,7 @@ async def test_status_failed(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
 async def test_status_with_ssh_and_http(
@@ -308,10 +308,10 @@ async def test_status_with_ssh_and_http(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit(
+async def test_job_run(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -381,8 +381,7 @@ async def test_job_submit(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
@@ -391,18 +390,19 @@ async def test_job_submit(
                 False,
             ),
         ]
-        ret = await client.jobs.submit(
-            image=image,
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
-            http=HTTPPort(8181),
             volumes=volumes,
-            is_preemptible=False,
+            http=HTTPPort(8181),
         )
+        ret = await client.jobs.run(container=container, is_preemptible=False)
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit_with_name_and_description(
+async def test_job_run_with_name_and_description(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -476,8 +476,7 @@ async def test_job_submit_with_name_and_description(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
@@ -486,19 +485,23 @@ async def test_job_submit_with_name_and_description(
                 False,
             ),
         ]
-        ret = await client.jobs.submit(
-            image=image,
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
-            http=HTTPPort(8181),
             volumes=volumes,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(
+            container,
             is_preemptible=False,
             name="test-job-name",
             description="job description",
         )
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit_no_volumes(
+async def test_job_run_no_volumes(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -518,7 +521,7 @@ async def test_job_submit_no_volumes(
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
             "resources": {
-                "cpu": 1.0,
+                "cpu": 7,
                 "memory_mb": 16384,
                 "gpu": 1,
                 "shm": False,
@@ -540,7 +543,7 @@ async def test_job_submit_no_volumes(
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
                     "memory_mb": 16384,
-                    "cpu": 7.0,
+                    "cpu": 7,
                     "shm": True,
                     "gpu": 1,
                     "gpu_model": "test-gpu-model",
@@ -559,22 +562,24 @@ async def test_job_submit_no_volumes(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
-        ret = await client.jobs.submit(
-            image=image,
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
             http=HTTPPort(8181),
-            volumes=None,
+        )
+        ret = await client.jobs.run(
+            container,
             is_preemptible=False,
             name="test-job-name",
             description="job description",
         )
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
 
 
-async def test_job_submit_preemptible(
+async def test_job_run_preemptible(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -647,8 +652,7 @@ async def test_job_submit_preemptible(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = Image(image="submit-image-name", command="submit-command")
-        resources = Resources.create(7, 1, "test-gpu-model", 16384, True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
             Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
@@ -657,25 +661,98 @@ async def test_job_submit_preemptible(
                 False,
             ),
         ]
-        ret = await client.jobs.submit(
-            image=image,
+        container = Container(
+            image="submit-image-name",
+            command="submit-command",
             resources=resources,
-            http=HTTPPort(8181),
             volumes=volumes,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(
+            container,
             is_preemptible=True,
             name="test-job-name",
             description="job description",
         )
 
-    assert ret == JobDescription.from_api(JSON)
+    assert ret == _job_description_from_api(JSON)
+
+
+async def test_job_run_schedule_timeout(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+        "schedule_timeout": 5,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "resources": {
+                    "memory_mb": 16384,
+                    "cpu": 7,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+            },
+            "is_preemptible": False,
+            "schedule_timeout": 5,
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        container = Container(
+            image="submit-image-name", command="submit-command", resources=resources
+        )
+        ret = await client.jobs.run(container=container, schedule_timeout=5)
+
+    assert ret == _job_description_from_api(JSON)
 
 
 @pytest.mark.parametrize(
     "volume", ["storage:///", ":", "::::", "", "storage:///data/:/data/rest:wrong"]
 )
-def test_volume_from_str_fail(volume: str) -> None:
-    with pytest.raises(ValueError):
-        Volume.from_cli("testuser", volume)
+async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        with pytest.raises(ValueError):
+            client.jobs.parse_volume(volume)
 
 
 def create_job_response(
@@ -732,7 +809,7 @@ async def test_list_no_filter(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list()
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == job_descriptions
 
 
@@ -768,7 +845,7 @@ async def test_list_filter_by_name(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(name=name_1)
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == job_descriptions[:3]
 
 
@@ -805,7 +882,7 @@ async def test_list_filter_by_statuses(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses)
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == [job for job in job_descriptions if job.status in statuses]
 
 
@@ -813,40 +890,46 @@ class TestVolumeParsing:
     @pytest.mark.parametrize(
         "volume_param", ["dir", "storage://dir", "storage://dir:/var/www:rw:ro"]
     )
-    def test_incorrect_params_count(self, volume_param: str) -> None:
-        with pytest.raises(ValueError, match=r"Invalid volume specification"):
-            Volume.from_cli("bob", volume_param)
+    async def test_incorrect_params_count(
+        self, volume_param: str, make_client: _MakeClient
+    ) -> None:
+        async with make_client("https://example.com") as client:
+            with pytest.raises(ValueError, match=r"Invalid volume specification"):
+                client.jobs.parse_volume(volume_param)
 
     @pytest.mark.parametrize(
         "volume_param", ["storage://dir:/var/www:write", "storage://dir:/var/www:"]
     )
-    def test_incorrect_mode(self, volume_param: str) -> None:
-        with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
-            Volume.from_cli("bob", volume_param)
+    async def test_incorrect_mode(
+        self, volume_param: str, make_client: _MakeClient
+    ) -> None:
+        async with make_client("https://example.com") as client:
+            with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
+                client.jobs.parse_volume(volume_param)
 
     @pytest.mark.parametrize(
         "volume_param,volume",
         [
             (
-                "storage://bob/dir:/var/www",
+                "storage://user/dir:/var/www",
                 Volume(
-                    storage_path="storage://bob/dir",
+                    storage_path="storage://user/dir",
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://bob/dir:/var/www:rw",
+                "storage://user/dir:/var/www:rw",
                 Volume(
-                    storage_path="storage://bob/dir",
+                    storage_path="storage://user/dir",
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://bob:/var/www:ro",
+                "storage://user:/var/www:ro",
                 Volume(
-                    storage_path="storage://bob",
+                    storage_path="storage://user",
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -854,7 +937,7 @@ class TestVolumeParsing:
             (
                 "storage://~/:/var/www:ro",
                 Volume(
-                    storage_path="storage://bob",
+                    storage_path="storage://user",
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -862,7 +945,7 @@ class TestVolumeParsing:
             (
                 "storage:dir:/var/www:ro",
                 Volume(
-                    storage_path="storage://bob/dir",
+                    storage_path="storage://user/dir",
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -870,15 +953,18 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_path="storage://bob",
+                    storage_path="storage://user",
                     container_path="/var/www",
                     read_only=True,
                 ),
             ),
         ],
     )
-    def test_positive(self, volume_param: str, volume: Volume) -> None:
-        assert Volume.from_cli("bob", volume_param) == volume
+    async def test_positive(
+        self, volume_param: str, volume: Volume, make_client: _MakeClient
+    ) -> None:
+        async with make_client("https://example.com") as client:
+            assert client.jobs.parse_volume(volume_param) == volume
 
 
 async def test_list_filter_by_name_and_statuses(
@@ -919,5 +1005,5 @@ async def test_list_filter_by_name_and_statuses(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses, name=name)
 
-    job_descriptions = [JobDescription.from_api(job) for job in jobs]
+    job_descriptions = [_job_description_from_api(job) for job in jobs]
     assert ret == job_descriptions[:2]

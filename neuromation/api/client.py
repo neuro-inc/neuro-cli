@@ -42,7 +42,7 @@ class Client(metaclass=NoPublicConstructor):
         self._core = _Core(
             connector, self._config.url, self._config.auth_token.token, cookie, timeout
         )
-        self._jobs = Jobs._create(self._core, self._config)
+        self._jobs = Jobs._create(self._core, self._config, self.username)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core)
         self._images: Optional[Images] = None
