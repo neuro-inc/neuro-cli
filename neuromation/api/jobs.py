@@ -58,6 +58,7 @@ class HTTPPort:
 class Container:
     image: RemoteImage
     resources: Resources
+    entrypoint: Optional[str] = None
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
@@ -335,6 +336,7 @@ def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Conta
     return Container(
         image=parser.parse_remote(data["image"]),
         resources=_resources_from_api(data["resources"]),
+        entrypoint=data.get("entrypoint", None),
         command=data.get("command", None),
         http=_http_port_from_api(data["http"]) if "http" in data else None,
         env=data.get("env", dict()),
@@ -347,6 +349,8 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         "image": container.image.as_repo_str(),
         "resources": _resources_to_api(container.resources),
     }
+    if container.entrypoint:
+        primitive["entrypoint"] = container.command
     if container.command:
         primitive["command"] = container.command
     if container.http:

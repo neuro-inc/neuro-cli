@@ -193,6 +193,10 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 #   storage://neuromation --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
+# Starts a container using the custom image my-ubuntu:latest stored in neuromation
+# registry, run /script.sh and pass arg1 and arg2 as its arguments:
+neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+
 ```
 
 **Options:**
@@ -208,6 +212,7 @@ Name | Description|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
@@ -237,6 +242,10 @@ neuro job submit [OPTIONS] IMAGE [CMD]...
 # Directory /mod mounted to /mod directory in read-write mode.
 neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
+# Starts a container using the custom image my-ubuntu:latest stored in neuromation
+# registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
+neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+
 ```
 
 **Options:**
@@ -255,6 +264,7 @@ Name | Description|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
@@ -1203,6 +1213,10 @@ neuro run [OPTIONS] IMAGE [CMD]...
 #   storage://neuromation --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
+# Starts a container using the custom image my-ubuntu:latest stored in neuromation
+# registry, run /script.sh and pass arg1 and arg2 as its arguments:
+neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+
 ```
 
 **Options:**
@@ -1218,6 +1232,7 @@ Name | Description|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
@@ -1247,6 +1262,10 @@ neuro submit [OPTIONS] IMAGE [CMD]...
 # Directory /mod mounted to /mod directory in read-write mode.
 neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
 
+# Starts a container using the custom image my-ubuntu:latest stored in neuromation
+# registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
+neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+
 ```
 
 **Options:**
@@ -1265,6 +1284,7 @@ Name | Description|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
