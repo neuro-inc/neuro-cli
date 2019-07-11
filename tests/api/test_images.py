@@ -771,7 +771,6 @@ class TestRegistry:
         self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
     ) -> None:
         JSON = {"repositories": ["bob/alpine", "jill/bananas"]}
-        expected_urls = ["image://bob/alpine", "image://jill/bananas"]
 
         async def handler(request: web.Request) -> web.Response:
             return web.json_response(JSON)
