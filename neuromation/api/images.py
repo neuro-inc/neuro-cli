@@ -179,18 +179,6 @@ class Images(metaclass=NoPublicConstructor):
             ret = await resp.json()
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]
 
-    def parse_local(self, image: str) -> LocalImage:
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        return parser.parse_as_docker_image(image)
-
-    def parse_remote(self, image: str) -> RemoteImage:
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        return parser.parse_as_neuro_image(image)
-
 
 class _DummyProgress(AbstractDockerImageProgress):
     def start(self, src: str, dst: str) -> None:

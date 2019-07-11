@@ -772,15 +772,6 @@ async def test_job_run_schedule_timeout(
     assert ret == _job_description_from_api(JSON, parser)
 
 
-@pytest.mark.parametrize(
-    "volume", ["storage:///", ":", "::::", "", "storage:///data/:/data/rest:wrong"]
-)
-async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> None:
-    async with make_client("https://example.com") as client:
-        with pytest.raises(ValueError):
-            client.jobs.parse_volume(volume)
-
-
 def create_job_response(
     id: str, status: str, name: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -930,7 +921,7 @@ class TestVolumeParsing:
     ) -> None:
         async with make_client("https://example.com") as client:
             with pytest.raises(ValueError, match=r"Invalid volume specification"):
-                client.jobs.parse_volume(volume_param)
+                client.parse.volume(volume_param)
 
     @pytest.mark.parametrize(
         "volume_param", ["storage://dir:/var/www:write", "storage://dir:/var/www:"]
@@ -940,7 +931,7 @@ class TestVolumeParsing:
     ) -> None:
         async with make_client("https://example.com") as client:
             with pytest.raises(ValueError, match=r"Wrong ReadWrite/ReadOnly mode spec"):
-                client.jobs.parse_volume(volume_param)
+                client.parse.volume(volume_param)
 
     @pytest.mark.parametrize(
         "volume_param,volume",
@@ -999,7 +990,7 @@ class TestVolumeParsing:
         self, volume_param: str, volume: Volume, make_client: _MakeClient
     ) -> None:
         async with make_client("https://example.com") as client:
-            assert client.jobs.parse_volume(volume_param) == volume
+            assert client.parse.volume(volume_param) == volume
 
 
 async def test_list_filter_by_name_and_statuses(

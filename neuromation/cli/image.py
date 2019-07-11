@@ -45,11 +45,9 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
     progress = DockerImageProgress.create(
         type=DockerImageOperation.PUSH, tty=root.tty, quiet=root.quiet
     )
-    local_obj = root.client.images.parse_local(local_image)
+    local_obj = root.client.parse.local_image(local_image)
     if remote_image is not None:
-        remote_obj: Optional[RemoteImage] = root.client.images.parse_remote(
-            remote_image
-        )
+        remote_obj: Optional[RemoteImage] = root.client.parse.remote_image(remote_image)
     else:
         remote_obj = None
     with contextlib.closing(progress):
@@ -82,9 +80,9 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     progress = DockerImageProgress.create(
         type=DockerImageOperation.PULL, tty=root.tty, quiet=root.quiet
     )
-    remote_obj = root.client.images.parse_remote(remote_image)
+    remote_obj = root.client.parse.remote_image(remote_image)
     if local_image is not None:
-        local_obj: Optional[LocalImage] = root.client.images.parse_local(local_image)
+        local_obj: Optional[LocalImage] = root.client.parse.local_image(local_image)
     else:
         local_obj = None
     with contextlib.closing(progress):

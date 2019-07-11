@@ -704,18 +704,6 @@ class TestImages:
             result = await client.images.pull(image)
         assert result == local_image
 
-    async def test_parse_local(self, make_client: _MakeClient) -> None:
-        async with make_client("https://api.localhost.localdomain") as client:
-            result = client.images.parse_local("bananas:latest")
-        assert result == LocalImage("bananas", "latest")
-
-    async def test_parse_remote(self, make_client: _MakeClient) -> None:
-        async with make_client("https://api.localhost.localdomain") as client:
-            result = client.images.parse_remote("image://bob/bananas:latest")
-        assert result == RemoteImage(
-            "bananas", "latest", owner="bob", registry="registry-dev.neu.ro"
-        )
-
 
 class TestRegistry:
     @pytest.mark.skipif(

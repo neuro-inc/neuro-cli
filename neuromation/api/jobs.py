@@ -15,8 +15,8 @@ from neuromation.utils import kill_proc_tree
 
 from .config import _Config
 from .core import IllegalArgumentError, _Core
+from .parser import Volume
 from .parsing_utils import RemoteImage, _ImageNameParser
-from .url_utils import normalize_storage_path_uri
 from .utils import NoPublicConstructor
 
 
@@ -46,13 +46,6 @@ class JobStatus(str, enum.Enum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     UNKNOWN = "unknown"  # invalid status code, a default value is status is not sent
-
-
-@dataclass(frozen=True)
-class Volume:
-    storage_path: str
-    container_path: str
-    read_only: bool
 
 
 @dataclass(frozen=True)
@@ -109,10 +102,9 @@ class JobTelemetry:
 
 
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config, username: str) -> None:
+    def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
-        self._username = username
 
     async def run(
         self,
@@ -302,26 +294,6 @@ class Jobs(metaclass=NoPublicConstructor):
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
-
-    def parse_volume(self, volume: str) -> Volume:
-        parts = volume.split(":")
-
-        read_only = False
-        if len(parts) == 4:
-            if parts[-1] not in ["ro", "rw"]:
-                raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
-            read_only = parts.pop() == "ro"
-        elif len(parts) != 3:
-            raise ValueError(f"Invalid volume specification '{volume}'")
-
-        container_path = parts.pop()
-        storage_path = normalize_storage_path_uri(URL(":".join(parts)), self._username)
-
-        return Volume(
-            storage_path=str(storage_path),
-            container_path=container_path,
-            read_only=read_only,
-        )
 
 
 #  ############## Internal helpers ###################

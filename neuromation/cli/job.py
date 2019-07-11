@@ -704,16 +704,14 @@ async def run_job(
     volumes: Set[Volume] = set()
     for v in volume:
         if v == "HOME":
+            volumes.add(root.client.parse.volume("storage://~:/var/storage/home:rw"))
             volumes.add(
-                root.client.jobs.parse_volume("storage://~:/var/storage/home:rw")
-            )
-            volumes.add(
-                root.client.jobs.parse_volume(
+                root.client.parse.volume(
                     "storage://neuromation:/var/storage/neuromation:ro"
                 )
             )
         else:
-            volumes.add(root.client.jobs.parse_volume(v))
+            volumes.add(root.client.parse.volume(v))
 
     if pass_config:
         if CONFIG_ENV_NAME in env_dict:
