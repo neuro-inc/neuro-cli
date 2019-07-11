@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from typing import Optional
 
@@ -45,9 +46,10 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
         type=DockerImageOperation.PUSH, tty=root.tty, quiet=root.quiet
     )
 
-    result_remote_image = await root.client.images.push(
-        local_image, remote_image, progress=progress
-    )
+    with contextlib.closing(progress):
+        result_remote_image = await root.client.images.push(
+            local_image, remote_image, progress=progress
+        )
     click.echo(result_remote_image)
 
 
@@ -74,9 +76,10 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     progress = DockerImageProgress.create(
         type=DockerImageOperation.PULL, tty=root.tty, quiet=root.quiet
     )
-    result_local_image = await root.client.images.pull(
-        remote_image, local_image, progress=progress
-    )
+    with contextlib.closing(progress):
+        result_local_image = await root.client.images.pull(
+            remote_image, local_image, progress=progress
+        )
     click.echo(result_local_image)
 
 

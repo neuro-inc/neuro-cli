@@ -698,7 +698,6 @@ async def run_job(
     log.debug(f'cmd="{cmd}"')
 
     log.info(f"Using image '{image}'")
-    log.debug(f"IMAGE: {image}")
 
     resources = Resources(memory, cpu, gpu, gpu_model, extshm)
 

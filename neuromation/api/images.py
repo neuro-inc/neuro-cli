@@ -78,36 +78,34 @@ class Images(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
         progress.start(local_str, remote_str)
 
-        with contextlib.closing(progress):
-            repo = remote_image.as_repo_str()
-            try:
-                await self._docker.images.tag(local_str, repo)
-            except DockerError as error:
-                if error.status == 404:
-                    raise ValueError(
-                        f"Image {local_str} was not found "
-                        "in your local docker images"
-                    ) from error
-            try:
-                stream = await self._docker.images.push(
-                    repo, auth=self._auth(), stream=True
-                )
-            except DockerError as error:
-                # TODO check this part when registry fixed
-                if error.status == 403:
-                    raise AuthorizationError(f"Access denied {remote_str}") from error
-                raise  # pragma: no cover
-            async for obj in stream:
-                if "error" in obj.keys():
-                    error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                    raise DockerError(900, error_details)
-                elif "id" in obj.keys() and obj["id"] != remote_image.tag:
-                    if "progress" in obj.keys():
-                        message = f"{obj['id']}: {obj['status']} {obj['progress']}"
-                    else:
-                        message = f"{obj['id']}: {obj['status']}"
-                    progress.progress(message, obj["id"])
-            return remote_image
+        repo = remote_image.as_repo_str()
+        try:
+            await self._docker.images.tag(local_str, repo)
+        except DockerError as error:
+            if error.status == 404:
+                raise ValueError(
+                    f"Image {local_str} was not found " "in your local docker images"
+                ) from error
+        try:
+            stream = await self._docker.images.push(
+                repo, auth=self._auth(), stream=True
+            )
+        except DockerError as error:
+            # TODO check this part when registry fixed
+            if error.status == 403:
+                raise AuthorizationError(f"Access denied {remote_str}") from error
+            raise  # pragma: no cover
+        async for obj in stream:
+            if "error" in obj.keys():
+                error_details = obj.get("errorDetail", {"message": "Unknown error"})
+                raise DockerError(900, error_details)
+            elif "id" in obj.keys() and obj["id"] != remote_image.tag:
+                if "progress" in obj.keys():
+                    message = f"{obj['id']}: {obj['status']} {obj['progress']}"
+                else:
+                    message = f"{obj['id']}: {obj['status']}"
+                progress.progress(message, obj["id"])
+        return remote_image
 
     async def pull(
         self,
@@ -134,37 +132,36 @@ class Images(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
         progress.start(remote_str, local_str)
 
-        with contextlib.closing(progress):
-            repo = remote_image.as_repo_str()
-            try:
-                stream = await self._docker.pull(
-                    repo, auth=self._auth(), repo=repo, stream=True
-                )
-                self._temporary_images.append(repo)
-            except DockerError as error:
-                if error.status == 404:
-                    raise ValueError(
-                        f"Image {remote_str} was not found " "in registry"
-                    ) from error
-                # TODO check this part when registry fixed
-                elif error.status == 403:
-                    raise AuthorizationError(f"Access denied {remote_str}") from error
-                raise  # pragma: no cover
+        repo = remote_image.as_repo_str()
+        try:
+            stream = await self._docker.pull(
+                repo, auth=self._auth(), repo=repo, stream=True
+            )
+            self._temporary_images.append(repo)
+        except DockerError as error:
+            if error.status == 404:
+                raise ValueError(
+                    f"Image {remote_str} was not found " "in registry"
+                ) from error
+            # TODO check this part when registry fixed
+            elif error.status == 403:
+                raise AuthorizationError(f"Access denied {remote_str}") from error
+            raise  # pragma: no cover
 
-            async for obj in stream:
-                if "error" in obj.keys():
-                    error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                    raise DockerError(900, error_details)
-                elif "id" in obj.keys() and obj["id"] != remote_image.tag:
-                    if "progress" in obj.keys():
-                        message = f"{obj['id']}: {obj['status']} {obj['progress']}"
-                    else:
-                        message = f"{obj['id']}: {obj['status']}"
-                    progress.progress(message, obj["id"])
+        async for obj in stream:
+            if "error" in obj.keys():
+                error_details = obj.get("errorDetail", {"message": "Unknown error"})
+                raise DockerError(900, error_details)
+            elif "id" in obj.keys() and obj["id"] != remote_image.tag:
+                if "progress" in obj.keys():
+                    message = f"{obj['id']}: {obj['status']} {obj['progress']}"
+                else:
+                    message = f"{obj['id']}: {obj['status']}"
+                progress.progress(message, obj["id"])
 
-            await self._docker.images.tag(repo, local_str)
+        await self._docker.images.tag(repo, local_str)
 
-            return local_image
+        return local_image
 
     async def ls(self) -> List[RemoteImage]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
