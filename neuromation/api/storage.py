@@ -2,7 +2,6 @@ import asyncio
 import enum
 import errno
 import fnmatch
-import logging
 import os
 import re
 from dataclasses import dataclass
@@ -22,8 +21,6 @@ from .url_utils import (
 )
 from .utils import NoPublicConstructor
 
-
-log = logging.getLogger(__name__)
 
 Printer = Callable[[str], None]
 
@@ -322,7 +319,11 @@ class Storage(metaclass=NoPublicConstructor):
                 # This case is for uploading non-regular file,
                 # e.g. blocking device or unix socket
                 # Coverage temporary skipped, the line is waiting for a champion
-                log.warning("Cannot upload %s", child)  # pragma: no cover
+                progress.fail(
+                    str(src / child.name),
+                    str(dst / child.name),
+                    f"Cannot upload {child}), not regular file/directory",
+                )  # pragma: no cover
 
     async def download_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -366,7 +367,11 @@ class Storage(metaclass=NoPublicConstructor):
                     src / child.name, dst / child.name, progress=progress
                 )
             else:
-                log.warning("Cannot download %s", child)  # pragma: no cover
+                progress.fail(
+                    str(src / child.name),
+                    str(dst / child.name),
+                    f"Cannot download {child}, not regular file/directory",
+                )  # pragma: no cover
 
 
 _magic_check = re.compile("(?:[*?[])")
