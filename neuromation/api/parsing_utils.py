@@ -48,12 +48,12 @@ class _ImageNameParser:
             )
         self._registry = registry_url.host
 
-    def parse_as_docker_image(self, image: str) -> LocalImage:
+    def parse_as_local_image(self, image: str) -> LocalImage:
         try:
             self._validate_image_name(image)
-            return self._parse_as_docker_image(image)
+            return self._parse_as_local_image(image)
         except ValueError as e:
-            raise ValueError(f"Invalid docker image '{image}': {e}") from e
+            raise ValueError(f"Invalid local image '{image}': {e}") from e
 
     def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> RemoteImage:
         try:
@@ -73,7 +73,7 @@ class _ImageNameParser:
         if self.is_in_neuro_registry(value):
             return self.parse_as_neuro_image(value)
         else:
-            img = self.parse_as_docker_image(value)
+            img = self.parse_as_local_image(value)
             return RemoteImage(img.name, img.tag)
 
     def is_in_neuro_registry(self, image: str) -> bool:
@@ -88,7 +88,7 @@ class _ImageNameParser:
             registry=self._registry,
         )
 
-    def convert_to_docker_image(self, image: RemoteImage) -> LocalImage:
+    def convert_to_local_image(self, image: RemoteImage) -> LocalImage:
         return LocalImage(name=image.name, tag=image.tag)
 
     def normalize(self, image: str) -> str:
@@ -97,7 +97,7 @@ class _ImageNameParser:
                 remote_image = self.parse_as_neuro_image(image)
                 image_normalized = str(remote_image)
             else:
-                local_image = self.parse_as_docker_image(image)
+                local_image = self.parse_as_local_image(image)
                 image_normalized = str(local_image)
         except ValueError:
             image_normalized = image
@@ -120,9 +120,9 @@ class _ImageNameParser:
                 "ambiguous value: valid as both local and remote image name"
             )
 
-    def _parse_as_docker_image(self, image: str) -> LocalImage:
+    def _parse_as_local_image(self, image: str) -> LocalImage:
         if self.is_in_neuro_registry(image):
-            raise ValueError("scheme 'image://' is not allowed for docker images")
+            raise ValueError("scheme 'image://' is not allowed for local images")
         name, tag = self._split_image_name(image, self.default_tag)
         return LocalImage(name=name, tag=tag)
 

@@ -481,7 +481,7 @@ class LocalImageType(click.ParamType):
                 "remote image cannot be used as local", ctx, param, self.name
             )
         else:
-            parsed_image = image_parser.parse_as_docker_image(value)
+            parsed_image = image_parser.parse_as_local_image(value)
         return parsed_image
 
 

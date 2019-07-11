@@ -115,7 +115,7 @@ class Images(metaclass=NoPublicConstructor):
                 self._config.auth_token.username,
                 self._config.cluster_config.registry_url,
             )
-            local_image = parser.convert_to_docker_image(remote_image)
+            local_image = parser.convert_to_local_image(remote_image)
 
         local_str = str(local_image)
         remote_str = str(remote_image)
