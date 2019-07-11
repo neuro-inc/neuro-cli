@@ -87,7 +87,9 @@ def test_images_complete_lifecycle(
     image_urls = [URL(line) for line in captured.out.splitlines() if line]
     for url in image_urls:
         assert url.scheme == "image"
-    image_url_without_tag = image_url.with_path(image_url.path.replace(f":{tag}", ":latest"))
+    image_url_without_tag = image_url.with_path(
+        image_url.path.replace(f":{tag}", ":latest")
+    )
     assert image_url_without_tag in image_urls
 
     # delete local
