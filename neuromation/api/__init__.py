@@ -4,7 +4,7 @@ from typing import Awaitable, Callable, Optional
 import aiohttp
 from yarl import URL
 
-from .abc import AbstractDockerImageProgress, AbstractProgress
+from .abc import AbstractDockerImageProgress, AbstractStorageProgress
 from .client import Client
 from .config_factory import (
     CONFIG_ENV_NAME,
@@ -62,7 +62,7 @@ __all__ = (
     "AuthError",
     "AuthenticationError",
     "AuthorizationError",
-    "AbstractProgress",
+    "AbstractStorageProgress",
     "AbstractDockerImageProgress",
     "ImageNameParser",
     "RemoteImage",

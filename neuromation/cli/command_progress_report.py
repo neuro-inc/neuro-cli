@@ -1,9 +1,9 @@
 from typing import Optional
 
-from neuromation.api import AbstractProgress
+from neuromation.api import AbstractStorageProgress
 
 
-class ProgressBase(AbstractProgress):
+class ProgressBase(AbstractStorageProgress):
     def start(self, src: str, dst: str, size: int) -> None:
         pass
 
@@ -15,6 +15,9 @@ class ProgressBase(AbstractProgress):
 
     def mkdir(self, src: str, dst: str) -> None:
         print(f"{src!r} -> {dst!r}")
+
+    def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
+        print(f"Failure: {src:!} -> {dst!r} [{message}]")
 
     @classmethod
     def create_progress(
@@ -55,3 +58,6 @@ class StandardPrintPercentOnly(ProgressBase):
 
     def mkdir(self, src: str, dst: str) -> None:
         print(f"Copy directory {src!r} -> {dst!r}.")
+
+    def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
+        print(f"Failure: {src:!} -> {dst!r} [{message}]")

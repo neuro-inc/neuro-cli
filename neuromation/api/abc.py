@@ -1,7 +1,7 @@
 import abc
 
 
-class AbstractProgress(abc.ABC):
+class AbstractStorageProgress(abc.ABC):
     @abc.abstractmethod
     def start(self, src: str, dst: str, size: int) -> None:  # pragma: no cover
         pass
@@ -16,6 +16,10 @@ class AbstractProgress(abc.ABC):
 
     @abc.abstractmethod
     def mkdir(self, src: str, dst: str) -> None:  # pragma: no cover
+        pass
+
+    @abc.abstractmethod
+    def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
         pass
 
 

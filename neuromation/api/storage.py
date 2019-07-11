@@ -12,7 +12,7 @@ from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 import attr
 from yarl import URL
 
-from .abc import AbstractProgress
+from .abc import AbstractStorageProgress
 from .config import _Config
 from .core import ResourceNotFound, _Core
 from .url_utils import (
@@ -237,26 +237,25 @@ class Storage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self, src: Path, dst: URL, *, progress: AbstractStorageProgress
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         with src.open("rb") as stream:
-            if progress is not None:
-                progress.start(str(src), str(dst), os.stat(stream.fileno()).st_size)
+            progress.start(str(src), str(dst), os.stat(stream.fileno()).st_size)
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
-                if progress is not None:
-                    progress.progress(str(src), str(dst), pos)
+                progress.progress(str(src), str(dst), pos)
                 yield chunk
                 chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
                 pos += len(chunk)
-            if progress is not None:
-                progress.complete(str(src), str(dst))
+            progress.complete(str(src), str(dst))
 
     async def upload_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
     ) -> None:
+        if progress is None:
+            progress = _DummyProgress()
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src)
@@ -292,8 +291,10 @@ class Storage(metaclass=NoPublicConstructor):
         await self.create(dst, self._iterate_file(path, dst, progress=progress))
 
     async def upload_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
     ) -> None:
+        if progress is None:
+            progress = _DummyProgress()
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
         path = _extract_path(src).resolve()
@@ -307,8 +308,7 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
-        if progress is not None:
-            progress.mkdir(str(path), str(dst))
+        progress.mkdir(str(path), str(dst))
         for child in path.iterdir():
             if child.is_file():
                 await self.upload_file(
@@ -325,8 +325,10 @@ class Storage(metaclass=NoPublicConstructor):
                 log.warning("Cannot upload %s", child)  # pragma: no cover
 
     async def download_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
     ) -> None:
+        if progress is None:
+            progress = _DummyProgress()
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
@@ -336,26 +338,24 @@ class Storage(metaclass=NoPublicConstructor):
             if not stat.is_file():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
             size = stat.size
-            if progress is not None:
-                progress.start(str(src), str(path), size)
+            progress.start(str(src), str(path), size)
             pos = 0
             async for chunk in self.open(src):
                 pos += len(chunk)
-                if progress is not None:
-                    progress.progress(str(src), str(path), pos)
+                progress.progress(str(src), str(path), pos)
                 await loop.run_in_executor(None, stream.write, chunk)
-            if progress is not None:
-                progress.complete(str(src), str(path))
+            progress.complete(str(src), str(path))
 
     async def download_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
     ) -> None:
+        if progress is None:
+            progress = _DummyProgress()
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
-        if progress is not None:
-            progress.mkdir(str(src), str(path))
+        progress.mkdir(str(src), str(path))
         for child in await self.ls(src):
             if child.is_file():
                 await self.download_file(
@@ -392,3 +392,20 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
         modification_time=int(values["modificationTime"]),
         permission=values["permission"],
     )
+
+
+class _DummyProgress(AbstractStorageProgress):
+    def start(self, src: str, dst: str, size: int) -> None:
+        pass
+
+    def complete(self, src: str, dst: str) -> None:
+        print(f"{src!r} -> {dst!r}")
+
+    def progress(self, src: str, dst: str, current: int) -> None:
+        pass
+
+    def mkdir(self, src: str, dst: str) -> None:
+        pass
+
+    def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
+        pass
