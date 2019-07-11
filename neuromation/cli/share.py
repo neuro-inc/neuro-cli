@@ -101,7 +101,7 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
         for p in sorted(
             await root.client.users.get_acl(root.username, scheme), key=permission_key
         ):
-            print(p.uri, p.action.value)
+            click.echo(f"{p.uri} {p.action.value}")
     else:
 
         def shared_permission_key(sp: SharedPermission) -> Any:
@@ -111,7 +111,9 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
             await root.client.users.get_shared_acl(root.username, scheme),
             key=shared_permission_key,
         ):
-            print(sp.permission.uri, sp.permission.action.value, sp.username)
+            click.echo(
+                f"{sp.permission.uri} {sp.permission.action.value} {sp.username}"
+            )
 
 
 acl.add_command(grant)
