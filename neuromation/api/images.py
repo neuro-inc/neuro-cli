@@ -46,7 +46,7 @@ class Images(metaclass=NoPublicConstructor):
             self._config.auth_token.username,
         )
 
-    async def close(self) -> None:
+    async def _close(self) -> None:
         for image in self._temporary_images:
             with contextlib.suppress(DockerError, aiohttp.ClientError):
                 await self._docker.images.delete(image)

@@ -50,7 +50,7 @@ class Client(metaclass=NoPublicConstructor):
     async def close(self) -> None:
         await self._core.close()
         if self._images is not None:
-            await self._images.close()
+            await self._images._close()
         await self._connector.close()
 
     async def __aenter__(self) -> "Client":
