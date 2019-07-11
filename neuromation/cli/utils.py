@@ -87,6 +87,7 @@ def warn_if_has_newer_version(
             fg="red",
         )
 
+
 async def _run_async_function(
     init_client: bool,
     func: Callable[..., Awaitable[_T]],
