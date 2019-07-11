@@ -633,23 +633,6 @@ class TestImages:
             result = await client.images.push(local_image)
         assert result == image
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
-    async def test_success_push_image_str(
-        self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
-    ) -> None:
-        async def message_generator() -> AsyncIterator[Dict[str, Any]]:
-            yield {}
-
-        patched_tag.return_value = True
-        patched_push.return_value = message_generator()
-        image = self.parser.parse_as_neuro_image("image://bob/bananas:latest")
-        async with make_client("https://api.localhost.localdomain") as client:
-            result = await client.images.push(
-                "bananas:latest", "image://bob/bananas:latest"
-            )
-        assert result == image
-
     @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_non_existent_image(
         self, patched_pull: Any, make_client: _MakeClient
@@ -721,22 +704,17 @@ class TestImages:
             result = await client.images.pull(image)
         assert result == local_image
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
-    async def test_success_pull_image_str(
-        self, patched_pull: Any, patched_tag: Any, make_client: _MakeClient
-    ) -> None:
-        async def message_generator() -> AsyncIterator[Dict[str, Any]]:
-            yield {}
-
-        patched_tag.return_value = True
-        patched_pull.return_value = message_generator()
-        local_image = self.parser.parse_as_docker_image("bananas:latest")
+    async def test_parse_local(self, make_client: _MakeClient) -> None:
         async with make_client("https://api.localhost.localdomain") as client:
-            result = await client.images.pull(
-                "image://bob/image:bananas", "bananas:latest"
-            )
-        assert result == local_image
+            result = client.images.parse_local("bananas:latest")
+        assert result == LocalImage("bananas", "latest")
+
+    async def test_parse_remote(self, make_client: _MakeClient) -> None:
+        async with make_client("https://api.localhost.localdomain") as client:
+            result = client.images.parse_remote("image://bob/bananas:latest")
+        assert result == RemoteImage(
+            "bananas", "latest", owner="bob", registry="registry-dev.neu.ro"
+        )
 
 
 class TestRegistry:

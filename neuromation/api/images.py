@@ -1,7 +1,7 @@
 import contextlib
 import re
 from dataclasses import replace
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import aiodocker
 import aiohttp
@@ -55,21 +55,17 @@ class Images(metaclass=NoPublicConstructor):
 
     async def push(
         self,
-        local_image: Union[LocalImage, str],
-        remote_image: Optional[Union[RemoteImage, str]] = None,
+        local_image: LocalImage,
+        remote_image: Optional[RemoteImage] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> RemoteImage:
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        if isinstance(local_image, str):
-            local_image = parser.parse_as_docker_image(local_image)
-
         if remote_image is None:
+            parser = _ImageNameParser(
+                self._config.auth_token.username,
+                self._config.cluster_config.registry_url,
+            )
             remote_image = parser.convert_to_neuro_image(local_image)
-        elif isinstance(remote_image, str):
-            remote_image = parser.parse_as_neuro_image(remote_image)
 
         local_str = str(local_image)
         remote_str = str(remote_image)
@@ -109,21 +105,17 @@ class Images(metaclass=NoPublicConstructor):
 
     async def pull(
         self,
-        remote_image: Union[RemoteImage, str],
-        local_image: Optional[Union[LocalImage, str]] = None,
+        remote_image: RemoteImage,
+        local_image: Optional[LocalImage] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> LocalImage:
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        if isinstance(remote_image, str):
-            remote_image = parser.parse_as_neuro_image(remote_image)
-
         if local_image is None:
+            parser = _ImageNameParser(
+                self._config.auth_token.username,
+                self._config.cluster_config.registry_url,
+            )
             local_image = parser.convert_to_docker_image(remote_image)
-        elif isinstance(local_image, str):
-            local_image = parser.parse_as_docker_image(local_image)
 
         local_str = str(local_image)
         remote_str = str(remote_image)
@@ -186,6 +178,18 @@ class Images(metaclass=NoPublicConstructor):
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]
+
+    def parse_local(self, image: str) -> LocalImage:
+        parser = _ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
+        return parser.parse_as_docker_image(image)
+
+    def parse_remote(self, image: str) -> RemoteImage:
+        parser = _ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
+        return parser.parse_as_neuro_image(image)
 
 
 class _DummyProgress(AbstractDockerImageProgress):
