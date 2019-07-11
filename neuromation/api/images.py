@@ -1,5 +1,4 @@
 import contextlib
-import logging
 import re
 from dataclasses import replace
 from typing import Dict, List, Optional, Union
@@ -15,9 +14,6 @@ from .core import AuthorizationError, _Core
 from .parsing_utils import LocalImage, RemoteImage, _ImageNameParser
 from .registry import _Registry
 from .utils import NoPublicConstructor
-
-
-log = logging.getLogger(__name__)
 
 
 class Images(metaclass=NoPublicConstructor):
@@ -77,8 +73,6 @@ class Images(metaclass=NoPublicConstructor):
 
         local_str = str(local_image)
         remote_str = str(remote_image)
-        log.debug(f"LOCAL: '{local_str}'")
-        log.debug(f"REMOTE: '{remote_str}'")
 
         if progress is None:
             progress = _DummyProgress()
@@ -135,9 +129,6 @@ class Images(metaclass=NoPublicConstructor):
 
         local_str = str(local_image)
         remote_str = str(remote_image)
-
-        log.debug(f"REMOTE: '{remote_str}'")
-        log.debug(f"LOCAL: '{local_str}'")
 
         if progress is None:
             progress = _DummyProgress()

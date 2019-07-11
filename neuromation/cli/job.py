@@ -20,7 +20,6 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.api.parsing_utils import _ImageNameParser
 
 from .defaults import (
     GPU_MODELS,
@@ -425,8 +424,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        image_parser = _ImageNameParser(root.username, root.registry_url)
-        formatter = TabularJobsFormatter(width, image_parser)
+        formatter = TabularJobsFormatter(width)
 
     for line in formatter(jobs):
         click.echo(line)

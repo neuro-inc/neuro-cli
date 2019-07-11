@@ -12,7 +12,6 @@ from click import style, unstyle
 from dateutil.parser import isoparse
 
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
-from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -188,9 +187,7 @@ class TabularJobRow:
     command: str
 
     @classmethod
-    def from_job(
-        cls, job: JobDescription, image_parser: _ImageNameParser
-    ) -> "TabularJobRow":
+    def from_job(cls, job: JobDescription) -> "TabularJobRow":
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -214,7 +211,7 @@ class TabularJobRow:
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, image_parser: _ImageNameParser):
+    def __init__(self, width: int):
         self.width = width
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
@@ -225,7 +222,6 @@ class TabularJobsFormatter(BaseJobsFormatter):
             "description": [11, 50],
             "command": [7, 0],
         }
-        self.image_parser = image_parser
 
     def _positions(self, rows: Iterable[TabularJobRow]) -> Mapping[str, int]:
         positions = {}
@@ -250,7 +246,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[TabularJobRow] = []
         for job in jobs:
-            rows.append(TabularJobRow.from_job(job, self.image_parser))
+            rows.append(TabularJobRow.from_job(job))
         header = TabularJobRow(
             id="ID",
             name="NAME",

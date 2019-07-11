@@ -640,14 +640,13 @@ class TestTabularJobRow:
 
     def test_with_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name="job-name"),
-            self.image_parser,
+            self._job_descr_with_status(JobStatus.RUNNING, name="job-name")
         )
         assert row.name == "job-name"
 
     def test_without_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name=None), self.image_parser
+            self._job_descr_with_status(JobStatus.RUNNING, name=None)
         )
         assert row.name == ""
 
@@ -661,9 +660,7 @@ class TestTabularJobRow:
         ],
     )
     def test_status_date_relation(self, status: JobStatus, date: str) -> None:
-        row = TabularJobRow.from_job(
-            self._job_descr_with_status(status), self.image_parser
-        )
+        row = TabularJobRow.from_job(self._job_descr_with_status(status))
         assert row.status == f"{status}"
         assert row.when == date
 
@@ -671,8 +668,7 @@ class TestTabularJobRow:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
                 JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red"
-            ),
-            self.image_parser,
+            )
         )
         assert row.image == "image://bob/swiss-box:red"
         assert row.name == ""
@@ -683,12 +679,12 @@ class TestTabularJobsFormatter:
     image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def test_empty(self) -> None:
-        formatter = TabularJobsFormatter(0, self.image_parser)
+        formatter = TabularJobsFormatter(0)
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)]
 
     def test_width_cutting(self) -> None:
-        formatter = TabularJobsFormatter(10, self.image_parser)
+        formatter = TabularJobsFormatter(10)
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)[:10]]
 
@@ -715,7 +711,7 @@ class TestTabularJobsFormatter:
             ssh_auth_server=URL("ssh-auth"),
             is_preemptible=True,
         )
-        formatter = TabularJobsFormatter(0, self.image_parser)
+        formatter = TabularJobsFormatter(0)
         result = [item for item in formatter([job])]
         assert result in [
             [
@@ -779,7 +775,7 @@ class TestTabularJobsFormatter:
                 is_preemptible=True,
             ),
         ]
-        formatter = TabularJobsFormatter(0, self.image_parser)
+        formatter = TabularJobsFormatter(0)
         result = [item for item in formatter(jobs)]
         assert result == [
             "ID                                        NAME   STATUS   WHEN         IMAGE            DESCRIPTION                           COMMAND",  # noqa: E501
