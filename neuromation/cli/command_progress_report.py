@@ -19,7 +19,7 @@ class ProgressBase(AbstractStorageProgress):
         click.echo(f"{src!r} -> {dst!r}")
 
     def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
-        click.echo(f"Failure: {src:!} -> {dst!r} [{message}]")
+        click.echo(f"Failure: {src:!} -> {dst!r} [{message}]", err=True)
 
     @classmethod
     def create_progress(
@@ -62,4 +62,4 @@ class StandardPrintPercentOnly(ProgressBase):
         click.echo(f"Copy directory {src!r} -> {dst!r}.")
 
     def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
-        click.echo(f"Failure: {src:!} -> {dst!r} [{message}]")
+        click.echo(f"Failure: {src:!} -> {dst!r} [{message}]", err=True)
