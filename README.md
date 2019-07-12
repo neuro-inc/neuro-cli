@@ -213,7 +213,7 @@ Name | Description|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
-|_--attach_|Display job's logs and return error code|
+|_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--help_|Show this message and exit.|
 
 
@@ -261,7 +261,7 @@ Name | Description|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
-|_--attach_|Display job's logs and return error code|
+|_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--help_|Show this message and exit.|
 
 
@@ -1225,7 +1225,7 @@ Name | Description|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
-|_--attach_|Display job's logs and return error code|
+|_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--help_|Show this message and exit.|
 
 
@@ -1273,7 +1273,7 @@ Name | Description|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
-|_--attach_|Display job's logs and return error code|
+|_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--help_|Show this message and exit.|
 
 

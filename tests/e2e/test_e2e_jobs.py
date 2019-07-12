@@ -66,6 +66,7 @@ def test_job_lifecycle(helper: Helper) -> None:
             "80",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             "--name",
             job_name,
             UBUNTU_IMAGE_NAME,
@@ -163,6 +164,7 @@ def test_job_description(helper: Helper) -> None:
             description,
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -242,6 +244,7 @@ def test_e2e_no_env(helper: Helper) -> None:
             "0",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -276,6 +279,7 @@ def test_e2e_env(helper: Helper) -> None:
             "VAR=VAL",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -311,6 +315,7 @@ def test_e2e_env_from_local(helper: Helper) -> None:
             "VAR",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -347,6 +352,7 @@ def test_e2e_multiple_env(helper: Helper) -> None:
             "VAR2=VAL2",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -388,6 +394,7 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
             str(env_file),
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -415,6 +422,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             "-n",
             job_name,
             UBUNTU_IMAGE_NAME,
@@ -452,6 +460,7 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -483,6 +492,7 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -512,6 +522,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -542,6 +553,7 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -573,6 +585,7 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -612,6 +625,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -645,6 +659,7 @@ def nginx_job(helper: Helper) -> Iterator[str]:
             "-g",
             "0",
             "--non-preemptible",
+            "--detach",
             NGINX_IMAGE_NAME,
             command,
         ]
@@ -801,6 +816,7 @@ def test_job_run(helper: Helper) -> None:
             "cpu-small",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -877,6 +893,7 @@ def test_pass_config(image: str, helper: Helper) -> None:
             "cpu-small",
             "--non-preemptible",
             "--no-wait-start",
+            "--detach",
             "--pass-config",
             image_full_str,
             command,
@@ -912,6 +929,7 @@ def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
                 http_auth,
                 "--non-preemptible",
                 "--no-wait-start",
+                "--detach",
                 UBUNTU_IMAGE_NAME,
                 "true",
             ]
@@ -936,6 +954,7 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
             "-s",
             "cpu-small",
             "--non-preemptible",
+            "--detach",
             UBUNTU_IMAGE_NAME,
             "true",
         ]
@@ -960,6 +979,7 @@ def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
             "-s",
             "cpu-small",
             "--non-preemptible",
+            "--detach",
             "--name",
             job_name,
             UBUNTU_IMAGE_NAME,
@@ -984,6 +1004,7 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
             "-s",
             "cpu-small",
             "--non-preemptible",
+            "--detach",
             "--browse",
             UBUNTU_IMAGE_NAME,
             "true",
@@ -994,7 +1015,7 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run_attach(helper: Helper) -> None:
+def test_job_run_no_detach(helper: Helper) -> None:
     token = uuid4()
     # Run a new job
     captured = helper.run_cli(
@@ -1005,7 +1026,6 @@ def test_job_run_attach(helper: Helper) -> None:
             "-s",
             "cpu-small",
             "--non-preemptible",
-            "--attach",
             UBUNTU_IMAGE_NAME,
             f"echo {token}",
         ]
@@ -1014,7 +1034,7 @@ def test_job_run_attach(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run_attach_failure(helper: Helper) -> None:
+def test_job_run_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         helper.run_cli(
@@ -1025,7 +1045,6 @@ def test_job_run_attach_failure(helper: Helper) -> None:
                 "-s",
                 "cpu-small",
                 "--non-preemptible",
-                "--attach",
                 UBUNTU_IMAGE_NAME,
                 "exit 127",
             ]
@@ -1050,6 +1069,7 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
             "--http",
             "80",
             "--non-preemptible",
+            "--detach",
             "--browse",
             UBUNTU_IMAGE_NAME,
             "true",
@@ -1060,7 +1080,7 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
 
 
 @pytest.mark.e2e
-def test_job_submit_attach(helper: Helper) -> None:
+def test_job_submit_no_detach(helper: Helper) -> None:
     token = uuid4()
     # Run a new job
     captured = helper.run_cli(
@@ -1077,7 +1097,6 @@ def test_job_submit_attach(helper: Helper) -> None:
             "--http",
             "80",
             "--non-preemptible",
-            "--attach",
             UBUNTU_IMAGE_NAME,
             f"echo {token}",
         ]
@@ -1086,7 +1105,7 @@ def test_job_submit_attach(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_submit_attach_failure(helper: Helper) -> None:
+def test_job_submit_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         helper.run_cli(
@@ -1103,7 +1122,6 @@ def test_job_submit_attach_failure(helper: Helper) -> None:
                 "--http",
                 "80",
                 "--non-preemptible",
-                "--attach",
                 UBUNTU_IMAGE_NAME,
                 f"exit 127",
             ]

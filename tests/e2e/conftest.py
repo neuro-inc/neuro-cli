@@ -408,7 +408,7 @@ class Helper:
 
     def run_job(self, image: str, command: str = "", params: Sequence[str] = ()) -> str:
         captured = self.run_cli(
-            ["-q", "job", "submit"]
+            ["-q", "job", "submit", "--detach"]
             + list(params)
             + ([image, command] if command else [image])
         )

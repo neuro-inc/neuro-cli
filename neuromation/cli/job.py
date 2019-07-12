@@ -188,7 +188,11 @@ def job() -> None:
     help="Upload neuro config to the job",
 )
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
-@click.option("--attach", is_flag=True, help="Display job's logs and return error code")
+@click.option(
+    "--detach",
+    is_flag=True,
+    help="Don't attach to job logs and don't wait for exit code",
+)
 @async_cmd()
 async def submit(
     root: Root,
@@ -210,7 +214,7 @@ async def submit(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
-    attach: bool,
+    detach: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -247,7 +251,7 @@ async def submit(
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
-        attach=attach,
+        detach=detach,
     )
 
 
@@ -597,7 +601,11 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Upload neuro config to the job",
 )
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
-@click.option("--attach", is_flag=True, help="Display job's logs and return error code")
+@click.option(
+    "--detach",
+    is_flag=True,
+    help="Don't attach to job logs and don't wait for exit code",
+)
 @async_cmd()
 @click.pass_context
 async def run(
@@ -618,7 +626,7 @@ async def run(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
-    attach: bool,
+    detach: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -640,8 +648,6 @@ async def run(
     job_preset = root.resource_presets[preset]
 
     log.info(f"Using preset '{preset}': {job_preset}")
-    if attach and not wait_start:
-        raise click.UsageError("Cannot use --attach and --no-wait-start together")
 
     await run_job(
         root,
@@ -663,7 +669,7 @@ async def run(
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
-        attach=attach,
+        detach=detach,
     )
 
 
@@ -704,7 +710,7 @@ async def run_job(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
-    attach: bool,
+    detach: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -717,8 +723,8 @@ async def run_job(
         raise click.UsageError("--browse requires --http")
     if browse and not wait_start:
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
-    if attach and not wait_start:
-        raise click.UsageError("Cannot use --attach and --no-wait-start together")
+    if not detach and not wait_start:
+        raise click.UsageError("--no-wait-start requires --detach")
 
     env_dict = build_env(env, env_file)
 
@@ -778,7 +784,7 @@ async def run_job(
     if browse:
         await browse_job(root, job)
 
-    if attach:
+    if not detach:
         await _print_logs(root, job.id)
         res = await root.client.jobs.status(job.id)
         click.echo(f"Exit code: {res.history.exit_code}")
