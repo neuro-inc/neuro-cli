@@ -239,15 +239,16 @@ class Storage(metaclass=NoPublicConstructor):
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
         with src.open("rb") as stream:
-            progress.start(src_url, dst, os.stat(stream.fileno()).st_size)
+            size = os.stat(stream.fileno()).st_size
+            progress.start(src_url, dst, size)
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
-                progress.progress(src_url, dst, pos)
+                progress.progress(src_url, dst, pos, size)
                 yield chunk
                 chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
                 pos += len(chunk)
-            progress.complete(src_url, dst)
+            progress.complete(src_url, dst, size)
 
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -344,9 +345,9 @@ class Storage(metaclass=NoPublicConstructor):
             pos = 0
             async for chunk in self.open(src):
                 pos += len(chunk)
-                progress.progress(src, dst, pos)
+                progress.progress(src, dst, pos, size)
                 await loop.run_in_executor(None, stream.write, chunk)
-            progress.complete(src, dst)
+            progress.complete(src, dst, size)
 
     async def download_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -404,10 +405,10 @@ class _DummyProgress(AbstractStorageProgress):
     def start(self, src: URL, dst: URL, size: int) -> None:
         pass
 
-    def complete(self, src: URL, dst: URL) -> None:
+    def complete(self, src: URL, dst: URL, size: int) -> None:
         pass
 
-    def progress(self, src: URL, dst: URL, current: int) -> None:
+    def progress(self, src: URL, dst: URL, current: int, size: int) -> None:
         pass
 
     def mkdir(self, src: URL, dst: URL) -> None:

@@ -11,12 +11,12 @@ class ProgressBase(AbstractStorageProgress):
     def start(self, src: URL, dst: URL, size: int) -> None:
         pass
 
-    def complete(self, src_url: URL, dst_url: URL) -> None:
+    def complete(self, src_url: URL, dst_url: URL, size: int) -> None:
         src = self.fmt_url(src_url)
         dst = self.fmt_url(dst_url)
         click.echo(f"{src!r} -> {dst!r}")
 
-    def progress(self, src: URL, dst: URL, current: int) -> None:
+    def progress(self, src: URL, dst: URL, current: int, size: int) -> None:
         pass
 
     def mkdir(self, src_url: URL, dst_url: URL) -> None:
@@ -48,30 +48,21 @@ class ProgressBase(AbstractStorageProgress):
 
 
 class StandardPrintPercentOnly(ProgressBase):
-    def __init__(self) -> None:
-        self._src: Optional[str] = None
-        self._dst: Optional[str] = None
-        self._file_size: Optional[int] = None
+    def start(self, src_url: URL, dst_url: URL, size: int) -> None:
+        src = self.fmt_url(src_url)
+        dst = self.fmt_url(dst_url)
+        click.echo(f"Start copying {src!r} -> {dst!r}.")
 
-    def start(self, src: URL, dst: URL, size: int) -> None:
-        self._src = self.fmt_url(src)
-        self._dst = self.fmt_url(dst)
-        self._file_size = size
-        click.echo(f"Start copying {self._src!r} -> {self._dst!r}.")
+    def complete(self, src_url: URL, dst_url: URL, size: int) -> None:
+        src = self.fmt_url(src_url)
+        dst = self.fmt_url(dst_url)
+        click.echo(f"\rFile {src!r} -> {dst!r} copying completed.")
 
-    def complete(self, src: URL, dst: URL) -> None:
-        self._src = self.fmt_url(src)
-        self._dst = self.fmt_url(dst)
-        click.echo(f"\rFile {self._src!r} -> {self._dst!r} copying completed.")
-
-    def progress(self, src: URL, dst: URL, current: int) -> None:
-        self._src = self.fmt_url(src)
-        self._dst = self.fmt_url(dst)
-        if self._file_size:
-            progress = (100 * current) / self._file_size
-        else:
-            progress = 0
-        click.echo(f"\r{self._src!r} -> {self._dst!r}: {progress:.2f}%.", nl=False)
+    def progress(self, src_url: URL, dst_url: URL, current: int, size: int) -> None:
+        src = self.fmt_url(src_url)
+        dst = self.fmt_url(dst_url)
+        progress = (100 * current) / size
+        click.echo(f"\r{src!r} -> {dst!r}: {progress:.2f}%.", nl=False)
 
     def mkdir(self, src_url: URL, dst_url: URL) -> None:
         src = self.fmt_url(src_url)

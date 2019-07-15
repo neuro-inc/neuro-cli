@@ -34,15 +34,15 @@ def test_simple_progress(capsys: Any) -> None:
     captured = capsys.readouterr()
     assert captured.out == f"Start copying {src_str!r} -> {dst_str!r}.\n"
 
-    report.progress(src, dst, 300)
+    report.progress(src, dst, 300, 600)
     captured = capsys.readouterr()
     assert captured.out == f"\r{src_str!r} -> {dst_str!r}: 50.00%."
 
-    report.progress(src, dst, 400)
+    report.progress(src, dst, 400, 600)
     captured = capsys.readouterr()
     assert captured.out == f"\r{src_str!r} -> {dst_str!r}: 66.67%."
 
-    report.complete(src, dst)
+    report.complete(src, dst, 600)
     captured = capsys.readouterr()
     assert captured.out == f"\rFile {src_str!r} -> {dst_str!r} copying completed.\n"
 
@@ -50,7 +50,7 @@ def test_simple_progress(capsys: Any) -> None:
 def test_mkdir(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
     src = URL("file:///abc")
-    src_str = '/abc'
+    src_str = "/abc"
     dst = URL("storage:xyz")
     dst_str = "storage:xyz"
 
