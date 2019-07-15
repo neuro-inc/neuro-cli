@@ -3,31 +3,38 @@ from typing import Optional
 import click
 from yarl import URL
 
-from neuromation.api import AbstractStorageProgress
+from neuromation.api import (
+    AbstractStorageProgress,
+    StorageProgressComplete,
+    StorageProgressFail,
+    StorageProgressMkdir,
+    StorageProgressStart,
+    StorageProgressStep,
+)
 from neuromation.api.url_utils import _extract_path
 
 
 class ProgressBase(AbstractStorageProgress):
-    def start(self, src: URL, dst: URL, size: int) -> None:
+    def start(self, data: StorageProgressStart) -> None:
         pass
 
-    def complete(self, src_url: URL, dst_url: URL, size: int) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
+    def complete(self, data: StorageProgressComplete) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
         click.echo(f"{src!r} -> {dst!r}")
 
-    def progress(self, src: URL, dst: URL, current: int, size: int) -> None:
+    def step(self, data: StorageProgressStep) -> None:
         pass
 
-    def mkdir(self, src_url: URL, dst_url: URL) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
         click.echo(f"{src!r} -> {dst!r}")
 
-    def fail(self, src_url: URL, dst_url: URL, message: str) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
-        click.echo(f"Failure: {src:!} -> {dst!r} [{message}]", err=True)
+    def fail(self, data: StorageProgressFail) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
+        click.echo(f"Failure: {src!r} -> {dst!r} [{data.message}]", err=True)
 
     def fmt_url(self, url: URL) -> str:
         if url.scheme == "file":
@@ -48,28 +55,28 @@ class ProgressBase(AbstractStorageProgress):
 
 
 class StandardPrintPercentOnly(ProgressBase):
-    def start(self, src_url: URL, dst_url: URL, size: int) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
+    def start(self, data: StorageProgressStart) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
         click.echo(f"Start copying {src!r} -> {dst!r}.")
 
-    def complete(self, src_url: URL, dst_url: URL, size: int) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
+    def complete(self, data: StorageProgressComplete) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
         click.echo(f"\rFile {src!r} -> {dst!r} copying completed.")
 
-    def progress(self, src_url: URL, dst_url: URL, current: int, size: int) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
-        progress = (100 * current) / size
+    def step(self, data: StorageProgressStep) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
+        progress = (100 * data.current) / data.size
         click.echo(f"\r{src!r} -> {dst!r}: {progress:.2f}%.", nl=False)
 
-    def mkdir(self, src_url: URL, dst_url: URL) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
         click.echo(f"Copy directory {src!r} -> {dst!r}.")
 
-    def fail(self, src_url: URL, dst_url: URL, message: str) -> None:
-        src = self.fmt_url(src_url)
-        dst = self.fmt_url(dst_url)
-        click.echo(f"Failure: {src:!} -> {dst!r} [{message}]", err=True)
+    def fail(self, data: StorageProgressFail) -> None:
+        src = self.fmt_url(data.src)
+        dst = self.fmt_url(data.dst)
+        click.echo(f"Failure: {src!r} -> {dst!r} [{data.message}]", err=True)

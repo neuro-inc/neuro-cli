@@ -11,7 +11,14 @@ from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 import attr
 from yarl import URL
 
-from .abc import AbstractStorageProgress
+from .abc import (
+    AbstractStorageProgress,
+    StorageProgressComplete,
+    StorageProgressFail,
+    StorageProgressMkdir,
+    StorageProgressStart,
+    StorageProgressStep,
+)
 from .config import _Config
 from .core import ResourceNotFound, _Core
 from .url_utils import (
@@ -240,15 +247,15 @@ class Storage(metaclass=NoPublicConstructor):
         src_url = URL(src.as_uri())
         with src.open("rb") as stream:
             size = os.stat(stream.fileno()).st_size
-            progress.start(src_url, dst, size)
+            progress.start(StorageProgressStart(src_url, dst, size))
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
-                progress.progress(src_url, dst, pos, size)
+                progress.step(StorageProgressStep(src_url, dst, pos, size))
                 yield chunk
                 chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
                 pos += len(chunk)
-            progress.complete(src_url, dst, size)
+            progress.complete(StorageProgressComplete(src_url, dst, size))
 
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -307,7 +314,7 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
-        progress.mkdir(src, dst)
+        progress.mkdir(StorageProgressMkdir(src, dst))
         for child in path.iterdir():
             if child.is_file():
                 await self.upload_file(
@@ -322,9 +329,11 @@ class Storage(metaclass=NoPublicConstructor):
                 # e.g. blocking device or unix socket
                 # Coverage temporary skipped, the line is waiting for a champion
                 progress.fail(
-                    src / child.name,
-                    dst / child.name,
-                    f"Cannot upload {child}, not regular file/directory",
+                    StorageProgressFail(
+                        src / child.name,
+                        dst / child.name,
+                        f"Cannot upload {child}, not regular file/directory",
+                    )
                 )  # pragma: no cover
 
     async def download_file(
@@ -341,13 +350,13 @@ class Storage(metaclass=NoPublicConstructor):
             if not stat.is_file():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
             size = stat.size
-            progress.start(src, dst, size)
+            progress.start(StorageProgressStart(src, dst, size))
             pos = 0
             async for chunk in self.open(src):
                 pos += len(chunk)
-                progress.progress(src, dst, pos, size)
+                progress.step(StorageProgressStep(src, dst, pos, size))
                 await loop.run_in_executor(None, stream.write, chunk)
-            progress.complete(src, dst, size)
+            progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -358,7 +367,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
-        progress.mkdir(src, dst)
+        progress.mkdir(StorageProgressMkdir(src, dst))
         for child in await self.ls(src):
             if child.is_file():
                 await self.download_file(
@@ -370,9 +379,11 @@ class Storage(metaclass=NoPublicConstructor):
                 )
             else:
                 progress.fail(
-                    src / child.name,
-                    dst / child.name,
-                    f"Cannot download {child}, not regular file/directory",
+                    StorageProgressFail(
+                        src / child.name,
+                        dst / child.name,
+                        f"Cannot download {child}, not regular file/directory",
+                    )
                 )  # pragma: no cover
 
 
@@ -402,17 +413,17 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
 
 
 class _DummyProgress(AbstractStorageProgress):
-    def start(self, src: URL, dst: URL, size: int) -> None:
+    def start(self, data: StorageProgressStart) -> None:
         pass
 
-    def complete(self, src: URL, dst: URL, size: int) -> None:
+    def complete(self, data: StorageProgressComplete) -> None:
         pass
 
-    def progress(self, src: URL, dst: URL, current: int, size: int) -> None:
+    def step(self, data: StorageProgressStep) -> None:
         pass
 
-    def mkdir(self, src: URL, dst: URL) -> None:
+    def mkdir(self, data: StorageProgressMkdir) -> None:
         pass
 
-    def fail(self, src: URL, dst: URL, message: str) -> None:  # pragma: no cover
+    def fail(self, data: StorageProgressFail) -> None:
         pass

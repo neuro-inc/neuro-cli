@@ -10,7 +10,17 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Client, FileStatus, FileStatusType, IllegalArgumentError
+from neuromation.api import (
+    Client,
+    FileStatus,
+    FileStatusType,
+    IllegalArgumentError,
+    StorageProgressComplete,
+    StorageProgressFail,
+    StorageProgressMkdir,
+    StorageProgressStart,
+    StorageProgressStep,
+)
 from tests import _RawTestServerFactory, _TestServerFactory
 
 
@@ -696,9 +706,9 @@ async def test_storage_upload_not_a_file(
 
     src = URL(file_path.as_uri())
     dst = URL("storage://user/file.txt")
-    progress.start.assert_called_with(src, dst, 0)
-    progress.progress.assert_not_called()
-    progress.complete.assert_called_with(src, dst, 0)
+    progress.start.assert_called_with(StorageProgressStart(src, dst, 0))
+    progress.step.assert_not_called()
+    progress.complete.assert_called_with(StorageProgressComplete(src, dst, 0))
 
 
 async def test_storage_upload_regular_file_to_existing_file_target(
@@ -720,9 +730,11 @@ async def test_storage_upload_regular_file_to_existing_file_target(
 
     src = URL(file_path.as_uri())
     dst = URL("storage://user/file.txt")
-    progress.start.assert_called_with(src, dst, file_size)
-    progress.progress.assert_called_with(src, dst, file_size, file_size)
-    progress.complete.assert_called_with(src, dst, file_size)
+    progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
+    progress.step.assert_called_with(
+        StorageProgressStep(src, dst, file_size, file_size)
+    )
+    progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
 async def test_storage_upload_regular_file_to_existing_dir(
@@ -882,9 +894,9 @@ async def test_storage_download_regular_file_to_absent_file(
     src = URL("storage://user/file.txt")
     dst = URL(local_file.as_uri())
     file_size = src_file.stat().st_size
-    progress.start.assert_called_with(src, dst, file_size)
-    progress.progress.assert_called_with(src, dst, file_size, file_size)
-    progress.complete.assert_called_with(src, dst, file_size)
+    progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
+    progress.step.assert_called_with(StorageProgressStep(src, dst, file_size, file_size))
+    progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
 async def test_storage_download_regular_file_to_existing_file(

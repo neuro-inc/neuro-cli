@@ -4,7 +4,15 @@ from typing import Awaitable, Callable, Optional
 import aiohttp
 from yarl import URL
 
-from .abc import AbstractDockerImageProgress, AbstractStorageProgress
+from .abc import (
+    AbstractDockerImageProgress,
+    AbstractStorageProgress,
+    StorageProgressComplete,
+    StorageProgressFail,
+    StorageProgressMkdir,
+    StorageProgressStart,
+    StorageProgressStep,
+)
 from .client import Client
 from .config_factory import (
     CONFIG_ENV_NAME,
@@ -64,7 +72,11 @@ __all__ = (
     "AuthorizationError",
     "AbstractStorageProgress",
     "AbstractDockerImageProgress",
-    "ImageNameParser",
+    "StorageProgressStart",
+    "StorageProgressComplete",
+    "StorageProgressStep",
+    "StorageProgressMkdir",
+    "StorageProgressFail",
     "RemoteImage",
     "LocalImage",
     "Factory",
