@@ -187,6 +187,11 @@ def job() -> None:
     help="Upload neuro config to the job",
 )
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@click.option(
+    "--detach",
+    is_flag=True,
+    help="Don't attach to job logs and don't wait for exit code",
+)
 @async_cmd()
 async def submit(
     root: Root,
@@ -208,6 +213,7 @@ async def submit(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
+    detach: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -244,6 +250,7 @@ async def submit(
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
+        detach=detach,
     )
 
 
@@ -361,7 +368,11 @@ async def logs(root: Root, job: str) -> None:
     Print the logs for a container.
     """
     id = await resolve_job(root.client, job)
-    async for chunk in root.client.jobs.monitor(id):
+    await _print_logs(root, id)
+
+
+async def _print_logs(root: Root, job: str) -> None:
+    async for chunk in root.client.jobs.monitor(job):
         if not chunk:
             break
         click.echo(chunk.decode(errors="ignore"), nl=False)
@@ -589,6 +600,11 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Upload neuro config to the job",
 )
 @click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@click.option(
+    "--detach",
+    is_flag=True,
+    help="Don't attach to job logs and don't wait for exit code",
+)
 @async_cmd()
 async def run(
     root: Root,
@@ -607,6 +623,7 @@ async def run(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
+    detach: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -649,6 +666,7 @@ async def run(
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
+        detach=detach,
     )
 
 
@@ -689,7 +707,8 @@ async def run_job(
     wait_start: bool,
     pass_config: bool,
     browse: bool,
-) -> None:
+    detach: bool,
+) -> JobDescription:
     if http_auth is None:
         http_auth = True
     elif not http:
@@ -701,6 +720,8 @@ async def run_job(
         raise click.UsageError("--browse requires --http")
     if browse and not wait_start:
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
+    if not wait_start:
+        detach = True
 
     env_dict = build_env(env, env_file)
 
@@ -759,6 +780,13 @@ async def run_job(
     progress.close()
     if browse:
         await browse_job(root, job)
+
+    if not detach:
+        await _print_logs(root, job.id)
+        res = await root.client.jobs.status(job.id)
+        sys.exit(res.history.exit_code)
+
+    return job
 
 
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
