@@ -237,16 +237,17 @@ class Storage(metaclass=NoPublicConstructor):
         self, src: Path, dst: URL, *, progress: AbstractStorageProgress
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
+        src_url = URL(src.as_uri())
         with src.open("rb") as stream:
-            progress.start(str(src), str(dst), os.stat(stream.fileno()).st_size)
+            progress.start(src_url, dst, os.stat(stream.fileno()).st_size)
             chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
             pos = len(chunk)
             while chunk:
-                progress.progress(str(src), str(dst), pos)
+                progress.progress(src_url, dst, pos)
                 yield chunk
                 chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
                 pos += len(chunk)
-            progress.complete(str(src), str(dst))
+            progress.complete(src_url, dst)
 
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -305,7 +306,7 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
-        progress.mkdir(str(path), str(dst))
+        progress.mkdir(src, dst)
         for child in path.iterdir():
             if child.is_file():
                 await self.upload_file(
@@ -320,8 +321,8 @@ class Storage(metaclass=NoPublicConstructor):
                 # e.g. blocking device or unix socket
                 # Coverage temporary skipped, the line is waiting for a champion
                 progress.fail(
-                    str(src / child.name),
-                    str(dst / child.name),
+                    src / child.name,
+                    dst / child.name,
                     f"Cannot upload {child}), not regular file/directory",
                 )  # pragma: no cover
 
@@ -339,13 +340,13 @@ class Storage(metaclass=NoPublicConstructor):
             if not stat.is_file():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
             size = stat.size
-            progress.start(str(src), str(path), size)
+            progress.start(src, dst, size)
             pos = 0
             async for chunk in self.open(src):
                 pos += len(chunk)
-                progress.progress(str(src), str(path), pos)
+                progress.progress(src, dst, pos)
                 await loop.run_in_executor(None, stream.write, chunk)
-            progress.complete(str(src), str(path))
+            progress.complete(src, dst)
 
     async def download_dir(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -356,7 +357,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
-        progress.mkdir(str(src), str(path))
+        progress.mkdir(src, dst)
         for child in await self.ls(src):
             if child.is_file():
                 await self.download_file(
@@ -368,8 +369,8 @@ class Storage(metaclass=NoPublicConstructor):
                 )
             else:
                 progress.fail(
-                    str(src / child.name),
-                    str(dst / child.name),
+                    src / child.name,
+                    dst / child.name,
                     f"Cannot download {child}, not regular file/directory",
                 )  # pragma: no cover
 
@@ -400,17 +401,17 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
 
 
 class _DummyProgress(AbstractStorageProgress):
-    def start(self, src: str, dst: str, size: int) -> None:
+    def start(self, src: URL, dst: URL, size: int) -> None:
         pass
 
-    def complete(self, src: str, dst: str) -> None:
+    def complete(self, src: URL, dst: URL) -> None:
         pass
 
-    def progress(self, src: str, dst: str, current: int) -> None:
+    def progress(self, src: URL, dst: URL, current: int) -> None:
         pass
 
-    def mkdir(self, src: str, dst: str) -> None:
+    def mkdir(self, src: URL, dst: URL) -> None:
         pass
 
-    def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
+    def fail(self, src: URL, dst: URL, message: str) -> None:  # pragma: no cover
         pass

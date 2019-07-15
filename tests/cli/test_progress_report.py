@@ -1,5 +1,7 @@
 from typing import Any
 
+from yarl import URL
+
 from neuromation.cli.command_progress_report import (
     ProgressBase,
     StandardPrintPercentOnly,
@@ -23,8 +25,8 @@ def test_progress_factory_percent() -> None:
 
 def test_simple_progress(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
-    src = "abc"
-    dst = "xyz"
+    src = URL("file:///abc")
+    dst = URL("storage:xyz")
 
     report.start(src, dst, 600)
     captured = capsys.readouterr()
@@ -45,8 +47,8 @@ def test_simple_progress(capsys: Any) -> None:
 
 def test_mkdir(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
-    src = "abc"
-    dst = "xyz"
+    src = URL("file:///abc")
+    dst = URL("storage:xyz")
 
     report.mkdir(src, dst)
     captured = capsys.readouterr()

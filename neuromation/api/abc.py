@@ -1,25 +1,27 @@
 import abc
 
+from yarl import URL
+
 
 class AbstractStorageProgress(abc.ABC):
     @abc.abstractmethod
-    def start(self, src: str, dst: str, size: int) -> None:  # pragma: no cover
+    def start(self, src: URL, dst: URL, size: int) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def complete(self, src: str, dst: str) -> None:  # pragma: no cover
+    def complete(self, src: URL, dst: URL) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def progress(self, src: str, dst: str, current: int) -> None:  # pragma: no cover
+    def progress(self, src: URL, dst: URL, current: int) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def mkdir(self, src: str, dst: str) -> None:  # pragma: no cover
+    def mkdir(self, src: URL, dst: URL) -> None:  # pragma: no cover
         pass
 
     @abc.abstractmethod
-    def fail(self, src: str, dst: str, message: str) -> None:  # pragma: no cover
+    def fail(self, src: URL, dst: URL, message: str) -> None:  # pragma: no cover
         pass
 
 

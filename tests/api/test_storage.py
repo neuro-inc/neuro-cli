@@ -694,8 +694,8 @@ async def test_storage_upload_not_a_file(
     uploaded = target_path.read_bytes()
     assert uploaded == b""
 
-    src = str(file_path)
-    dst = "storage://user/file.txt"
+    src = URL(file_path.as_uri())
+    dst = URL("storage://user/file.txt")
     progress.start.assert_called_with(src, dst, 0)
     progress.progress.assert_not_called()
     progress.complete.assert_called_with(src, dst)
@@ -718,8 +718,8 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     uploaded = target_path.read_bytes()
     assert uploaded == expected
 
-    src = str(file_path)
-    dst = "storage://user/file.txt"
+    src = URL(file_path.as_uri())
+    dst = URL("storage://user/file.txt")
     progress.start.assert_called_with(src, dst, file_size)
     progress.progress.assert_called_with(src, dst, file_size)
     progress.complete.assert_called_with(src, dst)
@@ -879,8 +879,8 @@ async def test_storage_download_regular_file_to_absent_file(
     downloaded = local_file.read_bytes()
     assert downloaded == expected
 
-    src = "storage://user/file.txt"
-    dst = str(local_file)
+    src = URL("storage://user/file.txt")
+    dst = URL(local_file.as_uri())
     file_size = src_file.stat().st_size
     progress.start.assert_called_with(src, dst, 7)
     progress.progress.assert_called_with(src, dst, file_size)
