@@ -70,18 +70,20 @@ def test_mkdir(capsys: Any) -> None:
 def test_fail1(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
     src = URL("file:///abc")
+    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
 
     report.fail(StorageProgressFail(src, dst, "error"))
     captured = capsys.readouterr()
-    assert captured.err == "Failure: '/abc' -> 'storage:xyz' [error]\n"
+    assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
 
 
 def test_fail2(capsys: Any) -> None:
     report = ProgressBase()
     src = URL("file:///abc")
+    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
 
     report.fail(StorageProgressFail(src, dst, "error"))
     captured = capsys.readouterr()
-    assert captured.err == "Failure: '/abc' -> 'storage:xyz' [error]\n"
+    assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
