@@ -170,11 +170,18 @@ class Images(metaclass=NoPublicConstructor):
                 result.append(parser.parse_as_neuro_image(repo))
             return result
 
+    def _validate_image_for_tags(self, image: RemoteImage) -> None:
+        err = f"Invalid image `{image}`: "
+        if image.tag is not None:
+            raise ValueError(err + "tag is not allowed")
+        if not image.owner:
+            raise ValueError(err + "missing image owner")
+        if not image.name:
+            raise ValueError(err + "missing image name")
+
     async def tags(self, image: RemoteImage) -> List[RemoteImage]:
-        if image.owner:
-            name = f"{image.owner}/{image.name}"
-        else:
-            name = image.name
+        self._validate_image_for_tags(image)
+        name = f"{image.owner}/{image.name}"
         async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
             ret = await resp.json()
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]
