@@ -390,7 +390,12 @@ class Helper:
                 delay *= 2
                 continue
             else:
-                proc.check_returncode()
+                try:
+                    proc.check_returncode()
+                except subprocess.CalledProcessError:
+                    log.error(f"Last stdout: '{proc.stdout}'")
+                    log.error(f"Last stderr: '{proc.stderr}'")
+                    raise
             out = proc.stdout
             err = proc.stderr
             if any(

@@ -21,6 +21,7 @@ from neuromation.utils import run as run_async
 from tests.e2e import Helper
 
 
+ALPINE_IMAGE_NAME = "alpine:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
 TEST_IMAGE_NAME = "neuro-cli-test"
@@ -629,6 +630,45 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
             ["job", "exec", "--no-key-check", "--timeout=60", job_id, "true"]
         )
     assert cm.value.returncode == 127
+
+
+@pytest.mark.e2e
+def test_job_save(helper: Helper) -> None:
+    job_name = f"job-save-test-{uuid4().hex[:6]}"
+    file_name = f"/flag-file-{uuid4().hex[:6]}"
+
+    # run first job, change a file within it
+    job_id_1 = helper.run_job_and_wait_state(
+        ALPINE_IMAGE_NAME, command="sleep 15m", params=("-n", job_name)
+    )
+    captured = helper.run_cli(
+        [
+            "job",
+            "exec",
+            "--no-key-check",
+            "--timeout=60",
+            job_name,
+            f"touch {file_name}",
+        ]
+    )
+    assert captured.out == ""
+
+    # save first job to a container
+    new_image_name = f"image://{helper.username}/nginx:{job_name}"
+    captured = helper.run_cli(["job", "save", job_name, new_image_name])
+    assert captured.out == new_image_name
+
+    helper.run_cli(["job", "kill", job_name])
+    helper.wait_job_change_state_to(job_id_1, JobStatus.SUCCEEDED)
+
+    helper.run_job_and_wait_state(
+        new_image_name, command="sleep 15m", params=("-n", job_name)
+    )
+    captured = helper.run_cli(
+        ["job", "exec", "--no-key-check", "--timeout=60", job_name, f"stat {file_name}"]
+    )
+    assert f"File: {file_name}" in captured.out
+    helper.run_cli(["job", "kill", job_name])
 
 
 @pytest.fixture

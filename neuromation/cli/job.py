@@ -482,6 +482,8 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     id = await resolve_job(root.client, job)
     await root.client.jobs.save(id, image)
+    if not root.quiet:
+        click.echo(image)
 
 
 @command()
