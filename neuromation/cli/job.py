@@ -720,8 +720,8 @@ async def run_job(
         raise click.UsageError("--browse requires --http")
     if browse and not wait_start:
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
-    if not detach and not wait_start:
-        raise click.UsageError("--no-wait-start requires --detach")
+    if not wait_start:
+        detach = True
 
     env_dict = build_env(env, env_file)
 

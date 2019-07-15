@@ -119,7 +119,6 @@ def test_images_complete_lifecycle(
             "0",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
         ]
     )
     assert not captured.err

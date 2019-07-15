@@ -66,7 +66,6 @@ def test_job_lifecycle(helper: Helper) -> None:
             "80",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             "--name",
             job_name,
             UBUNTU_IMAGE_NAME,
@@ -164,7 +163,6 @@ def test_job_description(helper: Helper) -> None:
             description,
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -244,7 +242,6 @@ def test_e2e_no_env(helper: Helper) -> None:
             "0",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -279,7 +276,6 @@ def test_e2e_env(helper: Helper) -> None:
             "VAR=VAL",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -315,7 +311,6 @@ def test_e2e_env_from_local(helper: Helper) -> None:
             "VAR",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -352,7 +347,6 @@ def test_e2e_multiple_env(helper: Helper) -> None:
             "VAR2=VAL2",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -394,7 +388,6 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
             str(env_file),
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -422,7 +415,6 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             "-n",
             job_name,
             UBUNTU_IMAGE_NAME,
@@ -460,7 +452,6 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -492,7 +483,6 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -522,7 +512,6 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -553,7 +542,6 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -585,7 +573,6 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -625,7 +612,6 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
             "0.1",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -816,7 +802,6 @@ def test_job_run(helper: Helper) -> None:
             "cpu-small",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             UBUNTU_IMAGE_NAME,
             command,
         ]
@@ -893,7 +878,6 @@ def test_pass_config(image: str, helper: Helper) -> None:
             "cpu-small",
             "--non-preemptible",
             "--no-wait-start",
-            "--detach",
             "--pass-config",
             image_full_str,
             command,
@@ -929,7 +913,6 @@ def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
                 http_auth,
                 "--non-preemptible",
                 "--no-wait-start",
-                "--detach",
                 UBUNTU_IMAGE_NAME,
                 "true",
             ]
