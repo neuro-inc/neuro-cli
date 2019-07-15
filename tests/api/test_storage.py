@@ -16,8 +16,6 @@ from neuromation.api import (
     FileStatusType,
     IllegalArgumentError,
     StorageProgressComplete,
-    StorageProgressFail,
-    StorageProgressMkdir,
     StorageProgressStart,
     StorageProgressStep,
 )
@@ -895,7 +893,9 @@ async def test_storage_download_regular_file_to_absent_file(
     dst = URL(local_file.as_uri())
     file_size = src_file.stat().st_size
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
-    progress.step.assert_called_with(StorageProgressStep(src, dst, file_size, file_size))
+    progress.step.assert_called_with(
+        StorageProgressStep(src, dst, file_size, file_size)
+    )
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
