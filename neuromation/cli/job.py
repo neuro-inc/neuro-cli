@@ -8,7 +8,6 @@ import webbrowser
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import click
-from click import Context
 from yarl import URL
 
 from neuromation.api import (
