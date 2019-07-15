@@ -726,8 +726,8 @@ class TestRegistry:
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
         assert set(ret) == {
-            RemoteImage("alpine", "latest", owner="bob", registry="127.0.0.1"),
-            RemoteImage("bananas", "latest", owner="jill", registry="127.0.0.1"),
+            RemoteImage("alpine", tag=None, owner="bob", registry="127.0.0.1"),
+            RemoteImage("bananas", tag=None, owner="jill", registry="127.0.0.1"),
         }
 
     @pytest.mark.skipif(
@@ -750,6 +750,6 @@ class TestRegistry:
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
         assert set(ret) == {
-            RemoteImage("alpine", "latest", owner="bob", registry="127.0.0.1"),
-            RemoteImage("bananas", "latest", owner="jill", registry="127.0.0.1"),
+            RemoteImage("alpine", tag=None, owner="bob", registry="127.0.0.1"),
+            RemoteImage("bananas", tag=None, owner="jill", registry="127.0.0.1"),
         }
