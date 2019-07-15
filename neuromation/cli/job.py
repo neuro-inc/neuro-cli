@@ -787,7 +787,6 @@ async def run_job(
     if not detach:
         await _print_logs(root, job.id)
         res = await root.client.jobs.status(job.id)
-        click.echo(f"Exit code: {res.history.exit_code}")
         sys.exit(res.history.exit_code)
 
     return job
