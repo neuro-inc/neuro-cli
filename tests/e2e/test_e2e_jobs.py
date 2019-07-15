@@ -1034,19 +1034,25 @@ def test_job_run_no_detach(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run_no_detach_failure(helper: Helper) -> None:
+def test_job_submit_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         helper.run_cli(
             [
                 "-v",
                 "job",
-                "run",
-                "-s",
-                "cpu-small",
+                "submit",
+                "-m",
+                "20M",
+                "-c",
+                "0.1",
+                "-g",
+                "0",
+                "--http",
+                "80",
                 "--non-preemptible",
                 UBUNTU_IMAGE_NAME,
-                "exit 127",
+                f"exit 127",
             ]
         )
     assert exc_info.value.returncode == 127
@@ -1077,53 +1083,3 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
     )
     assert "Browsing https://job-" in captured.out
     assert "Open job URL: https://job-" in captured.err
-
-
-@pytest.mark.e2e
-def test_job_submit_no_detach(helper: Helper) -> None:
-    token = uuid4()
-    # Run a new job
-    captured = helper.run_cli(
-        [
-            "-v",
-            "job",
-            "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
-            "--http",
-            "80",
-            "--non-preemptible",
-            UBUNTU_IMAGE_NAME,
-            f"echo {token}",
-        ]
-    )
-    assert str(token) in captured.out
-
-
-@pytest.mark.e2e
-def test_job_submit_no_detach_failure(helper: Helper) -> None:
-    # Run a new job
-    with pytest.raises(subprocess.CalledProcessError) as exc_info:
-        helper.run_cli(
-            [
-                "-v",
-                "job",
-                "submit",
-                "-m",
-                "20M",
-                "-c",
-                "0.1",
-                "-g",
-                "0",
-                "--http",
-                "80",
-                "--non-preemptible",
-                UBUNTU_IMAGE_NAME,
-                f"exit 127",
-            ]
-        )
-    assert exc_info.value.returncode == 127
