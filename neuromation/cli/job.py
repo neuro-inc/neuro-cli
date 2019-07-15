@@ -164,7 +164,6 @@ def job() -> None:
 @click.option(
     "--entrypoint",
     type=str,
-    multiple=False,
     help=(
         "Executable entrypoint in the container "
         "(note that it overwrites `ENTRYPOINT` and `CMD` "
@@ -582,7 +581,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @click.option(
     "--entrypoint",
     type=str,
-    multiple=False,
     help=(
         "Executable entrypoint in the container "
         "(note that it overwrites `ENTRYPOINT` and `CMD` "
