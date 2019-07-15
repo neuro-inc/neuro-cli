@@ -162,6 +162,15 @@ def job() -> None:
     "storage://neuromation:/var/storage/neuromation:ro",
 )
 @click.option(
+    "--entrypoint",
+    type=str,
+    help=(
+        "Executable entrypoint in the container "
+        "(note that it overwrites `ENTRYPOINT` and `CMD` "
+        "instructions of the docker image)"
+    ),
+)
+@click.option(
     "-e",
     "--env",
     metavar="VAR=VAL",
@@ -203,6 +212,7 @@ async def submit(
     extshm: bool,
     http: Optional[int],
     http_auth: Optional[bool],
+    entrypoint: Optional[str],
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
@@ -229,6 +239,10 @@ async def submit(
     # Directory /mod mounted to /mod directory in read-write mode.
     neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
       pytorch:latest
+
+    # Starts a container using the custom image my-ubuntu:latest stored in neuromation
+    # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
+    neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
     """
     await run_job(
         root,
@@ -240,6 +254,7 @@ async def submit(
         extshm=extshm,
         http=http,
         http_auth=http_auth,
+        entrypoint=entrypoint,
         cmd=cmd,
         volume=volume,
         env=env,
@@ -575,6 +590,15 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "storage://neuromation:/var/storage/neuromation:ro",
 )
 @click.option(
+    "--entrypoint",
+    type=str,
+    help=(
+        "Executable entrypoint in the container "
+        "(note that it overwrites `ENTRYPOINT` and `CMD` "
+        "instructions of the docker image)"
+    ),
+)
+@click.option(
     "-e",
     "--env",
     metavar="VAR=VAL",
@@ -613,6 +637,7 @@ async def run(
     extshm: bool,
     http: int,
     http_auth: Optional[bool],
+    entrypoint: Optional[str],
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
@@ -639,6 +664,10 @@ async def run(
     #   storage://~           --> /var/storage/home (in read-write mode),
     #   storage://neuromation --> /var/storage/neuromation (in read-only mode).
     neuro run --preset=gpu-small --volume=HOME pytorch:latest
+
+    # Starts a container using the custom image my-ubuntu:latest stored in neuromation
+    # registry, run /script.sh and pass arg1 and arg2 as its arguments:
+    neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
     """
     if not preset:
         preset = next(iter(root.resource_presets.keys()))
@@ -656,6 +685,7 @@ async def run(
         extshm=extshm,
         http=http,
         http_auth=http_auth,
+        entrypoint=entrypoint,
         cmd=cmd,
         volume=volume,
         env=env,
@@ -697,6 +727,7 @@ async def run_job(
     extshm: bool,
     http: Optional[int],
     http_auth: Optional[bool],
+    entrypoint: Optional[str],
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
@@ -726,6 +757,7 @@ async def run_job(
     env_dict = build_env(env, env_file)
 
     cmd = " ".join(cmd) if cmd is not None else None
+    log.debug(f'entrypoint="{entrypoint}"')
     log.debug(f'cmd="{cmd}"')
 
     log.info(f"Using image '{image}'")
@@ -761,6 +793,7 @@ async def run_job(
 
     container = Container(
         image=image,
+        entrypoint=entrypoint,
         command=cmd,
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,
