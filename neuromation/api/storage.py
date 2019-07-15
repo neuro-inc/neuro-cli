@@ -323,7 +323,7 @@ class Storage(metaclass=NoPublicConstructor):
                 progress.fail(
                     src / child.name,
                     dst / child.name,
-                    f"Cannot upload {child}), not regular file/directory",
+                    f"Cannot upload {child}, not regular file/directory",
                 )  # pragma: no cover
 
     async def download_file(
