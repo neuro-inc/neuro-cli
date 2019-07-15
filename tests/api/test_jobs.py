@@ -4,9 +4,11 @@ import pytest
 from aiohttp import web
 
 from neuromation.api import (
+    AuthorizationError,
     Client,
     Container,
     HTTPPort,
+    IllegalArgumentError,
     JobStatus,
     JobTelemetry,
     RemoteImage,
@@ -193,6 +195,116 @@ async def test_kill_ok(
         ret = await client.jobs.kill("job-id")
 
     assert ret is None
+
+
+async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
+    async with make_client("http://whatever") as client:
+        image = RemoteImage(name="ubuntu")
+        with pytest.raises(ValueError, match="not in the neuromation registry"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_not_found_error(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPNotFound()
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(ResourceNotFound):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_no_permissions_forbidden(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPForbidden()
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(AuthorizationError):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_non_existing_job(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPBadRequest(text='{"error": "no such job job-id"}')
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(IllegalArgumentError, match="no such job"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_unknown_registry_host(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPBadRequest(text='{"error": "Unknown registry host"}')
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(IllegalArgumentError, match="Unknown registry host"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_not_running_job(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPInternalServerError(
+            text='{"error": "Job \'job-id\' is not running"}'
+        )
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(IllegalArgumentError, match="not running"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_ok(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        return web.Response(status=web.HTTPCreated.status_code)
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        await client.jobs.save("job-id", image)
 
 
 async def test_status_failed(
