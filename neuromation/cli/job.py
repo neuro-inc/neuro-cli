@@ -607,9 +607,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Don't attach to job logs and don't wait for exit code",
 )
 @async_cmd()
-@click.pass_context
 async def run(
-    ctx: Context,
     root: Root,
     image: RemoteImage,
     preset: str,
