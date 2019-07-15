@@ -1,3 +1,4 @@
+import sys
 from typing import Any
 
 from yarl import URL
@@ -33,7 +34,7 @@ def test_progress_factory_percent() -> None:
 def test_simple_progress(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
     src = URL("file:///abc")
-    src_str = "/abc"
+    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
     dst_str = "storage:xyz"
 
@@ -57,7 +58,7 @@ def test_simple_progress(capsys: Any) -> None:
 def test_mkdir(capsys: Any) -> None:
     report = StandardPrintPercentOnly()
     src = URL("file:///abc")
-    src_str = "/abc"
+    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
     dst_str = "storage:xyz"
 
