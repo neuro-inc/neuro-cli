@@ -167,7 +167,7 @@ class Images(metaclass=NoPublicConstructor):
             for repo in ret["repositories"]:
                 if not repo.startswith(prefix):
                     repo = prefix + repo
-                result.append(parser.parse_as_neuro_image(repo))
+                result.append(parser.parse_as_neuro_image(repo, allow_tag=False))
             return result
 
     async def tags(self, image: RemoteImage) -> List[RemoteImage]:
