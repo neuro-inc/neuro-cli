@@ -350,7 +350,7 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         "resources": _resources_to_api(container.resources),
     }
     if container.entrypoint:
-        primitive["entrypoint"] = container.command
+        primitive["entrypoint"] = container.entrypoint
     if container.command:
         primitive["command"] = container.command
     if container.http:
