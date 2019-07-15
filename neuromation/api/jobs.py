@@ -161,9 +161,8 @@ class Jobs(metaclass=NoPublicConstructor):
             raise ValueError(
                 "Cannot save the job to the image not in the neuromation registry"
             )
-        image_str = image.as_repo_str()
+        payload = {"container": {"image": image.as_repo_str()}}
         url = URL(f"jobs/{id}/save")
-        payload = {"container": {"image": image_str}}
         async with self._core.request("POST", url, json=payload):
             # an error is raised for status >= 400
             return None  # 201 status code

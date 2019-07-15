@@ -204,23 +204,6 @@ async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> Non
             await client.jobs.save("job-id", image)
 
 
-async def test_save_not_found_error(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        raise web.HTTPNotFound()
-
-    app = web.Application()
-    app.router.add_post("/jobs/job-id/save", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
-        with pytest.raises(ResourceNotFound):
-            await client.jobs.save("job-id", image)
-
-
 async def test_save_no_permissions_forbidden(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
