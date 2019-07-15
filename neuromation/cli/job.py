@@ -473,6 +473,18 @@ async def top(root: Root, job: str) -> None:
 
 
 @command()
+@click.argument("job")
+@click.argument("image", type=ImageType())
+@async_cmd()
+async def save(root: Root, job: str, image: RemoteImage) -> None:
+    """
+    Save job's state as a docker image
+    """
+    id = await resolve_job(root.client, job)
+    await root.client.jobs.save(id, image)
+
+
+@command()
 @click.argument("jobs", nargs=-1, required=True)
 @async_cmd()
 async def kill(root: Root, jobs: Sequence[str]) -> None:
@@ -661,6 +673,7 @@ job.add_command(port_forward)
 job.add_command(logs)
 job.add_command(kill)
 job.add_command(top)
+job.add_command(save)
 job.add_command(browse)
 
 

@@ -13,6 +13,7 @@
 		* [neuro job logs](#neuro-job-logs)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job top](#neuro-job-top)
+		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
 	* [neuro storage](#neuro-storage)
 		* [neuro storage cp](#neuro-storage-cp)
@@ -51,6 +52,7 @@
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
+	* [neuro save](#neuro-save)
 	* [neuro login](#neuro-login)
 	* [neuro logout](#neuro-logout)
 	* [neuro cp](#neuro-cp)
@@ -123,6 +125,7 @@ Name | Description|
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
+| _[neuro save](#neuro-save)_| Save job's state as a docker image |
 | _[neuro login](#neuro-login)_| Log into Neuromation Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
 | _[neuro cp](#neuro-cp)_| Copy files and directories |
@@ -168,6 +171,7 @@ Name | Description|
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
+| _[neuro job save](#neuro-job-save)_| Save job's state as a docker image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 
 
@@ -425,6 +429,25 @@ Display GPU/CPU/Memory usage.
 
 ```bash
 neuro job top [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job save
+
+Save job's state as a docker image
+
+**Usage:**
+
+```bash
+neuro job save [OPTIONS] JOB IMAGE
 ```
 
 **Options:**
@@ -1435,6 +1458,25 @@ Display GPU/CPU/Memory usage.
 
 ```bash
 neuro top [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro save
+
+Save job's state as a docker image
+
+**Usage:**
+
+```bash
+neuro save [OPTIONS] JOB IMAGE
 ```
 
 **Options:**

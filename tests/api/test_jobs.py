@@ -200,7 +200,7 @@ async def test_kill_ok(
 async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
     async with make_client("http://whatever") as client:
         image = RemoteImage(name="ubuntu")
-        with pytest.raises(ValueError, match="not in the neuromation registry"):
+        with pytest.raises(ValueError, match="must be in the neuromation registry"):
             await client.jobs.save("job-id", image)
 
 
