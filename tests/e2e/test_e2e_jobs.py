@@ -632,10 +632,19 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     assert cm.value.returncode == 127
 
 
+def delete_image(image: str) -> None:
+    try:
+        docker.images.delete(image, force=True)
+    except subprocess.CalledProcessError:  # let's ignore any possible errors
+        pass
+
+
 @pytest.mark.e2e
-def test_job_save(helper: Helper, loop: asyncio.AbstractEventLoop) -> None:
+def test_job_save(request: Any, helper: Helper) -> None:
     job_name = f"job-save-test-{uuid4().hex[:6]}"
     file_name = f"/flag-file-{uuid4().hex[:6]}"
+    saved_image = f"image://{helper.username}/nginx:{job_name}"
+    request.addfinalizer(lambda: delete_image(saved_image))
 
     # run first job, change a file within it
     job_id_1 = helper.run_job_and_wait_state(
@@ -654,7 +663,6 @@ def test_job_save(helper: Helper, loop: asyncio.AbstractEventLoop) -> None:
     assert captured.out == ""
 
     # save first job to a container
-    saved_image = f"image://{helper.username}/nginx:{job_name}"
     captured = helper.run_cli(["job", "save", job_name, saved_image])
     assert captured.out == saved_image
 
@@ -671,8 +679,6 @@ def test_job_save(helper: Helper, loop: asyncio.AbstractEventLoop) -> None:
     )
     assert f"File: {file_name}" in captured.out
     helper.run_cli(["job", "kill", job_name])
-
-    loop.run_until_complete(docker.images.delete(saved_image, force=True))
 
 
 @pytest.fixture

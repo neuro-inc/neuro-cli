@@ -455,9 +455,7 @@ neuro job save [OPTIONS] JOB IMAGE
 ```bash
 
 neuro job save job-id image:ubuntu-patched
-neuro job save job-id image:ubuntu-patched:v2
-neuro job save my-favourite-job image://~/ubuntu-patched:v3
-neuro job save my-favourite-job image://~/ubuntu-patched:v4
+neuro job save my-favourite-job image://~/ubuntu-patched:v1
 neuro job save my-favourite-job image://bob/ubuntu-patched
 
 ```
@@ -1496,9 +1494,7 @@ neuro save [OPTIONS] JOB IMAGE
 ```bash
 
 neuro job save job-id image:ubuntu-patched
-neuro job save job-id image:ubuntu-patched:v2
-neuro job save my-favourite-job image://~/ubuntu-patched:v3
-neuro job save my-favourite-job image://~/ubuntu-patched:v4
+neuro job save my-favourite-job image://~/ubuntu-patched:v1
 neuro job save my-favourite-job image://bob/ubuntu-patched
 
 ```

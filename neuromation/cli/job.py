@@ -483,9 +483,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     Examples:
 
     neuro job save job-id image:ubuntu-patched
-    neuro job save job-id image:ubuntu-patched:v2
-    neuro job save my-favourite-job image://~/ubuntu-patched:v3
-    neuro job save my-favourite-job image://~/ubuntu-patched:v4
+    neuro job save my-favourite-job image://~/ubuntu-patched:v1
     neuro job save my-favourite-job image://bob/ubuntu-patched
     """
     id = await resolve_job(root.client, job)
