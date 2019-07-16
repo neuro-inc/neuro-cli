@@ -632,53 +632,34 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     assert cm.value.returncode == 127
 
 
-def delete_image(image: str) -> None:
-    try:
-        docker.images.delete(image, force=True)
-    except subprocess.CalledProcessError:  # let's ignore any possible errors
-        pass
-
-
 @pytest.mark.e2e
-def test_job_save(request: Any, helper: Helper) -> None:
+def test_job_save(request: Any, helper: Helper, docker: aiodocker.Docker) -> None:
     job_name = f"job-save-test-{uuid4().hex[:6]}"
-    file_name = f"/flag-file-{uuid4().hex[:6]}"
     saved_image = f"image://{helper.username}/nginx:{job_name}"
-    request.addfinalizer(lambda: delete_image(saved_image))
+    request.addfinalizer(lambda: docker.images.delete(saved_image, force=True))
 
-    # run first job, change a file within it
+    command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
-        ALPINE_IMAGE_NAME, command="sleep 15m", params=("-n", job_name)
+        ALPINE_IMAGE_NAME,
+        command=command,
+        params=("-n", job_name),
+        wait_state=JobStatus.RUNNING,
     )
-    captured = helper.run_cli(
-        [
-            "job",
-            "exec",
-            "--no-key-check",
-            "--timeout=60",
-            job_name,
-            f"touch {file_name}",
-        ]
-    )
-    assert captured.out == ""
 
-    # save first job to a container
     captured = helper.run_cli(["job", "save", job_name, saved_image])
     assert captured.out == saved_image
 
-    # wait to free the job name
+    # wait to free the job name:
     helper.run_cli(["job", "kill", job_name])
     helper.wait_job_change_state_to(job_id_1, JobStatus.SUCCEEDED)
 
-    # check with another job
+    command = 'sh -c \'[ "$(cat /test)" = "123" ]\''
     helper.run_job_and_wait_state(
-        saved_image, command="sleep 15m", params=("-n", job_name)
+        saved_image,
+        command=command,
+        params=("-n", job_name),
+        wait_state=JobStatus.SUCCEEDED,
     )
-    captured = helper.run_cli(
-        ["job", "exec", "--no-key-check", "--timeout=60", job_name, f"stat {file_name}"]
-    )
-    assert f"File: {file_name}" in captured.out
-    helper.run_cli(["job", "kill", job_name])
 
 
 @pytest.fixture
