@@ -1,10 +1,10 @@
 import glob as globmodule  # avoid conflict with subcommand "glob"
-import logging
 from typing import List, Optional, Sequence
 
 import click
 from yarl import URL
 
+from neuromation.api import FileStatusType
 from neuromation.api.url_utils import _extract_path
 
 from .formatters import (
@@ -14,12 +14,10 @@ from .formatters import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
     create_storage_progress,
+    get_painter,
 )
 from .root import Root
 from .utils import async_cmd, command, group, parse_file_resource
-
-
-log = logging.getLogger(__name__)
 
 
 @group()
@@ -57,9 +55,12 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     neuro rm storage:foo/**/*.tmp
     """
     for uri in await _expand(paths, root, glob):
+        if root.verbosity > 0:
+            painter = get_painter(root.color, quote=True)
+            curi = painter.paint(str(uri), FileStatusType.FILE)
         await root.client.storage.rm(uri, recursive=recursive)
         if root.verbosity > 0:
-            click.echo(f"removed {str(uri)!r}")
+            click.echo(f"removed {curi}")
 
 
 @command()
@@ -103,7 +104,9 @@ async def ls(
 
         uri = parse_file_resource(path, root)
         if root.verbosity > 0:
-            click.echo(f"List of {str(uri)!r}:")
+            painter = get_painter(root.color, quote=True)
+            curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
+            click.echo(f"List of {curi}:")
 
         files = await root.client.storage.ls(uri)
 
@@ -122,7 +125,10 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     """
     for pattern in patterns:
         uri = parse_file_resource(pattern, root)
-        log.info(f"Using pattern {str(uri)!r}:")
+        if root.verbosity > 0:
+            painter = get_painter(root.color, quote=True)
+            curi = painter.paint(str(uri), FileStatusType.FILE)
+            click.echo(f"Using pattern {curi}:")
         async for file in root.client.storage.glob(uri):
             click.echo(file)
 
@@ -272,13 +278,14 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     """
     Make directories.
     """
-
     for path in paths:
         uri = parse_file_resource(path, root)
 
         await root.client.storage.mkdirs(uri, parents=parents, exist_ok=parents)
         if root.verbosity > 0:
-            click.echo(f"created directory {str(uri)!r}")
+            painter = get_painter(root.color, quote=True)
+            curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
+            click.echo(f"created directory {curi}")
 
 
 @command()
@@ -378,9 +385,14 @@ async def mv(
         if target_dir:
             dst = target_dir / src.name
         assert dst
+        if root.verbosity > 0:
+            painter = get_painter(root.color, quote=True)
+            src_status = await root.client.storage.stats(src)
         await root.client.storage.mv(src, dst)
         if root.verbosity > 0:
-            click.echo(f"{str(src)!r} -> {str(dst)!r}")
+            csrc = painter.paint(str(src), src_status.type)
+            cdst = painter.paint(str(dst), src_status.type)
+            click.echo(f"{csrc} -> {cdst}")
 
 
 async def _expand(
@@ -389,7 +401,10 @@ async def _expand(
     uris = []
     for path in paths:
         uri = parse_file_resource(path, root)
-        log.info(f"Expand {uri!r}")
+        if root.verbosity > 0:
+            painter = get_painter(root.color, quote=True)
+            curi = painter.paint(str(str), FileStatusType.FILE)
+            click.echo(f"Expand {curi}")
         uri_path = str(_extract_path(uri))
         if glob and globmodule.has_magic(uri_path):
             if uri.scheme == "storage":

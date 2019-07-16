@@ -16,6 +16,7 @@ from .storage import (
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
     create_storage_progress,
+    get_painter,
 )
 
 
@@ -36,4 +37,5 @@ __all__ = [
     "DockerImageProgress",
     "DockerImageOperation",
     "create_storage_progress",
+    "get_painter",
 ]

@@ -415,8 +415,6 @@ def get_painter(color: bool, *, quote: bool = False) -> BasePainter:
         lscolors = os.getenv("LSCOLORS")
         if lscolors:
             return BSDPainter(lscolors)
-
-        pass
     if quote:
         return QuotedPainter()
     else:
