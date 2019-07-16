@@ -196,30 +196,6 @@ async def test_kill_ok(
     assert ret is None
 
 
-async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
-    async with make_client("http://whatever") as client:
-        image = RemoteImage(name="ubuntu")
-        with pytest.raises(ValueError, match="must be in the neuromation registry"):
-            await client.jobs.save("job-id", image)
-
-
-async def test_save_unknown_registry_host(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        raise web.HTTPBadRequest(text='{"error": "Unknown registry host"}')
-
-    app = web.Application()
-    app.router.add_post("/jobs/job-id/save", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
-        with pytest.raises(IllegalArgumentError, match="Unknown registry host"):
-            await client.jobs.save("job-id", image)
-
-
 async def test_save_ok(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -234,6 +210,50 @@ async def test_save_ok(
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage(registry="gcr.io", owner="me", name="img")
         await client.jobs.save("job-id", image)
+
+
+async def test_save_unknown_registry_host(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPBadRequest(text='{"error": "Unknown registry host"}')
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="unknown", owner="me", name="img")
+        with pytest.raises(IllegalArgumentError, match="Unknown registry host"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_docker_error(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        docker_error = f"Failed to push image 'unknown/me:latest': A docker error"
+        raise web.HTTPInternalServerError(
+            text='{"error": "Failed to save job \'job-id\': ' + docker_error + '"}'
+        )
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="unknown", owner="me", name="img")
+        with pytest.raises(IllegalArgumentError, match="Failed to save job"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
+    async with make_client("http://whatever") as client:
+        image = RemoteImage(name="ubuntu")
+        with pytest.raises(ValueError, match="must be in the neuromation registry"):
+            await client.jobs.save("job-id", image)
 
 
 async def test_status_failed(
