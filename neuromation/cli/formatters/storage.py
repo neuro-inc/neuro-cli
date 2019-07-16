@@ -99,7 +99,10 @@ class NonePainter(BasePainter):
 
 class QuotedPainter(BasePainter):
     def paint(self, label: str, type: FileStatusType) -> str:
-        return "'" + label + "'"
+        if "'" not in label:
+            return "'" + label + "'"
+        else:
+            return '"' + label + '"'
 
 
 class GnuPainter(BasePainter):

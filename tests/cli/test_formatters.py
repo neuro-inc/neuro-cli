@@ -42,6 +42,7 @@ from neuromation.cli.formatters.storage import (
     GnuPainter,
     LongFilesFormatter,
     NonePainter,
+    QuotedPainter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
     get_painter,
@@ -795,6 +796,30 @@ class TestNonePainter:
             "read",
         )
         assert painter.paint(file.name, file.type) == file.name
+
+
+class TestQuotedPainter:
+    def test_simple(self) -> None:
+        painter = QuotedPainter()
+        file = FileStatus(
+            "File1",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        assert painter.paint(file.name, file.type) == "'File1'"
+
+    def test_has_quote(self) -> None:
+        painter = QuotedPainter()
+        file = FileStatus(
+            "File1'2",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        assert painter.paint(file.name, file.type) == '''"File1'2"'''
 
 
 class TestGnuPainter:
