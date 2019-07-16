@@ -479,6 +479,14 @@ async def top(root: Root, job: str) -> None:
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image
+
+    Examples:
+
+    neuro job save job-id image:ubuntu-patched
+    neuro job save job-id image:ubuntu-patched:v2
+    neuro job save my-favourite-job image://~/ubuntu-patched:v3
+    neuro job save my-favourite-job image://~/ubuntu-patched:v4
+    neuro job save my-favourite-job image://bob/ubuntu-patched
     """
     id = await resolve_job(root.client, job)
     await root.client.jobs.save(id, image)

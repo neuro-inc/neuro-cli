@@ -633,7 +633,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_save(helper: Helper,loop: asyncio.AbstractEventLoop,) -> None:
+def test_job_save(helper: Helper, loop: asyncio.AbstractEventLoop) -> None:
     job_name = f"job-save-test-{uuid4().hex[:6]}"
     file_name = f"/flag-file-{uuid4().hex[:6]}"
 
