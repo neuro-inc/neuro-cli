@@ -478,7 +478,7 @@ async def top(root: Root, job: str) -> None:
 @async_cmd()
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
-    Save job's state as a docker image
+    Save job's state to an image
     """
     id = await resolve_job(root.client, job)
     await root.client.jobs.save(id, image)
