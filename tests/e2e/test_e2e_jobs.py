@@ -1,6 +1,5 @@
 import asyncio
 import hashlib
-import logging
 import os
 import re
 import subprocess
@@ -633,25 +632,11 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     assert cm.value.returncode == 127
 
 
-def delete_image(loop: asyncio.AbstractEventLoop, image: str) -> None:
-    try:
-        loop.run_until_complete(docker.images.delete(image, force=True))
-        logging.info("Finalization completed")
-    except Exception as e:  # let's ignore any possible errors
-        logging.warning(f"Finalization error: {e}")
-
-
 @pytest.mark.e2e
-def test_job_save(
-    helper: Helper,
-    docker: aiodocker.Docker,
-    request: Any,
-    loop: asyncio.AbstractEventLoop,
-) -> None:
+def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     job_name = f"job-save-test-{uuid4().hex[:6]}"
-    saved_image = f"image://{helper.username}/test-image:{job_name}"
-    request.addfinalizer(lambda: delete_image(loop, saved_image))
-
+    image = f"test-image:{job_name}"
+    image_neuro_name = f"image://{helper.username}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME,
@@ -659,9 +644,8 @@ def test_job_save(
         params=("-n", job_name),
         wait_state=JobStatus.RUNNING,
     )
-
-    captured = helper.run_cli(["job", "save", job_name, saved_image])
-    assert captured.out == saved_image
+    captured = helper.run_cli(["job", "save", job_name, image_neuro_name])
+    assert captured.out == image_neuro_name
 
     # wait to free the job name:
     helper.run_cli(["job", "kill", job_name])
@@ -669,11 +653,13 @@ def test_job_save(
 
     command = 'sh -c \'[ "$(cat /test)" = "123" ]\''
     helper.run_job_and_wait_state(
-        saved_image,
+        image_neuro_name,
         command=command,
         params=("-n", job_name),
         wait_state=JobStatus.SUCCEEDED,
     )
+
+    # TODO (A.Yushkovskiy): delete the pushed image in GCR
 
 
 @pytest.fixture

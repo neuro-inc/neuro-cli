@@ -188,6 +188,8 @@ def test_images_push_with_specified_name(
     local_images = parse_docker_ls_output(docker_ls_output)
     assert pulled in local_images
 
+    # TODO (A.Yushkovskiy): delete the pushed image in GCR
+    # delete locally
     loop.run_until_complete(docker.images.delete(pulled, force=True))
 
 
