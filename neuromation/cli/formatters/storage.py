@@ -399,19 +399,17 @@ class BSDPainter(BasePainter):
         return label
 
 
-class PainterFactory:
-    @classmethod
-    def detect(cls, color: bool) -> BasePainter:
-        if color:
-            ls_colors = os.getenv("LS_COLORS")
-            if ls_colors:
-                return GnuPainter(ls_colors)
-            lscolors = os.getenv("LSCOLORS")
-            if lscolors:
-                return BSDPainter(lscolors)
+def get_painter(color: bool) -> BasePainter:
+    if color:
+        ls_colors = os.getenv("LS_COLORS")
+        if ls_colors:
+            return GnuPainter(ls_colors)
+        lscolors = os.getenv("LSCOLORS")
+        if lscolors:
+            return BSDPainter(lscolors)
 
-            pass
-        return NonePainter()
+        pass
+    return NonePainter()
 
 
 class BaseFilesFormatter:
@@ -429,7 +427,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
     def __init__(self, human_readable: bool, color: bool):
         self.human_readable = human_readable
-        self.painter = PainterFactory.detect(color)
+        self.painter = get_painter(color)
 
     def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
 
@@ -468,7 +466,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
 class SimpleFilesFormatter(BaseFilesFormatter):
     def __init__(self, color: bool):
-        self.painter = PainterFactory.detect(color)
+        self.painter = get_painter(color)
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         for file in files:
@@ -478,7 +476,7 @@ class SimpleFilesFormatter(BaseFilesFormatter):
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
     def __init__(self, width: int, color: bool):
         self.width = width
-        self.painter = PainterFactory.detect(color)
+        self.painter = get_painter(color)
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:

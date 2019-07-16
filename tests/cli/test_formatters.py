@@ -42,9 +42,9 @@ from neuromation.cli.formatters.storage import (
     GnuPainter,
     LongFilesFormatter,
     NonePainter,
-    PainterFactory,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
+    get_painter,
 )
 from neuromation.cli.printer import CSI
 from neuromation.cli.root import Root
@@ -989,24 +989,24 @@ class TestPainterFactory:
     def test_detection(self, monkeypatch: Any) -> None:
         monkeypatch.setenv("LS_COLORS", "")
         monkeypatch.setenv("LSCOLORS", "")
-        painter = PainterFactory.detect(True)
+        painter = get_painter(True)
         assert isinstance(painter, NonePainter)
 
         monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
         monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
-        painter_without_color = PainterFactory.detect(False)
-        painter_with_color = PainterFactory.detect(True)
+        painter_without_color = get_painter(False)
+        painter_with_color = get_painter(True)
         assert isinstance(painter_without_color, NonePainter)
         assert not isinstance(painter_with_color, NonePainter)
 
         monkeypatch.setenv("LSCOLORS", "")
         monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
-        painter = PainterFactory.detect(True)
+        painter = get_painter(True)
         assert isinstance(painter, GnuPainter)
 
         monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
         monkeypatch.setenv("LS_COLORS", "")
-        painter = PainterFactory.detect(True)
+        painter = get_painter(True)
         assert isinstance(painter, BSDPainter)
 
 
