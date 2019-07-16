@@ -349,7 +349,7 @@ async def port_forward(
     job_id = await resolve_job(root.client, job)
     tasks = []
     for local_port, job_port in local_remote_port:
-        print(
+        click.echo(
             f"Port localhost:{local_port} will be forwarded "
             f"to port {job_port} of {job_id}"
         )
@@ -361,13 +361,13 @@ async def port_forward(
             )
         )
 
-    print("Press ^C to stop forwarding")
+    click.echo("Press ^C to stop forwarding")
     result = 0
     for future in asyncio.as_completed(tasks):
         try:
             await future
         except ValueError as e:
-            print(f"Port forwarding failed: {e}")
+            click.echo(f"Port forwarding failed: {e}")
             [task.cancel() for task in tasks]
             result = -1
             break
@@ -531,12 +531,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         try:
             await root.client.jobs.kill(job_resolved)
             # TODO (ajuszkowski) printing should be on the cli level
-            print(job_resolved)
+            click.echo(job_resolved)
         except ValueError as e:
             errors.append((job, e))
 
     def format_fail(job: str, reason: Exception) -> str:
-        return f"Cannot kill job {job}: {reason}"
+        return click.style(f"Cannot kill job {job}: {reason}", fg="red")
 
     for job, error in errors:
         click.echo(format_fail(job, error))

@@ -1,4 +1,3 @@
-import logging
 from dataclasses import dataclass
 from typing import Any, Dict
 
@@ -6,9 +5,6 @@ import pkg_resources
 from yarl import URL
 
 from .login import _AuthConfig, _AuthToken, _ClusterConfig
-
-
-log = logging.getLogger(__name__)
 
 
 @dataclass

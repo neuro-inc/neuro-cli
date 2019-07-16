@@ -7,10 +7,23 @@ from fnmatch import fnmatch
 from math import ceil
 from typing import Any, Dict, Iterator, List, Sequence
 
+import click
 import humanize
 from click import style, unstyle
+from yarl import URL
 
-from neuromation.api import Action, FileStatus, FileStatusType
+from neuromation.api import (
+    AbstractStorageProgress,
+    Action,
+    FileStatus,
+    FileStatusType,
+    StorageProgressComplete,
+    StorageProgressFail,
+    StorageProgressMkdir,
+    StorageProgressStart,
+    StorageProgressStep,
+)
+from neuromation.api.url_utils import _extract_path
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -75,13 +88,21 @@ class ParseState(enum.Enum):
 
 class BasePainter(abc.ABC):
     @abc.abstractmethod
-    def paint(self, label: str, file: FileStatus) -> str:  # pragma: no cover
+    def paint(self, label: str, type: FileStatusType) -> str:  # pragma: no cover
         pass
 
 
 class NonePainter(BasePainter):
-    def paint(self, label: str, file: FileStatus) -> str:
+    def paint(self, label: str, type: FileStatusType) -> str:
         return label
+
+
+class QuotedPainter(BasePainter):
+    def paint(self, label: str, type: FileStatusType) -> str:
+        if "'" not in label:
+            return "'" + label + "'"
+        else:
+            return '"' + label + '"'
 
 
 class GnuPainter(BasePainter):
@@ -306,17 +327,17 @@ class GnuPainter(BasePainter):
         if state == ParseState.PS_RIGHT and len(right):
             process(left, right)
 
-    def paint(self, label: str, file: FileStatus) -> str:
+    def paint(self, label: str, type: FileStatusType) -> str:
         mapping = {
             FileStatusType.FILE: self.color_indicator[GnuIndicators.FILE],
             FileStatusType.DIRECTORY: self.color_indicator[GnuIndicators.DIR],
         }
-        color = mapping[file.type]
+        color = mapping[type]
         if not color:
             color = self.color_indicator[GnuIndicators.NORM]
-        if file.type == FileStatusType.FILE:
+        if type == FileStatusType.FILE:
             for pattern, value in self.color_ext_type.items():
-                if fnmatch(file.name, pattern):
+                if fnmatch(label, pattern):
                     color = value
                     break
         if color:
@@ -358,9 +379,9 @@ class BSDPainter(BasePainter):
             self._colors[attr] = parts[num]
             num += 1
 
-    def paint(self, label: str, file: FileStatus) -> str:
+    def paint(self, label: str, type: FileStatusType) -> str:
         color = ""
-        if file.type == FileStatusType.DIRECTORY:
+        if type == FileStatusType.DIRECTORY:
             color = self._colors[BSDAttributes.DIRECTORY]
         if color:
             char_to_color = {
@@ -386,18 +407,17 @@ class BSDPainter(BasePainter):
         return label
 
 
-class PainterFactory:
-    @classmethod
-    def detect(cls, color: bool) -> BasePainter:
-        if color:
-            ls_colors = os.getenv("LS_COLORS")
-            if ls_colors:
-                return GnuPainter(ls_colors)
-            lscolors = os.getenv("LSCOLORS")
-            if lscolors:
-                return BSDPainter(lscolors)
-
-            pass
+def get_painter(color: bool, *, quote: bool = False) -> BasePainter:
+    if color:
+        ls_colors = os.getenv("LS_COLORS")
+        if ls_colors:
+            return GnuPainter(ls_colors)
+        lscolors = os.getenv("LSCOLORS")
+        if lscolors:
+            return BSDPainter(lscolors)
+    if quote:
+        return QuotedPainter()
+    else:
         return NonePainter()
 
 
@@ -416,7 +436,7 @@ class LongFilesFormatter(BaseFilesFormatter):
 
     def __init__(self, human_readable: bool, color: bool):
         self.human_readable = human_readable
-        self.painter = PainterFactory.detect(color)
+        self.painter = get_painter(color)
 
     def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
 
@@ -429,7 +449,7 @@ class LongFilesFormatter(BaseFilesFormatter):
         if self.human_readable:
             size = humanize.naturalsize(size, gnu=True).rstrip("B")
 
-        name = self.painter.paint(file.name, file)
+        name = self.painter.paint(file.name, file.type)
 
         return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
 
@@ -455,22 +475,22 @@ class LongFilesFormatter(BaseFilesFormatter):
 
 class SimpleFilesFormatter(BaseFilesFormatter):
     def __init__(self, color: bool):
-        self.painter = PainterFactory.detect(color)
+        self.painter = get_painter(color)
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         for file in files:
-            yield self.painter.paint(file.name, file)
+            yield self.painter.paint(file.name, file.type)
 
 
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
     def __init__(self, width: int, color: bool):
         self.width = width
-        self.painter = PainterFactory.detect(color)
+        self.painter = get_painter(color)
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:
             return
-        items = [self.painter.paint(file.name, file) for file in files]
+        items = [self.painter.paint(file.name, file.type) for file in files]
         widths = [len(unstyle(item)) for item in items]
         # let`s check how many columns we can use
         test_count = 1
@@ -514,3 +534,112 @@ class FilesSorter(str, enum.Enum):
             field = "modification_time"
         assert field
         return operator.attrgetter(field)
+
+
+# progress indicator
+
+
+def create_storage_progress(
+    color: bool, show_progress: bool, verbose: bool
+) -> AbstractStorageProgress:
+    if show_progress:
+        return StandardPrintPercentOnly(color)
+    if verbose:
+        return NoPercentPrinter(color)
+    return QuietPrinter(color)
+
+
+def fmt_url(url: URL) -> str:
+    if url.scheme == "file":
+        path = _extract_path(url)
+        return str(path)
+    else:
+        return str(url)
+
+
+class QuietPrinter(AbstractStorageProgress):
+    def __init__(self, color: bool):
+        self.painter = get_painter(color, quote=True)
+
+    def start(self, data: StorageProgressStart) -> None:
+        pass
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        pass
+
+    def step(self, data: StorageProgressStep) -> None:
+        pass
+
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        pass
+
+    def fail(self, data: StorageProgressFail) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(
+            click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
+            err=True,
+        )
+
+
+class NoPercentPrinter(AbstractStorageProgress):
+    def __init__(self, color: bool):
+        self.painter = get_painter(color, quote=True)
+
+    def start(self, data: StorageProgressStart) -> None:
+        pass
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(f"{src} -> {dst}")
+
+    def step(self, data: StorageProgressStep) -> None:
+        pass
+
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(f"{src} -> {dst}")
+
+    def fail(self, data: StorageProgressFail) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(
+            click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
+            err=True,
+        )
+
+
+class StandardPrintPercentOnly(AbstractStorageProgress):
+    def __init__(self, color: bool):
+        self.painter = get_painter(color, quote=True)
+
+    def start(self, data: StorageProgressStart) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(f"Start copying {src} -> {dst}.")
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(f"\rFile {src} -> {dst} copying completed.")
+
+    def step(self, data: StorageProgressStep) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        progress = (100 * data.current) / data.size
+        click.echo(f"\r{src} -> {dst}: {progress:.2f}%.", nl=False)
+
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(f"Copy directory {src} -> {dst}.")
+
+    def fail(self, data: StorageProgressFail) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(
+            click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
+            err=True,
+        )

@@ -42,9 +42,10 @@ from neuromation.cli.formatters.storage import (
     GnuPainter,
     LongFilesFormatter,
     NonePainter,
-    PainterFactory,
+    QuotedPainter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
+    get_painter,
 )
 from neuromation.cli.printer import CSI
 from neuromation.cli.root import Root
@@ -794,7 +795,31 @@ class TestNonePainter:
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             "read",
         )
-        assert painter.paint(file.name, file) == file.name
+        assert painter.paint(file.name, file.type) == file.name
+
+
+class TestQuotedPainter:
+    def test_simple(self) -> None:
+        painter = QuotedPainter()
+        file = FileStatus(
+            "File1",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        assert painter.paint(file.name, file.type) == "'File1'"
+
+    def test_has_quote(self) -> None:
+        painter = QuotedPainter()
+        file = FileStatus(
+            "File1'2",
+            2048,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        assert painter.paint(file.name, file.type) == '''"File1'2"'''
 
 
 class TestGnuPainter:
@@ -934,24 +959,24 @@ class TestGnuPainter:
             "write",
         )
         painter = GnuPainter("di=32;41:fi=0;44:no=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;44mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;44mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[32;41mtmp\x1b[0m"
 
         painter = GnuPainter("di=32;41:no=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[32;41mtmp\x1b[0m"
 
         painter = GnuPainter("no=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
 
         painter = GnuPainter("*.text=0;46")
-        assert painter.paint(file.name, file) == "test.txt"
-        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "test.txt"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
 
         painter = GnuPainter("*.txt=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
 
 
 class TestBSDPainter:
@@ -975,12 +1000,12 @@ class TestBSDPainter:
             "write",
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad")
-        assert painter.paint(file.name, file) == "test.txt"
-        assert painter.paint(folder.name, folder) == click.style("tmp", fg="blue")
+        assert painter.paint(file.name, file.type) == "test.txt"
+        assert painter.paint(folder.name, folder.type) == click.style("tmp", fg="blue")
 
         painter = BSDPainter("Eafxcxdxbxegedabagacad")
-        assert painter.paint(file.name, file) == "test.txt"
-        assert painter.paint(folder.name, folder) == click.style(
+        assert painter.paint(file.name, file.type) == "test.txt"
+        assert painter.paint(folder.name, folder.type) == click.style(
             "tmp", fg="blue", bg="black", bold=True
         )
 
@@ -989,24 +1014,24 @@ class TestPainterFactory:
     def test_detection(self, monkeypatch: Any) -> None:
         monkeypatch.setenv("LS_COLORS", "")
         monkeypatch.setenv("LSCOLORS", "")
-        painter = PainterFactory.detect(True)
+        painter = get_painter(True)
         assert isinstance(painter, NonePainter)
 
         monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
         monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
-        painter_without_color = PainterFactory.detect(False)
-        painter_with_color = PainterFactory.detect(True)
+        painter_without_color = get_painter(False)
+        painter_with_color = get_painter(True)
         assert isinstance(painter_without_color, NonePainter)
         assert not isinstance(painter_with_color, NonePainter)
 
         monkeypatch.setenv("LSCOLORS", "")
         monkeypatch.setenv("LS_COLORS", "di=32;41:fi=0;44:no=0;46")
-        painter = PainterFactory.detect(True)
+        painter = get_painter(True)
         assert isinstance(painter, GnuPainter)
 
         monkeypatch.setenv("LSCOLORS", "exfxcxdxbxegedabagacad")
         monkeypatch.setenv("LS_COLORS", "")
-        painter = PainterFactory.detect(True)
+        painter = get_painter(True)
         assert isinstance(painter, BSDPainter)
 
 
