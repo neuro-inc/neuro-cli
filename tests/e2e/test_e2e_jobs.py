@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 import os
 import re
 import subprocess
@@ -632,11 +633,24 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     assert cm.value.returncode == 127
 
 
+def delete_image(loop: asyncio.AbstractEventLoop, image: str) -> None:
+    try:
+        loop.run_until_complete(docker.images.delete(image, force=True))
+        logging.info("Finalization completed")
+    except Exception as e:  # let's ignore any possible errors
+        logging.warning(f"Finalization error: {e}")
+
+
 @pytest.mark.e2e
-def test_job_save(request: Any, helper: Helper, docker: aiodocker.Docker) -> None:
+def test_job_save(
+    helper: Helper,
+    docker: aiodocker.Docker,
+    request: Any,
+    loop: asyncio.AbstractEventLoop,
+) -> None:
     job_name = f"job-save-test-{uuid4().hex[:6]}"
     saved_image = f"image://{helper.username}/nginx:{job_name}"
-    request.addfinalizer(lambda: docker.images.delete(saved_image, force=True))
+    request.addfinalizer(lambda: delete_image(loop, saved_image))
 
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
