@@ -68,23 +68,27 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_mkdir(helper: Helper) -> None:
-    helper.check_create_dir_on_storage("folder")
+    helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder"])
     helper.check_dir_exists_on_storage("folder", "")
 
     # Create existing directory
-    with pytest.raises(OSError):
-        helper.check_create_dir_on_storage("folder")
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder"])
+    assert cm.value.returncode == 74
     helper.check_create_dir_on_storage("folder", exist_ok=True)
 
     # Create a subdirectory in existing directory
-    helper.check_create_dir_on_storage("folder/subfolder")
+    helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder/subfolder"])
     helper.check_dir_exists_on_storage("subfolder", "folder")
 
     # Create a subdirectory in non-existing directory
-    with pytest.raises(OSError):
-        helper.check_create_dir_on_storage("parent/child")
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["storage", "mkdir", helper.tmpstorage + "parent/child"])
+    assert cm.value.returncode == 72
     helper.check_dir_absent_on_storage("parent", "")
-    helper.check_create_dir_on_storage("parent/child", parents=True)
+    helper.run_cli(
+        ["storage", "mkdir", "--parents", helper.tmpstorage + "parent/child"]
+    )
     helper.check_dir_exists_on_storage("parent", "")
     helper.check_dir_exists_on_storage("child", "parent")
 

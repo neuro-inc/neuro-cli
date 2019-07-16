@@ -384,8 +384,9 @@ class Helper:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            if proc.returncode == EX_IOERR:
+            if proc.returncode == EX_IOERR and "mkdir" not in arguments:
                 # network problem
+                # TODO: Drop this retry maybe?
                 sleep(delay)
                 delay *= 2
                 continue
