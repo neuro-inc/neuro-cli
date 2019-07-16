@@ -232,12 +232,14 @@ async def cp(
     if no_target_directory and len(srcs) > 1:
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
+    tty = root.tty and progress
+
     for src in srcs:
         if target_dir:
             dst = target_dir / src.name
         assert dst
 
-        progress_obj = create_storage_progress(progress, root.verbosity > 0)
+        progress_obj = create_storage_progress(root.color, tty, root.verbosity > 0)
 
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:

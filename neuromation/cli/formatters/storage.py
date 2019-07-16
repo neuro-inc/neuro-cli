@@ -97,6 +97,11 @@ class NonePainter(BasePainter):
         return label
 
 
+class QuotedPainter(BasePainter):
+    def paint(self, label: str, type: FileStatusType) -> str:
+        return label
+
+
 class GnuPainter(BasePainter):
     def __init__(self, ls_colors: str):
         self._defaults()
@@ -399,7 +404,7 @@ class BSDPainter(BasePainter):
         return label
 
 
-def get_painter(color: bool) -> BasePainter:
+def get_painter(color: bool, *, quote: bool = False) -> BasePainter:
     if color:
         ls_colors = os.getenv("LS_COLORS")
         if ls_colors:
@@ -409,7 +414,10 @@ def get_painter(color: bool) -> BasePainter:
             return BSDPainter(lscolors)
 
         pass
-    return NonePainter()
+    if quote:
+        return QuotedPainter()
+    else:
+        return NonePainter()
 
 
 class BaseFilesFormatter:
@@ -531,13 +539,13 @@ class FilesSorter(str, enum.Enum):
 
 
 def create_storage_progress(
-    show_progress: bool, verbose: bool
+    color: bool, show_progress: bool, verbose: bool
 ) -> AbstractStorageProgress:
     if show_progress:
-        return StandardPrintPercentOnly()
+        return StandardPrintPercentOnly(color)
     if verbose:
-        return NoPercentPrinter()
-    return QuietPrinter()
+        return NoPercentPrinter(color)
+    return QuietPrinter(color)
 
 
 def fmt_url(url: URL) -> str:
@@ -549,6 +557,9 @@ def fmt_url(url: URL) -> str:
 
 
 class QuietPrinter(AbstractStorageProgress):
+    def __init__(self, color: bool):
+        self.painter = get_painter(color, quote=True)
+
     def start(self, data: StorageProgressStart) -> None:
         pass
 
@@ -568,6 +579,9 @@ class QuietPrinter(AbstractStorageProgress):
 
 
 class NoPercentPrinter(AbstractStorageProgress):
+    def __init__(self, color: bool):
+        self.painter = get_painter(color, quote=True)
+
     def start(self, data: StorageProgressStart) -> None:
         pass
 
@@ -591,6 +605,9 @@ class NoPercentPrinter(AbstractStorageProgress):
 
 
 class StandardPrintPercentOnly(AbstractStorageProgress):
+    def __init__(self, color: bool):
+        self.painter = get_painter(color, quote=True)
+
     def start(self, data: StorageProgressStart) -> None:
         src = fmt_url(data.src)
         dst = fmt_url(data.dst)

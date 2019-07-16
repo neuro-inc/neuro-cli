@@ -19,22 +19,22 @@ from neuromation.cli.formatters.storage import (
 
 
 def test_progress_factory_none() -> None:
-    progress = create_storage_progress(False, False)
+    progress = create_storage_progress(False, False, False)
     assert isinstance(progress, QuietPrinter)
 
 
 def test_progress_factory_verbose() -> None:
-    progress = create_storage_progress(False, True)
+    progress = create_storage_progress(False, False, True)
     assert isinstance(progress, NoPercentPrinter)
 
 
 def test_progress_factory_percent() -> None:
-    progress = create_storage_progress(True, False)
+    progress = create_storage_progress(False, True, False)
     assert isinstance(progress, StandardPrintPercentOnly)
 
 
 def test_simple_progress(capsys: Any) -> None:
-    report = create_storage_progress(True, False)
+    report = create_storage_progress(False, True, False)
     src = URL("file:///abc")
     src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
@@ -58,7 +58,7 @@ def test_simple_progress(capsys: Any) -> None:
 
 
 def test_mkdir(capsys: Any) -> None:
-    report = create_storage_progress(True, False)
+    report = create_storage_progress(False, True, False)
     src = URL("file:///abc")
     src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
@@ -70,7 +70,7 @@ def test_mkdir(capsys: Any) -> None:
 
 
 def test_fail1(capsys: Any) -> None:
-    report = create_storage_progress(True, False)
+    report = create_storage_progress(False, True, False)
     src = URL("file:///abc")
     src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
@@ -81,7 +81,7 @@ def test_fail1(capsys: Any) -> None:
 
 
 def test_fail2(capsys: Any) -> None:
-    report = create_storage_progress(False, True)
+    report = create_storage_progress(False, False, True)
     src = URL("file:///abc")
     src_str = "/abc" if not sys.platform == "win32" else "\\abc"
     dst = URL("storage:xyz")
