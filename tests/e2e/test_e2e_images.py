@@ -147,7 +147,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
-    assert result.returncode == 127, assertion_msg
+    assert result.returncode, assertion_msg
 
     image_full_str_latest_tag = image_full_str.replace(f":{tag}", ":latest")
     cmd = f"neuro image tags {image_full_str_latest_tag}"
@@ -155,7 +155,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
-    assert result.returncode == 127, assertion_msg
+    assert result.returncode, assertion_msg
 
 
 @pytest.mark.e2e
