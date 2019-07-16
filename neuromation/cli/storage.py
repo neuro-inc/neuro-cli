@@ -7,13 +7,13 @@ from yarl import URL
 
 from neuromation.api.url_utils import _extract_path
 
-from .command_progress_report import ProgressBase
 from .formatters import (
     BaseFilesFormatter,
     FilesSorter,
     LongFilesFormatter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
+    create_storage_progress,
 )
 from .root import Root
 from .utils import async_cmd, command, group, parse_file_resource
@@ -237,7 +237,7 @@ async def cp(
             dst = target_dir / src.name
         assert dst
 
-        progress_obj = ProgressBase.create_progress(progress, root.verbosity > 0)
+        progress_obj = create_storage_progress(progress, root.verbosity > 0)
 
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:

@@ -7,10 +7,23 @@ from fnmatch import fnmatch
 from math import ceil
 from typing import Any, Dict, Iterator, List, Sequence
 
+import click
 import humanize
 from click import style, unstyle
+from yarl import URL
 
-from neuromation.api import Action, FileStatus, FileStatusType
+from neuromation.api import (
+    AbstractStorageProgress,
+    Action,
+    FileStatus,
+    FileStatusType,
+    StorageProgressComplete,
+    StorageProgressFail,
+    StorageProgressMkdir,
+    StorageProgressStart,
+    StorageProgressStep,
+)
+from neuromation.api.url_utils import _extract_path
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -514,3 +527,94 @@ class FilesSorter(str, enum.Enum):
             field = "modification_time"
         assert field
         return operator.attrgetter(field)
+
+
+# progress indicator
+
+
+def create_storage_progress(
+    show_progress: bool, verbose: bool
+) -> AbstractStorageProgress:
+    if show_progress:
+        return StandardPrintPercentOnly()
+    if verbose:
+        return NoPercentPrinter()
+    return QuietPrinter()
+
+
+def fmt_url(url: URL) -> str:
+    if url.scheme == "file":
+        path = _extract_path(url)
+        return str(path)
+    else:
+        return str(url)
+
+
+class QuietPrinter(AbstractStorageProgress):
+    def start(self, data: StorageProgressStart) -> None:
+        pass
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        pass
+
+    def step(self, data: StorageProgressStep) -> None:
+        pass
+
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        pass
+
+    def fail(self, data: StorageProgressFail) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"Failure: '{src}' -> '{dst}' [{data.message}]", err=True)
+
+
+class NoPercentPrinter(AbstractStorageProgress):
+    def start(self, data: StorageProgressStart) -> None:
+        pass
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"'{src}' -> '{dst}'")
+
+    def step(self, data: StorageProgressStep) -> None:
+        pass
+
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"'{src}' -> '{dst}'")
+
+    def fail(self, data: StorageProgressFail) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"Failure: '{src}' -> '{dst}' [{data.message}]", err=True)
+
+
+class StandardPrintPercentOnly(AbstractStorageProgress):
+    def start(self, data: StorageProgressStart) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"Start copying '{src}' -> '{dst}'.")
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"\rFile '{src}' -> '{dst}' copying completed.")
+
+    def step(self, data: StorageProgressStep) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        progress = (100 * data.current) / data.size
+        click.echo(f"\r'{src}' -> '{dst}': {progress:.2f}%.", nl=False)
+
+    def mkdir(self, data: StorageProgressMkdir) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"Copy directory '{src}' -> '{dst}'.")
+
+    def fail(self, data: StorageProgressFail) -> None:
+        src = fmt_url(data.src)
+        dst = fmt_url(data.dst)
+        click.echo(f"Failure: '{src}' -> '{dst}' [{data.message}]", err=True)
