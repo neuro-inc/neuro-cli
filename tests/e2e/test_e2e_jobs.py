@@ -649,7 +649,7 @@ def test_job_save(
     loop: asyncio.AbstractEventLoop,
 ) -> None:
     job_name = f"job-save-test-{uuid4().hex[:6]}"
-    saved_image = f"image://{helper.username}/nginx:{job_name}"
+    saved_image = f"image://{helper.username}/test-image:{job_name}"
     request.addfinalizer(lambda: delete_image(loop, saved_image))
 
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
