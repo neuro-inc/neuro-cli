@@ -88,12 +88,12 @@ class ParseState(enum.Enum):
 
 class BasePainter(abc.ABC):
     @abc.abstractmethod
-    def paint(self, label: str, file: FileStatus) -> str:  # pragma: no cover
+    def paint(self, label: str, type: FileStatusType) -> str:  # pragma: no cover
         pass
 
 
 class NonePainter(BasePainter):
-    def paint(self, label: str, file: FileStatus) -> str:
+    def paint(self, label: str, type: FileStatusType) -> str:
         return label
 
 
@@ -319,17 +319,17 @@ class GnuPainter(BasePainter):
         if state == ParseState.PS_RIGHT and len(right):
             process(left, right)
 
-    def paint(self, label: str, file: FileStatus) -> str:
+    def paint(self, label: str, type: FileStatusType) -> str:
         mapping = {
             FileStatusType.FILE: self.color_indicator[GnuIndicators.FILE],
             FileStatusType.DIRECTORY: self.color_indicator[GnuIndicators.DIR],
         }
-        color = mapping[file.type]
+        color = mapping[type]
         if not color:
             color = self.color_indicator[GnuIndicators.NORM]
-        if file.type == FileStatusType.FILE:
+        if type == FileStatusType.FILE:
             for pattern, value in self.color_ext_type.items():
-                if fnmatch(file.name, pattern):
+                if fnmatch(label, pattern):
                     color = value
                     break
         if color:
@@ -371,9 +371,9 @@ class BSDPainter(BasePainter):
             self._colors[attr] = parts[num]
             num += 1
 
-    def paint(self, label: str, file: FileStatus) -> str:
+    def paint(self, label: str, type: FileStatusType) -> str:
         color = ""
-        if file.type == FileStatusType.DIRECTORY:
+        if type == FileStatusType.DIRECTORY:
             color = self._colors[BSDAttributes.DIRECTORY]
         if color:
             char_to_color = {
@@ -440,7 +440,7 @@ class LongFilesFormatter(BaseFilesFormatter):
         if self.human_readable:
             size = humanize.naturalsize(size, gnu=True).rstrip("B")
 
-        name = self.painter.paint(file.name, file)
+        name = self.painter.paint(file.name, file.type)
 
         return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
 
@@ -470,7 +470,7 @@ class SimpleFilesFormatter(BaseFilesFormatter):
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         for file in files:
-            yield self.painter.paint(file.name, file)
+            yield self.painter.paint(file.name, file.type)
 
 
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
@@ -481,7 +481,7 @@ class VerticalColumnsFilesFormatter(BaseFilesFormatter):
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:
             return
-        items = [self.painter.paint(file.name, file) for file in files]
+        items = [self.painter.paint(file.name, file.type) for file in files]
         widths = [len(unstyle(item)) for item in items]
         # let`s check how many columns we can use
         test_count = 1

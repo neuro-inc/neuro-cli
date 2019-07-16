@@ -794,7 +794,7 @@ class TestNonePainter:
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             "read",
         )
-        assert painter.paint(file.name, file) == file.name
+        assert painter.paint(file.name, file.type) == file.name
 
 
 class TestGnuPainter:
@@ -934,24 +934,24 @@ class TestGnuPainter:
             "write",
         )
         painter = GnuPainter("di=32;41:fi=0;44:no=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;44mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;44mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[32;41mtmp\x1b[0m"
 
         painter = GnuPainter("di=32;41:no=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[32;41mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[32;41mtmp\x1b[0m"
 
         painter = GnuPainter("no=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
 
         painter = GnuPainter("*.text=0;46")
-        assert painter.paint(file.name, file) == "test.txt"
-        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "test.txt"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
 
         painter = GnuPainter("*.txt=0;46")
-        assert painter.paint(file.name, file) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder) == "\x1b[01;34mtmp\x1b[0m"
+        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
 
 
 class TestBSDPainter:
@@ -975,12 +975,12 @@ class TestBSDPainter:
             "write",
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad")
-        assert painter.paint(file.name, file) == "test.txt"
-        assert painter.paint(folder.name, folder) == click.style("tmp", fg="blue")
+        assert painter.paint(file.name, file.type) == "test.txt"
+        assert painter.paint(folder.name, folder.type) == click.style("tmp", fg="blue")
 
         painter = BSDPainter("Eafxcxdxbxegedabagacad")
-        assert painter.paint(file.name, file) == "test.txt"
-        assert painter.paint(folder.name, folder) == click.style(
+        assert painter.paint(file.name, file.type) == "test.txt"
+        assert painter.paint(folder.name, folder.type) == click.style(
             "tmp", fg="blue", bg="black", bold=True
         )
 
