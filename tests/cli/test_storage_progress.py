@@ -66,7 +66,7 @@ def test_mkdir(capsys: Any) -> None:
 
     report.mkdir(StorageProgressMkdir(src, dst))
     captured = capsys.readouterr()
-    assert captured.out == f"Copy directory {src_str!r} -> {dst_str!r}.\n"
+    assert captured.out == f"Copy directory '{src_str}' -> '{dst_str}'.\n"
 
 
 def test_fail1(capsys: Any) -> None:
