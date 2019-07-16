@@ -157,6 +157,15 @@ class Jobs(metaclass=NoPublicConstructor):
             # an error is raised for status >= 400
             return None  # 201 status code
 
+    async def save(self, id: str, image: RemoteImage) -> None:
+        if not image._is_in_neuro_registry():
+            raise ValueError(f"Image `{image}` must be in the neuromation registry")
+        payload = {"container": {"image": image.as_repo_str()}}
+        url = self._config.cluster_config.monitoring_url / f"{id}/save"
+        async with self._core.request("POST", url, json=payload):
+            # an error is raised for status >= 400
+            return None  # 201 status code
+
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.monitoring_url / f"{id}/log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)

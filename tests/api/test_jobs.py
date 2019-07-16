@@ -195,6 +195,29 @@ async def test_kill_ok(
     assert ret is None
 
 
+async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
+    async with make_client("http://whatever") as client:
+        image = RemoteImage(name="ubuntu")
+        with pytest.raises(ValueError, match="must be in the neuromation registry"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_ok(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        return web.Response(status=web.HTTPCreated.status_code)
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        await client.jobs.save("job-id", image)
+
+
 async def test_status_failed(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
