@@ -6,7 +6,7 @@ import pathlib
 import time
 from fnmatch import fnmatch
 from math import ceil
-from typing import Any, Dict, Iterator, List, Sequence
+from typing import Any, Dict, Iterator, List, Optional, Sequence
 
 import click
 import humanize
@@ -414,9 +414,15 @@ class BSDPainter(BasePainter):
                     bold = True
             if color[1] in char_to_color.keys():
                 bg = char_to_color[color[1]]
-            if fg or bg or bold:
-                return style(label, fg=fg, bg=bg, bold=bold, underline=self._underline)
-        return style(label, underline=self._underline)
+            if self._underline:
+                underline: Optional[bool] = True
+            else:
+                underline = None
+            if fg or bg or bold or underline:
+                return style(label, fg=fg, bg=bg, bold=bold, underline=underline)
+        if self._underline:
+            return style(label, underline=self._underline)
+        return label
 
 
 def get_painter(color: bool, *, quote: bool = False) -> BasePainter:

@@ -1009,6 +1009,31 @@ class TestBSDPainter:
             "tmp", fg="blue", bg="black", bold=True
         )
 
+    def test_coloring_underline(self) -> None:
+        file = FileStatus(
+            "test.txt",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        folder = FileStatus(
+            "tmp",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "write",
+        )
+        painter = BSDPainter("exfxcxdxbxegedabagacad", underline=True)
+        assert painter.paint(file.name, file.type) == click.style("test.txt", underline=True)
+        assert painter.paint(folder.name, folder.type) == click.style("tmp", fg="blue", underline=True)
+
+        painter = BSDPainter("Eafxcxdxbxegedabagacad", underline=True)
+        assert painter.paint(file.name, file.type) == click.style("test.txt", underline=True)
+        assert painter.paint(folder.name, folder.type) == click.style(
+            "tmp", fg="blue", bg="black", bold=True, underline=True
+        )
+
 
 class TestPainterFactory:
     def test_detection(self, monkeypatch: Any) -> None:
