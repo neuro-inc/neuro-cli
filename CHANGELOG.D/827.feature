@@ -1,1 +1,0 @@
-`neuro job submit` and `neuro job run` command now support `--pass-config` option. This option ensures your local neuromation config file is uploaded to your job allowing you to executre `neuro` commands from the container.
