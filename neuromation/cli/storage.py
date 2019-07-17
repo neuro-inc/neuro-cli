@@ -1,15 +1,29 @@
+import asyncio
 import glob as globmodule  # avoid conflict with subcommand "glob"
+import os
+import secrets
+import shlex
 from typing import List, Optional, Sequence
 
+import aiodocker
 import click
 from yarl import URL
 
-from neuromation.api import FileStatusType
+from neuromation.api import (
+    Container,
+    FileStatusType,
+    HTTPPort,
+    JobStatus,
+    RemoteImage,
+    Resources,
+    Volume,
+)
 from neuromation.api.url_utils import _extract_path
 
 from .formatters import (
     BaseFilesFormatter,
     FilesSorter,
+    JobStartProgress,
     LongFilesFormatter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
@@ -266,6 +280,198 @@ async def cp(
 
 
 @command()
+@click.argument("sources", nargs=-1, required=False)
+@click.argument("destination", required=False)
+@click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
+@click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in SOURCES with explicit scheme",
+)
+@click.option(
+    "-t",
+    "--target-directory",
+    metavar="DIRECTORY",
+    default=None,
+    help="Copy all SOURCES into DIRECTORY",
+)
+@click.option(
+    "-T",
+    "--no-target-directory",
+    is_flag=True,
+    help="Treat DESTINATION as a normal file",
+)
+@click.option(
+    "-u",
+    "--update",
+    is_flag=True,
+    help="Copy only when the SOURCE file is newer than the destination file "
+    "or when the destination file is missing",
+)
+@click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
+@async_cmd()
+async def load(
+    root: Root,
+    sources: Sequence[str],
+    destination: Optional[str],
+    recursive: bool,
+    glob: bool,
+    target_directory: Optional[str],
+    no_target_directory: bool,
+    update: bool,
+    progress: bool,
+) -> None:
+    """
+    Copy files and directories using Amazon S3 (EXPERIMENTAL).
+
+    Same as "cp", but uses Amazon S3.
+    """
+    target_dir: Optional[URL]
+    dst: Optional[URL]
+    if target_directory:
+        if no_target_directory:
+            raise click.UsageError(
+                "Cannot combine --target-directory (-t) and --no-target-directory (-T)"
+            )
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        sources = *sources, destination
+        target_dir = parse_file_resource(target_directory, root)
+        dst = None
+    else:
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"DESTINATION"'
+            )
+        if not sources:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        dst = parse_file_resource(destination, root)
+        if no_target_directory or not await root.client.storage._is_dir(dst):
+            target_dir = None
+        else:
+            target_dir = dst
+            dst = None
+
+    srcs = await _expand(sources, root, glob, allow_file=True)
+    if no_target_directory and len(srcs) > 1:
+        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
+
+    for src in srcs:
+        if target_dir:
+            dst = target_dir / src.name
+        assert dst
+        await cp_s3(root, src, dst, recursive=recursive, update=update)
+
+
+async def cp_s3(root: Root, src: URL, dst: URL, recursive: bool, update: bool) -> None:
+    if src.scheme == "file" and dst.scheme == "storage":
+        storage_uri = dst
+        local_uri = src
+        upload = True
+    elif src.scheme == "storage" and dst.scheme == "file":
+        storage_uri = src
+        local_uri = dst
+        upload = False
+    else:
+        raise RuntimeError(
+            f"Copy operation of the file with scheme '{src.scheme}'"
+            f" to the file with scheme '{dst.scheme}'"
+            f" is not supported"
+        )
+
+    access_key = secrets.token_urlsafe(nbytes=16)
+    secret_key = secrets.token_urlsafe(nbytes=16)
+    bucket = f".bucket-{secrets.token_hex(nbytes=16)}"
+    s3_uri = f"s3://{bucket}{storage_uri.path}"
+    command = f"ln -s /mnt /mnt/{bucket}; minio server /mnt"
+    volume = Volume(
+        storage_path=str(storage_uri.with_path("")),
+        container_path="/mnt",
+        read_only=not upload,
+    )
+    server_container = Container(
+        image=RemoteImage("minio/minio"),
+        entrypoint="sh",
+        command=f"-c {shlex.quote(command)}",
+        http=HTTPPort(port=9000, requires_auth=False),
+        resources=Resources(memory_mb=1024, cpu=1, gpu=0, gpu_model=None, shm=True),
+        env={"MINIO_ACCESS_KEY": access_key, "MINIO_SECRET_KEY": secret_key},
+        volumes=[volume],
+    )
+
+    job = await root.client.jobs.run(server_container, name="neuro-upload-server")
+    try:
+        jsprogress = JobStartProgress.create(
+            tty=root.tty, color=root.color, quiet=root.quiet
+        )
+        while job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.2)
+            job = await root.client.jobs.status(job.id)
+            jsprogress(job)
+        jsprogress.close()
+
+        local_path = "/data"
+        if not os.path.isdir(local_uri.path):
+            local_path = f"/data/{local_uri.name}"
+            local_uri = local_uri.parent
+        binding = f"{local_uri.path}:/data"
+        if upload:
+            binding += ":ro"
+        cp_cmd = ["sync" if update else "cp"]
+        if recursive:
+            cp_cmd.append("--recursive")
+        if root.verbosity < 0:
+            cp_cmd.append("--quiet")
+        if upload:
+            cp_cmd.append(local_path)
+            cp_cmd.append(s3_uri)
+        else:
+            cp_cmd.append(s3_uri)
+            cp_cmd.append(local_path)
+
+        script = f"""\
+aws configure set default.s3.max_concurrent_requests 100
+aws configure set default.s3.max_queue_size 10000
+aws --endpoint-url {job.http_url} s3 {" ".join(cp_cmd)}
+aws --endpoint-url {job.http_url} s3 rb s3://{bucket}
+exit
+"""
+        docker = aiodocker.Docker()
+        try:
+            client_container = await docker.containers.create(
+                config={
+                    "Image": "mesosphere/aws-cli",
+                    "Entrypoint": "sh",
+                    "Cmd": ["-c", script],
+                    "Env": [
+                        f"AWS_ACCESS_KEY_ID={access_key}",
+                        f"AWS_SECRET_ACCESS_KEY={secret_key}",
+                    ],
+                    "HostConfig": {"Binds": [binding]},
+                    "Tty": True,
+                },
+                name="neuro-upload-client",
+            )
+            try:
+                await client_container.start()
+                await client_container.wait()
+                logs = await client_container.log(stdout=True, stderr=True)
+                print("".join(logs))
+            finally:
+                await client_container.delete(force=True)
+        finally:
+            await docker.close()
+    finally:
+        await root.client.jobs.kill(job.id)
+
+
+@command()
 @click.argument("paths", nargs=-1, required=True)
 @click.option(
     "-p",
@@ -426,3 +632,4 @@ storage.add_command(glob)
 storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
+storage.add_command(load)
