@@ -5,6 +5,25 @@
 
 [comment]: # (towncrier release notes start)
 
+
+Neuromation 19.7.17 (2019-07-17)
+================================
+
+Features
+--------
+
+
+- The behavior of `neuro storage mv` is now closer to the behavior of the `mv` command.  It moves now files inside the target directory if it exists and moves a file under the new name otherwise.  Added also options `--target-directory` (`-t`) and `--no-target-directory` (`-T`). ([#203](https://github.com/neuromation/platform-api-clients/issues/203))
+
+- `neuro job submit` and `neuro job run` command now support `--pass-config` option. This option ensures your local neuromation config file is uploaded to your job allowing you to executre `neuro` commands from the container. ([#827](https://github.com/neuromation/platform-api-clients/issues/827))
+
+- Add `neuro image tags` command to list all tags for a given image ([#852](https://github.com/neuromation/platform-api-clients/issues/852))
+
+- Stabilize jobs API ([#879](https://github.com/neuromation/platform-api-clients/issues/879))
+
+- `neuro storage cp`, `neuro storage mv` and `neuro storage rm` support now globbing for source arguments.  Globbing can be disabled by specifying new option `--no-glob`.  Added command `neuro storage glob` which lists resources matching patterns. ([#889](https://github.com/neuromation/platform-api-clients/issues/889))
+
+
 Neuromation 19.7.4 (2019-07-04)
 ===============================
 

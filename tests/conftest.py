@@ -5,6 +5,7 @@ import pytest
 from jose import jwt
 from yarl import URL
 
+import neuromation
 from neuromation.api import Client
 from neuromation.api.config import (
     _AuthConfig,
@@ -85,6 +86,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             url=URL(url),
             cluster_config=cluster_config,
             cookie_session=_CookieSession.create_uninitialized(),
+            version=neuromation.__version__,
         )
         connector = aiohttp.TCPConnector()
         return Client._create(connector, config)
