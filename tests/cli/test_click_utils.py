@@ -1,8 +1,9 @@
 from textwrap import dedent
 
+import pytest
 from click.testing import CliRunner
 
-from neuromation.cli.utils import DeprecatedGroup, MainGroup, command, group
+from neuromation.cli.utils import JOB_NAME, DeprecatedGroup, MainGroup, command, group
 
 
 def test_print() -> None:
@@ -237,3 +238,17 @@ def test_print_help_with_examples() -> None:
           --help  Show this message and exit.
     """
     )
+
+
+class TestJobNameType:
+    def test_too_short(self) -> None:
+        with pytest.raises(ValueError, match="too short"):
+            JOB_NAME.convert("a" * 2, param=None, ctx=None)
+
+    def test_too_long(self) -> None:
+        with pytest.raises(ValueError, match="too long"):
+            JOB_NAME.convert("a" * 41, param=None, ctx=None)
+
+    def test_invalid_pattern(self) -> None:
+        with pytest.raises(ValueError, match="must match regex"):
+            JOB_NAME.convert("abc-DEF", param=None, ctx=None)
