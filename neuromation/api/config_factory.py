@@ -8,8 +8,11 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 import aiohttp
 import certifi
+import pkg_resources
 import yaml
 from yarl import URL
+
+import neuromation
 
 from .client import Client
 from .config import _Config, _CookieSession, _PyPIVersion
@@ -99,6 +102,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
+            version=pkg_resources.parse_version(neuromation.__version__),
         )
         self._save(config)
 
@@ -128,6 +132,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
+            version=pkg_resources.parse_version(neuromation.__version__),
         )
         self._save(config)
 
@@ -149,6 +154,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
+            version=pkg_resources.parse_version(neuromation.__version__),
         )
         self._save(config)
 
@@ -193,6 +199,7 @@ class Factory:
                 pypi=_PyPIVersion.from_config(pypi_payload),
                 url=api_url,
                 cookie_session=cookie_session,
+                version=pkg_resources.parse_version(neuromation.__version__),
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")

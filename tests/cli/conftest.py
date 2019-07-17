@@ -4,9 +4,11 @@ from collections import namedtuple
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, List
 
+import pkg_resources
 import pytest
 from yarl import URL
 
+import neuromation
 from neuromation.api import Factory
 from neuromation.api.config import (
     _AuthConfig,
@@ -51,6 +53,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
         cookie_session=_CookieSession.create_uninitialized(),
+        version=pkg_resources.parse_version(neuromation.__version__),
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path

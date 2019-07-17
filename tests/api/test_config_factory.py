@@ -4,6 +4,7 @@ from typing import Any, Dict
 from unittest import mock
 
 import aiohttp
+import pkg_resources
 import pytest
 import yaml
 from aiohttp import web
@@ -11,6 +12,7 @@ from aiohttp.test_utils import TestServer as _TestServer
 from jose import jwt
 from yarl import URL
 
+import neuromation
 import neuromation.api.config_factory
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import (
@@ -128,6 +130,7 @@ def _create_config(
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
         cookie_session=_CookieSession.create_uninitialized(),
+        version=pkg_resources.parse_version(neuromation.__version__),
     )
     Factory(nmrc_path)._save(config)
     assert nmrc_path.exists()
