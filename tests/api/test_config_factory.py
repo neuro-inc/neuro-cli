@@ -100,11 +100,7 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
 
     async def new_token(request: web.Request) -> web.Response:
         return web.json_response(
-            {
-                "access_token": token,
-                "expires_in": 3600,
-                "refresh_token": token,
-            }
+            {"access_token": token, "expires_in": 3600, "refresh_token": token}
         )
 
     app = web.Application()
