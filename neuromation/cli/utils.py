@@ -546,13 +546,20 @@ class JobNameType(click.ParamType):
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> str:
-        pre = f"Invalid job name '{value}'"
-        if len(value) < JOB_NAME_MIN_LENGTH:
-            raise ValueError(f"{pre}: too short (min length {JOB_NAME_MIN_LENGTH})")
-        if len(value) > JOB_NAME_MAX_LENGTH:
-            raise ValueError(f"{pre}: too long (max length {JOB_NAME_MAX_LENGTH})")
-        if JOB_NAME_REGEX.match(value) is None:
-            raise ValueError(f"{pre}: must match regex {JOB_NAME_PATTERN}")
+        if (
+            len(value) < JOB_NAME_MIN_LENGTH
+            or len(value) > JOB_NAME_MAX_LENGTH
+            or JOB_NAME_REGEX.match(value) is None
+        ):
+            raise ValueError(
+                f"Invalid job name '{value}'.\n"
+                "The name can only contain lowercase letters, numbers and hyphens "
+                "with the following rules: \n"
+                "  - the first character must be a letter; \n"
+                "  - each hyphen must be surrounded by a non-hyphen character; \n"
+                f"  - total length must be between {JOB_NAME_MIN_LENGTH} and "
+                f"{JOB_NAME_MAX_LENGTH} characters long."
+            )
         return value
 
 
