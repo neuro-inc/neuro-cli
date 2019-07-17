@@ -528,7 +528,7 @@ Name | Description|
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
-| _[neuro storage load](#neuro-storage-load)_| Copy files and directories using Amazon S3 \(EXPERIMENTAL) |
+| _[neuro storage load](#neuro-storage-load)_| Copy files and directories using MinIO \(EXPERIMENTAL) |
 
 
 
@@ -728,7 +728,7 @@ Name | Description|
 
 ### neuro storage load
 
-Copy files and directories using Amazon S3 \(EXPERIMENTAL).<br/><br/>Same as "cp", but uses Amazon S3.
+Copy files and directories using MinIO \(EXPERIMENTAL).<br/><br/>Same as "cp", but uses MinIO and the Amazon S3 protocol.
 
 **Usage:**
 

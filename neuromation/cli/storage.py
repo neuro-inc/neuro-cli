@@ -1,5 +1,6 @@
 import asyncio
 import glob as globmodule  # avoid conflict with subcommand "glob"
+import logging
 import os
 import secrets
 import shlex
@@ -32,6 +33,14 @@ from .formatters import (
 )
 from .root import Root
 from .utils import async_cmd, command, group, parse_file_resource
+
+
+MINIO_IMAGE_NAME = "minio/minio"
+MINIO_IMAGE_TAG = "RELEASE.2019-07-10T00-34-56Z"
+AWS_IMAGE_NAME = "mesosphere/aws-cli"
+AWS_IMAGE_TAG = "1.14.5"
+
+log = logging.getLogger(__name__)
 
 
 @group()
@@ -324,12 +333,14 @@ async def load(
     progress: bool,
 ) -> None:
     """
-    Copy files and directories using Amazon S3 (EXPERIMENTAL).
+    Copy files and directories using MinIO (EXPERIMENTAL).
 
-    Same as "cp", but uses Amazon S3.
+    Same as "cp", but uses MinIO and the Amazon S3 protocol.
     """
     target_dir: Optional[URL]
     dst: Optional[URL]
+    if update and recursive:
+        raise click.UsageError("Cannot use --update and --recursive together")
     if target_directory:
         if no_target_directory:
             raise click.UsageError(
@@ -366,10 +377,14 @@ async def load(
         if target_dir:
             dst = target_dir / src.name
         assert dst
-        await cp_s3(root, src, dst, recursive=recursive, update=update)
+        await cp_s3(
+            root, src, dst, recursive=recursive, update=update, progress=progress
+        )
 
 
-async def cp_s3(root: Root, src: URL, dst: URL, recursive: bool, update: bool) -> None:
+async def cp_s3(
+    root: Root, src: URL, dst: URL, recursive: bool, update: bool, progress: bool
+) -> None:
     if src.scheme == "file" and dst.scheme == "storage":
         storage_uri = dst
         local_uri = src
@@ -387,7 +402,7 @@ async def cp_s3(root: Root, src: URL, dst: URL, recursive: bool, update: bool) -
 
     access_key = secrets.token_urlsafe(nbytes=16)
     secret_key = secrets.token_urlsafe(nbytes=16)
-    bucket = f".bucket-{secrets.token_hex(nbytes=16)}"
+    bucket = f".bucket-{secrets.token_hex(nbytes=8)}"
     s3_uri = f"s3://{bucket}{storage_uri.path}"
     command = f"ln -s /mnt /mnt/{bucket}; minio server /mnt"
     volume = Volume(
@@ -396,7 +411,7 @@ async def cp_s3(root: Root, src: URL, dst: URL, recursive: bool, update: bool) -
         read_only=not upload,
     )
     server_container = Container(
-        image=RemoteImage("minio/minio"),
+        image=RemoteImage(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),
         entrypoint="sh",
         command=f"-c {shlex.quote(command)}",
         http=HTTPPort(port=9000, requires_auth=False),
@@ -405,6 +420,7 @@ async def cp_s3(root: Root, src: URL, dst: URL, recursive: bool, update: bool) -
         volumes=[volume],
     )
 
+    log.info(f"Launching Amazon S3 gateway for {str(storage_uri.with_path(''))!r}")
     job = await root.client.jobs.run(server_container, name="neuro-upload-server")
     try:
         jsprogress = JobStartProgress.create(
@@ -442,11 +458,12 @@ aws --endpoint-url {job.http_url} s3 {" ".join(cp_cmd)}
 aws --endpoint-url {job.http_url} s3 rb s3://{bucket}
 exit
 """
+        log.info(f"Launching Amazon S3 client for {local_uri.path!r}")
         docker = aiodocker.Docker()
         try:
             client_container = await docker.containers.create(
                 config={
-                    "Image": "mesosphere/aws-cli",
+                    "Image": f"{AWS_IMAGE_NAME}:{AWS_IMAGE_TAG}",
                     "Entrypoint": "sh",
                     "Cmd": ["-c", script],
                     "Env": [
@@ -456,13 +473,17 @@ exit
                     "HostConfig": {"Binds": [binding]},
                     "Tty": True,
                 },
-                name="neuro-upload-client",
+                name=f"neuro-upload-client-{secrets.token_hex(nbytes=8)}",
             )
             try:
                 await client_container.start()
+                # TODO Output logs in real time
                 await client_container.wait()
-                logs = await client_container.log(stdout=True, stderr=True)
-                print("".join(logs))
+                if root.verbosity > 0 or progress:
+                    logs = await client_container.log(stdout=True)
+                    click.echo("".join(logs))
+                logs = await client_container.log(stderr=True)
+                click.echo("".join(logs), err=True)
             finally:
                 await client_container.delete(force=True)
         finally:
