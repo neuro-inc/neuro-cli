@@ -107,7 +107,7 @@ class QuotedPainter(BasePainter):
 
 
 class GnuPainter(BasePainter):
-    def __init__(self, ls_colors: str, *, underline=False):
+    def __init__(self, ls_colors: str, *, underline: bool = False):
         self._defaults()
         self._parse_ls_colors(ls_colors)
         self._underline = underline
@@ -361,7 +361,10 @@ class GnuPainter(BasePainter):
                 + self.color_indicator[GnuIndicators.RESET]
                 + self.color_indicator[GnuIndicators.RIGHT]
             )
-        return style(label, underline=self._underline)
+        if self._underline:
+            return style(label, underline=self._underline)
+        else:
+            return label
 
 
 class BSDAttributes(enum.Enum):
@@ -379,7 +382,7 @@ class BSDAttributes(enum.Enum):
 
 
 class BSDPainter(BasePainter):
-    def __init__(self, lscolors: str, *, underline=False):
+    def __init__(self, lscolors: str, *, underline: bool = False):
         self._underline = underline
         self._parse_lscolors(lscolors)
 

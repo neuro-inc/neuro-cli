@@ -978,6 +978,41 @@ class TestGnuPainter:
         assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
         assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
 
+    def test_coloring_underline(self) -> None:
+        file = FileStatus(
+            "test.txt",
+            1024,
+            FileStatusType.FILE,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "read",
+        )
+        folder = FileStatus(
+            "tmp",
+            0,
+            FileStatusType.DIRECTORY,
+            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            "write",
+        )
+        painter = GnuPainter("di=32;41:fi=0;44:no=0;46", underline=True)
+        assert painter.paint(file.name, file.type) == "\x1b[0;44m\x1b[4mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[32;41m\x1b[4mtmp\x1b[0m"
+
+        painter = GnuPainter("di=32;41:no=0;46", underline=True)
+        assert painter.paint(file.name, file.type) == "\x1b[0;46m\x1b[4mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[32;41m\x1b[4mtmp\x1b[0m"
+
+        painter = GnuPainter("no=0;46", underline=True)
+        assert painter.paint(file.name, file.type) == "\x1b[0;46m\x1b[4mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34m\x1b[4mtmp\x1b[0m"
+
+        painter = GnuPainter("*.text=0;46", underline=True)
+        assert painter.paint(file.name, file.type) == "\x1b[4mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34m\x1b[4mtmp\x1b[0m"
+
+        painter = GnuPainter("*.txt=0;46", underline=True)
+        assert painter.paint(file.name, file.type) == "\x1b[0;46m\x1b[4mtest.txt\x1b[0m"
+        assert painter.paint(folder.name, folder.type) == "\x1b[01;34m\x1b[4mtmp\x1b[0m"
+
 
 class TestBSDPainter:
     def test_color_parsing(self) -> None:
@@ -1025,11 +1060,17 @@ class TestBSDPainter:
             "write",
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad", underline=True)
-        assert painter.paint(file.name, file.type) == click.style("test.txt", underline=True)
-        assert painter.paint(folder.name, folder.type) == click.style("tmp", fg="blue", underline=True)
+        assert painter.paint(file.name, file.type) == click.style(
+            "test.txt", underline=True
+        )
+        assert painter.paint(folder.name, folder.type) == click.style(
+            "tmp", fg="blue", underline=True
+        )
 
         painter = BSDPainter("Eafxcxdxbxegedabagacad", underline=True)
-        assert painter.paint(file.name, file.type) == click.style("test.txt", underline=True)
+        assert painter.paint(file.name, file.type) == click.style(
+            "test.txt", underline=True
+        )
         assert painter.paint(folder.name, folder.type) == click.style(
             "tmp", fg="blue", bg="black", bold=True, underline=True
         )
