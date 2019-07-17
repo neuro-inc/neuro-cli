@@ -1,7 +1,6 @@
 from typing import Callable
 
 import aiohttp
-import pkg_resources
 import pytest
 from jose import jwt
 from yarl import URL
@@ -87,7 +86,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             url=URL(url),
             cluster_config=cluster_config,
             cookie_session=_CookieSession.create_uninitialized(),
-            version=pkg_resources.parse_version(neuromation.__version__),
+            version=neuromation.__version__,
         )
         connector = aiohttp.TCPConnector()
         return Client._create(connector, config)

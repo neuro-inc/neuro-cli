@@ -8,7 +8,6 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 import aiohttp
 import certifi
-import pkg_resources
 import yaml
 from yarl import URL
 
@@ -64,17 +63,18 @@ class Factory:
             new_token = await refresh_token(
                 connector, config.auth_config, config.auth_token, timeout
             )
-            if config.version != pkg_resources.parse_version(neuromation.__version__):
+            if config.version != neuromation.__version__:
                 config_authorized = await get_server_config(
                     connector, config.url, token=new_token.token
                 )
-                if config_authorized != config.cluster_config:
+                if (
+                    config_authorized.cluster_config != config.cluster_config
+                    or config_authorized.auth_config != config.auth_config
+                ):
                     raise ConfigError(
-                        "Neuro CLI updated. " "Please logout and login again."
+                        "Neuro CLI updated. Please logout and login again."
                     )
-                config = replace(
-                    config, version=pkg_resources.parse_version(neuromation.__version__)
-                )
+                config = replace(config, version=neuromation.__version__)
             if new_token != config.auth_token:
                 config = replace(config, auth_token=new_token)
             if config != saved_config:
@@ -113,7 +113,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
-            version=pkg_resources.parse_version(neuromation.__version__),
+            version=neuromation.__version__,
         )
         self._save(config)
 
@@ -143,7 +143,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
-            version=pkg_resources.parse_version(neuromation.__version__),
+            version=neuromation.__version__,
         )
         self._save(config)
 
@@ -165,7 +165,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
-            version=pkg_resources.parse_version(neuromation.__version__),
+            version=neuromation.__version__,
         )
         self._save(config)
 
@@ -202,6 +202,7 @@ class Factory:
             cookie_session = _CookieSession.from_config(
                 payload.get("cookie_session", {})
             )
+            version = payload.get("version", "")
 
             return _Config(
                 auth_config=auth_config,
@@ -210,7 +211,7 @@ class Factory:
                 pypi=_PyPIVersion.from_config(pypi_payload),
                 url=api_url,
                 cookie_session=cookie_session,
-                version=pkg_resources.parse_version(neuromation.__version__),
+                version=version,
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
@@ -268,7 +269,7 @@ class Factory:
             token_url=URL(auth_config["token_url"]),
             client_id=auth_config["client_id"],
             audience=auth_config["audience"],
-            headless_callback_url=auth_config["headless_callback_url"],
+            headless_callback_url=URL(auth_config["headless_callback_url"]),
             success_redirect_url=success_redirect_url,
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
@@ -322,6 +323,7 @@ class Factory:
             }
             payload["pypi"] = config.pypi.to_config()
             payload["cookie_session"] = config.cookie_session.to_config()
+            payload["version"] = config.version
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
 

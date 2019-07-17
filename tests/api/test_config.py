@@ -1,4 +1,3 @@
-import pkg_resources
 import pytest
 from yarl import URL
 
@@ -48,7 +47,7 @@ class TestConfig:
             ),
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
-            version=pkg_resources.parse_version(neuromation.__version__),
+            version=neuromation.__version__,
         )
         config.check_initialized()  # check no exceptions
 
@@ -85,7 +84,7 @@ class TestConfig:
             ),
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
-            version=pkg_resources.parse_version(neuromation.__version__),
+            version=neuromation.__version__,
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
             config.check_initialized()
@@ -123,7 +122,7 @@ class TestConfig:
             ),
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
-            version=pkg_resources.parse_version(neuromation.__version__),
+            version=neuromation.__version__,
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
             config.check_initialized()

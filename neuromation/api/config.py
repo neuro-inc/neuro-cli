@@ -81,7 +81,7 @@ class _Config:
     pypi: _PyPIVersion
     url: URL
     cookie_session: _CookieSession
-    version: Any
+    version: str
 
     def check_initialized(self) -> None:
         if (
