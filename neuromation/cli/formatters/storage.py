@@ -106,9 +106,10 @@ class QuotedPainter(BasePainter):
 
 
 class GnuPainter(BasePainter):
-    def __init__(self, ls_colors: str):
+    def __init__(self, ls_colors: str, *, underline=False):
         self._defaults()
         self._parse_ls_colors(ls_colors)
+        self._underline = underline
 
     def _defaults(self) -> None:
         self.color_indicator: Dict[GnuIndicators, str] = {
@@ -341,16 +342,25 @@ class GnuPainter(BasePainter):
                     color = value
                     break
         if color:
+            if self._underline:
+                underline = (
+                    self.color_indicator[GnuIndicators.LEFT]
+                    + "4"
+                    + self.color_indicator[GnuIndicators.RIGHT]
+                )
+            else:
+                underline = ""
             return (
                 self.color_indicator[GnuIndicators.LEFT]
                 + color
                 + self.color_indicator[GnuIndicators.RIGHT]
+                + underline
                 + label
                 + self.color_indicator[GnuIndicators.LEFT]
                 + self.color_indicator[GnuIndicators.RESET]
                 + self.color_indicator[GnuIndicators.RIGHT]
             )
-        return label
+        return style(label, underline=self._underline)
 
 
 class BSDAttributes(enum.Enum):
@@ -368,7 +378,8 @@ class BSDAttributes(enum.Enum):
 
 
 class BSDPainter(BasePainter):
-    def __init__(self, lscolors: str):
+    def __init__(self, lscolors: str, *, underline=False):
+        self._underline = underline
         self._parse_lscolors(lscolors)
 
     def _parse_lscolors(self, lscolors: str) -> None:
@@ -403,18 +414,18 @@ class BSDPainter(BasePainter):
             if color[1] in char_to_color.keys():
                 bg = char_to_color[color[1]]
             if fg or bg or bold:
-                return style(label, fg=fg, bg=bg, bold=bold)
-        return label
+                return style(label, fg=fg, bg=bg, bold=bold, underline=self._underline)
+        return style(label, underline=self._underline)
 
 
 def get_painter(color: bool, *, quote: bool = False) -> BasePainter:
     if color:
         ls_colors = os.getenv("LS_COLORS")
         if ls_colors:
-            return GnuPainter(ls_colors)
+            return GnuPainter(ls_colors, underline=quote)
         lscolors = os.getenv("LSCOLORS")
         if lscolors:
-            return BSDPainter(lscolors)
+            return BSDPainter(lscolors, underline=quote)
     if quote:
         return QuotedPainter()
     else:
@@ -632,8 +643,8 @@ class StandardPrintPercentOnly(AbstractStorageProgress):
         click.echo(f"\r{src} -> {dst}: {progress:.2f}%.", nl=False)
 
     def mkdir(self, data: StorageProgressMkdir) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.DIRECTORY)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.DIRECTORY)
         click.echo(f"Copy directory {src} -> {dst}.")
 
     def fail(self, data: StorageProgressFail) -> None:

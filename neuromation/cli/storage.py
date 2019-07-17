@@ -157,7 +157,13 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     is_flag=True,
     help="Treat DESTINATION as a normal file",
 )
-@click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
+@click.option(
+    "-p/-P",
+    "--progress/--no-progress",
+    is_flag=True,
+    default=True,
+    help="Show progress, on by default",
+)
 @async_cmd()
 async def cp(
     root: Root,
@@ -403,7 +409,7 @@ async def _expand(
         uri = parse_file_resource(path, root)
         if root.verbosity > 0:
             painter = get_painter(root.color, quote=True)
-            curi = painter.paint(str(str), FileStatusType.FILE)
+            curi = painter.paint(str(uri), FileStatusType.FILE)
             click.echo(f"Expand {curi}")
         uri_path = str(_extract_path(uri))
         if glob and globmodule.has_magic(uri_path):
