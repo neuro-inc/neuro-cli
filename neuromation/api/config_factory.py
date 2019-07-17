@@ -58,18 +58,29 @@ class Factory:
         self._path = path.expanduser()
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
-        config = self._read()
+        saved_config = config = self._read()
         connector = await _make_connector()
         try:
             new_token = await refresh_token(
                 connector, config.auth_config, config.auth_token, timeout
             )
+            if config.version != pkg_resources.parse_version(neuromation.__version__):
+                config_authorized = await get_server_config(
+                    connector, config.url, token=new_token.token
+                )
+                if config_authorized != config.cluster_config:
+                    raise ConfigError(
+                        "Neuro CLI updated. " "Please logout and login again."
+                    )
+                config = replace(
+                    config, version=pkg_resources.parse_version(neuromation.__version__)
+                )
             if new_token != config.auth_token:
-                new_config = replace(config, auth_token=new_token)
+                config = replace(config, auth_token=new_token)
+            if config != saved_config:
                 # _save() may raise malformed config exception
                 # Should close connector in this case
-                self._save(new_config)
-                config = new_config
+                self._save(config)
         except (asyncio.CancelledError, Exception):
             await connector.close()
             raise
