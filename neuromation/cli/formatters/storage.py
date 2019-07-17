@@ -2,6 +2,7 @@ import abc
 import enum
 import operator
 import os
+import pathlib
 import time
 from fnmatch import fnmatch
 from math import ceil
@@ -563,7 +564,12 @@ def create_storage_progress(
 def fmt_url(url: URL) -> str:
     if url.scheme == "file":
         path = _extract_path(url)
-        return str(path)
+        cwd = pathlib.Path.cwd()
+        try:
+            rel_path = path.relative_to(cwd)
+            return str(rel_path)
+        except ValueError:
+            return str(path)
     else:
         return str(url)
 
