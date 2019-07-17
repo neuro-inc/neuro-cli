@@ -38,7 +38,7 @@ from .utils import async_cmd, command, group, parse_file_resource
 MINIO_IMAGE_NAME = "minio/minio"
 MINIO_IMAGE_TAG = "RELEASE.2019-07-10T00-34-56Z"
 AWS_IMAGE_NAME = "mesosphere/aws-cli"
-AWS_IMAGE_TAG = "1.14.5"
+AWS_IMAGE_TAG = "latest"  # XXX Does not work with concrete tags (?!)
 
 log = logging.getLogger(__name__)
 
