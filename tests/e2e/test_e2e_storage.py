@@ -1,6 +1,7 @@
 import errno
 import os
 import subprocess
+import sys
 from pathlib import Path, PurePath
 from typing import Tuple
 
@@ -352,6 +353,9 @@ def test_e2e_copy_recursive_to_platform(
     helper.check_dir_absent_on_storage("nested", "")
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Docker is not configured on Windows"
+)
 @pytest.mark.e2e
 def test_load_local_file_to_platform_home_directory(
     helper: Helper, data: _Data
@@ -370,6 +374,9 @@ def test_load_local_file_to_platform_home_directory(
     helper.check_rm_file_on_storage(file_name, "", fromhome=True)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Docker is not configured on Windows"
+)
 @pytest.mark.e2e
 def test_load_local_file_to_platform_directory(helper: Helper, data: _Data) -> None:
     srcfile, checksum = data
@@ -393,6 +400,9 @@ def test_load_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
     helper.check_file_absent_on_storage(file_name, "folder")
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Docker is not configured on Windows"
+)
 @pytest.mark.e2e
 def test_load_local_single_file_to_platform_file(helper: Helper, data: _Data) -> None:
     # case when copy happens with rename to 'different_name.txt'
@@ -418,6 +428,9 @@ def test_load_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     helper.check_file_absent_on_storage("different_name.txt", "folder")
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Docker is not configured on Windows"
+)
 @pytest.mark.e2e
 def test_e2e_load_recursive_to_platform(
     helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path
