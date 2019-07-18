@@ -421,7 +421,8 @@ async def cp_s3(
     )
 
     log.info(f"Launching Amazon S3 gateway for {str(storage_uri.with_path(''))!r}")
-    job = await root.client.jobs.run(server_container, name="neuro-upload-server")
+    job_name = f"neuro-upload-server-{secrets.token_hex(nbytes=8)}"
+    job = await root.client.jobs.run(server_container, name=job_name)
     try:
         jsprogress = JobStartProgress.create(
             tty=root.tty, color=root.color, quiet=root.quiet
