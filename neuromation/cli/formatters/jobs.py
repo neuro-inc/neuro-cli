@@ -1,10 +1,10 @@
 import abc
 import datetime
 import itertools
+import sys
 import time
 from dataclasses import dataclass
 from math import floor
-from sys import platform
 from typing import Iterable, Iterator, List, Mapping
 
 import humanize
@@ -327,7 +327,7 @@ class DetailedJobStartProgress(JobStartProgress):
         self._time = time.time()
         self._color = color
         self._prev = ""
-        if platform == "win32":
+        if sys.platform == "win32":
             self._spinner = itertools.cycle("-\\|/")
         else:
             self._spinner = itertools.cycle("◢◣◤◥")
@@ -352,7 +352,7 @@ class DetailedJobStartProgress(JobStartProgress):
                 self._printer.print(self._prev, lineno=self._lineno)
             self._prev = msg
             self._printer.print(msg)
-            self._lineno = self._printer.total_lines
+            self._lineno = self._printer.total_lines - 1
         else:
             self._printer.print(
                 f"{msg} {next(self._spinner)} [{dt:.1f} sec]", lineno=self._lineno

@@ -61,7 +61,7 @@ class DetailedDockerImageProgress(DockerImageProgress):
                 self._printer.print(message, lineno)
             else:
                 self._printer.print(message)
-                self._mapping[layer_id] = self._printer.total_lines
+                self._mapping[layer_id] = self._printer.total_lines - 1
         else:
             self._printer.print(message)
 

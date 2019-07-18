@@ -14,8 +14,9 @@ from yarl import URL
 from .abc import (
     AbstractStorageProgress,
     StorageProgressComplete,
+    StorageProgressEnterDir,
     StorageProgressFail,
-    StorageProgressMkdir,
+    StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
 )
@@ -314,7 +315,7 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
-        progress.mkdir(StorageProgressMkdir(src, dst))
+        progress.enter(StorageProgressEnterDir(src, dst))
         for child in path.iterdir():
             if child.is_file():
                 await self.upload_file(
@@ -335,6 +336,7 @@ class Storage(metaclass=NoPublicConstructor):
                         f"Cannot upload {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
+        progress.leave(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
@@ -367,7 +369,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
-        progress.mkdir(StorageProgressMkdir(src, dst))
+        progress.enter(StorageProgressEnterDir(src, dst))
         for child in await self.ls(src):
             if child.is_file():
                 await self.download_file(
@@ -385,6 +387,7 @@ class Storage(metaclass=NoPublicConstructor):
                         f"Cannot download {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
+        progress.leave(StorageProgressLeaveDir(src, dst))
 
 
 _magic_check = re.compile("(?:[*?[])")
@@ -422,7 +425,10 @@ class _DummyProgress(AbstractStorageProgress):
     def step(self, data: StorageProgressStep) -> None:
         pass
 
-    def mkdir(self, data: StorageProgressMkdir) -> None:
+    def enter(self, data: StorageProgressEnterDir) -> None:
+        pass
+
+    def leave(self, data: StorageProgressLeaveDir) -> None:
         pass
 
     def fail(self, data: StorageProgressFail) -> None:

@@ -19,12 +19,14 @@ from neuromation.api import (
     FileStatus,
     FileStatusType,
     StorageProgressComplete,
+    StorageProgressEnterDir,
     StorageProgressFail,
-    StorageProgressMkdir,
+    StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
 )
 from neuromation.api.url_utils import _extract_path
+from neuromation.cli.printer import TTYPrinter
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -573,6 +575,7 @@ def create_storage_progress(
 def fmt_url(url: URL) -> str:
     if url.scheme == "file":
         path = _extract_path(url)
+        return str(path)
         cwd = pathlib.Path.cwd()
         try:
             rel_path = path.relative_to(cwd)
@@ -596,7 +599,10 @@ class QuietPrinter(AbstractStorageProgress):
     def step(self, data: StorageProgressStep) -> None:
         pass
 
-    def mkdir(self, data: StorageProgressMkdir) -> None:
+    def enter(self, data: StorageProgressEnterDir) -> None:
+        pass
+
+    def leave(self, data: StorageProgressLeaveDir) -> None:
         pass
 
     def fail(self, data: StorageProgressFail) -> None:
@@ -623,7 +629,12 @@ class NoPercentPrinter(AbstractStorageProgress):
     def step(self, data: StorageProgressStep) -> None:
         pass
 
-    def mkdir(self, data: StorageProgressMkdir) -> None:
+    def enter(self, data: StorageProgressEnterDir) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        click.echo(f"{src} -> {dst}")
+
+    def leave(self, data: StorageProgressLeaveDir) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
         dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
         click.echo(f"{src} -> {dst}")
@@ -638,29 +649,38 @@ class NoPercentPrinter(AbstractStorageProgress):
 
 
 class StandardPrintPercentOnly(AbstractStorageProgress):
+    HEIGHT = 3
+
     def __init__(self, color: bool):
         self.painter = get_painter(color, quote=True)
+        self.printer = TTYPrinter()
+        self.lines = []
 
     def start(self, data: StorageProgressStart) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
         dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(f"Start copying {src} -> {dst}.")
+        self.append(f"Start copying {src} -> {dst}")
 
     def complete(self, data: StorageProgressComplete) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
         dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(f"\rFile {src} -> {dst} copying completed.")
+        self.append(f"\rFile {src} -> {dst} copying completed")
 
     def step(self, data: StorageProgressStep) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
         dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
         progress = (100 * data.current) / data.size
-        click.echo(f"\r{src} -> {dst}: {progress:.2f}%.", nl=False)
+        self.append(f"\r{src} -> {dst}: {progress:.2f}%")
 
-    def mkdir(self, data: StorageProgressMkdir) -> None:
+    def enter(self, data: StorageProgressEnterDir) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.DIRECTORY)
         dst = self.painter.paint(fmt_url(data.dst), FileStatusType.DIRECTORY)
-        click.echo(f"Copy directory {src} -> {dst}.")
+        self.append(f"Copy directory {src} -> {dst}")
+
+    def leave(self, data: StorageProgressLeaveDir) -> None:
+        src = self.painter.paint(fmt_url(data.src), FileStatusType.DIRECTORY)
+        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.DIRECTORY)
+        self.append(f"Done directory {src} -> {dst}")
 
     def fail(self, data: StorageProgressFail) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
@@ -669,3 +689,15 @@ class StandardPrintPercentOnly(AbstractStorageProgress):
             click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
             err=True,
         )
+
+    def append(self, line: str) -> None:
+        if self.lines:
+            self.lines.pop(0)
+        self.lines.append(line)
+        for lineno, line in enumerate(self.lines):
+            self.printer.print(line, lineno)
+
+    def replace(self, line: str) -> None:
+        # replace last line
+        self.lines[-1] = line
+        self.printer.print(line, len(self.lines) - 1)
