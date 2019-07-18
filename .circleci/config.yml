@@ -52,6 +52,7 @@ build:
           name: run e2e tests
           command: |
             . .venv/bin/activate
+            export PYTEST_XDIST_WORKER_COUNT=16
             make _e2e
 
       - &cov_step
