@@ -753,3 +753,27 @@ class TestRegistry:
             RemoteImage("alpine", tag=None, owner="bob", registry="127.0.0.1"),
             RemoteImage("bananas", tag=None, owner="jill", registry="127.0.0.1"),
         }
+
+    async def test_tags_bad_image_with_tag(self, make_client: _MakeClient) -> None:
+        url = URL("http://whatever")
+        registry_url = URL("http://whatever-registry")
+        async with make_client(url, registry_url=registry_url) as client:
+            image = RemoteImage(name="ubuntu", tag="latest", owner="me", registry="reg")
+            with pytest.raises(ValueError, match="tag is not allowed"):
+                await client.images.tags(image)
+
+    async def test_tags_bad_image_without_owner(self, make_client: _MakeClient) -> None:
+        url = URL("http://whatever")
+        registry_url = URL("http://whatever-registry")
+        async with make_client(url, registry_url=registry_url) as client:
+            image = RemoteImage(name="ubuntu", tag=None, owner=None, registry="reg")
+            with pytest.raises(ValueError, match="missing image owner"):
+                await client.images.tags(image)
+
+    async def test_tags_bad_image_without_name(self, make_client: _MakeClient) -> None:
+        url = URL("http://whatever")
+        registry_url = URL("http://whatever-registry")
+        async with make_client(url, registry_url=registry_url) as client:
+            image = RemoteImage(name="", tag=None, owner="me", registry="reg")
+            with pytest.raises(ValueError, match="missing image name"):
+                await client.images.tags(image)

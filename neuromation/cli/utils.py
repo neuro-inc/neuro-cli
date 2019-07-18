@@ -503,6 +503,21 @@ class ImageType(click.ParamType):
         return image_parser.parse_remote(value)
 
 
+class RemoteTaglessImageType(click.ParamType):
+    name = "image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> RemoteImage:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        config = Factory(root.config_path)._read()
+        image_parser = _ImageNameParser(
+            config.auth_token.username, config.cluster_config.registry_url
+        )
+        return image_parser.parse_as_neuro_image(value, allow_tag=False)
+
+
 class LocalRemotePortParamType(click.ParamType):
     name = "local-remote-port-pair"
 

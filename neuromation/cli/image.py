@@ -8,7 +8,13 @@ from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters import DockerImageOperation, DockerImageProgress
 
 from .root import Root
-from .utils import ImageType, async_cmd, command, deprecated_quiet_option, group
+from .utils import (
+    RemoteTaglessImageType,
+    async_cmd,
+    command,
+    deprecated_quiet_option,
+    group,
+)
 
 
 log = logging.getLogger(__name__)
@@ -105,7 +111,7 @@ async def ls(root: Root) -> None:
 
 
 @command()
-@click.argument("image", type=ImageType())
+@click.argument("image", type=RemoteTaglessImageType())
 @async_cmd()
 async def tags(root: Root, image: RemoteImage) -> None:
     """
