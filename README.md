@@ -295,7 +295,8 @@ neuro job ls [OPTIONS]
 
 ```bash
 
-neuro ps --name my-experiments-v1 --status all
+neuro ps -a
+neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
 
@@ -305,7 +306,8 @@ neuro ps -s failed -s succeeded -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed]_|Filter out job by status \(multiple option)|
+|_\-a, --all-statuses_|Filter out job by any status \(equivalent to '\-s pending -s running -s succeeded -s failed')  \[default: False]|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
@@ -1346,7 +1348,8 @@ neuro ps [OPTIONS]
 
 ```bash
 
-neuro ps --name my-experiments-v1 --status all
+neuro ps -a
+neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
 
@@ -1356,7 +1359,8 @@ neuro ps -s failed -s succeeded -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option)|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed]_|Filter out job by status \(multiple option)|
+|_\-a, --all-statuses_|Filter out job by any status \(equivalent to '\-s pending -s running -s succeeded -s failed')  \[default: False]|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|

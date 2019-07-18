@@ -398,8 +398,19 @@ async def _print_logs(root: Root, job: str) -> None:
     "-s",
     "--status",
     multiple=True,
-    type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
+    type=click.Choice(["pending", "running", "succeeded", "failed"]),
     help="Filter out job by status (multiple option)",
+)
+@click.option(
+    "-a",
+    "--all-statuses",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help=(
+        "Filter out job by any status (equivalent to "
+        "'-s pending -s running -s succeeded -s failed')"
+    ),
 )
 @click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
 @click.option(
@@ -414,23 +425,27 @@ async def _print_logs(root: Root, job: str) -> None:
 )
 @async_cmd()
 async def ls(
-    root: Root, status: Sequence[str], name: str, description: str, wide: bool
+    root: Root,
+    status: Sequence[str],
+    all_statuses: bool,
+    name: str,
+    description: str,
+    wide: bool,
 ) -> None:
     """
     List all jobs.
 
     Examples:
 
-    neuro ps --name my-experiments-v1 --status all
+    neuro ps -a
+    neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
     """
 
-    status = status or ["running", "pending"]
+    statuses = status or ["running", "pending"]
 
-    # TODO: add validation of status values
-    statuses = set(status)
-    if "all" not in statuses:
+    if not all_statuses:
         real_statuses = set(JobStatus(s) for s in statuses)
     else:
         real_statuses = set()
