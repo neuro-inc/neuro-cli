@@ -1,6 +1,7 @@
 import pytest
 from yarl import URL
 
+import neuromation
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -46,6 +47,7 @@ class TestConfig:
             ),
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
+            version=neuromation.__version__,
         )
         config.check_initialized()  # check no exceptions
 
@@ -82,6 +84,7 @@ class TestConfig:
             ),
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
+            version=neuromation.__version__,
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
             config.check_initialized()
@@ -119,6 +122,7 @@ class TestConfig:
             ),
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
+            version=neuromation.__version__,
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
             config.check_initialized()

@@ -11,6 +11,7 @@ from aiohttp.test_utils import TestServer as _TestServer
 from jose import jwt
 from yarl import URL
 
+import neuromation
 import neuromation.api.config_factory
 from neuromation.api import ConfigError, Factory
 from neuromation.api.config import (
@@ -42,7 +43,7 @@ def config_file(
 
 
 @pytest.fixture
-async def mock_for_login(aiohttp_server: _TestServerFactory) -> _TestServer:
+async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _TestServer:
     async def config_handler(request: web.Request) -> web.Response:
         config_json: Dict[str, Any] = {
             "auth_url": str(srv.make_url("/authorize")),
@@ -97,20 +98,16 @@ async def mock_for_login(aiohttp_server: _TestServerFactory) -> _TestServer:
         url = URL(request.query["redirect_uri"]).with_query(code="test_auth_code")
         raise web.HTTPSeeOther(location=url)
 
-    async def token(request: web.Request) -> web.Response:
+    async def new_token(request: web.Request) -> web.Response:
         return web.json_response(
-            {
-                "access_token": "access_token",
-                "expires_in": 3600,
-                "refresh_token": "refresh_token",
-            }
+            {"access_token": token, "expires_in": 3600, "refresh_token": token}
         )
 
     app = web.Application()
     app.router.add_get("/config", config_handler)
     app.router.add_get("/oauth/show-code", show_code)
     app.router.add_get("/authorize", authorize)
-    app.router.add_post("/oauth/token", token)
+    app.router.add_post("/oauth/token", new_token)
     srv = await aiohttp_server(app)
     return srv
 
@@ -128,6 +125,7 @@ def _create_config(
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
         cookie_session=_CookieSession.create_uninitialized(),
+        version=neuromation.__version__,
     )
     Factory(nmrc_path)._save(config)
     assert nmrc_path.exists()
@@ -248,6 +246,46 @@ class TestConfigFileInteraction:
                 yaml.safe_dump(modified, f, default_flow_style=False)
             with pytest.raises(ConfigError, match=r"Malformed"):
                 await Factory().get()
+
+    async def test_silent_update(
+        self, config_file: Path, mock_for_login: _TestServer
+    ) -> None:
+        # make config
+        async def show_dummy_browser(url: URL) -> None:
+            async with aiohttp.ClientSession() as client:
+                await client.get(url, allow_redirects=True)
+
+        config_file.unlink()
+
+        await Factory(config_file).login(
+            show_dummy_browser, url=mock_for_login.make_url("/")
+        )
+        with config_file.open("r") as f:
+            config = yaml.safe_load(f)
+        config["version"] = "10.1.1"  # config belongs old version
+        config["url"] = str(mock_for_login.make_url("/"))
+        with config_file.open("w") as f:
+            yaml.safe_dump(config, f)
+        client = await Factory(config_file).get()
+        await client.close()
+
+        with config_file.open("r") as f:
+            config = yaml.safe_load(f)
+        assert config["version"] == neuromation.__version__
+
+    async def test_explicit_update(
+        self, config_file: Path, mock_for_login: _TestServer
+    ) -> None:
+        # await Factory().login(url=mock_for_login)
+        # config_file = tmp_home / ".nmrc"
+        with config_file.open("r") as f:
+            config = yaml.safe_load(f)
+        config["version"] = "10.1.1"  # config belongs old version
+        config["url"] = str(mock_for_login.make_url("/"))
+        with config_file.open("w") as f:
+            yaml.safe_dump(config, f)
+        with pytest.raises(ConfigError, match="Neuro CLI updated"):
+            await Factory(config_file).get()
 
 
 class TestLogin:

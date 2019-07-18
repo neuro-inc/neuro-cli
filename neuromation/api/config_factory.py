@@ -11,6 +11,8 @@ import certifi
 import yaml
 from yarl import URL
 
+import neuromation
+
 from .client import Client
 from .config import _Config, _CookieSession, _PyPIVersion
 from .core import DEFAULT_TIMEOUT
@@ -55,18 +57,30 @@ class Factory:
         self._path = path.expanduser()
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
-        config = self._read()
+        saved_config = config = self._read()
         connector = await _make_connector()
         try:
             new_token = await refresh_token(
                 connector, config.auth_config, config.auth_token, timeout
             )
+            if config.version != neuromation.__version__:
+                config_authorized = await get_server_config(
+                    connector, config.url, token=new_token.token
+                )
+                if (
+                    config_authorized.cluster_config != config.cluster_config
+                    or config_authorized.auth_config != config.auth_config
+                ):
+                    raise ConfigError(
+                        "Neuro CLI updated. Please logout and login again."
+                    )
+                config = replace(config, version=neuromation.__version__)
             if new_token != config.auth_token:
-                new_config = replace(config, auth_token=new_token)
+                config = replace(config, auth_token=new_token)
+            if config != saved_config:
                 # _save() may raise malformed config exception
                 # Should close connector in this case
-                self._save(new_config)
-                config = new_config
+                self._save(config)
         except (asyncio.CancelledError, Exception):
             await connector.close()
             raise
@@ -99,6 +113,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
+            version=neuromation.__version__,
         )
         self._save(config)
 
@@ -128,6 +143,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
+            version=neuromation.__version__,
         )
         self._save(config)
 
@@ -149,6 +165,7 @@ class Factory:
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
+            version=neuromation.__version__,
         )
         self._save(config)
 
@@ -185,6 +202,7 @@ class Factory:
             cookie_session = _CookieSession.from_config(
                 payload.get("cookie_session", {})
             )
+            version = payload.get("version", "")
 
             return _Config(
                 auth_config=auth_config,
@@ -193,6 +211,7 @@ class Factory:
                 pypi=_PyPIVersion.from_config(pypi_payload),
                 url=api_url,
                 cookie_session=cookie_session,
+                version=version,
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
@@ -250,7 +269,7 @@ class Factory:
             token_url=URL(auth_config["token_url"]),
             client_id=auth_config["client_id"],
             audience=auth_config["audience"],
-            headless_callback_url=auth_config["headless_callback_url"],
+            headless_callback_url=URL(auth_config["headless_callback_url"]),
             success_redirect_url=success_redirect_url,
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
@@ -304,6 +323,7 @@ class Factory:
             }
             payload["pypi"] = config.pypi.to_config()
             payload["cookie_session"] = config.cookie_session.to_config()
+            payload["version"] = config.version
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
 
