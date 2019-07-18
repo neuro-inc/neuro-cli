@@ -418,10 +418,7 @@ def test_e2e_load_recursive_to_platform(
     target_file_name = Path(srcfile).name
 
     # Upload local file
-    captured = helper.run_cli(["storage", "load", "-r", dir_path, helper.tmpstorage])
-    # stderr has logs like "Using path ..."
-    # assert not captured.err
-    assert not captured.out
+    helper.run_cli(["storage", "load", "-r", dir_path, helper.tmpstorage])
 
     helper.check_file_exists_on_storage(
         target_file_name, f"nested/directory/for/test", FILE_SIZE_B
@@ -434,6 +431,7 @@ def test_e2e_load_recursive_to_platform(
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
     print("target file", targetfile)
+    assert str(targetfile) in list(map(str, targetdir.rglob("*")))
     assert helper.hash_hex(targetfile) == checksum
 
     # Remove test dir

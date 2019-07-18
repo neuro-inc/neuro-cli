@@ -402,13 +402,13 @@ async def cp_s3(
 
     access_key = secrets.token_urlsafe(nbytes=16)
     secret_key = secrets.token_urlsafe(nbytes=16)
-    bucket = f".bucket-{secrets.token_hex(nbytes=8)}"
+    bucket = f"bucket-{secrets.token_hex(nbytes=8)}"
     s3_uri = f"s3://{bucket}{storage_uri.path}"
     command = f"ln -s /mnt /mnt/{bucket}; minio server /mnt"
     volume = Volume(
         storage_path=str(storage_uri.with_path("")),
         container_path="/mnt",
-        read_only=not upload,
+        read_only=False,
     )
     server_container = Container(
         image=RemoteImage(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),
