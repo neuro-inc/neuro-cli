@@ -38,7 +38,7 @@ from .utils import async_cmd, command, group, parse_file_resource
 MINIO_IMAGE_NAME = "minio/minio"
 MINIO_IMAGE_TAG = "RELEASE.2019-07-10T00-34-56Z"
 AWS_IMAGE_NAME = "mesosphere/aws-cli"
-AWS_IMAGE_TAG = "latest"  # XXX Does not work with concrete tags (?!)
+AWS_IMAGE_TAG = "1.14.5"
 
 log = logging.getLogger(__name__)
 
@@ -461,9 +461,13 @@ exit
         log.info(f"Launching Amazon S3 client for {local_uri.path!r}")
         docker = aiodocker.Docker()
         try:
+            aws_image = f"{AWS_IMAGE_NAME}:{AWS_IMAGE_TAG}"
+            async for info in await docker.images.pull(aws_image, stream=True):
+                # TODO Use some of Progress classes
+                log.debug(str(info))
             client_container = await docker.containers.create(
                 config={
-                    "Image": f"{AWS_IMAGE_NAME}:{AWS_IMAGE_TAG}",
+                    "Image": aws_image,
                     "Entrypoint": "sh",
                     "Cmd": ["-c", script],
                     "Env": [
