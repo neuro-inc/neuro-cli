@@ -52,7 +52,7 @@ build:
           name: run e2e tests
           command: |
             . .venv/bin/activate
-            export PYTEST_XDIST_NUM_PROCESSES=8
+            export PYTEST_XDIST_NUM_PROCESSES=16
             make _e2e
 
       - &cov_step

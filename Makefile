@@ -75,7 +75,7 @@ _init-readme:
 e2e:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_PROCESSES} --forked \
-	    --timeout=300 \
+	    --timeout_method=thread --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -88,7 +88,7 @@ e2e:
 _e2e:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_PROCESSES} --forked \
-	    --timeout=300 \
+	    --timeout_method=thread --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
