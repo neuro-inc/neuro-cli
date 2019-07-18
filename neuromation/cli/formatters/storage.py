@@ -6,7 +6,7 @@ import pathlib
 import time
 from fnmatch import fnmatch
 from math import ceil
-from typing import Any, Dict, Iterator, List, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
 import humanize
@@ -649,38 +649,38 @@ class NoPercentPrinter(AbstractStorageProgress):
 
 
 class StandardPrintPercentOnly(AbstractStorageProgress):
-    HEIGHT = 3
+    HEIGHT = 10
 
     def __init__(self, color: bool):
         self.painter = get_painter(color, quote=True)
         self.printer = TTYPrinter()
-        self.lines = []
-
-    def start(self, data: StorageProgressStart) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        self.append(f"Start copying {src} -> {dst}")
-
-    def complete(self, data: StorageProgressComplete) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        self.append(f"\rFile {src} -> {dst} copying completed")
-
-    def step(self, data: StorageProgressStep) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        progress = (100 * data.current) / data.size
-        self.append(f"\r{src} -> {dst}: {progress:.2f}%")
+        self.lines: List[Tuple[bool, str]] = []
+        self.dir_stack: List[str] = []
 
     def enter(self, data: StorageProgressEnterDir) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.DIRECTORY)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.DIRECTORY)
-        self.append(f"Copy directory {src} -> {dst}")
+        self.dir_stack.append(src)
+        self.append(f"{src}", is_dir=True)
 
     def leave(self, data: StorageProgressLeaveDir) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.DIRECTORY)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.DIRECTORY)
-        self.append(f"Done directory {src} -> {dst}")
+        del self.dir_stack[-1]
+        if self.dir_stack:
+            self.append(f"{self.dir_stack[-1]}", is_dir=True)
+
+    def start(self, data: StorageProgressStart) -> None:
+        src = self.painter.paint(data.src.name, FileStatusType.FILE)
+        progress = 0
+        self.append(f"{src}: {progress:.2f}%")
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        src = self.painter.paint(data.src.name, FileStatusType.FILE)
+        progress = 100
+        self.replace(f"{src}: {progress:.2f}%")
+
+    def step(self, data: StorageProgressStep) -> None:
+        src = self.painter.paint(data.src.name, FileStatusType.FILE)
+        progress = (100 * data.current) / data.size
+        self.replace(f"{src}: {progress:.2f}%")
 
     def fail(self, data: StorageProgressFail) -> None:
         src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
@@ -689,15 +689,26 @@ class StandardPrintPercentOnly(AbstractStorageProgress):
             click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
             err=True,
         )
+        # clear lines to sync with writing to stderr
+        self.lines = []
 
-    def append(self, line: str) -> None:
-        if self.lines:
-            self.lines.pop(0)
-        self.lines.append(line)
+    def append(self, msg: str, is_dir: bool = False) -> None:
+        self.lines.append((is_dir, msg))
+        if len(self.lines) > self.HEIGHT:
+            if not self.lines[0][0]:
+                # top line is not a dir, drop it.
+                del self.lines[0]
+            else:
+                if any(line[0] for line in self.lines[1:]):
+                    # there are folder lines below
+                    del self.lines[0]
+                else:
+                    # there is only top folder line, drop next file line
+                    del self.lines[1]
         for lineno, line in enumerate(self.lines):
-            self.printer.print(line, lineno)
+            self.printer.print(line[1], lineno)
 
-    def replace(self, line: str) -> None:
+    def replace(self, msg: str) -> None:
         # replace last line
-        self.lines[-1] = line
-        self.printer.print(line, len(self.lines) - 1)
+        self.lines[-1] = (False, msg)
+        self.printer.print(msg, len(self.lines) - 1)
