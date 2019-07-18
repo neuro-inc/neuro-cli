@@ -359,7 +359,9 @@ def test_load_local_file_to_platform_home_directory(
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
-    helper.run_cli(["storage", "load", srcfile, "storage:"])
+    captured = helper.run_cli(["storage", "load", srcfile, "storage:"])
+    print(f"nero stdout: {captured.out}")
+    print(f"nero stderr: {captured.err}")
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "", FILE_SIZE_B, fromhome=True)
@@ -375,7 +377,11 @@ def test_load_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
 
     helper.check_create_dir_on_storage("folder")
     # Upload local file to existing directory
-    helper.run_cli(["storage", "load", srcfile, helper.tmpstorage + "/folder"])
+    captured = helper.run_cli(
+        ["storage", "load", srcfile, helper.tmpstorage + "/folder"]
+    )
+    print(f"nero stdout: {captured.out}")
+    print(f"nero stderr: {captured.err}")
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
@@ -395,9 +401,11 @@ def test_load_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
 
     helper.check_create_dir_on_storage("folder")
     # Upload local file to platform
-    helper.run_cli(
+    captured = helper.run_cli(
         ["storage", "load", srcfile, helper.tmpstorage + "/folder/different_name.txt"]
     )
+    print(f"nero stdout: {captured.out}")
+    print(f"nero stderr: {captured.err}")
 
     # Ensure file is there
     helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
@@ -418,7 +426,9 @@ def test_e2e_load_recursive_to_platform(
     target_file_name = Path(srcfile).name
 
     # Upload local file
-    helper.run_cli(["storage", "load", "-r", dir_path, helper.tmpstorage])
+    captured = helper.run_cli(["storage", "load", "-r", dir_path, helper.tmpstorage])
+    print(f"nero stdout: {captured.out}")
+    print(f"nero stderr: {captured.err}")
 
     helper.check_file_exists_on_storage(
         target_file_name, f"nested/directory/for/test", FILE_SIZE_B
