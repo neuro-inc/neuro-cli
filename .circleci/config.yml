@@ -2,26 +2,26 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-py36: &py36
+job_env: &job_env
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/repo
 
-py37: &py37
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/repo
+py36_step: &py36_step
+      - run:
+          name: install python
+          command: |
+            pyenv versions
+            pyenv global 3.6.5
 
-build: &build
-    steps:
-      - checkout
-
+py37_step: &py37_step
       - run:
           name: install python
           command: |
             pyenv versions
             pyenv global 3.7.0
 
+build_steps: &build_steps
       - run:
           name: install dependencies
           command: |
@@ -60,17 +60,23 @@ build: &build
 version: 2
 jobs:  
   build_py36:
-    <<: *py36
-    <<: *build
-
-  build_py37:
-    <<: *py37
-    <<: *build
-
-  pypi_deploy:
-    <<: *py36
+    <<: *job_env
     steps:
       - checkout
+      <<: *py36_step
+      <<: *build_steps
+
+  build_py37:
+    steps:
+      - checkout
+      <<: *py37_step
+      <<: *build_steps
+
+  pypi_deploy:
+    <<: *job_env
+    steps:
+      - checkout
+      <<: *py36_step
 
       - run:
           name: install dependencies
@@ -86,7 +92,7 @@ jobs:
             make publish
 
   trigger_e2e:
-    <<: *py36
+    <<: *job_env
     steps:
       - run:
           name: trigger platform-e2e tests
