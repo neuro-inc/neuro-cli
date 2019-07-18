@@ -7,49 +7,55 @@ job_env: &job_env
       image: ubuntu-1604:201903-01
     working_directory: ~/repo
 
-py36_step: &py36_step
-      - run:
+build:
+    steps:
+      - &py36_step
+        run:
           name: install python
           command: |
             pyenv versions
             pyenv global 3.6.5
 
-py37_step: &py37_step
-      - run:
+      - &py37_step
+        run:
           name: install python
           command: |
             pyenv versions
             pyenv global 3.7.0
 
-build_steps: &build_steps
-      - run:
+      - &py_deps_step
+        run:
           name: install dependencies
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
             pip3 install -r requirements/ci.txt
 
-      - run:
+      - &lint_step
+        run:
           name: run linters
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
             make lint
 
-      - run:
+      - &unit_step
+        run:
           name: run unit tests
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
             make test
 
-      - run:
+      - &e2e_step
+        run:
           name: run e2e tests
           command: |
             . .venv/bin/activate
             make _e2e
 
-      - run:
+      - &cov_step
+        run:
           name: upload coverage info to codecov.io
           command: |
             python3 -m venv .venv
@@ -63,20 +69,29 @@ jobs:
     <<: *job_env
     steps:
       - checkout
-      <<: *py36_step
-      <<: *build_steps
+      - *py36_step
+      - *py_deps_step
+      - *lint_step
+      - *unit_step
+      - *e2e_step
+      - *cov_step
 
   build_py37:
+    <<: *job_env
     steps:
       - checkout
-      <<: *py37_step
-      <<: *build_steps
+      - *py37_step
+      - *py_deps_step
+      - *lint_step
+      - *unit_step
+      - *e2e_step
+      - *cov_step
 
   pypi_deploy:
     <<: *job_env
     steps:
       - checkout
-      <<: *py36_step
+      - *py36_step
 
       - run:
           name: install dependencies
