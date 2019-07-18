@@ -19,6 +19,7 @@ build: &build
       - run:
           name: install python
           command: |
+            pyenv versions
             pyenv global 3.7.0
 
       - run:
@@ -34,8 +35,6 @@ build: &build
             python3 -m venv .venv
             . .venv/bin/activate
             make lint
-
-      - setup_remote_docker
 
       - run:
           name: run unit tests
