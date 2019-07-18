@@ -18,6 +18,8 @@ DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
 README_PATTERN := README.XXXXXXXX.md
 
+PYTEST_XDIST_NUM_PROCESSES ?= auto
+
 .PHONY: help
 .SILENT: help
 help:
@@ -72,7 +74,7 @@ _init-readme:
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n auto --forked \
+	    -n ${PYTEST_XDIST_NUM_PROCESSES} --forked \
 	    --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
@@ -85,7 +87,7 @@ e2e:
 .PHONY: _e2e
 _e2e:
 	pytest \
-	    -n auto --forked \
+	    -n ${PYTEST_XDIST_NUM_PROCESSES} --forked \
 	    --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
