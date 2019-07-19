@@ -242,13 +242,13 @@ def test_print_help_with_examples() -> None:
 
 class TestJobNameType:
     def test_too_short(self) -> None:
-        with pytest.raises(ValueError, match="too short"):
+        with pytest.raises(ValueError, match="Invalid job name"):
             JOB_NAME.convert("a" * 2, param=None, ctx=None)
 
     def test_too_long(self) -> None:
-        with pytest.raises(ValueError, match="too long"):
+        with pytest.raises(ValueError, match="Invalid job name"):
             JOB_NAME.convert("a" * 41, param=None, ctx=None)
 
     def test_invalid_pattern(self) -> None:
-        with pytest.raises(ValueError, match="must match regex"):
+        with pytest.raises(ValueError, match="Invalid job name"):
             JOB_NAME.convert("abc-DEF", param=None, ctx=None)
