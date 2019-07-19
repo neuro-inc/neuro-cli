@@ -55,7 +55,7 @@ from .utils import (
 log = logging.getLogger(__name__)
 
 
-def build_env(env: Sequence[str], env_file: str) -> Dict[str, str]:
+def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     if env_file:
         with open(env_file, "r") as ef:
             env = ef.read().splitlines() + list(env)
@@ -216,10 +216,10 @@ async def submit(
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: str,
+    env_file: Optional[str],
     preemptible: bool,
     name: Optional[str],
-    description: str,
+    description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
@@ -661,10 +661,10 @@ async def run(
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: str,
+    env_file: Optional[str],
     preemptible: bool,
     name: Optional[str],
-    description: str,
+    description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
@@ -752,10 +752,10 @@ async def run_job(
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: str,
+    env_file: Optional[str],
     preemptible: bool,
     name: Optional[str],
-    description: str,
+    description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,

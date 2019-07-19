@@ -140,6 +140,12 @@ class Helper:
     def tmpstorage(self) -> str:
         return self._tmpstorage
 
+    def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
+        if fromhome:
+            return URL(f"storage://{self.username}/{path}")
+        else:
+            return URL(self.tmpstorage + path)
+
     @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
         url = URL(self.tmpstorage + path)
@@ -154,9 +160,9 @@ class Helper:
 
     @run_async
     async def check_file_exists_on_storage(
-        self, name: str, path: str, size: int
+        self, name: str, path: str, size: int, *, fromhome: bool = False
     ) -> None:
-        url = URL(self.tmpstorage + path)
+        url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
             for file in files:
@@ -228,8 +234,10 @@ class Helper:
             await client.storage.rm(url, recursive=recursive)
 
     @run_async
-    async def check_rm_file_on_storage(self, name: str, path: str) -> None:
-        url = URL(self.tmpstorage + path)
+    async def check_rm_file_on_storage(
+        self, name: str, path: str, *, fromhome: bool = False
+    ) -> None:
+        url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url / name)
 
