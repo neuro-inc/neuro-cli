@@ -366,7 +366,7 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(self, arguments: List[str]) -> SysCap:
+    def run_cli(self, arguments: List[str], *, verbosity: int = 0) -> SysCap:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
@@ -380,6 +380,11 @@ class Helper:
                 "--color=no",
                 f"--network-timeout={NETWORK_TIMEOUT}",
             ]
+
+            if verbosity < 0:
+                args.append("-" + "q" * (-verbosity))
+            if verbosity > 0:
+                args.append("-" + "v" * verbosity)
 
             if self._nmrc_path:
                 args.append(f"--neuromation-config={self._nmrc_path}")
@@ -414,7 +419,12 @@ class Helper:
                 match = job_id_pattern.search(out)
                 if match:
                     self._executed_jobs.append(match.group(1))
-            return SysCap(out.strip(), err.strip())
+            out = out.strip()
+            err = err.strip()
+            if verbosity > 0:
+                print(f"nero stdout: {out}")
+                print(f"nero stderr: {err}")
+            return SysCap(out, err)
         else:
             raise TestRetriesExceeded(
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
