@@ -556,7 +556,7 @@ class JobNameType(click.ParamType):
                 "The name can only contain lowercase letters, numbers and hyphens "
                 "with the following rules: \n"
                 "  - the first character must be a letter; \n"
-                "  - each hyphen must be surrounded by a non-hyphen character; \n"
+                "  - each hyphen must be surrounded by non-hyphen characters; \n"
                 f"  - total length must be between {JOB_NAME_MIN_LENGTH} and "
                 f"{JOB_NAME_MAX_LENGTH} characters long."
             )
