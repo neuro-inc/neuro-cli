@@ -482,17 +482,22 @@ exit
             )
             try:
                 await client_container.start()
-                # TODO Separate stdout and stderr
-                if root.verbosity >= 0 or progress:
+                tasks = [client_container.wait()]
+
+                async def printlogs(err: bool) -> None:
                     async for piece in await client_container.log(
-                        stdout=(root.verbosity > 0 or progress),
-                        stderr=True,
+                        stdout=not err,
+                        stderr=err,
                         follow=True,
                         details=(root.verbosity > 1),
                     ):
-                        click.echo(piece, nl=False)
-                else:
-                    await client_container.wait()
+                        click.echo(piece, nl=False, err=err)
+
+                if not root.quiet:
+                    tasks.append(printlogs(err=True))
+                if root.verbosity > 0 or progress:
+                    tasks.append(printlogs(err=False))
+                await asyncio.gather(*tasks)
             finally:
                 await client_container.delete(force=True)
         finally:
