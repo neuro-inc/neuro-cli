@@ -456,9 +456,12 @@ async def cp_s3(
 aws configure set default.s3.max_concurrent_requests 100
 aws configure set default.s3.max_queue_size 10000
 aws --endpoint-url {job.http_url} s3 {" ".join(cp_cmd)}
+rc=$?
 aws --endpoint-url {job.http_url} s3 rb s3://{bucket}
-exit
+exit $rc
 """
+        if root.verbosity >= 2:
+            script = "set -x\n" + script
         log.info(f"Launching Amazon S3 client for {local_uri.path!r}")
         docker = aiodocker.Docker()
         try:
