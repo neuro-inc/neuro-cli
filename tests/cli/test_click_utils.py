@@ -241,6 +241,10 @@ def test_print_help_with_examples() -> None:
 
 
 class TestJobNameType:
+    def test_ok(self) -> None:
+        name = "a-bc-def"
+        assert name == JOB_NAME.convert(name, param=None, ctx=None)
+
     def test_too_short(self) -> None:
         with pytest.raises(ValueError, match="Invalid job name"):
             JOB_NAME.convert("a" * 2, param=None, ctx=None)
@@ -249,6 +253,16 @@ class TestJobNameType:
         with pytest.raises(ValueError, match="Invalid job name"):
             JOB_NAME.convert("a" * 41, param=None, ctx=None)
 
-    def test_invalid_pattern(self) -> None:
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "abc@",  # invalid character
+            "abc-DEF",  # capital letters
+            "abc--def",  # two consequent hyphens
+            "-abc-def",  # hyphen as the first symbol
+            "abc-def-",  # hyphen as the last symbol
+        ],
+    )
+    def test_invalid_pattern(self, name: str) -> None:
         with pytest.raises(ValueError, match="Invalid job name"):
-            JOB_NAME.convert("abc-DEF", param=None, ctx=None)
+            JOB_NAME.convert(name, param=None, ctx=None)
