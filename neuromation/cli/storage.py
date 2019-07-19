@@ -482,13 +482,17 @@ exit
             )
             try:
                 await client_container.start()
-                # TODO Output logs in real time
-                await client_container.wait()
-                if root.verbosity > 0 or progress:
-                    logs = await client_container.log(stdout=True)
-                    click.echo("".join(logs))
-                logs = await client_container.log(stderr=True)
-                click.echo("".join(logs), err=True)
+                # TODO Separate stdout and stderr
+                if root.verbosity >= 0 or progress:
+                    async for piece in await client_container.log(
+                        stdout=(root.verbosity > 0 or progress),
+                        stderr=True,
+                        follow=True,
+                        details=(root.verbosity > 1),
+                    ):
+                        click.echo(piece, nl=False)
+                else:
+                    await client_container.wait()
             finally:
                 await client_container.delete(force=True)
         finally:
