@@ -408,8 +408,8 @@ async def _print_logs(root: Root, job: str) -> None:
     default=False,
     show_default=True,
     help=(
-        "Filter out job by any status (equivalent to "
-        "'-s pending -s running -s succeeded -s failed')"
+        "Show all jobs regardless the status (equivalent to "
+        "`-s pending -s running -s succeeded -s failed`)"
     ),
 )
 @click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
