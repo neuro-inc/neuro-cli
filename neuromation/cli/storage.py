@@ -501,6 +501,9 @@ exit $rc
                 if root.verbosity > 0 or progress:
                     tasks.append(printlogs(err=False))
                 await asyncio.gather(*tasks)
+                exit_code = (await client_container.show())["State"]["ExitCode"]
+                if exit_code:
+                    raise RuntimeError(f"AWS copying failed with code {exit_code}")
             finally:
                 await client_container.delete(force=True)
         finally:
