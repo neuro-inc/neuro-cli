@@ -398,8 +398,11 @@ async def _print_logs(root: Root, job: str) -> None:
     "-s",
     "--status",
     multiple=True,
-    type=click.Choice(["pending", "running", "succeeded", "failed"]),
-    help="Filter out job by status (multiple option)",
+    type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
+    help=(
+        "Filter out job by status (multiple option)."
+        " Note: option `all` is deprecated, use `neuro ps -a` instead."
+    ),
 )
 @click.option(
     "-a",
@@ -443,14 +446,8 @@ async def ls(
     neuro ps -s failed -s succeeded -q
     """
 
-    statuses = status or ["running", "pending"]
-
-    if not all_statuses:
-        real_statuses = set(JobStatus(s) for s in statuses)
-    else:
-        real_statuses = set()
-
-    jobs = await root.client.jobs.list(statuses=real_statuses, name=name)
+    statuses = calc_statuses(status, all_statuses)
+    jobs = await root.client.jobs.list(statuses=statuses, name=name)
 
     # client-side filtering
     if description:
@@ -893,3 +890,34 @@ async def browse_job(root: Root, job: JobDescription) -> None:
     log.info(f"Open job URL: {url}")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, webbrowser.open, str(url))
+
+
+def calc_statuses(status: Sequence[str], all_statuses: bool) -> Set[JobStatus]:
+    defaults = {"running", "pending"}
+    statuses = set(status)
+
+    if "all" in statuses:
+        if all_statuses:
+            raise click.UsageError(
+                "Parameters `-a/--all-statuses` and "
+                "`-s all/--status=all` are incompatible"
+            )
+        click.echo(
+            click.style(
+                "DeprecationWarning: "
+                "Option `-s all/--status=all` is deprecated. "
+                "Please use `-a/--all-statuses` instead.",
+                fg="red",
+            ),
+            err=True,
+        )
+        statuses = set()
+    else:
+        if all_statuses:
+            opt = " ".join([f"--status={s}" for s in status])
+            log.warning(f"Option `-a/--all-statuses` overwrites option(s) `{opt}`")
+            statuses = set()
+        elif not statuses:
+            statuses = defaults
+
+    return set(JobStatus(s) for s in statuses)

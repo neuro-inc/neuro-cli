@@ -306,7 +306,7 @@ neuro ps -s failed -s succeeded -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed]_|Filter out job by status \(multiple option)|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-a, --all-statuses_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)  \[default: False]|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
@@ -1359,7 +1359,7 @@ neuro ps -s failed -s succeeded -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed]_|Filter out job by status \(multiple option)|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-a, --all-statuses_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)  \[default: False]|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
