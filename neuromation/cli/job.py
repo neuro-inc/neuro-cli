@@ -80,7 +80,7 @@ def job() -> None:
     """
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
@@ -275,7 +275,7 @@ async def submit(
     )
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("job")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
@@ -320,7 +320,7 @@ async def exec(
     sys.exit(retcode)
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command()
 @click.argument("job")
 @click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @click.option(
@@ -548,7 +548,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         click.echo(format_fail(job, error))
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
