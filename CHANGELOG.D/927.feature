@@ -1,0 +1,1 @@
+Forbid mixing arguments and CLI options.
