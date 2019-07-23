@@ -39,6 +39,7 @@ from .formatters import (
 )
 from .root import Root
 from .utils import (
+    JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
     ImageType,
@@ -55,7 +56,7 @@ from .utils import (
 log = logging.getLogger(__name__)
 
 
-def build_env(env: Sequence[str], env_file: str) -> Dict[str, str]:
+def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     if env_file:
         with open(env_file, "r") as ef:
             env = ef.read().splitlines() + list(env)
@@ -142,7 +143,12 @@ def job() -> None:
     show_default=True,
 )
 @click.option(
-    "-n", "--name", metavar="NAME", type=str, help="Optional job name", default=None
+    "-n",
+    "--name",
+    metavar="NAME",
+    type=JOB_NAME,
+    help="Optional job name",
+    default=None,
 )
 @click.option(
     "-d",
@@ -216,10 +222,10 @@ async def submit(
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: str,
+    env_file: Optional[str],
     preemptible: bool,
     name: Optional[str],
-    description: str,
+    description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
@@ -598,7 +604,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "-n",
     "--name",
     metavar="NAME",
-    type=str,
+    type=JOB_NAME,
     help="Optional job name",
     default=None,
     show_default=True,
@@ -672,10 +678,10 @@ async def run(
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: str,
+    env_file: Optional[str],
     preemptible: bool,
     name: Optional[str],
-    description: str,
+    description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
@@ -763,10 +769,10 @@ async def run_job(
     cmd: Sequence[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: str,
+    env_file: Optional[str],
     preemptible: bool,
     name: Optional[str],
-    description: str,
+    description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,

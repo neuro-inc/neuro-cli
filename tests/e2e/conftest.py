@@ -140,6 +140,12 @@ class Helper:
     def tmpstorage(self) -> str:
         return self._tmpstorage
 
+    def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
+        if fromhome:
+            return URL(f"storage://{self.username}/{path}")
+        else:
+            return URL(self.tmpstorage + path)
+
     @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
         url = URL(self.tmpstorage + path)
@@ -154,9 +160,9 @@ class Helper:
 
     @run_async
     async def check_file_exists_on_storage(
-        self, name: str, path: str, size: int
+        self, name: str, path: str, size: int, *, fromhome: bool = False
     ) -> None:
-        url = URL(self.tmpstorage + path)
+        url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
             for file in files:
@@ -228,8 +234,10 @@ class Helper:
             await client.storage.rm(url, recursive=recursive)
 
     @run_async
-    async def check_rm_file_on_storage(self, name: str, path: str) -> None:
-        url = URL(self.tmpstorage + path)
+    async def check_rm_file_on_storage(
+        self, name: str, path: str, *, fromhome: bool = False
+    ) -> None:
+        url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url / name)
 
@@ -358,7 +366,7 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(self, arguments: List[str]) -> SysCap:
+    def run_cli(self, arguments: List[str], *, verbosity: int = 0) -> SysCap:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
@@ -372,6 +380,11 @@ class Helper:
                 "--color=no",
                 f"--network-timeout={NETWORK_TIMEOUT}",
             ]
+
+            if verbosity < 0:
+                args.append("-" + "q" * (-verbosity))
+            if verbosity > 0:
+                args.append("-" + "v" * verbosity)
 
             if self._nmrc_path:
                 args.append(f"--neuromation-config={self._nmrc_path}")
@@ -406,7 +419,12 @@ class Helper:
                 match = job_id_pattern.search(out)
                 if match:
                     self._executed_jobs.append(match.group(1))
-            return SysCap(out.strip(), err.strip())
+            out = out.strip()
+            err = err.strip()
+            if verbosity > 0:
+                print(f"nero stdout: {out}")
+                print(f"nero stderr: {err}")
+            return SysCap(out, err)
         else:
             raise TestRetriesExceeded(
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"

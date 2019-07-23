@@ -22,6 +22,7 @@
 		* [neuro storage rm](#neuro-storage-rm)
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
+		* [neuro storage load](#neuro-storage-load)
 	* [neuro image](#neuro-image)
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
@@ -529,6 +530,7 @@ Name | Description|
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
+| _[neuro storage load](#neuro-storage-load)_| Copy files and directories using MinIO \(EXPERIMENTAL) |
 
 
 
@@ -721,6 +723,31 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage load
+
+Copy files and directories using MinIO \(EXPERIMENTAL).<br/><br/>Same as "cp", but uses MinIO and the Amazon S3 protocol.
+
+**Usage:**
+
+```bash
+neuro storage load [OPTIONS] [SOURCES]... [DESTINATION]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
+|_\-p, --progress_|Show progress, off by default|
 |_--help_|Show this message and exit.|
 
 

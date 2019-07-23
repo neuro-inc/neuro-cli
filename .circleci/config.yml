@@ -2,50 +2,61 @@
 #
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-py36: &py36
-    docker:
-      - image: circleci/python:3.6.1
+job_env: &job_env
+    machine:
+      image: ubuntu-1604:201903-01
     working_directory: ~/repo
 
-py36: &py37
-    docker:
-      - image: circleci/python:3.7.2
-    working_directory: ~/repo
-
-build: &build
+build:
     steps:
-      - checkout
+      - &py36_step
+        run:
+          name: install python
+          command: |
+            pyenv versions
+            pyenv global 3.6.5
 
-      - run:
+      - &py37_step
+        run:
+          name: install python
+          command: |
+            pyenv versions
+            pyenv global 3.7.0
+
+      - &py_deps_step
+        run:
           name: install dependencies
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
             pip3 install -r requirements/ci.txt
 
-      - run:
+      - &lint_step
+        run:
           name: run linters
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
             make lint
 
-      - setup_remote_docker
-
-      - run:
+      - &unit_step
+        run:
           name: run unit tests
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
             make test
 
-      - run:
+      - &e2e_step
+        run:
           name: run e2e tests
           command: |
             . .venv/bin/activate
+            export PYTEST_XDIST_NUM_PROCESSES=16
             make _e2e
 
-      - run:
+      - &cov_step
+        run:
           name: upload coverage info to codecov.io
           command: |
             python3 -m venv .venv
@@ -56,17 +67,32 @@ build: &build
 version: 2
 jobs:  
   build_py36:
-    <<: *py36
-    <<: *build
-
-  build_py37:
-    <<: *py37
-    <<: *build
-
-  pypi_deploy:
-    <<: *py36
+    <<: *job_env
     steps:
       - checkout
+      - *py36_step
+      - *py_deps_step
+      - *lint_step
+      - *unit_step
+      - *e2e_step
+      - *cov_step
+
+  build_py37:
+    <<: *job_env
+    steps:
+      - checkout
+      - *py37_step
+      - *py_deps_step
+      - *lint_step
+      - *unit_step
+      - *e2e_step
+      - *cov_step
+
+  pypi_deploy:
+    <<: *job_env
+    steps:
+      - checkout
+      - *py36_step
 
       - run:
           name: install dependencies
@@ -82,7 +108,7 @@ jobs:
             make publish
 
   trigger_e2e:
-    <<: *py36
+    <<: *job_env
     steps:
       - run:
           name: trigger platform-e2e tests
