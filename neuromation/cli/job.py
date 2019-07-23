@@ -406,7 +406,7 @@ async def _print_logs(root: Root, job: str) -> None:
 )
 @click.option(
     "-a",
-    "--all-statuses",
+    "--all",
     is_flag=True,
     default=False,
     show_default=True,
@@ -899,14 +899,14 @@ def calc_statuses(status: Sequence[str], all_statuses: bool) -> Set[JobStatus]:
     if "all" in statuses:
         if all_statuses:
             raise click.UsageError(
-                "Parameters `-a/--all-statuses` and "
+                "Parameters `-a/--all` and "
                 "`-s all/--status=all` are incompatible"
             )
         click.echo(
             click.style(
                 "DeprecationWarning: "
                 "Option `-s all/--status=all` is deprecated. "
-                "Please use `-a/--all-statuses` instead.",
+                "Please use `-a/--all` instead.",
                 fg="red",
             ),
             err=True,
@@ -916,7 +916,7 @@ def calc_statuses(status: Sequence[str], all_statuses: bool) -> Set[JobStatus]:
         if all_statuses:
             if statuses:
                 opt = " ".join([f"--status={s}" for s in status])
-                log.warning(f"Option `-a/--all-statuses` overwrites option(s) `{opt}`")
+                log.warning(f"Option `-a/--all` overwrites option(s) `{opt}`")
             statuses = set()
         elif not statuses:
             statuses = defaults
