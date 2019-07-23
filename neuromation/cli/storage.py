@@ -402,9 +402,13 @@ async def cp_s3(
 
     access_key = secrets.token_urlsafe(nbytes=16)
     secret_key = secrets.token_urlsafe(nbytes=16)
-    bucket = f"bucket-{secrets.token_hex(nbytes=8)}"
-    s3_uri = f"s3://{bucket}{storage_uri.path}"
-    command = f"ln -s /mnt /mnt/{bucket}; minio server /mnt"
+    minio_dir = f"minio-{secrets.token_hex(nbytes=8)}"
+    s3_uri = f"s3://bucket{storage_uri.path}"
+    minio_script = f"""\
+mkdir /mnt/{minio_dir}
+ln -s /mnt /mnt/{minio_dir}/bucket
+minio server /mnt/{minio_dir}
+"""
     volume = Volume(
         storage_path=str(storage_uri.with_path("")),
         container_path="/mnt",
@@ -413,7 +417,7 @@ async def cp_s3(
     server_container = Container(
         image=RemoteImage(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),
         entrypoint="sh",
-        command=f"-c {shlex.quote(command)}",
+        command=f"-c {shlex.quote(minio_script)}",
         http=HTTPPort(port=9000, requires_auth=False),
         resources=Resources(memory_mb=1024, cpu=1, gpu=0, gpu_model=None, shm=True),
         env={"MINIO_ACCESS_KEY": access_key, "MINIO_SECRET_KEY": secret_key},
@@ -452,16 +456,13 @@ async def cp_s3(
             cp_cmd.append(s3_uri)
             cp_cmd.append(local_path)
 
-        script = f"""\
+        aws_script = f"""\
 aws configure set default.s3.max_concurrent_requests 100
 aws configure set default.s3.max_queue_size 10000
-aws --endpoint-url {job.http_url} s3 {" ".join(cp_cmd)}
-rc=$?
-aws --endpoint-url {job.http_url} s3 rb s3://{bucket}
-exit $rc
+aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
 """
         if root.verbosity >= 2:
-            script = "set -x\n" + script
+            aws_script = "set -x\n" + aws_script
         log.info(f"Launching Amazon S3 client for {local_uri.path!r}")
         docker = aiodocker.Docker()
         try:
@@ -473,7 +474,7 @@ exit $rc
                 config={
                     "Image": aws_image,
                     "Entrypoint": "sh",
-                    "Cmd": ["-c", script],
+                    "Cmd": ["-c", aws_script],
                     "Env": [
                         f"AWS_ACCESS_KEY_ID={access_key}",
                         f"AWS_SECRET_ACCESS_KEY={secret_key}",
@@ -509,7 +510,10 @@ exit $rc
         finally:
             await docker.close()
     finally:
-        await root.client.jobs.kill(job.id)
+        try:
+            await root.client.jobs.kill(job.id)
+        finally:
+            await root.client.storage.rm(URL(f"storage:{minio_dir}"), recursive=True)
 
 
 @command()
