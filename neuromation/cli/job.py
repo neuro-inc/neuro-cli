@@ -429,7 +429,7 @@ async def _print_logs(root: Root, job: str) -> None:
 async def ls(
     root: Root,
     status: Sequence[str],
-    all_statuses: bool,
+    all: bool,
     name: str,
     description: str,
     wide: bool,
@@ -445,7 +445,7 @@ async def ls(
     neuro ps -s failed -s succeeded -q
     """
 
-    statuses = calc_statuses(status, all_statuses)
+    statuses = calc_statuses(status, all)
     jobs = await root.client.jobs.list(statuses=statuses, name=name)
 
     # client-side filtering
@@ -891,15 +891,14 @@ async def browse_job(root: Root, job: JobDescription) -> None:
     await loop.run_in_executor(None, webbrowser.open, str(url))
 
 
-def calc_statuses(status: Sequence[str], all_statuses: bool) -> Set[JobStatus]:
+def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
     defaults = {"running", "pending"}
     statuses = set(status)
 
     if "all" in statuses:
-        if all_statuses:
+        if all:
             raise click.UsageError(
-                "Parameters `-a/--all` and "
-                "`-s all/--status=all` are incompatible"
+                "Parameters `-a/--all` and " "`-s all/--status=all` are incompatible"
             )
         click.echo(
             click.style(
@@ -912,7 +911,7 @@ def calc_statuses(status: Sequence[str], all_statuses: bool) -> Set[JobStatus]:
         )
         statuses = set()
     else:
-        if all_statuses:
+        if all:
             if statuses:
                 opt = " ".join([f"--status={s}" for s in status])
                 log.warning(f"Option `-a/--all` overwrites option(s) `{opt}`")

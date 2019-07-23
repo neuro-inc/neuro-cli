@@ -16,23 +16,22 @@ logger.setLevel(logging.INFO)
 def test_calc_statuses__contains_all__all_statuses_true(statuses: Tuple[str]) -> None:
     with pytest.raises(
         click.UsageError,
-        match="Parameters `-a/--all-statuses` and "
-        "`-s all/--status=all` are incompatible$",
+        match="Parameters `-a/--all` and " "`-s all/--status=all` are incompatible$",
     ):
-        calc_statuses(statuses, all_statuses=True)
+        calc_statuses(statuses, all=True)
 
 
 @pytest.mark.parametrize("statuses", [("all",), ("all", "failed", "succeeded")])
 def test_calc_statuses__contains_all__all_statuses_false(
     capsys: Any, caplog: Any, statuses: Tuple[str]
 ) -> None:
-    calc_statuses(statuses, all_statuses=False)
+    calc_statuses(statuses, all=False)
     std = capsys.readouterr()
     assert not std.out
     assert std.err == (
         "DeprecationWarning: "
         "Option `-s all/--status=all` is deprecated. "
-        "Please use `-a/--all-statuses` instead.\n"
+        "Please use `-a/--all` instead.\n"
     )
     assert not caplog.text
 
@@ -40,21 +39,36 @@ def test_calc_statuses__contains_all__all_statuses_false(
 def test_calc_statuses__not_contains_all__all_statuses_true(
     capsys: Any, caplog: Any
 ) -> None:
-    assert calc_statuses(["succeeded", "pending"], all_statuses=True) == set()
+    assert calc_statuses(["succeeded", "pending"], all=True) == set()
     std = capsys.readouterr()
     assert not std.out
     assert not std.err
     warning = (
-        "Option `-a/--all-statuses` overwrites option(s) "
+        "Option `-a/--all` overwrites option(s) "
         "`--status=succeeded --status=pending`"
     )
     assert warning in caplog.text
 
 
+def test_calc_statuses__not_contains_all__all_statuses_true__quiet_mode(
+    capsys: Any, caplog: Any
+) -> None:
+    root_logger = logging.getLogger()
+    handler = root_logger.handlers[-1]
+    assert handler.formatter
+    handler.setLevel(logging.ERROR)
+
+    assert calc_statuses(["succeeded", "pending"], all=True) == set()
+    std = capsys.readouterr()
+    assert not std.out
+    assert not std.err
+    assert not caplog.text
+
+
 def test_calc_statuses__not_contains_all__all_statuses_false(
     capsys: Any, caplog: Any
 ) -> None:
-    assert calc_statuses(["succeeded", "pending"], all_statuses=False) == {
+    assert calc_statuses(["succeeded", "pending"], all=False) == {
         JobStatus.SUCCEEDED,
         JobStatus.PENDING,
     }
@@ -67,10 +81,7 @@ def test_calc_statuses__not_contains_all__all_statuses_false(
 def test_calc_statuses__check_defaults__all_statuses_false(
     capsys: Any, caplog: Any
 ) -> None:
-    assert calc_statuses([], all_statuses=False) == {
-        JobStatus.PENDING,
-        JobStatus.RUNNING,
-    }
+    assert calc_statuses([], all=False) == {JobStatus.PENDING, JobStatus.RUNNING}
     std = capsys.readouterr()
     assert not std.out
     assert not std.err
@@ -80,7 +91,7 @@ def test_calc_statuses__check_defaults__all_statuses_false(
 def test_calc_statuses__check_defaults__all_statuses_true(
     capsys: Any, caplog: Any
 ) -> None:
-    assert calc_statuses([], all_statuses=True) == set()
+    assert calc_statuses([], all=True) == set()
     std = capsys.readouterr()
     assert not std.out
     assert not std.err
