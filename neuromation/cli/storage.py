@@ -14,6 +14,7 @@ from neuromation.api import (
     Container,
     FileStatusType,
     HTTPPort,
+    IllegalArgumentError,
     JobStatus,
     RemoteImage,
     Resources,
@@ -402,9 +403,13 @@ async def cp_s3(
 
     access_key = secrets.token_urlsafe(nbytes=16)
     secret_key = secrets.token_urlsafe(nbytes=16)
-    bucket = f"bucket-{secrets.token_hex(nbytes=8)}"
-    s3_uri = f"s3://{bucket}{storage_uri.path}"
-    command = f"ln -s /mnt /mnt/{bucket}; minio server /mnt"
+    minio_dir = f"minio-{secrets.token_hex(nbytes=8)}"
+    s3_uri = f"s3://bucket{storage_uri.path}"
+    minio_script = f"""\
+mkdir /mnt/{minio_dir}
+ln -s /mnt /mnt/{minio_dir}/bucket
+minio server /mnt/{minio_dir}
+"""
     volume = Volume(
         storage_path=str(storage_uri.with_path("")),
         container_path="/mnt",
@@ -413,7 +418,7 @@ async def cp_s3(
     server_container = Container(
         image=RemoteImage(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),
         entrypoint="sh",
-        command=f"-c {shlex.quote(command)}",
+        command=f"-c {shlex.quote(minio_script)}",
         http=HTTPPort(port=9000, requires_auth=False),
         resources=Resources(memory_mb=1024, cpu=1, gpu=0, gpu_model=None, shm=True),
         env={"MINIO_ACCESS_KEY": access_key, "MINIO_SECRET_KEY": secret_key},
@@ -452,13 +457,13 @@ async def cp_s3(
             cp_cmd.append(s3_uri)
             cp_cmd.append(local_path)
 
-        script = f"""\
+        aws_script = f"""\
 aws configure set default.s3.max_concurrent_requests 100
 aws configure set default.s3.max_queue_size 10000
-aws --endpoint-url {job.http_url} s3 {" ".join(cp_cmd)}
-aws --endpoint-url {job.http_url} s3 rb s3://{bucket}
-exit
+aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
 """
+        if root.verbosity >= 2:
+            aws_script = "set -x\n" + aws_script
         log.info(f"Launching Amazon S3 client for {local_uri.path!r}")
         docker = aiodocker.Docker()
         try:
@@ -470,7 +475,7 @@ exit
                 config={
                     "Image": aws_image,
                     "Entrypoint": "sh",
-                    "Cmd": ["-c", script],
+                    "Cmd": ["-c", aws_script],
                     "Env": [
                         f"AWS_ACCESS_KEY_ID={access_key}",
                         f"AWS_SECRET_ACCESS_KEY={secret_key}",
@@ -498,12 +503,33 @@ exit
                 if root.verbosity > 0 or progress:
                     tasks.append(printlogs(err=False))
                 await asyncio.gather(*tasks)
+                exit_code = (await client_container.show())["State"]["ExitCode"]
+                if exit_code:
+                    raise RuntimeError(f"AWS copying failed with code {exit_code}")
             finally:
                 await client_container.delete(force=True)
         finally:
             await docker.close()
     finally:
-        await root.client.jobs.kill(job.id)
+        try:
+            await root.client.jobs.kill(job.id)
+        finally:
+            attempts = 5
+            while True:
+                try:
+                    await root.client.storage.rm(
+                        URL(f"storage:{minio_dir}"), recursive=True
+                    )
+                except IllegalArgumentError:
+                    attempts -= 1
+                    if not attempts:
+                        raise
+                    log.info(
+                        "Failed attempt to remove the MinIO directory", exc_info=True
+                    )
+                    await asyncio.sleep(0.2)
+                    continue
+                break
 
 
 @command()
