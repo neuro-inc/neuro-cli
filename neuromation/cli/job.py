@@ -409,7 +409,6 @@ async def _print_logs(root: Root, job: str) -> None:
     "--all",
     is_flag=True,
     default=False,
-    show_default=True,
     help=(
         "Show all jobs regardless the status (equivalent to "
         "`-s pending -s running -s succeeded -s failed`)"
