@@ -27,6 +27,7 @@ from neuromation.api import (
 )
 from neuromation.api.url_utils import _extract_path
 from neuromation.cli.printer import TTYPrinter
+from neuromation.cli.root import Root
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -561,18 +562,20 @@ class FilesSorter(str, enum.Enum):
 
 # progress indicator
 
+class BaseStorageProgress(AbstractStorageProgress):
+    @abc.abstractmethod
+    def begin(self, src: URL, dst: URL) -> None:
+        pass
 
-def create_storage_progress(
-    color: bool, show_progress: bool, verbose: bool
-) -> AbstractStorageProgress:
+
+def create_storage_progress(root: Root, show_progress: bool) -> BaseStorageProgress:
     if show_progress:
-        return StandardPrintPercentOnly(color)
-    if verbose:
-        return NoPercentPrinter(color)
-    return QuietPrinter(color)
+        return TTYProgress(root)
+    else:
+        return StreamProgress(root)
 
 
-def fmt_url(url: URL) -> str:
+def format_url(url: URL) -> str:
     if url.scheme == "file":
         path = _extract_path(url)
         return str(path)
@@ -586,79 +589,109 @@ def fmt_url(url: URL) -> str:
         return str(url)
 
 
-class QuietPrinter(AbstractStorageProgress):
-    def __init__(self, color: bool):
-        self.painter = get_painter(color, quote=True)
+class StreamProgress(BaseStorageProgress):
+    def __init__(self, root: Root) -> None:
+        self.painter = get_painter(root.color, quote=True)
+        self.verbose = root.verbosity > 0
+
+    def fmt_url(self, url: URL, type: FileStatusType) -> str:
+        label = format_url(url)
+        return self.painter.paint(label, type)
+
+    def begin(self, src: URL, dst: URL) -> None:
+        if self.verbose:
+            src_label = self.fmt_url(src, FileStatusType.DIRECTORY)
+            dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY)
+            click.echo(f"Copy {src_label} -> {dst_label}")
 
     def start(self, data: StorageProgressStart) -> None:
         pass
 
     def complete(self, data: StorageProgressComplete) -> None:
-        pass
-
-    def step(self, data: StorageProgressStep) -> None:
-        pass
-
-    def enter(self, data: StorageProgressEnterDir) -> None:
-        pass
-
-    def leave(self, data: StorageProgressLeaveDir) -> None:
-        pass
-
-    def fail(self, data: StorageProgressFail) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(
-            click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
-            err=True,
-        )
-
-
-class NoPercentPrinter(AbstractStorageProgress):
-    def __init__(self, color: bool):
-        self.painter = get_painter(color, quote=True)
-
-    def start(self, data: StorageProgressStart) -> None:
-        pass
-
-    def complete(self, data: StorageProgressComplete) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        if not self.verbose:
+            return
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
         click.echo(f"{src} -> {dst}")
 
     def step(self, data: StorageProgressStep) -> None:
         pass
 
     def enter(self, data: StorageProgressEnterDir) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        if not self.verbose:
+            return
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
         click.echo(f"{src} -> {dst}")
 
     def leave(self, data: StorageProgressLeaveDir) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        if not self.verbose:
+            return
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
         click.echo(f"{src} -> {dst}")
 
     def fail(self, data: StorageProgressFail) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
         click.echo(
             click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
             err=True,
         )
 
 
-class StandardPrintPercentOnly(AbstractStorageProgress):
+class TTYProgress(BaseStorageProgress):
     HEIGHT = 10
 
-    def __init__(self, color: bool):
-        self.painter = get_painter(color, quote=True)
+    def __init__(self, root: Root) -> None:
+        self.painter = get_painter(root.color, quote=True)
         self.printer = TTYPrinter()
+        self.half_width = root.terminal_size[0] // 2 - 10
+        self.width = root.terminal_size[0] - 10
         self.lines: List[Tuple[bool, str]] = []
         self.dir_stack: List[str] = []
 
+    def fmt_url(self, url: URL, type: FileStatusType, *, half: bool=False) -> str:
+        label = str(url)
+        if half:
+            width = self.half_width
+        else:
+            width = self.width
+        while len(label) > width:
+            parts = url.parts
+            if len(parts) > 1:
+                if parts[0] == '/':
+                    if len(parts) < 3:
+                        break
+                    slash, first, second, *last = parts
+                    if first == '...':
+                        if last:
+                            parts = ['...'] + last
+                    else:
+                        parts = ['...', second] + last
+                else:
+                    first, second, *last = parts
+                    if first == '...':
+                        if last:
+                            parts = ['...'] + last
+                    else:
+                        parts = ['...', second] + last
+            else:
+                break
+            url = URL(f"{url.scheme}://{url.host or ''}/{'/'.join(parts)}")
+            label = str(url)
+        return self.fmt_str(label, type)
+
+    def fmt_str(self, label: str, type: FileStatusType) -> str:
+        return self.painter.paint(label, type)
+
+    def begin(self, src: URL, dst: URL) -> None:
+        src_label = self.fmt_url(src, FileStatusType.DIRECTORY, half=True)
+        dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
+        click.echo(f"Copy {src_label} => {dst_label}")
+
     def enter(self, data: StorageProgressEnterDir) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.DIRECTORY)
+        src = self.fmt_url(data.src, FileStatusType.DIRECTORY)
         self.dir_stack.append(src)
         self.append(f"{src}", is_dir=True)
 
@@ -668,23 +701,23 @@ class StandardPrintPercentOnly(AbstractStorageProgress):
             self.append(f"{self.dir_stack[-1]}", is_dir=True)
 
     def start(self, data: StorageProgressStart) -> None:
-        src = self.painter.paint(data.src.name, FileStatusType.FILE)
+        src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = 0
-        self.append(f"{src}: {progress:.2f}%")
+        self.append(f"{src} [{progress:.2f}%]")
 
     def complete(self, data: StorageProgressComplete) -> None:
-        src = self.painter.paint(data.src.name, FileStatusType.FILE)
+        src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = 100
-        self.replace(f"{src}: {progress:.2f}%")
+        self.replace(f"{src} [{progress:.2f}%]")
 
     def step(self, data: StorageProgressStep) -> None:
-        src = self.painter.paint(data.src.name, FileStatusType.FILE)
+        src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = (100 * data.current) / data.size
-        self.replace(f"{src}: {progress:.2f}%")
+        self.replace(f"{src} [{progress:.2f}%]")
 
     def fail(self, data: StorageProgressFail) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
         click.echo(
             click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
             err=True,
