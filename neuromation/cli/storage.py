@@ -14,6 +14,7 @@ from neuromation.api import (
     Container,
     FileStatusType,
     HTTPPort,
+    IllegalArgumentError,
     JobStatus,
     RemoteImage,
     Resources,
@@ -513,7 +514,22 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
         try:
             await root.client.jobs.kill(job.id)
         finally:
-            await root.client.storage.rm(URL(f"storage:{minio_dir}"), recursive=True)
+            attempts = 5
+            while True:
+                try:
+                    await root.client.storage.rm(
+                        URL(f"storage:{minio_dir}"), recursive=True
+                    )
+                except IllegalArgumentError:
+                    attempts -= 1
+                    if not attempts:
+                        raise
+                    log.info(
+                        "Failed attempt to remove the MinIO directory", exc_info=True
+                    )
+                    await asyncio.sleep(0.2)
+                    continue
+                break
 
 
 @command()
