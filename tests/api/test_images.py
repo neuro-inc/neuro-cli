@@ -754,6 +754,9 @@ class TestRegistry:
             RemoteImage("bananas", tag=None, owner="jill", registry="127.0.0.1"),
         }
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
+    )
     async def test_tags_bad_image_with_tag(self, make_client: _MakeClient) -> None:
         url = URL("http://whatever")
         registry_url = URL("http://whatever-registry")
@@ -762,6 +765,9 @@ class TestRegistry:
             with pytest.raises(ValueError, match="tag is not allowed"):
                 await client.images.tags(image)
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
+    )
     async def test_tags_bad_image_without_owner(self, make_client: _MakeClient) -> None:
         url = URL("http://whatever")
         registry_url = URL("http://whatever-registry")
@@ -770,6 +776,9 @@ class TestRegistry:
             with pytest.raises(ValueError, match="missing image owner"):
                 await client.images.tags(image)
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
+    )
     async def test_tags_bad_image_without_name(self, make_client: _MakeClient) -> None:
         url = URL("http://whatever")
         registry_url = URL("http://whatever-registry")
