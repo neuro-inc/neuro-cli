@@ -113,11 +113,11 @@ def test_images_complete_lifecycle(
         [
             "-q",
             "submit",
-            str(image_url),
             "-g",
             "0",
             "--non-preemptible",
             "--no-wait-start",
+            str(image_url),
         ]
     )
     assert not captured.err
