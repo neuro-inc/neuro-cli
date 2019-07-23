@@ -39,6 +39,7 @@ from .formatters import (
 )
 from .root import Root
 from .utils import (
+    JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
     ImageType,
@@ -142,7 +143,12 @@ def job() -> None:
     show_default=True,
 )
 @click.option(
-    "-n", "--name", metavar="NAME", type=str, help="Optional job name", default=None
+    "-n",
+    "--name",
+    metavar="NAME",
+    type=JOB_NAME,
+    help="Optional job name",
+    default=None,
 )
 @click.option(
     "-d",
@@ -587,7 +593,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "-n",
     "--name",
     metavar="NAME",
-    type=str,
+    type=JOB_NAME,
     help="Optional job name",
     default=None,
     show_default=True,
