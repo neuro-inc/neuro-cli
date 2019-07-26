@@ -80,7 +80,7 @@ def job() -> None:
     """
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
@@ -275,7 +275,7 @@ async def submit(
     )
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("job")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
@@ -320,7 +320,7 @@ async def exec(
     sys.exit(retcode)
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command()
 @click.argument("job")
 @click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @click.option(
@@ -405,7 +405,20 @@ async def _print_logs(root: Root, job: str) -> None:
     "--status",
     multiple=True,
     type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
-    help="Filter out job by status (multiple option)",
+    help=(
+        "Filter out job by status (multiple option)."
+        " Note: option `all` is deprecated, use `neuro ps -a` instead."
+    ),
+)
+@click.option(
+    "-a",
+    "--all",
+    is_flag=True,
+    default=False,
+    help=(
+        "Show all jobs regardless the status (equivalent to "
+        "`-s pending -s running -s succeeded -s failed`)"
+    ),
 )
 @click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
 @click.option(
@@ -420,28 +433,26 @@ async def _print_logs(root: Root, job: str) -> None:
 )
 @async_cmd()
 async def ls(
-    root: Root, status: Sequence[str], name: str, description: str, wide: bool
+    root: Root,
+    status: Sequence[str],
+    all: bool,
+    name: str,
+    description: str,
+    wide: bool,
 ) -> None:
     """
     List all jobs.
 
     Examples:
 
-    neuro ps --name my-experiments-v1 --status all
+    neuro ps -a
+    neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
     """
 
-    status = status or ["running", "pending"]
-
-    # TODO: add validation of status values
-    statuses = set(status)
-    if "all" not in statuses:
-        real_statuses = set(JobStatus(s) for s in statuses)
-    else:
-        real_statuses = set()
-
-    jobs = await root.client.jobs.list(statuses=real_statuses, name=name)
+    statuses = calc_statuses(status, all)
+    jobs = await root.client.jobs.list(statuses=statuses, name=name)
 
     # client-side filtering
     if description:
@@ -548,7 +559,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         click.echo(format_fail(job, error))
 
 
-@command(context_settings=dict(ignore_unknown_options=True))
+@command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
@@ -884,3 +895,34 @@ async def browse_job(root: Root, job: JobDescription) -> None:
     log.info(f"Open job URL: {url}")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, webbrowser.open, str(url))
+
+
+def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
+    defaults = {"running", "pending"}
+    statuses = set(status)
+
+    if "all" in statuses:
+        if all:
+            raise click.UsageError(
+                "Parameters `-a/--all` and " "`-s all/--status=all` are incompatible"
+            )
+        click.echo(
+            click.style(
+                "DeprecationWarning: "
+                "Option `-s all/--status=all` is deprecated. "
+                "Please use `-a/--all` instead.",
+                fg="red",
+            ),
+            err=True,
+        )
+        statuses = set()
+    else:
+        if all:
+            if statuses:
+                opt = " ".join([f"--status={s}" for s in status])
+                log.warning(f"Option `-a/--all` overwrites option(s) `{opt}`")
+            statuses = set()
+        elif not statuses:
+            statuses = defaults
+
+    return set(JobStatus(s) for s in statuses)
