@@ -1,15 +1,31 @@
+import asyncio
 import glob as globmodule  # avoid conflict with subcommand "glob"
+import logging
+import os
+import secrets
+import shlex
 from typing import List, Optional, Sequence
 
+import aiodocker
 import click
 from yarl import URL
 
-from neuromation.api import FileStatusType
+from neuromation.api import (
+    Container,
+    FileStatusType,
+    HTTPPort,
+    IllegalArgumentError,
+    JobStatus,
+    RemoteImage,
+    Resources,
+    Volume,
+)
 from neuromation.api.url_utils import _extract_path
 
 from .formatters import (
     BaseFilesFormatter,
     FilesSorter,
+    JobStartProgress,
     LongFilesFormatter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
@@ -18,6 +34,14 @@ from .formatters import (
 )
 from .root import Root
 from .utils import async_cmd, command, group, parse_file_resource
+
+
+MINIO_IMAGE_NAME = "minio/minio"
+MINIO_IMAGE_TAG = "RELEASE.2019-07-10T00-34-56Z"
+AWS_IMAGE_NAME = "mesosphere/aws-cli"
+AWS_IMAGE_TAG = "1.14.5"
+
+log = logging.getLogger(__name__)
 
 
 @group()
@@ -273,6 +297,249 @@ async def cp(
 
 
 @command()
+@click.argument("sources", nargs=-1, required=False)
+@click.argument("destination", required=False)
+@click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
+@click.option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in SOURCES with explicit scheme",
+)
+@click.option(
+    "-t",
+    "--target-directory",
+    metavar="DIRECTORY",
+    default=None,
+    help="Copy all SOURCES into DIRECTORY",
+)
+@click.option(
+    "-T",
+    "--no-target-directory",
+    is_flag=True,
+    help="Treat DESTINATION as a normal file",
+)
+@click.option(
+    "-u",
+    "--update",
+    is_flag=True,
+    help="Copy only when the SOURCE file is newer than the destination file "
+    "or when the destination file is missing",
+)
+@click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
+@async_cmd()
+async def load(
+    root: Root,
+    sources: Sequence[str],
+    destination: Optional[str],
+    recursive: bool,
+    glob: bool,
+    target_directory: Optional[str],
+    no_target_directory: bool,
+    update: bool,
+    progress: bool,
+) -> None:
+    """
+    Copy files and directories using MinIO (EXPERIMENTAL).
+
+    Same as "cp", but uses MinIO and the Amazon S3 protocol.
+    """
+    target_dir: Optional[URL]
+    dst: Optional[URL]
+    if update and recursive:
+        raise click.UsageError("Cannot use --update and --recursive together")
+    if target_directory:
+        if no_target_directory:
+            raise click.UsageError(
+                "Cannot combine --target-directory (-t) and --no-target-directory (-T)"
+            )
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        sources = *sources, destination
+        target_dir = parse_file_resource(target_directory, root)
+        dst = None
+    else:
+        if destination is None:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"DESTINATION"'
+            )
+        if not sources:
+            raise click.MissingParameter(
+                param_type="argument", param_hint='"SOURCES..."'
+            )
+        dst = parse_file_resource(destination, root)
+        if no_target_directory or not await root.client.storage._is_dir(dst):
+            target_dir = None
+        else:
+            target_dir = dst
+            dst = None
+
+    srcs = await _expand(sources, root, glob, allow_file=True)
+    if no_target_directory and len(srcs) > 1:
+        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
+
+    for src in srcs:
+        if target_dir:
+            dst = target_dir / src.name
+        assert dst
+        await cp_s3(
+            root, src, dst, recursive=recursive, update=update, progress=progress
+        )
+
+
+async def cp_s3(
+    root: Root, src: URL, dst: URL, recursive: bool, update: bool, progress: bool
+) -> None:
+    if src.scheme == "file" and dst.scheme == "storage":
+        storage_uri = dst
+        local_uri = src
+        upload = True
+    elif src.scheme == "storage" and dst.scheme == "file":
+        storage_uri = src
+        local_uri = dst
+        upload = False
+    else:
+        raise RuntimeError(
+            f"Copy operation of the file with scheme '{src.scheme}'"
+            f" to the file with scheme '{dst.scheme}'"
+            f" is not supported"
+        )
+
+    access_key = secrets.token_urlsafe(nbytes=16)
+    secret_key = secrets.token_urlsafe(nbytes=16)
+    minio_dir = f"minio-{secrets.token_hex(nbytes=8)}"
+    s3_uri = f"s3://bucket{storage_uri.path}"
+    minio_script = f"""\
+mkdir /mnt/{minio_dir}
+ln -s /mnt /mnt/{minio_dir}/bucket
+minio server /mnt/{minio_dir}
+"""
+    volume = Volume(
+        storage_path=str(storage_uri.with_path("")),
+        container_path="/mnt",
+        read_only=False,
+    )
+    server_container = Container(
+        image=RemoteImage(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),
+        entrypoint="sh",
+        command=f"-c {shlex.quote(minio_script)}",
+        http=HTTPPort(port=9000, requires_auth=False),
+        resources=Resources(memory_mb=1024, cpu=1, gpu=0, gpu_model=None, shm=True),
+        env={"MINIO_ACCESS_KEY": access_key, "MINIO_SECRET_KEY": secret_key},
+        volumes=[volume],
+    )
+
+    log.info(f"Launching Amazon S3 gateway for {str(storage_uri.with_path(''))!r}")
+    job_name = f"neuro-upload-server-{secrets.token_hex(nbytes=8)}"
+    job = await root.client.jobs.run(server_container, name=job_name)
+    try:
+        jsprogress = JobStartProgress.create(
+            tty=root.tty, color=root.color, quiet=root.quiet
+        )
+        while job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.2)
+            job = await root.client.jobs.status(job.id)
+            jsprogress(job)
+        jsprogress.close()
+
+        local_path = "/data"
+        if not os.path.isdir(local_uri.path):
+            local_path = f"/data/{local_uri.name}"
+            local_uri = local_uri.parent
+        binding = f"{local_uri.path}:/data"
+        if upload:
+            binding += ":ro"
+        cp_cmd = ["sync" if update else "cp"]
+        if recursive:
+            cp_cmd.append("--recursive")
+        if root.verbosity < 0:
+            cp_cmd.append("--quiet")
+        if upload:
+            cp_cmd.append(local_path)
+            cp_cmd.append(s3_uri)
+        else:
+            cp_cmd.append(s3_uri)
+            cp_cmd.append(local_path)
+
+        aws_script = f"""\
+aws configure set default.s3.max_concurrent_requests 100
+aws configure set default.s3.max_queue_size 10000
+aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
+"""
+        if root.verbosity >= 2:
+            aws_script = "set -x\n" + aws_script
+        log.info(f"Launching Amazon S3 client for {local_uri.path!r}")
+        docker = aiodocker.Docker()
+        try:
+            aws_image = f"{AWS_IMAGE_NAME}:{AWS_IMAGE_TAG}"
+            async for info in await docker.images.pull(aws_image, stream=True):
+                # TODO Use some of Progress classes
+                log.debug(str(info))
+            client_container = await docker.containers.create(
+                config={
+                    "Image": aws_image,
+                    "Entrypoint": "sh",
+                    "Cmd": ["-c", aws_script],
+                    "Env": [
+                        f"AWS_ACCESS_KEY_ID={access_key}",
+                        f"AWS_SECRET_ACCESS_KEY={secret_key}",
+                    ],
+                    "HostConfig": {"Binds": [binding]},
+                    "Tty": True,
+                },
+                name=f"neuro-upload-client-{secrets.token_hex(nbytes=8)}",
+            )
+            try:
+                await client_container.start()
+                tasks = [client_container.wait()]
+
+                async def printlogs(err: bool) -> None:
+                    async for piece in await client_container.log(
+                        stdout=not err,
+                        stderr=err,
+                        follow=True,
+                        details=(root.verbosity > 1),
+                    ):
+                        click.echo(piece, nl=False, err=err)
+
+                if not root.quiet:
+                    tasks.append(printlogs(err=True))
+                if root.verbosity > 0 or progress:
+                    tasks.append(printlogs(err=False))
+                await asyncio.gather(*tasks)
+                exit_code = (await client_container.show())["State"]["ExitCode"]
+                if exit_code:
+                    raise RuntimeError(f"AWS copying failed with code {exit_code}")
+            finally:
+                await client_container.delete(force=True)
+        finally:
+            await docker.close()
+    finally:
+        try:
+            await root.client.jobs.kill(job.id)
+        finally:
+            attempts = 5
+            while True:
+                try:
+                    await root.client.storage.rm(
+                        URL(f"storage:{minio_dir}"), recursive=True
+                    )
+                except IllegalArgumentError:
+                    attempts -= 1
+                    if not attempts:
+                        raise
+                    log.info(
+                        "Failed attempt to remove the MinIO directory", exc_info=True
+                    )
+                    await asyncio.sleep(0.2)
+                    continue
+                break
+
+
+@command()
 @click.argument("paths", nargs=-1, required=True)
 @click.option(
     "-p",
@@ -433,3 +700,4 @@ storage.add_command(glob)
 storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
+storage.add_command(load)

@@ -47,9 +47,10 @@ async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
     # TODO use random image name here
     image_name = f"{TEST_IMAGE_NAME}:{tag}"
     with image_archive.open(mode="r+b") as fileobj:
-        await docker.images.build(
+        result = await docker.images.build(
             fileobj=fileobj, tag=image_name, buildargs={"TAG": tag}, encoding="identity"
         )
+        print(result)
 
     return image_name
 
@@ -140,9 +141,20 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
     assert tag in captured.out
 
+    cmd = f"neuro image tags {image_full_str}"
+    result = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
+    assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
+    assert result.returncode, assertion_msg
+
     image_full_str_latest_tag = image_full_str.replace(f":{tag}", ":latest")
-    captured = helper.run_cli(["image", "tags", image_full_str_latest_tag])
-    assert tag in captured.out
+    cmd = f"neuro image tags {image_full_str_latest_tag}"
+    result = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
+    assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
+    assert result.returncode, assertion_msg
 
 
 @pytest.mark.e2e

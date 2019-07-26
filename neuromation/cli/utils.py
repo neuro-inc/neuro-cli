@@ -54,6 +54,12 @@ _T = TypeVar("_T")
 
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 
+# NOTE: these job name defaults are taken from `platform_api` file `validators.py`
+JOB_NAME_MIN_LENGTH = 3
+JOB_NAME_MAX_LENGTH = 40
+JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
+JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
+
 
 def warn_if_has_newer_version(
     version: _PyPIVersion, check_neuromation: bool = True
@@ -503,6 +509,21 @@ class ImageType(click.ParamType):
         return image_parser.parse_remote(value)
 
 
+class RemoteTaglessImageType(click.ParamType):
+    name = "image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> RemoteImage:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        config = Factory(root.config_path)._read()
+        image_parser = _ImageNameParser(
+            config.auth_token.username, config.cluster_config.registry_url
+        )
+        return image_parser.parse_as_neuro_image(value, allow_tag=False)
+
+
 class LocalRemotePortParamType(click.ParamType):
     name = "local-remote-port-pair"
 
@@ -532,6 +553,32 @@ class MegabyteType(click.ParamType):
 
 
 MEGABYTE = MegabyteType()
+
+
+class JobNameType(click.ParamType):
+    name = "job_name"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> str:
+        if (
+            len(value) < JOB_NAME_MIN_LENGTH
+            or len(value) > JOB_NAME_MAX_LENGTH
+            or JOB_NAME_REGEX.match(value) is None
+        ):
+            raise ValueError(
+                f"Invalid job name '{value}'.\n"
+                "The name can only contain lowercase letters, numbers and hyphens "
+                "with the following rules: \n"
+                "  - the first character must be a letter; \n"
+                "  - each hyphen must be surrounded by non-hyphen characters; \n"
+                f"  - total length must be between {JOB_NAME_MIN_LENGTH} and "
+                f"{JOB_NAME_MAX_LENGTH} characters long."
+            )
+        return value
+
+
+JOB_NAME = JobNameType()
 
 
 def do_deprecated_quiet(
