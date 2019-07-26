@@ -1,0 +1,1 @@
+Forbid mixing arguments and CLI options in `run`, `submit` and `exec` commands. Options (parameters starting from dash or double dash, e.g. `-n` and `--name`) should prepend arguments (e.g. `image:ubuntu:latest`). All tailed options belong to executed container command, not to neuro CLI itself.
