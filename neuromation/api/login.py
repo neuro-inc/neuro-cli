@@ -594,7 +594,7 @@ async def get_server_config(
                         memory_mb=data["memory_mb"],
                         gpu=data.get("gpu"),
                         gpu_model=data.get("gpu_model"),
-                        is_preemptible=data.get("is_preemptible", False)
+                        is_preemptible=data.get("is_preemptible", False),
                     )
                     for data in payload.get("resource_presets", ())
                 },

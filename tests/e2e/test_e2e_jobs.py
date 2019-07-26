@@ -959,16 +959,7 @@ def fakebrowser(monkeypatch: Any) -> None:
 def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            "cpu-small",
-            "--detach",
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
+        ["-q", "job", "run", "-s", "cpu-small", "--detach", UBUNTU_IMAGE_NAME, "true"]
     )
     job_id = captured.out
 
@@ -1028,15 +1019,7 @@ def test_job_run_no_detach(helper: Helper) -> None:
     token = uuid4()
     # Run a new job
     captured = helper.run_cli(
-        [
-            "-v",
-            "job",
-            "run",
-            "-s",
-            "cpu-small",
-            UBUNTU_IMAGE_NAME,
-            f"echo {token}",
-        ]
+        ["-v", "job", "run", "-s", "cpu-small", UBUNTU_IMAGE_NAME, f"echo {token}"]
     )
     assert str(token) in captured.out
 
