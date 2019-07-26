@@ -583,13 +583,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     default=None,
 )
 @click.option(
-    "--preemptible/--non-preemptible",
-    "-p/-P",
-    help="Run job on a lower-cost preemptible instance",
-    default=False,
-    show_default=True,
-)
-@click.option(
     "-n",
     "--name",
     metavar="NAME",
@@ -668,7 +661,6 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    preemptible: bool,
     name: Optional[str],
     description: Optional[str],
     wait_start: bool,
@@ -716,7 +708,7 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
-        preemptible=preemptible,
+        preemptible=job_preset.is_preemptible,
         name=name,
         description=description,
         wait_start=wait_start,

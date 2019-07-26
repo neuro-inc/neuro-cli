@@ -1208,11 +1208,11 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name         #CPU  Memory #GPU  GPU Model
-                gpu-small       7   30720    1  nvidia-tesla-k80
-                gpu-large       7   61440    1  nvidia-tesla-v100
-                cpu-small       7    2048
-                cpu-large       7   14336"""
+                Name         #CPU  Memory Preemptible #GPU  GPU Model
+                gpu-small       7   30720     ✖︎         1  nvidia-tesla-k80
+                gpu-large       7   61440     ✖︎         1  nvidia-tesla-v100
+                cpu-small       7    2048     ✖︎
+                cpu-large       7   14336     ✖︎"""
         )
 
 
