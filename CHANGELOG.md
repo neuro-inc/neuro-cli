@@ -17,18 +17,6 @@ Features
 - Forbid mixing arguments and CLI options in `run`, `submit` and `exec` commands. Options (parameters starting from dash or double dash, e.g. `-n` and `--name`) should prepend arguments (e.g. `image:ubuntu:latest`). All tailed options belong to executed container command, not to neuro CLI itself. ([#927](https://github.com/neuromation/platform-api-clients/issues/927))
 
 
-Neuromation 19.7.26 (2019-07-26)
-================================
-
-Features
---------
-
-
-- Add option `ps --all`, deprecate `ps -s all`. ([#538](https://github.com/neuromation/platform-api-clients/issues/538))
-
-- Forbid mixing arguments and CLI options in `run`, `submit` and `exec` commands. Options (parameters starting from dash or double dash, e.g. `-n` and `--name`) should prepend arguments (e.g. `image:ubuntu:latest`). All tailed options belong to executed container command, not to neuro CLI itself. ([#927](https://github.com/neuromation/platform-api-clients/issues/927))
-
-
 Neuromation 19.7.17 (2019-07-17)
 ================================
 
