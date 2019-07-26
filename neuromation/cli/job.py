@@ -583,6 +583,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     default=None,
 )
 @click.option(
+    "--preemptible/--non-preemptible",
+    "-p/-P",
+    help="Run job on a lower-cost preemptible instance (DEPRECATED AND IGNORED)",
+    default=None,
+    hidden=True,
+)
+@click.option(
     "-n",
     "--name",
     metavar="NAME",
@@ -661,6 +668,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    preemptible: Optional[bool],
     name: Optional[str],
     description: Optional[str],
     wait_start: bool,
@@ -690,6 +698,10 @@ async def run(
     if not preset:
         preset = next(iter(root.resource_presets.keys()))
     job_preset = root.resource_presets[preset]
+    if preemptible is not None:
+        click.echo(
+            "-p/-P option is deprecated and ignored. Use corresponding presets instead."
+        )
 
     log.info(f"Using preset '{preset}': {job_preset}")
 
