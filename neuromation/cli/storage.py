@@ -515,6 +515,7 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
             await root.client.jobs.kill(job.id)
         finally:
             attempts = 5
+            delay = 0.2
             while True:
                 try:
                     await root.client.storage.rm(
@@ -527,7 +528,8 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
                     log.info(
                         "Failed attempt to remove the MinIO directory", exc_info=True
                     )
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(delay)
+                    delay *= 2
                     continue
                 break
 
