@@ -316,7 +316,9 @@ class Storage(metaclass=NoPublicConstructor):
         except ResourceNotFound:
             await self.mkdirs(dst)
         progress.enter(StorageProgressEnterDir(src, dst))
-        for child in path.iterdir():
+        folder = [item for item in path.iterdir()]
+        folder.sort(key=lambda item: (item.is_dir(), item.name))
+        for child in folder:
             if child.is_file():
                 await self.upload_file(
                     src / child.name, dst / child.name, progress=progress
@@ -370,7 +372,9 @@ class Storage(metaclass=NoPublicConstructor):
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
         progress.enter(StorageProgressEnterDir(src, dst))
-        for child in await self.ls(src):
+        folder = await self.ls(src)
+        folder.sort(key=lambda item: (item.is_dir(), item.name))
+        for child in folder:
             if child.is_file():
                 await self.download_file(
                     src / child.name, dst / child.name, progress=progress

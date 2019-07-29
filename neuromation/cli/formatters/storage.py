@@ -562,6 +562,7 @@ class FilesSorter(str, enum.Enum):
 
 # progress indicator
 
+
 class BaseStorageProgress(AbstractStorageProgress):
     @abc.abstractmethod
     def begin(self, src: URL, dst: URL) -> None:
@@ -646,33 +647,37 @@ class TTYProgress(BaseStorageProgress):
     def __init__(self, root: Root) -> None:
         self.painter = get_painter(root.color, quote=True)
         self.printer = TTYPrinter()
-        self.width = root.terminal_size[0] // 2 - 10
+        self.half_width = (root.terminal_size[0] - 10) // 2
+        self.full_width = root.terminal_size[0] - 20
         self.lines: List[Tuple[bool, str]] = []
         self.dir_stack: List[str] = []
         self.verbose = root.verbosity > 0
 
-    def fmt_url(self, url: URL, type: FileStatusType) -> str:
+    def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
         label = str(url)
-        width = self.width
+        if half:
+            width = self.half_width
+        else:
+            width = self.full_width
         while len(label) > width:
-            parts = url.parts
+            parts = list(url.parts)
             if len(parts) > 1:
-                if parts[0] == '/':
+                if parts[0] == "/":
                     if len(parts) < 3:
                         break
                     slash, first, second, *last = parts
-                    if first == '...':
+                    if first == "...":
                         if last:
-                            parts = ['...'] + last
+                            parts = ["..."] + last
                     else:
-                        parts = ['...', second] + last
+                        parts = ["...", second] + last
                 else:
                     first, second, *last = parts
-                    if first == '...':
+                    if first == "...":
                         if last:
-                            parts = ['...'] + last
+                            parts = ["..."] + last
                     else:
-                        parts = ['...', second] + last
+                        parts = ["...", second] + last
             else:
                 break
             url = URL(f"{url.scheme}://{url.host or ''}/{'/'.join(parts)}")
@@ -682,17 +687,22 @@ class TTYProgress(BaseStorageProgress):
     def fmt_str(self, label: str, type: FileStatusType) -> str:
         return self.painter.paint(label, type)
 
+    def fmt_size(self, size: int) -> str:
+        return humanize.naturalsize(size, gnu=True)
+
     def begin(self, src: URL, dst: URL) -> None:
         if self.verbose:
-            src_label = self.fmt_str(str(src), FileStatusType.DIRECTORY)
-            dst_label = self.fmt_str(str(dst), FileStatusType.DIRECTORY)
+            click.echo("Copy")
+            click.echo(self.fmt_str(str(src), FileStatusType.DIRECTORY))
+            click.echo("=>")
+            click.echo(self.fmt_str(str(dst), FileStatusType.DIRECTORY))
         else:
-            src_label = self.fmt_url(src, FileStatusType.DIRECTORY)
-            dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY)
-        click.echo(f"Copy {src_label} => {dst_label}")
+            src_label = self.fmt_url(src, FileStatusType.DIRECTORY, half=True)
+            dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
+            click.echo(f"Copy {src_label} => {dst_label}")
 
     def enter(self, data: StorageProgressEnterDir) -> None:
-        src = self.fmt_url(data.src, FileStatusType.DIRECTORY)
+        src = self.fmt_url(data.src, FileStatusType.DIRECTORY, half=False)
         self.dir_stack.append(src)
         self.append(f"{src}", is_dir=True)
 
@@ -704,21 +714,25 @@ class TTYProgress(BaseStorageProgress):
     def start(self, data: StorageProgressStart) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = 0
-        self.append(f"{src} [{progress:.2f}%]")
+        current = self.fmt_size(0)
+        total = self.fmt_size(data.size)
+        self.append(f"{src} [{progress:.2f}%] {current} of {total}")
 
     def complete(self, data: StorageProgressComplete) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
-        progress = 100
-        self.replace(f"{src} [{progress:.2f}%]")
+        total = self.fmt_size(data.size)
+        self.replace(f"{src} {total}")
 
     def step(self, data: StorageProgressStep) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = (100 * data.current) / data.size
-        self.replace(f"{src} [{progress:.2f}%]")
+        current = self.fmt_size(data.current)
+        total = self.fmt_size(data.size)
+        self.replace(f"{src} [{progress:.2f}%] {current} of {total}")
 
     def fail(self, data: StorageProgressFail) -> None:
-        src = self.fmt_url(data.src, FileStatusType.FILE)
-        dst = self.fmt_url(data.dst, FileStatusType.FILE)
+        src = self.fmt_str(str(data.src), FileStatusType.FILE)
+        dst = self.fmt_str(str(data.dst), FileStatusType.FILE)
         click.echo(
             click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
             err=True,
