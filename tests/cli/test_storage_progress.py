@@ -389,7 +389,7 @@ def test_tty_fmt_url_relative_over_single_segment() -> None:
     )
 
 
-def test_tty_append_files():
+def test_tty_append_files() -> None:
     with mock.patch.object(TTYProgress, "HEIGHT", 3):
         report = create_storage_progress(make_root(True, True, False), True)
         assert isinstance(report, TTYProgress)
@@ -405,7 +405,7 @@ def test_tty_append_files():
         assert report.lines == [(False, "b"), (False, "c"), (False, "d")]
 
 
-def test_tty_append_dir():
+def test_tty_append_dir() -> None:
     with mock.patch.object(TTYProgress, "HEIGHT", 3):
         report = create_storage_progress(make_root(True, True, False), True)
         assert isinstance(report, TTYProgress)
@@ -421,7 +421,7 @@ def test_tty_append_dir():
         assert report.lines == [(True, "a"), (False, "c"), (False, "d")]
 
 
-def test_tty_append_second_dir():
+def test_tty_append_second_dir() -> None:
     with mock.patch.object(TTYProgress, "HEIGHT", 3):
         report = create_storage_progress(make_root(True, True, False), True)
         assert isinstance(report, TTYProgress)
