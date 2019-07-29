@@ -37,7 +37,11 @@ def test_format_url_storage() -> None:
 
 def test_format_url_file() -> None:
     u = URL("file:///asvetlov/folder")
-    assert format_url(u) == "/asvetlov/folder"
+    if sys.platform == 'win32':
+        expected = "\\asvetlov\\folder"
+    else:
+        expected = "/asvetlov/folder"
+    assert format_url(u) == expected
 
 
 def make_root(color: bool, tty: bool, verbose: bool) -> Root:
