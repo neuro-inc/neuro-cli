@@ -14,11 +14,17 @@ from neuromation.api import (
     StorageProgressStep,
 )
 from neuromation.cli.formatters import create_storage_progress
-from neuromation.cli.formatters.storage import StreamProgress, TTYProgress, format_url
+from neuromation.cli.formatters.storage import (
+    BaseStorageProgress,
+    StreamProgress,
+    TTYProgress,
+    format_url,
+)
 from neuromation.cli.root import Root
 
 
-def unstyle(report: TTYProgress) -> List[str]:
+def unstyle(report: BaseStorageProgress) -> List[str]:
+    assert isinstance(report, TTYProgress)
     return [click.unstyle(line) for (is_dir, line) in report.lines]
 
 
