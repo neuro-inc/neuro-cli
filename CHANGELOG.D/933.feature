@@ -1,0 +1,1 @@
+Show progress for `neuro cp` by default.
