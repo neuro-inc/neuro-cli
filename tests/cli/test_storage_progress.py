@@ -116,6 +116,40 @@ def test_stream_progress(capsys: Any) -> None:
     assert captured.out == f""
 
 
+def test_tty_progress(capsys: Any) -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    src = URL("file:///abc")
+    dst = URL("storage:xyz")
+
+    report.begin(src, dst)
+    captured = capsys.readouterr()
+    assert captured.out == f"Copy file:///abc => storage:xyz\n"
+
+    report.enter(StorageProgressEnterDir(src, dst))
+    captured = capsys.readouterr()
+    assert captured.out == f"file:///abc\n"
+
+    report.start(StorageProgressStart(src, dst, 600))
+    captured = capsys.readouterr()
+    assert captured.out == f"file:///abc\nabc [0.00%] 0B of 600B\n"
+
+    report.step(StorageProgressStep(src, dst, 300, 600))
+    captured = capsys.readouterr()
+    assert captured.out == "abc [50.00%] 300B of 600B\n"
+
+    report.step(StorageProgressStep(src, dst, 400, 600))
+    captured = capsys.readouterr()
+    assert captured.out == "abc [66.67%] 400B of 600B\n"
+
+    report.complete(StorageProgressComplete(src, dst, 600))
+    captured = capsys.readouterr()
+    assert captured.out == f"abc 600B\n"
+
+    report.leave(StorageProgressLeaveDir(src, dst))
+    captured = capsys.readouterr()
+    assert captured.out == f""
+
+
 def test_fail1(capsys: Any) -> None:
     report = create_storage_progress(make_root(False, True, False), False)
     src = URL("file:///abc")
