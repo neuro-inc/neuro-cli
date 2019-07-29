@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from typing import Any, List
+from unittest import mock
 
 import click
 from yarl import URL
@@ -386,3 +387,51 @@ def test_tty_fmt_url_relative_over_single_segment() -> None:
         click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
         == "storage:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     )
+
+
+def test_tty_append_files():
+    with mock.patch.object(TTYProgress, 'HEIGHT', 3):
+        report = create_storage_progress(make_root(True, True, False), True)
+        assert isinstance(report, TTYProgress)
+        mock.patch.object(report, 'HEIGHT', 3)
+        assert report.lines == []
+        report.append('a')
+        assert report.lines == [(False, 'a')]
+        report.append('b')
+        assert report.lines == [(False, 'a'), (False, 'b')]
+        report.append('c')
+        assert report.lines == [(False, 'a'), (False, 'b'), (False, 'c')]
+        report.append('d')
+        assert report.lines == [(False, 'b'), (False, 'c'), (False, 'd')]
+
+
+def test_tty_append_dir():
+    with mock.patch.object(TTYProgress, 'HEIGHT', 3):
+        report = create_storage_progress(make_root(True, True, False), True)
+        assert isinstance(report, TTYProgress)
+        mock.patch.object(report, 'HEIGHT', 3)
+        assert report.lines == []
+        report.append('a', is_dir=True)
+        assert report.lines == [(True, 'a')]
+        report.append('b')
+        assert report.lines == [(True, 'a'), (False, 'b')]
+        report.append('c')
+        assert report.lines == [(True, 'a'), (False, 'b'), (False, 'c')]
+        report.append('d')
+        assert report.lines == [(True, 'a'), (False, 'c'), (False, 'd')]
+
+
+def test_tty_append_second_dir():
+    with mock.patch.object(TTYProgress, 'HEIGHT', 3):
+        report = create_storage_progress(make_root(True, True, False), True)
+        assert isinstance(report, TTYProgress)
+        mock.patch.object(report, 'HEIGHT', 3)
+        assert report.lines == []
+        report.append('a', is_dir=True)
+        assert report.lines == [(True, 'a')]
+        report.append('b')
+        assert report.lines == [(True, 'a'), (False, 'b')]
+        report.append('c', is_dir=True)
+        assert report.lines == [(True, 'a'), (False, 'b'), (True, 'c')]
+        report.append('d')
+        assert report.lines == [(False, 'b'), (True, 'c'), (False, 'd')]
