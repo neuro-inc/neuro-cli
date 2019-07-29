@@ -11,8 +11,18 @@ from neuromation.api import (
     StorageProgressStep,
 )
 from neuromation.cli.formatters import create_storage_progress
-from neuromation.cli.formatters.storage import StreamProgress, TTYProgress
+from neuromation.cli.formatters.storage import StreamProgress, TTYProgress, format_url
 from neuromation.cli.root import Root
+
+
+def test_format_url_storage():
+    u = URL("storage://asvetlov/folder")
+    assert format_url(u) == "storage://asvetlov/folder"
+
+
+def test_format_url_file():
+    u = URL("file:///asvetlov/folder")
+    assert format_url(u) == "/asvetlov/folder"
 
 
 def make_root(color: bool, tty: bool, verbose: bool) -> Root:
