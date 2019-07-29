@@ -2,6 +2,7 @@ import textwrap
 import time
 from dataclasses import replace
 from datetime import datetime
+from sys import platform
 from typing import Any, List, Optional
 
 import click
@@ -1201,18 +1202,22 @@ class TestResourcesFormatter:
 class TestConfigFormatter:
     async def test_output(self, root: Root) -> None:
         out = ConfigFormatter()(root)
+        if platform == "win32":
+            no = "No"
+        else:
+            no = " ✖︎"
         assert click.unstyle(out) == textwrap.dedent(
-            """\
+            f"""\
             User Configuration:
               User Name: user
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
                 Name         #CPU  Memory Preemptible #GPU  GPU Model
-                gpu-small       7   30720     ✖︎         1  nvidia-tesla-k80
-                gpu-large       7   61440     ✖︎         1  nvidia-tesla-v100
-                cpu-small       7    2048     ✖︎
-                cpu-large       7   14336     ✖︎"""
+                gpu-small       7   30720    {no}         1  nvidia-tesla-k80
+                gpu-large       7   61440    {no}         1  nvidia-tesla-v100
+                cpu-small       7    2048    {no}
+                cpu-large       7   14336    {no}"""
         )
 
 
