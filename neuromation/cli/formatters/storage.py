@@ -653,7 +653,7 @@ class TTYProgress(BaseStorageProgress):
             if len(parts) > 1:
                 if parts[0] == "/":
                     if len(parts) < 3:
-                        slash = '/'
+                        slash = "/"
                         break
                     slash, first, second, *last = parts
                     if first == "...":
@@ -664,7 +664,7 @@ class TTYProgress(BaseStorageProgress):
                     else:
                         parts = ["...", second] + last
                 else:
-                    slash = ''
+                    slash = ""
                     # len(parts) > 1 always
                     first, second, *last = parts
                     if first == "...":
