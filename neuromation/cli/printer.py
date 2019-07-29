@@ -1,7 +1,6 @@
 import abc
 from os import linesep
 from time import time
-from typing import Optional
 
 import click
 

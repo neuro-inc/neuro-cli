@@ -12,7 +12,8 @@ import attr
 from yarl import URL
 
 from .abc import (
-    AbstractStorageProgress,
+    AbstractFileProgress,
+    AbstractRecursiveFileProgress,
     StorageProgressComplete,
     StorageProgressEnterDir,
     StorageProgressFail,
@@ -242,7 +243,7 @@ class Storage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, dst: URL, *, progress: AbstractStorageProgress
+        self, src: Path, dst: URL, *, progress: AbstractFileProgress
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
@@ -259,7 +260,7 @@ class Storage(metaclass=NoPublicConstructor):
             progress.complete(StorageProgressComplete(src_url, dst, size))
 
     async def upload_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -298,7 +299,11 @@ class Storage(metaclass=NoPublicConstructor):
         await self.create(dst, self._iterate_file(path, dst, progress=progress))
 
     async def upload_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -341,7 +346,7 @@ class Storage(metaclass=NoPublicConstructor):
         progress.leave(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -363,7 +368,11 @@ class Storage(metaclass=NoPublicConstructor):
             progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -419,7 +428,7 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
     )
 
 
-class _DummyProgress(AbstractStorageProgress):
+class _DummyProgress(AbstractRecursiveFileProgress):
     def start(self, data: StorageProgressStart) -> None:
         pass
 

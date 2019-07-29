@@ -6,7 +6,8 @@ from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
-    AbstractStorageProgress,
+    AbstractFileProgress,
+    AbstractRecursiveFileProgress,
     StorageProgressComplete,
     StorageProgressEnterDir,
     StorageProgressFail,
@@ -71,7 +72,8 @@ __all__ = (
     "AuthError",
     "AuthenticationError",
     "AuthorizationError",
-    "AbstractStorageProgress",
+    "AbstractFileProgress",
+    "AbstractRecursiveFileProgress",
     "AbstractDockerImageProgress",
     "StorageProgressStart",
     "StorageProgressComplete",

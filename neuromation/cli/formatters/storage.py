@@ -14,7 +14,7 @@ from click import style, unstyle
 from yarl import URL
 
 from neuromation.api import (
-    AbstractStorageProgress,
+    AbstractRecursiveFileProgress,
     Action,
     FileStatus,
     FileStatusType,
@@ -563,7 +563,7 @@ class FilesSorter(str, enum.Enum):
 # progress indicator
 
 
-class BaseStorageProgress(AbstractStorageProgress):
+class BaseStorageProgress(AbstractRecursiveFileProgress):
     @abc.abstractmethod
     def begin(self, src: URL, dst: URL) -> None:
         pass
@@ -626,11 +626,7 @@ class StreamProgress(BaseStorageProgress):
         click.echo(f"{src} -> {dst}")
 
     def leave(self, data: StorageProgressLeaveDir) -> None:
-        if not self.verbose:
-            return
-        src = self.fmt_url(data.src, FileStatusType.FILE)
-        dst = self.fmt_url(data.dst, FileStatusType.FILE)
-        click.echo(f"{src} -> {dst}")
+        pass
 
     def fail(self, data: StorageProgressFail) -> None:
         src = self.fmt_url(data.src, FileStatusType.FILE)
