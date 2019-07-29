@@ -1205,7 +1205,7 @@ class TestConfigFormatter:
         if platform == "win32":
             no = "No"
         else:
-            no = " ✖︎"
+            no = "✖︎"
         assert click.unstyle(out) == textwrap.dedent(
             f"""\
             User Configuration:
@@ -1214,10 +1214,10 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
                 Name         #CPU  Memory Preemptible #GPU  GPU Model
-                gpu-small       7   30720    {no}         1  nvidia-tesla-k80
-                gpu-large       7   61440    {no}         1  nvidia-tesla-v100
-                cpu-small       7    2048    {no}
-                cpu-large       7   14336    {no}"""
+                gpu-small       7   30720     {no}         1  nvidia-tesla-k80
+                gpu-large       7   61440     {no}         1  nvidia-tesla-v100
+                cpu-small       7    2048     {no}
+                cpu-large       7   14336     {no}"""
         )
 
 
