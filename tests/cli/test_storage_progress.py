@@ -152,7 +152,7 @@ def test_stream_fail2(capsys: Any) -> None:
 
 
 def test_tty_progress(capsys: Any) -> None:
-    report = create_storage_progress(make_root(True, True, False), True)
+    report = create_storage_progress(make_root(False, True, False), True)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
     src_f = URL("file:///abc/file.txt")
@@ -160,39 +160,39 @@ def test_tty_progress(capsys: Any) -> None:
 
     report.begin(src, dst)
     captured = capsys.readouterr()
-    assert captured.out == f"Copy file:///abc => storage:xyz\n"
+    assert captured.out == f"Copy 'file:///abc' => 'storage:xyz'\n"
 
     report.enter(StorageProgressEnterDir(src, dst))
-    assert unstyle(report) == ["file:///abc"]
+    assert unstyle(report) == ["'file:///abc'"]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt [0.00%] 0B of 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' [0.00%] 0B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt [50.00%] 300B of 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' [50.00%] 300B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt [66.67%] 400B of 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' [66.67%] 400B of 600B"]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
 
     report.leave(StorageProgressLeaveDir(src, dst))
-    assert unstyle(report) == ["file:///abc", "file.txt 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
 
 
 def test_tty_verbose(capsys: Any) -> None:
-    report = create_storage_progress(make_root(True, True, True), True)
+    report = create_storage_progress(make_root(False, True, True), True)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
 
     report.begin(src, dst)
     captured = capsys.readouterr()
-    assert captured.out == f"Copy\nfile:///abc\n=>\nstorage:xyz\n"
+    assert captured.out == f"Copy\n'file:///abc'\n=>\n'storage:xyz'\n"
 
 
 def test_tty_nested() -> None:
-    report = create_storage_progress(make_root(True, True, False), True)
+    report = create_storage_progress(make_root(False, True, False), True)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
     src_f = URL("file:///abc/file.txt")
@@ -203,63 +203,63 @@ def test_tty_nested() -> None:
     dst2_f = URL("storage:xyz/cde/file.txt")
 
     report.enter(StorageProgressEnterDir(src, dst))
-    assert unstyle(report) == ["file:///abc"]
+    assert unstyle(report) == ["'file:///abc'"]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt [0.00%] 0B of 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' [0.00%] 0B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt [50.00%] 300B of 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' [50.00%] 300B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt [66.67%] 400B of 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' [66.67%] 400B of 600B"]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["file:///abc", "file.txt 600B"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
 
     report.enter(StorageProgressEnterDir(src2, dst2))
-    assert unstyle(report) == ["file:///abc", "file.txt 600B", "file:///abc/cde"]
+    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B", "'file:///abc/cde'"]
 
     report.start(StorageProgressStart(src2_f, dst2_f, 800))
     assert unstyle(report) == [
-        "file:///abc",
-        "file.txt 600B",
-        "file:///abc/cde",
-        "file.txt [0.00%] 0B of 800B",
+        "'file:///abc'",
+        "'file.txt' 600B",
+        "'file:///abc/cde'",
+        "'file.txt' [0.00%] 0B of 800B",
     ]
 
     report.step(StorageProgressStep(src2_f, dst2_f, 300, 800))
     assert unstyle(report) == [
-        "file:///abc",
-        "file.txt 600B",
-        "file:///abc/cde",
-        "file.txt [37.50%] 300B of 800B",
+        "'file:///abc'",
+        "'file.txt' 600B",
+        "'file:///abc/cde'",
+        "'file.txt' [37.50%] 300B of 800B",
     ]
 
     report.complete(StorageProgressComplete(src2_f, dst_f, 800))
     assert unstyle(report) == [
-        "file:///abc",
-        "file.txt 600B",
-        "file:///abc/cde",
-        "file.txt 800B",
+        "'file:///abc'",
+        "'file.txt' 600B",
+        "'file:///abc/cde'",
+        "'file.txt' 800B",
     ]
 
     report.leave(StorageProgressLeaveDir(src2, dst2))
     assert unstyle(report) == [
-        "file:///abc",
-        "file.txt 600B",
-        "file:///abc/cde",
-        "file.txt 800B",
-        "file:///abc",
+        "'file:///abc'",
+        "'file.txt' 600B",
+        "'file:///abc/cde'",
+        "'file.txt' 800B",
+        "'file:///abc'",
     ]
 
     report.leave(StorageProgressLeaveDir(src, dst))
     assert unstyle(report) == [
-        "file:///abc",
-        "file.txt 600B",
-        "file:///abc/cde",
-        "file.txt 800B",
-        "file:///abc",
+        "'file:///abc'",
+        "'file.txt' 600B",
+        "'file:///abc/cde'",
+        "'file.txt' 800B",
+        "'file:///abc'",
     ]
 
 
