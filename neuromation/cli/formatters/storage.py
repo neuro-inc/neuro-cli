@@ -2,7 +2,6 @@ import abc
 import enum
 import operator
 import os
-import pathlib
 import time
 from fnmatch import fnmatch
 from math import ceil
