@@ -646,17 +646,14 @@ class TTYProgress(BaseStorageProgress):
     def __init__(self, root: Root) -> None:
         self.painter = get_painter(root.color, quote=True)
         self.printer = TTYPrinter()
-        self.half_width = root.terminal_size[0] // 2 - 10
-        self.width = root.terminal_size[0] - 10
+        self.width = root.terminal_size[0] // 2 - 10
         self.lines: List[Tuple[bool, str]] = []
         self.dir_stack: List[str] = []
+        self.verbose = root.verbosity > 0
 
-    def fmt_url(self, url: URL, type: FileStatusType, *, half: bool=False) -> str:
+    def fmt_url(self, url: URL, type: FileStatusType) -> str:
         label = str(url)
-        if half:
-            width = self.half_width
-        else:
-            width = self.width
+        width = self.width
         while len(label) > width:
             parts = url.parts
             if len(parts) > 1:
@@ -686,8 +683,12 @@ class TTYProgress(BaseStorageProgress):
         return self.painter.paint(label, type)
 
     def begin(self, src: URL, dst: URL) -> None:
-        src_label = self.fmt_url(src, FileStatusType.DIRECTORY, half=True)
-        dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
+        if self.verbose:
+            src_label = self.fmt_str(str(src), FileStatusType.DIRECTORY)
+            dst_label = self.fmt_str(str(dst), FileStatusType.DIRECTORY)
+        else:
+            src_label = self.fmt_url(src, FileStatusType.DIRECTORY)
+            dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY)
         click.echo(f"Copy {src_label} => {dst_label}")
 
     def enter(self, data: StorageProgressEnterDir) -> None:
