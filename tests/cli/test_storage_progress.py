@@ -6,6 +6,7 @@ import click
 from yarl import URL
 
 from neuromation.api import (
+    FileStatusType,
     StorageProgressComplete,
     StorageProgressEnterDir,
     StorageProgressFail,
@@ -127,6 +128,28 @@ def test_stream_progress(capsys: Any) -> None:
     assert captured.out == f""
 
 
+def test_stream_fail1(capsys: Any) -> None:
+    report = create_storage_progress(make_root(False, True, False), False)
+    src = URL("file:///abc")
+    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
+    dst = URL("storage:xyz")
+
+    report.fail(StorageProgressFail(src, dst, "error"))
+    captured = capsys.readouterr()
+    assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
+
+
+def test_stream_fail2(capsys: Any) -> None:
+    report = create_storage_progress(make_root(False, True, False), False)
+    src = URL("file:///abc")
+    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
+    dst = URL("storage:xyz")
+
+    report.fail(StorageProgressFail(src, dst, "error"))
+    captured = capsys.readouterr()
+    assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
+
+
 def test_tty_progress(capsys: Any) -> None:
     report = create_storage_progress(make_root(True, True, False), True)
     src = URL("file:///abc")
@@ -239,28 +262,6 @@ def test_tty_nested() -> None:
     ]
 
 
-def test_fail1(capsys: Any) -> None:
-    report = create_storage_progress(make_root(False, True, False), False)
-    src = URL("file:///abc")
-    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
-    dst = URL("storage:xyz")
-
-    report.fail(StorageProgressFail(src, dst, "error"))
-    captured = capsys.readouterr()
-    assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
-
-
-def test_fail2(capsys: Any) -> None:
-    report = create_storage_progress(make_root(False, True, False), False)
-    src = URL("file:///abc")
-    src_str = "/abc" if not sys.platform == "win32" else "\\abc"
-    dst = URL("storage:xyz")
-
-    report.fail(StorageProgressFail(src, dst, "error"))
-    captured = capsys.readouterr()
-    assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
-
-
 def test_fail_tty(capsys: Any) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     src = URL("file:///abc")
@@ -269,3 +270,108 @@ def test_fail_tty(capsys: Any) -> None:
     report.fail(StorageProgressFail(src, dst, "error"))
     captured = capsys.readouterr()
     assert captured.err == f"Failure: 'file:///abc' -> 'storage:xyz' [error]\n"
+
+
+def test_tty_fmt_url() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("storage://andrew/folder/file.txt")
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "storage://andrew/folder/file.txt"
+    )
+
+
+def test_tty_fmt_storage_url_over_half() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("storage://andrew/folder0/folder1/file.txt")
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "storage://andrew/.../file.txt"
+    )
+
+
+def test_tty_fmt_storage_url_over_full() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL(
+        "storage://andrew/"
+        + "/".join("folder" + str(i) for i in range(5))
+        + "/file.txt"
+    )
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=False))
+        == "storage://andrew/.../folder2/folder3/folder4/file.txt"
+    )
+
+
+def test_tty_fmt_url_over_half_single_segment() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("file://" + "a" * 40)
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "file://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+
+
+def test_tty_fmt_url_over_half_single_segment2() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("file:///" + "a" * 40)
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "file:///aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+
+
+def test_tty_fmt_url_over_half_long_segment() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("file:///andrew/" + "a" * 30)
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "file:///.../aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+
+
+def test_tty_fmt_file_url_over_half() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("file:///andrew/folder0/folder1/file.txt")
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "file:///.../folder1/file.txt"
+    )
+
+
+def test_tty_fmt_file_url_over_full() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL(
+        "file:///andrew/" + "/".join("folder" + str(i) for i in range(5)) + "/file.txt"
+    )
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=False))
+        == "file:///.../folder0/folder1/folder2/folder3/folder4/file.txt"
+    )
+
+
+def test_tty_fmt_url_relative_over() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("storage:folder1/folder2/folder3/folder4/folder5")
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "storage:.../folder3/folder4/folder5"
+    )
+
+
+def test_tty_fmt_url_relative_over_long_2_segments() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("storage:folder/" + "a" * 30)
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "storage:.../aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+
+
+def test_tty_fmt_url_relative_over_single_segment() -> None:
+    report = create_storage_progress(make_root(True, True, False), True)
+    url = URL("storage:" + "a" * 35)
+    assert (
+        click.unstyle(report.fmt_url(url, FileStatusType.FILE, half=True))
+        == "storage:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )

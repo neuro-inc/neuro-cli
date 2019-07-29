@@ -653,23 +653,34 @@ class TTYProgress(BaseStorageProgress):
             if len(parts) > 1:
                 if parts[0] == "/":
                     if len(parts) < 3:
+                        slash = '/'
                         break
                     slash, first, second, *last = parts
                     if first == "...":
                         if last:
                             parts = ["..."] + last
+                        else:
+                            break
                     else:
                         parts = ["...", second] + last
                 else:
+                    slash = ''
+                    # len(parts) > 1 always
                     first, second, *last = parts
                     if first == "...":
                         if last:
                             parts = ["..."] + last
+                        else:
+                            break
                     else:
                         parts = ["...", second] + last
             else:
                 break
-            url = URL(f"{url.scheme}://{url.host or ''}/{'/'.join(parts)}")
+            if url.host or slash:
+                pre = f"//{url.host or ''}{slash}"
+            else:
+                pre = ""
+            url = URL(f"{url.scheme}:{pre}{'/'.join(parts)}")
             label = str(url)
         return self.fmt_str(label, type)
 
