@@ -529,7 +529,7 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
                         "Failed attempt to remove the MinIO directory", exc_info=True
                     )
                     await asyncio.sleep(delay)
-                    delay *= 1.5
+                    delay *= 2
                     continue
                 break
 
