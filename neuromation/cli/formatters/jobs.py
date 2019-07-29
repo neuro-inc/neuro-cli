@@ -351,8 +351,8 @@ class DetailedJobStartProgress(JobStartProgress):
             if self._prev:
                 self._printer.print(self._prev, lineno=self._lineno)
             self._prev = msg
+            self._lineno = self._printer.total_lines
             self._printer.print(msg)
-            self._lineno = self._printer.total_lines - 1
         else:
             self._printer.print(
                 f"{msg} {next(self._spinner)} [{dt:.1f} sec]", lineno=self._lineno
