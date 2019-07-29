@@ -37,7 +37,7 @@ def test_format_url_storage() -> None:
 
 def test_format_url_file() -> None:
     u = URL("file:///asvetlov/folder")
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         expected = "\\asvetlov\\folder"
     else:
         expected = "/asvetlov/folder"
