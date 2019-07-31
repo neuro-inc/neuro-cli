@@ -831,7 +831,6 @@ def test_job_run(helper: Helper) -> None:
             "run",
             "-s",
             "cpu-small",
-            "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
@@ -908,7 +907,6 @@ def test_pass_config(image: str, helper: Helper) -> None:
             "-q",
             "-s",
             "cpu-small",
-            "--non-preemptible",
             "--no-wait-start",
             "--pass-config",
             image_full_str,
@@ -943,7 +941,6 @@ def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
                 "-g",
                 "0",
                 http_auth,
-                "--non-preemptible",
                 "--no-wait-start",
                 UBUNTU_IMAGE_NAME,
                 "true",
@@ -962,17 +959,7 @@ def fakebrowser(monkeypatch: Any) -> None:
 def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            "cpu-small",
-            "--non-preemptible",
-            "--detach",
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
+        ["-q", "job", "run", "-s", "cpu-small", "--detach", UBUNTU_IMAGE_NAME, "true"]
     )
     job_id = captured.out
 
@@ -993,7 +980,6 @@ def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
             "run",
             "-s",
             "cpu-small",
-            "--non-preemptible",
             "--detach",
             "--name",
             job_name,
@@ -1018,7 +1004,6 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
             "run",
             "-s",
             "cpu-small",
-            "--non-preemptible",
             "--detach",
             "--browse",
             UBUNTU_IMAGE_NAME,
@@ -1034,16 +1019,7 @@ def test_job_run_no_detach(helper: Helper) -> None:
     token = uuid4()
     # Run a new job
     captured = helper.run_cli(
-        [
-            "-v",
-            "job",
-            "run",
-            "-s",
-            "cpu-small",
-            "--non-preemptible",
-            UBUNTU_IMAGE_NAME,
-            f"echo {token}",
-        ]
+        ["-v", "job", "run", "-s", "cpu-small", UBUNTU_IMAGE_NAME, f"echo {token}"]
     )
     assert str(token) in captured.out
 
@@ -1065,7 +1041,6 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
                 "0",
                 "--http",
                 "80",
-                "--non-preemptible",
                 UBUNTU_IMAGE_NAME,
                 f"exit 127",
             ]
@@ -1089,7 +1064,6 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
             "0",
             "--http",
             "80",
-            "--non-preemptible",
             "--detach",
             "--browse",
             UBUNTU_IMAGE_NAME,
