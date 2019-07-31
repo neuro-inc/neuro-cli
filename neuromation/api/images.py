@@ -8,7 +8,12 @@ import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from .abc import AbstractDockerImageProgress
+from .abc import (
+    AbstractDockerImageProgress,
+    ImageProgressComplete,
+    ImageProgressStart,
+    ImageProgressStep,
+)
 from .config import _Config
 from .core import AuthorizationError, _Core
 from .parsing_utils import LocalImage, RemoteImage, _ImageNameParser
@@ -72,7 +77,7 @@ class Images(metaclass=NoPublicConstructor):
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(local_str, remote_str)
+        progress.start(ImageProgressStart(local_str, remote_str))
 
         repo = remote_image.as_repo_str()
         try:
@@ -100,7 +105,7 @@ class Images(metaclass=NoPublicConstructor):
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress.progress(message, obj["id"])
+                progress.step(ImageProgressStep(message, obj["id"]))
         return remote_image
 
     async def pull(
@@ -122,7 +127,7 @@ class Images(metaclass=NoPublicConstructor):
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(remote_str, local_str)
+        progress.start(ImageProgressStart(remote_str, local_str))
 
         repo = remote_image.as_repo_str()
         try:
@@ -149,7 +154,7 @@ class Images(metaclass=NoPublicConstructor):
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress.progress(message, obj["id"])
+                progress.step(ImageProgressStep(message, obj["id"]))
 
         await self._docker.images.tag(repo, local_str)
 
@@ -188,11 +193,11 @@ class Images(metaclass=NoPublicConstructor):
 
 
 class _DummyProgress(AbstractDockerImageProgress):
-    def start(self, src: str, dst: str) -> None:
+    def start(self, data: ImageProgressStart) -> None:
         pass
 
-    def progress(self, message: str, layer_id: str) -> None:
+    def step(self, data: ImageProgressStep) -> None:
         pass
 
-    def close(self) -> None:
+    def complete(self, data: ImageProgressComplete) -> None:
         pass

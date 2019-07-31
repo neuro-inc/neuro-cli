@@ -1,7 +1,12 @@
 from enum import Enum
 from typing import Dict
 
-from neuromation.api import AbstractDockerImageProgress
+from neuromation.api import (
+    AbstractDockerImageProgress,
+    ImageProgressComplete,
+    ImageProgressStart,
+    ImageProgressStep,
+)
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -28,13 +33,13 @@ class DockerImageProgress(AbstractDockerImageProgress):
 
 
 class QuietDockerImageProgress(DockerImageProgress):
-    def start(self, src: str, dst: str) -> None:
+    def start(self, data: ImageProgressStart) -> None:
         pass
 
-    def progress(self, message: str, layer_id: str) -> None:
+    def step(self, data: ImageProgressStep) -> None:
         pass
 
-    def close(self) -> None:
+    def complete(self, data: ImageProgressComplete) -> None:
         pass
 
 
@@ -44,29 +49,28 @@ class DetailedDockerImageProgress(DockerImageProgress):
         self._mapping: Dict[str, int] = {}
         self._printer = TTYPrinter()
 
-    def start(self, src: str, dst: str) -> None:
+    def start(self, data: ImageProgressStart) -> None:
         if self._type == DockerImageOperation.PUSH:
-            self._printer.print(f"Using local image '{src}'")
-            self._printer.print(f"Using remote image '{dst}'")
+            self._printer.print(f"Using local image '{data.src}'")
+            self._printer.print(f"Using remote image '{data.dst}'")
             self._printer.print("Pushing image...")
         elif self._type == DockerImageOperation.PULL:
-            self._printer.print(f"Using remote image '{src}'")
-            self._printer.print(f"Using local image '{dst}'")
+            self._printer.print(f"Using remote image '{data.src}'")
+            self._printer.print(f"Using local image '{data.dst}'")
             self._printer.print("Pulling image...")
 
-    def progress(self, message: str, layer_id: str) -> None:
-        if layer_id:
-            if layer_id in self._mapping.keys():
-                lineno = self._mapping[layer_id]
-                self._printer.print(message, lineno)
+    def step(self, data: ImageProgressStep) -> None:
+        if data.layer_id:
+            if data.layer_id in self._mapping.keys():
+                lineno = self._mapping[data.layer_id]
+                self._printer.print(data.message, lineno)
             else:
-                self._mapping[layer_id] = self._printer.total_lines
-                self._printer.print(message)
+                self._mapping[data.layer_id] = self._printer.total_lines
+                self._printer.print(data.message)
         else:
-            self._printer.print(message)
+            self._printer.print(data.message)
 
-    def close(self) -> None:
-        super().close()
+    def complete(self, data: ImageProgressComplete) -> None:
         self._printer.close()
 
 
@@ -75,22 +79,21 @@ class StreamDockerImageProgress(DockerImageProgress):
         super().__init__(type)
         self._printer = StreamPrinter()
 
-    def start(self, src: str, dst: str) -> None:
+    def start(self, data: ImageProgressStart) -> None:
         if self._type == DockerImageOperation.PUSH:
-            self._printer.print(f"Using local image '{src}'")
-            self._printer.print(f"Using remote image '{dst}'")
+            self._printer.print(f"Using local image '{data.src}'")
+            self._printer.print(f"Using remote image '{data.dst}'")
             self._printer.print("Pushing image...")
         elif self._type == DockerImageOperation.PULL:
-            self._printer.print(f"Using remote image '{src}'")
-            self._printer.print(f"Using local image '{dst}'")
+            self._printer.print(f"Using remote image '{data.src}'")
+            self._printer.print(f"Using local image '{data.dst}'")
             self._printer.print("Pulling image...")
 
-    def progress(self, message: str, layer_id: str) -> None:
-        if layer_id:
+    def step(self, data: ImageProgressStep) -> None:
+        if data.layer_id:
             self._printer.tick()
         else:
-            self._printer.print(message)
+            self._printer.print(data.message)
 
-    def close(self) -> None:
-        super().close()
+    def complete(self, data: ImageProgressComplete) -> None:
         self._printer.close()

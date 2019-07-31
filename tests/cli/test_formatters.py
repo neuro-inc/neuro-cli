@@ -14,6 +14,9 @@ from neuromation.api import (
     FileStatus,
     FileStatusType,
     HTTPPort,
+    ImageProgressComplete,
+    ImageProgressStart,
+    ImageProgressStep,
     JobDescription,
     JobStatus,
     JobStatusHistory,
@@ -1292,9 +1295,9 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PULL, tty=True, quiet=True
         )
-        formatter.start("input", "output")
-        formatter.progress("message1", "layer1")
-        formatter.close()
+        formatter.start(ImageProgressStart("input", "output"))
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.complete(ImageProgressComplete())
         out, err = capfd.readouterr()
         assert err == ""
         assert out == ""
@@ -1303,11 +1306,11 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PUSH, tty=False, quiet=False
         )
-        formatter.start("input:latest", "image://bob/output:stream")
-        formatter.progress("message1", "layer1")
-        formatter.progress("message2", "layer1")
+        formatter.start(ImageProgressStart("input:latest", "image://bob/output:stream"))
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.step(ImageProgressStep("message2", "layer1"))
 
-        formatter.close()
+        formatter.complete(ImageProgressComplete())
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
@@ -1320,10 +1323,10 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(
             DockerImageOperation.PUSH, tty=True, quiet=False
         )
-        formatter.start("input:latest", "image://bob/output:stream")
-        formatter.progress("message1", "layer1")
-        formatter.progress("message2", "layer1")
-        formatter.close()
+        formatter.start(ImageProgressStart("input:latest", "image://bob/output:stream"))
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.step(ImageProgressStep("message2", "layer1"))
+        formatter.complete(ImageProgressComplete())
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
