@@ -10,7 +10,6 @@ from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
-    ImageProgressComplete,
     ImageProgressPull,
     ImageProgressPush,
     ImageProgressStep,
@@ -195,7 +194,4 @@ class _DummyProgress(AbstractDockerImageProgress):
         pass
 
     def step(self, data: ImageProgressStep) -> None:
-        pass
-
-    def complete(self, data: ImageProgressComplete) -> None:
         pass

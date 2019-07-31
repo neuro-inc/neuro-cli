@@ -105,11 +105,6 @@ class ImageProgressStep:
     layer_id: str
 
 
-@dataclass(frozen=True)
-class ImageProgressComplete:
-    pass  # to be extended later
-
-
 class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
     def pull(self, data: ImageProgressPull) -> None:
@@ -121,8 +116,4 @@ class AbstractDockerImageProgress(abc.ABC):
 
     @abc.abstractmethod
     def step(self, data: ImageProgressStep) -> None:
-        pass  # pragma: no cover
-
-    @abc.abstractmethod
-    def complete(self, data: ImageProgressComplete) -> None:
         pass  # pragma: no cover

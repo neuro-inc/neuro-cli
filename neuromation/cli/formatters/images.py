@@ -1,8 +1,8 @@
+import abc
 from typing import Dict
 
 from neuromation.api import (
     AbstractDockerImageProgress,
-    ImageProgressComplete,
     ImageProgressPull,
     ImageProgressPush,
     ImageProgressStep,
@@ -12,14 +12,18 @@ from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 class DockerImageProgress(AbstractDockerImageProgress):
     @classmethod
-    def create(cls, tty: bool, quiet: bool) -> AbstractDockerImageProgress:
+    def create(cls, tty: bool, quiet: bool) -> "DockerImageProgress":
         if quiet:
-            progress: AbstractDockerImageProgress = QuietDockerImageProgress()
+            progress: DockerImageProgress = QuietDockerImageProgress()
         elif tty:
             progress = DetailedDockerImageProgress()
         else:
             progress = StreamDockerImageProgress()
         return progress
+
+    @abc.abstractmethod
+    def close(self) -> None:
+        pass
 
 
 class QuietDockerImageProgress(DockerImageProgress):
@@ -32,7 +36,7 @@ class QuietDockerImageProgress(DockerImageProgress):
     def step(self, data: ImageProgressStep) -> None:
         pass
 
-    def complete(self, data: ImageProgressComplete) -> None:
+    def close(self) -> None:
         pass
 
 
@@ -62,7 +66,7 @@ class DetailedDockerImageProgress(DockerImageProgress):
         else:
             self._printer.print(data.message)
 
-    def complete(self, data: ImageProgressComplete) -> None:
+    def close(self) -> None:
         self._printer.close()
 
 
@@ -86,5 +90,5 @@ class StreamDockerImageProgress(DockerImageProgress):
         else:
             self._printer.print(data.message)
 
-    def complete(self, data: ImageProgressComplete) -> None:
+    def close(self) -> None:
         self._printer.close()

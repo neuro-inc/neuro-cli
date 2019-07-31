@@ -14,7 +14,6 @@ from neuromation.api import (
     FileStatus,
     FileStatusType,
     HTTPPort,
-    ImageProgressComplete,
     ImageProgressPull,
     ImageProgressPush,
     ImageProgressStep,
@@ -1296,7 +1295,7 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
         formatter.pull(ImageProgressPull(RemoteImage("input"), LocalImage("output")))
         formatter.step(ImageProgressStep("message1", "layer1"))
-        formatter.complete(ImageProgressComplete())
+        formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert out == ""
@@ -1312,7 +1311,7 @@ class TestDockerImageProgress:
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.step(ImageProgressStep("message2", "layer1"))
 
-        formatter.complete(ImageProgressComplete())
+        formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
@@ -1331,7 +1330,7 @@ class TestDockerImageProgress:
         )
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.step(ImageProgressStep("message2", "layer1"))
-        formatter.complete(ImageProgressComplete())
+        formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
