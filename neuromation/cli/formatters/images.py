@@ -1,39 +1,32 @@
-from enum import Enum
 from typing import Dict
 
 from neuromation.api import (
     AbstractDockerImageProgress,
     ImageProgressComplete,
-    ImageProgressStart,
+    ImageProgressPull,
+    ImageProgressPush,
     ImageProgressStep,
 )
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
-class DockerImageOperation(str, Enum):
-    PUSH = "push"
-    PULL = "pull"
-
-
 class DockerImageProgress(AbstractDockerImageProgress):
     @classmethod
-    def create(
-        cls, type: DockerImageOperation, tty: bool, quiet: bool
-    ) -> AbstractDockerImageProgress:
+    def create(cls, tty: bool, quiet: bool) -> AbstractDockerImageProgress:
         if quiet:
-            progress: AbstractDockerImageProgress = QuietDockerImageProgress(type)
+            progress: AbstractDockerImageProgress = QuietDockerImageProgress()
         elif tty:
-            progress = DetailedDockerImageProgress(type)
+            progress = DetailedDockerImageProgress()
         else:
-            progress = StreamDockerImageProgress(type)
+            progress = StreamDockerImageProgress()
         return progress
-
-    def __init__(self, type: DockerImageOperation) -> None:
-        self._type = type
 
 
 class QuietDockerImageProgress(DockerImageProgress):
-    def start(self, data: ImageProgressStart) -> None:
+    def pull(self, data: ImageProgressPull) -> None:
+        pass
+
+    def push(self, data: ImageProgressPush) -> None:
         pass
 
     def step(self, data: ImageProgressStep) -> None:
@@ -44,20 +37,19 @@ class QuietDockerImageProgress(DockerImageProgress):
 
 
 class DetailedDockerImageProgress(DockerImageProgress):
-    def __init__(self, type: DockerImageOperation) -> None:
-        super().__init__(type)
+    def __init__(self) -> None:
         self._mapping: Dict[str, int] = {}
         self._printer = TTYPrinter()
 
-    def start(self, data: ImageProgressStart) -> None:
-        if self._type == DockerImageOperation.PUSH:
-            self._printer.print(f"Using local image '{data.src}'")
-            self._printer.print(f"Using remote image '{data.dst}'")
-            self._printer.print("Pushing image...")
-        elif self._type == DockerImageOperation.PULL:
-            self._printer.print(f"Using remote image '{data.src}'")
-            self._printer.print(f"Using local image '{data.dst}'")
-            self._printer.print("Pulling image...")
+    def push(self, data: ImageProgressPush) -> None:
+        self._printer.print(f"Using local image '{data.src}'")
+        self._printer.print(f"Using remote image '{data.dst}'")
+        self._printer.print("Pushing image...")
+
+    def pull(self, data: ImageProgressPull) -> None:
+        self._printer.print(f"Using remote image '{data.src}'")
+        self._printer.print(f"Using local image '{data.dst}'")
+        self._printer.print("Pulling image...")
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
@@ -75,19 +67,18 @@ class DetailedDockerImageProgress(DockerImageProgress):
 
 
 class StreamDockerImageProgress(DockerImageProgress):
-    def __init__(self, type: DockerImageOperation) -> None:
-        super().__init__(type)
+    def __init__(self) -> None:
         self._printer = StreamPrinter()
 
-    def start(self, data: ImageProgressStart) -> None:
-        if self._type == DockerImageOperation.PUSH:
-            self._printer.print(f"Using local image '{data.src}'")
-            self._printer.print(f"Using remote image '{data.dst}'")
-            self._printer.print("Pushing image...")
-        elif self._type == DockerImageOperation.PULL:
-            self._printer.print(f"Using remote image '{data.src}'")
-            self._printer.print(f"Using local image '{data.dst}'")
-            self._printer.print("Pulling image...")
+    def push(self, data: ImageProgressPush) -> None:
+        self._printer.print(f"Using local image '{data.src}'")
+        self._printer.print(f"Using remote image '{data.dst}'")
+        self._printer.print("Pushing image...")
+
+    def pull(self, data: ImageProgressPull) -> None:
+        self._printer.print(f"Using remote image '{data.src}'")
+        self._printer.print(f"Using local image '{data.dst}'")
+        self._printer.print("Pulling image...")
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:

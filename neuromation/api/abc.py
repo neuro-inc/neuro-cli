@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 from yarl import URL
 
+from .parsing_utils import LocalImage, RemoteImage
+
 
 # storage
 
@@ -86,9 +88,15 @@ class AbstractRecursiveFileProgress(AbstractFileProgress):
 
 
 @dataclass(frozen=True)
-class ImageProgressStart:
-    src: str
-    dst: str
+class ImageProgressPull:
+    src: RemoteImage
+    dst: LocalImage
+
+
+@dataclass(frozen=True)
+class ImageProgressPush:
+    src: LocalImage
+    dst: RemoteImage
 
 
 @dataclass(frozen=True)
@@ -104,7 +112,11 @@ class ImageProgressComplete:
 
 class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
-    def start(self, data: ImageProgressStart) -> None:
+    def pull(self, data: ImageProgressPull) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def push(self, data: ImageProgressPush) -> None:
         pass  # pragma: no cover
 
     @abc.abstractmethod

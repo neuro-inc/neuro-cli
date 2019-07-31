@@ -15,12 +15,14 @@ from neuromation.api import (
     FileStatusType,
     HTTPPort,
     ImageProgressComplete,
-    ImageProgressStart,
+    ImageProgressPull,
+    ImageProgressPush,
     ImageProgressStep,
     JobDescription,
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
+    LocalImage,
     RemoteImage,
     Resources,
 )
@@ -28,7 +30,6 @@ from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
-    DockerImageOperation,
     DockerImageProgress,
     JobFormatter,
     JobStartProgress,
@@ -1292,10 +1293,8 @@ class TestConfigFormatter:
 
 class TestDockerImageProgress:
     def test_quiet(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(
-            DockerImageOperation.PULL, tty=True, quiet=True
-        )
-        formatter.start(ImageProgressStart("input", "output"))
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.pull(ImageProgressPull(RemoteImage("input"), LocalImage("output")))
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.complete(ImageProgressComplete())
         out, err = capfd.readouterr()
@@ -1303,10 +1302,13 @@ class TestDockerImageProgress:
         assert out == ""
 
     def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH, tty=False, quiet=False
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.push(
+            ImageProgressPush(
+                LocalImage("input", "latest"),
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
         )
-        formatter.start(ImageProgressStart("input:latest", "image://bob/output:stream"))
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.step(ImageProgressStep("message2", "layer1"))
 
@@ -1320,10 +1322,13 @@ class TestDockerImageProgress:
         assert CSI not in out
 
     def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH, tty=True, quiet=False
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.push(
+            ImageProgressPush(
+                LocalImage("input", "latest"),
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
         )
-        formatter.start(ImageProgressStart("input:latest", "image://bob/output:stream"))
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.step(ImageProgressStep("message2", "layer1"))
         formatter.complete(ImageProgressComplete())
