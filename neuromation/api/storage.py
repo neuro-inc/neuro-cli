@@ -12,10 +12,12 @@ import attr
 from yarl import URL
 
 from .abc import (
-    AbstractStorageProgress,
+    AbstractFileProgress,
+    AbstractRecursiveFileProgress,
     StorageProgressComplete,
+    StorageProgressEnterDir,
     StorageProgressFail,
-    StorageProgressMkdir,
+    StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
 )
@@ -241,7 +243,7 @@ class Storage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, dst: URL, *, progress: AbstractStorageProgress
+        self, src: Path, dst: URL, *, progress: AbstractFileProgress
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
@@ -258,7 +260,7 @@ class Storage(metaclass=NoPublicConstructor):
             progress.complete(StorageProgressComplete(src_url, dst, size))
 
     async def upload_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -297,7 +299,11 @@ class Storage(metaclass=NoPublicConstructor):
         await self.create(dst, self._iterate_file(path, dst, progress=progress))
 
     async def upload_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -314,8 +320,9 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         except ResourceNotFound:
             await self.mkdirs(dst)
-        progress.mkdir(StorageProgressMkdir(src, dst))
-        for child in path.iterdir():
+        progress.enter(StorageProgressEnterDir(src, dst))
+        folder = sorted(path.iterdir(), key=lambda item: (item.is_dir(), item.name))
+        for child in folder:
             if child.is_file():
                 await self.upload_file(
                     src / child.name, dst / child.name, progress=progress
@@ -335,9 +342,10 @@ class Storage(metaclass=NoPublicConstructor):
                         f"Cannot upload {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
+        progress.leave(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -359,7 +367,11 @@ class Storage(metaclass=NoPublicConstructor):
             progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractStorageProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -367,8 +379,9 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         path.mkdir(parents=True, exist_ok=True)
-        progress.mkdir(StorageProgressMkdir(src, dst))
-        for child in await self.ls(src):
+        progress.enter(StorageProgressEnterDir(src, dst))
+        folder = sorted(await self.ls(src), key=lambda item: (item.is_dir(), item.name))
+        for child in folder:
             if child.is_file():
                 await self.download_file(
                     src / child.name, dst / child.name, progress=progress
@@ -385,6 +398,7 @@ class Storage(metaclass=NoPublicConstructor):
                         f"Cannot download {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
+        progress.leave(StorageProgressLeaveDir(src, dst))
 
 
 _magic_check = re.compile("(?:[*?[])")
@@ -412,7 +426,7 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
     )
 
 
-class _DummyProgress(AbstractStorageProgress):
+class _DummyProgress(AbstractRecursiveFileProgress):
     def start(self, data: StorageProgressStart) -> None:
         pass
 
@@ -422,7 +436,10 @@ class _DummyProgress(AbstractStorageProgress):
     def step(self, data: StorageProgressStep) -> None:
         pass
 
-    def mkdir(self, data: StorageProgressMkdir) -> None:
+    def enter(self, data: StorageProgressEnterDir) -> None:
+        pass
+
+    def leave(self, data: StorageProgressLeaveDir) -> None:
         pass
 
     def fail(self, data: StorageProgressFail) -> None:

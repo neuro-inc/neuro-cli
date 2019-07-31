@@ -5,7 +5,7 @@ import os
 import time
 from fnmatch import fnmatch
 from math import ceil
-from typing import Any, Dict, Iterator, List, Sequence
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
 import humanize
@@ -13,17 +13,20 @@ from click import style, unstyle
 from yarl import URL
 
 from neuromation.api import (
-    AbstractStorageProgress,
+    AbstractRecursiveFileProgress,
     Action,
     FileStatus,
     FileStatusType,
     StorageProgressComplete,
+    StorageProgressEnterDir,
     StorageProgressFail,
-    StorageProgressMkdir,
+    StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
 )
 from neuromation.api.url_utils import _extract_path
+from neuromation.cli.printer import TTYPrinter
+from neuromation.cli.root import Root
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -106,9 +109,10 @@ class QuotedPainter(BasePainter):
 
 
 class GnuPainter(BasePainter):
-    def __init__(self, ls_colors: str):
+    def __init__(self, ls_colors: str, *, underline: bool = False):
         self._defaults()
         self._parse_ls_colors(ls_colors)
+        self._underline = underline
 
     def _defaults(self) -> None:
         self.color_indicator: Dict[GnuIndicators, str] = {
@@ -341,16 +345,28 @@ class GnuPainter(BasePainter):
                     color = value
                     break
         if color:
+            if self._underline:
+                underline = (
+                    self.color_indicator[GnuIndicators.LEFT]
+                    + "4"
+                    + self.color_indicator[GnuIndicators.RIGHT]
+                )
+            else:
+                underline = ""
             return (
                 self.color_indicator[GnuIndicators.LEFT]
                 + color
                 + self.color_indicator[GnuIndicators.RIGHT]
+                + underline
                 + label
                 + self.color_indicator[GnuIndicators.LEFT]
                 + self.color_indicator[GnuIndicators.RESET]
                 + self.color_indicator[GnuIndicators.RIGHT]
             )
-        return label
+        if self._underline:
+            return style(label, underline=self._underline)
+        else:
+            return label
 
 
 class BSDAttributes(enum.Enum):
@@ -368,7 +384,8 @@ class BSDAttributes(enum.Enum):
 
 
 class BSDPainter(BasePainter):
-    def __init__(self, lscolors: str):
+    def __init__(self, lscolors: str, *, underline: bool = False):
+        self._underline = underline
         self._parse_lscolors(lscolors)
 
     def _parse_lscolors(self, lscolors: str) -> None:
@@ -402,8 +419,14 @@ class BSDPainter(BasePainter):
                     bold = True
             if color[1] in char_to_color.keys():
                 bg = char_to_color[color[1]]
-            if fg or bg or bold:
-                return style(label, fg=fg, bg=bg, bold=bold)
+            if self._underline:
+                underline: Optional[bool] = True
+            else:
+                underline = None
+            if fg or bg or bold or underline:
+                return style(label, fg=fg, bg=bg, bold=bold, underline=underline)
+        if self._underline:
+            return style(label, underline=self._underline)
         return label
 
 
@@ -411,10 +434,10 @@ def get_painter(color: bool, *, quote: bool = False) -> BasePainter:
     if color:
         ls_colors = os.getenv("LS_COLORS")
         if ls_colors:
-            return GnuPainter(ls_colors)
+            return GnuPainter(ls_colors, underline=quote)
         lscolors = os.getenv("LSCOLORS")
         if lscolors:
-            return BSDPainter(lscolors)
+            return BSDPainter(lscolors, underline=quote)
     if quote:
         return QuotedPainter()
     else:
@@ -539,17 +562,20 @@ class FilesSorter(str, enum.Enum):
 # progress indicator
 
 
-def create_storage_progress(
-    color: bool, show_progress: bool, verbose: bool
-) -> AbstractStorageProgress:
+class BaseStorageProgress(AbstractRecursiveFileProgress):
+    @abc.abstractmethod
+    def begin(self, src: URL, dst: URL) -> None:  # pragma: no cover
+        pass
+
+
+def create_storage_progress(root: Root, show_progress: bool) -> BaseStorageProgress:
     if show_progress:
-        return StandardPrintPercentOnly(color)
-    if verbose:
-        return NoPercentPrinter(color)
-    return QuietPrinter(color)
+        return TTYProgress(root)
+    else:
+        return StreamProgress(root)
 
 
-def fmt_url(url: URL) -> str:
+def format_url(url: URL) -> str:
     if url.scheme == "file":
         path = _extract_path(url)
         return str(path)
@@ -557,89 +583,179 @@ def fmt_url(url: URL) -> str:
         return str(url)
 
 
-class QuietPrinter(AbstractStorageProgress):
-    def __init__(self, color: bool):
-        self.painter = get_painter(color, quote=True)
+class StreamProgress(BaseStorageProgress):
+    def __init__(self, root: Root) -> None:
+        self.painter = get_painter(root.color, quote=True)
+        self.verbose = root.verbosity > 0
+
+    def fmt_url(self, url: URL, type: FileStatusType) -> str:
+        label = format_url(url)
+        return self.painter.paint(label, type)
+
+    def begin(self, src: URL, dst: URL) -> None:
+        if self.verbose:
+            src_label = self.fmt_url(src, FileStatusType.DIRECTORY)
+            dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY)
+            click.echo(f"Copy {src_label} -> {dst_label}")
 
     def start(self, data: StorageProgressStart) -> None:
         pass
 
     def complete(self, data: StorageProgressComplete) -> None:
-        pass
+        if not self.verbose:
+            return
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
+        click.echo(f"{src} -> {dst}")
 
     def step(self, data: StorageProgressStep) -> None:
         pass
 
-    def mkdir(self, data: StorageProgressMkdir) -> None:
+    def enter(self, data: StorageProgressEnterDir) -> None:
+        if not self.verbose:
+            return
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
+        click.echo(f"{src} -> {dst}")
+
+    def leave(self, data: StorageProgressLeaveDir) -> None:
         pass
 
     def fail(self, data: StorageProgressFail) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        src = self.fmt_url(data.src, FileStatusType.FILE)
+        dst = self.fmt_url(data.dst, FileStatusType.FILE)
         click.echo(
             click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
             err=True,
         )
 
 
-class NoPercentPrinter(AbstractStorageProgress):
-    def __init__(self, color: bool):
-        self.painter = get_painter(color, quote=True)
+class TTYProgress(BaseStorageProgress):
+    HEIGHT = 10
+
+    def __init__(self, root: Root) -> None:
+        self.painter = get_painter(root.color, quote=True)
+        self.printer = TTYPrinter()
+        self.half_width = (root.terminal_size[0] - 10) // 2
+        self.full_width = root.terminal_size[0] - 20
+        self.lines: List[Tuple[bool, str]] = []
+        self.dir_stack: List[str] = []
+        self.verbose = root.verbosity > 0
+
+    def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
+        label = str(url)
+        if half:
+            width = self.half_width
+        else:
+            width = self.full_width
+        while len(label) > width:
+            parts = list(url.parts)
+            if len(parts) < 2:
+                break
+            if parts[0] == "/":
+                if len(parts) < 3:
+                    slash = "/"
+                    break
+                slash, first, second, *last = parts
+                if first == "...":
+                    if last:
+                        parts = ["..."] + last
+                    else:
+                        break
+                else:
+                    parts = ["...", second] + last
+            else:
+                slash = ""
+                # len(parts) > 1 always
+                first, second, *last = parts
+                if first == "...":
+                    if last:
+                        parts = ["..."] + last
+                    else:
+                        break
+                else:
+                    parts = ["...", second] + last
+            if url.host or slash:
+                pre = f"//{url.host or ''}{slash}"
+            else:
+                pre = ""
+            url = URL(f"{url.scheme}:{pre}{'/'.join(parts)}")
+            label = str(url)
+        return self.fmt_str(label, type)
+
+    def fmt_str(self, label: str, type: FileStatusType) -> str:
+        return self.painter.paint(label, type)
+
+    def fmt_size(self, size: int) -> str:
+        return humanize.naturalsize(size, gnu=True)
+
+    def begin(self, src: URL, dst: URL) -> None:
+        if self.verbose:
+            click.echo("Copy")
+            click.echo(self.fmt_str(str(src), FileStatusType.DIRECTORY))
+            click.echo("=>")
+            click.echo(self.fmt_str(str(dst), FileStatusType.DIRECTORY))
+        else:
+            src_label = self.fmt_url(src, FileStatusType.DIRECTORY, half=True)
+            dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
+            click.echo(f"Copy {src_label} => {dst_label}")
+
+    def enter(self, data: StorageProgressEnterDir) -> None:
+        src = self.fmt_url(data.src, FileStatusType.DIRECTORY, half=False)
+        self.dir_stack.append(src)
+        self.append(f"{src}", is_dir=True)
+
+    def leave(self, data: StorageProgressLeaveDir) -> None:
+        del self.dir_stack[-1]
+        if self.dir_stack:
+            self.append(f"{self.dir_stack[-1]}", is_dir=True)
 
     def start(self, data: StorageProgressStart) -> None:
-        pass
+        src = self.fmt_str(data.src.name, FileStatusType.FILE)
+        progress = 0
+        current = self.fmt_size(0)
+        total = self.fmt_size(data.size)
+        self.append(f"{src} [{progress:.2f}%] {current} of {total}")
 
     def complete(self, data: StorageProgressComplete) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(f"{src} -> {dst}")
+        src = self.fmt_str(data.src.name, FileStatusType.FILE)
+        total = self.fmt_size(data.size)
+        self.replace(f"{src} {total}")
 
     def step(self, data: StorageProgressStep) -> None:
-        pass
-
-    def mkdir(self, data: StorageProgressMkdir) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(f"{src} -> {dst}")
-
-    def fail(self, data: StorageProgressFail) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(
-            click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
-            err=True,
-        )
-
-
-class StandardPrintPercentOnly(AbstractStorageProgress):
-    def __init__(self, color: bool):
-        self.painter = get_painter(color, quote=True)
-
-    def start(self, data: StorageProgressStart) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(f"Start copying {src} -> {dst}.")
-
-    def complete(self, data: StorageProgressComplete) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(f"\rFile {src} -> {dst} copying completed.")
-
-    def step(self, data: StorageProgressStep) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = (100 * data.current) / data.size
-        click.echo(f"\r{src} -> {dst}: {progress:.2f}%.", nl=False)
-
-    def mkdir(self, data: StorageProgressMkdir) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
-        click.echo(f"Copy directory {src} -> {dst}.")
+        current = self.fmt_size(data.current)
+        total = self.fmt_size(data.size)
+        self.replace(f"{src} [{progress:.2f}%] {current} of {total}")
 
     def fail(self, data: StorageProgressFail) -> None:
-        src = self.painter.paint(fmt_url(data.src), FileStatusType.FILE)
-        dst = self.painter.paint(fmt_url(data.dst), FileStatusType.FILE)
+        src = self.fmt_str(str(data.src), FileStatusType.FILE)
+        dst = self.fmt_str(str(data.dst), FileStatusType.FILE)
         click.echo(
             click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
             err=True,
         )
+        # clear lines to sync with writing to stderr
+        self.lines = []
+
+    def append(self, msg: str, is_dir: bool = False) -> None:
+        self.lines.append((is_dir, msg))
+        if len(self.lines) > self.HEIGHT:
+            if not self.lines[0][0]:
+                # top line is not a dir, drop it.
+                del self.lines[0]
+            else:
+                if any(line[0] for line in self.lines[1:]):
+                    # there are folder lines below
+                    del self.lines[0]
+                else:
+                    # there is only top folder line, drop next file line
+                    del self.lines[1]
+        for lineno, line in enumerate(self.lines):
+            self.printer.print(line[1], lineno)
+
+    def replace(self, msg: str) -> None:
+        # replace last line
+        self.lines[-1] = (False, msg)
+        self.printer.print(msg, len(self.lines) - 1)

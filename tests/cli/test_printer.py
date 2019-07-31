@@ -95,13 +95,13 @@ class TestTTYPrinter:
         assert printer.total_lines == 0
         printer.print("message1")
         assert printer.total_lines == 1
-        printer.print("message1-replace", 1)
+        printer.print("message1-replace", 0)
         assert printer.total_lines == 1
-        printer.print("message3", 3)
+        printer.print("message3", 2)
         assert printer.total_lines == 3
-        printer.print("message7", 7)
+        printer.print("message7", 6)
         assert printer.total_lines == 7
-        printer.print("message2", 2)
+        printer.print("message2", 1)
         assert printer.total_lines == 7
         printer.close()
         out, err = capfd.readouterr()

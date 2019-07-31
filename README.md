@@ -582,7 +582,7 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-p, --progress_|Show progress, off by default|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
 |_--help_|Show this message and exit.|
 
 
@@ -1647,7 +1647,7 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-p, --progress_|Show progress, off by default|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
 |_--help_|Show this message and exit.|
 
 

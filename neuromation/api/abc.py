@@ -27,7 +27,13 @@ class StorageProgressStep:
 
 
 @dataclass
-class StorageProgressMkdir:
+class StorageProgressEnterDir:
+    src: URL
+    dst: URL
+
+
+@dataclass
+class StorageProgressLeaveDir:
     src: URL
     dst: URL
 
@@ -39,7 +45,7 @@ class StorageProgressFail:
     message: str
 
 
-class AbstractStorageProgress(abc.ABC):
+class AbstractFileProgress(abc.ABC):
     # design note:
     # dataclasses used instead of direct passing parameters
     # because a dataclass is forward-compatible
@@ -58,8 +64,14 @@ class AbstractStorageProgress(abc.ABC):
     def step(self, data: StorageProgressStep) -> None:
         pass  # pragma: no cover
 
+
+class AbstractRecursiveFileProgress(AbstractFileProgress):
     @abc.abstractmethod
-    def mkdir(self, data: StorageProgressMkdir) -> None:
+    def enter(self, data: StorageProgressEnterDir) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def leave(self, data: StorageProgressLeaveDir) -> None:
         pass  # pragma: no cover
 
     @abc.abstractmethod

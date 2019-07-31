@@ -1,7 +1,6 @@
 import abc
 from os import linesep
 from time import time
-from typing import Optional
 
 import click
 
@@ -43,17 +42,16 @@ class TTYPrinter(AbstractPrinter):
     def total_lines(self) -> int:
         return self._total_lines
 
-    def print(self, text: str, lineno: Optional[int] = None) -> str:
+    def print(self, text: str, lineno: int = -1) -> str:
         """
         Print given text on specified line
-        If lineno is not passed then  text will be printed on latest line
+        If lineno is not passed then text will be printed on latest line
         """
-        assert lineno is None or lineno > 0
-        if not lineno:
-            lineno = self._total_lines + 1
+        if lineno < 0:
+            lineno = self._total_lines
 
         commands = []
-        diff = self._total_lines - lineno + 1
+        diff = self._total_lines - lineno
         clear_tail = False
 
         if diff > 0:
@@ -73,7 +71,7 @@ class TTYPrinter(AbstractPrinter):
             commands.append(CURSOR_DOWN.format(diff - 1))
         message = "".join(commands)
 
-        self._total_lines = max(self._total_lines, lineno)
+        self._total_lines = max(self._total_lines, lineno + 1)
         self._print(message)
         return message
 
