@@ -10,7 +10,7 @@ from yarl import URL
 
 from neuromation.api import AuthorizationError, Client
 from neuromation.api.images import LocalImage, RemoteImage
-from neuromation.api.parsing_utils import _ImageNameParser
+from neuromation.api.parsing_utils import _as_repo_str, _ImageNameParser
 from tests import _TestServerFactory
 
 
@@ -506,24 +506,24 @@ class TestRemoteImage:
     def test_as_str_in_neuro_registry_tag_none(self) -> None:
         image = RemoteImage(name="ubuntu", tag=None, owner="me", registry="registry.io")
         assert str(image) == "image://me/ubuntu"
-        assert image.as_repo_str() == "registry.io/me/ubuntu"
+        assert _as_repo_str(image) == "registry.io/me/ubuntu"
 
     def test_as_str_in_neuro_registry_tag_yes(self) -> None:
         image = RemoteImage(
             name="ubuntu", tag="v10.04", owner="me", registry="registry.io"
         )
         assert str(image) == "image://me/ubuntu:v10.04"
-        assert image.as_repo_str() == "registry.io/me/ubuntu:v10.04"
+        assert _as_repo_str(image) == "registry.io/me/ubuntu:v10.04"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
         image = RemoteImage(name="ubuntu", tag=None, owner=None, registry=None)
         assert str(image) == "ubuntu"
-        assert image.as_repo_str() == "ubuntu"
+        assert _as_repo_str(image) == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
         image = RemoteImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
         assert str(image) == "ubuntu:v10.04"
-        assert image.as_repo_str() == "ubuntu:v10.04"
+        assert _as_repo_str(image) == "ubuntu:v10.04"
 
 
 @pytest.mark.usefixtures("patch_docker_host")

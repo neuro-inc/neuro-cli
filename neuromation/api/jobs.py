@@ -16,7 +16,12 @@ from neuromation.utils import kill_proc_tree
 from .config import _Config
 from .core import IllegalArgumentError, _Core
 from .parser import Volume
-from .parsing_utils import RemoteImage, _ImageNameParser
+from .parsing_utils import (
+    RemoteImage,
+    _as_repo_str,
+    _ImageNameParser,
+    _is_in_neuro_registry,
+)
 from .utils import NoPublicConstructor
 
 
@@ -158,9 +163,9 @@ class Jobs(metaclass=NoPublicConstructor):
             return None  # 201 status code
 
     async def save(self, id: str, image: RemoteImage) -> None:
-        if not image._is_in_neuro_registry():
+        if not _is_in_neuro_registry(image):
             raise ValueError(f"Image `{image}` must be in the neuromation registry")
-        payload = {"container": {"image": image.as_repo_str()}}
+        payload = {"container": {"image": _as_repo_str(image)}}
         url = self._config.cluster_config.monitoring_url / f"{id}/save"
         async with self._core.request("POST", url, json=payload):
             # an error is raised for status >= 400
@@ -355,7 +360,7 @@ def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Conta
 
 def _container_to_api(container: Container) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {
-        "image": container.image.as_repo_str(),
+        "image": _as_repo_str(container.image),
         "resources": _resources_to_api(container.resources),
     }
     if container.entrypoint:

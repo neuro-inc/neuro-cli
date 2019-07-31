@@ -17,7 +17,7 @@ from .abc import (
 )
 from .config import _Config
 from .core import AuthorizationError, _Core
-from .parsing_utils import LocalImage, RemoteImage, _ImageNameParser
+from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _ImageNameParser
 from .registry import _Registry
 from .utils import NoPublicConstructor
 
@@ -77,7 +77,7 @@ class Images(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
         progress.push(ImageProgressPush(local, remote))
 
-        repo = remote.as_repo_str()
+        repo = _as_repo_str(remote)
         try:
             await self._docker.images.tag(str(local), repo)
         except DockerError as error:
@@ -124,7 +124,7 @@ class Images(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
         progress.pull(ImageProgressPull(remote, local))
 
-        repo = remote.as_repo_str()
+        repo = _as_repo_str(remote)
         try:
             stream = await self._docker.pull(
                 repo, auth=self._auth(), repo=repo, stream=True
