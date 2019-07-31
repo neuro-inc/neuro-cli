@@ -650,32 +650,31 @@ class TTYProgress(BaseStorageProgress):
             width = self.full_width
         while len(label) > width:
             parts = list(url.parts)
-            if len(parts) > 1:
-                if parts[0] == "/":
-                    if len(parts) < 3:
-                        slash = "/"
-                        break
-                    slash, first, second, *last = parts
-                    if first == "...":
-                        if last:
-                            parts = ["..."] + last
-                        else:
-                            break
-                    else:
-                        parts = ["...", second] + last
-                else:
-                    slash = ""
-                    # len(parts) > 1 always
-                    first, second, *last = parts
-                    if first == "...":
-                        if last:
-                            parts = ["..."] + last
-                        else:
-                            break
-                    else:
-                        parts = ["...", second] + last
-            else:
+            if len(parts) < 2:
                 break
+            if parts[0] == "/":
+                if len(parts) < 3:
+                    slash = "/"
+                    break
+                slash, first, second, *last = parts
+                if first == "...":
+                    if last:
+                        parts = ["..."] + last
+                    else:
+                        break
+                else:
+                    parts = ["...", second] + last
+            else:
+                slash = ""
+                # len(parts) > 1 always
+                first, second, *last = parts
+                if first == "...":
+                    if last:
+                        parts = ["..."] + last
+                    else:
+                        break
+                else:
+                    parts = ["...", second] + last
             if url.host or slash:
                 pre = f"//{url.host or ''}{slash}"
             else:
