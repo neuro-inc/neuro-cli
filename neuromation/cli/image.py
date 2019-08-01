@@ -5,7 +5,7 @@ from typing import Optional
 import click
 
 from neuromation.api import LocalImage, RemoteImage
-from neuromation.cli.formatters import DockerImageOperation, DockerImageProgress
+from neuromation.cli.formatters import DockerImageProgress
 
 from .root import Root
 from .utils import (
@@ -48,9 +48,7 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 
     """
 
-    progress = DockerImageProgress.create(
-        type=DockerImageOperation.PUSH, tty=root.tty, quiet=root.quiet
-    )
+    progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
     local_obj = root.client.parse.local_image(local_image)
     if remote_image is not None:
         remote_obj: Optional[RemoteImage] = root.client.parse.remote_image(remote_image)
@@ -83,9 +81,7 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
     """
 
-    progress = DockerImageProgress.create(
-        type=DockerImageOperation.PULL, tty=root.tty, quiet=root.quiet
-    )
+    progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
     remote_obj = root.client.parse.remote_image(remote_image)
     if local_image is not None:
         local_obj: Optional[LocalImage] = root.client.parse.local_image(local_image)

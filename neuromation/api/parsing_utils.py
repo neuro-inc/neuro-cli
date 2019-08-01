@@ -11,19 +11,21 @@ class RemoteImage:
     owner: Optional[str] = None
     registry: Optional[str] = None
 
-    def _is_in_neuro_registry(self) -> bool:
-        return bool(self.registry and self.owner)
-
     def __str__(self) -> str:
-        pre = f"image://{self.owner}/" if self._is_in_neuro_registry() else ""
+        pre = f"image://{self.owner}/" if _is_in_neuro_registry(self) else ""
         post = f":{self.tag}" if self.tag else ""
         return pre + self.name + post
 
-    def as_repo_str(self) -> str:
-        # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
-        pre = f"{self.registry}/{self.owner}/" if self._is_in_neuro_registry() else ""
-        post = f":{self.tag}" if self.tag else ""
-        return pre + self.name + post
+
+def _is_in_neuro_registry(image: RemoteImage) -> bool:
+    return bool(image.registry and image.owner)
+
+
+def _as_repo_str(image: RemoteImage) -> str:
+    # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
+    pre = f"{image.registry}/{image.owner}/" if _is_in_neuro_registry(image) else ""
+    post = f":{image.tag}" if image.tag else ""
+    return pre + image.name + post
 
 
 @dataclass(frozen=True)

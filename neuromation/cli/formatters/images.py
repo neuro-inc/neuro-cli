@@ -1,37 +1,41 @@
-from enum import Enum
+import abc
 from typing import Dict
 
-from neuromation.api import AbstractDockerImageProgress
+import click
+
+from neuromation.api import (
+    AbstractDockerImageProgress,
+    ImageProgressPull,
+    ImageProgressPush,
+    ImageProgressStep,
+)
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
-
-
-class DockerImageOperation(str, Enum):
-    PUSH = "push"
-    PULL = "pull"
 
 
 class DockerImageProgress(AbstractDockerImageProgress):
     @classmethod
-    def create(
-        cls, type: DockerImageOperation, tty: bool, quiet: bool
-    ) -> AbstractDockerImageProgress:
+    def create(cls, tty: bool, quiet: bool) -> "DockerImageProgress":
         if quiet:
-            progress: AbstractDockerImageProgress = QuietDockerImageProgress(type)
+            progress: DockerImageProgress = QuietDockerImageProgress()
         elif tty:
-            progress = DetailedDockerImageProgress(type)
+            progress = DetailedDockerImageProgress()
         else:
-            progress = StreamDockerImageProgress(type)
+            progress = StreamDockerImageProgress()
         return progress
 
-    def __init__(self, type: DockerImageOperation) -> None:
-        self._type = type
+    @abc.abstractmethod
+    def close(self) -> None:  # pragma: no cover
+        pass
 
 
 class QuietDockerImageProgress(DockerImageProgress):
-    def start(self, src: str, dst: str) -> None:
+    def pull(self, data: ImageProgressPull) -> None:
         pass
 
-    def progress(self, message: str, layer_id: str) -> None:
+    def push(self, data: ImageProgressPush) -> None:
+        pass
+
+    def step(self, data: ImageProgressStep) -> None:
         pass
 
     def close(self) -> None:
@@ -39,58 +43,54 @@ class QuietDockerImageProgress(DockerImageProgress):
 
 
 class DetailedDockerImageProgress(DockerImageProgress):
-    def __init__(self, type: DockerImageOperation) -> None:
-        super().__init__(type)
+    def __init__(self) -> None:
         self._mapping: Dict[str, int] = {}
         self._printer = TTYPrinter()
 
-    def start(self, src: str, dst: str) -> None:
-        if self._type == DockerImageOperation.PUSH:
-            self._printer.print(f"Using local image '{src}'")
-            self._printer.print(f"Using remote image '{dst}'")
-            self._printer.print("Pushing image...")
-        elif self._type == DockerImageOperation.PULL:
-            self._printer.print(f"Using remote image '{src}'")
-            self._printer.print(f"Using local image '{dst}'")
-            self._printer.print("Pulling image...")
+    def push(self, data: ImageProgressPush) -> None:
+        src = click.style(str(data.src), bold=True)
+        dst = click.style(str(data.dst), bold=True)
+        self._printer.print(f"Pushing image {src} => {dst}")
 
-    def progress(self, message: str, layer_id: str) -> None:
-        if layer_id:
-            if layer_id in self._mapping.keys():
-                lineno = self._mapping[layer_id]
-                self._printer.print(message, lineno)
+    def pull(self, data: ImageProgressPull) -> None:
+        src = click.style(str(data.src), bold=True)
+        dst = click.style(str(data.dst), bold=True)
+        self._printer.print(f"Pulling image {src} => {dst}")
+
+    def step(self, data: ImageProgressStep) -> None:
+        if data.layer_id:
+            if data.layer_id in self._mapping.keys():
+                lineno = self._mapping[data.layer_id]
+                self._printer.print(data.message, lineno)
             else:
-                self._mapping[layer_id] = self._printer.total_lines
-                self._printer.print(message)
+                self._mapping[data.layer_id] = self._printer.total_lines
+                self._printer.print(data.message)
         else:
-            self._printer.print(message)
+            self._printer.print(data.message)
 
     def close(self) -> None:
-        super().close()
         self._printer.close()
 
 
 class StreamDockerImageProgress(DockerImageProgress):
-    def __init__(self, type: DockerImageOperation) -> None:
-        super().__init__(type)
+    def __init__(self) -> None:
         self._printer = StreamPrinter()
 
-    def start(self, src: str, dst: str) -> None:
-        if self._type == DockerImageOperation.PUSH:
-            self._printer.print(f"Using local image '{src}'")
-            self._printer.print(f"Using remote image '{dst}'")
-            self._printer.print("Pushing image...")
-        elif self._type == DockerImageOperation.PULL:
-            self._printer.print(f"Using remote image '{src}'")
-            self._printer.print(f"Using local image '{dst}'")
-            self._printer.print("Pulling image...")
+    def push(self, data: ImageProgressPush) -> None:
+        self._printer.print(f"Using local image '{data.src}'")
+        self._printer.print(f"Using remote image '{data.dst}'")
+        self._printer.print("Pushing image...")
 
-    def progress(self, message: str, layer_id: str) -> None:
-        if layer_id:
+    def pull(self, data: ImageProgressPull) -> None:
+        self._printer.print(f"Using remote image '{data.src}'")
+        self._printer.print(f"Using local image '{data.dst}'")
+        self._printer.print("Pulling image...")
+
+    def step(self, data: ImageProgressStep) -> None:
+        if data.layer_id:
             self._printer.tick()
         else:
-            self._printer.print(message)
+            self._printer.print(data.message)
 
     def close(self) -> None:
-        super().close()
         self._printer.close()

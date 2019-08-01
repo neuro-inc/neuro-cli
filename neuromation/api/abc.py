@@ -3,22 +3,27 @@ from dataclasses import dataclass
 
 from yarl import URL
 
+from .parsing_utils import LocalImage, RemoteImage
 
-@dataclass
+
+# storage
+
+
+@dataclass(frozen=True)
 class StorageProgressStart:
     src: URL
     dst: URL
     size: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class StorageProgressComplete:
     src: URL
     dst: URL
     size: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class StorageProgressStep:
     src: URL
     dst: URL
@@ -26,19 +31,19 @@ class StorageProgressStep:
     size: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class StorageProgressEnterDir:
     src: URL
     dst: URL
 
 
-@dataclass
+@dataclass(frozen=True)
 class StorageProgressLeaveDir:
     src: URL
     dst: URL
 
 
-@dataclass
+@dataclass(frozen=True)
 class StorageProgressFail:
     src: URL
     dst: URL
@@ -79,15 +84,36 @@ class AbstractRecursiveFileProgress(AbstractFileProgress):
         pass  # pragma: no cover
 
 
+# image
+
+
+@dataclass(frozen=True)
+class ImageProgressPull:
+    src: RemoteImage
+    dst: LocalImage
+
+
+@dataclass(frozen=True)
+class ImageProgressPush:
+    src: LocalImage
+    dst: RemoteImage
+
+
+@dataclass(frozen=True)
+class ImageProgressStep:
+    message: str
+    layer_id: str
+
+
 class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
-    def start(self, src: str, dst: str) -> None:
+    def pull(self, data: ImageProgressPull) -> None:
         pass  # pragma: no cover
 
     @abc.abstractmethod
-    def progress(self, message: str, layer_id: str) -> None:
+    def push(self, data: ImageProgressPush) -> None:
         pass  # pragma: no cover
 
     @abc.abstractmethod
-    def close(self) -> None:
+    def step(self, data: ImageProgressStep) -> None:
         pass  # pragma: no cover

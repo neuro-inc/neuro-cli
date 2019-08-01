@@ -14,10 +14,14 @@ from neuromation.api import (
     FileStatus,
     FileStatusType,
     HTTPPort,
+    ImageProgressPull,
+    ImageProgressPush,
+    ImageProgressStep,
     JobDescription,
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
+    LocalImage,
     RemoteImage,
     Resources,
 )
@@ -25,7 +29,6 @@ from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
-    DockerImageOperation,
     DockerImageProgress,
     JobFormatter,
     JobStartProgress,
@@ -1288,24 +1291,34 @@ class TestConfigFormatter:
 
 
 class TestDockerImageProgress:
-    def test_quiet(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(
-            DockerImageOperation.PULL, tty=True, quiet=True
-        )
-        formatter.start("input", "output")
-        formatter.progress("message1", "layer1")
+    def test_quiet_pull(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.pull(ImageProgressPull(RemoteImage("input"), LocalImage("output")))
+        formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert out == ""
 
-    def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH, tty=False, quiet=False
+    def test_quiet_push(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.push(ImageProgressPush(LocalImage("output"), RemoteImage("input")))
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_no_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.pull(
+            ImageProgressPull(
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                LocalImage("input", "latest"),
+            )
         )
-        formatter.start("input:latest", "image://bob/output:stream")
-        formatter.progress("message1", "layer1")
-        formatter.progress("message2", "layer1")
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.step(ImageProgressStep("message2", "layer1"))
 
         formatter.close()
         out, err = capfd.readouterr()
@@ -1316,13 +1329,55 @@ class TestDockerImageProgress:
         assert "message2" not in out
         assert CSI not in out
 
-    def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(
-            DockerImageOperation.PUSH, tty=True, quiet=False
+    def test_no_tty_push(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.push(
+            ImageProgressPush(
+                LocalImage("input", "latest"),
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
         )
-        formatter.start("input:latest", "image://bob/output:stream")
-        formatter.progress("message1", "layer1")
-        formatter.progress("message2", "layer1")
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.step(ImageProgressStep("message2", "layer1"))
+
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "input:latest" in out
+        assert "image://bob/output:stream" in out
+        assert "message1" not in out
+        assert "message2" not in out
+        assert CSI not in out
+
+    def test_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.pull(
+            ImageProgressPull(
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                LocalImage("input", "latest"),
+            )
+        )
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.step(ImageProgressStep("message2", "layer1"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "input:latest" in out
+        assert "image://bob/output:stream" in out
+        assert "message1" in out
+        assert "message2" in out
+        assert CSI in out
+
+    def test_tty_push(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.push(
+            ImageProgressPush(
+                LocalImage("input", "latest"),
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
+        )
+        formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.step(ImageProgressStep("message2", "layer1"))
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""

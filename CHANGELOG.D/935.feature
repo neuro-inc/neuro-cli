@@ -1,0 +1,1 @@
+Use dataclasses in image progress API

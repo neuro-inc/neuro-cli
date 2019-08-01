@@ -8,10 +8,15 @@ import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from .abc import AbstractDockerImageProgress
+from .abc import (
+    AbstractDockerImageProgress,
+    ImageProgressPull,
+    ImageProgressPush,
+    ImageProgressStep,
+)
 from .config import _Config
 from .core import AuthorizationError, _Core
-from .parsing_utils import LocalImage, RemoteImage, _ImageNameParser
+from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _ImageNameParser
 from .registry import _Registry
 from .utils import NoPublicConstructor
 
@@ -55,32 +60,29 @@ class Images(metaclass=NoPublicConstructor):
 
     async def push(
         self,
-        local_image: LocalImage,
-        remote_image: Optional[RemoteImage] = None,
+        local: LocalImage,
+        remote: Optional[RemoteImage] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> RemoteImage:
-        if remote_image is None:
+        if remote is None:
             parser = _ImageNameParser(
                 self._config.auth_token.username,
                 self._config.cluster_config.registry_url,
             )
-            remote_image = parser.convert_to_neuro_image(local_image)
-
-        local_str = str(local_image)
-        remote_str = str(remote_image)
+            remote = parser.convert_to_neuro_image(local)
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(local_str, remote_str)
+        progress.push(ImageProgressPush(local, remote))
 
-        repo = remote_image.as_repo_str()
+        repo = _as_repo_str(remote)
         try:
-            await self._docker.images.tag(local_str, repo)
+            await self._docker.images.tag(str(local), repo)
         except DockerError as error:
             if error.status == 404:
                 raise ValueError(
-                    f"Image {local_str} was not found " "in your local docker images"
+                    f"Image {local} was not found " "in your local docker images"
                 ) from error
         try:
             stream = await self._docker.images.push(
@@ -89,42 +91,39 @@ class Images(metaclass=NoPublicConstructor):
         except DockerError as error:
             # TODO check this part when registry fixed
             if error.status == 403:
-                raise AuthorizationError(f"Access denied {remote_str}") from error
+                raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
         async for obj in stream:
             if "error" in obj.keys():
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(900, error_details)
-            elif "id" in obj.keys() and obj["id"] != remote_image.tag:
+            elif "id" in obj.keys() and obj["id"] != remote.tag:
                 if "progress" in obj.keys():
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress.progress(message, obj["id"])
-        return remote_image
+                progress.step(ImageProgressStep(message, obj["id"]))
+        return remote
 
     async def pull(
         self,
-        remote_image: RemoteImage,
-        local_image: Optional[LocalImage] = None,
+        remote: RemoteImage,
+        local: Optional[LocalImage] = None,
         *,
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> LocalImage:
-        if local_image is None:
+        if local is None:
             parser = _ImageNameParser(
                 self._config.auth_token.username,
                 self._config.cluster_config.registry_url,
             )
-            local_image = parser.convert_to_local_image(remote_image)
-
-        local_str = str(local_image)
-        remote_str = str(remote_image)
+            local = parser.convert_to_local_image(remote)
 
         if progress is None:
             progress = _DummyProgress()
-        progress.start(remote_str, local_str)
+        progress.pull(ImageProgressPull(remote, local))
 
-        repo = remote_image.as_repo_str()
+        repo = _as_repo_str(remote)
         try:
             stream = await self._docker.pull(
                 repo, auth=self._auth(), repo=repo, stream=True
@@ -133,27 +132,27 @@ class Images(metaclass=NoPublicConstructor):
         except DockerError as error:
             if error.status == 404:
                 raise ValueError(
-                    f"Image {remote_str} was not found " "in registry"
+                    f"Image {remote} was not found " "in registry"
                 ) from error
             # TODO check this part when registry fixed
             elif error.status == 403:
-                raise AuthorizationError(f"Access denied {remote_str}") from error
+                raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
 
         async for obj in stream:
             if "error" in obj.keys():
                 error_details = obj.get("errorDetail", {"message": "Unknown error"})
                 raise DockerError(900, error_details)
-            elif "id" in obj.keys() and obj["id"] != remote_image.tag:
+            elif "id" in obj.keys() and obj["id"] != remote.tag:
                 if "progress" in obj.keys():
                     message = f"{obj['id']}: {obj['status']} {obj['progress']}"
                 else:
                     message = f"{obj['id']}: {obj['status']}"
-                progress.progress(message, obj["id"])
+                progress.step(ImageProgressStep(message, obj["id"]))
 
-        await self._docker.images.tag(repo, local_str)
+        await self._docker.images.tag(repo, local)
 
-        return local_image
+        return local
 
     async def ls(self) -> List[RemoteImage]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
@@ -188,11 +187,11 @@ class Images(metaclass=NoPublicConstructor):
 
 
 class _DummyProgress(AbstractDockerImageProgress):
-    def start(self, src: str, dst: str) -> None:
+    def pull(self, data: ImageProgressPull) -> None:
         pass
 
-    def progress(self, message: str, layer_id: str) -> None:
+    def push(self, data: ImageProgressPush) -> None:
         pass
 
-    def close(self) -> None:
+    def step(self, data: ImageProgressStep) -> None:
         pass
