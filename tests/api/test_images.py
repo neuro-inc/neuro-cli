@@ -592,16 +592,12 @@ class TestImageParser:
             name="library/ubuntu", tag="v10.04", owner="bob", registry="localhost:5000"
         )
 
-    @pytest.mark.xfail(
-        reason="issue #938: `_ImageNameParser.parse_remote()`: "
-        "do not fall back to `parse_as_local_image()`"
-    )
     def test_parse_remote__registry_has_port__image_in_bad_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice", registry_url=URL("http://localhost:5000")
         )
         image = "localhost:9999/bob/library/ubuntu:v10.04"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="too many tags"):
             my_parser.parse_remote(image)
 
 
