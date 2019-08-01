@@ -1302,7 +1302,7 @@ class TestDockerImageProgress:
 
     def test_quiet_push(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
-        formatter.push(ImageProgressPull(LocalImage("output"), RemoteImage("input")))
+        formatter.push(ImageProgressPush(LocalImage("output"), RemoteImage("input")))
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.close()
         out, err = capfd.readouterr()
