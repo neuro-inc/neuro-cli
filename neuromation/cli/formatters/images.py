@@ -24,7 +24,7 @@ class DockerImageProgress(AbstractDockerImageProgress):
         return progress
 
     @abc.abstractmethod
-    def close(self) -> None:
+    def close(self) -> None:  # pragma: no cover
         pass
 
 
