@@ -74,8 +74,14 @@ class _ImageNameParser:
         if self.is_in_neuro_registry(value):
             return self.parse_as_neuro_image(value)
         else:
+            registry, name = None, None
             img = self.parse_as_local_image(value)
-            return RemoteImage(img.name, img.tag)
+            name = img.name
+            if ":" in name:
+                assert "/" in name
+                registry, name = name.split("/", 1)
+
+            return RemoteImage(name=name, tag=img.tag, registry=registry)
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
@@ -165,6 +171,13 @@ class _ImageNameParser:
             image, tag = image.split(":")
             if not tag:
                 raise ValueError("empty tag is not allowed")
+        elif colon_count == 2:
+            # case `localhost:9000/owner/ubuntu:latest`
+            if "/" not in image:
+                # case `ubuntu:v11:latest`
+                raise ValueError("too many tags")
+            *image_arr, tag = image.split(":")
+            image = ":".join(image_arr)
         else:
             raise ValueError("too many tags")
         return image, tag

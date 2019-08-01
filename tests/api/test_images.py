@@ -100,9 +100,21 @@ class TestImageParser:
         with pytest.raises(ValueError, match="empty tag is not allowed"):
             self.parser._split_image_name("ubuntu:", self.parser.default_tag)
 
-    def test_split_image_name_2_colon(self) -> None:
+    def test_split_image_name_2_colon_no_slash(self) -> None:
         with pytest.raises(ValueError, match="too many tags"):
             self.parser._split_image_name("ubuntu:v10.04:LTS", self.parser.default_tag)
+
+    def test_split_image_name_2_colon_with_slash(self) -> None:
+        splitted = self.parser._split_image_name(
+            "localhost:5000/ubuntu:v10.04", self.parser.default_tag
+        )
+        assert splitted == ("localhost:5000/ubuntu", "v10.04")
+
+    def test_split_image_name_3_colon_with_slash(self) -> None:
+        with pytest.raises(ValueError, match="too many tags"):
+            self.parser._split_image_name(
+                "localhost:5000/ubuntu:v10.04:LTS", self.parser.default_tag
+            )
 
     # public method: parse_local
 
