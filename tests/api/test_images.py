@@ -10,7 +10,11 @@ from yarl import URL
 
 from neuromation.api import AuthorizationError, Client
 from neuromation.api.images import LocalImage, RemoteImage
-from neuromation.api.parsing_utils import _as_repo_str, _ImageNameParser
+from neuromation.api.parsing_utils import (
+    _as_repo_str,
+    _get_url_authority,
+    _ImageNameParser,
+)
 from tests import _TestServerFactory
 
 
@@ -59,17 +63,18 @@ class TestImageParser:
 
     @pytest.mark.parametrize(
         "registry_url",
-        [
-            "http://reg.neu.ro",
-            "https://reg.neu.ro",
-            "http://reg.neu.ro:5000",
-            "https://reg.neu.ro/bla/bla",
-            "http://reg.neu.ro:5000/bla/bla",
-        ],
+        ["http://reg.neu.ro", "https://reg.neu.ro", "https://reg.neu.ro/bla/bla"],
     )
     def test_get_registry_hostname(self, registry_url: str) -> None:
         parser = _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
         assert parser._registry == "reg.neu.ro"
+
+    @pytest.mark.parametrize(
+        "registry_url", ["http://reg.neu.ro:5000", "http://reg.neu.ro:5000/bla/bla"]
+    )
+    def test_get_registry_hostname_with_port(self, registry_url: str) -> None:
+        parser = _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
+        assert parser._registry == "reg.neu.ro:5000"
 
     @pytest.mark.parametrize(
         "registry_url",
@@ -501,6 +506,104 @@ class TestImageParser:
         with pytest.raises(ValueError, match="ambiguous value"):
             self.parser.parse_as_local_image(url)
 
+    # other corner cases
+
+    def test_is_in_neuro_registry__registry_has_port__neuro_image(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "image://bob/library/ubuntu:v10.04"
+        assert my_parser.is_in_neuro_registry(image) is True
+
+    def test_is_in_neuro_registry__registry_has_port__image_in_good_repo(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "localhost:5000/bob/library/ubuntu:v10.04"
+        assert my_parser.is_in_neuro_registry(image) is True
+
+    def test_is_in_neuro_registry__registry_has_port__image_in_bad_repo(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "localhost:9999/bob/library/ubuntu:v10.04"
+        assert my_parser.is_in_neuro_registry(image) is False
+
+    def test_is_in_neuro_registry__registry_has_port__local_image(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "ubuntu:v10.04"
+        assert my_parser.is_in_neuro_registry(image) is False
+
+    def test_is_in_neuro_registry__registry_has_port(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "ubuntu:v10.04"
+        parsed = my_parser.parse_as_local_image(image)
+        assert parsed == LocalImage(name="ubuntu", tag="v10.04")
+
+    def test_parse_as_neuro_image__registry_has_port__neuro_image(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "image://bob/library/ubuntu:v10.04"
+        parsed = my_parser.parse_as_neuro_image(image)
+        assert parsed == RemoteImage(
+            name="library/ubuntu", tag="v10.04", owner="bob", registry="localhost:5000"
+        )
+
+    def test_parse_as_neuro_image__registry_has_port__image_in_good_repo(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "localhost:5000/bob/library/ubuntu:v10.04"
+        parsed = my_parser.parse_as_neuro_image(image)
+        assert parsed == RemoteImage(
+            name="library/ubuntu", tag="v10.04", owner="bob", registry="localhost:5000"
+        )
+
+    def test_parse_as_neuro_image__registry_has_port__image_in_bad_repo(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "localhost:9999/bob/library/ubuntu:v10.04"
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+            my_parser.parse_as_neuro_image(image)
+
+    def test_parse_remote__registry_has_port__neuro_image(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "image://bob/library/ubuntu:v10.04"
+        parsed = my_parser.parse_remote(image)
+        assert parsed == RemoteImage(
+            name="library/ubuntu", tag="v10.04", owner="bob", registry="localhost:5000"
+        )
+
+    def test_parse_remote__registry_has_port__image_in_good_repo(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "localhost:5000/bob/library/ubuntu:v10.04"
+        parsed = my_parser.parse_remote(image)
+        assert parsed == RemoteImage(
+            name="library/ubuntu", tag="v10.04", owner="bob", registry="localhost:5000"
+        )
+
+    @pytest.mark.xfail(
+        reason="issue #938: `_ImageNameParser.parse_remote()`: "
+        "do not fall back to `parse_as_local_image()`"
+    )
+    def test_parse_remote__registry_has_port__image_in_bad_repo(self) -> None:
+        my_parser = _ImageNameParser(
+            default_user="alice", registry_url=URL("http://localhost:5000")
+        )
+        image = "localhost:9999/bob/library/ubuntu:v10.04"
+        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+            my_parser.parse_remote(image)
+
 
 class TestRemoteImage:
     def test_as_str_in_neuro_registry_tag_none(self) -> None:
@@ -725,9 +828,11 @@ class TestRegistry:
         registry_url = srv.make_url("/v2/")
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
+
+        registry = _get_url_authority(registry_url)
         assert set(ret) == {
-            RemoteImage("alpine", tag=None, owner="bob", registry="127.0.0.1"),
-            RemoteImage("bananas", tag=None, owner="jill", registry="127.0.0.1"),
+            RemoteImage("alpine", tag=None, owner="bob", registry=registry),
+            RemoteImage("bananas", tag=None, owner="jill", registry=registry),
         }
 
     @pytest.mark.skipif(
@@ -747,11 +852,14 @@ class TestRegistry:
         srv = await aiohttp_server(app)
         url = "http://platform"
         registry_url = srv.make_url("/v2/")
+
         async with make_client(url, registry_url=registry_url) as client:
             ret = await client.images.ls()
+
+        registry = _get_url_authority(registry_url)
         assert set(ret) == {
-            RemoteImage("alpine", tag=None, owner="bob", registry="127.0.0.1"),
-            RemoteImage("bananas", tag=None, owner="jill", registry="127.0.0.1"),
+            RemoteImage("alpine", tag=None, owner="bob", registry=registry),
+            RemoteImage("bananas", tag=None, owner="jill", registry=registry),
         }
 
     @pytest.mark.skipif(
