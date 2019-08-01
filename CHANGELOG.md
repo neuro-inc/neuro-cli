@@ -5,6 +5,20 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.8.1 (2019-08-01)
+===============================
+
+Features
+--------
+
+
+- The `-p/--non-preemptible` parameter for `neuro run` has been removed in favor in embedding it into presets coming from the server. ([#928](https://github.com/neuromation/platform-api-clients/issues/928))
+
+- Show progress for `neuro cp` by default. ([#933](https://github.com/neuromation/platform-api-clients/issues/933))
+
+- Use dataclasses in image progress API ([#935](https://github.com/neuromation/platform-api-clients/issues/935))
+
+
 Neuromation 19.7.26 (2019-07-26)
 ================================
 
