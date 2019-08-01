@@ -1,6 +1,8 @@
 import abc
 from typing import Dict
 
+import click
+
 from neuromation.api import (
     AbstractDockerImageProgress,
     ImageProgressPull,
@@ -46,14 +48,14 @@ class DetailedDockerImageProgress(DockerImageProgress):
         self._printer = TTYPrinter()
 
     def push(self, data: ImageProgressPush) -> None:
-        self._printer.print(f"Using local image '{data.src}'")
-        self._printer.print(f"Using remote image '{data.dst}'")
-        self._printer.print("Pushing image...")
+        src = click.style(str(data.src), bold=True)
+        dst = click.style(str(data.dst), bold=True)
+        self._printer.print(f"Pushing image {src} => {dst}")
 
     def pull(self, data: ImageProgressPull) -> None:
-        self._printer.print(f"Using remote image '{data.src}'")
-        self._printer.print(f"Using local image '{data.dst}'")
-        self._printer.print("Pulling image...")
+        src = click.style(str(data.src), bold=True)
+        dst = click.style(str(data.dst), bold=True)
+        self._printer.print(f"Pulling image {src} => {dst}")
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
