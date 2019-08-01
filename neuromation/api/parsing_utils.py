@@ -133,13 +133,11 @@ class _ImageNameParser:
         if not self.is_in_neuro_registry(image):
             raise ValueError("scheme 'image://' is required for remote images")
 
-        allow_port = False
         url = URL(image)
 
         if url.scheme and url.scheme != "image":
             # image with port in registry: `localhost:5000/owner/ubuntu:latest`
             url = URL(f"//{url}")
-            allow_port = True
 
         if not url.scheme:
             parts = url.path.split("/")
@@ -150,7 +148,7 @@ class _ImageNameParser:
                 query=url.query,
             )
 
-        self._check_allowed_uri_elements(url, allow_port=allow_port)
+        self._check_allowed_uri_elements(url)
 
         registry = self._registry
         owner = self._default_user if not url.host or url.host == "~" else url.host
@@ -171,7 +169,7 @@ class _ImageNameParser:
             raise ValueError("too many tags")
         return image, tag
 
-    def _check_allowed_uri_elements(self, url: URL, allow_port: bool = False) -> None:
+    def _check_allowed_uri_elements(self, url: URL) -> None:
         if not url.path or url.path == "/":
             raise ValueError("no image name specified")
         if url.query:
@@ -182,8 +180,10 @@ class _ImageNameParser:
             raise ValueError(f"user is not allowed, found: '{url.user}'")
         if url.password:
             raise ValueError(f"password is not allowed, found: '{url.password}'")
-        if url.port and not allow_port:
-            raise ValueError(f"port is not allowed, found: '{url.port}'")
+        if url.port and url.scheme == "image":
+            raise ValueError(
+                f"port is not allowed with 'image://' scheme, found: '{url.port}'"
+            )
 
 
 def _get_url_authority(url: URL) -> Optional[str]:
