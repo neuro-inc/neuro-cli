@@ -74,9 +74,9 @@ class _ImageNameParser:
         if self.is_in_neuro_registry(value):
             return self.parse_as_neuro_image(value)
         else:
-            registry, name = None, None
             img = self.parse_as_local_image(value)
             name = img.name
+            registry = None
             if ":" in name:
                 assert "/" in name
                 registry, name = name.split("/", 1)
