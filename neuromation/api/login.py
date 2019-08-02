@@ -32,15 +32,30 @@ from aiohttp.web import (
     Response,
     TCPSite,
 )
+from jose import JWTError, jwt
 from yarl import URL
 
 from .core import DEFAULT_TIMEOUT
-from .users import get_token_username
 from .utils import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:
     return base64.urlsafe_b64encode(payload).decode().rstrip("=")
+
+
+JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
+JWT_IDENTITY_CLAIM_OPTIONS = ("identity", JWT_IDENTITY_CLAIM)
+
+
+def get_token_username(token: str) -> str:
+    try:
+        claims = jwt.get_unverified_claims(token)
+    except JWTError as e:
+        raise ValueError(f"Passed string does not contain valid JWT structure.") from e
+    for identity_claim in JWT_IDENTITY_CLAIM_OPTIONS:
+        if identity_claim in claims:
+            return claims[identity_claim]
+    raise ValueError("JWT Claims structure is not correct.")
 
 
 class AuthException(Exception):
