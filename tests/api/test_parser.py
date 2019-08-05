@@ -1,8 +1,10 @@
 from typing import Callable
 
 import pytest
+from yarl import URL
 
 from neuromation.api import Client, LocalImage, RemoteImage
+from neuromation.api.parsing_utils import _get_url_authority
 
 
 _MakeClient = Callable[..., Client]
@@ -29,3 +31,23 @@ async def test_parse_remote(make_client: _MakeClient) -> None:
     assert result == RemoteImage(
         "bananas", "latest", owner="bob", registry="registry-dev.neu.ro"
     )
+
+
+def test_get_url_authority_with_explicit_port() -> None:
+    url = URL("http://example.com:8080/")
+    assert _get_url_authority(url) == "example.com:8080"
+
+
+def test_get_url_authority_with_implicit_port() -> None:
+    url = URL("http://example.com/")  # here `url.port == 80`
+    assert _get_url_authority(url) == "example.com"
+
+
+def test_get_url_authority_without_port() -> None:
+    url = URL("scheme://example.com/")  # here `url.port is None`
+    assert _get_url_authority(url) == "example.com"
+
+
+def test_get_url_authority_without_host() -> None:
+    url = URL("scheme://")
+    assert _get_url_authority(url) is None

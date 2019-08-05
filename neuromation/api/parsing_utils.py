@@ -22,7 +22,6 @@ def _is_in_neuro_registry(image: RemoteImage) -> bool:
 
 
 def _as_repo_str(image: RemoteImage) -> str:
-    # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
     pre = f"{image.registry}/{image.owner}/" if _is_in_neuro_registry(image) else ""
     post = f":{image.tag}" if image.tag else ""
     return pre + image.name + post
@@ -48,7 +47,7 @@ class _ImageNameParser:
                 f"Empty hostname in registry URL '{registry_url}': "
                 "please consider updating configuration"
             )
-        self._registry = registry_url.host
+        self._registry = _get_url_authority(registry_url)
 
     def parse_as_local_image(self, image: str) -> LocalImage:
         try:
@@ -135,16 +134,19 @@ class _ImageNameParser:
             raise ValueError("scheme 'image://' is required for remote images")
 
         url = URL(image)
+
+        if url.scheme and url.scheme != "image":
+            # image with port in registry: `localhost:5000/owner/ubuntu:latest`
+            url = URL(f"//{url}")
+
         if not url.scheme:
             parts = url.path.split("/")
-            url = url.build(
+            url = URL.build(
                 scheme="image",
                 host=parts[1],
                 path="/".join([""] + parts[2:]),
                 query=url.query,
             )
-        else:
-            assert url.scheme == "image", f"invalid image scheme: '{url.scheme}'"
 
         self._check_allowed_uri_elements(url)
 
@@ -178,5 +180,15 @@ class _ImageNameParser:
             raise ValueError(f"user is not allowed, found: '{url.user}'")
         if url.password:
             raise ValueError(f"password is not allowed, found: '{url.password}'")
-        if url.port:
-            raise ValueError(f"port is not allowed, found: '{url.port}'")
+        if url.port and url.scheme == "image":
+            raise ValueError(
+                f"port is not allowed with 'image://' scheme, found: '{url.port}'"
+            )
+
+
+def _get_url_authority(url: URL) -> Optional[str]:
+    if url.host is None:
+        return None
+    port = url.explicit_port  # type: ignore
+    suffix = f":{port}" if port is not None else ""
+    return url.host + suffix
