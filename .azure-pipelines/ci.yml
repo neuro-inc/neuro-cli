@@ -23,7 +23,7 @@ stages:
   jobs:
   - job: lint
     pool:
-    vmImage: 'ubuntu-latest'
+      vmImage: 'ubuntu-latest'
     steps:
     - chechout: self
       clean: true
