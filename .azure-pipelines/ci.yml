@@ -44,7 +44,7 @@ stages:
 - stage: test
   displayName: "Run tests"
   jobs:
-  - jos: test:
+  - job: test
     strategy:
       matrix:
         Py36-Linux:
