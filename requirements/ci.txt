@@ -15,7 +15,7 @@ setuptools==41.0.1
 wheel==0.33.4
 cmarkgfm==0.4.2
 twine==1.13.0
-markdown-toc==1.2.4
+markdown-toc==1.2.6
 towncrier==19.2.0
 asynctest==0.13.0
 cryptography==2.7  # temporary pin the version until trusme fixes deprecation warning
