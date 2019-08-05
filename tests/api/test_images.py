@@ -86,31 +86,37 @@ class TestImageParser:
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
             _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
 
-    def test_split_image_name_no_colon(self) -> None:
+    def test_split_image_name_no_tag(self) -> None:
         splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
         assert splitted == ("ubuntu", "latest")
 
-    def test_split_image_name_1_colon(self) -> None:
+    def test_split_image_name_with_tag(self) -> None:
         splitted = self.parser._split_image_name(
             "ubuntu:v10.04", self.parser.default_tag
         )
         assert splitted == ("ubuntu", "v10.04")
 
-    def test_split_image_name_1_colon_empty_tag(self) -> None:
+    def test_split_image_name_empty_tag(self) -> None:
         with pytest.raises(ValueError, match="empty tag is not allowed"):
             self.parser._split_image_name("ubuntu:", self.parser.default_tag)
 
-    def test_split_image_name_2_colon_no_slash(self) -> None:
+    def test_split_image_name_two_tags(self) -> None:
         with pytest.raises(ValueError, match="too many tags"):
             self.parser._split_image_name("ubuntu:v10.04:LTS", self.parser.default_tag)
 
-    def test_split_image_name_2_colon_with_slash(self) -> None:
+    def test_split_image_name_with_registry_port_no_tag(self) -> None:
+        splitted = self.parser._split_image_name(
+            "localhost:5000/ubuntu", self.parser.default_tag
+        )
+        assert splitted == ("localhost:5000/ubuntu", "latest")
+
+    def test_split_image_name_with_registry_port_with_tag(self) -> None:
         splitted = self.parser._split_image_name(
             "localhost:5000/ubuntu:v10.04", self.parser.default_tag
         )
         assert splitted == ("localhost:5000/ubuntu", "v10.04")
 
-    def test_split_image_name_3_colon_with_slash(self) -> None:
+    def test_split_image_name_with_registry_port_two_tags(self) -> None:
         with pytest.raises(ValueError, match="too many tags"):
             self.parser._split_image_name(
                 "localhost:5000/ubuntu:v10.04:LTS", self.parser.default_tag
@@ -146,7 +152,7 @@ class TestImageParser:
         image = "http://ubuntu"
         parsed = self.parser.parse_as_local_image(image)
         # instead of parser, the docker client will fail
-        assert parsed == LocalImage(name="http", tag="//ubuntu")
+        assert parsed == LocalImage(name="http://ubuntu", tag="latest")
 
     def test_parse_as_local_image_no_tag(self) -> None:
         image = "ubuntu"
