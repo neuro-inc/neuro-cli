@@ -8,14 +8,20 @@ trigger:
   branches:
     include:
     - master
-    - ?.?
     - refs/tags/*
 pr:
+  autoCancel: true
   branches:
     include:
     - master
-    - ?.?
 
+schedules:
+- cron: "0 6 * * *"
+  displayName: "Daily 6AM UTC build"
+  branches:
+    include:
+      - master
+  always: true
 
 stages:
 - stage: linters
