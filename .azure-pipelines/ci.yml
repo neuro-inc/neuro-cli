@@ -25,13 +25,13 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - chechout: self
+    - checkout: self
       clean: true
 
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '3.7'
-      diplayName: "User Python 3.7"
+      displayName: "User Python 3.7"
 
     - script: |
         pip install -U pip wheel
