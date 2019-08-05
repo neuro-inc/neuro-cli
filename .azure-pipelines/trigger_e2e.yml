@@ -1,0 +1,24 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+
+- stage: trigger_e2e
+  displayName: "Trugger E2E"
+  jobs:
+  - job: trigger_e2e
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+      clean: true
+
+    - script: |
+        curl -X POST --header "Content-Type: application/json" \
+           -d '{"branch":"master"}' \
+           https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
+      displayName: 'Trigger E2E CircleCI test suite'
+      env:
+        E2E_CIRCLECI_TOKEN: '$(circleci.e2e_token)'
