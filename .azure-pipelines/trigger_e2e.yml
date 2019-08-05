@@ -13,8 +13,7 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - checkout: self
-      clean: true
+    - checkout: none
 
     - script: |
         curl -X POST --header "Content-Type: application/json" \
