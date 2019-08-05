@@ -95,7 +95,7 @@ stages:
       displayName: 'Run unittests'
 
     - script: |
-        make e2e
+        make e2e_ci
       displayName: 'Run e2e'
       env:
         CLIENT_TEST_E2E_USER_NAME: '$(e2e.token)'
