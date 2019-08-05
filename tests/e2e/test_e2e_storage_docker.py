@@ -24,7 +24,9 @@ def test_load_local_file_to_platform_home_directory(
     helper.run_cli(["storage", "load", srcfile, "storage:"], verbosity=2)
 
     # Ensure file is there
-    helper.check_file_exists_on_storage(file_name, "", FILE_SIZE_B, fromhome=True)
+    helper.check_file_exists_on_storage_retries(
+        file_name, "", FILE_SIZE_B, fromhome=True
+    )
 
     # Remove the file from platform
     helper.check_rm_file_on_storage(file_name, "", fromhome=True)
@@ -45,13 +47,10 @@ def test_load_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
     )
 
     # Ensure file is there
-    helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
+    helper.check_file_exists_on_storage_retries(file_name, "folder", FILE_SIZE_B)
 
     # Remove the file from platform
     helper.check_rm_file_on_storage(file_name, "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage(file_name, "folder")
 
 
 @pytest.mark.skipif(
@@ -71,14 +70,13 @@ def test_load_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     )
 
     # Ensure file is there
-    helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
+    helper.check_file_exists_on_storage_retries(
+        "different_name.txt", "folder", FILE_SIZE_B
+    )
     helper.check_file_absent_on_storage(file_name, "folder")
 
     # Remove the file from platform
     helper.check_rm_file_on_storage("different_name.txt", "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage("different_name.txt", "folder")
 
 
 @pytest.mark.skipif(
@@ -94,7 +92,7 @@ def test_e2e_load_recursive_to_platform(
     # Upload local file
     helper.run_cli(["storage", "load", "-r", dir_path, helper.tmpstorage], verbosity=2)
 
-    helper.check_file_exists_on_storage(
+    helper.check_file_exists_on_storage_retries(
         target_file_name, f"nested/directory/for/test", FILE_SIZE_B
     )
 
@@ -108,10 +106,14 @@ def test_e2e_load_recursive_to_platform(
     print("source file", srcfile)
     print("target file", targetfile)
     assert str(targetfile) in list(map(str, targetdir.rglob("*")))
+
+    helper.check_file_exists_on_storage_retries(
+        target_file_name,
+        "nested/directory/for/test",
+        FILE_SIZE_B,
+    )
+
     assert helper.hash_hex(targetfile) == checksum
 
     # Remove test dir
     helper.check_rmdir_on_storage("nested")
-
-    # And confirm
-    helper.check_dir_absent_on_storage("nested", "")

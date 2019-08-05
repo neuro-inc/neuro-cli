@@ -36,6 +36,7 @@ from neuromation.api import (
     FileStatusType,
     JobDescription,
     JobStatus,
+    ResourceNotFound,
     get as api_get,
     login_with_token,
 )
@@ -172,6 +173,38 @@ class Helper:
                     and file.size == size
                 ):
                     return
+        raise AssertionError(f"File {name} with size {size} not found in {url}")
+
+    @run_async
+    async def check_file_exists_on_storage_retries(
+        self,
+        name: str,
+        path: str,
+        size: int,
+        *,
+        fromhome: bool = False,
+        retries: float = 180,
+    ) -> None:
+        url = self.make_uri(path, fromhome=fromhome)
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            t0 = time()
+            delay = 0.2
+            while time() - t0 < retries:
+                try:
+                    files = await client.storage.ls(url)
+                except ResourceNotFound:
+                    await asyncio.sleep(delay)
+                    delay = min(delay * 2, 15)
+                else:
+                    for file in files:
+                        if (
+                            file.type == FileStatusType.FILE
+                            and file.name == name
+                            and file.size == size
+                        ):
+                            return
+                    await asyncio.sleep(delay)
+                    delay = min(delay * 2, 15)
         raise AssertionError(f"File {name} with size {size} not found in {url}")
 
     @run_async
@@ -489,7 +522,7 @@ async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
 
 @pytest.fixture(scope="session")
 def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME ")
     if e2e_test_token:
         tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
