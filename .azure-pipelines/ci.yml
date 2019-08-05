@@ -89,6 +89,10 @@ stages:
       displayName: 'Run unittests'
 
     - script: |
+        make e2e
+      displayName: 'Run e2e'
+
+    - script: |
         pip install codecov
         python -m codecov -f coverage.xml -X gcov
       displayName: 'Upload coverage reports'
