@@ -108,9 +108,7 @@ def test_e2e_load_recursive_to_platform(
     assert str(targetfile) in list(map(str, targetdir.rglob("*")))
 
     helper.check_file_exists_on_storage_retries(
-        target_file_name,
-        "nested/directory/for/test",
-        FILE_SIZE_B,
+        target_file_name, "nested/directory/for/test", FILE_SIZE_B
     )
 
     assert helper.hash_hex(targetfile) == checksum
