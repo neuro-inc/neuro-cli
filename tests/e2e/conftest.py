@@ -522,7 +522,7 @@ async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
 
 @pytest.fixture(scope="session")
 def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME ")
+    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
     if e2e_test_token:
         tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
