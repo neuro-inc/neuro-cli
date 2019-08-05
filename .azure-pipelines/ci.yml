@@ -22,24 +22,24 @@ stages:
   displayName: "Linters"
   jobs:
   - job: lint
-  - pool:
+    pool:
     vmImage: 'ubuntu-latest'
-  steps:
-  - chechout: self
-    clean: true
+    steps:
+    - chechout: self
+      clean: true
 
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.7'
-    diplayName: "User Python 3.7"
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.7'
+      diplayName: "User Python 3.7"
 
-  - script: |
-      pip install -U pip wheel
-      pip install -r requirements/ci.txt
-    displayName: 'Inatall dependencies'
+    - script: |
+        pip install -U pip wheel
+        pip install -r requirements/ci.txt
+      displayName: 'Inatall dependencies'
 
-  - script: |
-      make lint
+    - script: |
+        make lint
       
 - stage: test
   displayName: "Run tests"
