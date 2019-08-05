@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 import click
 
-from neuromation.api import Permission, SharedPermission
+from neuromation.api import Permission, Share
 
 from .root import Root
 from .utils import (
@@ -104,15 +104,21 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
             click.echo(f"{p.uri} {p.action.value}")
     else:
 
-        def shared_permission_key(sp: SharedPermission) -> Any:
-            return sp.permission.uri, sp.permission.action.value, sp.username
+        def shared_permission_key(share: Share) -> Any:
+            return share.permission.uri, share.permission.action.value, share.user
 
-        for sp in sorted(
-            await root.client.users.get_shared_acl(root.username, scheme),
+        for share in sorted(
+            await root.client.users.get_shares(root.username, scheme),
             key=shared_permission_key,
         ):
             click.echo(
-                f"{sp.permission.uri} {sp.permission.action.value} {sp.username}"
+                " ".join(
+                    [
+                        str(share.permission.uri),
+                        share.permission.action.value,
+                        share.user,
+                    ]
+                )
             )
 
 

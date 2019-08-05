@@ -47,7 +47,7 @@ from .jobs import (
 )
 from .parsing_utils import LocalImage, RemoteImage
 from .storage import FileStatus, FileStatusType
-from .users import Action, Permission, SharedPermission
+from .users import Action, Permission, Share
 from .utils import _ContextManager
 
 
@@ -64,7 +64,7 @@ __all__ = (
     "HTTPPort",
     "Action",
     "Permission",
-    "SharedPermission",
+    "Share",
     "Client",
     "FileStatusType",
     "FileStatus",
