@@ -5,10 +5,11 @@ trigger:
     - master
 
 
+stages:
 - stage: trigger_e2e
   displayName: "Trugger E2E"
   jobs:
-  - job: trigger_e2e
+  - job: trigger_e2e_job
     pool:
       vmImage: 'ubuntu-latest'
     steps:
