@@ -78,7 +78,8 @@ class _ImageNameParser:
             name = img.name
             registry = None
             if ":" in name:
-                assert "/" in name
+                msg = "here name must contain slash(es). checked by _split_image_name()"
+                assert "/" in name, msg
                 registry, name = name.split("/", 1)
 
             return RemoteImage(name=name, tag=img.tag, registry=registry)
