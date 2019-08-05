@@ -4,29 +4,90 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- master
+  batch: true
+  branches:
+    include:
+    - master
+    - ?.?
+    - refs/tags/*
+pr:
+  branches:
+    include:
+    - master
+    - ?.?
 
-pool:
-  vmImage: 'ubuntu-latest'
-strategy:
-  matrix:
-    Python36:
-      python.version: '3.6'
-    Python37:
-      python.version: '3.7'
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+stages:
+- stage: linters
+  displayName: "Linters"
+  jobs:
+  - job: lint
+  - pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - chechout: self
+    clean: true
 
-- script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements/ci.txt
-  displayName: 'Install dependencies'
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.7'
+    diplayName: "User Python 3.7"
 
-- script: |
-    pip install pytest pytest-azurepipelines
-    pytest
-  displayName: 'pytest'
+  - script: |
+      pip install -U pip wheel
+      pip install -r requirements/ci.txt
+    displayName: 'Inatall dependencies'
+
+  - script: |
+      make lint
+      
+- stage: test
+  displayName: "Run tests"
+  jobs:
+  - jos: test:
+    strategy:
+      matrix:
+        Py36-Linux:
+          python.version: '3.6'
+          image: 'ubuntu-latest'
+        Py37-Linux:
+          python.version: '3.7'
+          image: 'ubuntu-latest'
+        Py36-Win64:
+          python.version: '3.6'
+          image: 'vs2017-win2016'
+        Py37-Win64:
+          python.version: '3.7'
+          image: 'vs2017-win2016'
+
+    pool:
+      vmImage: $[ variables['image'] ]
+
+    timeoutInMinutes: 15
+
+    steps:
+    - checkout: self
+      clean: true
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(python.version)'
+      displayName: "Use Python $(python.version)'
+
+    - script: |
+        python -m pip install -U pip wheel
+      displayName: 'Install prerequirements'
+
+    - script: |
+        pip install -r requirements/ci.txt pytest-azurepipelines
+        pip install .
+      displayName: 'Install dependencies'
+
+    - script: |
+        make test
+      displayName: 'Run unittests'
+
+    - script: |
+        pip install codecov
+        python -m codecov -f coverage.xml -X gcov
+      displayName: 'Upload coverage reports'
