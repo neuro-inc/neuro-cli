@@ -60,6 +60,9 @@ help:
 	* CI \n\
 	- coverage: upload coverage information to codecov.io \n\
 	- ci: run CI related targets \n\
+\n\
+        * DOC \n\
+        - doc: generate sphinx html docs \n\
     "
 
 .PHONY: init
@@ -249,3 +252,7 @@ update-deps-fast: REQUIREMENTS_CHANGED:=$(shell git diff --name-status --diff-fi
 update-deps-fast:
 	@ [ -z "${REQUIREMENTS_CHANGED}" ] || (make update-deps)
 
+
+.PHONY: doc
+doc:
+	make -C docs html
