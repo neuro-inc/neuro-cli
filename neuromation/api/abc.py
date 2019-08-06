@@ -105,6 +105,17 @@ class ImageProgressStep:
     layer_id: str
 
 
+@dataclass(frozen=True)
+class ContainerProgressCommit:
+    job: str
+    dst: RemoteImage
+
+
+@dataclass(frozen=True)
+class ContainerProgressStep:
+    message: str
+
+
 class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
     def pull(self, data: ImageProgressPull) -> None:
@@ -116,4 +127,14 @@ class AbstractDockerImageProgress(abc.ABC):
 
     @abc.abstractmethod
     def step(self, data: ImageProgressStep) -> None:
+        pass  # pragma: no cover
+
+
+class AbstractDockerContainerProgress(abc.ABC):
+    @abc.abstractmethod
+    def commit(self, data: ContainerProgressCommit) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def step(self, data: ContainerProgressStep) -> None:
         pass  # pragma: no cover

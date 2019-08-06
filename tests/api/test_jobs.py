@@ -1,3 +1,4 @@
+import json
 from typing import Any, Callable, Dict, List, Optional
 
 import pytest
@@ -199,14 +200,42 @@ async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> Non
     async with make_client("http://whatever") as client:
         image = RemoteImage(name="ubuntu")
         with pytest.raises(ValueError, match="must be in the neuromation registry"):
-            await client.jobs.save("job-id", image)
+            await client.images.save("job-id", image)
 
 
 async def test_save_ok(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        return web.Response(status=web.HTTPCreated.status_code)
+    JSON = [
+        {"status": "Committing container DIGEST as image alpine:latest"},
+        {"status": "Committed"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+        {"status": "Preparing", "progressDetail": {}, "id": "a31dbd3063d7"},
+        {
+            "status": "Pushing",
+            "progressDetail": {"current": 3584},
+            "progress": " 3.584kB",
+            "id": "0acd017a4b67",
+        },
+        {"status": "Pushed", "progressDetail": {}, "id": "0acd017a4b67"},
+        {"status": "job-id: digest: sha256:DIGEST size: 1359"},
+        {
+            "progressDetail": {},
+            "aux": {"Tag": "job-id", "Digest": "sha256:DIGEST", "Size": 1359},
+        },
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
 
     app = web.Application()
     app.router.add_post("/jobs/job-id/save", handler)
@@ -215,7 +244,7 @@ async def test_save_ok(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage(registry="gcr.io", owner="me", name="img")
-        await client.jobs.save("job-id", image)
+        await client.images.save("job-id", image)
 
 
 async def test_status_failed(

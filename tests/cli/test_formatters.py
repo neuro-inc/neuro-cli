@@ -25,6 +25,7 @@ from neuromation.api import (
     RemoteImage,
     Resources,
 )
+from neuromation.api.abc import ContainerProgressCommit, ContainerProgressStep
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
@@ -37,6 +38,7 @@ from neuromation.cli.formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from neuromation.cli.formatters.images import DockerContainerProgress
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
@@ -1382,6 +1384,56 @@ class TestDockerImageProgress:
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
+        assert "image://bob/output:stream" in out
+        assert "message1" in out
+        assert "message2" in out
+        assert CSI in out
+
+
+class TestDockerContainerProgress:
+    def test_quiet_commit(self, capfd: Any) -> None:
+        formatter = DockerContainerProgress.create(tty=True, quiet=True)
+        formatter.commit(ContainerProgressCommit("job-id", RemoteImage("output")))
+        formatter.step(ContainerProgressStep("message1"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_no_tty_commit(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerContainerProgress.create(tty=False, quiet=False)
+        formatter.commit(
+            ContainerProgressCommit(
+                "job-id",
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
+        )
+        formatter.step(ContainerProgressStep("message1"))
+        formatter.step(ContainerProgressStep("message2"))
+
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "image://bob/output:stream" in out
+        assert "job-id" in out
+        assert "message1" in out
+        assert "message2" in out
+        assert CSI not in out
+
+    def test_tty_commit(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerContainerProgress.create(tty=True, quiet=False)
+        formatter.commit(
+            ContainerProgressCommit(
+                "job-id",
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
+        )
+        formatter.step(ContainerProgressStep("message1"))
+        formatter.step(ContainerProgressStep("message2"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "job-id" in out
         assert "image://bob/output:stream" in out
         assert "message1" in out
         assert "message2" in out

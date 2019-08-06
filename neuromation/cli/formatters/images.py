@@ -9,6 +9,11 @@ from neuromation.api import (
     ImageProgressPush,
     ImageProgressStep,
 )
+from neuromation.api.abc import (
+    AbstractDockerContainerProgress,
+    ContainerProgressCommit,
+    ContainerProgressStep,
+)
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -28,6 +33,22 @@ class DockerImageProgress(AbstractDockerImageProgress):
         pass
 
 
+class DockerContainerProgress(AbstractDockerContainerProgress):
+    @classmethod
+    def create(cls, tty: bool, quiet: bool) -> "DockerContainerProgress":
+        if quiet:
+            progress: DockerContainerProgress = QuietDockerContainerProgress()
+        elif tty:
+            progress = DetailedDockerContainerProgress()
+        else:
+            progress = StreamDockerContainerProgress()
+        return progress
+
+    @abc.abstractmethod
+    def close(self) -> None:  # pragma: no cover
+        pass
+
+
 class QuietDockerImageProgress(DockerImageProgress):
     def pull(self, data: ImageProgressPull) -> None:
         pass
@@ -36,6 +57,17 @@ class QuietDockerImageProgress(DockerImageProgress):
         pass
 
     def step(self, data: ImageProgressStep) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+
+class QuietDockerContainerProgress(DockerContainerProgress):
+    def commit(self, data: ContainerProgressCommit) -> None:
+        pass
+
+    def step(self, data: ContainerProgressStep) -> None:
         pass
 
     def close(self) -> None:
@@ -72,6 +104,22 @@ class DetailedDockerImageProgress(DockerImageProgress):
         self._printer.close()
 
 
+class DetailedDockerContainerProgress(DockerContainerProgress):
+    def __init__(self) -> None:
+        self._printer = TTYPrinter()
+
+    def commit(self, data: ContainerProgressCommit) -> None:
+        job = click.style(str(data.job), bold=True)
+        dst = click.style(str(data.dst), bold=True)
+        self._printer.print(f"Committing job {job} as {dst}")
+
+    def step(self, data: ContainerProgressStep) -> None:
+        self._printer.print(data.message)
+
+    def close(self) -> None:
+        self._printer.close()
+
+
 class StreamDockerImageProgress(DockerImageProgress):
     def __init__(self) -> None:
         self._printer = StreamPrinter()
@@ -91,6 +139,21 @@ class StreamDockerImageProgress(DockerImageProgress):
             self._printer.tick()
         else:
             self._printer.print(data.message)
+
+    def close(self) -> None:
+        self._printer.close()
+
+
+class StreamDockerContainerProgress(DockerContainerProgress):
+    def __init__(self) -> None:
+        self._printer = StreamPrinter()
+
+    def commit(self, data: ContainerProgressCommit) -> None:
+        self._printer.print(f"Using remote image '{data.dst}'")
+        self._printer.print(f"Committing job '{data.job}'...")
+
+    def step(self, data: ContainerProgressStep) -> None:
+        self._printer.print(data.message)
 
     def close(self) -> None:
         self._printer.close()

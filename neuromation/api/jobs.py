@@ -16,12 +16,7 @@ from neuromation.utils import kill_proc_tree
 from .config import _Config
 from .core import IllegalArgumentError, _Core
 from .parser import Volume
-from .parsing_utils import (
-    RemoteImage,
-    _as_repo_str,
-    _ImageNameParser,
-    _is_in_neuro_registry,
-)
+from .parsing_utils import RemoteImage, _as_repo_str, _ImageNameParser
 from .utils import NoPublicConstructor
 
 
@@ -159,15 +154,6 @@ class Jobs(metaclass=NoPublicConstructor):
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
         async with self._core.request("DELETE", url):
-            # an error is raised for status >= 400
-            return None  # 201 status code
-
-    async def save(self, id: str, image: RemoteImage) -> None:
-        if not _is_in_neuro_registry(image):
-            raise ValueError(f"Image `{image}` must be in the neuromation registry")
-        payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
-        async with self._core.request("POST", url, json=payload):
             # an error is raised for status >= 400
             return None  # 201 status code
 
