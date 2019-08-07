@@ -48,7 +48,7 @@ class JobFormatter:
             job_alias = job.name
         else:
             job_alias = job.id
-        http_url = job.http_url_named or job.http_url
+        http_url = job.http_url
         if http_url:
             out.append(style("Http URL", bold=True) + f": {http_url}")
         out.append(style("Shortcuts", bold=True) + ":")
@@ -90,9 +90,8 @@ class JobStatusFormatter:
         result += f"Preemptible: {job_status.is_preemptible}\n"
         if job_status.internal_hostname:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
-        http_url = job_status.http_url_named or job_status.http_url
-        if http_url:
-            result = f"{result}Http URL: {http_url}\n"
+        if job_status.http_url:
+            result = f"{result}Http URL: {job_status.http_url}\n"
         if job_status.container.http:
             result = (
                 f"{result}Http authentication: "

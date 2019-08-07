@@ -89,11 +89,9 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
-    ssh_auth_server: URL
     name: Optional[str] = None
     description: Optional[str] = None
     http_url: URL = URL()
-    http_url_named: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
@@ -237,7 +235,7 @@ class Jobs(metaclass=NoPublicConstructor):
                 "-o",
                 "UserKnownHostsFile=/dev/null",
             ]
-        server_url = job_status.ssh_auth_server
+        server_url = job_status.ssh_server
         port = server_url.port if server_url.port else 22
         command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
         proc = await asyncio.create_subprocess_exec(*command)
@@ -273,7 +271,7 @@ class Jobs(metaclass=NoPublicConstructor):
                 "-o",
                 "UserKnownHostsFile=/dev/null",
             ]
-        server_url = job_status.ssh_auth_server
+        server_url = job_status.ssh_server
         port = server_url.port if server_url.port else 22
         proxy_command += [
             "-p",
@@ -405,10 +403,8 @@ def _job_description_from_api(
         is_preemptible=res["is_preemptible"],
         name=name,
         description=description,
-        http_url=http_url,
-        http_url_named=http_url_named,
+        http_url=http_url_named or http_url,
         ssh_server=ssh_server,
-        ssh_auth_server=URL(res["ssh_auth_server"]),
         internal_hostname=internal_hostname,
     )
 
