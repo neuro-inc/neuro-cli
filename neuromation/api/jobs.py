@@ -94,7 +94,6 @@ class JobDescription:
     description: Optional[str] = None
     http_url: URL = URL()
     http_url_named: URL = URL()
-    ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
 
@@ -394,7 +393,6 @@ def _job_description_from_api(
     )
     http_url = URL(res.get("http_url", ""))
     http_url_named = URL(res.get("http_url_named", ""))
-    ssh_server = URL(res.get("ssh_server", ""))
     internal_hostname = res.get("internal_hostname", None)
     return JobDescription(
         status=JobStatus(res["status"]),
@@ -407,7 +405,6 @@ def _job_description_from_api(
         description=description,
         http_url=http_url,
         http_url_named=http_url_named,
-        ssh_server=ssh_server,
         ssh_auth_server=URL(res["ssh_auth_server"]),
         internal_hostname=internal_hostname,
     )

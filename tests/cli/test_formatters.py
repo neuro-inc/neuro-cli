@@ -188,7 +188,6 @@ class TestJobStartProgress:
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=status,
                 reason=reason,
@@ -256,7 +255,6 @@ class TestJobOutputFormatter:
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
@@ -305,7 +303,6 @@ class TestJobOutputFormatter:
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
@@ -471,7 +468,6 @@ class TestJobOutputFormatter:
                 finished_at="",
             ),
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
