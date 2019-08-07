@@ -10,6 +10,7 @@ Welcome to neuromation's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   usage
    reference
 
 
