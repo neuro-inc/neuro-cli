@@ -55,6 +55,7 @@ def cluster_config() -> _ClusterConfig:
             ),
             "cpu-small": RunPreset(cpu=7, memory_mb=2 * 1024),
             "cpu-large": RunPreset(cpu=7, memory_mb=14 * 1024),
+            "cpu-large-p": RunPreset(cpu=7, memory_mb=14 * 1024, is_preemptible=True),
         },
     )
 
