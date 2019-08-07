@@ -1,5 +1,7 @@
 import abc
+import enum
 from dataclasses import dataclass
+from typing import Optional
 
 from yarl import URL
 
@@ -100,20 +102,32 @@ class ImageProgressPush:
 
 
 @dataclass(frozen=True)
-class ImageProgressStep:
-    message: str
-    layer_id: str
-
-
-@dataclass(frozen=True)
-class ContainerProgressCommit:
+class ImageProgressSave:
     job: str
     dst: RemoteImage
 
 
 @dataclass(frozen=True)
-class ContainerProgressStep:
+class ImageProgressStep:
     message: str
+    layer_id: str
+
+
+class ImageCommitStatus(str, enum.Enum):
+    STARTED = "CommitStarted"
+    FINISHED = "CommitFinished"
+
+
+@dataclass(frozen=True)
+class ImageCommitDetails:
+    container: str
+    target_image: RemoteImage
+
+
+@dataclass(frozen=True)
+class ImageCommitStep:
+    status: ImageCommitStatus
+    details: Optional[ImageCommitDetails] = None
 
 
 class AbstractDockerImageProgress(abc.ABC):
@@ -129,12 +143,10 @@ class AbstractDockerImageProgress(abc.ABC):
     def step(self, data: ImageProgressStep) -> None:
         pass  # pragma: no cover
 
-
-class AbstractDockerContainerProgress(abc.ABC):
     @abc.abstractmethod
-    def commit(self, data: ContainerProgressCommit) -> None:
+    def save(self, data: ImageProgressSave) -> None:
         pass  # pragma: no cover
 
     @abc.abstractmethod
-    def step(self, data: ContainerProgressStep) -> None:
+    def commit(self, data: ImageCommitStep) -> None:
         pass  # pragma: no cover

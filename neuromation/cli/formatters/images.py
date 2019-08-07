@@ -9,11 +9,7 @@ from neuromation.api import (
     ImageProgressPush,
     ImageProgressStep,
 )
-from neuromation.api.abc import (
-    AbstractDockerContainerProgress,
-    ContainerProgressCommit,
-    ContainerProgressStep,
-)
+from neuromation.api.abc import ImageCommitStatus, ImageCommitStep, ImageProgressSave
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -26,22 +22,6 @@ class DockerImageProgress(AbstractDockerImageProgress):
             progress = DetailedDockerImageProgress()
         else:
             progress = StreamDockerImageProgress()
-        return progress
-
-    @abc.abstractmethod
-    def close(self) -> None:  # pragma: no cover
-        pass
-
-
-class DockerContainerProgress(AbstractDockerContainerProgress):
-    @classmethod
-    def create(cls, tty: bool, quiet: bool) -> "DockerContainerProgress":
-        if quiet:
-            progress: DockerContainerProgress = QuietDockerContainerProgress()
-        elif tty:
-            progress = DetailedDockerContainerProgress()
-        else:
-            progress = StreamDockerContainerProgress()
         return progress
 
     @abc.abstractmethod
@@ -62,15 +42,10 @@ class QuietDockerImageProgress(DockerImageProgress):
     def close(self) -> None:
         pass
 
-
-class QuietDockerContainerProgress(DockerContainerProgress):
-    def commit(self, data: ContainerProgressCommit) -> None:
+    def save(self, data: ImageProgressSave) -> None:
         pass
 
-    def step(self, data: ContainerProgressStep) -> None:
-        pass
-
-    def close(self) -> None:
+    def commit(self, data: ImageCommitStep) -> None:
         pass
 
 
@@ -100,21 +75,18 @@ class DetailedDockerImageProgress(DockerImageProgress):
         else:
             self._printer.print(data.message)
 
-    def close(self) -> None:
-        self._printer.close()
-
-
-class DetailedDockerContainerProgress(DockerContainerProgress):
-    def __init__(self) -> None:
-        self._printer = TTYPrinter()
-
-    def commit(self, data: ContainerProgressCommit) -> None:
+    def save(self, data: ImageProgressSave) -> None:
         job = click.style(str(data.job), bold=True)
         dst = click.style(str(data.dst), bold=True)
-        self._printer.print(f"Committing job {job} as {dst}")
+        self._printer.print(f"Saving {job} -> {dst}")
 
-    def step(self, data: ContainerProgressStep) -> None:
-        self._printer.print(data.message)
+    def commit(self, data: ImageCommitStep) -> None:
+        if data.status == ImageCommitStatus.STARTED and data.details:
+            img = click.style(str(data.details.target_image), bold=True)
+            cnt = click.style(str(data.details.container), bold=True)
+            self._printer.print(f"Creating image {img} from {cnt}")
+        elif data.status == ImageCommitStatus.FINISHED:
+            self._printer.print("Image created")
 
     def close(self) -> None:
         self._printer.close()
@@ -140,20 +112,16 @@ class StreamDockerImageProgress(DockerImageProgress):
         else:
             self._printer.print(data.message)
 
-    def close(self) -> None:
-        self._printer.close()
+    def save(self, data: ImageProgressSave) -> None:
+        self._printer.print(f"Saving job '{data.job}' to image '{data.dst}'...")
 
-
-class StreamDockerContainerProgress(DockerContainerProgress):
-    def __init__(self) -> None:
-        self._printer = StreamPrinter()
-
-    def commit(self, data: ContainerProgressCommit) -> None:
-        self._printer.print(f"Using remote image '{data.dst}'")
-        self._printer.print(f"Committing job '{data.job}'...")
-
-    def step(self, data: ContainerProgressStep) -> None:
-        self._printer.print(data.message)
+    def commit(self, data: ImageCommitStep) -> None:
+        if data.status == ImageCommitStatus.STARTED and data.details:
+            d = data.details
+            self._printer.print(f"Using remote image '{d.target_image}'")
+            self._printer.print(f"Creating image from container '{d.container}'...")
+        elif data.status == ImageCommitStatus.FINISHED:
+            self._printer.print("Image created")
 
     def close(self) -> None:
         self._printer.close()
