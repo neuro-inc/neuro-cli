@@ -27,7 +27,7 @@ class Client(metaclass=NoPublicConstructor):
         *,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
     ) -> None:
-        self._closing = False
+        self._closed = False
         config.check_initialized()
         self._config = config
         self._connector = connector
@@ -51,9 +51,9 @@ class Client(metaclass=NoPublicConstructor):
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
-        if self._closing:
+        if self._closed:
             return
-        self._closing = True
+        self._closed = True
         await self._core.close()
         if self._images is not None:
             await self._images._close()

@@ -18,8 +18,8 @@ async def test_client__get_session_cookie(make_client: _MakeClient) -> None:
 
 async def test_client_double_closing(make_client: _MakeClient) -> None:
     client = make_client("http://example.com")
-    assert not client._closing
+    assert not client._closed
     await client.close()
-    assert client._closing
+    assert client._closed
     await client.close()
-    assert client._closing
+    assert client._closed
