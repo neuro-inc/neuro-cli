@@ -166,7 +166,7 @@ class TestJobFormatter:
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
     def test_non_quiet_http_url_named(self, job_descr: JobDescription) -> None:
-        job_descr = replace(job_descr, http_url_named=URL("https://job-named.dev"))
+        job_descr = replace(job_descr, http_url=URL("https://job-named.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Name: {TEST_JOB_NAME}\n"
