@@ -90,9 +90,8 @@ class JobStatusFormatter:
         result += f"Preemptible: {job_status.is_preemptible}\n"
         if job_status.internal_hostname:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
-        http_url = job_status.http_url
-        if http_url:
-            result = f"{result}Http URL: {http_url}\n"
+        if job_status.http_url:
+            result = f"{result}Http URL: {job_status.http_url}\n"
         if job_status.container.http:
             result = (
                 f"{result}Http authentication: "
