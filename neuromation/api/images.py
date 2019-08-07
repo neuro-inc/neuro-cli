@@ -84,7 +84,7 @@ class Images(metaclass=NoPublicConstructor):
             remote = parser.convert_to_neuro_image(local)
 
         if progress is None:
-            progress = _DummyImageProgress()
+            progress = _DummyProgress()
         progress.push(ImageProgressPush(local, remote))
 
         repo = _as_repo_str(remote)
@@ -125,7 +125,7 @@ class Images(metaclass=NoPublicConstructor):
             local = parser.convert_to_local_image(remote)
 
         if progress is None:
-            progress = _DummyImageProgress()
+            progress = _DummyProgress()
         progress.pull(ImageProgressPull(remote, local))
 
         repo = _as_repo_str(remote)
@@ -163,7 +163,7 @@ class Images(metaclass=NoPublicConstructor):
         if not _is_in_neuro_registry(image):
             raise ValueError(f"Image `{image}` must be in the neuromation registry")
         if progress is None:
-            progress = _DummyImageProgress()
+            progress = _DummyProgress()
 
         image_parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
@@ -278,7 +278,7 @@ def _raise_on_error_chunk(obj: Dict[str, Any]) -> None:
         raise DockerError(900, error_details)
 
 
-class _DummyImageProgress(AbstractDockerImageProgress):
+class _DummyProgress(AbstractDockerImageProgress):
     def pull(self, data: ImageProgressPull) -> None:
         pass
 
