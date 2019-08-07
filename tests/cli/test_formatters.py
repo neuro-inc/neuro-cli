@@ -77,7 +77,7 @@ def job_descr_no_name() -> JobDescription:
             image=RemoteImage("ubuntu", "latest"),
             resources=Resources(16, 0.1, 0, None, False),
         ),
-        ssh_auth_server=URL("ssh-auth"),
+        ssh_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -101,7 +101,7 @@ def job_descr() -> JobDescription:
             image=RemoteImage("ubuntu", "latest"),
             resources=Resources(16, 0.1, 0, None, False),
         ),
-        ssh_auth_server=URL("ssh-auth"),
+        ssh_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -188,7 +188,6 @@ class TestJobStartProgress:
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=status,
                 reason=reason,
@@ -202,7 +201,7 @@ class TestJobStartProgress:
                 image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -256,7 +255,6 @@ class TestJobOutputFormatter:
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
@@ -272,7 +270,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -305,7 +303,6 @@ class TestJobOutputFormatter:
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
@@ -321,7 +318,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -364,7 +361,7 @@ class TestJobOutputFormatter:
                 image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -401,7 +398,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -438,7 +435,7 @@ class TestJobOutputFormatter:
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -471,13 +468,12 @@ class TestJobOutputFormatter:
                 finished_at="",
             ),
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             internal_hostname="host.local",
         )
@@ -581,7 +577,7 @@ class TestSimpleJobsFormatter:
                     image=RemoteImage("ubuntu", "latest"),
                     resources=Resources(16, 0.1, 0, None, False),
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
             JobDescription(
@@ -601,7 +597,7 @@ class TestSimpleJobsFormatter:
                     image=RemoteImage("ubuntu", "latest"),
                     resources=Resources(16, 0.1, 0, None, False),
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
         ]
@@ -639,7 +635,7 @@ class TestTabularJobRow:
                 resources=Resources(16, 0.1, 0, None, False),
                 command="ls",
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
 
@@ -713,7 +709,7 @@ class TestTabularJobsFormatter:
                 resources=Resources(16, 0.1, 0, None, False),
                 command="c",
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
         formatter = TabularJobsFormatter(0)
@@ -754,7 +750,7 @@ class TestTabularJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
             JobDescription(
@@ -776,7 +772,7 @@ class TestTabularJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
         ]
