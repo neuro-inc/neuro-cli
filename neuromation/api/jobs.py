@@ -93,7 +93,6 @@ class JobDescription:
     name: Optional[str] = None
     description: Optional[str] = None
     http_url: URL = URL()
-    http_url_named: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
@@ -405,8 +404,7 @@ def _job_description_from_api(
         is_preemptible=res["is_preemptible"],
         name=name,
         description=description,
-        http_url=http_url,
-        http_url_named=http_url_named,
+        http_url=http_url_named or http_url,
         ssh_server=ssh_server,
         ssh_auth_server=URL(res["ssh_auth_server"]),
         internal_hostname=internal_hostname,

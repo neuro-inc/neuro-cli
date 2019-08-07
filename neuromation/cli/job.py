@@ -893,7 +893,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 
 
 async def browse_job(root: Root, job: JobDescription) -> None:
-    url = job.http_url_named or job.http_url
+    url = job.http_url
     if url.scheme not in ("http", "https"):
         raise RuntimeError(f"Cannot open job URL: {url}")
     log.info(f"Open job URL: {url}")
