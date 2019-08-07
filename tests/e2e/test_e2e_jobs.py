@@ -644,13 +644,16 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
         params=("-n", job_name),
         wait_state=JobStatus.RUNNING,
     )
+    img_uri = f"image://{helper.username}/{image}"
     captured = helper.run_cli(["job", "save", job_name, image_neuro_name])
-    assert f"Committing job '{job_id_1}'..." in captured.out
-    img = f"{helper.registry_url.host}/{helper.username}/{image}"
-    assert f"Committing image {img} from " in captured.out
-    assert "Committed" in captured.out
-    assert "Pushing image..." in captured.out
-    assert captured.out.endswith(f"image://{helper.username}/{image}")
+    out = captured.out
+    assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
+    assert f"Using remote image '{img_uri}'" in out
+    assert "Creating image from container" in out
+    assert "Image created" in out
+    assert f"Using local image '{helper.username}/{image}'" in out
+    assert "Pushing image..." in out
+    assert out.endswith(img_uri)
 
     # wait to free the job name:
     helper.run_cli(["job", "kill", job_name])
