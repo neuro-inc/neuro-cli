@@ -186,7 +186,7 @@ class _ImageNameParser:
             name, tag = image.rsplit(":", 1)
         else:
             raise ValueError("too many tags")
-        if tag and any(char in tag for char in "/:"):
+        if tag and (":" in tag or "/" in tag):
             raise ValueError("invalid tag")
         return name, tag
 
