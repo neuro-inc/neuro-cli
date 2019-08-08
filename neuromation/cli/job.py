@@ -534,7 +534,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     id = await resolve_job(root.client, job)
     progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
     with contextlib.closing(progress):
-        await root.client.images.save(id, image, progress=progress)
+        await root.client.jobs.save(id, image, progress=progress)
     click.echo(image)
 
 

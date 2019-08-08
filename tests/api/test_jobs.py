@@ -201,7 +201,7 @@ async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> Non
     async with make_client("http://whatever") as client:
         image = RemoteImage(name="ubuntu")
         with pytest.raises(ValueError, match="must be in the neuromation registry"):
-            await client.images.save("job-id", image)
+            await client.jobs.save("job-id", image)
 
 
 async def test_save_ok(
@@ -248,7 +248,7 @@ async def test_save_ok(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage(registry="gcr.io", owner="me", name="img")
-        await client.images.save("job-id", image)
+        await client.jobs.save("job-id", image)
 
 
 async def test_save_wrong_first_commit_message_fails(
@@ -283,7 +283,7 @@ async def test_save_wrong_first_commit_message_fails(
         with pytest.raises(
             DockerError, match=f"Invalid commit status: '{invalid_status}'"
         ):
-            await client.images.save("job-id", image)
+            await client.jobs.save("job-id", image)
 
 
 async def test_save_commit_takes_more_than_two_messages_fails(
@@ -318,7 +318,7 @@ async def test_save_commit_takes_more_than_two_messages_fails(
         with pytest.raises(
             DockerError, match=f"Expect commit to finish, received: 'CommitStarted'"
         ):
-            await client.images.save("job-id", image)
+            await client.jobs.save("job-id", image)
 
 
 async def test_save_commit_missing_status_fails(
@@ -350,7 +350,7 @@ async def test_save_commit_missing_status_fails(
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage(registry="gcr.io", owner="me", name="img")
         with pytest.raises(DockerError, match='Missing required field: "status"'):
-            await client.images.save("job-id", image)
+            await client.jobs.save("job-id", image)
 
 
 async def test_status_failed(

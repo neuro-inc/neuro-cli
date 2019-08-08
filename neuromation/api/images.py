@@ -1,5 +1,4 @@
 import contextlib
-import json
 import re
 from dataclasses import replace
 from typing import Any, Dict, List, Optional
@@ -11,8 +10,6 @@ from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
-    ImageCommitDetails,
-    ImageCommitStatus,
     ImageCommitStep,
     ImageProgressPull,
     ImageProgressPush,
@@ -21,13 +18,7 @@ from .abc import (
 )
 from .config import _Config
 from .core import AuthorizationError, _Core
-from .parsing_utils import (
-    LocalImage,
-    RemoteImage,
-    _as_repo_str,
-    _ImageNameParser,
-    _is_in_neuro_registry,
-)
+from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _ImageNameParser
 from .registry import _Registry
 from .utils import NoPublicConstructor
 
@@ -153,51 +144,6 @@ class Images(metaclass=NoPublicConstructor):
 
         return local
 
-    async def save(
-        self,
-        id: str,
-        image: RemoteImage,
-        *,
-        progress: Optional[AbstractDockerImageProgress] = None,
-    ) -> None:
-        if not _is_in_neuro_registry(image):
-            raise ValueError(f"Image `{image}` must be in the neuromation registry")
-        if progress is None:
-            progress = _DummyProgress()
-
-        image_parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-
-        payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
-
-        async with self._core.request("POST", url, json=payload) as resp:
-            # first, we expect exactly two docker-commit messages
-            progress.save(ImageProgressSave(id, image))
-
-            chunk = await resp.content.readline()
-            step = _parse_commit_chunk(_load_chunk(chunk), image_parser)
-            progress.commit(step)
-
-            chunk = await resp.content.readline()
-            step = _parse_commit_chunk(_load_chunk(chunk), image_parser)
-            progress.commit(step)
-            if step.status != ImageCommitStatus.FINISHED:
-                error_details = {
-                    "message": f"Expect commit to finish, received: '{step.status}'"
-                }
-                raise DockerError(400, error_details)
-
-            # then, we expect stream for docker-push
-            src = LocalImage(f"{image.owner}/{image.name}", image.tag)
-            progress.push(ImageProgressPush(src, dst=image))
-            async for chunk in resp.content:
-                obj = _load_chunk(chunk)
-                push_step = _try_parse_image_progress_step(obj, image.tag)
-                if push_step:
-                    progress.step(push_step)
-
     async def ls(self) -> List[RemoteImage]:
         async with self._registry.request("GET", URL("_catalog")) as resp:
             parser = _ImageNameParser(
@@ -230,10 +176,6 @@ class Images(metaclass=NoPublicConstructor):
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]
 
 
-def _load_chunk(chunk: bytes) -> Dict[str, Any]:
-    return json.loads(chunk, encoding="utf-8")
-
-
 def _try_parse_image_progress_step(
     obj: Dict[str, Any], target_image_tag: Optional[str]
 ) -> Optional[ImageProgressStep]:
@@ -245,31 +187,6 @@ def _try_parse_image_progress_step(
             message = f"{obj['id']}: {obj['status']}"
         return ImageProgressStep(message, obj["id"])
     return None
-
-
-def _parse_commit_chunk(
-    obj: Dict[str, Any], image_parser: _ImageNameParser
-) -> ImageCommitStep:
-    _raise_on_error_chunk(obj)
-    if "status" not in obj.keys():
-        error_details = {"message": 'Missing required field: "status"'}
-        raise DockerError(400, error_details)
-
-    status_str = obj["status"]
-    details_json = obj.get("details", {})
-    container = details_json.get("container")
-    image_str = details_json.get("image")
-    details: Optional[ImageCommitDetails] = None
-    if container and image_str:
-        image = image_parser.parse_remote(image_str)
-        details = ImageCommitDetails(container=container, target_image=image)
-    try:
-        status = ImageCommitStatus(status_str)
-    except ValueError:
-        error_details = {"message": f"Invalid commit status: '{status_str}'"}
-        raise DockerError(400, error_details)
-
-    return ImageCommitStep(status=status, details=details)
 
 
 def _raise_on_error_chunk(obj: Dict[str, Any]) -> None:
