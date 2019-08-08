@@ -4,6 +4,7 @@
 Jobs Usage
 ==========
 
+Jobs api
 
 
 .. _job-preemptibility:
