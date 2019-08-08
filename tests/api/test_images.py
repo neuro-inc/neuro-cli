@@ -51,6 +51,10 @@ class TestImageParser:
         image = "ubuntu"
         assert not self.parser.has_tag(image)
 
+    def test_has_tag_no_tag_with_slash(self) -> None:
+        image = "library/ubuntu"
+        assert not self.parser.has_tag(image)
+
     def test_has_tag_empty_tag(self) -> None:
         image = "ubuntu:"
         with pytest.raises(ValueError, match="empty tag is not allowed"):
@@ -120,6 +124,18 @@ class TestImageParser:
         with pytest.raises(ValueError, match="too many tags"):
             self.parser._split_image_name(
                 "localhost:5000/ubuntu:v10.04:LTS", self.parser.default_tag
+            )
+
+    def test_split_image_name_with_registry_port_empty_tag(self) -> None:
+        splitted = self.parser._split_image_name(
+            "localhost:5000/ubuntu:", self.parser.default_tag
+        )
+        assert splitted == ("localhost:5000/ubuntu", "latest")
+
+    def test_split_image_name_with_registry_port_slash_in_tag(self) -> None:
+        with pytest.raises(ValueError, match="invalid tag format"):
+            self.parser._split_image_name(
+                "localhost:5000/ubuntu:v10/04", self.parser.default_tag
             )
 
     # public method: parse_local

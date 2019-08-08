@@ -185,6 +185,10 @@ class _ImageNameParser:
             name = ":".join(image_arr)
         else:
             raise ValueError("too many tags")
+        if not tag:
+            tag = default_tag
+        elif "/" in tag:
+            raise ValueError("invalid tag format")
         return name, tag
 
     def _check_allowed_uri_elements(self, url: URL) -> None:
