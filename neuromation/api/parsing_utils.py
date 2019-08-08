@@ -165,8 +165,12 @@ class _ImageNameParser:
     def _split_image_name(
         self, image: str, default_tag: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
+        if image.endswith(":") or image.startswith(":"):
+            # case `ubuntu:`, `:latest`
+            raise ValueError("empty name or empty tag")
         colon_count = image.count(":")
         if colon_count == 0:
+            # case `ubuntu`
             name, tag = image, default_tag
         elif colon_count == 1:
             # case `ubuntu:latest`
@@ -174,21 +178,16 @@ class _ImageNameParser:
             if "/" in tag:
                 # case `localhost:5000/ubuntu`
                 name, tag = image, default_tag
-            elif not tag:
-                raise ValueError("empty tag is not allowed")
         elif colon_count == 2:
             # case `localhost:9000/owner/ubuntu:latest`
             if "/" not in image:
-                # case `ubuntu:v11:latest`
+                # case `localhost:9000:latest`
                 raise ValueError("too many tags")
-            *image_arr, tag = image.split(":")
-            name = ":".join(image_arr)
+            name, tag = image.rsplit(":", 1)
         else:
             raise ValueError("too many tags")
-        if not tag:
-            tag = default_tag
-        elif "/" in tag:
-            raise ValueError("invalid tag format")
+        if tag and any(char in tag for char in "/:"):
+            raise ValueError("invalid tag")
         return name, tag
 
     def _check_allowed_uri_elements(self, url: URL) -> None:

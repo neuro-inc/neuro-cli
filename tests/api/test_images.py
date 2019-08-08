@@ -57,7 +57,17 @@ class TestImageParser:
 
     def test_has_tag_empty_tag(self) -> None:
         image = "ubuntu:"
-        with pytest.raises(ValueError, match="empty tag is not allowed"):
+        with pytest.raises(ValueError, match="empty tag"):
+            self.parser.has_tag(image)
+
+    def test_has_tag_empty_tag_with_slash(self) -> None:
+        image = "library/ubuntu:"
+        with pytest.raises(ValueError, match="empty tag"):
+            self.parser.has_tag(image)
+
+    def test_has_tag_empty_image_name(self) -> None:
+        image = ":latest"
+        with pytest.raises(ValueError, match="empty name"):
             self.parser.has_tag(image)
 
     def test_has_tag_too_many_tags(self) -> None:
@@ -101,7 +111,7 @@ class TestImageParser:
         assert splitted == ("ubuntu", "v10.04")
 
     def test_split_image_name_empty_tag(self) -> None:
-        with pytest.raises(ValueError, match="empty tag is not allowed"):
+        with pytest.raises(ValueError, match="empty tag"):
             self.parser._split_image_name("ubuntu:", self.parser.default_tag)
 
     def test_split_image_name_two_tags(self) -> None:
@@ -127,13 +137,13 @@ class TestImageParser:
             )
 
     def test_split_image_name_with_registry_port_empty_tag(self) -> None:
-        splitted = self.parser._split_image_name(
-            "localhost:5000/ubuntu:", self.parser.default_tag
-        )
-        assert splitted == ("localhost:5000/ubuntu", "latest")
+        with pytest.raises(ValueError, match="empty tag"):
+            self.parser._split_image_name(
+                "localhost:5000/ubuntu:", self.parser.default_tag
+            )
 
     def test_split_image_name_with_registry_port_slash_in_tag(self) -> None:
-        with pytest.raises(ValueError, match="invalid tag format"):
+        with pytest.raises(ValueError, match="invalid tag"):
             self.parser._split_image_name(
                 "localhost:5000/ubuntu:v10/04", self.parser.default_tag
             )
