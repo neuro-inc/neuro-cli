@@ -33,6 +33,16 @@ async def test_parse_remote(make_client: _MakeClient) -> None:
     )
 
 
+async def test_parse_remote_registry_image(make_client: _MakeClient) -> None:
+    async with make_client(
+        "https://api.localhost.localdomain", registry_url="http://localhost:5000"
+    ) as client:
+        result = client.parse.remote_image("localhost:5000/bob/library/bananas:latest")
+    assert result == RemoteImage(
+        "library/bananas", "latest", owner="bob", registry="localhost:5000"
+    )
+
+
 def test_get_url_authority_with_explicit_port() -> None:
     url = URL("http://example.com:8080/")
     assert _get_url_authority(url) == "example.com:8080"
