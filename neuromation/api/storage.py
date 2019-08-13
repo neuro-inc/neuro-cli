@@ -3,7 +3,6 @@ import enum
 import errno
 import fnmatch
 import itertools
-import json
 import os
 import re
 import struct
@@ -15,6 +14,8 @@ import aiohttp
 import attr
 from aiohttp import ClientWebSocketResponse, WSCloseCode
 from yarl import URL
+
+import cbor
 
 from .abc import (
     AbstractFileProgress,
@@ -92,7 +93,7 @@ class WSStorageClient:
     ) -> int:
         reqid = self._new_req_id()
         payload = {"op": op.value, "id": reqid, "path": path, **params}
-        header = json.dumps(payload).encode()
+        header = cbor.dumps(payload)
         await self._client.send_bytes(
             struct.pack("!I", len(header) + 4) + header + data
         )
@@ -115,7 +116,7 @@ class WSStorageClient:
             await self._client.close(code=WSCloseCode.MESSAGE_TOO_BIG)
             raise RuntimeError("Too large message")
         hsize, = struct.unpack("!I", resp[:4])
-        payload = json.loads(resp[4:hsize])
+        payload = cbor.loads(resp[4:hsize])
         op = payload["op"]
         if op == WSStorageOperation.ACK:
             return payload, resp[hsize:]

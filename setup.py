@@ -24,6 +24,7 @@ setup(
     # Make sure to pin versions of install_requires
     install_requires=[
         "aiohttp>=3.5",
+        "cbor==1.0.0",
         'dataclasses>=0.5; python_version<"3.7"',
         "pyyaml>=3.0",
         'async_generator>=1.5; python_version<"3.7"',
