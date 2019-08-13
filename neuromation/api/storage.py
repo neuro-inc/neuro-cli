@@ -2,13 +2,18 @@ import asyncio
 import enum
 import errno
 import fnmatch
+import itertools
+import json
 import os
 import re
+import struct
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
 
+import aiohttp
 import attr
+from aiohttp import ClientWebSocketResponse, WSCloseCode
 from yarl import URL
 
 from .abc import (
@@ -28,8 +33,12 @@ from .url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asynccontextmanager
 
+
+WS_READ_SIZE = 2 ** 20  # 1 MiB
+MAX_WS_READ_SIZE = 16 * 2 ** 20  # 16 MiB
+MAX_WS_MESSAGE_SIZE = MAX_WS_READ_SIZE + 2 ** 16 + 100
 
 Printer = Callable[[str], None]
 
@@ -37,6 +46,17 @@ Printer = Callable[[str], None]
 class FileStatusType(str, enum.Enum):
     DIRECTORY = "DIRECTORY"
     FILE = "FILE"
+
+
+class WSStorageOperation(str, enum.Enum):
+    ACK = "ACK"
+    ERROR = "ERROR"
+    READ = "READ"
+    STAT = "STAT"
+    LIST = "LIST"
+    CREATE = "CREATE"
+    WRITE = "WRITE"
+    MKDIRS = "MKDIRS"
 
 
 @dataclass(frozen=True)
@@ -58,10 +78,82 @@ class FileStatus:
         return Path(self.path).name
 
 
+class WSStorageClient:
+    def __init__(self, ws: ClientWebSocketResponse, idgen: Callable[[], int]) -> None:
+        self._client = ws
+        self._new_req_id = idgen
+
+    async def send(
+        self,
+        op: WSStorageOperation,
+        path: str = "",
+        params: Dict[str, Any] = {},
+        data: bytes = b"",
+    ) -> int:
+        reqid = self._new_req_id()
+        payload = {"op": op.value, "id": reqid, "path": path, **params}
+        header = json.dumps(payload).encode()
+        await self._client.send_bytes(
+            struct.pack("!I", len(header) + 4) + header + data
+        )
+        return reqid
+
+    async def receive(self) -> Tuple[Dict[str, Any], bytes]:
+        msg = await self._client.receive()
+        if msg.type == aiohttp.WSMsgType.BINARY:
+            return await self._unpack(msg.data)
+        elif msg.type == aiohttp.WSMsgType.ERROR:
+            raise msg.data
+        else:
+            raise RuntimeError("Unsupported WebSocket message type {msg.type}")
+
+    async def _unpack(self, resp: bytes) -> Tuple[Dict[str, Any], bytes]:
+        if len(resp) < 4:
+            await self._client.close(code=WSCloseCode.UNSUPPORTED_DATA)
+            raise RuntimeError("Too short message")
+        if len(resp) > MAX_WS_MESSAGE_SIZE:
+            await self._client.close(code=WSCloseCode.MESSAGE_TOO_BIG)
+            raise RuntimeError("Too large message")
+        hsize, = struct.unpack("!I", resp[:4])
+        payload = json.loads(resp[4:hsize])
+        op = payload["op"]
+        if op == WSStorageOperation.ACK:
+            return payload, resp[hsize:]
+
+        if op == WSStorageOperation.ERROR:
+            if "errno" in payload:
+                raise OSError(payload["errno"], payload["error"])
+            raise RuntimeError(payload["error"])
+
+        raise RuntimeError(f"Unexpected response {payload!r}")
+
+    async def send_checked(
+        self,
+        op: WSStorageOperation,
+        path: str = "",
+        params: Dict[str, Any] = {},
+        data: bytes = b"",
+    ) -> Tuple[Dict[str, Any], bytes]:
+        reqid = await self.send(op, path, params, data)
+        payload, data = await self.receive()
+        rop = payload["rop"]
+        respid = payload["respid"]
+        if respid != reqid:
+            raise RuntimeError(
+                f"Unexpected response id {respid} for operation {op}, expected {reqid}"
+            )
+        if rop != op:
+            raise RuntimeError(
+                f"Unexpected response op {rop} for request #{reqid}, expected {op}"
+            )
+        return payload, data
+
+
 class Storage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
+        self._req_id_seq = itertools.count()
 
     def _uri_to_path(self, uri: URL) -> str:
         uri = normalize_storage_path_uri(uri, self._config.auth_token.username)
@@ -186,6 +278,10 @@ class Storage(metaclass=NoPublicConstructor):
             res = await resp.json()
             return _file_status_from_api(res["FileStatus"])
 
+    async def _stat(self, ws: WSStorageClient, path: str) -> FileStatus:
+        payload, data = await ws.send_checked(WSStorageOperation.STAT, path)
+        return _file_status_from_api(payload["FileStatus"])
+
     async def _is_dir(self, uri: URL) -> bool:
         if uri.scheme == "storage":
             try:
@@ -242,23 +338,6 @@ class Storage(metaclass=NoPublicConstructor):
 
     # high-level helpers
 
-    async def _iterate_file(
-        self, src: Path, dst: URL, *, progress: AbstractFileProgress
-    ) -> AsyncIterator[bytes]:
-        loop = asyncio.get_event_loop()
-        src_url = URL(src.as_uri())
-        with src.open("rb") as stream:
-            size = os.stat(stream.fileno()).st_size
-            progress.start(StorageProgressStart(src_url, dst, size))
-            chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
-            pos = len(chunk)
-            while chunk:
-                progress.step(StorageProgressStep(src_url, dst, pos, size))
-                yield chunk
-                chunk = await loop.run_in_executor(None, stream.read, 1024 * 1024)
-                pos += len(chunk)
-            progress.complete(StorageProgressComplete(src_url, dst, size))
-
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
     ) -> None:
@@ -279,24 +358,38 @@ class Storage(metaclass=NoPublicConstructor):
                 raise
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
-        try:
-            stats = await self.stats(dst)
-            if stats.is_dir():
-                raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
-        except ResourceNotFound:
-            # target doesn't exist, lookup for parent dir
-            try:
-                stats = await self.stats(dst.parent)
-                if not stats.is_dir():
-                    # parent path should be a folder
-                    raise NotADirectoryError(
-                        errno.ENOTDIR, "Not a directory", str(dst.parent)
-                    )
-            except ResourceNotFound:
-                raise NotADirectoryError(
-                    errno.ENOTDIR, "Not a directory", str(dst.parent)
+
+        async with self._ws_connect(dst, "WEBSOCKET_WRITE") as ws:
+            await self._upload_file(ws, src, path, dst, "", progress=progress)
+
+    # XXX Move to WSStorageClient?
+    async def _upload_file(
+        self,
+        ws: WSStorageClient,
+        src: URL,
+        src_path: Path,
+        dst: URL,
+        dst_path: str = "",
+        *,
+        progress: AbstractFileProgress,
+    ) -> None:
+        loop = asyncio.get_event_loop()
+        with src_path.open("rb") as stream:
+            size = os.stat(stream.fileno()).st_size
+            progress.start(StorageProgressStart(src, dst, size))
+            await ws.send_checked(WSStorageOperation.CREATE, dst_path, {"size": size})
+            pos = 0
+            while True:
+                chunk = await loop.run_in_executor(None, stream.read, WS_READ_SIZE)
+                if not chunk:
+                    break
+                newpos = pos + len(chunk)
+                progress.step(StorageProgressStep(src, dst, pos, size))
+                await ws.send_checked(
+                    WSStorageOperation.WRITE, dst_path, {"offset": pos}, data=chunk
                 )
-        await self.create(dst, self._iterate_file(path, dst, progress=progress))
+                pos = newpos
+            progress.complete(StorageProgressComplete(src, dst, size))
 
     async def upload_dir(
         self,
@@ -314,22 +407,42 @@ class Storage(metaclass=NoPublicConstructor):
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
         if not path.is_dir():
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
-        try:
-            stat = await self.stats(dst)
-            if not stat.is_dir():
-                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
-        except ResourceNotFound:
-            await self.mkdirs(dst)
-        progress.enter(StorageProgressEnterDir(src, dst))
-        folder = sorted(path.iterdir(), key=lambda item: (item.is_dir(), item.name))
+
+        async with self._ws_connect(dst, "WEBSOCKET_WRITE") as ws:
+            await self._upload_dir(ws, src, path, dst, "", progress=progress)
+
+    async def _upload_dir(
+        self,
+        ws: WSStorageClient,
+        src_uri: URL,
+        src_path: Path,
+        dst_uri: URL,
+        dst_path: str = "",
+        *,
+        progress: AbstractRecursiveFileProgress,
+    ) -> None:
+        progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
+        folder = sorted(src_path.iterdir(), key=lambda item: (item.is_dir(), item.name))
+        await ws.send_checked(WSStorageOperation.MKDIRS, dst_path)
         for child in folder:
+            name = child.name
             if child.is_file():
-                await self.upload_file(
-                    src / child.name, dst / child.name, progress=progress
+                await self._upload_file(
+                    ws,
+                    src_uri / name,
+                    src_path / name,
+                    dst_uri / name,
+                    f"{dst_path}/{name}",
+                    progress=progress,
                 )
             elif child.is_dir():
-                await self.upload_dir(
-                    src / child.name, dst / child.name, progress=progress
+                await self._upload_dir(
+                    ws,
+                    src_uri / name,
+                    src_path / name,
+                    dst_uri / name,
+                    f"{dst_path}/{name}",
+                    progress=progress,
                 )
             else:
                 # This case is for uploading non-regular file,
@@ -337,12 +450,12 @@ class Storage(metaclass=NoPublicConstructor):
                 # Coverage temporary skipped, the line is waiting for a champion
                 progress.fail(
                     StorageProgressFail(
-                        src / child.name,
-                        dst / child.name,
+                        src_uri / name,
+                        dst_uri / name,
                         f"Cannot upload {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
-        progress.leave(StorageProgressLeaveDir(src, dst))
+        progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
 
     async def download_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
@@ -352,18 +465,39 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        loop = asyncio.get_event_loop()
-        with path.open("wb") as stream:
-            stat = await self.stats(src)
+
+        async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
+            stat = await self._stat(ws, "")
             if not stat.is_file():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
-            size = stat.size
+            await self._download_file(
+                ws, src, "", dst, path, stat.size, progress=progress
+            )
+
+    async def _download_file(
+        self,
+        ws: WSStorageClient,
+        src: URL,
+        src_path: str,
+        dst: URL,
+        dst_path: Path,
+        size: int,
+        *,
+        progress: AbstractFileProgress,
+    ) -> None:
+        loop = asyncio.get_event_loop()
+        with dst_path.open("wb") as stream:
             progress.start(StorageProgressStart(src, dst, size))
             pos = 0
-            async for chunk in self.open(src):
-                pos += len(chunk)
+            while pos < size:
+                payload, data = await ws.send_checked(
+                    WSStorageOperation.READ,
+                    src_path,
+                    {"offset": pos, "size": min(WS_READ_SIZE, size - pos)},
+                )
+                pos += len(data)
                 progress.step(StorageProgressStep(src, dst, pos, size))
-                await loop.run_in_executor(None, stream.write, chunk)
+                await loop.run_in_executor(None, stream.write, data)
             progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
@@ -378,27 +512,70 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        path.mkdir(parents=True, exist_ok=True)
+
+        async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
+            await self._download_dir(ws, src, "", dst, path, progress=progress)
+
+    async def _download_dir(
+        self,
+        ws: WSStorageClient,
+        src: URL,
+        src_path: str,
+        dst: URL,
+        dst_path: Path,
+        *,
+        progress: AbstractRecursiveFileProgress,
+    ) -> None:
         progress.enter(StorageProgressEnterDir(src, dst))
-        folder = sorted(await self.ls(src), key=lambda item: (item.is_dir(), item.name))
+        payload, data = await ws.send_checked(WSStorageOperation.LIST, src_path)
+        folder = [
+            _file_status_from_api(status)
+            for status in payload["FileStatuses"]["FileStatus"]
+        ]
+        folder.sort(key=lambda item: (item.is_dir(), item.path))
+        dst_path.mkdir(parents=True, exist_ok=True)
         for child in folder:
+            name = child.name
             if child.is_file():
-                await self.download_file(
-                    src / child.name, dst / child.name, progress=progress
+                await self._download_file(
+                    ws,
+                    src / name,
+                    f"{src_path}/{name}",
+                    dst / name,
+                    dst_path / name,
+                    child.size,
+                    progress=progress,
                 )
             elif child.is_dir():
-                await self.download_dir(
-                    src / child.name, dst / child.name, progress=progress
+                await self._download_dir(
+                    ws,
+                    src / name,
+                    f"{src_path}/{name}",
+                    dst / name,
+                    dst_path / name,
+                    progress=progress,
                 )
             else:
                 progress.fail(
                     StorageProgressFail(
-                        src / child.name,
-                        dst / child.name,
+                        src / name,
+                        dst / name,
                         f"Cannot download {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
         progress.leave(StorageProgressLeaveDir(src, dst))
+
+    def _new_req_id(self) -> int:
+        return next(self._req_id_seq)
+
+    @asynccontextmanager
+    async def _ws_connect(self, uri: URL, op: str) -> AsyncIterator[WSStorageClient]:
+        path = self._uri_to_path(uri)
+        assert op == "WEBSOCKET_READ" or path, "Creation in root is not allowed"
+        url = self._config.cluster_config.storage_url / path
+        url = url.with_query(op=op)
+        async with self._core._session.ws_connect(url) as ws:
+            yield WSStorageClient(ws, self._new_req_id)
 
 
 _magic_check = re.compile("(?:[*?[])")
