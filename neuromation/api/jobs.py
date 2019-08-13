@@ -77,7 +77,7 @@ class JobStatusHistory:
     created_at: str
     started_at: str
     finished_at: str
-    description: Optional[str] = None
+    description: str
     exit_code: Optional[int] = None
 
 
