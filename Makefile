@@ -63,6 +63,7 @@ help:
 \n\
         * DOC \n\
         - doc: generate sphinx html docs \n\
+        - doc-spelling: check dockumentation spelling \n\
     "
 
 .PHONY: init
@@ -255,5 +256,10 @@ update-deps-fast:
 
 .PHONY: doc
 doc:
-	make -C docs html
+	make -C docs html SPHINXOPTS="-W -E"
+	@echo "open file://`pwd`/docs/_build/html/index.html"
+
+.PHONY: doc-spelling
+doc-spelling:
+	make -C docs spelling SPHINXOPTS="-W -E"
 	@echo "open file://`pwd`/docs/_build/html/index.html"

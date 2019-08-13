@@ -7,9 +7,9 @@ Jobs Usage
 Jobs api
 
 
-.. _job-preemptibility:
+.. _job-preemption:
 
-Job preemptibility
+Job preemption
 ==================
 
 TBD
