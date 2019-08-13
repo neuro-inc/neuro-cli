@@ -193,7 +193,7 @@ class TabularJobRow:
             when = job.history.started_at
         else:
             when = job.history.finished_at
-        when_datetime = datetime.datetime.fromtimestamp(isoparse(when).timestamp())
+        assert when is not None
         if time.time() - when_datetime.timestamp() < 60 * 60 * 24:
             when_humanized = humanize.naturaltime(when_datetime)
         else:
