@@ -228,6 +228,22 @@ JobStatusHistory
       * ``'ErrImagePull'`` for :attr:`JobStatus.FAILED` job that cannot pull specified
         image.
 
+   .. attribute:: description
+
+      Extended description for short abbreviation described by :attr:`reason`,
+      empty :class:`str` if no additional information is provided.
+
+   .. attribute:: exit_code
+
+      Exit code for container's process (:class:`int`) or ``None`` if the job was not
+      started or is still running.
+
+   .. attribute:: created_at
+
+   .. attribute:: started_at
+
+   .. attribute:: finished_at
+
 Resources
 ---------
 
