@@ -12,10 +12,9 @@ from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
 import attr
+import cbor
 from aiohttp import ClientWebSocketResponse, WSCloseCode
 from yarl import URL
-
-import cbor
 
 from .abc import (
     AbstractFileProgress,
@@ -138,7 +137,7 @@ class WSStorageClient:
         reqid = await self.send(op, path, params, data)
         payload, data = await self.receive()
         rop = payload["rop"]
-        respid = payload["respid"]
+        respid = payload["rid"]
         if respid != reqid:
             raise RuntimeError(
                 f"Unexpected response id {respid} for operation {op}, expected {reqid}"
@@ -433,7 +432,7 @@ class Storage(metaclass=NoPublicConstructor):
                     src_uri / name,
                     src_path / name,
                     dst_uri / name,
-                    f"{dst_path}/{name}",
+                    _join_path(dst_path, name),
                     progress=progress,
                 )
             elif child.is_dir():
@@ -442,7 +441,7 @@ class Storage(metaclass=NoPublicConstructor):
                     src_uri / name,
                     src_path / name,
                     dst_uri / name,
-                    f"{dst_path}/{name}",
+                    _join_path(dst_path, name),
                     progress=progress,
                 )
             else:
@@ -541,7 +540,7 @@ class Storage(metaclass=NoPublicConstructor):
                 await self._download_file(
                     ws,
                     src / name,
-                    f"{src_path}/{name}",
+                    _join_path(src_path, name),
                     dst / name,
                     dst_path / name,
                     child.size,
@@ -551,7 +550,7 @@ class Storage(metaclass=NoPublicConstructor):
                 await self._download_dir(
                     ws,
                     src / name,
-                    f"{src_path}/{name}",
+                    _join_path(src_path, name),
                     dst / name,
                     dst_path / name,
                     progress=progress,
@@ -592,6 +591,12 @@ def _ishidden(name: str) -> bool:
 
 def _isrecursive(pattern: str) -> bool:
     return pattern == "**"
+
+
+def _join_path(basedir: str, name: str) -> str:
+    if basedir and name:
+        return f"{basedir}/{name}"
+    return basedir or name
 
 
 def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
