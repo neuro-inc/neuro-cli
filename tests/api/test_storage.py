@@ -235,7 +235,9 @@ async def storage_server(
             await ws_send_ack(ws, op, reqid)
 
         elif op == "MKDIRS":
-            local_path.mkdir(parents=True, exist_ok=True)
+            parents = payload.get("parents", False)
+            exist_ok = payload.get("exist_ok", False)
+            local_path.mkdir(parents=parents, exist_ok=exist_ok)
             await ws_send_ack(ws, op, reqid)
 
         else:

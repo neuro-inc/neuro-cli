@@ -435,7 +435,9 @@ class Storage(metaclass=NoPublicConstructor):
         progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
         folder = sorted(src_path.iterdir(), key=lambda item: (item.is_dir(), item.name))
         try:
-            await ws.send_checked(WSStorageOperation.MKDIRS, dst_path)
+            await ws.send_checked(
+                WSStorageOperation.MKDIRS, dst_path, {"parents": True, "exist_ok": True}
+            )
         except FileExistsError:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
         for child in folder:
