@@ -277,7 +277,7 @@ async def submit(
 
 @command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("job")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @click.option(
     "-t",
     "--tty",
@@ -307,7 +307,22 @@ async def exec(
 ) -> None:
     """
     Execute command in a running job.
+
+    Examples:
+
+    # Provides a shell to the container via `/bin/bash`:
+    neuro exec my-job
+    neuro exec --tty my-job /bin/bash
+
+    # Executes a single command in the container and returns the control:
+    neuro exec my-job ls > ls_output.txt && echo "OK"
+    neuro exec my-job /bin/not-an-executable || echo "failed"
     """
+    # TODO (artem) Provide a backup option if the container lacks `/bin/bash`
+    if not cmd:
+        # if no command specified, we assume `neuro exec --tty JOB_ID /bin/bash`
+        cmd = ("/bin/bash",)
+        tty = True
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
     retcode = await root.client.jobs.exec(

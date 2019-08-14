@@ -592,6 +592,22 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_e2e_ssh_exec_tty_is_by_default(helper: Helper) -> None:
+    command = 'bash -c "sleep 15m; false"'
+    job_id = helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME,
+        command=command,
+        params=("-m", "20M", "-c", "0.1", "--non-preemptible", "--no-wait-start"),
+    )
+
+    captured = helper.run_cli(
+        ["job", "exec", "--no-key-check", "--timeout=60", job_id],
+        wait_for_exit_code=False,
+    )
+    assert f"root@{job_id}" in captured.out
+
+
+@pytest.mark.e2e
 def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(

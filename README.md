@@ -343,7 +343,7 @@ Execute command in a running job.
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] JOB CMD...
+neuro job exec [OPTIONS] JOB [CMD]...
 ```
 
 **Options:**
@@ -1421,7 +1421,7 @@ Execute command in a running job.
 **Usage:**
 
 ```bash
-neuro exec [OPTIONS] JOB CMD...
+neuro exec [OPTIONS] JOB [CMD]...
 ```
 
 **Options:**
