@@ -4,7 +4,7 @@ import json
 import shlex
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
+from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
 import async_timeout
 import attr
@@ -140,13 +140,15 @@ class Jobs(metaclass=NoPublicConstructor):
             return _job_description_from_api(res, parser)
 
     async def list(
-        self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
+        self,
+        *,
+        statuses: Iterable[JobStatus] = (),
+        name: str = "",
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
-        if statuses:
-            for status in statuses:
-                params.add("status", status.value)
+        for status in statuses:
+            params.add("status", status.value)
         if name:
             params.add("name", name)
         parser = _ImageNameParser(

@@ -39,14 +39,36 @@ Jobs
                                      cannot be scheduled because the lack of computation
                                      cluster resources (memory, CPU/GPU etc).
 
-      :return JobDescription: dataclass with infomation about started job.
+      :return: :class:`JobDescription` instance with infomation about started job.
 
 
-   .. comethod:: list(*, statuses: Optional[Set[JobStatus]] = None, \
-                      name: Optional[str] = None \
+   .. comethod:: list(*, statuses: Iterable[JobStatus] = (), \
+                      name: str = "" \
                  ) -> List[JobDescription]
 
-      List user jobs.
+      List user jobs, all scheduled, running and finished jobs by default.
+
+      :param ~typing.Iterable[JobStatus] statuses: filter jobs by their statuses.
+
+                                                   The parameter can be a set or list of
+                                                   requested statuese,
+                                                   e.g. ``{JobStatus.PENDIND,
+                                                   JobStatus.RUNNING}`` can be used for
+                                                   requesting only scheduled and running
+                                                   job but skip finished and failed
+                                                   ones.
+
+                                                   Empty sequence means that jobs with
+                                                   all statuses are returned (default
+                                                   behavior). The list can be pretty
+                                                   huge though.
+
+      :param str name: Filter jobs by :attr:`~JobDescription.name` (exact match).
+
+                       Empty string means that no filter is applied (default).
+
+      :return: a :class:`list` of :class:`JobDescription` objects.
+
 
 
 Job dataclasses
