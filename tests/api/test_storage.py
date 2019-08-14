@@ -1,13 +1,16 @@
 import errno
 import os
+import struct
+from errno import errorcode
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
-from typing import Any, AsyncIterator, Callable, List, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
 from unittest import mock
 
+import cbor
 import pytest
-from aiohttp import web
+from aiohttp import WSMsgType, web
 from yarl import URL
 
 from neuromation.api import (
@@ -49,6 +52,72 @@ def storage_path(tmp_path: Path) -> Path:
     return ret
 
 
+def get_stat_result(path: Path) -> Dict[str, Any]:
+    stat = path.stat()
+    return {
+        "path": path.name,
+        "type": "FILE" if path.is_file() else "DIRECTORY",
+        "length": stat.st_size,
+        "modificationTime": stat.st_mtime,
+        "permission": "write",
+    }
+
+
+def get_list_result(path: Path) -> List[Dict[str, Any]]:
+    ret = []
+    for child in path.iterdir():
+        stat = child.stat()
+        ret.append(
+            {
+                "path": child.name,
+                "type": "FILE" if child.is_file() else "DIRECTORY",
+                "length": stat.st_size,
+                "modificationTime": stat.st_mtime,
+                "permission": "write",
+            }
+        )
+    return ret
+
+
+def open_file(path: Path) -> Any:
+    try:
+        return open(path, "rb+")
+    except FileNotFoundError:
+        return open(path, "wb+")
+
+
+async def ws_send(
+    ws: web.WebSocketResponse, op: str, payload: Dict[str, Any], data: bytes = b""
+) -> None:
+    header = cbor.dumps({"op": op, **payload})
+    await ws.send_bytes(struct.pack("!I", len(header) + 4) + header + data)
+
+
+async def ws_send_ack(
+    ws: web.WebSocketResponse,
+    rop: str,
+    rid: int,
+    *,
+    result: Dict[str, Any] = {},
+    data: bytes = b"",
+) -> None:
+    payload = {"rop": rop, "rid": rid, **result}
+    await ws_send(ws, "ACK", payload, data)
+
+
+async def ws_send_error(
+    ws: web.WebSocketResponse,
+    rop: str,
+    rid: int,
+    error: str,
+    errno: Optional[int] = None,
+) -> None:
+    payload = {"rop": rop, "rid": rid, "error": error}
+    if errno is not None:
+        payload["errno"] = errorcode.get(errno, errno)
+    await ws_send(ws, "ERROR", payload)
+
+
 @pytest.fixture
 async def storage_server(
     aiohttp_raw_server: _RawTestServerFactory, storage_path: Path
@@ -56,7 +125,7 @@ async def storage_server(
     PREFIX = "/storage/user"
     PREFIX_LEN = len(PREFIX)
 
-    async def handler(request: web.Request) -> web.Response:
+    async def handler(request: web.Request) -> web.StreamResponse:
         op = request.query["op"]
         path = request.path
         assert path.startswith(PREFIX)
@@ -64,46 +133,113 @@ async def storage_server(
         if path.startswith("/"):
             path = path[1:]
         local_path = storage_path / path
+
         if op == "CREATE":
             content = await request.read()
             local_path.write_bytes(content)
             return web.Response(status=201)
+
         elif op == "OPEN":
             return web.Response(body=local_path.read_bytes())
+
         elif op == "GETFILESTATUS":
             if not local_path.exists():
                 raise web.HTTPNotFound()
-            stat = local_path.stat()
-            return web.json_response(
-                {
-                    "FileStatus": {
-                        "path": local_path.name,
-                        "type": "FILE" if local_path.is_file() else "DIRECTORY",
-                        "length": stat.st_size,
-                        "modificationTime": stat.st_mtime,
-                        "permission": "write",
-                    }
-                }
-            )
+            result = {"FileStatus": get_stat_result(local_path)}
+            return web.json_response(result)
+
         elif op == "MKDIRS":
             local_path.mkdir(parents=True, exist_ok=True)
             return web.Response(status=201)
+
         elif op == "LISTSTATUS":
-            ret = []
-            for child in local_path.iterdir():
-                stat = child.stat()
-                ret.append(
-                    {
-                        "path": child.name,
-                        "type": "FILE" if child.is_file() else "DIRECTORY",
-                        "length": stat.st_size,
-                        "modificationTime": stat.st_mtime,
-                        "permission": "write",
-                    }
-                )
-            return web.json_response({"FileStatuses": {"FileStatus": ret}})
+            result = {"FileStatuses": {"FileStatus": get_list_result(local_path)}}
+            return web.json_response(result)
+
+        elif op == "WEBSOCKET_READ":
+            return await ws_handler(request, local_path, write=False)
+
+        elif op == "WEBSOCKET_WRITE":
+            return await ws_handler(request, local_path, write=True)
+
         else:
             raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
+
+    async def ws_handler(
+        request: web.Request, local_path: Path, write: bool
+    ) -> web.StreamResponse:
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        async for msg in ws:
+            if msg.type == WSMsgType.BINARY:
+                hsize, = struct.unpack("!I", msg.data[:4])
+                payload = cbor.loads(msg.data[4:hsize])
+                op = payload["op"]
+                reqid = payload["id"]
+                try:
+                    rel_path = payload.get("path", "")
+                    await ws_msg_handler(
+                        ws,
+                        write,
+                        op,
+                        reqid,
+                        local_path / rel_path,
+                        payload,
+                        msg.data[hsize:],
+                    )
+                except OSError as e:
+                    await ws_send_error(ws, op, reqid, e.strerror, e.errno)
+                except Exception as e:
+                    await ws_send_error(ws, op, reqid, str(e))
+        return ws
+
+    async def ws_msg_handler(
+        ws: web.WebSocketResponse,
+        write: bool,
+        op: str,
+        reqid: int,
+        local_path: Path,
+        payload: Dict[str, Any],
+        data: bytes,
+    ) -> None:
+        if op == "READ":
+            offset = payload["offset"]
+            size = payload["size"]
+            with open(local_path, "rb") as f:
+                f.seek(offset)
+                data = f.read(size)
+            await ws_send_ack(ws, op, reqid, data=data)
+
+        elif op == "STAT":
+            result = {"FileStatus": get_stat_result(local_path)}
+            await ws_send_ack(ws, op, reqid, result=result)
+
+        elif op == "LIST":
+            result = {"FileStatuses": {"FileStatus": get_list_result(local_path)}}
+            await ws_send_ack(ws, op, reqid, result=result)
+
+        elif not write:
+            await ws_send_error(ws, op, reqid, "Requires writing permission")
+
+        elif op == "WRITE":
+            offset = payload["offset"]
+            with open_file(local_path) as f:
+                f.seek(offset)
+                f.write(data)
+            await ws_send_ack(ws, op, reqid)
+
+        elif op == "CREATE":
+            size = payload["size"]
+            with open_file(local_path) as f:
+                f.truncate(size)
+            await ws_send_ack(ws, op, reqid)
+
+        elif op == "MKDIRS":
+            local_path.mkdir(parents=True, exist_ok=True)
+            await ws_send_ack(ws, op, reqid)
+
+        else:
+            await ws_send_error(ws, op, reqid, "Unknown operation")
 
     return await aiohttp_raw_server(handler)
 

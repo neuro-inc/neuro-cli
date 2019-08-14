@@ -122,7 +122,10 @@ class WSStorageClient:
 
         if op == WSStorageOperation.ERROR:
             if "errno" in payload:
-                raise OSError(payload["errno"], payload["error"])
+                raise OSError(
+                    errno.__dict__.get(payload["errno"], payload["errno"]),
+                    payload["error"],
+                )
             raise RuntimeError(payload["error"])
 
         raise RuntimeError(f"Unexpected response {payload!r}")
@@ -359,8 +362,8 @@ class Storage(metaclass=NoPublicConstructor):
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
 
-        async with self._ws_connect(dst, "WEBSOCKET_WRITE") as ws:
-            await self._upload_file(ws, src, path, dst, "", progress=progress)
+        async with self._ws_connect(dst.parent, "WEBSOCKET_WRITE") as ws:
+            await self._upload_file(ws, src, path, dst, dst.name, progress=progress)
 
     # XXX Move to WSStorageClient?
     async def _upload_file(
@@ -374,6 +377,28 @@ class Storage(metaclass=NoPublicConstructor):
         progress: AbstractFileProgress,
     ) -> None:
         loop = asyncio.get_event_loop()
+        try:
+            stat = await self._stat(ws, dst_path)
+            if not stat.is_file():
+                raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
+        except FileNotFoundError:
+            pass
+            # target doesn't exist, lookup for parent dir
+            try:
+                parent_path = dst_path.rstrip("/").rpartition("/")[0]
+                print("dst =", dst)
+                print("dst_path =", dst_path)
+                print("parent_path =", parent_path)
+                stat = await self._stat(ws, parent_path)
+                if not stat.is_dir():
+                    # parent path should be a folder
+                    raise NotADirectoryError(
+                        errno.ENOTDIR, "Not a directory", str(dst.parent)
+                    )
+            except FileNotFoundError:
+                raise NotADirectoryError(
+                    errno.ENOTDIR, "Not a directory", str(dst.parent)
+                )
         with src_path.open("rb") as stream:
             size = os.stat(stream.fileno()).st_size
             progress.start(StorageProgressStart(src, dst, size))
@@ -384,7 +409,7 @@ class Storage(metaclass=NoPublicConstructor):
                 if not chunk:
                     break
                 newpos = pos + len(chunk)
-                progress.step(StorageProgressStep(src, dst, pos, size))
+                progress.step(StorageProgressStep(src, dst, newpos, size))
                 await ws.send_checked(
                     WSStorageOperation.WRITE, dst_path, {"offset": pos}, data=chunk
                 )
@@ -423,7 +448,12 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> None:
         progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
         folder = sorted(src_path.iterdir(), key=lambda item: (item.is_dir(), item.name))
-        await ws.send_checked(WSStorageOperation.MKDIRS, dst_path)
+        try:
+            stat = await self._stat(ws, dst_path)
+            if not stat.is_dir():
+                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
+        except FileNotFoundError:
+            await ws.send_checked(WSStorageOperation.MKDIRS, dst_path)
         for child in folder:
             name = child.name
             if child.is_file():
