@@ -51,9 +51,23 @@ class TestImageParser:
         image = "ubuntu"
         assert not self.parser.has_tag(image)
 
+    def test_has_tag_no_tag_with_slash(self) -> None:
+        image = "library/ubuntu"
+        assert not self.parser.has_tag(image)
+
     def test_has_tag_empty_tag(self) -> None:
         image = "ubuntu:"
-        with pytest.raises(ValueError, match="empty tag is not allowed"):
+        with pytest.raises(ValueError, match="empty tag"):
+            self.parser.has_tag(image)
+
+    def test_has_tag_empty_tag_with_slash(self) -> None:
+        image = "library/ubuntu:"
+        with pytest.raises(ValueError, match="empty tag"):
+            self.parser.has_tag(image)
+
+    def test_has_tag_empty_image_name(self) -> None:
+        image = ":latest"
+        with pytest.raises(ValueError, match="empty name"):
             self.parser.has_tag(image)
 
     def test_has_tag_too_many_tags(self) -> None:
@@ -86,23 +100,53 @@ class TestImageParser:
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
             _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
 
-    def test_split_image_name_no_colon(self) -> None:
+    def test_split_image_name_no_tag(self) -> None:
         splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
         assert splitted == ("ubuntu", "latest")
 
-    def test_split_image_name_1_colon(self) -> None:
+    def test_split_image_name_with_tag(self) -> None:
         splitted = self.parser._split_image_name(
             "ubuntu:v10.04", self.parser.default_tag
         )
         assert splitted == ("ubuntu", "v10.04")
 
-    def test_split_image_name_1_colon_empty_tag(self) -> None:
-        with pytest.raises(ValueError, match="empty tag is not allowed"):
+    def test_split_image_name_empty_tag(self) -> None:
+        with pytest.raises(ValueError, match="empty tag"):
             self.parser._split_image_name("ubuntu:", self.parser.default_tag)
 
-    def test_split_image_name_2_colon(self) -> None:
+    def test_split_image_name_two_tags(self) -> None:
         with pytest.raises(ValueError, match="too many tags"):
             self.parser._split_image_name("ubuntu:v10.04:LTS", self.parser.default_tag)
+
+    def test_split_image_name_with_registry_port_no_tag(self) -> None:
+        splitted = self.parser._split_image_name(
+            "localhost:5000/ubuntu", self.parser.default_tag
+        )
+        assert splitted == ("localhost:5000/ubuntu", "latest")
+
+    def test_split_image_name_with_registry_port_with_tag(self) -> None:
+        splitted = self.parser._split_image_name(
+            "localhost:5000/ubuntu:v10.04", self.parser.default_tag
+        )
+        assert splitted == ("localhost:5000/ubuntu", "v10.04")
+
+    def test_split_image_name_with_registry_port_two_tags(self) -> None:
+        with pytest.raises(ValueError, match="too many tags"):
+            self.parser._split_image_name(
+                "localhost:5000/ubuntu:v10.04:LTS", self.parser.default_tag
+            )
+
+    def test_split_image_name_with_registry_port_empty_tag(self) -> None:
+        with pytest.raises(ValueError, match="empty tag"):
+            self.parser._split_image_name(
+                "localhost:5000/ubuntu:", self.parser.default_tag
+            )
+
+    def test_split_image_name_with_registry_port_slash_in_tag(self) -> None:
+        with pytest.raises(ValueError, match="invalid tag"):
+            self.parser._split_image_name(
+                "localhost:5000/ubuntu:v10/04", self.parser.default_tag
+            )
 
     # public method: parse_local
 
@@ -134,7 +178,7 @@ class TestImageParser:
         image = "http://ubuntu"
         parsed = self.parser.parse_as_local_image(image)
         # instead of parser, the docker client will fail
-        assert parsed == LocalImage(name="http", tag="//ubuntu")
+        assert parsed == LocalImage(name="http://ubuntu", tag="latest")
 
     def test_parse_as_local_image_no_tag(self) -> None:
         image = "ubuntu"
@@ -592,13 +636,19 @@ class TestImageParser:
             name="library/ubuntu", tag="v10.04", owner="bob", registry="localhost:5000"
         )
 
-    def test_parse_remote__registry_has_port__image_in_bad_repo(self) -> None:
+    def test_parse_remote__registry_has_port__image_in_other_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice", registry_url=URL("http://localhost:5000")
         )
-        image = "localhost:9999/bob/library/ubuntu:v10.04"
-        with pytest.raises(ValueError, match="too many tags"):
-            my_parser.parse_remote(image)
+        image = "example.com:9999/bob/library/ubuntu:v10.04"
+        parsed = my_parser.parse_remote(image)
+        # NOTE: "owner" is parsed only for images in neuromation registry
+        assert parsed == RemoteImage(
+            name="bob/library/ubuntu",
+            tag="v10.04",
+            owner=None,
+            registry="example.com:9999",
+        )
 
 
 class TestRemoteImage:
