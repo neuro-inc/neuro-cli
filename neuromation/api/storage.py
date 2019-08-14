@@ -429,38 +429,38 @@ class Storage(metaclass=NoPublicConstructor):
     async def _upload_dir(
         self,
         ws: WSStorageClient,
-        src_uri: URL,
+        src: URL,
         src_path: Path,
-        dst_uri: URL,
+        dst: URL,
         dst_path: str = "",
         *,
         progress: AbstractRecursiveFileProgress,
     ) -> None:
-        progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
+        progress.enter(StorageProgressEnterDir(src, dst))
         folder = sorted(src_path.iterdir(), key=lambda item: (item.is_dir(), item.name))
         try:
             await ws.send_checked(
                 WSStorageOperation.MKDIRS, dst_path, {"parents": True, "exist_ok": True}
             )
         except FileExistsError:
-            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
+            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         for child in folder:
             name = child.name
             if child.is_file():
                 await self._upload_file(
                     ws,
-                    src_uri / name,
+                    src / name,
                     src_path / name,
-                    dst_uri / name,
+                    dst / name,
                     _join_path(dst_path, name),
                     progress=progress,
                 )
             elif child.is_dir():
                 await self._upload_dir(
                     ws,
-                    src_uri / name,
+                    src / name,
                     src_path / name,
-                    dst_uri / name,
+                    dst / name,
                     _join_path(dst_path, name),
                     progress=progress,
                 )
@@ -470,12 +470,12 @@ class Storage(metaclass=NoPublicConstructor):
                 # Coverage temporary skipped, the line is waiting for a champion
                 progress.fail(
                     StorageProgressFail(
-                        src_uri / name,
-                        dst_uri / name,
+                        src / name,
+                        dst / name,
                         f"Cannot upload {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
-        progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
+        progress.leave(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
