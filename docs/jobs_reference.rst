@@ -42,6 +42,13 @@ Jobs
       :return JobDescription: dataclass with infomation about started job.
 
 
+   .. comethod:: list(*, statuses: Optional[Set[JobStatus]] = None, \
+                      name: Optional[str] = None \
+                 ) -> List[JobDescription]
+
+      List user jobs.
+
+
 Job dataclasses
 ===============
 
