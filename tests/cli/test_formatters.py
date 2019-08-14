@@ -1,12 +1,13 @@
 import textwrap
 import time
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from sys import platform
 from typing import Any, List, Optional
 
 import click
 import pytest
+from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
@@ -69,9 +70,9 @@ def job_descr_no_name() -> JobDescription:
             status=JobStatus.PENDING,
             reason="ErrorReason",
             description="ErrorDesc",
-            created_at="2018-09-25T12:28:21.298672+00:00",
-            started_at="2018-09-25T12:28:59.759433+00:00",
-            finished_at="2018-09-25T12:28:59.759433+00:00",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
@@ -93,9 +94,9 @@ def job_descr() -> JobDescription:
             status=JobStatus.PENDING,
             reason="ErrorReason",
             description="ErrorDesc",
-            created_at="2018-09-25T12:28:21.298672+00:00",
-            started_at="2018-09-25T12:28:59.759433+00:00",
-            finished_at="2018-09-25T12:28:59.759433+00:00",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
@@ -192,9 +193,9 @@ class TestJobStartProgress:
                 status=status,
                 reason=reason,
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at="2018-09-25T12:28:59.759433+00:00",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
             ),
             container=Container(
                 command="test-command",
@@ -259,9 +260,9 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at="2018-09-25T12:28:59.759433+00:00",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 exit_code=123,
             ),
             container=Container(
@@ -307,9 +308,9 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at="2018-09-25T12:28:59.759433+00:00",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 exit_code=321,
             ),
             container=Container(
@@ -352,9 +353,9 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
             ),
             container=Container(
                 command="test-command",
@@ -389,9 +390,9 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
             ),
             container=Container(
                 image=RemoteImage("test-image"),
@@ -426,9 +427,9 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
             ),
             container=Container(
                 image=RemoteImage("test-image"),
@@ -463,9 +464,9 @@ class TestJobOutputFormatter:
                 status=JobStatus.RUNNING,
                 reason="ContainerRunning",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:24.759433+00:00",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
             ),
             http_url=URL("http://local.host.test/"),
             container=Container(
@@ -569,9 +570,9 @@ class TestSimpleJobsFormatter:
                     status=JobStatus.PENDING,
                     reason="ErrorReason",
                     description="ErrorDesc",
-                    created_at="2018-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2018-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
@@ -589,9 +590,9 @@ class TestSimpleJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
-                    created_at="2018-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2018-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
@@ -626,9 +627,9 @@ class TestTabularJobRow:
                 status=status,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2017-01-02T12:28:21.298672+00:00",
-                started_at="2017-02-03T12:28:59.759433+00:00",
-                finished_at="2017-03-04T12:28:59.759433+00:00",
+                created_at=isoparse("2017-01-02T12:28:21.298672+00:00"),
+                started_at=isoparse("2017-02-03T12:28:59.759433+00:00"),
+                finished_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
             ),
             container=Container(
                 image=remote_image,
@@ -700,9 +701,9 @@ class TestTabularJobsFormatter:
                 status=JobStatus.FAILED,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at=datetime.fromtimestamp(time.time() - 1).isoformat(),
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
             ),
             container=Container(
                 image=RemoteImage("i", "l"),
@@ -741,9 +742,9 @@ class TestTabularJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
-                    created_at="2018-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2017-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),
@@ -763,9 +764,9 @@ class TestTabularJobsFormatter:
                     status=JobStatus.PENDING,
                     reason="",
                     description="",
-                    created_at="2017-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2017-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2017-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),

@@ -9,7 +9,6 @@ from typing import Iterable, Iterator, List, Mapping
 
 import humanize
 from click import style, unstyle
-from dateutil.parser import isoparse
 
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
@@ -102,16 +101,22 @@ class JobStatusFormatter:
             for key, value in job_status.container.env.items():
                 result += f"{key}={value}\n"
 
-        assert job_status.history
-        result = f"{result}Created: {job_status.history.created_at}"
+        assert job_status.history is not None
+        assert job_status.history.created_at is not None
+        created_at = job_status.history.created_at.isoformat()
+        result = f"{result}Created: {created_at}"
         if job_status.status in [
             JobStatus.RUNNING,
             JobStatus.FAILED,
             JobStatus.SUCCEEDED,
         ]:
-            result += "\n" f"Started: {job_status.history.started_at}"
+            assert job_status.history.started_at is not None
+            started_at = job_status.history.started_at.isoformat()
+            result += "\n" f"Started: {started_at}"
         if job_status.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
-            result += "\n" f"Finished: {job_status.history.finished_at}"
+            assert job_status.history.finished_at is not None
+            finished_at = job_status.history.finished_at.isoformat()
+            result += "\n" f"Finished: {finished_at}"
             result += "\n" f"Exit code: {job_status.history.exit_code}"
         if job_status.status == JobStatus.FAILED:
             result += "\n===Description===\n"
@@ -193,11 +198,13 @@ class TabularJobRow:
             when = job.history.started_at
         else:
             when = job.history.finished_at
-        when_datetime = datetime.datetime.fromtimestamp(isoparse(when).timestamp())
-        if time.time() - when_datetime.timestamp() < 60 * 60 * 24:
-            when_humanized = humanize.naturaltime(when_datetime)
+        assert when is not None
+        assert when.tzinfo is not None
+        delta = datetime.datetime.now(datetime.timezone.utc) - when
+        if delta < datetime.timedelta(days=1):
+            when_humanized = humanize.naturaltime(delta)
         else:
-            when_humanized = humanize.naturaldate(when_datetime)
+            when_humanized = humanize.naturaldate(when)
         return cls(
             id=job.id,
             name=job.name if job.name else "",
