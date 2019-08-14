@@ -363,6 +363,18 @@ class Storage(metaclass=NoPublicConstructor):
             # See https://bugs.python.org/issue37074
 
         async with self._ws_connect(dst.parent, "WEBSOCKET_WRITE") as ws:
+            try:
+                stat = await self._stat(ws, "")
+                if not stat.is_dir():
+                    # parent path should be a folder
+                    raise NotADirectoryError(
+                        errno.ENOTDIR, "Not a directory", str(dst.parent)
+                    )
+            except FileNotFoundError:
+                # target's parent doesn't exist
+                raise NotADirectoryError(
+                    errno.ENOTDIR, "Not a directory", str(dst.parent)
+                )
             await self._upload_file(ws, src, path, dst, dst.name, progress=progress)
 
     # XXX Move to WSStorageClient?
@@ -380,15 +392,7 @@ class Storage(metaclass=NoPublicConstructor):
         with src_path.open("rb") as stream:
             size = os.stat(stream.fileno()).st_size
             progress.start(StorageProgressStart(src, dst, size))
-            try:
-                await ws.send_checked(
-                    WSStorageOperation.CREATE, dst_path, {"size": size}
-                )
-            except FileNotFoundError:
-                # target's parent doesn't exist
-                raise NotADirectoryError(
-                    errno.ENOTDIR, "Not a directory", str(dst.parent)
-                )
+            await ws.send_checked(WSStorageOperation.CREATE, dst_path, {"size": size})
             pos = 0
             while True:
                 chunk = await loop.run_in_executor(None, stream.read, WS_READ_SIZE)
