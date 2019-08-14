@@ -338,12 +338,26 @@ Name | Description|
 
 ### neuro job exec
 
-Execute command in a running job.
+Execute command in a running job.<br/>
 
 **Usage:**
 
 ```bash
 neuro job exec [OPTIONS] JOB [CMD]...
+```
+
+**Examples:**
+
+```bash
+
+# Provides a shell to the container via `/bin/bash`:
+neuro exec my-job
+neuro exec --tty my-job /bin/bash
+
+# Executes a single command in the container and returns the control:
+neuro exec my-job ls > ls_output.txt && echo OK
+neuro exec my-job /bin/not-an-executable || echo failed
+
 ```
 
 **Options:**
@@ -1416,12 +1430,26 @@ Name | Description|
 
 ## neuro exec
 
-Execute command in a running job.
+Execute command in a running job.<br/>
 
 **Usage:**
 
 ```bash
 neuro exec [OPTIONS] JOB [CMD]...
+```
+
+**Examples:**
+
+```bash
+
+# Provides a shell to the container via `/bin/bash`:
+neuro exec my-job
+neuro exec --tty my-job /bin/bash
+
+# Executes a single command in the container and returns the control:
+neuro exec my-job ls > ls_output.txt && echo OK
+neuro exec my-job /bin/not-an-executable || echo failed
+
 ```
 
 **Options:**
