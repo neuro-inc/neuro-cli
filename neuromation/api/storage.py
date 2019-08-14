@@ -377,28 +377,18 @@ class Storage(metaclass=NoPublicConstructor):
         progress: AbstractFileProgress,
     ) -> None:
         loop = asyncio.get_event_loop()
-        try:
-            stat = await self._stat(ws, dst_path)
-            if not stat.is_file():
-                raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
-        except FileNotFoundError:
-            # target doesn't exist, lookup for parent dir
-            try:
-                parent_path = dst_path.rstrip("/").rpartition("/")[0]
-                stat = await self._stat(ws, parent_path)
-                if not stat.is_dir():
-                    # parent path should be a folder
-                    raise NotADirectoryError(
-                        errno.ENOTDIR, "Not a directory", str(dst.parent)
-                    )
-            except FileNotFoundError:
-                raise NotADirectoryError(
-                    errno.ENOTDIR, "Not a directory", str(dst.parent)
-                )
         with src_path.open("rb") as stream:
             size = os.stat(stream.fileno()).st_size
             progress.start(StorageProgressStart(src, dst, size))
-            await ws.send_checked(WSStorageOperation.CREATE, dst_path, {"size": size})
+            try:
+                await ws.send_checked(
+                    WSStorageOperation.CREATE, dst_path, {"size": size}
+                )
+            except FileNotFoundError:
+                # target's parent doesn't exist
+                raise NotADirectoryError(
+                    errno.ENOTDIR, "Not a directory", str(dst.parent)
+                )
             pos = 0
             while True:
                 chunk = await loop.run_in_executor(None, stream.read, WS_READ_SIZE)
@@ -445,11 +435,9 @@ class Storage(metaclass=NoPublicConstructor):
         progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
         folder = sorted(src_path.iterdir(), key=lambda item: (item.is_dir(), item.name))
         try:
-            stat = await self._stat(ws, dst_path)
-            if not stat.is_dir():
-                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
-        except FileNotFoundError:
             await ws.send_checked(WSStorageOperation.MKDIRS, dst_path)
+        except FileExistsError:
+            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
         for child in folder:
             name = child.name
             if child.is_file():
