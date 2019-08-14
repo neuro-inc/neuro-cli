@@ -3,11 +3,13 @@ import enum
 import json
 import shlex
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
 
 import async_timeout
 import attr
 from aiohttp import WSServerHandshakeError
+from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
 
@@ -74,9 +76,9 @@ class Container:
 class JobStatusHistory:
     status: JobStatus
     reason: str
-    created_at: str
-    started_at: str
-    finished_at: str
+    created_at: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
     description: Optional[str] = None
     exit_code: Optional[int] = None
 
@@ -385,9 +387,9 @@ def _job_description_from_api(
         status=JobStatus(res["history"].get("status", "unknown")),
         reason=res["history"].get("reason", ""),
         description=res["history"].get("description", ""),
-        created_at=res["history"].get("created_at", ""),
-        started_at=res["history"].get("started_at", ""),
-        finished_at=res["history"].get("finished_at", ""),
+        created_at=_parse_datetime(res["history"].get("created_at")),
+        started_at=_parse_datetime(res["history"].get("started_at")),
+        finished_at=_parse_datetime(res["history"].get("finished_at")),
         exit_code=res["history"].get("exit_code"),
     )
     http_url = URL(res.get("http_url", ""))
@@ -435,3 +437,9 @@ def _volume_from_api(data: Dict[str, Any]) -> Volume:
     return Volume(
         storage_path=storage_path, container_path=container_path, read_only=read_only
     )
+
+
+def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    return isoparse(dt)

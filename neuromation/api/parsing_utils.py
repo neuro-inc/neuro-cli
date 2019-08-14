@@ -75,7 +75,14 @@ class _ImageNameParser:
             return self.parse_as_neuro_image(value)
         else:
             img = self.parse_as_local_image(value)
-            return RemoteImage(img.name, img.tag)
+            name = img.name
+            registry = None
+            if ":" in name:
+                msg = "here name must contain slash(es). checked by _split_image_name()"
+                assert "/" in name, msg
+                registry, name = name.split("/", 1)
+
+            return RemoteImage(name=name, tag=img.tag, registry=registry)
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
@@ -158,16 +165,30 @@ class _ImageNameParser:
     def _split_image_name(
         self, image: str, default_tag: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
+        if image.endswith(":") or image.startswith(":"):
+            # case `ubuntu:`, `:latest`
+            raise ValueError("empty name or empty tag")
         colon_count = image.count(":")
         if colon_count == 0:
-            image, tag = image, default_tag
+            # case `ubuntu`
+            name, tag = image, default_tag
         elif colon_count == 1:
-            image, tag = image.split(":")
-            if not tag:
-                raise ValueError("empty tag is not allowed")
+            # case `ubuntu:latest`
+            name, tag = image.split(":")
+            if "/" in tag:
+                # case `localhost:5000/ubuntu`
+                name, tag = image, default_tag
+        elif colon_count == 2:
+            # case `localhost:9000/owner/ubuntu:latest`
+            if "/" not in image:
+                # case `localhost:9000:latest`
+                raise ValueError("too many tags")
+            name, tag = image.rsplit(":", 1)
         else:
             raise ValueError("too many tags")
-        return image, tag
+        if tag and (":" in tag or "/" in tag):
+            raise ValueError("invalid tag")
+        return name, tag
 
     def _check_allowed_uri_elements(self, url: URL) -> None:
         if not url.path or url.path == "/":
