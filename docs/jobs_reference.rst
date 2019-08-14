@@ -240,9 +240,56 @@ JobStatusHistory
 
    .. attribute:: created_at
 
+      Job creation timestamp, :class:`~datetime.datetime` or ``None``.
+
    .. attribute:: started_at
 
+      Job starting timestamp, :class:`~datetime.datetime` or ``None`` if job not
+      started.
+
    .. attribute:: finished_at
+
+      Job finishing timestamp, :class:`~datetime.datetime` or ``None`` if job not
+      finished.
+
+
+JobTelemetry
+------------
+
+.. class:: JobTelemetry
+
+   *Read-only* :class:`~dataclasses.dataclass` for job telemetry (statistics),
+   e.g. consumed CPU load, memory footprint etc.
+
+   .. seealso:: :meth:`Jobs.top`.
+
+   .. attribute:: timestamp
+
+      Date and time of telemetry report (:class:`float`), time in seconds since the
+      :ref:`epoch`, like the value returned from :func:`time.time()`.
+
+      See :mod:`time` and :mod:`datetime` for more information how to handle the
+      timestamp.
+
+   .. attribute:: cpu
+
+      CPU load, :class:`float`. ``1`` means fully loaded one CPU unit, ``0.5`` is for
+      half-utilized CPU.
+
+   .. attribute:: memory
+
+      Consumend memory in megabytes, :class:`float`.
+
+   .. attribute:: gpu_duty_cycle
+
+      Percentage of time over the past sample period (10 seconds) during which the
+      accelerator was actively processing. :class:`int` between ``1`` and ``100``,
+      ``None`` if the job has no GPU available.
+
+   .. attribute:: gpu_memory
+
+      Percentage of used GPU memory, :class:`float` between ``0`` and ``1``.
+
 
 Resources
 ---------
