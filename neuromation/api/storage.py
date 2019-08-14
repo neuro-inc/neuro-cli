@@ -382,13 +382,9 @@ class Storage(metaclass=NoPublicConstructor):
             if not stat.is_file():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
         except FileNotFoundError:
-            pass
             # target doesn't exist, lookup for parent dir
             try:
                 parent_path = dst_path.rstrip("/").rpartition("/")[0]
-                print("dst =", dst)
-                print("dst_path =", dst_path)
-                print("parent_path =", parent_path)
                 stat = await self._stat(ws, parent_path)
                 if not stat.is_dir():
                     # parent path should be a folder
