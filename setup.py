@@ -27,6 +27,7 @@ setup(
         'dataclasses>=0.5; python_version<"3.7"',
         "pyyaml>=3.0",
         'async_generator>=1.5; python_version<"3.7"',
+        'async_exit_stack>=1.0.1; python_version<"3.7"',
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "yarl>=1.3.0",
