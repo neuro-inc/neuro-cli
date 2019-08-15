@@ -343,20 +343,19 @@ Execute command in a running job.<br/>
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] JOB [CMD]...
+neuro job exec [OPTIONS] JOB CMD...
 ```
 
 **Examples:**
 
 ```bash
 
-# Provides a shell to the container via `/bin/bash`:
-neuro exec my-job
-neuro exec --tty my-job /bin/bash
+# Provides a shell to the container:
+neuro exec my-job /bin/bash
 
 # Executes a single command in the container and returns the control:
-neuro exec my-job ls > ls_output.txt && echo OK
-neuro exec my-job /bin/not-an-executable || echo failed
+neuro exec -T my-job ls > ls_output.txt && echo OK
+neuro exec my-job -T /bin/not-an-executable || echo failed
 
 ```
 
@@ -364,7 +363,7 @@ neuro exec my-job /bin/not-an-executable || echo failed
 
 Name | Description|
 |----|------------|
-|_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
@@ -1435,20 +1434,19 @@ Execute command in a running job.<br/>
 **Usage:**
 
 ```bash
-neuro exec [OPTIONS] JOB [CMD]...
+neuro exec [OPTIONS] JOB CMD...
 ```
 
 **Examples:**
 
 ```bash
 
-# Provides a shell to the container via `/bin/bash`:
-neuro exec my-job
-neuro exec --tty my-job /bin/bash
+# Provides a shell to the container:
+neuro exec my-job /bin/bash
 
 # Executes a single command in the container and returns the control:
-neuro exec my-job ls > ls_output.txt && echo OK
-neuro exec my-job /bin/not-an-executable || echo failed
+neuro exec -T my-job ls > ls_output.txt && echo OK
+neuro exec my-job -T /bin/not-an-executable || echo failed
 
 ```
 
@@ -1456,7 +1454,7 @@ neuro exec my-job /bin/not-an-executable || echo failed
 
 Name | Description|
 |----|------------|
-|_\-t, --tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
