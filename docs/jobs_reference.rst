@@ -83,8 +83,34 @@ Jobs
          async for chunk in client.jobs.monitor(job_id):
              print(chunk.encode('utf8', errors='replace')
 
-   .. comethod:: port_forward(id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> int
+   .. comethod:: port_forward(id: str, local_port: int, job_port: int, *, \
+                              no_key_check: bool = False \
+                 ) -> None
+
+      Forward local port to job.
+
+      :param str id: job :attr:`~JobDescription.id`.
+
+      :param int local_port: local TCP port to forward.
+
+      :param int jot_port: remote TCP port in a job to forward.
+
+      .. note::
+
+         The call doesn't return immediatelly but keeps running to perform port
+         forwarding.
+
+         Practically, it means that usually every port forward requires a separate
+         concurrent asyncio task, e.g.::
+
+            forwarder = await asyncio.create_task(
+                client.jobs.port_forward(job_id, 8080, 80))
+
+            # do some work
+
+            forwarder.cancel()  # cancel port forwarding task
+            with contextlib.suppress(asyncio.CancelledError):
+                await forwarder
 
    .. comethod:: run(container: Container, \
                      *, \
