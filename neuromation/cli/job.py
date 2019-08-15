@@ -277,12 +277,13 @@ async def submit(
 
 @command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("job")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
-    "-t",
-    "--tty",
+    "-T",
+    "--no-tty",
+    default=False,
     is_flag=True,
-    help="Allocate virtual tty. Useful for interactive jobs.",
+    help="Do not allocate a virtual tty. Should be used for non-interactive commands",
 )
 @click.option(
     "--no-key-check",
@@ -300,7 +301,7 @@ async def submit(
 async def exec(
     root: Root,
     job: str,
-    tty: bool,
+    no_tty: bool,
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -310,25 +311,19 @@ async def exec(
 
     Examples:
 
-    # Provides a shell to the container via `/bin/bash`:
-    neuro exec my-job
-    neuro exec --tty my-job /bin/bash
+    # Provides a shell to the container:
+    neuro exec my-job /bin/bash
 
     # Executes a single command in the container and returns the control:
-    neuro exec my-job ls > ls_output.txt && echo "OK"
-    neuro exec my-job /bin/not-an-executable || echo "failed"
+    neuro exec -T my-job ls > ls_output.txt && echo "OK"
+    neuro exec my-job -T /bin/not-an-executable || echo "failed"
     """
-    # TODO (artem) Provide a backup option if the container lacks `/bin/bash`
-    if not cmd:
-        # if no command specified, we assume `neuro exec --tty JOB_ID /bin/bash`
-        cmd = ("/bin/bash",)
-        tty = True
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
     retcode = await root.client.jobs.exec(
         id,
         cmd,
-        tty=tty,
+        tty=not no_tty,
         no_key_check=no_key_check,
         timeout=timeout if timeout else None,
     )
