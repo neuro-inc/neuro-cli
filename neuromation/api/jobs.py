@@ -140,10 +140,7 @@ class Jobs(metaclass=NoPublicConstructor):
             return _job_description_from_api(res, parser)
 
     async def list(
-        self,
-        *,
-        statuses: Iterable[JobStatus] = (),
-        name: str = "",
+        self, *, statuses: Iterable[JobStatus] = (), name: str = ""
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
@@ -208,7 +205,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def exec(
         self,
         id: str,
-        cmd: List[str],
+        cmd: Iterable[str],
         *,
         tty: bool = False,
         no_key_check: bool = False,
@@ -224,7 +221,7 @@ class Jobs(metaclass=NoPublicConstructor):
             {
                 "method": "job_exec",
                 "token": self._config.auth_token.token,
-                "params": {"job": id, "command": cmd},
+                "params": {"job": id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
@@ -253,7 +250,7 @@ class Jobs(metaclass=NoPublicConstructor):
 
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> int:
+    ) -> None:
         try:
             job_status = await self.status(id)
         except IllegalArgumentError as e:
@@ -306,7 +303,7 @@ class Jobs(metaclass=NoPublicConstructor):
             result = await proc.wait()
             if result != 0:
                 raise ValueError(f"error code {result}")
-            return local_port
+            return
         finally:
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks

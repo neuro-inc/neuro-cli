@@ -15,32 +15,31 @@ Jobs
 
    User can start new job, terminate it, get status, list running jobs etc.
 
-   .. comethod:: run(container: Container, \
-                     *, \
-                     name: Optional[str] = None, \
-                     description: Optional[str] = None, \
-                     is_preemptible: bool = False, \
-                     schedule_timeout: Optional[float] = None, \
-                 ) -> JobDescription
+   .. comethod:: exec(id: str, cmd: List[str], *, \
+                      tty: bool = False, \
+                      timeout: Optional[float] = None, \
+                 ) -> int
 
-      Start a new job.
+      Execute a command in a running job, wait for the command finish.
 
-      :param Container container: container description to start.
+      :param str id: job :attr:`~JobDescription.id` to use for command execution.
 
-      :param str name: optional container name.
+      :param ~typing.Iterable[str] cmd: the command to execute, a sequence of
+                                        :class:`str`, e.g. :class:`list` of strings.
 
-      :param str desciption: optional container description.
+      :param bool tty: ``True`` if :ref:`TTY<job-tty>` mode is requested, default is
+                       ``False``.
 
-      :param bool is_preemtible: a flag that specifies is the job is *preemptible* or
-                                 not, see :ref:`Preemption <job-preemption>` for
-                                 details.
+      :param float timeout: maximum time in seconds to wait for the command execution
+                            finish, infinite if ``None`` (default).
 
-      :param float schedule_timeout: minimal timeout to wait before reporting that job
-                                     cannot be scheduled because the lack of computation
-                                     cluster resources (memory, CPU/GPU etc).
+      :return: Executed process exit code (:class:`int`), zero for successful execution.
 
-      :return: :class:`JobDescription` instance with infomation about started job.
+   .. comethod:: kill(id: str) -> None
 
+      Kill a job.
+
+      :param str id: job :attr:`~JobDescription.id` to kill.
 
    .. comethod:: list(*, statuses: Iterable[JobStatus] = (), \
                       name: str = "" \
@@ -70,6 +69,70 @@ Jobs
       :return: a :class:`list` of :class:`JobDescription` objects.
 
 
+   .. comethod:: monitor(id: str) -> AsyncIterator[bytes]
+      :async-for:
+
+      Get job logs as a sequence of data chunks.
+
+      :param str id: job :attr:`~JobDescription.id` to retrieve logs.
+
+      :return: :class:`~collections.abc.AsyncIterator` over :class:`bytes` log chunks.
+
+      The method usage is::
+
+         async for chunk in client.jobs.monitor(job_id):
+             print(chunk.encode('utf8', errors='replace')
+
+   .. comethod:: port_forward(id: str, local_port: int, job_port: int, *, no_key_check: bool = False
+    ) -> int
+
+   .. comethod:: run(container: Container, \
+                     *, \
+                     name: Optional[str] = None, \
+                     description: Optional[str] = None, \
+                     is_preemptible: bool = False, \
+                     schedule_timeout: Optional[float] = None, \
+                 ) -> JobDescription
+
+      Start a new job.
+
+      :param Container container: container description to start.
+
+      :param str name: optional container name.
+
+      :param str desciption: optional container description.
+
+      :param bool is_preemtible: a flag that specifies is the job is *preemptible* or
+                                 not, see :ref:`Preemption <job-preemption>` for
+                                 details.
+
+      :param float schedule_timeout: minimal timeout to wait before reporting that job
+                                     cannot be scheduled because the lack of computation
+                                     cluster resources (memory, CPU/GPU etc).
+
+      :return: :class:`JobDescription` instance with infomation about started job.
+
+   .. comethod:: status(id: str) -> JobDescription
+
+      Get information about a job.
+
+      :param str id: job :attr:`~JobDescription.id` to get its status.
+
+      :return: :class:`JobDescription` instance with job status details.
+
+   .. comethod:: top(id: str) -> AsyncIterator[JobTelemetry]
+      :async-for:
+
+      Get job usage statistics.
+
+      :param str id: job :attr:`~JobDescription.id` to get telemetry data.
+
+      :return: asynchronous iterator which emits `JobTelemetry` objects peridodically.
+
+      The usage example::
+
+          async for data in client.jobs.top(job_id):
+              print(data.cpu, data.memory)
 
 Job dataclasses
 ===============
