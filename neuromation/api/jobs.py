@@ -2,6 +2,7 @@ import asyncio
 import enum
 import json
 import shlex
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
@@ -24,7 +25,7 @@ from .parsing_utils import (
     _ImageNameParser,
     _is_in_neuro_registry,
 )
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asynccontextmanager
 
 
 @dataclass(frozen=True)
@@ -249,9 +250,22 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
+    @asynccontextmanager
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> int:
+    ) -> AsyncIterator[None]:
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(
+            self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
+        )
+        yield
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+    async def _port_forward(
+        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
+    ) -> None:
         try:
             job_status = await self.status(id)
         except IllegalArgumentError as e:
@@ -304,7 +318,7 @@ class Jobs(metaclass=NoPublicConstructor):
             result = await proc.wait()
             if result != 0:
                 raise ValueError(f"error code {result}")
-            return local_port
+            return
         finally:
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
