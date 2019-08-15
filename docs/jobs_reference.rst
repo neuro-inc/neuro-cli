@@ -86,6 +86,7 @@ Jobs
    .. comethod:: port_forward(id: str, local_port: int, job_port: int, *, \
                               no_key_check: bool = False \
                  ) -> None
+      :async-with:
 
       Forward local port to job.
 
@@ -95,22 +96,10 @@ Jobs
 
       :param int jot_port: remote TCP port in a job to forward.
 
-      .. note::
+      The method should be used as async context manager, e.g.::
 
-         The call doesn't return immediatelly but keeps running to perform port
-         forwarding.
-
-         Practically, it means that usually every port forward requires a separate
-         concurrent asyncio task, e.g.::
-
-            forwarder = await asyncio.create_task(
-                client.jobs.port_forward(job_id, 8080, 80))
-
-            # do some work
-
-            forwarder.cancel()  # cancel port forwarding task
-            with contextlib.suppress(asyncio.CancelledError):
-                await forwarder
+         async with client.jobs.port_forward(job_id, 8080, 80):
+             # port forwarding is awailable inside with-block
 
    .. comethod:: run(container: Container, \
                      *, \
