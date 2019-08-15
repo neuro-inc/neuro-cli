@@ -11,6 +11,8 @@ from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 import attr
 from yarl import URL
 
+import neuromation
+
 from .abc import (
     AbstractFileProgress,
     AbstractRecursiveFileProgress,
@@ -296,7 +298,12 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
-        await self.create(dst, self._iterate_file(path, dst, progress=progress))
+        await self._upload_file(path, dst, progress=progress)
+
+    async def _upload_file(
+        self, src_path: Path, dst: URL, *, progress: AbstractFileProgress
+    ) -> None:
+        await self.create(dst, self._iterate_file(src_path, dst, progress=progress))
 
     async def upload_dir(
         self,
@@ -314,22 +321,29 @@ class Storage(metaclass=NoPublicConstructor):
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
         if not path.is_dir():
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
+        await self._upload_dir(src, path, dst, progress=progress)
+
+    async def _upload_dir(
+        self,
+        src: URL,
+        src_path: Path,
+        dst: URL,
+        *,
+        progress: AbstractRecursiveFileProgress,
+    ) -> None:
         try:
-            stat = await self.stats(dst)
-            if not stat.is_dir():
-                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
-        except ResourceNotFound:
-            await self.mkdirs(dst)
+            await self.mkdirs(dst, exist_ok=True)
+        except neuromation.api.IllegalArgumentError:
+            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         progress.enter(StorageProgressEnterDir(src, dst))
-        folder = sorted(path.iterdir(), key=lambda item: (item.is_dir(), item.name))
+        folder = sorted(src_path.iterdir(), key=lambda item: (item.is_dir(), item.name))
         for child in folder:
+            name = child.name
             if child.is_file():
-                await self.upload_file(
-                    src / child.name, dst / child.name, progress=progress
-                )
+                await self._upload_file(src_path / name, dst / name, progress=progress)
             elif child.is_dir():
-                await self.upload_dir(
-                    src / child.name, dst / child.name, progress=progress
+                await self._upload_dir(
+                    src / name, src_path / name, dst / name, progress=progress
                 )
             else:
                 # This case is for uploading non-regular file,
@@ -337,8 +351,8 @@ class Storage(metaclass=NoPublicConstructor):
                 # Coverage temporary skipped, the line is waiting for a champion
                 progress.fail(
                     StorageProgressFail(
-                        src / child.name,
-                        dst / child.name,
+                        src / name,
+                        dst / name,
                         f"Cannot upload {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
@@ -352,12 +366,22 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
+        stat = await self.stats(src)
+        if not stat.is_file():
+            raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
+        await self._download_file(src, dst, path, stat.size, progress=progress)
+
+    async def _download_file(
+        self,
+        src: URL,
+        dst: URL,
+        dst_path: Path,
+        size: int,
+        *,
+        progress: AbstractFileProgress,
+    ) -> None:
         loop = asyncio.get_event_loop()
-        with path.open("wb") as stream:
-            stat = await self.stats(src)
-            if not stat.is_file():
-                raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
-            size = stat.size
+        with dst_path.open("wb") as stream:
             progress.start(StorageProgressStart(src, dst, size))
             pos = 0
             async for chunk in self.open(src):
@@ -378,23 +402,38 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        path.mkdir(parents=True, exist_ok=True)
+        await self._download_dir(src, dst, path, progress=progress)
+
+    async def _download_dir(
+        self,
+        src: URL,
+        dst: URL,
+        dst_path: Path,
+        *,
+        progress: AbstractRecursiveFileProgress,
+    ) -> None:
+        dst_path.mkdir(parents=True, exist_ok=True)
         progress.enter(StorageProgressEnterDir(src, dst))
         folder = sorted(await self.ls(src), key=lambda item: (item.is_dir(), item.name))
         for child in folder:
+            name = child.name
             if child.is_file():
-                await self.download_file(
-                    src / child.name, dst / child.name, progress=progress
+                await self._download_file(
+                    src / name,
+                    dst / name,
+                    dst_path / name,
+                    child.size,
+                    progress=progress,
                 )
             elif child.is_dir():
-                await self.download_dir(
-                    src / child.name, dst / child.name, progress=progress
+                await self._download_dir(
+                    src / name, dst / name, dst_path / name, progress=progress
                 )
             else:
                 progress.fail(
                     StorageProgressFail(
-                        src / child.name,
-                        dst / child.name,
+                        src / name,
+                        dst / name,
                         f"Cannot download {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
