@@ -283,7 +283,7 @@ async def submit(
     "--no-tty",
     default=False,
     is_flag=True,
-    help="Do not allocate a virtual tty. Should be used for non-interactive commands",
+    help="Do not allocate a virtual tty. Should be used for non-interactive commands.",
 )
 @click.option(
     "--no-key-check",

@@ -430,7 +430,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = helper.run_cli(
-        ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "true"]
+        ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "true"]
     )
     assert captured.out == ""
 
@@ -556,15 +556,7 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            [
-                "job",
-                "exec",
-                "--no-tty",
-                "--no-key-check",
-                "--timeout=60",
-                job_id,
-                "[ -t 1 ]",
-            ]
+            ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
         )
     assert cm.value.returncode == 1
 

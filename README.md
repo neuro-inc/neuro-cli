@@ -363,7 +363,7 @@ neuro exec -T my-job /bin/not-an-executable || echo failed
 
 Name | Description|
 |----|------------|
-|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands|
+|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
@@ -1454,7 +1454,7 @@ neuro exec -T my-job /bin/not-an-executable || echo failed
 
 Name | Description|
 |----|------------|
-|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands|
+|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|

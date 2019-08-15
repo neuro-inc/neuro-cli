@@ -399,13 +399,7 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(
-        self,
-        arguments: List[str],
-        *,
-        verbosity: int = 0,
-        wait_for_exit_code: bool = True,
-    ) -> SysCap:
+    def run_cli(self, arguments: List[str], *, verbosity: int = 0) -> SysCap:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
@@ -442,7 +436,7 @@ class Helper:
                 sleep(delay)
                 delay *= 2
                 continue
-            elif wait_for_exit_code:
+            else:
                 try:
                     proc.check_returncode()
                 except subprocess.CalledProcessError:
