@@ -315,8 +315,8 @@ async def exec(
     neuro exec my-job /bin/bash
 
     # Executes a single command in the container and returns the control:
-    neuro exec -T my-job ls > ls_output.txt && echo "OK"
-    neuro exec my-job -T /bin/not-an-executable || echo "failed"
+    neuro exec --no-tty my-job ls > ls_output.txt && echo "OK"
+    neuro exec -T my-job /bin/not-an-executable || echo "failed"
     """
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
