@@ -613,3 +613,9 @@ deprecated_quiet_option: Any = click.option(
     expose_value=False,
     is_eager=True,
 )
+
+
+if sys.version_info >= (3, 7):  # pragma: no cover
+    from contextlib import AsyncExitStack  # noqa
+else:
+    from async_exit_stack import AsyncExitStack  # noqa

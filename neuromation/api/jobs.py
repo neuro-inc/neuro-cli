@@ -2,6 +2,7 @@ import asyncio
 import enum
 import json
 import shlex
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
@@ -24,7 +25,7 @@ from .parsing_utils import (
     _ImageNameParser,
     _is_in_neuro_registry,
 )
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asynccontextmanager
 
 
 @dataclass(frozen=True)
@@ -248,7 +249,20 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
+    @asynccontextmanager
     async def port_forward(
+        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
+    ) -> AsyncIterator[None]:
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(
+            self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
+        )
+        yield
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+    async def _port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
     ) -> None:
         try:

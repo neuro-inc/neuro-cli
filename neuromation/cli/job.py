@@ -42,6 +42,7 @@ from .utils import (
     JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
+    AsyncExitStack,
     ImageType,
     alias,
     async_cmd,
@@ -351,34 +352,20 @@ async def port_forward(
     neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
     """
-    loop = asyncio.get_event_loop()
     job_id = await resolve_job(root.client, job)
-    tasks = []
-    for local_port, job_port in local_remote_port:
-        click.echo(
-            f"Port localhost:{local_port} will be forwarded "
-            f"to port {job_port} of {job_id}"
-        )
-        tasks.append(
-            loop.create_task(
+    async with AsyncExitStack() as stack:
+        for local_port, job_port in local_remote_port:
+            click.echo(
+                f"Port localhost:{local_port} will be forwarded "
+                f"to port {job_port} of {job_id}"
+            )
+            await stack.enter_async_context(
                 root.client.jobs.port_forward(
                     job_id, local_port, job_port, no_key_check=no_key_check
                 )
             )
-        )
 
-    click.echo("Press ^C to stop forwarding")
-    result = 0
-    for future in asyncio.as_completed(tasks):
-        try:
-            await future
-        except ValueError as e:
-            click.echo(f"Port forwarding failed: {e}")
-            [task.cancel() for task in tasks]
-            result = -1
-            break
-
-    sys.exit(result)
+        click.echo("Press ^C to stop forwarding")
 
 
 @command()
