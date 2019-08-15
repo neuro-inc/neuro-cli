@@ -61,3 +61,4 @@ Client
    :maxdepth: 2
 
    jobs_reference
+   storage_reference

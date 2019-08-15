@@ -6,6 +6,26 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
+
+import io
+import os
+import re
+
+_docs_path = os.path.dirname(__file__)
+_version_path = os.path.abspath(os.path.join(_docs_path,
+                                             '..', 'neuromation', '__init__.py'))
+with io.open(_version_path, 'r', encoding='latin1') as fp:
+    try:
+        _version_info = re.search(r'^__version__ = "'
+                                  r"(?P<major>\d+)"
+                                  r"\.(?P<minor>\d+)"
+                                  r"\.(?P<patch>\d+)"
+                                  r'(?P<tag>.*)?"$',
+                                  fp.read(), re.M).groupdict()
+    except IndexError:
+        raise RuntimeError('Unable to determine version.')
+
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -23,10 +43,10 @@ project = 'neuromation'
 copyright = '2019, Neuromation Ltd.'
 author = 'Neuromation Ltd.'
 
-# The short X.Y version
-version = ''
-# The full version, including alpha/beta/rc tags
-release = '19.8.6'
+# The short X.Y version.
+version = '{major}.{minor}'.format(**_version_info)
+# The full version, including alpha/beta/rc tags.
+release = '{major}.{minor}.{patch}{tag}'.format(**_version_info)
 
 
 # -- General configuration ---------------------------------------------------
@@ -183,5 +203,7 @@ epub_exclude_files = ['search.html']
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None,
-                       'https://docs.aiohttp.org/en/latest': None}
+intersphinx_mapping = {'https://docs.python.org/3': None,
+                       'https://docs.aiohttp.org/en/latest': None,
+                       'https://yarl.readthedocs.io/en/latest': None,
+                       'https://multidict.readthedocs.io/en/stable': None}
