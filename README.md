@@ -354,8 +354,7 @@ neuro job exec [OPTIONS] JOB CMD...
 neuro exec my-job /bin/bash
 
 # Executes a single command in the container and returns the control:
-neuro exec --no-tty my-job ls > ls_output.txt && echo OK
-neuro exec -T my-job /bin/not-an-executable || echo failed
+neuro exec --no-tty my-job ls -l
 
 ```
 
@@ -363,7 +362,7 @@ neuro exec -T my-job /bin/not-an-executable || echo failed
 
 Name | Description|
 |----|------------|
-|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands.|
+|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
@@ -1445,8 +1444,7 @@ neuro exec [OPTIONS] JOB CMD...
 neuro exec my-job /bin/bash
 
 # Executes a single command in the container and returns the control:
-neuro exec --no-tty my-job ls > ls_output.txt && echo OK
-neuro exec -T my-job /bin/not-an-executable || echo failed
+neuro exec --no-tty my-job ls -l
 
 ```
 
@@ -1454,7 +1452,7 @@ neuro exec -T my-job /bin/not-an-executable || echo failed
 
 Name | Description|
 |----|------------|
-|_\-T, --no-tty_|Do not allocate a virtual tty. Should be used for non-interactive commands.|
+|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|

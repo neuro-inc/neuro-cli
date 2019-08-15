@@ -279,11 +279,11 @@ async def submit(
 @click.argument("job")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
-    "-T",
-    "--no-tty",
-    default=False,
+    "-t/-T",
+    "--tty/--no-tty",
+    default=True,
     is_flag=True,
-    help="Do not allocate a virtual tty. Should be used for non-interactive commands.",
+    help="Allocate virtual tty. Useful for interactive jobs.",
 )
 @click.option(
     "--no-key-check",
@@ -301,7 +301,7 @@ async def submit(
 async def exec(
     root: Root,
     job: str,
-    no_tty: bool,
+    tty: bool,
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -315,15 +315,14 @@ async def exec(
     neuro exec my-job /bin/bash
 
     # Executes a single command in the container and returns the control:
-    neuro exec --no-tty my-job ls > ls_output.txt && echo "OK"
-    neuro exec -T my-job /bin/not-an-executable || echo "failed"
+    neuro exec --no-tty my-job ls -l
     """
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
     retcode = await root.client.jobs.exec(
         id,
         cmd,
-        tty=not no_tty,
+        tty=tty,
         no_key_check=no_key_check,
         timeout=timeout if timeout else None,
     )
