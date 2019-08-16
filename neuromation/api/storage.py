@@ -10,7 +10,17 @@ import struct
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import aiohttp
 import attr
@@ -52,6 +62,10 @@ class FileStatusType(str, enum.Enum):
     FILE = "FILE"
 
 
+WSStorageHandler = Callable[[Dict[str, Any], bytes], Awaitable[None]]
+WSStorageErrorHandler = Callable[[BaseException], Awaitable[None]]
+
+
 class WSStorageOperation(str, enum.Enum):
     ACK = "ACK"
     ERROR = "ERROR"
@@ -90,11 +104,8 @@ class WSStorageClient:
         self._root = root
         self._new_req_id = idgen
         self._handlers: Dict[
-            int, Callable[[Dict[str, Any], bytes], Awaitable[None]]
+            int, Tuple[WSStorageHandler, Optional[WSStorageErrorHandler]]
         ] = {}
-
-    def __aiter__(self) -> ClientWebSocketResponse:
-        return self._client
 
     async def send(
         self,
@@ -119,27 +130,21 @@ class WSStorageClient:
         params: Dict[str, Any] = {},
         data: bytes = b"",
         *,
-        handler: Callable[[Dict[str, Any], bytes], Awaitable[None]],
+        handler: WSStorageHandler,
+        error_handler: Optional[WSStorageErrorHandler] = None,
     ) -> None:
         reqid = self._new_req_id()
         payload = {"op": op.value, "id": reqid, "path": path, **params}
         log.debug("WS send: %s", payload)
         header = cbor.dumps(payload)
+        self._handlers[reqid] = handler, error_handler
         await self._client.send_bytes(
             struct.pack("!I", len(header) + 4) + header + data
         )
-        self._handlers[reqid] = handler
 
-    async def receive(self) -> Tuple[Dict[str, Any], bytes]:
-        msg = await self._client.receive()
-        if msg.type == aiohttp.WSMsgType.BINARY:
-            return await self._unpack(msg.data)
-        elif msg.type == aiohttp.WSMsgType.ERROR:
-            raise msg.data
-        else:
-            raise RuntimeError("Unsupported WebSocket message type {msg.type}")
-
-    async def _unpack(self, resp: bytes) -> Tuple[Dict[str, Any], bytes]:
+    async def parse_msg(
+        self, resp: bytes
+    ) -> Tuple[Dict[str, Any], Union[bytes, BaseException]]:
         if len(resp) < 4:
             await self._client.close(code=WSCloseCode.UNSUPPORTED_DATA)
             raise RuntimeError("Too short message")
@@ -158,43 +163,32 @@ class WSStorageClient:
             return payload, data
 
         if op == WSStorageOperation.ERROR:
+            exc: BaseException
             if "errno" in payload:
-                raise OSError(
+                exc = OSError(
                     errno.__dict__.get(payload["errno"], payload["errno"]),
                     payload["error"],
                 )
-            raise RuntimeError(payload["error"])
+            else:
+                exc = RuntimeError(payload["error"])
+            log.debug("WS error: %s", payload)
+            return payload, exc
 
         raise RuntimeError(f"Unexpected response {payload!r}")
-
-    async def sync_request(
-        self,
-        op: WSStorageOperation,
-        path: str = "",
-        params: Dict[str, Any] = {},
-        data: bytes = b"",
-    ) -> Tuple[Dict[str, Any], bytes]:
-        reqid = await self.send(op, path, params, data)
-        payload, data = await self.receive()
-        rop = payload["rop"]
-        respid = payload["rid"]
-        if respid != reqid:
-            raise RuntimeError(
-                f"Unexpected response id {respid} for operation {op}, expected {reqid}"
-            )
-        if rop != op:
-            raise RuntimeError(
-                f"Unexpected response op {rop} for request #{reqid}, expected {op}"
-            )
-        return payload, data
 
     async def run(self) -> None:
         async for msg in self._client:
             if msg.type == aiohttp.WSMsgType.BINARY:
-                payload, data = await self._unpack(msg.data)
+                payload, data = await self.parse_msg(msg.data)
                 rid = payload["rid"]
-                handler = self._handlers.pop(rid)
-                await handler(payload, data)
+                handler, error_handler = self._handlers.pop(rid)
+                if isinstance(data, BaseException):
+                    if error_handler is None:
+                        raise data
+                    else:
+                        await error_handler(data)
+                else:
+                    await handler(payload, data)
                 if not self._handlers:
                     break
             elif msg.type == aiohttp.WSMsgType.ERROR:
@@ -273,11 +267,17 @@ class WSStorageClient:
                     )  # pragma: no cover
             progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
 
+        async def mkdir_error_handler(exc: BaseException) -> None:
+            if isinstance(exc, FileExistsError):
+                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
+            raise exc
+
         await self.async_request(
             WSStorageOperation.MKDIRS,
             dst,
             {"parents": True, "exist_ok": True},
             handler=mkdir_handler,
+            error_handler=mkdir_error_handler,
         )
 
     async def download_file(
@@ -480,10 +480,6 @@ class Storage(metaclass=NoPublicConstructor):
             res = await resp.json()
             return _file_status_from_api(res["FileStatus"])
 
-    async def _stat(self, ws: WSStorageClient, path: str) -> FileStatus:
-        payload, data = await ws.sync_request(WSStorageOperation.STAT, path)
-        return _file_status_from_api(payload["FileStatus"])
-
     async def _is_dir(self, uri: URL) -> bool:
         if uri.scheme == "storage":
             try:
@@ -562,20 +558,31 @@ class Storage(metaclass=NoPublicConstructor):
             # See https://bugs.python.org/issue37074
 
         async with self._ws_connect(dst.parent, "WEBSOCKET_WRITE") as ws:
-            try:
-                stat = await self._stat(ws, "")
+
+            async def stat_handler(payload: Dict[str, Any], data: bytes) -> None:
+                stat = _file_status_from_api(payload["FileStatus"])
                 if not stat.is_dir():
                     # parent path should be a folder
                     raise NotADirectoryError(
                         errno.ENOTDIR, "Not a directory", str(dst.parent)
                     )
-            except FileNotFoundError:
-                # target's parent doesn't exist
-                raise NotADirectoryError(
-                    errno.ENOTDIR, "Not a directory", str(dst.parent)
-                )
-            size = path.stat().st_size
-            await ws.upload_file(path, dst.name, size, progress=progress)
+                size = path.stat().st_size
+                await ws.upload_file(path, dst.name, size, progress=progress)
+
+            async def stat_error_handler(exc: BaseException) -> None:
+                if isinstance(exc, FileNotFoundError):
+                    # target's parent doesn't exist
+                    raise NotADirectoryError(
+                        errno.ENOTDIR, "Not a directory", str(dst.parent)
+                    )
+                raise exc
+
+            await ws.async_request(
+                WSStorageOperation.STAT,
+                "",
+                handler=stat_handler,
+                error_handler=stat_error_handler,
+            )
             await ws.run()
 
     async def upload_dir(
