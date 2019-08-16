@@ -425,25 +425,23 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
-            await self._send_create_request(
-                ws, src, path, dst, dst.name, progress=progress
-            )
+            await self._send_create_request(ws, path, dst.name, progress=progress)
             await ws.run()
 
     async def _send_create_request(
         self,
         ws: WSStorageClient,
-        src: URL,
         src_path: Path,
-        dst: URL,
         dst_path: str,
         *,
         progress: AbstractFileProgress,
     ) -> None:
+        src_uri = URL(src_path.as_uri())
+        dst_uri = ws._root / dst_path
         size = src_path.stat().st_size
 
         async def create_handler(payload: Dict[str, Any], data: bytes) -> None:
-            progress.start(StorageProgressStart(src, dst, size))
+            progress.start(StorageProgressStart(src_uri, dst_uri, size))
             loop = asyncio.get_event_loop()
             with src_path.open("rb") as stream:
                 pos = 0
@@ -452,7 +450,7 @@ class Storage(metaclass=NoPublicConstructor):
                     if not chunk:
                         break
                     newpos = pos + len(chunk)
-                    progress.step(StorageProgressStep(src, dst, newpos, size))
+                    progress.step(StorageProgressStep(src_uri, dst_uri, newpos, size))
 
                     async def write_handler(
                         payload: Dict[str, Any], data: bytes
@@ -467,7 +465,7 @@ class Storage(metaclass=NoPublicConstructor):
                         handler=write_handler,
                     )
                     pos = newpos
-                progress.complete(StorageProgressComplete(src, dst, size))
+                progress.complete(StorageProgressComplete(src_uri, dst_uri, size))
 
         await ws.async_request(
             WSStorageOperation.CREATE, dst_path, {"size": size}, handler=create_handler
@@ -491,31 +489,22 @@ class Storage(metaclass=NoPublicConstructor):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
 
         async with self._ws_connect(dst, "WEBSOCKET_WRITE") as ws:
-            await self._send_mkdir_request(ws, src, path, dst, "", progress=progress)
+            await self._send_mkdir_request(ws, path, "", progress=progress)
             await ws.run()
 
     async def _send_mkdir_request(
         self,
         ws: WSStorageClient,
-        src: URL,
         src_path: Path,
-        dst: URL,
         dst_path: str,
         *,
         progress: AbstractRecursiveFileProgress,
     ) -> None:
-        async def mkdir_handler(
-            ws: WSStorageClient,
-            src: URL,
-            src_path: Path,
-            dst: URL,
-            dst_path: str,
-            payload: Dict[str, Any],
-            data: bytes,
-            *,
-            progress: AbstractRecursiveFileProgress,
-        ) -> None:
-            progress.enter(StorageProgressEnterDir(src, dst))
+        src_uri = URL(src_path.as_uri())
+        dst_uri = ws._root / dst_path
+
+        async def mkdir_handler(payload: Dict[str, Any], data: bytes) -> None:
+            progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
             folder = sorted(
                 src_path.iterdir(), key=lambda item: (item.is_dir(), item.name)
             )
@@ -523,21 +512,11 @@ class Storage(metaclass=NoPublicConstructor):
                 name = child.name
                 if child.is_file():
                     await self._send_create_request(
-                        ws,
-                        src / name,
-                        child,
-                        dst / name,
-                        _join_path(dst_path, name),
-                        progress=progress,
+                        ws, child, _join_path(dst_path, name), progress=progress
                     )
                 elif child.is_dir():
                     await self._send_mkdir_request(
-                        ws,
-                        src / name,
-                        child,
-                        dst / name,
-                        _join_path(dst_path, name),
-                        progress=progress,
+                        ws, child, _join_path(dst_path, name), progress=progress
                     )
                 else:
                     # This case is for uploading non-regular file,
@@ -545,21 +524,18 @@ class Storage(metaclass=NoPublicConstructor):
                     # Coverage temporary skipped, the line is waiting for a champion
                     progress.fail(
                         StorageProgressFail(
-                            src / name,
-                            dst / name,
+                            src_uri / name,
+                            dst_uri / name,
                             f"Cannot upload {child}, not regular file/directory",
                         )
                     )  # pragma: no cover
-            progress.leave(StorageProgressLeaveDir(src, dst))
+            progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
 
-        handler = partial(
-            mkdir_handler, ws, src, src_path, dst, dst_path, progress=progress
-        )
         await ws.async_request(
             WSStorageOperation.MKDIRS,
             dst_path,
             {"parents": True, "exist_ok": True},
-            handler=handler,
+            handler=mkdir_handler,
         )
 
     async def download_file(
@@ -579,7 +555,7 @@ class Storage(metaclass=NoPublicConstructor):
                     raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
                 assert progress
                 await self._send_read_requests(
-                    ws, src, "", dst, path, stat.size, progress=progress
+                    ws, "", path, stat.size, progress=progress
                 )
 
             await ws.async_request(WSStorageOperation.STAT, "", handler=stat_handler)
@@ -588,14 +564,14 @@ class Storage(metaclass=NoPublicConstructor):
     async def _send_read_requests(
         self,
         ws: WSStorageClient,
-        src: URL,
         src_path: str,
-        dst: URL,
         dst_path: Path,
         size: int,
         *,
         progress: AbstractFileProgress,
     ) -> None:
+        src_uri = ws._root / src_path if src_path else ws._root
+        dst_uri = URL(dst_path.as_uri())
         loop = asyncio.get_event_loop()
 
         async def read_handler(
@@ -611,7 +587,7 @@ class Storage(metaclass=NoPublicConstructor):
 
         with open(dst_path, "wb", buffering=0):
             pass
-        progress.start(StorageProgressStart(src, dst, size))
+        progress.start(StorageProgressStart(src_uri, dst_uri, size))
         for pos in range(0, size, WS_READ_SIZE):
             chunk_size = min(WS_READ_SIZE, size - pos)
             handler = partial(read_handler, dst_path, pos, chunk_size)
@@ -621,8 +597,8 @@ class Storage(metaclass=NoPublicConstructor):
                 {"offset": pos, "size": chunk_size},
                 handler=handler,
             )
-            progress.step(StorageProgressStep(src, dst, pos + chunk_size, size))
-        progress.complete(StorageProgressComplete(src, dst, size))
+            progress.step(StorageProgressStep(src_uri, dst_uri, pos + chunk_size, size))
+        progress.complete(StorageProgressComplete(src_uri, dst_uri, size))
 
     async def download_dir(
         self,
@@ -638,21 +614,22 @@ class Storage(metaclass=NoPublicConstructor):
         path = _extract_path(dst)
 
         async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
-            await self._send_list_request(ws, src, "", dst, path, progress=progress)
+            await self._send_list_request(ws, "", path, progress=progress)
             await ws.run()
 
     async def _send_list_request(
         self,
         ws: WSStorageClient,
-        src: URL,
         src_path: str,
-        dst: URL,
         dst_path: Path,
         *,
         progress: AbstractRecursiveFileProgress,
     ) -> None:
+        src_uri = ws._root / src_path if src_path else ws._root
+        dst_uri = URL(dst_path.as_uri())
+
         async def list_handler(payload: Dict[str, Any], data: bytes) -> None:
-            progress.enter(StorageProgressEnterDir(src, dst))
+            progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
             folder = [
                 _file_status_from_api(status)
                 for status in payload["FileStatuses"]["FileStatus"]
@@ -664,9 +641,7 @@ class Storage(metaclass=NoPublicConstructor):
                 if child.is_file():
                     await self._send_read_requests(
                         ws,
-                        src / name,
                         _join_path(src_path, name),
-                        dst / name,
                         dst_path / name,
                         child.size,
                         progress=progress,
@@ -674,9 +649,7 @@ class Storage(metaclass=NoPublicConstructor):
                 elif child.is_dir():
                     await self._send_list_request(
                         ws,
-                        src / name,
                         _join_path(src_path, name),
-                        dst / name,
                         dst_path / name,
                         progress=progress,
                     )
@@ -684,12 +657,12 @@ class Storage(metaclass=NoPublicConstructor):
                     assert progress is not None
                     progress.fail(
                         StorageProgressFail(
-                            src / name,
-                            dst / name,
+                            src_uri / name,
+                            dst_uri / name,
                             f"Cannot download {child}, not regular file/directory",
                         )
                     )  # pragma: no cover
-            progress.leave(StorageProgressLeaveDir(src, dst))
+            progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
 
         await ws.async_request(WSStorageOperation.LIST, src_path, handler=list_handler)
 
