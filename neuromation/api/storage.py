@@ -4,6 +4,7 @@ import errno
 import fnmatch
 import itertools
 import logging
+import os
 import re
 import struct
 from dataclasses import dataclass
@@ -202,11 +203,10 @@ class WSStorageClient:
                 raise RuntimeError(f"Unsupported WebSocket message type: {msg.type}")
 
     async def upload_file(
-        self, src: Path, dst: str, *, progress: AbstractFileProgress
+        self, src: Path, dst: str, size: int, *, progress: AbstractFileProgress
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
-        size = src.stat().st_size
 
         async def create_handler(payload: Dict[str, Any], data: bytes) -> None:
             progress.start(StorageProgressStart(src_uri, dst_uri, size))
@@ -247,16 +247,18 @@ class WSStorageClient:
 
         async def mkdir_handler(payload: Dict[str, Any], data: bytes) -> None:
             progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
-            folder = sorted(src.iterdir(), key=lambda item: (item.is_dir(), item.name))
+            with os.scandir(src) as it:
+                folder = sorted(it, key=lambda item: (item.is_dir(), item.name))
             for child in folder:
                 name = child.name
                 if child.is_file():
+                    size = child.stat().st_size
                     await self.upload_file(
-                        child, _join_path(dst, name), progress=progress
+                        src / name, _join_path(dst, name), size, progress=progress
                     )
                 elif child.is_dir():
                     await self.upload_dir(
-                        child, _join_path(dst, name), progress=progress
+                        src / name, _join_path(dst, name), progress=progress
                     )
                 else:
                     # This case is for uploading non-regular file,
@@ -572,7 +574,8 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
-            await ws.upload_file(path, dst.name, progress=progress)
+            size = path.stat().st_size
+            await ws.upload_file(path, dst.name, size, progress=progress)
             await ws.run()
 
     async def upload_dir(
