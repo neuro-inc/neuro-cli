@@ -551,11 +551,13 @@ class Storage(metaclass=NoPublicConstructor):
                 raise IsADirectoryError(
                     errno.EISDIR, "Is a directory, use recursive copy", str(path)
                 )
+            size = path.stat().st_size
         except OSError as e:
             if getattr(e, "winerror", None) not in (1, 87):
                 raise
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
+            size = 0
 
         async with self._ws_connect(dst.parent, "WEBSOCKET_WRITE") as ws:
 
@@ -566,7 +568,6 @@ class Storage(metaclass=NoPublicConstructor):
                     raise NotADirectoryError(
                         errno.ENOTDIR, "Not a directory", str(dst.parent)
                     )
-                size = path.stat().st_size
                 await ws.upload_file(path, dst.name, size, progress=progress)
 
             async def stat_error_handler(exc: BaseException) -> None:

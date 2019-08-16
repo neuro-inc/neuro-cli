@@ -1,6 +1,7 @@
 import errno
 import os
 import struct
+import sys
 from errno import errorcode
 from filecmp import dircmp
 from pathlib import Path
@@ -84,6 +85,10 @@ def open_file(path: Path) -> Any:
         return open(path, "rb+")
     except FileNotFoundError:
         return open(path, "wb+")
+    except PermissionError if sys.platform == "win32" else ():  # type: ignore
+        if path.is_dir():
+            raise IsADirectoryError(errno.EISDIR, "Is a directory", str(path))
+        raise
 
 
 async def ws_send(
