@@ -280,8 +280,9 @@ async def submit(
 @click.argument("job")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @click.option(
-    "-t",
-    "--tty",
+    "-t/-T",
+    "--tty/--no-tty",
+    default=True,
     is_flag=True,
     help="Allocate virtual tty. Useful for interactive jobs.",
 )
@@ -308,6 +309,14 @@ async def exec(
 ) -> None:
     """
     Execute command in a running job.
+
+    Examples:
+
+    # Provides a shell to the container:
+    neuro exec my-job /bin/bash
+
+    # Executes a single command in the container and returns the control:
+    neuro exec --no-tty my-job ls -l
     """
     cmd = shlex.split(" ".join(cmd))
     id = await resolve_job(root.client, job)
