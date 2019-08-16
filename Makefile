@@ -140,11 +140,11 @@ test-fast:
 
 .PHONY: test-all
 test-all:
-	pytest \
+	pytest -vv\
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
-		tests
+		tests/e2e/test_e2e_storage.py
 
 .PHONY: lint
 lint: lint-docs
