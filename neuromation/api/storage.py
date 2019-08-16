@@ -568,6 +568,7 @@ class Storage(metaclass=NoPublicConstructor):
                     raise NotADirectoryError(
                         errno.ENOTDIR, "Not a directory", str(dst.parent)
                     )
+                assert progress
                 await ws.upload_file(path, dst.name, size, progress=progress)
 
             async def stat_error_handler(exc: BaseException) -> None:
