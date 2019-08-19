@@ -48,7 +48,7 @@ class FileStatus:
     size: int
     type: FileStatusType
     modification_time: int
-    permission: str
+    permission: Action
 
     def is_file(self) -> bool:
         return self.type == FileStatusType.FILE
