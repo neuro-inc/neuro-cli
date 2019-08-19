@@ -5,6 +5,30 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.8.19 (2019-08-19)
+================================
+
+Features
+--------
+
+
+- Change default interactivity option for `neuro exec`: by default, interactive `--tty` will be used. ([#942](https://github.com/neuromation/platform-api-clients/issues/942))
+
+- Use `Optional[datetime]` in `JobStatusHistory` `.created_at`, `.started_at`, `.finished_at` instead of `str`. ([#955](https://github.com/neuromation/platform-api-clients/issues/955))
+
+- `neuro storage cp` is now up to 2 times faster for a directory with many small files. ([#958](https://github.com/neuromation/platform-api-clients/issues/958))
+
+- Refactor port forwarding api to use async context manager for controlling a time of port
+  forwarding process. ([#959](https://github.com/neuromation/platform-api-clients/issues/959))
+
+
+Bugfixes
+--------
+
+
+- Support remote images with registry `host:port`. ([#939](https://github.com/neuromation/platform-api-clients/issues/939))
+
+
 Neuromation 19.8.1 (2019-08-01)
 ===============================
 

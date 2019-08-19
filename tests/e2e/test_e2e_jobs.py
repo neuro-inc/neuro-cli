@@ -430,12 +430,12 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-key-check", "--timeout=60", job_id, "true"]
+        ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "true"]
     )
     assert captured.out == ""
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-key-check", "--timeout=60", job_name, "true"]
+        ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_name, "true"]
     )
     assert captured.out == ""
 
@@ -466,7 +466,7 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "--no-key-check", "--timeout=60", job_id, "false"]
+            ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "false"]
         )
     assert cm.value.returncode == 1
 
@@ -496,7 +496,7 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["job", "exec", "--no-key-check", "--timeout=60", job_id])
+        helper.run_cli(["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id])
     assert cm.value.returncode == 2
 
 
@@ -525,7 +525,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-key-check", "--timeout=60", job_id, "echo 1"]
+        ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "echo 1"]
     )
     assert captured.out == "1"
 
@@ -556,7 +556,7 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
+            ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
         )
     assert cm.value.returncode == 1
 
@@ -586,7 +586,7 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     captured = helper.run_cli(
-        ["job", "exec", "-t", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
+        ["job", "exec", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
     )
     assert captured.out == ""
 
@@ -595,7 +595,7 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
 def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "--no-key-check", "--timeout=60", "job_id", "true"]
+            ["job", "exec", "-T", "--no-key-check", "--timeout=60", "job_id", "true"]
         )
     assert cm.value.returncode == 127
 
@@ -627,7 +627,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "--no-key-check", "--timeout=60", job_id, "true"]
+            ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "true"]
         )
     assert cm.value.returncode == 127
 
