@@ -1016,10 +1016,9 @@ def test_job_run_no_detach(helper: Helper) -> None:
     )
     assert str(token) in captured.out
     detach_notification = (
-        "This terminal is attached to the remote job, so you receive "
-        "the job output.\nUse 'Ctrl-C' to detach from this job (it "
-        "will NOT terminate the job), or\nrestart the job with `--detach` "
-        "option."
+        "Terminal is attached to the remote job, so you receive the job output.\n"
+        "Use 'Ctrl-C' to detach from this job (it will NOT terminate the job), or\n"
+        "restart the job with `--detach` option.\n"
     )
     assert detach_notification in captured.out
 

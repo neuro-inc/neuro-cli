@@ -854,10 +854,9 @@ async def run_job(
 
     if not detach:
         click.echo(
-            "This terminal is attached to the remote job, so you receive "
-            "the job output.\nUse 'Ctrl-C' to detach from this job (it "
-            "will NOT terminate the job), or\nrestart the job with `--detach` "
-            "option.\n"
+            "Terminal is attached to the remote job, so you receive the job output.\n"
+            "Use 'Ctrl-C' to detach from this job (it will NOT terminate the job), or\n"
+            "restart the job with `--detach` option.\n"
         )
         await _print_logs(root, job.id)
         res = await root.client.jobs.status(job.id)
