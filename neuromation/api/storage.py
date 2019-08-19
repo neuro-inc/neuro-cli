@@ -31,6 +31,7 @@ from .url_utils import (
     normalize_storage_path_uri,
 )
 from .utils import NoPublicConstructor
+from .users import Action
 
 
 Printer = Callable[[str], None]
@@ -461,7 +462,7 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
         type=FileStatusType(values["type"]),
         size=int(values["length"]),
         modification_time=int(values["modificationTime"]),
-        permission=values["permission"],
+        permission=Action(values["permission"]),
     )
 
 
