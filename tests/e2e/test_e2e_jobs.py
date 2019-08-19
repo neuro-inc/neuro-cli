@@ -1015,11 +1015,11 @@ def test_job_run_no_detach(helper: Helper) -> None:
         ["-v", "job", "run", "-s", "cpu-small", UBUNTU_IMAGE_NAME, f"echo {token}"]
     )
     assert str(token) in captured.out
-    detach_notification = (
-        "Terminal is attached to the remote job, so you receive the job output.\n"
-        "Use 'Ctrl-C' to detach from this job (it will NOT terminate the job), or\n"
-        "restart the job with `--detach` option.\n"
-    )
+    detach_notification = """\
+Terminal is attached to the remote job, so you receive the job's output.
+Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
+with `--detach` option.
+"""
     assert detach_notification in captured.out
 
 

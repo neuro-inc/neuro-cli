@@ -3,6 +3,7 @@ import logging
 import os
 import shlex
 import sys
+import textwrap
 import uuid
 import webbrowser
 from typing import Dict, List, Optional, Sequence, Set, Tuple
@@ -853,11 +854,14 @@ async def run_job(
         await browse_job(root, job)
 
     if not detach:
-        click.echo(
-            "Terminal is attached to the remote job, so you receive the job output.\n"
-            "Use 'Ctrl-C' to detach from this job (it will NOT terminate the job), or\n"
-            "restart the job with `--detach` option.\n"
+        msg = textwrap.dedent(
+            """\
+            Terminal is attached to the remote job, so you receive the job's output.
+            Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
+            with `--detach` option.
+        """
         )
+        click.echo(click.style(msg, dim=True))
         await _print_logs(root, job.id)
         res = await root.client.jobs.status(job.id)
         sys.exit(res.history.exit_code)
