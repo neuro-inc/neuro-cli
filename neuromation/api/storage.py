@@ -30,8 +30,8 @@ from .url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
-from .utils import NoPublicConstructor
 from .users import Action
+from .utils import NoPublicConstructor
 
 
 Printer = Callable[[str], None]
