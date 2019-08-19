@@ -2,13 +2,16 @@ import asyncio
 import enum
 import json
 import shlex
+from contextlib import suppress
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
 
 import async_timeout
 import attr
 from aiodocker.exceptions import DockerError
 from aiohttp import WSServerHandshakeError
+from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
 
@@ -37,7 +40,7 @@ from .parsing_utils import (
     _ImageNameParser,
     _is_in_neuro_registry,
 )
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asynccontextmanager
 
 
 @dataclass(frozen=True)
@@ -89,9 +92,9 @@ class Container:
 class JobStatusHistory:
     status: JobStatus
     reason: str
-    created_at: str
-    started_at: str
-    finished_at: str
+    created_at: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
     description: Optional[str] = None
     exit_code: Optional[int] = None
 
@@ -104,11 +107,9 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
-    ssh_auth_server: URL
     name: Optional[str] = None
     description: Optional[str] = None
     http_url: URL = URL()
-    http_url_named: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
@@ -288,7 +289,7 @@ class Jobs(metaclass=NoPublicConstructor):
                 "-o",
                 "UserKnownHostsFile=/dev/null",
             ]
-        server_url = job_status.ssh_auth_server
+        server_url = job_status.ssh_server
         port = server_url.port if server_url.port else 22
         command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
         proc = await asyncio.create_subprocess_exec(*command)
@@ -300,9 +301,22 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
+    @asynccontextmanager
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> int:
+    ) -> AsyncIterator[None]:
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(
+            self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
+        )
+        yield
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+    async def _port_forward(
+        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
+    ) -> None:
         try:
             job_status = await self.status(id)
         except IllegalArgumentError as e:
@@ -324,7 +338,7 @@ class Jobs(metaclass=NoPublicConstructor):
                 "-o",
                 "UserKnownHostsFile=/dev/null",
             ]
-        server_url = job_status.ssh_auth_server
+        server_url = job_status.ssh_server
         port = server_url.port if server_url.port else 22
         proxy_command += [
             "-p",
@@ -355,7 +369,7 @@ class Jobs(metaclass=NoPublicConstructor):
             result = await proc.wait()
             if result != 0:
                 raise ValueError(f"error code {result}")
-            return local_port
+            return
         finally:
             await kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
@@ -467,9 +481,9 @@ def _job_description_from_api(
         status=JobStatus(res["history"].get("status", "unknown")),
         reason=res["history"].get("reason", ""),
         description=res["history"].get("description", ""),
-        created_at=res["history"].get("created_at", ""),
-        started_at=res["history"].get("started_at", ""),
-        finished_at=res["history"].get("finished_at", ""),
+        created_at=_parse_datetime(res["history"].get("created_at")),
+        started_at=_parse_datetime(res["history"].get("started_at")),
+        finished_at=_parse_datetime(res["history"].get("finished_at")),
         exit_code=res["history"].get("exit_code"),
     )
     http_url = URL(res.get("http_url", ""))
@@ -485,10 +499,8 @@ def _job_description_from_api(
         is_preemptible=res["is_preemptible"],
         name=name,
         description=description,
-        http_url=http_url,
-        http_url_named=http_url_named,
+        http_url=http_url_named or http_url,
         ssh_server=ssh_server,
-        ssh_auth_server=URL(res["ssh_auth_server"]),
         internal_hostname=internal_hostname,
     )
 
@@ -519,3 +531,9 @@ def _volume_from_api(data: Dict[str, Any]) -> Volume:
     return Volume(
         storage_path=storage_path, container_path=container_path, read_only=read_only
     )
+
+
+def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    return isoparse(dt)

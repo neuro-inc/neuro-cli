@@ -154,6 +154,24 @@ class TestConfigFileInteraction:
         await client.close()
         assert client._config.auth_token.token == token
 
+    async def test_preset_serialization(
+        self,
+        tmp_home: Path,
+        token: str,
+        auth_config: _AuthConfig,
+        cluster_config: _ClusterConfig,
+    ) -> None:
+        _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
+        client = await Factory().get()
+        await client.close()
+        assert len(client._config.cluster_config.resource_presets) > 0
+        assert not client._config.cluster_config.resource_presets[
+            "cpu-large"
+        ].is_preemptible
+        assert client._config.cluster_config.resource_presets[
+            "cpu-large-p"
+        ].is_preemptible
+
     async def test_shorten_path(
         self,
         tmp_home: Path,

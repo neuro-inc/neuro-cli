@@ -1,12 +1,13 @@
 import textwrap
 import time
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from sys import platform
 from typing import Any, List, Optional
 
 import click
 import pytest
+from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
@@ -75,15 +76,15 @@ def job_descr_no_name() -> JobDescription:
             status=JobStatus.PENDING,
             reason="ErrorReason",
             description="ErrorDesc",
-            created_at="2018-09-25T12:28:21.298672+00:00",
-            started_at="2018-09-25T12:28:59.759433+00:00",
-            finished_at="2018-09-25T12:28:59.759433+00:00",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
             resources=Resources(16, 0.1, 0, None, False),
         ),
-        ssh_auth_server=URL("ssh-auth"),
+        ssh_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -99,15 +100,15 @@ def job_descr() -> JobDescription:
             status=JobStatus.PENDING,
             reason="ErrorReason",
             description="ErrorDesc",
-            created_at="2018-09-25T12:28:21.298672+00:00",
-            started_at="2018-09-25T12:28:59.759433+00:00",
-            finished_at="2018-09-25T12:28:59.759433+00:00",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
             resources=Resources(16, 0.1, 0, None, False),
         ),
-        ssh_auth_server=URL("ssh-auth"),
+        ssh_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -172,7 +173,7 @@ class TestJobFormatter:
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
     def test_non_quiet_http_url_named(self, job_descr: JobDescription) -> None:
-        job_descr = replace(job_descr, http_url_named=URL("https://job-named.dev"))
+        job_descr = replace(job_descr, http_url=URL("https://job-named.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
             + f"Name: {TEST_JOB_NAME}\n"
@@ -194,21 +195,20 @@ class TestJobStartProgress:
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=status,
                 reason=reason,
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at="2018-09-25T12:28:59.759433+00:00",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
             ),
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -262,14 +262,13 @@ class TestJobOutputFormatter:
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at="2018-09-25T12:28:59.759433+00:00",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 exit_code=123,
             ),
             container=Container(
@@ -278,7 +277,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -311,14 +310,13 @@ class TestJobOutputFormatter:
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             history=JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at="2018-09-25T12:28:59.759433+00:00",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 exit_code=321,
             ),
             container=Container(
@@ -327,7 +325,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -361,16 +359,16 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
             ),
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -398,16 +396,16 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
             ),
             container=Container(
                 image=RemoteImage("test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -435,16 +433,16 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
             ),
             container=Container(
                 image=RemoteImage("test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
         )
@@ -472,18 +470,17 @@ class TestJobOutputFormatter:
                 status=JobStatus.RUNNING,
                 reason="ContainerRunning",
                 description="",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:24.759433+00:00",
-                finished_at="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
             ),
             http_url=URL("http://local.host.test/"),
-            ssh_server=URL("ssh://local.host.test:22/"),
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
                 resources=Resources(16, 0.1, 0, None, False),
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             internal_hostname="host.local",
         )
@@ -579,15 +576,15 @@ class TestSimpleJobsFormatter:
                     status=JobStatus.PENDING,
                     reason="ErrorReason",
                     description="ErrorDesc",
-                    created_at="2018-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2018-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
                     resources=Resources(16, 0.1, 0, None, False),
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
             JobDescription(
@@ -599,15 +596,15 @@ class TestSimpleJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
-                    created_at="2018-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2018-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
                     resources=Resources(16, 0.1, 0, None, False),
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
         ]
@@ -636,16 +633,16 @@ class TestTabularJobRow:
                 status=status,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2017-01-02T12:28:21.298672+00:00",
-                started_at="2017-02-03T12:28:59.759433+00:00",
-                finished_at="2017-03-04T12:28:59.759433+00:00",
+                created_at=isoparse("2017-01-02T12:28:21.298672+00:00"),
+                started_at=isoparse("2017-02-03T12:28:59.759433+00:00"),
+                finished_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
             ),
             container=Container(
                 image=remote_image,
                 resources=Resources(16, 0.1, 0, None, False),
                 command="ls",
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
 
@@ -710,16 +707,16 @@ class TestTabularJobsFormatter:
                 status=JobStatus.FAILED,
                 reason="ErrorReason",
                 description="ErrorDesc",
-                created_at="2018-09-25T12:28:21.298672+00:00",
-                started_at="2018-09-25T12:28:59.759433+00:00",
-                finished_at=datetime.fromtimestamp(time.time() - 1).isoformat(),
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
             ),
             container=Container(
                 image=RemoteImage("i", "l"),
                 resources=Resources(16, 0.1, 0, None, False),
                 command="c",
             ),
-            ssh_auth_server=URL("ssh-auth"),
+            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
         formatter = TabularJobsFormatter(0)
@@ -751,16 +748,16 @@ class TestTabularJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
-                    created_at="2018-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2017-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),
                     resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
             JobDescription(
@@ -773,16 +770,16 @@ class TestTabularJobsFormatter:
                     status=JobStatus.PENDING,
                     reason="",
                     description="",
-                    created_at="2017-09-25T12:28:21.298672+00:00",
-                    started_at="2018-09-25T12:28:59.759433+00:00",
-                    finished_at="2017-09-25T12:28:59.759433+00:00",
+                    created_at=isoparse("2017-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),
                     resources=Resources(16, 0.1, 0, None, False),
                     command="ls -la /some/path",
                 ),
-                ssh_auth_server=URL("ssh-auth"),
+                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
         ]

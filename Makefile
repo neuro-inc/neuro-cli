@@ -71,6 +71,14 @@ init: _init-readme update-deps
 _init-readme:
 	cp -n README.in.md README.md
 
+.PHONY: e2e_ci
+e2e_ci:
+	if [ "${AGENT_OS}" = "Windows_NT" ]; then \
+	    make _e2e_win; \
+	else \
+	    make _e2e; \
+	fi
+
 .PHONY: e2e
 e2e:
 	pytest \

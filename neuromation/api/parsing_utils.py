@@ -22,7 +22,6 @@ def _is_in_neuro_registry(image: RemoteImage) -> bool:
 
 
 def _as_repo_str(image: RemoteImage) -> str:
-    # TODO (ajuszkowski, 11-Feb-2019) should be host:port (see URL.explicit_port)
     pre = f"{image.registry}/{image.owner}/" if _is_in_neuro_registry(image) else ""
     post = f":{image.tag}" if image.tag else ""
     return pre + image.name + post
@@ -48,7 +47,7 @@ class _ImageNameParser:
                 f"Empty hostname in registry URL '{registry_url}': "
                 "please consider updating configuration"
             )
-        self._registry = registry_url.host
+        self._registry = _get_url_authority(registry_url)
 
     def parse_as_local_image(self, image: str) -> LocalImage:
         try:
@@ -76,7 +75,14 @@ class _ImageNameParser:
             return self.parse_as_neuro_image(value)
         else:
             img = self.parse_as_local_image(value)
-            return RemoteImage(img.name, img.tag)
+            name = img.name
+            registry = None
+            if ":" in name:
+                msg = "here name must contain slash(es). checked by _split_image_name()"
+                assert "/" in name, msg
+                registry, name = name.split("/", 1)
+
+            return RemoteImage(name=name, tag=img.tag, registry=registry)
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
@@ -135,16 +141,19 @@ class _ImageNameParser:
             raise ValueError("scheme 'image://' is required for remote images")
 
         url = URL(image)
+
+        if url.scheme and url.scheme != "image":
+            # image with port in registry: `localhost:5000/owner/ubuntu:latest`
+            url = URL(f"//{url}")
+
         if not url.scheme:
             parts = url.path.split("/")
-            url = url.build(
+            url = URL.build(
                 scheme="image",
                 host=parts[1],
                 path="/".join([""] + parts[2:]),
                 query=url.query,
             )
-        else:
-            assert url.scheme == "image", f"invalid image scheme: '{url.scheme}'"
 
         self._check_allowed_uri_elements(url)
 
@@ -156,16 +165,30 @@ class _ImageNameParser:
     def _split_image_name(
         self, image: str, default_tag: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
+        if image.endswith(":") or image.startswith(":"):
+            # case `ubuntu:`, `:latest`
+            raise ValueError("empty name or empty tag")
         colon_count = image.count(":")
         if colon_count == 0:
-            image, tag = image, default_tag
+            # case `ubuntu`
+            name, tag = image, default_tag
         elif colon_count == 1:
-            image, tag = image.split(":")
-            if not tag:
-                raise ValueError("empty tag is not allowed")
+            # case `ubuntu:latest`
+            name, tag = image.split(":")
+            if "/" in tag:
+                # case `localhost:5000/ubuntu`
+                name, tag = image, default_tag
+        elif colon_count == 2:
+            # case `localhost:9000/owner/ubuntu:latest`
+            if "/" not in image:
+                # case `localhost:9000:latest`
+                raise ValueError("too many tags")
+            name, tag = image.rsplit(":", 1)
         else:
             raise ValueError("too many tags")
-        return image, tag
+        if tag and (":" in tag or "/" in tag):
+            raise ValueError("invalid tag")
+        return name, tag
 
     def _check_allowed_uri_elements(self, url: URL) -> None:
         if not url.path or url.path == "/":
@@ -178,5 +201,15 @@ class _ImageNameParser:
             raise ValueError(f"user is not allowed, found: '{url.user}'")
         if url.password:
             raise ValueError(f"password is not allowed, found: '{url.password}'")
-        if url.port:
-            raise ValueError(f"port is not allowed, found: '{url.port}'")
+        if url.port and url.scheme == "image":
+            raise ValueError(
+                f"port is not allowed with 'image://' scheme, found: '{url.port}'"
+            )
+
+
+def _get_url_authority(url: URL) -> Optional[str]:
+    if url.host is None:
+        return None
+    port = url.explicit_port  # type: ignore
+    suffix = f":{port}" if port is not None else ""
+    return url.host + suffix

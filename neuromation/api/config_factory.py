@@ -257,6 +257,7 @@ class Factory:
             "memory_mb": resource_preset.memory_mb,
             "gpu": resource_preset.gpu,
             "gpu_model": resource_preset.gpu_model,
+            "is_preemptible": resource_preset.is_preemptible,
         }
 
     def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
@@ -297,6 +298,7 @@ class Factory:
                 memory_mb=payload["memory_mb"],
                 gpu=payload.get("gpu"),
                 gpu_model=payload.get("gpu_model"),
+                is_preemptible=payload.get("is_preemptible", False),
             ),
         )
 

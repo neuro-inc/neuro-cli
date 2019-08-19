@@ -3,15 +3,10 @@ from enum import Enum
 from typing import Any, Dict, Optional, Sequence
 
 from aiohttp.web import HTTPCreated, HTTPNoContent
-from jose import JWTError, jwt
 from yarl import URL
 
 from .core import ClientError, _Core
 from .utils import NoPublicConstructor
-
-
-JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
-JWT_IDENTITY_CLAIM_OPTIONS = ("identity", JWT_IDENTITY_CLAIM)
 
 
 class Action(str, Enum):
@@ -31,8 +26,8 @@ class Permission:
 
 
 @dataclass(frozen=True)
-class SharedPermission:
-    username: str
+class Share:
+    user: str
     permission: Permission
 
 
@@ -54,9 +49,9 @@ class Users(metaclass=NoPublicConstructor):
             ret.append(Permission(uri, action))
         return ret
 
-    async def get_shared_acl(
+    async def get_shares(
         self, user: str, scheme: Optional[str] = None
-    ) -> Sequence[SharedPermission]:
+    ) -> Sequence[Share]:
         url = URL(f"users/{user}/permissions/shared")
         params = {"scheme": scheme} if scheme else {}
         async with self._core.request("GET", url, params=params) as resp:
@@ -65,7 +60,7 @@ class Users(metaclass=NoPublicConstructor):
         for item in payload:
             uri = URL(item["uri"])
             action = Action(item["action"])
-            ret.append(SharedPermission(item["user"], Permission(uri, action)))
+            ret.append(Share(item["user"], Permission(uri, action)))
         return ret
 
     async def share(self, user: str, permission: Permission) -> None:
@@ -88,14 +83,3 @@ class Users(metaclass=NoPublicConstructor):
                     f"Server return unexpected result: {resp.status}."
                 )  # NOQA
         return None
-
-
-def get_token_username(token: str) -> str:
-    try:
-        claims = jwt.get_unverified_claims(token)
-    except JWTError as e:
-        raise ValueError(f"Passed string does not contain valid JWT structure.") from e
-    for identity_claim in JWT_IDENTITY_CLAIM_OPTIONS:
-        if identity_claim in claims:
-            return claims[identity_claim]
-    raise ValueError("JWT Claims structure is not correct.")
