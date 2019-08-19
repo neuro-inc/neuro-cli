@@ -1015,6 +1015,13 @@ def test_job_run_no_detach(helper: Helper) -> None:
         ["-v", "job", "run", "-s", "cpu-small", UBUNTU_IMAGE_NAME, f"echo {token}"]
     )
     assert str(token) in captured.out
+    detach_notification = (
+        "This terminal is attached to the remote job, so you receive "
+        "the job output.\nUse 'Ctrl-C' to detach from this job (it "
+        "will NOT terminate the job), or\nrestart the job with `--detach` "
+        "option."
+    )
+    assert detach_notification in captured.out
 
 
 @pytest.mark.e2e
