@@ -54,14 +54,12 @@ MAX_WS_READ_SIZE = 16 * 2 ** 20  # 16 MiB
 MAX_WS_MESSAGE_SIZE = MAX_WS_READ_SIZE + 2 ** 16 + 100
 
 Printer = Callable[[str], None]
+WSStorageHandler = AsyncGenerator[None, Tuple[Dict[str, Any], bytes]]
 
 
 class FileStatusType(str, enum.Enum):
     DIRECTORY = "DIRECTORY"
     FILE = "FILE"
-
-
-WSStorageHandler = AsyncGenerator[None, Tuple[Dict[str, Any], bytes]]
 
 
 class WSStorageOperation(str, enum.Enum):
@@ -103,22 +101,6 @@ class WSStorageClient:
         self._new_req_id = idgen
         self._handlers: Dict[int, WSStorageHandler] = {}
 
-    async def send(
-        self,
-        op: WSStorageOperation,
-        path: str = "",
-        params: Dict[str, Any] = {},
-        data: bytes = b"",
-    ) -> int:
-        reqid = self._new_req_id()
-        payload = {"op": op.value, "id": reqid, "path": path, **params}
-        log.debug("WS send: %s", payload)
-        header = cbor.dumps(payload)
-        await self._client.send_bytes(
-            struct.pack("!I", len(header) + 4) + header + data
-        )
-        return reqid
-
     async def async_request(
         self,
         op: WSStorageOperation,
@@ -130,7 +112,10 @@ class WSStorageClient:
     ) -> None:
         reqid = self._new_req_id()
         payload = {"op": op.value, "id": reqid, "path": path, **params}
-        log.debug("WS send: %s", payload)
+        if data:
+            log.debug("WS send: %s, %d bytes", payload, len(data))
+        else:
+            log.debug("WS send: %s", payload)
         header = cbor.dumps(payload)
         await handler.__anext__()
         self._handlers[reqid] = handler
@@ -241,33 +226,32 @@ class WSStorageClient:
                 payload, data = yield
             except FileExistsError:
                 raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
-            else:
-                progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
-                with os.scandir(src) as it:
-                    folder = sorted(it, key=lambda item: (item.is_dir(), item.name))
-                for child in folder:
-                    name = child.name
-                    if child.is_file():
-                        size = child.stat().st_size
-                        await self.upload_file(
-                            src / name, _join_path(dst, name), size, progress=progress
+            progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
+            with os.scandir(src) as it:
+                folder = sorted(it, key=lambda item: (item.is_dir(), item.name))
+            for child in folder:
+                name = child.name
+                if child.is_file():
+                    size = child.stat().st_size
+                    await self.upload_file(
+                        src / name, _join_path(dst, name), size, progress=progress
+                    )
+                elif child.is_dir():
+                    await self.upload_dir(
+                        src / name, _join_path(dst, name), progress=progress
+                    )
+                else:
+                    # This case is for uploading non-regular file,
+                    # e.g. blocking device or unix socket
+                    # Coverage temporary skipped, the line is waiting for a champion
+                    progress.fail(
+                        StorageProgressFail(
+                            src_uri / name,
+                            dst_uri / name,
+                            f"Cannot upload {child}, not regular file/directory",
                         )
-                    elif child.is_dir():
-                        await self.upload_dir(
-                            src / name, _join_path(dst, name), progress=progress
-                        )
-                    else:
-                        # This case is for uploading non-regular file,
-                        # e.g. blocking device or unix socket
-                        # Coverage temporary skipped, the line is waiting for a champion
-                        progress.fail(
-                            StorageProgressFail(
-                                src_uri / name,
-                                dst_uri / name,
-                                f"Cannot upload {child}, not regular file/directory",
-                            )
-                        )  # pragma: no cover
-                progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
+                    )  # pragma: no cover
+            progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
 
         await self.async_request(
             WSStorageOperation.MKDIRS,
@@ -562,15 +546,14 @@ class Storage(metaclass=NoPublicConstructor):
                     raise NotADirectoryError(
                         errno.ENOTDIR, "Not a directory", str(dst.parent)
                     )
-                else:
-                    stat = _file_status_from_api(payload["FileStatus"])
-                    if not stat.is_dir():
-                        # parent path should be a folder
-                        raise NotADirectoryError(
-                            errno.ENOTDIR, "Not a directory", str(dst.parent)
-                        )
-                    assert progress
-                    await ws.upload_file(path, dst.name, size, progress=progress)
+                stat = _file_status_from_api(payload["FileStatus"])
+                if not stat.is_dir():
+                    # parent path should be a folder
+                    raise NotADirectoryError(
+                        errno.ENOTDIR, "Not a directory", str(dst.parent)
+                    )
+                assert progress
+                await ws.upload_file(path, dst.name, size, progress=progress)
 
             await ws.async_request(WSStorageOperation.STAT, "", handler=stat_handler())
             await ws.run()
