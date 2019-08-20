@@ -17,9 +17,8 @@ from yarl import URL
 
 from neuromation.api.abc import (
     AbstractDockerImageProgress,
-    ImageCommitDetails,
-    ImageCommitStatus,
-    ImageCommitStep,
+    ImageCommitFinished,
+    ImageCommitStarted,
     ImageProgressPush,
     ImageProgressSave,
 )
@@ -233,18 +232,13 @@ class Jobs(metaclass=NoPublicConstructor):
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))
 
-            chunk = await resp.content.readline()
-            step = _parse_commit_chunk(_load_chunk(chunk), image_parser)
-            progress.commit(step)
+            chunk_1 = await resp.content.readline()
+            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), image_parser)
+            progress.commit_started(data_1)
 
-            chunk = await resp.content.readline()
-            step = _parse_commit_chunk(_load_chunk(chunk), image_parser)
-            progress.commit(step)
-            if step.status != ImageCommitStatus.FINISHED:
-                error_details = {
-                    "message": f"Expect commit to finish, received: '{step.status}'"
-                }
-                raise DockerError(400, error_details)
+            chunk_2 = await resp.content.readline()
+            data_2 = _parse_commit_finished_chunk(id, _load_chunk(chunk_2))
+            progress.commit_finished(data_2)
 
             # then, we expect stream for docker-push
             src = LocalImage(f"{image.owner}/{image.name}", image.tag)
@@ -383,29 +377,41 @@ def _load_chunk(chunk: bytes) -> Dict[str, Any]:
     return json.loads(chunk, encoding="utf-8")
 
 
-def _parse_commit_chunk(
-    obj: Dict[str, Any], image_parser: _ImageNameParser
-) -> ImageCommitStep:
+def _parse_commit_started_chunk(
+    job_id: str, obj: Dict[str, Any], image_parser: _ImageNameParser
+) -> ImageCommitStarted:
+    _raise_for_invalid_commit_chunk(obj, expect_started=True)
+    details_json = obj.get("details", {})
+    container = details_json.get("container")
+    image = details_json.get("image")
+    if not container:
+        error_details = {"message": "Missing required details: 'container'"}
+        raise DockerError(400, error_details)
+    if not image:
+        error_details = {"message": "Missing required details: 'image'"}
+        raise DockerError(400, error_details)
+    return ImageCommitStarted(job_id, container, image_parser.parse_remote(image))
+
+
+def _parse_commit_finished_chunk(
+    job_id: str, obj: Dict[str, Any]
+) -> ImageCommitFinished:
+    _raise_for_invalid_commit_chunk(obj, expect_started=False)
+    return ImageCommitFinished(job_id)
+
+
+def _raise_for_invalid_commit_chunk(obj: Dict[str, Any], expect_started: bool) -> None:
     _raise_on_error_chunk(obj)
     if "status" not in obj.keys():
         error_details = {"message": 'Missing required field: "status"'}
         raise DockerError(400, error_details)
-
-    status_str = obj["status"]
-    details_json = obj.get("details", {})
-    container = details_json.get("container")
-    image_str = details_json.get("image")
-    details: Optional[ImageCommitDetails] = None
-    if container and image_str:
-        image = image_parser.parse_remote(image_str)
-        details = ImageCommitDetails(container=container, target_image=image)
-    try:
-        status = ImageCommitStatus(status_str)
-    except ValueError:
-        error_details = {"message": f"Invalid commit status: '{status_str}'"}
+    status = obj["status"]
+    expected = "CommitStarted" if expect_started else "CommitFinished"
+    if status != expected:
+        error_details = {
+            "message": f"Invalid commit status: '{status}', expecting: '{expected}'"
+        }
         raise DockerError(400, error_details)
-
-    return ImageCommitStep(status=status, details=details)
 
 
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:

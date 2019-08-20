@@ -9,7 +9,11 @@ from neuromation.api import (
     ImageProgressPush,
     ImageProgressStep,
 )
-from neuromation.api.abc import ImageCommitStatus, ImageCommitStep, ImageProgressSave
+from neuromation.api.abc import (
+    ImageCommitFinished,
+    ImageCommitStarted,
+    ImageProgressSave,
+)
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -28,6 +32,9 @@ class DockerImageProgress(AbstractDockerImageProgress):
     def close(self) -> None:  # pragma: no cover
         pass
 
+    def _shorten_container_hash(self, container: str) -> str:
+        return container[:12]
+
 
 class QuietDockerImageProgress(DockerImageProgress):
     def pull(self, data: ImageProgressPull) -> None:
@@ -45,7 +52,10 @@ class QuietDockerImageProgress(DockerImageProgress):
     def save(self, data: ImageProgressSave) -> None:
         pass
 
-    def commit(self, data: ImageCommitStep) -> None:
+    def commit_started(self, data: ImageCommitStarted) -> None:
+        pass
+
+    def commit_finished(self, data: ImageCommitFinished) -> None:
         pass
 
 
@@ -80,13 +90,13 @@ class DetailedDockerImageProgress(DockerImageProgress):
         dst = click.style(str(data.dst), bold=True)
         self._printer.print(f"Saving {job} -> {dst}")
 
-    def commit(self, data: ImageCommitStep) -> None:
-        if data.status == ImageCommitStatus.STARTED and data.details:
-            img = click.style(str(data.details.target_image), bold=True)
-            cnt = click.style(str(data.details.container), bold=True)
-            self._printer.print(f"Creating image {img} from {cnt}")
-        elif data.status == ImageCommitStatus.FINISHED:
-            self._printer.print("Image created")
+    def commit_started(self, data: ImageCommitStarted) -> None:
+        img = click.style(str(data.target_image), bold=True)
+        cnt = click.style(self._shorten_container_hash(data.container), bold=True)
+        self._printer.print(f"Creating image {img} from container {cnt}")
+
+    def commit_finished(self, data: ImageCommitFinished) -> None:
+        self._printer.print("Image created")
 
     def close(self) -> None:
         self._printer.close()
@@ -115,13 +125,13 @@ class StreamDockerImageProgress(DockerImageProgress):
     def save(self, data: ImageProgressSave) -> None:
         self._printer.print(f"Saving job '{data.job}' to image '{data.dst}'...")
 
-    def commit(self, data: ImageCommitStep) -> None:
-        if data.status == ImageCommitStatus.STARTED and data.details:
-            d = data.details
-            self._printer.print(f"Using remote image '{d.target_image}'")
-            self._printer.print(f"Creating image from container '{d.container}'...")
-        elif data.status == ImageCommitStatus.FINISHED:
-            self._printer.print("Image created")
+    def commit_started(self, data: ImageCommitStarted) -> None:
+        self._printer.print(f"Using remote image '{data.target_image}'")
+        container = self._shorten_container_hash(data.container)
+        self._printer.print(f"Creating image from container '{container}'...")
+
+    def commit_finished(self, data: ImageCommitFinished) -> None:
+        self._printer.print("Image created")
 
     def close(self) -> None:
         self._printer.close()

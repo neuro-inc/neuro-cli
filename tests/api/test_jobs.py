@@ -251,12 +251,12 @@ async def test_save_ok(
         await client.jobs.save("job-id", image)
 
 
-async def test_save_wrong_first_commit_message_fails(
+async def test_save_commit_started_invalid_status_fails(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    invalid_status = "invalid status"
+    invalid = "invalid status"
     JSON = [
-        {"status": invalid_status},
+        {"status": invalid, "details": {"container": "cnt", "image": "img"}},
         {"status": "CommitFinished"},
         {"status": "The push refers to repository [localhost:5000/alpine]"},
     ]
@@ -281,17 +281,17 @@ async def test_save_wrong_first_commit_message_fails(
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage(registry="gcr.io", owner="me", name="img")
         with pytest.raises(
-            DockerError, match=f"Invalid commit status: '{invalid_status}'"
+            DockerError,
+            match=f"Invalid commit status: '{invalid}', expecting: 'CommitStarted'",
         ):
             await client.jobs.save("job-id", image)
 
 
-async def test_save_commit_takes_more_than_two_messages_fails(
+async def test_save_commit_started_missing_container_details_fails(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = [
-        {"status": "CommitStarted"},
-        {"status": "CommitStarted"},
+        {"status": "CommitStarted", "details": {"image": "img"}},
         {"status": "CommitFinished"},
         {"status": "The push refers to repository [localhost:5000/alpine]"},
     ]
@@ -315,18 +315,116 @@ async def test_save_commit_takes_more_than_two_messages_fails(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(DockerError, match="Missing required details: 'container'"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_started_missing_image_details_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = [
+        {"status": "CommitStarted", "details": {"container": "cnt"}},
+        {"status": "CommitFinished"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(DockerError, match="Missing required details: 'image'"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_finished_invalid_status_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    invalid = "invalid status"
+    JSON = [
+        {"status": "CommitStarted", "details": {"container": "cnt", "image": "img"}},
+        {"status": invalid},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
         with pytest.raises(
-            DockerError, match=f"Expect commit to finish, received: 'CommitStarted'"
+            DockerError,
+            match=(f"Invalid commit status: '{invalid}', expecting: 'CommitFinished'"),
         ):
             await client.jobs.save("job-id", image)
 
 
-async def test_save_commit_missing_status_fails(
+async def test_save_commit_started_missing_status_fails(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = [
         {"not-a-status": "value"},
         {"status": "CommitFinished"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(DockerError, match='Missing required field: "status"'):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_finished_missing_status_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = [
+        {"status": "CommitStarted", "details": {"container": "cnt", "image": "img"}},
+        {"not-a-status": "value"},
         {"status": "The push refers to repository [localhost:5000/alpine]"},
     ]
 
