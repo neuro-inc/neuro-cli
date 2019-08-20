@@ -158,7 +158,7 @@ class WSStorageClient:
 
         raise RuntimeError(f"Unexpected response {payload!r}")
 
-    async def create_task(self, coro: Awaitable[None]) -> "asyncio.Task[None]":
+    def create_task(self, coro: Awaitable[None]) -> "asyncio.Task[None]":
         async def wrapped() -> None:
             try:
                 await coro
@@ -217,7 +217,7 @@ class WSStorageClient:
                     )
                     await fut
 
-                await self.create_task(write_coro(pos, chunk))
+                self.create_task(write_coro(pos, chunk))
                 pos = newpos
             progress.complete(StorageProgressComplete(src_uri, dst_uri, size))
 
@@ -241,13 +241,13 @@ class WSStorageClient:
             name = child.name
             if child.is_file():
                 size = child.stat().st_size
-                await self.create_task(
+                self.create_task(
                     self.upload_file(
                         src / name, _join_path(dst, name), size, progress=progress
                     )
                 )
             elif child.is_dir():
-                await self.create_task(
+                self.create_task(
                     self.upload_dir(
                         src / name, _join_path(dst, name), progress=progress
                     )
@@ -286,7 +286,7 @@ class WSStorageClient:
         progress.start(StorageProgressStart(src_uri, dst_uri, size))
         for pos in range(0, size, WS_READ_SIZE):
             chunk_size = min(WS_READ_SIZE, size - pos)
-            await self.create_task(read_coro(dst, pos, chunk_size))
+            self.create_task(read_coro(dst, pos, chunk_size))
             progress.step(StorageProgressStep(src_uri, dst_uri, pos + chunk_size, size))
         progress.complete(StorageProgressComplete(src_uri, dst_uri, size))
 
@@ -308,13 +308,13 @@ class WSStorageClient:
         for child in folder:
             name = child.name
             if child.is_file():
-                await self.create_task(
+                self.create_task(
                     self.download_file(
                         _join_path(src, name), dst / name, child.size, progress=progress
                     )
                 )
             elif child.is_dir():
-                await self.create_task(
+                self.create_task(
                     self.download_dir(
                         _join_path(src, name), dst / name, progress=progress
                     )
