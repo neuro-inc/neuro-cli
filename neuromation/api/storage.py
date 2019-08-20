@@ -160,10 +160,12 @@ class WSStorageClient:
 
     async def create_task(self, coro: Awaitable[None]) -> "asyncio.Task[None]":
         async def wrapped() -> None:
-            await coro
-            self._tasks -= 1
-            if not self._tasks:
-                await self._client.close()
+            try:
+                await coro
+            finally:
+                self._tasks -= 1
+                if not self._tasks:
+                    await self._client.close()
 
         loop = asyncio.get_event_loop()
         self._tasks += 1
