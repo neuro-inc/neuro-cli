@@ -1417,7 +1417,7 @@ class TestDockerImageProgress:
         formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
         formatter.close()
         out, err = capfd.readouterr()
-        assert out == "Image created\n"
+        assert out.startswith("Image created")
         assert err == ""
 
     def test_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
@@ -1495,5 +1495,5 @@ class TestDockerImageProgress:
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert "Image created\n" in out
+        assert out.startswith("Image created")
         assert CSI not in out  # no styled strings
