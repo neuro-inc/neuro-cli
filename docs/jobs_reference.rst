@@ -72,34 +72,31 @@ Jobs
    .. comethod:: monitor(id: str) -> AsyncIterator[bytes]
       :async-for:
 
-      Get job logs as a sequence of data chunks.
+      Get job logs as a sequence of data chunks, e.g.::
+
+         async for chunk in client.jobs.monitor(job_id):
+             print(chunk.encode('utf8', errors='replace')
 
       :param str id: job :attr:`~JobDescription.id` to retrieve logs.
 
       :return: :class:`~collections.abc.AsyncIterator` over :class:`bytes` log chunks.
 
-      The method usage is::
-
-         async for chunk in client.jobs.monitor(job_id):
-             print(chunk.encode('utf8', errors='replace')
 
    .. comethod:: port_forward(id: str, local_port: int, job_port: int, *, \
                               no_key_check: bool = False \
                  ) -> None
       :async-with:
 
-      Forward local port to job.
+      Forward local port to job, e.g.::
+
+         async with client.jobs.port_forward(job_id, 8080, 80):
+             # port forwarding is awailable inside with-block
 
       :param str id: job :attr:`~JobDescription.id`.
 
       :param int local_port: local TCP port to forward.
 
       :param int jot_port: remote TCP port in a job to forward.
-
-      The method should be used as async context manager, e.g.::
-
-         async with client.jobs.port_forward(job_id, 8080, 80):
-             # port forwarding is awailable inside with-block
 
    .. comethod:: run(container: Container, \
                      *, \
@@ -138,16 +135,15 @@ Jobs
    .. comethod:: top(id: str) -> AsyncIterator[JobTelemetry]
       :async-for:
 
-      Get job usage statistics.
+      Get job usage statistics, e.g.::
+
+          async for data in client.jobs.top(job_id):
+              print(data.cpu, data.memory)
 
       :param str id: job :attr:`~JobDescription.id` to get telemetry data.
 
       :return: asynchronous iterator which emits `JobTelemetry` objects peridodically.
 
-      The usage example::
-
-          async for data in client.jobs.top(job_id):
-              print(data.cpu, data.memory)
 
 Job dataclasses
 ===============
@@ -327,7 +323,7 @@ JobStatusHistory
 
       Additional information for current status, :class:`str`.
 
-      Examples of ``reason`` values:
+      Examples of *reason* values:
 
       * ``'ContainerCreating'`` for :attr:`JobStatus.PENDING` job that initiates a pod
         for container.
