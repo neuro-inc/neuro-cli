@@ -11,6 +11,7 @@ from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
+    Action,
     Container,
     FileStatus,
     FileStatusType,
@@ -794,7 +795,7 @@ class TestNonePainter:
             2048,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         )
         assert painter.paint(file.name, file.type) == file.name
 
@@ -807,7 +808,7 @@ class TestQuotedPainter:
             2048,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         )
         assert painter.paint(file.name, file.type) == "'File1'"
 
@@ -818,7 +819,7 @@ class TestQuotedPainter:
             2048,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         )
         assert painter.paint(file.name, file.type) == '''"File1'2"'''
 
@@ -950,14 +951,14 @@ class TestGnuPainter:
             1024,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         )
         folder = FileStatus(
             "tmp",
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "write",
+            Action.WRITE,
         )
         painter = GnuPainter("di=32;41:fi=0;44:no=0;46")
         assert painter.paint(file.name, file.type) == "\x1b[0;44mtest.txt\x1b[0m"
@@ -985,14 +986,14 @@ class TestGnuPainter:
             1024,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         )
         folder = FileStatus(
             "tmp",
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "write",
+            Action.WRITE,
         )
         painter = GnuPainter("di=32;41:fi=0;44:no=0;46", underline=True)
         assert painter.paint(file.name, file.type) == "\x1b[0;44m\x1b[4mtest.txt\x1b[0m"
@@ -1026,14 +1027,14 @@ class TestBSDPainter:
             1024,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         )
         folder = FileStatus(
             "tmp",
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "write",
+            Action.WRITE,
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad")
         assert painter.paint(file.name, file.type) == "test.txt"
@@ -1051,14 +1052,14 @@ class TestBSDPainter:
             1024,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         )
         folder = FileStatus(
             "tmp",
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "write",
+            Action.WRITE,
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad", underline=True)
         assert painter.paint(file.name, file.type) == click.style(
@@ -1110,21 +1111,21 @@ class TestFilesFormatter:
             2048,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         ),
         FileStatus(
             "File2",
             1024,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-10-10 13:10:10", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         ),
         FileStatus(
             "File3 with space",
             1_024_001,
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2019-02-02 05:02:02", "%Y-%m-%d %H:%M:%S"))),
-            "read",
+            Action.READ,
         ),
     ]
     folders = [
@@ -1133,14 +1134,14 @@ class TestFilesFormatter:
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2017-03-03 06:03:03", "%Y-%m-%d %H:%M:%S"))),
-            "manage",
+            Action.MANAGE,
         ),
         FileStatus(
             "1Folder with space",
             0,
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2017-03-03 06:03:02", "%Y-%m-%d %H:%M:%S"))),
-            "manage",
+            Action.MANAGE,
         ),
     ]
     files_and_folders = files + folders

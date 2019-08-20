@@ -30,6 +30,7 @@ from .url_utils import (
     normalize_local_path_uri,
     normalize_storage_path_uri,
 )
+from .users import Action
 from .utils import NoPublicConstructor
 
 
@@ -47,7 +48,7 @@ class FileStatus:
     size: int
     type: FileStatusType
     modification_time: int
-    permission: str
+    permission: Action
 
     def is_file(self) -> bool:
         return self.type == FileStatusType.FILE
@@ -461,7 +462,7 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
         type=FileStatusType(values["type"]),
         size=int(values["length"]),
         modification_time=int(values["modificationTime"]),
-        permission=values["permission"],
+        permission=Action(values["permission"]),
     )
 
 
