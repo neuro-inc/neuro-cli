@@ -145,13 +145,8 @@ Jobs
       :return: asynchronous iterator which emits `JobTelemetry` objects peridodically.
 
 
-Job dataclasses
-===============
-
-.. sort following sections alphabetically
-
 Container
----------
+=========
 
 .. class:: Container
 
@@ -195,7 +190,7 @@ Container
 
 
 HTTPPort
---------
+========
 
 .. class:: HTTPPort
 
@@ -215,7 +210,7 @@ HTTPPort
 
 
 JobDescription
---------------
+==============
 
 .. class:: JobDescription
 
@@ -276,7 +271,7 @@ JobDescription
 
 
 JobStatus
----------
+=========
 
 .. class:: JobStatus
 
@@ -306,7 +301,7 @@ JobStatus
 
 
 JobStatusHistory
-----------------
+================
 
 .. class:: JobStatusHistory
 
@@ -357,7 +352,7 @@ JobStatusHistory
 
 
 JobTelemetry
-------------
+============
 
 .. class:: JobTelemetry
 
@@ -395,7 +390,7 @@ JobTelemetry
 
 
 Resources
----------
+=========
 
 .. class:: Resources
 
