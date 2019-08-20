@@ -61,9 +61,9 @@ help:
 	- coverage: upload coverage information to codecov.io \n\
 	- ci: run CI related targets \n\
 \n\
-        * DOC \n\
-        - doc: generate sphinx html docs \n\
-        - doc-spelling: check dockumentation spelling \n\
+        * API-DOC \n\
+        - api-doc: generate sphinx html docs \n\
+        - api-doc-spelling: check dockumentation spelling \n\
     "
 
 .PHONY: init
@@ -254,12 +254,12 @@ update-deps-fast:
 	@ [ -z "${REQUIREMENTS_CHANGED}" ] || (make update-deps)
 
 
-.PHONY: doc
-doc:
+.PHONY: api-doc
+api-doc:
 	make -C docs html SPHINXOPTS="-W -E"
 	@echo "open file://`pwd`/docs/_build/html/index.html"
 
-.PHONY: doc-spelling
-doc-spelling:
+.PHONY: api-doc-spelling
+api-doc-spelling:
 	make -C docs spelling SPHINXOPTS="-W -E"
 	@echo "open file://`pwd`/docs/_build/html/index.html"

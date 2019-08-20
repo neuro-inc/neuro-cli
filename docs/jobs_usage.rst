@@ -4,7 +4,7 @@
 Jobs Usage
 ==========
 
-Jobs api
+Jobs API
 
 
 .. _job-preemption:

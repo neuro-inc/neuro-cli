@@ -8,7 +8,7 @@ Reference
 
 .. _client-instantiation:
 
-Client instantiation
+Client instantiating
 ====================
 
 .. function:: get()

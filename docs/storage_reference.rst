@@ -23,14 +23,14 @@ Storage
    .. comethod:: glob(uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]
       :async-for:
 
-      Glob the given relative pattern *uri* in the directory represented by this uri,
+      Glob the given relative pattern *uri* in the directory represented by this *uri*,
       yielding all matching remote files (of any kind)::
 
           folder = yarl.URL("storage:folder/*")
           async for url in client.storage.glob(folder):
               print(url)
 
-      The ``“**”`` pattern means “this directory and all subdirectories,
+      The ``“**”`` pattern means “this directory and all sub-directories,
       recursively”. In other words, it enables recursive globbing::
 
           folder = yarl.URL("storage:folder/**/*.py")
@@ -60,7 +60,7 @@ Storage
                         exist_ok: bool = False \
                  ) -> None
 
-      Create a dirctory *uri*. Also create parent directories if *parents* is ``True``,
+      Create a directory *uri*. Also create parent directories if *parents* is ``True``,
       fail if directory exists and not *exist_ok*.
 
       :param ~yarl.URL uri: a path to directory for creation,
@@ -77,7 +77,7 @@ Storage
       :raises: :exc:`FileExistsError` if requested directory already exists and
                *exist_ok* flag is not set.
 
-      :raises: :exc:`FileNotFound` if parent directories dont exist and *parents* flag
+      :raises: :exc:`FileNotFound` if parent directories don't exist and *parents* flag
                is not set.
 
    .. comethod:: mv(src: URL, dst: URL) -> None
@@ -98,7 +98,7 @@ Storage
       :param ~yarl.URL uri: remote path to delete,
                             e.g. ``yarl.URL("storage:folder/file.bin")``.
 
-      :param bool recursive: remove a directory recusively with all nested files and
+      :param bool recursive: remove a directory recursively with all nested files and
                              folders if ``True`` (``False`` by default).
 
       :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
@@ -106,7 +106,7 @@ Storage
 
    .. comethod:: stats(uri: URL) -> FileStatus
 
-      Return infornamtion about *uri*.
+      Return information about *uri*.
 
       :param ~yarl.URL uri: storage path for requested info, e.g.
                             ``yarl.URL("storage:folder/file.bin")``.
@@ -183,7 +183,7 @@ Storage
                              *, progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
 
-      Recursively upload local directory *src* to storage url *dst*.
+      Recursively upload local directory *src* to storage URL *dst*.
 
       :param ~yarl.URL src: path to uploaded directory on local disk,
                             e.g. ``yarl.URL("file:///home/andrew/folder")``.
@@ -200,7 +200,7 @@ Storage
                              *, progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
 
-      Upload local file *src* to storage url *dst*.
+      Upload local file *src* to storage URL *dst*.
 
       :param ~yarl.URL src: path to uploaded file on local disk,
                             e.g. ``yarl.URL("file:///home/andrew/folder/file.txt")``.

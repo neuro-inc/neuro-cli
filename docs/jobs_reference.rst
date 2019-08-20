@@ -50,7 +50,7 @@ Jobs
       :param ~typing.Iterable[JobStatus] statuses: filter jobs by their statuses.
 
                                                    The parameter can be a set or list of
-                                                   requested statuese,
+                                                   requested statuses,
                                                    e.g. ``{JobStatus.PENDIND,
                                                    JobStatus.RUNNING}`` can be used for
                                                    requesting only scheduled and running
@@ -122,7 +122,7 @@ Jobs
                                      cannot be scheduled because the lack of computation
                                      cluster resources (memory, CPU/GPU etc).
 
-      :return: :class:`JobDescription` instance with infomation about started job.
+      :return: :class:`JobDescription` instance with information about started job.
 
    .. comethod:: status(id: str) -> JobDescription
 
@@ -142,7 +142,7 @@ Jobs
 
       :param str id: job :attr:`~JobDescription.id` to get telemetry data.
 
-      :return: asynchronous iterator which emits `JobTelemetry` objects peridodically.
+      :return: asynchronous iterator which emits `JobTelemetry` objects periodically.
 
 
 Container
@@ -155,7 +155,7 @@ Container
 
    .. attribute:: image
 
-      :class:`RemoteImage` used for starting a contatiner.
+      :class:`RemoteImage` used for starting a container.
 
    .. attribute:: resources
 
@@ -163,8 +163,8 @@ Container
 
    .. attribute:: entrypoint
 
-      Docker ENTRYPOINT_ used for overriding image entypoint (:class:`str`), default
-      ``None`` is used to pick entrypoint from image's *Dockerfile*.
+      Docker ENTRYPOINT_ used for overriding image entry-point (:class:`str`), default
+      ``None`` is used to pick entry-point from image's *Dockerfile*.
 
    .. attribute:: command
 
@@ -205,7 +205,7 @@ HTTPPort
 
    .. attribute:: requires_auth
 
-      Authentication in Neuromation platform is required for access to exosed HTTP
+      Authentication in Neuromation platform is required for access to exposed HTTP
       server if ``True``, the port is open publicly otherwise.
 
 
@@ -376,7 +376,7 @@ JobTelemetry
 
    .. attribute:: memory
 
-      Consumend memory in megabytes, :class:`float`.
+      Consumed memory in megabytes, :class:`float`.
 
    .. attribute:: gpu_duty_cycle
 
@@ -395,7 +395,7 @@ Resources
 .. class:: Resources
 
    *Read-only* :class:`~dataclasses.dataclass` for describing resources (memory, CPU/GPU
-   etc.) availiable for container, see also :attr:`Container.resources` attribute.
+   etc.) available for container, see also :attr:`Container.resources` attribute.
 
    .. attribute:: memory_mb
 
