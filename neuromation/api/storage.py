@@ -11,10 +11,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Union
 
-import aiohttp
 import attr
 import cbor
-from aiohttp import ClientWebSocketResponse, WSCloseCode
+from aiohttp import ClientWebSocketResponse, WSCloseCode, WSMsgType
 from yarl import URL
 
 from .abc import (
@@ -82,18 +81,23 @@ class FileStatus:
         return Path(self.path).name
 
 
-class WSStorageClient:
-    def __init__(
-        self, ws: ClientWebSocketResponse, root: URL, idgen: Callable[[], int]
-    ) -> None:
+class WSStorageClient(metaclass=NoPublicConstructor):
+    def __init__(self, ws: ClientWebSocketResponse, root: URL) -> None:
         self._client = ws
         self._root = root
-        self._new_req_id = idgen
-        self._tasks: int = 0
-        self._futures: Dict[int, asyncio.Future[Tuple[Dict[str, Any], bytes]]] = {}
+        self._req_id_seq = itertools.count()
+        self._responses: Dict[int, asyncio.Future[Tuple[Dict[str, Any], bytes]]] = {}
         self._send_queue: asyncio.Queue[Optional[bytes]] = asyncio.Queue()
+        self._comm_task = asyncio.gather(self._send_loop(), self._receive_loop())
 
-    async def request(
+    async def close(self) -> None:
+        await self._send_queue.put(None)
+        await self._comm_task
+
+    def _new_req_id(self) -> int:
+        return next(self._req_id_seq)
+
+    async def _request(
         self,
         op: WSStorageOperation,
         path: str = "",
@@ -106,11 +110,9 @@ class WSStorageClient:
             log.debug("WS send: %s, %d bytes", payload, len(data))
         else:
             log.debug("WS send: %s", payload)
-
-        loop = asyncio.get_event_loop()
-        fut = loop.create_future()
         header = cbor.dumps(payload)
-        self._futures[reqid] = fut
+        loop = asyncio.get_event_loop()
+        fut = self._responses[reqid] = loop.create_future()
         await self._send_queue.put(struct.pack("!I", len(header) + 4) + header + data)
         return await fut
 
@@ -145,7 +147,7 @@ class WSStorageClient:
 
         raise RuntimeError(f"Unexpected response {payload!r}")
 
-    async def send_loop(self) -> None:
+    async def _send_loop(self) -> None:
         while True:
             msg = await self._send_queue.get()
             if msg is None:
@@ -154,17 +156,17 @@ class WSStorageClient:
             self._send_queue.task_done()
         await self._client.close()
 
-    async def receive_loop(self) -> None:
+    async def _receive_loop(self) -> None:
         async for msg in self._client:
-            if msg.type == aiohttp.WSMsgType.BINARY:
+            if msg.type == WSMsgType.BINARY:
                 payload, data = await self._parse_msg(msg.data)
                 rid = payload["rid"]
-                fut = self._futures.pop(rid)
+                fut = self._responses.pop(rid)
                 if isinstance(data, BaseException):
                     fut.set_exception(data)
                 else:
                     fut.set_result((payload, data))
-            elif msg.type == aiohttp.WSMsgType.ERROR:
+            elif msg.type == WSMsgType.ERROR:
                 raise msg.data
             else:
                 raise RuntimeError(f"Unsupported WebSocket message type: {msg.type}")
@@ -174,11 +176,15 @@ class WSStorageClient:
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
-
         loop = asyncio.get_event_loop()
-        payload, data = await self.request(
-            WSStorageOperation.CREATE, dst, {"size": size}
-        )
+
+        async def write_coro(pos: int, chunk: bytes) -> None:
+            await self._request(
+                WSStorageOperation.WRITE, dst, {"offset": pos}, data=chunk
+            )
+            progress.step(StorageProgressStep(src_uri, dst_uri, pos + len(chunk), size))
+
+        await self._request(WSStorageOperation.CREATE, dst, {"size": size})
         progress.start(StorageProgressStart(src_uri, dst_uri, size))
         tasks = []
         with src.open("rb") as stream:
@@ -187,15 +193,6 @@ class WSStorageClient:
                 chunk = await loop.run_in_executor(None, stream.read, WS_READ_SIZE)
                 if not chunk:
                     break
-
-                async def write_coro(pos: int, chunk: bytes) -> None:
-                    await self.request(
-                        WSStorageOperation.WRITE, dst, {"offset": pos}, data=chunk
-                    )
-                    progress.step(
-                        StorageProgressStep(src_uri, dst_uri, pos + len(chunk), size)
-                    )
-
                 tasks.append(write_coro(pos, chunk))
                 pos += len(chunk)
         await asyncio.gather(*tasks)
@@ -206,9 +203,8 @@ class WSStorageClient:
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
-
         try:
-            payload, data = await self.request(
+            await self._request(
                 WSStorageOperation.MKDIRS, dst, {"parents": True, "exist_ok": True}
             )
         except FileExistsError:
@@ -254,7 +250,7 @@ class WSStorageClient:
         loop = asyncio.get_event_loop()
 
         async def read_coro(dst: Path, pos: int, chunk_size: int) -> None:
-            payload, data = await self.request(
+            payload, data = await self._request(
                 WSStorageOperation.READ, src, {"offset": pos, "size": chunk_size}
             )
             with open(dst, "rb+", buffering=0) as f:
@@ -278,7 +274,7 @@ class WSStorageClient:
         src_uri = self._root / src if src else self._root
         dst_uri = URL(dst.as_uri())
 
-        payload, data = await self.request(WSStorageOperation.LIST, src)
+        payload, data = await self._request(WSStorageOperation.LIST, src)
         progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
         tasks = []
         folder = [
@@ -318,7 +314,6 @@ class Storage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
-        self._req_id_seq = itertools.count()
 
     def _uri_to_path(self, uri: URL) -> str:
         uri = normalize_storage_path_uri(uri, self._config.auth_token.username)
@@ -524,7 +519,7 @@ class Storage(metaclass=NoPublicConstructor):
 
         async with self._ws_connect(dst.parent, "WEBSOCKET_WRITE") as ws:
             try:
-                payload, data = await ws.request(WSStorageOperation.STAT, "")
+                payload, data = await ws._request(WSStorageOperation.STAT, "")
             except FileNotFoundError:
                 # target's parent doesn't exist
                 raise NotADirectoryError(
@@ -569,7 +564,7 @@ class Storage(metaclass=NoPublicConstructor):
         path = _extract_path(dst)
 
         async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
-            payload, data = await ws.request(WSStorageOperation.STAT, "")
+            payload, data = await ws._request(WSStorageOperation.STAT, "")
             stat = _file_status_from_api(payload["FileStatus"])
             if not stat.is_file():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
@@ -592,9 +587,6 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
             await ws.download_dir("", path, progress=progress)
 
-    def _new_req_id(self) -> int:
-        return next(self._req_id_seq)
-
     @asynccontextmanager
     async def _ws_connect(self, uri: URL, op: str) -> AsyncIterator[WSStorageClient]:
         path = self._uri_to_path(uri)
@@ -604,11 +596,9 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core._session.ws_connect(
             url, max_msg_size=MAX_WS_MESSAGE_SIZE
         ) as client:
-            ws = WSStorageClient(client, uri, self._new_req_id)
-            task = asyncio.gather(ws.send_loop(), ws.receive_loop())
+            ws = WSStorageClient._create(client, uri)
             yield ws
-            await ws._send_queue.put(None)
-            await task
+            await ws.close()
 
 
 _magic_check = re.compile("(?:[*?[])")
