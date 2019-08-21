@@ -59,7 +59,7 @@ class _PyPIVersion:
             "pypi_version": str(self.pypi_version),
             "check_timestamp": int(self.check_timestamp),
             "certifi_pypi_version": str(self.certifi_pypi_version),
-            "certifi_check_timestamp": int(self.certifi_check_timestamp),
+            "certifi_check_timestamp": self.certifi_check_timestamp,
         }
         if self.certifi_pypi_upload_date != date.min:
             value = self._serialize_date(self.certifi_pypi_upload_date)

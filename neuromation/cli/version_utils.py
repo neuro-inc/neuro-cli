@@ -97,10 +97,12 @@ class VersionChecker(AbstractVersionChecker):
     async def _update_certifi_version(self) -> None:
         payload = await self._fetch_pypi("certifi")
         pypi_version = self._parse_max_version(payload)
+        pypi_upload_date = self._parse_version_upload_time(payload, pypi_version)
         self._version = dataclasses.replace(
             self._version,
             certifi_pypi_version=pypi_version,
-            certifi_check_timestamp=self._timer(),
+            certifi_pypi_upload_date=pypi_upload_date,
+            certifi_check_timestamp=int(self._timer()),
         )
 
     async def _fetch_pypi(self, package: str) -> Dict[str, Any]:
