@@ -37,6 +37,14 @@ class LocalImage:
         return self.name + post
 
 
+@dataclass(frozen=True)
+class InvalidImage:
+    name: str
+
+    def __str__(self) -> str:
+        return f"Invalid Image Name {self.name}"
+
+
 class _ImageNameParser:
     default_tag = "latest"
 
