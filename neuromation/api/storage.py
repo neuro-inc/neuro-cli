@@ -100,6 +100,7 @@ class WSStorageClient:
         self._new_req_id = idgen
         self._tasks: int = 0
         self._futures: Dict[int, asyncio.Future[Tuple[Dict[str, Any], bytes]]] = {}
+        self._send_queue: asyncio.Queue[Optional[bytes]] = asyncio.Queue()
 
     async def async_request(
         self,
@@ -119,9 +120,10 @@ class WSStorageClient:
         fut = loop.create_future()
         header = cbor.dumps(payload)
         self._futures[reqid] = fut
-        await self._client.send_bytes(
-            struct.pack("!I", len(header) + 4) + header + data
-        )
+        await self._send_queue.put(struct.pack("!I", len(header) + 4) + header + data)
+        # await self._client.send_bytes(
+        # struct.pack("!I", len(header) + 4) + header + data
+        # )
         return fut
 
     async def parse_msg(
@@ -162,10 +164,12 @@ class WSStorageClient:
         async def wrapped() -> None:
             try:
                 await coro
+            # except AssertionError:
+            # pass
             finally:
                 self._tasks -= 1
                 if not self._tasks:
-                    await self._client.close()
+                    await self._send_queue.put(None)
 
         loop = asyncio.get_event_loop()
         self._tasks += 1
@@ -173,9 +177,18 @@ class WSStorageClient:
         return task
 
     async def run_task(self, coro: Awaitable[None]) -> None:
-        # await coro
-        # await self.receive_loop()
-        await asyncio.gather(coro, self.receive_loop())
+        await asyncio.gather(
+            self.create_task(coro), self.send_loop(), self.receive_loop()
+        )
+
+    async def send_loop(self) -> None:
+        while True:
+            msg = await self._send_queue.get()
+            if msg is None:
+                break
+            await self._client.send_bytes(msg)
+            self._send_queue.task_done()
+        await self._client.close()
 
     async def receive_loop(self) -> None:
         async for msg in self._client:
