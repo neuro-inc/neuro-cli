@@ -1,6 +1,7 @@
 import asyncio
 import socket
 import ssl
+from datetime import date
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -102,7 +103,24 @@ PYPI_JSON = {
                 "size": 48633,
                 "upload_time": "2019-01-29T23:45:22",
                 "url": "https://files.pytho...ation-0.2.1-py3-none-any.whl",
-            }
+            },
+            {
+                "comment_text": "",
+                "digests": {
+                    "md5": "d8cb5a5984c291e69b9b0bf34423c865",
+                    "sha256": "046832c04d4e7...38f6514d0e5b9acc4939",
+                },
+                "downloads": -1,
+                "filename": "neuromation-0.2.1.tar.gz",
+                "has_sig": False,
+                "md5_digest": "af8fea5f3df6f7f81e9c6cbc6dd7c1e8",
+                "packagetype": "sdist",
+                "python_version": "source",
+                "requires_python": None,
+                "size": 156721,
+                "upload_time": "2019-01-30T00:02:23",
+                "url": "https://files.pytho...ation-0.2.1.tar.gz",
+            },
         ],
     },
     "urls": [
@@ -230,8 +248,11 @@ async def test__fetch_pypi(
     async with VersionChecker(
         _PyPIVersion.create_uninitialized(), connector=connector
     ) as checker:
-        version = await checker._fetch_pypi("neuromation")
+        payload = await checker._fetch_pypi("neuromation")
+        version = checker._parse_max_version(payload)
         assert version == pkg_resources.parse_version("0.2.1")
+        upload_time = checker._parse_version_upload_time(payload, version)
+        assert upload_time == date(2019, 1, 30)
 
 
 async def test__fetch_pypi_no_releases(
@@ -242,8 +263,11 @@ async def test__fetch_pypi_no_releases(
     async with VersionChecker(
         _PyPIVersion.create_uninitialized(), connector=connector
     ) as checker:
-        version = await checker._fetch_pypi("neuromation")
+        payload = await checker._fetch_pypi("neuromation")
+        version = checker._parse_max_version(payload)
         assert version == pkg_resources.parse_version("0.0.0")
+        upload_time = checker._parse_version_upload_time(payload, version)
+        assert upload_time == date.min
 
 
 async def test__fetch_pypi_non_200(
@@ -254,8 +278,11 @@ async def test__fetch_pypi_non_200(
     async with VersionChecker(
         _PyPIVersion.create_uninitialized(), connector=connector
     ) as checker:
-        version = await checker._fetch_pypi("neuromation")
+        payload = await checker._fetch_pypi("neuromation")
+        version = checker._parse_max_version(payload)
         assert version == pkg_resources.parse_version("0.0.0")
+        upload_time = checker._parse_version_upload_time(payload, version)
+        assert upload_time == date.min
 
 
 async def test_update_latest_version(

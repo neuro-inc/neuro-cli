@@ -1,3 +1,6 @@
+from datetime import date
+
+import pkg_resources
 import pytest
 from yarl import URL
 
@@ -126,3 +129,69 @@ class TestConfig:
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
             config.check_initialized()
+
+
+class TestPyPIVersion:
+    def test_from_config(self) -> None:
+        data = {
+            "pypi_version": "19.2.3",
+            "check_timestamp": "12345",
+            "certifi_pypi_version": "19.4.5",
+            "certifi_check_timestamp": "67890",
+        }
+        expected = _PyPIVersion(
+            pypi_version=pkg_resources.parse_version("19.2.3"),
+            check_timestamp=12345,
+            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
+            certifi_check_timestamp=67890,
+        )
+        assert _PyPIVersion.from_config(data) == expected
+
+    def test_from_config_with_certifi_pypi_upload_date(self) -> None:
+        data = {
+            "pypi_version": "19.2.3",
+            "check_timestamp": "12345",
+            "certifi_pypi_version": "19.4.5",
+            "certifi_pypi_upload_date": "2019-04-06",
+            "certifi_check_timestamp": "67890",
+        }
+        expected = _PyPIVersion(
+            pypi_version=pkg_resources.parse_version("19.2.3"),
+            check_timestamp=12345,
+            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
+            certifi_pypi_upload_date=date(2019, 4, 6),
+            certifi_check_timestamp=67890,
+        )
+        assert _PyPIVersion.from_config(data) == expected
+
+    def test_to_config(self) -> None:
+        version = _PyPIVersion(
+            pypi_version=pkg_resources.parse_version("19.2.3"),
+            check_timestamp=12345,
+            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
+            certifi_check_timestamp=67890,
+        )
+        expected = {
+            "pypi_version": "19.2.3",
+            "check_timestamp": 12345,
+            "certifi_pypi_version": "19.4.5",
+            "certifi_check_timestamp": 67890,
+        }
+        assert version.to_config() == expected
+
+    def test_to_config_with_certifi_pypi_upload_date(self) -> None:
+        version = _PyPIVersion(
+            pypi_version=pkg_resources.parse_version("19.2.3"),
+            check_timestamp=12345,
+            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
+            certifi_check_timestamp=67890,
+            certifi_pypi_upload_date=date(2019, 4, 6),
+        )
+        expected = {
+            "pypi_version": "19.2.3",
+            "check_timestamp": 12345,
+            "certifi_pypi_version": "19.4.5",
+            "certifi_check_timestamp": 67890,
+            "certifi_pypi_upload_date": "2019-04-06",
+        }
+        assert version.to_config() == expected
