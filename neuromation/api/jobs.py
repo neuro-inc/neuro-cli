@@ -5,17 +5,7 @@ import shlex
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Union,
-)
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
 
 import async_timeout
 import attr
@@ -30,7 +20,6 @@ from .config import _Config
 from .core import IllegalArgumentError, _Core
 from .parser import Volume
 from .parsing_utils import (
-    InvalidImage,
     RemoteImage,
     _as_repo_str,
     _ImageNameParser,
@@ -75,7 +64,7 @@ class HTTPPort:
 
 @dataclass(frozen=True)
 class Container:
-    image: Union[RemoteImage, InvalidImage]
+    image: RemoteImage
     resources: Resources
     entrypoint: Optional[str] = None
     command: Optional[str] = None
@@ -373,9 +362,9 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
 
 def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Container:
     try:
-        image: Union[RemoteImage, InvalidImage] = parser.parse_remote(data["image"])
+        image = parser.parse_remote(data["image"])
     except ValueError:
-        image = InvalidImage(data["image"])
+        image = RemoteImage(name=f'Invalid Image Name {data["image"]}')
 
     return Container(
         image=image,
@@ -389,7 +378,6 @@ def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Conta
 
 
 def _container_to_api(container: Container) -> Dict[str, Any]:
-    assert not isinstance(container.image, InvalidImage)
     primitive: Dict[str, Any] = {
         "image": _as_repo_str(container.image),
         "resources": _resources_to_api(container.resources),
