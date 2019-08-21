@@ -964,7 +964,7 @@ async def test_list_incorrect_image(
         if job.status == JobStatus.FAILED:
             assert job.container.image.name == INVALID_IMAGE_NAME
         else:
-            assert not job.container.image.name == INVALID_IMAGE_NAME
+            assert job.container.image.name != INVALID_IMAGE_NAME
 
 
 class TestVolumeParsing:
