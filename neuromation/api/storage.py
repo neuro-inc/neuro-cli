@@ -177,12 +177,15 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
         loop = asyncio.get_event_loop()
+        sumsize = 0
 
         async def write_coro(pos: int, chunk: bytes) -> None:
             await self._request(
                 WSStorageOperation.WRITE, dst, {"offset": pos}, data=chunk
             )
-            progress.step(StorageProgressStep(src_uri, dst_uri, pos + len(chunk), size))
+            nonlocal sumsize
+            sumsize += len(chunk)
+            progress.step(StorageProgressStep(src_uri, dst_uri, sumsize, size))
 
         await self._request(WSStorageOperation.CREATE, dst, {"size": size})
         progress.start(StorageProgressStart(src_uri, dst_uri, size))
@@ -248,6 +251,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         src_uri = self._root / src if src else self._root
         dst_uri = URL(dst.as_uri())
         loop = asyncio.get_event_loop()
+        sumsize = 0
 
         async def read_coro(dst: Path, pos: int, chunk_size: int) -> None:
             payload, data = await self._request(
@@ -256,7 +260,9 @@ class WSStorageClient(metaclass=NoPublicConstructor):
             with open(dst, "rb+", buffering=0) as f:
                 f.seek(pos)
                 await loop.run_in_executor(None, f.write, data)
-            progress.step(StorageProgressStep(src_uri, dst_uri, pos + chunk_size, size))
+            nonlocal sumsize
+            sumsize += chunk_size
+            progress.step(StorageProgressStep(src_uri, dst_uri, sumsize, size))
 
         with open(dst, "wb", buffering=0):
             pass
