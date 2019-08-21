@@ -14,7 +14,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.api.jobs import _job_description_from_api
+from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
 from neuromation.api.parsing_utils import _ImageNameParser
 from tests import _TestServerFactory
 
@@ -962,7 +962,7 @@ async def test_list_incorrect_image(
         ret = await client.jobs.list(statuses=statuses)
     for job in ret:
         if job.status == JobStatus.FAILED:
-            assert job.container.image.name.startswith("Invalid Image Name")
+            assert job.container.image.name == INVALID_IMAGE_NAME
         else:
             assert not job.container.image.name.startswith("Invalid Image Name")
 
