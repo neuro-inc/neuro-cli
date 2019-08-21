@@ -464,7 +464,7 @@ class LongFilesFormatter(BaseFilesFormatter):
     def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
 
         type = self.file_types_mapping[file.type]
-        permission = self.permissions_mapping[Action(file.permission)]
+        permission = self.permissions_mapping[file.permission]
 
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
 

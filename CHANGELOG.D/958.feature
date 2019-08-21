@@ -1,1 +1,0 @@
-`neuro storage cp` is now up to 2 times faster for a directory with many small files.

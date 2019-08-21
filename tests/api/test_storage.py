@@ -15,6 +15,7 @@ from aiohttp import WSMsgType, web
 from yarl import URL
 
 from neuromation.api import (
+    Action,
     Client,
     FileStatus,
     FileStatusType,
@@ -294,14 +295,14 @@ async def test_storage_ls(
             size=1024,
             type=FileStatusType.FILE,
             modification_time=0,
-            permission="read",
+            permission=Action.READ,
         ),
         FileStatus(
             path="bar",
             size=4 * 1024,
             type=FileStatusType.DIRECTORY,
             modification_time=0,
-            permission="read",
+            permission=Action.READ,
         ),
     ]
 
@@ -735,7 +736,7 @@ async def test_storage_stats(
             type=FileStatusType.DIRECTORY,
             size=1234,
             modification_time=3456,
-            permission="read",
+            permission=Action.READ,
         )
 
 

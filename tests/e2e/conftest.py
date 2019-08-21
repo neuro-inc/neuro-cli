@@ -446,7 +446,7 @@ class Helper:
             out = proc.stdout
             err = proc.stderr
             if any(
-                " ".join(arguments).startswith(start)
+                start in " ".join(arguments)
                 for start in ("submit", "job submit", "run", "job run")
             ):
                 match = job_id_pattern.search(out)
