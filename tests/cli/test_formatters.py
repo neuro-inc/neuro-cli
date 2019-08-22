@@ -2,7 +2,6 @@ import textwrap
 import time
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-from hashlib import sha256
 from sys import platform
 from typing import Any, List, Optional
 
@@ -1322,11 +1321,8 @@ class TestDockerImageProgress:
 
     def test_quiet_commit_started(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
-        cnt = sha256(b"seed").hexdigest()
         formatter.commit_started(
-            ImageCommitStarted(
-                job_id="job-id", container=cnt, target_image=RemoteImage("img")
-            )
+            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
         )
         formatter.close()
         out, err = capfd.readouterr()
@@ -1396,11 +1392,9 @@ class TestDockerImageProgress:
 
     def test_no_tty_commit_started(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=False, quiet=False)
-        cnt = sha256(b"seed").hexdigest()
         formatter.commit_started(
             ImageCommitStarted(
                 job_id="job-id",
-                container=cnt,
                 target_image=RemoteImage(
                     "output", "stream", "bob", "https://registry-dev.neu.ro"
                 ),
@@ -1409,7 +1403,7 @@ class TestDockerImageProgress:
         formatter.close()
         out, err = capfd.readouterr()
         assert "Using remote image 'image://bob/output:stream'" in out
-        assert f"Creating image from container '{cnt[:12]}'..." in out
+        assert f"Creating image from the job container..." in out
         assert err == ""
 
     def test_no_tty_commit_finished(self, capfd: Any) -> None:
@@ -1475,18 +1469,13 @@ class TestDockerImageProgress:
 
     def test_tty_commit_started(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=False)
-        cnt = sha256(b"seed").hexdigest()
         formatter.commit_started(
-            ImageCommitStarted(
-                job_id="job-id", container=cnt, target_image=RemoteImage("img")
-            )
+            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
         )
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert "img" in out
-        assert cnt[:12] in out
-        assert cnt[12:] not in out
         assert CSI in out
 
     def test_tty_commit_finished(self, capfd: Any, click_tty_emulation: Any) -> None:

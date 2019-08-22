@@ -92,8 +92,7 @@ class DetailedDockerImageProgress(DockerImageProgress):
 
     def commit_started(self, data: ImageCommitStarted) -> None:
         img = click.style(str(data.target_image), bold=True)
-        cnt = click.style(self._shorten_container_hash(data.container), bold=True)
-        self._printer.print(f"Creating image {img} from container {cnt}")
+        self._printer.print(f"Creating image {img} image from the job container")
 
     def commit_finished(self, data: ImageCommitFinished) -> None:
         self._printer.print("Image created")
@@ -127,8 +126,7 @@ class StreamDockerImageProgress(DockerImageProgress):
 
     def commit_started(self, data: ImageCommitStarted) -> None:
         self._printer.print(f"Using remote image '{data.target_image}'")
-        container = self._shorten_container_hash(data.container)
-        self._printer.print(f"Creating image from container '{container}'...")
+        self._printer.print(f"Creating image from the job container...")
 
     def commit_finished(self, data: ImageCommitFinished) -> None:
         self._printer.print("Image created")

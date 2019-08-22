@@ -114,7 +114,6 @@ class ImageProgressStep:
 @dataclass(frozen=True)
 class ImageCommitStarted:
     job_id: str
-    container: str
     target_image: RemoteImage
 
 

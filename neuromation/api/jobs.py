@@ -382,15 +382,11 @@ def _parse_commit_started_chunk(
 ) -> ImageCommitStarted:
     _raise_for_invalid_commit_chunk(obj, expect_started=True)
     details_json = obj.get("details", {})
-    container = details_json.get("container")
     image = details_json.get("image")
-    if not container:
-        error_details = {"message": "Missing required details: 'container'"}
-        raise DockerError(400, error_details)
     if not image:
         error_details = {"message": "Missing required details: 'image'"}
         raise DockerError(400, error_details)
-    return ImageCommitStarted(job_id, container, image_parser.parse_remote(image))
+    return ImageCommitStarted(job_id, image_parser.parse_remote(image))
 
 
 def _parse_commit_finished_chunk(
