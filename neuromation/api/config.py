@@ -55,7 +55,7 @@ class _PyPIVersion:
         )
 
     def to_config(self) -> Dict[str, Any]:
-        res = {
+        ret = {
             "pypi_version": str(self.pypi_version),
             "check_timestamp": int(self.check_timestamp),
             "certifi_pypi_version": str(self.certifi_pypi_version),
@@ -63,9 +63,9 @@ class _PyPIVersion:
         }
         if self.certifi_pypi_upload_date != date.min:
             value = self._serialize_date(self.certifi_pypi_upload_date)
-            res["certifi_pypi_upload_date"] = value
+            ret["certifi_pypi_upload_date"] = value
 
-        return res
+        return ret
 
     @classmethod
     def _deserialize_date(cls, value: str) -> date:
