@@ -76,10 +76,66 @@ AbstractDockerImageProgress
 
    .. method:: pull(data: ImageProgressPull) -> None
 
-      Pulling image from remote registry to local Docker is started.
+      Pulling image from remote Neuromation registry to local Docker is started.
 
       :param ImageProgressPull data: additional data, e.g. local and remote image
                                      objects.
+
+
+   .. method:: push(data: ImageProgressPush) -> None
+
+      Pushing image from local Docker to remote Neuromation registry is started.
+
+      :param ImageProgressPush data: additional data, e.g. local and remote image
+                                     objects.
+
+   .. method:: step(data: ImageProgressStep) -> None
+
+      Next step in image transfer is performed.
+
+      :param ImageProgressStep data: additional data, e.g. image layer id and progress
+                                     report.
+
+ImageProgressPull
+=================
+
+.. class:: ImageProgressPull
+
+   *Read-only* :class:`~dataclasses.dataclass` for pulling operation report.
+
+   .. attribute:: src
+
+      Source image, :class:`RemoteImage` instance.
+
+   .. attribute:: dst
+
+      Destination image, :class:`LocalImage` instance.
+
+
+.. class:: ImageProgressPush
+
+   *Read-only* :class:`~dataclasses.dataclass` for pulling operation report.
+
+   .. attribute:: src
+
+      Source image, :class:`LocalImage` instance.
+
+   .. attribute:: dst
+
+      Destination image, :class:`RemoteImage` instance.
+
+
+.. class:: ImageProgressStep
+
+   *Read-only* :class:`~dataclasses.dataclass` for push/pull progress step.
+
+   .. attribute:: layer_id
+
+      Image layer, :class:`str`.
+
+   .. attribute:: message
+
+      Progress message, :class:`str`.
 
 
 LocalImage
