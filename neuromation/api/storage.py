@@ -39,6 +39,7 @@ from .utils import NoPublicConstructor, asynccontextmanager
 
 log = logging.getLogger(__name__)
 
+MAX_WS_READS = 100
 WS_READ_SIZE = 2 ** 20  # 1 MiB
 MAX_WS_READ_SIZE = 16 * 2 ** 20  # 16 MiB
 MAX_WS_MESSAGE_SIZE = MAX_WS_READ_SIZE + 2 ** 16 + 100
@@ -89,6 +90,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         self._responses: Dict[int, asyncio.Future[Tuple[Dict[str, Any], bytes]]] = {}
         self._send_queue: asyncio.Queue[Optional[bytes]] = asyncio.Queue()
         self._comm_task = asyncio.gather(self._send_loop(), self._receive_loop())
+        self._read_sem = asyncio.BoundedSemaphore(MAX_WS_READS)
 
     async def close(self) -> None:
         await self._send_queue.put(None)
@@ -176,15 +178,18 @@ class WSStorageClient(metaclass=NoPublicConstructor):
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
-        loop = asyncio.get_event_loop()
         sumsize = 0
 
         async def write_coro(pos: int, chunk: bytes) -> None:
-            await self._request(
-                WSStorageOperation.WRITE, dst, {"offset": pos}, data=chunk
-            )
-            nonlocal sumsize
-            sumsize += len(chunk)
+            try:
+                await self._request(
+                    WSStorageOperation.WRITE, dst, {"offset": pos}, data=chunk
+                )
+                nonlocal sumsize
+                sumsize += len(chunk)
+            finally:
+                del chunk
+                self._read_sem.release()
             progress.step(StorageProgressStep(src_uri, dst_uri, sumsize, size))
 
         await self._request(WSStorageOperation.CREATE, dst, {"size": size})
@@ -193,11 +198,18 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         with src.open("rb") as stream:
             pos = 0
             while True:
-                chunk = await loop.run_in_executor(None, stream.read, WS_READ_SIZE)
+                await self._read_sem.acquire()
+                try:
+                    chunk = stream.read(WS_READ_SIZE)
+                except:  # noqa: E722
+                    self._read_sem.release()
+                    raise
                 if not chunk:
+                    self._read_sem.release()
                     break
                 tasks.append(write_coro(pos, chunk))
                 pos += len(chunk)
+                del chunk
         await asyncio.gather(*tasks)
         progress.complete(StorageProgressComplete(src_uri, dst_uri, size))
 
