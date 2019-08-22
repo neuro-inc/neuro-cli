@@ -1,1 +1,1 @@
-Use WebSockets for uploading/downloading files and directories to/from storage.
+Using WebSockets for uploading/downloading files and directories to/from storage allows to speed it up to 5-10 times.  New `neuro storage cp` option `--use-websockets`/`--no-use-websockets` (on by default) controls what implementation should be used.

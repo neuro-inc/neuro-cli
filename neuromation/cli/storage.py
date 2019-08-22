@@ -188,6 +188,12 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     default=True,
     help="Show progress, on by default",
 )
+@click.option(
+    "--use-websockets/--no-use-websockets",
+    is_flag=True,
+    default=True,
+    help="Use WebSockets",
+)
 @async_cmd()
 async def cp(
     root: Root,
@@ -198,6 +204,7 @@ async def cp(
     target_directory: Optional[str],
     no_target_directory: bool,
     progress: bool,
+    use_websockets: bool,
 ) -> None:
     """
     Copy files and directories.
@@ -280,14 +287,22 @@ async def cp(
 
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
-                await root.client.storage.upload_dir(src, dst, progress=progress_obj)
+                await root.client.storage.upload_dir(
+                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                )
             else:
-                await root.client.storage.upload_file(src, dst, progress=progress_obj)
+                await root.client.storage.upload_file(
+                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                )
         elif src.scheme == "storage" and dst.scheme == "file":
             if recursive:
-                await root.client.storage.download_dir(src, dst, progress=progress_obj)
+                await root.client.storage.download_dir(
+                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                )
             else:
-                await root.client.storage.download_file(src, dst, progress=progress_obj)
+                await root.client.storage.download_file(
+                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                )
         else:
             raise RuntimeError(
                 f"Copy operation of the file with scheme '{src.scheme}'"

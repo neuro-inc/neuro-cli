@@ -815,24 +815,38 @@ async def test_storage_open_directory(
 # high level API
 
 
-async def test_storage_upload_file_does_not_exists(make_client: _MakeClient) -> None:
+@pytest.mark.parametrize("use_websockets", [False, True])
+async def test_storage_upload_file_does_not_exists(
+    make_client: _MakeClient, use_websockets: bool
+) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
             await client.storage.upload_file(
-                URL("file:///not-exists-file"), URL("storage://host/path/to/file.txt")
+                URL("file:///not-exists-file"),
+                URL("storage://host/path/to/file.txt"),
+                use_websockets=use_websockets,
             )
 
 
-async def test_storage_upload_dir_doesnt_exist(make_client: _MakeClient) -> None:
+@pytest.mark.parametrize("use_websockets", [False, True])
+async def test_storage_upload_dir_doesnt_exist(
+    make_client: _MakeClient, use_websockets: bool
+) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(IsADirectoryError):
             await client.storage.upload_file(
-                URL(FOLDER.as_uri()), URL("storage://host/path/to")
+                URL(FOLDER.as_uri()),
+                URL("storage://host/path/to"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_not_a_file(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     file_path = Path(os.devnull).absolute()
     target_path = storage_path / "file.txt"
@@ -840,7 +854,10 @@ async def test_storage_upload_not_a_file(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
-            URL(file_path.as_uri()), URL("storage:file.txt"), progress=progress
+            URL(file_path.as_uri()),
+            URL("storage:file.txt"),
+            progress=progress,
+            use_websockets=use_websockets,
         )
 
     uploaded = target_path.read_bytes()
@@ -853,8 +870,12 @@ async def test_storage_upload_not_a_file(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, 0))
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_regular_file_to_existing_file_target(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     file_size = file_path.stat().st_size
@@ -863,7 +884,10 @@ async def test_storage_upload_regular_file_to_existing_file_target(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
-            URL(file_path.as_uri()), URL("storage:file.txt"), progress=progress
+            URL(file_path.as_uri()),
+            URL("storage:file.txt"),
+            progress=progress,
+            use_websockets=use_websockets,
         )
 
     expected = file_path.read_bytes()
@@ -879,8 +903,12 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_regular_file_to_existing_dir(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
@@ -889,12 +917,18 @@ async def test_storage_upload_regular_file_to_existing_dir(
     async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(IsADirectoryError):
             await client.storage.upload_file(
-                URL(file_path.as_uri()), URL("storage:folder")
+                URL(file_path.as_uri()),
+                URL("storage:folder"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_regular_file_to_existing_file(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
@@ -904,7 +938,9 @@ async def test_storage_upload_regular_file_to_existing_file(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
-            URL(file_path.as_uri()), URL("storage:folder/file.txt")
+            URL(file_path.as_uri()),
+            URL("storage:folder/file.txt"),
+            use_websockets=use_websockets,
         )
 
     expected = file_path.read_bytes()
@@ -912,8 +948,12 @@ async def test_storage_upload_regular_file_to_existing_file(
     assert uploaded == expected
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
@@ -922,12 +962,18 @@ async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
     async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(IsADirectoryError):
             await client.storage.upload_file(
-                URL(file_path.as_uri()), URL("storage:folder/")
+                URL(file_path.as_uri()),
+                URL("storage:folder/"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_regular_file_to_existing_non_dir(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     path = storage_path / "file"
@@ -936,44 +982,61 @@ async def test_storage_upload_regular_file_to_existing_non_dir(
     async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_file(
-                URL(file_path.as_uri()), URL("storage:file/subfile.txt")
+                URL(file_path.as_uri()),
+                URL("storage:file/subfile.txt"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_regular_file_to_not_existing(
-    storage_server: Any, make_client: _MakeClient
+    storage_server: Any, make_client: _MakeClient, use_websockets: bool
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
     async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_file(
-                URL(file_path.as_uri()), URL("storage:absent-dir/absent-file.txt")
+                URL(file_path.as_uri()),
+                URL("storage:absent-dir/absent-file.txt"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_recursive_src_doesnt_exist(
-    make_client: _MakeClient
+    make_client: _MakeClient, use_websockets: bool
 ) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
             await client.storage.upload_dir(
-                URL("file:does_not_exist"), URL("storage://host/path/to")
+                URL("file:does_not_exist"),
+                URL("storage://host/path/to"),
+                use_websockets=use_websockets,
             )
 
 
-async def test_storage_upload_recursive_src_is_a_file(make_client: _MakeClient) -> None:
+@pytest.mark.parametrize("use_websockets", [False, True])
+async def test_storage_upload_recursive_src_is_a_file(
+    make_client: _MakeClient, use_websockets: bool
+) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
     async with make_client("https://example.com") as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_dir(
-                URL(file_path.as_uri()), URL("storage://host/path/to")
+                URL(file_path.as_uri()),
+                URL("storage://host/path/to"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_recursive_target_is_a_file(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     target_file = storage_path / "file.txt"
     target_file.write_bytes(b"dummy")
@@ -981,40 +1044,59 @@ async def test_storage_upload_recursive_target_is_a_file(
     async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
             await client.storage.upload_dir(
-                URL(DATA_FOLDER.as_uri()), URL("storage:file.txt")
+                URL(DATA_FOLDER.as_uri()),
+                URL("storage:file.txt"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_recursive_ok(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     target_dir = storage_path / "folder"
     target_dir.mkdir()
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
-            URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
+            URL(DATA_FOLDER.as_uri()) / "nested",
+            URL("storage:folder"),
+            use_websockets=use_websockets,
         )
     diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
     assert not calc_diff(diff)  # type: ignore
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_upload_recursive_slash_ending(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     target_dir = storage_path / "folder"
     target_dir.mkdir()
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
-            URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder/")
+            URL(DATA_FOLDER.as_uri()) / "nested",
+            URL("storage:folder/"),
+            use_websockets=use_websockets,
         )
     diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
     assert not calc_diff(diff)  # type: ignore
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_download_regular_file_to_absent_file(
-    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     src_file = DATA_FOLDER / "file.txt"
     storage_file = storage_path / "file.txt"
@@ -1026,7 +1108,10 @@ async def test_storage_download_regular_file_to_absent_file(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
-            URL("storage:file.txt"), URL(local_file.as_uri()), progress=progress
+            URL("storage:file.txt"),
+            URL(local_file.as_uri()),
+            progress=progress,
+            use_websockets=use_websockets,
         )
 
     expected = src_file.read_bytes()
@@ -1043,8 +1128,13 @@ async def test_storage_download_regular_file_to_absent_file(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_download_regular_file_to_existing_file(
-    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     src_file = DATA_FOLDER / "file.txt"
     storage_file = storage_path / "file.txt"
@@ -1056,7 +1146,9 @@ async def test_storage_download_regular_file_to_existing_file(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
-            URL("storage:file.txt"), URL(local_file.as_uri())
+            URL("storage:file.txt"),
+            URL(local_file.as_uri()),
+            use_websockets=use_websockets,
         )
 
     expected = src_file.read_bytes()
@@ -1064,8 +1156,13 @@ async def test_storage_download_regular_file_to_existing_file(
     assert downloaded == expected
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_download_regular_file_to_dir(
-    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     src_file = DATA_FOLDER / "file.txt"
     storage_file = storage_path / "file.txt"
@@ -1076,12 +1173,19 @@ async def test_storage_download_regular_file_to_dir(
     async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises((IsADirectoryError, PermissionError)):
             await client.storage.download_file(
-                URL("storage:file.txt"), URL(local_dir.as_uri())
+                URL("storage:file.txt"),
+                URL(local_dir.as_uri()),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_download_regular_file_to_dir_slash_ended(
-    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     src_file = DATA_FOLDER / "file.txt"
     storage_file = storage_path / "file.txt"
@@ -1092,12 +1196,19 @@ async def test_storage_download_regular_file_to_dir_slash_ended(
     async with make_client(storage_server.make_url("/")) as client:
         with pytest.raises((IsADirectoryError, PermissionError)):
             await client.storage.download_file(
-                URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
+                URL("storage:file.txt"),
+                URL(local_dir.as_uri() + "/"),
+                use_websockets=use_websockets,
             )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_download_regular_file_to_non_file(
-    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     src_file = DATA_FOLDER / "file.txt"
     storage_file = storage_path / "file.txt"
@@ -1105,12 +1216,19 @@ async def test_storage_download_regular_file_to_non_file(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
-            URL("storage:file.txt"), URL(Path(os.devnull).absolute().as_uri())
+            URL("storage:file.txt"),
+            URL(Path(os.devnull).absolute().as_uri()),
+            use_websockets=use_websockets,
         )
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_download_dir(
-    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     storage_dir = storage_path / "folder"
     copytree(DATA_FOLDER / "nested", storage_dir)
@@ -1120,15 +1238,22 @@ async def test_storage_download_dir(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_dir(
-            URL("storage:folder"), URL(target_dir.as_uri())
+            URL("storage:folder"),
+            URL(target_dir.as_uri()),
+            use_websockets=use_websockets,
         )
 
     diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
     assert not calc_diff(diff)  # type: ignore
 
 
+@pytest.mark.parametrize("use_websockets", [False, True])
 async def test_storage_download_dir_slash_ending(
-    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    use_websockets: bool,
 ) -> None:
     storage_dir = storage_path / "folder"
     copytree(DATA_FOLDER / "nested", storage_dir / "nested")
@@ -1137,7 +1262,9 @@ async def test_storage_download_dir_slash_ending(
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_dir(
-            URL("storage:folder"), URL(local_dir.as_uri() + "/")
+            URL("storage:folder"),
+            URL(local_dir.as_uri() + "/"),
+            use_websockets=use_websockets,
         )
 
     diff = dircmp(DATA_FOLDER / "nested", local_dir / "nested")  # type: ignore
