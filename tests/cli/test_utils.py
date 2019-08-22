@@ -1,7 +1,5 @@
-from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Dict, Tuple
-from unittest.mock import patch
 
 import click
 import pytest
@@ -12,7 +10,6 @@ from neuromation.api import Action, Client
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
     LocalRemotePortParamType,
-    _need_to_warn_after_delay,
     parse_file_resource,
     parse_permission_action,
     parse_resource_for_sharing,
@@ -342,37 +339,3 @@ def test_local_remote_port_param_type_invalid(arg: str) -> None:
     param = LocalRemotePortParamType()
     with pytest.raises(click.BadParameter, match=".* is not a valid port combination"):
         param.convert(arg, None, None)
-
-
-class TestDelayedReleaseWarning:
-    date_to_patch = f"{_need_to_warn_after_delay.__module__}.date"
-
-    def test__need_to_warn_after_delay__zero_days_delay(self) -> None:
-        version_newest = date(2019, 1, 1)
-        with patch(self.date_to_patch) as mock_date:
-            mock_date.today.return_value = date(2019, 1, 1)
-            assert not _need_to_warn_after_delay(version_newest, delay_days=14)
-
-    def test__need_to_warn_after_delay__one_day_within_delay(self) -> None:
-        version_newest = date(2019, 1, 1)
-        with patch(self.date_to_patch) as mock_date:
-            mock_date.today.return_value = date(2019, 1, 2)
-            assert not _need_to_warn_after_delay(version_newest, delay_days=14)
-
-    def test__need_to_warn_after_delay__max_days_within_delay(self) -> None:
-        version_newest = date(2019, 1, 1)
-        with patch(self.date_to_patch) as mock_date:
-            mock_date.today.return_value = date(2019, 1, 15)
-            assert not _need_to_warn_after_delay(version_newest, delay_days=14)
-
-    def test__need_to_warn_after_delay__one_day_out_of_delay(self) -> None:
-        version_newest = date(2019, 1, 1)
-        with patch(self.date_to_patch) as mock_date:
-            mock_date.today.return_value = date(2019, 1, 16)
-            assert _need_to_warn_after_delay(version_newest, delay_days=14)
-
-    def test__need_to_warn_after_delay__month_out_of_delay(self) -> None:
-        version_newest = date(2019, 1, 1)
-        with patch(self.date_to_patch) as mock_date:
-            mock_date.today.return_value = date(2019, 2, 1)
-            assert _need_to_warn_after_delay(version_newest, delay_days=14)
