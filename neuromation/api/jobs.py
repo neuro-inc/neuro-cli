@@ -28,6 +28,9 @@ from .parsing_utils import (
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
+INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
+
+
 @dataclass(frozen=True)
 class Resources:
     memory_mb: int
@@ -361,8 +364,13 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
 
 
 def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Container:
+    try:
+        image = parser.parse_remote(data["image"])
+    except ValueError:
+        image = RemoteImage(name=INVALID_IMAGE_NAME)
+
     return Container(
-        image=parser.parse_remote(data["image"]),
+        image=image,
         resources=_resources_from_api(data["resources"]),
         entrypoint=data.get("entrypoint", None),
         command=data.get("command", None),
