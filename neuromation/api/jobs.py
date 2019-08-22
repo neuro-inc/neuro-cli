@@ -261,10 +261,10 @@ class Jobs(metaclass=NoPublicConstructor):
         task = loop.create_task(
             self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
         )
-        yield
-        task.cancel()
         with suppress(asyncio.CancelledError):
             await task
+        yield
+        task.cancel()
 
     async def _port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
