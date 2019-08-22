@@ -1071,3 +1071,21 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
     )
     assert "Browsing https://job-" in captured.out
     assert "Open job URL: https://job-" in captured.err
+
+
+@pytest.mark.e2e
+def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
+    command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
+
+    # first, run without --volume=HOME
+    helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME, command=command, wait_state=JobStatus.FAILED
+    )
+
+    # then, run with --volume=HOME
+    helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME,
+        command=command,
+        params=("--volume", "HOME"),
+        wait_state=JobStatus.SUCCEEDED,
+    )
