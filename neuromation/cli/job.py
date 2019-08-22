@@ -377,10 +377,9 @@ async def port_forward(
 
         click.echo("Press ^C to stop forwarding")
         try:
-            await asyncio.sleep(float('inf'))
+            await asyncio.sleep(float("inf"))
         except KeyboardInterrupt:
             pass
-
 
 
 @command()
