@@ -71,15 +71,63 @@ AbstractDockerImageProgress
 
 .. class:: AbstractDockerImageProgress
 
+   Base class for image operations progress, e.g. :meth:`Images.pull` and
+   :meth:`Images.push`. Inherited from :class:`abc.ABC`.
+
+   .. method:: pull(data: ImageProgressPull) -> None
+
+      Pulling image from remote registry to local Docker is started.
+
+      :param ImageProgressPull data: additional data, e.g. local and remote image
+                                     objects.
+
 
 LocalImage
 ==========
 
 .. class:: LocalImage
 
+   *Read-only* :class:`~dataclasses.dataclass` for describing *image* in local Docker
+   system.
+
+   .. attribute:: name
+
+      Image name, :class:`str`.
+
+   .. attribute:: tag
+
+      Image tag (:class:`str`), ``None`` if the tag is omitted (implicit ``latest``
+      tag).
 
 
 RemoteImage
 ===========
 
 .. class:: RemoteImage
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing *image* in remote
+   registry (Neuromation hosted or other registries like DockerHub_).
+
+   .. attribute:: name
+
+      Image name, :class:`str`.
+
+   .. attribute:: tag
+
+      Image tag (:class:`str`), ``None`` if the tag is omitted (implicit ``latest``
+      tag).
+
+   .. attribute:: owner
+
+      User name (:class:`str`) of a person who manages this image.
+
+      Public DockerHub_ images (e.g. ``"ubuntu:latest"``) have no *owner*, the attribute
+      is ``None``.
+
+   .. attribute:: registry
+
+      Host name for images hosted on Neuromation registry (:class:`str`), ``None`` for
+      other registries like DockerHub_.
+
+
+.. _DockerHub: https://hub.docker.com
