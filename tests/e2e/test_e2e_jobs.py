@@ -649,7 +649,7 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     out = captured.out
     assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
     assert f"Using remote image '{img_uri}'" in out
-    assert "Creating image from container" in out
+    assert "Creating image from the job container" in out
     assert "Image created" in out
     assert f"Using local image '{helper.username}/{image}'" in out
     assert "Pushing image..." in out
