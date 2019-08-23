@@ -55,6 +55,12 @@ class Resources:
     shm: Optional[bool]
 
 
+@dataclass(frozen=True)
+class TPUResource:
+    type: str
+    software_version: str
+
+
 class JobStatus(str, enum.Enum):
     """An Enum subclass that represents job statuses.
 
@@ -84,6 +90,7 @@ class HTTPPort:
 class Container:
     image: RemoteImage
     resources: Resources
+    tpu: Optional[TPUResource] = None
     entrypoint: Optional[str] = None
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
@@ -443,6 +450,15 @@ def _resources_from_api(data: Dict[str, Any]) -> Resources:
     )
 
 
+def _tpu_resource_to_api(tpu: TPUResource) -> Dict[str, Any]:
+    value = {"type": tpu.type, "software_version": tpu.software_version}
+    return value
+
+
+def _tpu_resource_from_api(data: Dict[str, Any]) -> TPUResource:
+    return TPUResource(type=data["type"], software_version=data["software_version"])
+
+
 def _http_port_to_api(port: HTTPPort) -> Dict[str, Any]:
     return {"port": port.port, "requires_auth": port.requires_auth}
 
@@ -458,10 +474,14 @@ def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Conta
         image = parser.parse_remote(data["image"])
     except ValueError:
         image = RemoteImage(name=INVALID_IMAGE_NAME)
+    tpu = None
+    if "tpu" in data:
+        tpu = _tpu_resource_from_api(data["tpu"])
 
     return Container(
         image=image,
         resources=_resources_from_api(data["resources"]),
+        tpu=tpu,
         entrypoint=data.get("entrypoint", None),
         command=data.get("command", None),
         http=_http_port_from_api(data["http"]) if "http" in data else None,
@@ -485,6 +505,8 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+    if container.tpu:
+        primitive["tpu"] = _tpu_resource_to_api(container.tpu)
     return primitive
 
 

@@ -43,6 +43,7 @@ from .jobs import (
     JobStatusHistory,
     JobTelemetry,
     Resources,
+    TPUResource,
     Volume,
 )
 from .parsing_utils import LocalImage, RemoteImage
@@ -60,6 +61,7 @@ __all__ = (
     "JobStatusHistory",
     "JobTelemetry",
     "Resources",
+    "TPUResource",
     "Volume",
     "HTTPPort",
     "Action",

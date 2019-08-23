@@ -20,6 +20,7 @@ from neuromation.api import (
     JobStatus,
     RemoteImage,
     Resources,
+    TPUResource,
     Volume,
 )
 from neuromation.cli.formatters import DockerImageProgress
@@ -103,6 +104,14 @@ def job() -> None:
     help="GPU to use",
     default=JOB_GPU_MODEL,
     show_default=True,
+)
+@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU to use")
+@click.option(
+    "tpu_software_version",
+    "--tpu-sw-version",
+    metavar="VERSION",
+    type=str,
+    help="Requested TPU version",
 )
 @click.option(
     "-c",
@@ -217,6 +226,8 @@ async def submit(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -259,6 +270,8 @@ async def submit(
         image=image,
         gpu=gpu,
         gpu_model=gpu_model,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
         cpu=cpu,
         memory=memory,
         extshm=extshm,
@@ -724,7 +737,6 @@ async def run(
         click.echo(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
-
     log.info(f"Using preset '{preset}': {job_preset}")
 
     await run_job(
@@ -732,6 +744,8 @@ async def run(
         image=image,
         gpu=job_preset.gpu,
         gpu_model=job_preset.gpu_model,
+        tpu_type=job_preset.tpu_type,
+        tpu_software_version=job_preset.tpu_software_version,
         cpu=job_preset.cpu,
         memory=job_preset.memory_mb,
         extshm=extshm,
@@ -775,6 +789,8 @@ async def run_job(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -844,12 +860,22 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
+    tpu = None
+    if tpu_type:
+        if tpu_software_version:
+            tpu = TPUResource(type=tpu_type, software_version=tpu_software_version)
+        else:
+            raise ValueError(
+                "--tpu-sw-version cannot be empty while --tpu-type specified"
+            )
+
     container = Container(
         image=image,
         entrypoint=entrypoint,
         command=cmd,
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,
+        tpu=tpu,
         env=env_dict,
         volumes=list(volumes),
     )

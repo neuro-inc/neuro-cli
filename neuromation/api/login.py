@@ -368,6 +368,8 @@ class RunPreset:
     is_preemptible: bool = False
     gpu: Optional[int] = None
     gpu_model: Optional[str] = None
+    tpu_type: Optional[str] = None
+    tpu_software_version: Optional[str] = None
 
 
 @dataclass(frozen=True)
