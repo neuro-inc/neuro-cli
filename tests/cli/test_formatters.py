@@ -3,7 +3,7 @@ import time
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from sys import platform
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import click
 import pytest
@@ -26,6 +26,7 @@ from neuromation.api import (
     LocalImage,
     RemoteImage,
     Resources,
+    TPUResource,
 )
 from neuromation.api.login import RunPreset
 from neuromation.api.abc import (
@@ -1271,6 +1272,18 @@ class TestResourcesFormatter:
             "  Additional: Extended SHM space"
         )
 
+    def test_tpu_container(self) -> None:
+        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True)
+        tpu = TPUResource(type="v2-8", software_version="1.14")
+        resource_formatter = ResourcesFormatter()
+        assert (
+            resource_formatter(resources=resources, tpu=tpu) == "Resources:\n"
+            "  Memory: 16 MB\n"
+            "  CPU: 0.1\n"
+            "  TPU: v2-8/1.14\n"
+            "  Additional: Extended SHM space"
+        )
+
 
 class TestConfigFormatter:
     async def test_output(self, root: Root) -> None:
@@ -1294,31 +1307,24 @@ class TestConfigFormatter:
         )
 
     async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
-        presets = root.resource_presets
+        presets = dict(root.resource_presets)
 
-        @property
-        def resource_presets(self) -> Dict[str, RunPreset]:
-            patched = dict(presets)
-            patched["tpu-small"] = RunPreset(
-                cpu=2,
-                memory_mb=2048,
-                is_preemptible=False,
-                tpu_type="v3-8",
-                tpu_software_version="1.14",
-            )
-            patched["hybrid"] = RunPreset(
-                cpu=4,
-                memory_mb=30720,
-                is_preemptible=False,
-                tpu_type="v3-64",
-                tpu_software_version="1.14",
-            )
-
-            return patched
-
-        monkeypatch.setattr(
-            "neuromation.cli.root.Root.resource_presets", resource_presets
+        presets["tpu-small"] = RunPreset(
+            cpu=2,
+            memory_mb=2048,
+            is_preemptible=False,
+            tpu_type="v3-8",
+            tpu_software_version="1.14",
         )
+        presets["hybrid"] = RunPreset(
+            cpu=4,
+            memory_mb=30720,
+            is_preemptible=False,
+            tpu_type="v3-64",
+            tpu_software_version="1.14",
+        )
+
+        monkeypatch.setattr("neuromation.cli.root.Root.resource_presets", presets)
         out = ConfigFormatter()(root)
         if platform == "win32":
             no = "No"
@@ -1338,7 +1344,7 @@ class TestConfigFormatter:
                 cpu-small       7    2048     {no}
                 cpu-large       7   14336     {no}
                 tpu-small       2    2048     {no}                               v3-8/1.14
-                hybrid          4   30720     {no}                               v3-64/1.14"""
+                hybrid          4   30720     {no}                               v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 

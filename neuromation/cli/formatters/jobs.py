@@ -5,12 +5,18 @@ import sys
 import time
 from dataclasses import dataclass
 from math import floor
-from typing import Iterable, Iterator, List, Mapping
+from typing import Iterable, Iterator, List, Mapping, Optional
 
 import humanize
 from click import style, unstyle
 
-from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
+from neuromation.api import (
+    JobDescription,
+    JobStatus,
+    JobTelemetry,
+    Resources,
+    TPUResource,
+)
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -85,7 +91,10 @@ class JobStatusFormatter:
 
         result += f"Command: {job_status.container.command}\n"
         resource_formatter = ResourcesFormatter()
-        result += resource_formatter(job_status.container.resources) + "\n"
+        result += (
+            resource_formatter(job_status.container.resources, job_status.container.tpu)
+            + "\n"
+        )
         result += f"Preemptible: {job_status.is_preemptible}\n"
         if job_status.internal_hostname:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
@@ -281,12 +290,15 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
 
 class ResourcesFormatter:
-    def __call__(self, resources: Resources) -> str:
+    def __call__(self, resources: Resources, tpu: Optional[TPUResource] = None) -> str:
         lines = list()
         lines.append(f"Memory: {resources.memory_mb} MB")
         lines.append(f"CPU: {resources.cpu:0.1f}")
         if resources.gpu:
             lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")
+
+        if tpu:
+            lines.append(f"TPU: {tpu.type}/{tpu.software_version}")
 
         additional = list()
         if resources.shm:
