@@ -3,7 +3,7 @@ import time
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from sys import platform
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 import pytest
@@ -27,6 +27,7 @@ from neuromation.api import (
     RemoteImage,
     Resources,
 )
+from neuromation.api.login import RunPreset
 from neuromation.api.abc import (
     ImageCommitFinished,
     ImageCommitStarted,
@@ -1290,6 +1291,54 @@ class TestConfigFormatter:
                 gpu-large       7   61440     {no}         1  nvidia-tesla-v100
                 cpu-small       7    2048     {no}
                 cpu-large       7   14336     {no}"""
+        )
+
+    async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
+        presets = root.resource_presets
+
+        @property
+        def resource_presets(self) -> Dict[str, RunPreset]:
+            patched = dict(presets)
+            patched["tpu-small"] = RunPreset(
+                cpu=2,
+                memory_mb=2048,
+                is_preemptible=False,
+                tpu_type="v3-8",
+                tpu_software_version="1.14",
+            )
+            patched["hybrid"] = RunPreset(
+                cpu=4,
+                memory_mb=30720,
+                is_preemptible=False,
+                tpu_type="v3-64",
+                tpu_software_version="1.14",
+            )
+
+            return patched
+
+        monkeypatch.setattr(
+            "neuromation.cli.root.Root.resource_presets", resource_presets
+        )
+        out = ConfigFormatter()(root)
+        if platform == "win32":
+            no = "No"
+        else:
+            no = "✖︎"
+
+        assert click.unstyle(out) == textwrap.dedent(
+            f"""\
+            User Configuration:
+              User Name: user
+              API URL: https://dev.neu.ro/api/v1
+              Docker Registry URL: https://registry-dev.neu.ro
+              Resource Presets:
+                Name         #CPU  Memory Preemptible #GPU  GPU Model          TPU
+                gpu-small       7   30720     {no}         1  nvidia-tesla-k80
+                gpu-large       7   61440     {no}         1  nvidia-tesla-v100
+                cpu-small       7    2048     {no}
+                cpu-large       7   14336     {no}
+                tpu-small       2    2048     {no}                               v3-8/1.14
+                hybrid          4   30720     {no}                               v3-64/1.14"""
         )
 
 
