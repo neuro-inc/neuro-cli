@@ -74,8 +74,15 @@ jobs:
       - *py_deps_step
       - *lint_step
       - *unit_step
-      - *e2e_step
       - *cov_step
+      -
+  build_py36_e2e:
+    <<: *job_env
+    steps:
+      - checkout
+      - *py36_step
+      - *py_deps_step
+      - *e2e_step
 
   build_py37:
     <<: *job_env
@@ -85,8 +92,15 @@ jobs:
       - *py_deps_step
       - *lint_step
       - *unit_step
-      - *e2e_step
       - *cov_step
+
+  build_py37_e2e:
+    <<: *job_env
+    steps:
+      - checkout
+      - *py37_step
+      - *py_deps_step
+      - *e2e_step
 
   pypi_deploy:
     <<: *job_env
