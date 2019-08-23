@@ -75,7 +75,7 @@ jobs:
       - *lint_step
       - *unit_step
       - *cov_step
-      -
+
   build_py36_e2e:
     <<: *job_env
     steps:
