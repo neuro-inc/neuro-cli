@@ -142,7 +142,17 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+      - build_py36_e2e:
+          context: org-global
+          filters:
+            tags:
+              only: /^v.*/
       - build_py37:
+          context: org-global
+          filters:
+            tags:
+              only: /^v.*/
+      - build_py37_e2e:
           context: org-global
           filters:
             tags:
