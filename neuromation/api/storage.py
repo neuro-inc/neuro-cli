@@ -181,6 +181,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
+        loop = asyncio.get_event_loop()
         sumsize = 0
 
         async def write_coro(pos: int, chunk: bytes) -> None:
@@ -210,7 +211,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                 if not chunk:
                     self._read_sem.release()
                     break
-                tasks.append(write_coro(pos, chunk))
+                tasks.append(loop.create_task(write_coro(pos, chunk)))
                 pos += len(chunk)
                 del chunk
         await asyncio.gather(*tasks)
