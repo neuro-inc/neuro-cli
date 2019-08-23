@@ -11,7 +11,7 @@ Jobs
 
 .. class:: Jobs
 
-   Jobs subsystem.
+   Jobs subsystem, available as :attr:`Client.jobs`.
 
    User can start new job, terminate it, get status, list running jobs etc.
 

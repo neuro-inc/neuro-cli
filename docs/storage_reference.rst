@@ -12,7 +12,7 @@ Storage
 
 .. class:: Storage
 
-   Storage subsystem.
+   Storage subsystem, available as :attr:`Client.storage`.
 
    The subsystem can be used for listing remote storage, uploading and downloading files
    etc.
