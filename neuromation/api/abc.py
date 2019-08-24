@@ -100,9 +100,26 @@ class ImageProgressPush:
 
 
 @dataclass(frozen=True)
+class ImageProgressSave:
+    job: str
+    dst: RemoteImage
+
+
+@dataclass(frozen=True)
 class ImageProgressStep:
     message: str
     layer_id: str
+
+
+@dataclass(frozen=True)
+class ImageCommitStarted:
+    job_id: str
+    target_image: RemoteImage
+
+
+@dataclass(frozen=True)
+class ImageCommitFinished:
+    job_id: str
 
 
 class AbstractDockerImageProgress(abc.ABC):
@@ -116,4 +133,16 @@ class AbstractDockerImageProgress(abc.ABC):
 
     @abc.abstractmethod
     def step(self, data: ImageProgressStep) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def save(self, data: ImageProgressSave) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def commit_started(self, data: ImageCommitStarted) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def commit_finished(self, data: ImageCommitFinished) -> None:
         pass  # pragma: no cover

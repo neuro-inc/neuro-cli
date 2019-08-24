@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import os
 import shlex
@@ -21,6 +22,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.cli.formatters import DockerImageProgress
 
 from .defaults import (
     GPU_MODELS,
@@ -532,9 +534,10 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     neuro job save my-favourite-job image://bob/ubuntu-patched
     """
     id = await resolve_job(root.client, job)
-    await root.client.jobs.save(id, image)
-    if not root.quiet:
-        click.echo(image)
+    progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
+    with contextlib.closing(progress):
+        await root.client.jobs.save(id, image, progress=progress)
+    click.echo(image)
 
 
 @command()

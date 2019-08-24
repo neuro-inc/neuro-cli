@@ -9,17 +9,31 @@ from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, 
 
 import async_timeout
 import attr
+from aiodocker.exceptions import DockerError
 from aiohttp import WSServerHandshakeError
 from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
 
+from neuromation.api.abc import (
+    AbstractDockerImageProgress,
+    ImageCommitFinished,
+    ImageCommitStarted,
+    ImageProgressPush,
+    ImageProgressSave,
+)
 from neuromation.utils import kill_proc_tree
 
 from .config import _Config
 from .core import IllegalArgumentError, _Core
+from .images import (
+    _DummyProgress,
+    _raise_on_error_chunk,
+    _try_parse_image_progress_step,
+)
 from .parser import Volume
 from .parsing_utils import (
+    LocalImage,
     RemoteImage,
     _as_repo_str,
     _ImageNameParser,
@@ -166,15 +180,6 @@ class Jobs(metaclass=NoPublicConstructor):
             # an error is raised for status >= 400
             return None  # 201 status code
 
-    async def save(self, id: str, image: RemoteImage) -> None:
-        if not _is_in_neuro_registry(image):
-            raise ValueError(f"Image `{image}` must be in the neuromation registry")
-        payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
-        async with self._core.request("POST", url, json=payload):
-            # an error is raised for status >= 400
-            return None  # 201 status code
-
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.monitoring_url / f"{id}/log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
@@ -206,6 +211,46 @@ class Jobs(metaclass=NoPublicConstructor):
             if e.status == 400:
                 raise ValueError(f"Job not found. Job Id = {id}")
             raise
+
+    async def save(
+        self,
+        id: str,
+        image: RemoteImage,
+        *,
+        progress: Optional[AbstractDockerImageProgress] = None,
+    ) -> None:
+        if not _is_in_neuro_registry(image):
+            raise ValueError(f"Image `{image}` must be in the neuromation registry")
+        if progress is None:
+            progress = _DummyProgress()
+
+        image_parser = _ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
+
+        payload = {"container": {"image": _as_repo_str(image)}}
+        url = self._config.cluster_config.monitoring_url / f"{id}/save"
+
+        async with self._core.request("POST", url, json=payload) as resp:
+            # first, we expect exactly two docker-commit messages
+            progress.save(ImageProgressSave(id, image))
+
+            chunk_1 = await resp.content.readline()
+            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), image_parser)
+            progress.commit_started(data_1)
+
+            chunk_2 = await resp.content.readline()
+            data_2 = _parse_commit_finished_chunk(id, _load_chunk(chunk_2))
+            progress.commit_finished(data_2)
+
+            # then, we expect stream for docker-push
+            src = LocalImage(f"{image.owner}/{image.name}", image.tag)
+            progress.push(ImageProgressPush(src, dst=image))
+            async for chunk in resp.content:
+                obj = _load_chunk(chunk)
+                push_step = _try_parse_image_progress_step(obj, image.tag)
+                if push_step:
+                    progress.step(push_step)
 
     async def exec(
         self,
@@ -329,6 +374,43 @@ class Jobs(metaclass=NoPublicConstructor):
 
 
 #  ############## Internal helpers ###################
+
+
+def _load_chunk(chunk: bytes) -> Dict[str, Any]:
+    return json.loads(chunk, encoding="utf-8")
+
+
+def _parse_commit_started_chunk(
+    job_id: str, obj: Dict[str, Any], image_parser: _ImageNameParser
+) -> ImageCommitStarted:
+    _raise_for_invalid_commit_chunk(obj, expect_started=True)
+    details_json = obj.get("details", {})
+    image = details_json.get("image")
+    if not image:
+        error_details = {"message": "Missing required details: 'image'"}
+        raise DockerError(400, error_details)
+    return ImageCommitStarted(job_id, image_parser.parse_remote(image))
+
+
+def _parse_commit_finished_chunk(
+    job_id: str, obj: Dict[str, Any]
+) -> ImageCommitFinished:
+    _raise_for_invalid_commit_chunk(obj, expect_started=False)
+    return ImageCommitFinished(job_id)
+
+
+def _raise_for_invalid_commit_chunk(obj: Dict[str, Any], expect_started: bool) -> None:
+    _raise_on_error_chunk(obj)
+    if "status" not in obj.keys():
+        error_details = {"message": 'Missing required field: "status"'}
+        raise DockerError(400, error_details)
+    status = obj["status"]
+    expected = "CommitStarted" if expect_started else "CommitFinished"
+    if status != expected:
+        error_details = {
+            "message": f"Invalid commit status: '{status}', expecting: '{expected}'"
+        }
+        raise DockerError(400, error_details)
 
 
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:
