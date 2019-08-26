@@ -600,21 +600,28 @@ async def get_server_config(
                 callback_urls=callback_urls,
                 headless_callback_url=headless_callback_url,
             )
+            resource_presets: Dict[str, RunPreset] = {}
+            for data in payload.get("resource_presets", ()):
+                tpu_type = tpu_software_version = None
+                if "tpu" in data:
+                    tpu_payload = data.get("tpu")
+                    tpu_type = tpu_payload["type"]
+                    tpu_software_version = tpu_payload["software_version"]
+                resource_presets[data["name"]] = RunPreset(
+                    cpu=data["cpu"],
+                    memory_mb=data["memory_mb"],
+                    gpu=data.get("gpu"),
+                    gpu_model=data.get("gpu_model"),
+                    is_preemptible=data.get("is_preemptible", False),
+                    tpu_type=tpu_type,
+                    tpu_software_version=tpu_software_version,
+                )
             cluster_config = _ClusterConfig(
                 registry_url=URL(payload.get("registry_url", "")),
                 storage_url=URL(payload.get("storage_url", "")),
                 users_url=URL(payload.get("users_url", "")),
                 monitoring_url=URL(payload.get("monitoring_url", "")),
-                resource_presets={
-                    data["name"]: RunPreset(
-                        cpu=data["cpu"],
-                        memory_mb=data["memory_mb"],
-                        gpu=data.get("gpu"),
-                        gpu_model=data.get("gpu_model"),
-                        is_preemptible=data.get("is_preemptible", False),
-                    )
-                    for data in payload.get("resource_presets", ())
-                },
+                resource_presets=resource_presets,
             )
             if headers and not cluster_config.is_initialized():
                 raise AuthException("Cannot authorize user")
