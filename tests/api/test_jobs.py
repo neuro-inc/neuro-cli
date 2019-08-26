@@ -15,6 +15,7 @@ from neuromation.api import (
     RemoteImage,
     ResourceNotFound,
     Resources,
+    TPUResource,
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
@@ -542,6 +543,72 @@ async def test_status_with_ssh_and_http(
         client._config.auth_token.username, client._config.cluster_config.registry_url
     )
     assert ret == _job_description_from_api(JSON, parser)
+
+
+async def test_status_with_tpu(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "status": "running",
+        "id": "job-id",
+        "description": "This is job description, not a history description",
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "history": {
+            "created_at": "2018-08-29T12:23:13.981621+00:00",
+            "started_at": "2018-08-29T12:23:15.988054+00:00",
+            "finished_at": "2018-08-29T12:59:31.427795+00:00",
+            "reason": "OK",
+            "description": "Everything is fine",
+        },
+        "is_preemptible": True,
+        "owner": "owner",
+        "container": {
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "http": {"port": 8181},
+            "resources": {
+                "memory_mb": "4096",
+                "cpu": 7.0,
+                "shm": True,
+                "gpu": 1,
+                "gpu_model": "test-gpu-model",
+                "tpu": {"type": "v3-8", "software_version": "1.14"},
+            },
+            "volumes": [
+                {
+                    "src_storage_uri": "storage://test-user/path_read_only",
+                    "dst_path": "/container/read_only",
+                    "read_only": True,
+                },
+                {
+                    "src_storage_uri": "storage://test-user/path_read_write",
+                    "dst_path": "/container/path_read_write",
+                    "read_only": False,
+                },
+            ],
+        },
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.status("job-id")
+
+    parser = _ImageNameParser(
+        client._config.auth_token.username, client._config.cluster_config.registry_url
+    )
+    assert ret == _job_description_from_api(JSON, parser)
+    assert ret.container.resources.tpu == TPUResource(
+        type="v3-8", software_version="1.14"
+    )
 
 
 async def test_job_run(

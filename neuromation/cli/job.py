@@ -831,7 +831,15 @@ async def run_job(
 
     log.info(f"Using image '{image}'")
 
-    resources = Resources(memory, cpu, gpu, gpu_model, extshm)
+    tpu = None
+    if tpu_type:
+        if tpu_software_version:
+            tpu = TPUResource(type=tpu_type, software_version=tpu_software_version)
+        else:
+            raise ValueError(
+                "--tpu-sw-version cannot be empty while --tpu-type specified"
+            )
+    resources = Resources(memory, cpu, gpu, gpu_model, extshm, tpu)
 
     volumes: Set[Volume] = set()
     for v in volume:
@@ -860,22 +868,12 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    tpu = None
-    if tpu_type:
-        if tpu_software_version:
-            tpu = TPUResource(type=tpu_type, software_version=tpu_software_version)
-        else:
-            raise ValueError(
-                "--tpu-sw-version cannot be empty while --tpu-type specified"
-            )
-
     container = Container(
         image=image,
         entrypoint=entrypoint,
         command=cmd,
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,
-        tpu=tpu,
         env=env_dict,
         volumes=list(volumes),
     )

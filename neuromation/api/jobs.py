@@ -47,18 +47,19 @@ INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 
 
 @dataclass(frozen=True)
+class TPUResource:
+    type: str
+    software_version: str
+
+
+@dataclass(frozen=True)
 class Resources:
     memory_mb: int
     cpu: float
     gpu: Optional[int]
     gpu_model: Optional[str]
     shm: Optional[bool]
-
-
-@dataclass(frozen=True)
-class TPUResource:
-    type: str
-    software_version: str
+    tpu: Optional[TPUResource] = None
 
 
 class JobStatus(str, enum.Enum):
@@ -90,7 +91,6 @@ class HTTPPort:
 class Container:
     image: RemoteImage
     resources: Resources
-    tpu: Optional[TPUResource] = None
     entrypoint: Optional[str] = None
     command: Optional[str] = None
     http: Optional[HTTPPort] = None
@@ -429,24 +429,30 @@ def _raise_for_invalid_commit_chunk(obj: Dict[str, Any], expect_started: bool) -
 
 
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:
-    value = {
+    value: Dict[str, Any] = {
         "memory_mb": resources.memory_mb,
         "cpu": resources.cpu,
         "shm": resources.shm,
     }
     if resources.gpu:
         value["gpu"] = resources.gpu
-        value["gpu_model"] = resources.gpu_model  # type: ignore
+        value["gpu_model"] = resources.gpu_model
+    if resources.tpu:
+        value["tpu"] = _tpu_resource_to_api(resources.tpu)
     return value
 
 
 def _resources_from_api(data: Dict[str, Any]) -> Resources:
+    tpu = None
+    if "tpu" in data:
+        tpu = _tpu_resource_from_api(data["tpu"])
     return Resources(
         memory_mb=data["memory_mb"],
         cpu=data["cpu"],
         shm=data.get("shm", None),
         gpu=data.get("gpu", None),
         gpu_model=data.get("gpu_model", None),
+        tpu=tpu,
     )
 
 
@@ -474,14 +480,10 @@ def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Conta
         image = parser.parse_remote(data["image"])
     except ValueError:
         image = RemoteImage(name=INVALID_IMAGE_NAME)
-    tpu = None
-    if "tpu" in data:
-        tpu = _tpu_resource_from_api(data["tpu"])
 
     return Container(
         image=image,
         resources=_resources_from_api(data["resources"]),
-        tpu=tpu,
         entrypoint=data.get("entrypoint", None),
         command=data.get("command", None),
         http=_http_port_from_api(data["http"]) if "http" in data else None,
@@ -505,8 +507,6 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
-    if container.tpu:
-        primitive["tpu"] = _tpu_resource_to_api(container.tpu)
     return primitive
 
 

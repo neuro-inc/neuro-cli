@@ -1273,8 +1273,10 @@ class TestResourcesFormatter:
         )
 
     def test_tpu_container(self) -> None:
-        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True)
         tpu = TPUResource(type="v2-8", software_version="1.14")
+        resources = Resources(
+            cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True, tpu=tpu
+        )
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources=resources, tpu=tpu) == "Resources:\n"

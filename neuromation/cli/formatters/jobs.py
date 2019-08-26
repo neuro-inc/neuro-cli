@@ -91,10 +91,7 @@ class JobStatusFormatter:
 
         result += f"Command: {job_status.container.command}\n"
         resource_formatter = ResourcesFormatter()
-        result += (
-            resource_formatter(job_status.container.resources, job_status.container.tpu)
-            + "\n"
-        )
+        result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
         if job_status.internal_hostname:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
@@ -297,8 +294,8 @@ class ResourcesFormatter:
         if resources.gpu:
             lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")
 
-        if tpu:
-            lines.append(f"TPU: {tpu.type}/{tpu.software_version}")
+        if resources.tpu:
+            lines.append(f"TPU: {resources.tpu.type}/{resources.tpu.software_version}")
 
         additional = list()
         if resources.shm:
