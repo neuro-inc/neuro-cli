@@ -158,7 +158,11 @@ class Jobs(metaclass=NoPublicConstructor):
             return _job_description_from_api(res, parser)
 
     async def list(
-        self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
+        self,
+        *,
+        statuses: Optional[Set[JobStatus]] = None,
+        name: Optional[str] = None,
+        owners: Optional[Set[str]] = None,
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
@@ -167,6 +171,9 @@ class Jobs(metaclass=NoPublicConstructor):
                 params.add("status", status.value)
         if name:
             params.add("name", name)
+        if owners:
+            for owner in owners:
+                params.add("owner", owner)
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
