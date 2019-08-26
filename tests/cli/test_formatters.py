@@ -1299,11 +1299,11 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name         #CPU  Memory Preemptible #GPU  GPU Model
-                gpu-small       7   30720     {no}         1  nvidia-tesla-k80
-                gpu-large       7   61440     {no}         1  nvidia-tesla-v100
-                cpu-small       7    2048     {no}
-                cpu-large       7   14336     {no}"""
+            Name         #CPU    Memory   Preemptible   GPU
+            gpu-small       7     30720        {no}        1 x nvidia-tesla-k80
+            gpu-large       7     61440        {no}        1 x nvidia-tesla-v100
+            cpu-small       7      2048        {no}
+            cpu-large       7     14336        {no}"""
         )
 
     async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
@@ -1338,13 +1338,13 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name         #CPU  Memory Preemptible #GPU  GPU Model          TPU
-                gpu-small       7   30720     {no}         1  nvidia-tesla-k80
-                gpu-large       7   61440     {no}         1  nvidia-tesla-v100
-                cpu-small       7    2048     {no}
-                cpu-large       7   14336     {no}
-                tpu-small       2    2048     {no}                               v3-8/1.14
-                hybrid          4   30720     {no}                               v3-64/1.14"""  # noqa: E501, ignore line length
+            Name         #CPU    Memory   Preemptible   GPU                    TPU
+            gpu-small       7     30720        {no}        1 x nvidia-tesla-k80
+            gpu-large       7     61440        {no}        1 x nvidia-tesla-v100
+            cpu-small       7      2048        {no}
+            cpu-large       7     14336        {no}
+            tpu-small       2      2048        {no}                               v3-8/1.14
+            hybrid          4     30720        {no}                               v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 
