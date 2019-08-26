@@ -1291,7 +1291,7 @@ class TestConfigFormatter:
         if platform == "win32":
             no = "No"
         else:
-            no = "✖︎"
+            no = " " + "✖︎"
         assert click.unstyle(out) == textwrap.dedent(
             f"""\
             User Configuration:
@@ -1300,10 +1300,10 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
             Name         #CPU    Memory   Preemptible   GPU
-            gpu-small       7     30720        {no}        1 x nvidia-tesla-k80
-            gpu-large       7     61440        {no}        1 x nvidia-tesla-v100
-            cpu-small       7      2048        {no}
-            cpu-large       7     14336        {no}"""
+            gpu-small       7     30720       {no}        1 x nvidia-tesla-k80
+            gpu-large       7     61440       {no}        1 x nvidia-tesla-v100
+            cpu-small       7      2048       {no}
+            cpu-large       7     14336       {no}"""
         )
 
     async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
@@ -1320,6 +1320,8 @@ class TestConfigFormatter:
             cpu=4,
             memory_mb=30720,
             is_preemptible=False,
+            gpu=2,
+            gpu_model="nvidia-tesla-v100",
             tpu_type="v3-64",
             tpu_software_version="1.14",
         )
@@ -1329,7 +1331,7 @@ class TestConfigFormatter:
         if platform == "win32":
             no = "No"
         else:
-            no = "✖︎"
+            no = " " + "✖︎"
 
         assert click.unstyle(out) == textwrap.dedent(
             f"""\
@@ -1339,12 +1341,12 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
             Name         #CPU    Memory   Preemptible   GPU                    TPU
-            gpu-small       7     30720        {no}        1 x nvidia-tesla-k80
-            gpu-large       7     61440        {no}        1 x nvidia-tesla-v100
-            cpu-small       7      2048        {no}
-            cpu-large       7     14336        {no}
-            tpu-small       2      2048        {no}                               v3-8/1.14
-            hybrid          4     30720        {no}                               v3-64/1.14"""  # noqa: E501, ignore line length
+            gpu-small       7     30720       {no}        1 x nvidia-tesla-k80
+            gpu-large       7     61440       {no}        1 x nvidia-tesla-v100
+            cpu-small       7      2048       {no}
+            cpu-large       7     14336       {no}
+            tpu-small       2      2048       {no}                               v3-8/1.14
+            hybrid          4     30720       {no}        2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 
