@@ -5,18 +5,12 @@ import sys
 import time
 from dataclasses import dataclass
 from math import floor
-from typing import Iterable, Iterator, List, Mapping, Optional
+from typing import Iterable, Iterator, List, Mapping
 
 import humanize
 from click import style, unstyle
 
-from neuromation.api import (
-    JobDescription,
-    JobStatus,
-    JobTelemetry,
-    Resources,
-    TPUResource,
-)
+from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -287,7 +281,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
 
 class ResourcesFormatter:
-    def __call__(self, resources: Resources, tpu: Optional[TPUResource] = None) -> str:
+    def __call__(self, resources: Resources) -> str:
         lines = list()
         lines.append(f"Memory: {resources.memory_mb} MB")
         lines.append(f"CPU: {resources.cpu:0.1f}")

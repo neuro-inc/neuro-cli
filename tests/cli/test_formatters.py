@@ -1279,7 +1279,7 @@ class TestResourcesFormatter:
         )
         resource_formatter = ResourcesFormatter()
         assert (
-            resource_formatter(resources=resources, tpu=tpu) == "Resources:\n"
+            resource_formatter(resources=resources) == "Resources:\n"
             "  Memory: 16 MB\n"
             "  CPU: 0.1\n"
             "  TPU: v2-8/1.14\n"
