@@ -999,7 +999,7 @@ async def test_job_run_schedule_timeout(
 def create_job_response(
     id: str,
     status: str,
-    owner: Optional[str] = None,
+    owner: str = "owner",
     name: Optional[str] = None,
     image: str = "submit-image-name",
 ) -> Dict[str, Any]:
