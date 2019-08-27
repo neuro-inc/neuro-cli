@@ -898,7 +898,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     return (
         local_nmrc_path,
         Volume(
-            storage_path=storage_nmrc_folder,
+            storage_uri=URL(storage_nmrc_folder),
             container_path=local_nmrc_folder,
             read_only=False,
         ),
