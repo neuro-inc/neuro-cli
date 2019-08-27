@@ -40,8 +40,14 @@ Parser
 
       :raise: :exc:`ValueError` if *image* has invalid format.
 
-Volume
-======
+   .. method:: remote_image(image: str) -> RemoteImage
 
+      Parse *image* string into :class:`RemoteImage`.
 
-.. class:: Volume
+      The string should fit to ``name[:tag]`` or ``image:name[tag]`` schemas,
+      e.g. ``"ubuntu:latest"`` or ``image:my-image:latest``. The former is used for
+      public DockerHub_ images, the later is for Neuromation image registry.
+
+      :raise: :exc:`ValueError` if *image* has invalid format.
+
+.. _DockerHub: https://hub.docker.com

@@ -421,6 +421,21 @@ Resources
       what ``/dev/shm`` device means.
 
 
+Volume
+======
+
+
+.. class:: Volume
+
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing mounted volumes of a
+   container.
+
+   .. attribute:: storage_path
+
+      
+
+
 .. _ENTRYPOINT: https://docs.docker.com/engine/reference/builder/#entrypoint
 
 .. _CMD: https://docs.docker.com/engine/reference/builder/#cmd
