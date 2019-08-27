@@ -477,7 +477,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width)
+        formatter = TabularJobsFormatter(width, root.username)
 
     for line in formatter(jobs):
         click.echo(line)

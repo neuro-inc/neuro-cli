@@ -648,13 +648,13 @@ class TestTabularJobRow:
 
     def test_with_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name="job-name")
+            self._job_descr_with_status(JobStatus.RUNNING, name="job-name"), "owner"
         )
         assert row.name == "job-name"
 
     def test_without_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name=None)
+            self._job_descr_with_status(JobStatus.RUNNING, name=None), "owner"
         )
         assert row.name == ""
 
@@ -668,7 +668,7 @@ class TestTabularJobRow:
         ],
     )
     def test_status_date_relation(self, status: JobStatus, date: str) -> None:
-        row = TabularJobRow.from_job(self._job_descr_with_status(status))
+        row = TabularJobRow.from_job(self._job_descr_with_status(status), "owner")
         assert row.status == f"{status}"
         assert row.when == date
 
@@ -676,31 +676,44 @@ class TestTabularJobRow:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
                 JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red"
-            )
+            ),
+            "owner",
         )
         assert row.image == "image://bob/swiss-box:red"
         assert row.name == ""
 
 
 class TestTabularJobsFormatter:
-    columns = ["ID", "NAME", "STATUS", "WHEN", "IMAGE", "DESCRIPTION", "COMMAND"]
+    columns = [
+        "ID",
+        "NAME",
+        "STATUS",
+        "WHEN",
+        "IMAGE",
+        "OWNER",
+        "DESCRIPTION",
+        "COMMAND",
+    ]
     image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def test_empty(self) -> None:
-        formatter = TabularJobsFormatter(0)
+        formatter = TabularJobsFormatter(0, "owner")
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)]
 
     def test_width_cutting(self) -> None:
-        formatter = TabularJobsFormatter(10)
+        formatter = TabularJobsFormatter(10, "owner")
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)[:10]]
 
-    def test_short_cells(self) -> None:
+    @pytest.mark.parametrize(
+        "owner_name,owner_printed", [("owner", "<you>"), ("alice", "alice")]
+    )
+    def test_short_cells(self, owner_name: str, owner_printed: str) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
-            owner="owner",
+            owner=owner_name,
             name="name",
             description="d",
             history=JobStatusHistory(
@@ -719,30 +732,33 @@ class TestTabularJobsFormatter:
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
-        formatter = TabularJobsFormatter(0)
+        formatter = TabularJobsFormatter(0, "owner")
         result = [item for item in formatter([job])]
         assert result in [
             [
-                "ID  NAME  STATUS  WHEN  IMAGE  DESCRIPTION  COMMAND",
-                "j   name  failed  now   i:l    d            c",
+                "ID  NAME  STATUS  WHEN  IMAGE  OWNER  DESCRIPTION  COMMAND",
+                f"j   name  failed  now   i:l    {owner_printed}  d            c",
             ],
             [
-                "ID  NAME  STATUS  WHEN          IMAGE  DESCRIPTION  COMMAND",
-                "j   name  failed  a second ago  i:l    d            c",
+                "ID  NAME  STATUS  WHEN          IMAGE  OWNER  DESCRIPTION  COMMAND",
+                f"j   name  failed  a second ago  i:l    {owner_printed}  d            c",  # noqa: E501
             ],
             [
-                "ID  NAME  STATUS  WHEN           IMAGE  DESCRIPTION  COMMAND",
-                "j   name  failed  2 seconds ago  i:l    d            c",
+                "ID  NAME  STATUS  WHEN           IMAGE  OWNER  DESCRIPTION  COMMAND",
+                f"j   name  failed  2 seconds ago  i:l    {owner_printed}  d            c",  # noqa: E501
             ],
         ]
 
-    def test_wide_cells(self) -> None:
+    @pytest.mark.parametrize(
+        "owner_name,owner_printed", [("owner", "<you>"), ("alice", "alice")]
+    )
+    def test_wide_cells(self, owner_name: str, owner_printed: str) -> None:
         jobs = [
             JobDescription(
                 status=JobStatus.FAILED,
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c82",
                 name="name1",
-                owner="owner",
+                owner=owner_name,
                 description="some description long long long long",
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
@@ -764,7 +780,7 @@ class TestTabularJobsFormatter:
                 status=JobStatus.PENDING,
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c84",
                 name="name2",
-                owner="owner",
+                owner=owner_name,
                 description="some description",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
@@ -783,12 +799,12 @@ class TestTabularJobsFormatter:
                 is_preemptible=True,
             ),
         ]
-        formatter = TabularJobsFormatter(0)
+        formatter = TabularJobsFormatter(0, "owner")
         result = [item for item in formatter(jobs)]
         assert result == [
-            "ID                                        NAME   STATUS   WHEN         IMAGE            DESCRIPTION                           COMMAND",  # noqa: E501
-            "job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag  some description long long long long  ls -la /some/path",  # noqa: E501
-            "job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  some-image-name:with-long-tag  some description        ls -la /some/path",  # noqa: E501
+            "ID                                        NAME   STATUS   WHEN         IMAGE            OWNER  DESCRIPTION                           COMMAND",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag  {owner_printed}  some description long long long long  ls -la /some/path",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  some-image-name:with-long-tag  {owner_printed}  some description        ls -la /some/path",  # noqa: E501
         ]
 
 
