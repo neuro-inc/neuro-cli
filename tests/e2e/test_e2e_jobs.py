@@ -6,7 +6,7 @@ import subprocess
 import sys
 import tarfile
 from pathlib import Path
-from time import sleep, time
+from time import time
 from typing import Any, AsyncIterator, Callable, Dict, Iterator, Tuple
 from uuid import uuid4
 
@@ -752,7 +752,7 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
                 except aiohttp.ClientConnectionError:
                     status = 599
                 if status != 200:
-                    sleep(loop_sleep)
+                    await asyncio.sleep(loop_sleep)
         return status
 
     async with api_get(path=nmrc_path) as client:
@@ -787,7 +787,7 @@ def test_job_submit_http_auth(
                             break
                 except aiohttp.ClientConnectionError:
                     pass
-                sleep(loop_sleep)
+                await asyncio.sleep(loop_sleep)
             else:
                 raise AssertionError("HTTP Auth not detected")
 
@@ -809,7 +809,7 @@ def test_job_submit_http_auth(
                             raise AssertionError("Secret not match")
                 except aiohttp.ClientConnectionError:
                     pass
-                sleep(loop_sleep)
+                await asyncio.sleep(loop_sleep)
             else:
                 raise AssertionError("Cannot fetch secret via forwarded http")
 
