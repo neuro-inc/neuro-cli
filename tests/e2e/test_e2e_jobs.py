@@ -795,6 +795,7 @@ def test_job_submit_http_auth(
         url: URL, cookies: Dict[str, str], secret: str
     ) -> None:
         start_time = time()
+        ntries = 0
         async with aiohttp.ClientSession(cookies=cookies) as session:  # type: ignore
             while time() - start_time < service_wait_time:
                 try:
@@ -803,7 +804,9 @@ def test_job_submit_http_auth(
                             body = await resp.text()
                             if secret == body.strip():
                                 break
-                        raise AssertionError("Secret not match")
+                        ntries += 1
+                        if ntries > 10:
+                            raise AssertionError("Secret not match")
                 except aiohttp.ClientConnectionError:
                     pass
                 await asyncio.sleep(loop_sleep)
