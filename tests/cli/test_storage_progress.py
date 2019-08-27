@@ -27,7 +27,7 @@ from neuromation.cli.root import Root
 
 def unstyle(report: BaseStorageProgress) -> List[str]:
     assert isinstance(report, TTYProgress)
-    return [click.unstyle(line) for (is_dir, line) in report.lines]
+    return [click.unstyle(line) for (key, is_dir, line) in report.lines]
 
 
 def test_format_url_storage() -> None:
@@ -399,14 +399,22 @@ def test_tty_append_files() -> None:
         assert isinstance(report, TTYProgress)
         mock.patch.object(report, "HEIGHT", 3)
         assert report.lines == []
-        report.append("a")
-        assert report.lines == [(False, "a")]
-        report.append("b")
-        assert report.lines == [(False, "a"), (False, "b")]
-        report.append("c")
-        assert report.lines == [(False, "a"), (False, "b"), (False, "c")]
-        report.append("d")
-        assert report.lines == [(False, "b"), (False, "c"), (False, "d")]
+        report.append(URL("a"), "a")
+        assert report.lines == [(URL("a"), False, "a")]
+        report.append(URL("b"), "b")
+        assert report.lines == [(URL("a"), False, "a"), (URL("b"), False, "b")]
+        report.append(URL("c"), "c")
+        assert report.lines == [
+            (URL("a"), False, "a"),
+            (URL("b"), False, "b"),
+            (URL("c"), False, "c"),
+        ]
+        report.append(URL("d"), "d")
+        assert report.lines == [
+            (URL("b"), False, "b"),
+            (URL("c"), False, "c"),
+            (URL("d"), False, "d"),
+        ]
 
 
 def test_tty_append_dir() -> None:
@@ -415,14 +423,22 @@ def test_tty_append_dir() -> None:
         assert isinstance(report, TTYProgress)
         mock.patch.object(report, "HEIGHT", 3)
         assert report.lines == []
-        report.append("a", is_dir=True)
-        assert report.lines == [(True, "a")]
-        report.append("b")
-        assert report.lines == [(True, "a"), (False, "b")]
-        report.append("c")
-        assert report.lines == [(True, "a"), (False, "b"), (False, "c")]
-        report.append("d")
-        assert report.lines == [(True, "a"), (False, "c"), (False, "d")]
+        report.append(URL("a"), "a", is_dir=True)
+        assert report.lines == [(URL("a"), True, "a")]
+        report.append(URL("b"), "b")
+        assert report.lines == [(URL("a"), True, "a"), (URL("b"), False, "b")]
+        report.append(URL("c"), "c")
+        assert report.lines == [
+            (URL("a"), True, "a"),
+            (URL("b"), False, "b"),
+            (URL("c"), False, "c"),
+        ]
+        report.append(URL("d"), "d")
+        assert report.lines == [
+            (URL("a"), True, "a"),
+            (URL("c"), False, "c"),
+            (URL("d"), False, "d"),
+        ]
 
 
 def test_tty_append_second_dir() -> None:
@@ -431,11 +447,19 @@ def test_tty_append_second_dir() -> None:
         assert isinstance(report, TTYProgress)
         mock.patch.object(report, "HEIGHT", 3)
         assert report.lines == []
-        report.append("a", is_dir=True)
-        assert report.lines == [(True, "a")]
-        report.append("b")
-        assert report.lines == [(True, "a"), (False, "b")]
-        report.append("c", is_dir=True)
-        assert report.lines == [(True, "a"), (False, "b"), (True, "c")]
-        report.append("d")
-        assert report.lines == [(False, "b"), (True, "c"), (False, "d")]
+        report.append(URL("a"), "a", is_dir=True)
+        assert report.lines == [(URL("a"), True, "a")]
+        report.append(URL("b"), "b")
+        assert report.lines == [(URL("a"), True, "a"), (URL("b"), False, "b")]
+        report.append(URL("c"), "c", is_dir=True)
+        assert report.lines == [
+            (URL("a"), True, "a"),
+            (URL("b"), False, "b"),
+            (URL("c"), True, "c"),
+        ]
+        report.append(URL("d"), "d")
+        assert report.lines == [
+            (URL("b"), False, "b"),
+            (URL("c"), True, "c"),
+            (URL("d"), False, "d"),
+        ]
