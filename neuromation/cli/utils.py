@@ -42,9 +42,9 @@ from neuromation.api import (
 from neuromation.api.config import _CookieSession, _PyPIVersion
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import uri_from_cli
-from neuromation.strings.parse import to_megabytes
-from neuromation.utils import run
 
+from .asyncio_utils import run
+from .parse_utils import to_megabytes
 from .root import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 

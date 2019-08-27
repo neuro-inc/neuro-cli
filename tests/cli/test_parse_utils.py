@@ -1,6 +1,6 @@
 import pytest
 
-from neuromation.strings import parse_memory
+from neuromation.cli.parse_utils import parse_memory
 
 
 def test_parse_memory() -> None:

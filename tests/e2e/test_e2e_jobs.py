@@ -17,7 +17,7 @@ from aiohttp.test_utils import unused_port
 from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
-from neuromation.utils import run as run_async
+from neuromation.cli.asyncio_utils import run
 from tests.e2e import Helper
 
 
@@ -816,12 +816,10 @@ def test_job_submit_http_auth(
     http_job = secret_job(http_port=True, http_auth=True)
     ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
 
-    run_async(_test_http_auth_redirect(ingress_secret_url))
+    run(_test_http_auth_redirect(ingress_secret_url))
 
     cookies = {"dat": helper.token}
-    run_async(
-        _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
-    )
+    run(_test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"]))
 
 
 @pytest.mark.e2e
