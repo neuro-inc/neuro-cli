@@ -6,7 +6,16 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+)
 
 import attr
 from yarl import URL
@@ -370,7 +379,7 @@ class Storage(metaclass=NoPublicConstructor):
                         f"Cannot upload {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
-        await asyncio.gather(*tasks)
+        await _run_concurrently(tasks)
         progress.leave(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
@@ -458,7 +467,7 @@ class Storage(metaclass=NoPublicConstructor):
                         f"Cannot download {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
-        await asyncio.gather(*tasks)
+        await _run_concurrently(tasks)
         progress.leave(StorageProgressLeaveDir(src, dst))
 
 
@@ -485,6 +494,21 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
         modification_time=int(values["modificationTime"]),
         permission=Action(values["permission"]),
     )
+
+
+async def _run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
+    loop = asyncio.get_event_loop()
+    tasks: "Iterable[asyncio.Future[Any]]" = [loop.create_task(coro) for coro in coros]
+    try:
+        done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+        for task in done:
+            await task
+    except:  # noqa: E722
+        for task in tasks:
+            task.cancel()
+        # wait for actual cancellation, ignore all exceptions raised from tasks
+        await asyncio.wait(tasks)
+        raise  # pragma: no cover
 
 
 class _DummyProgress(AbstractRecursiveFileProgress):
