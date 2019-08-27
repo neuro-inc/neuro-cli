@@ -534,7 +534,7 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
 
 def _volume_to_api(volume: Volume) -> Dict[str, Any]:
     resp: Dict[str, Any] = {
-        "src_storage_uri": volume.storage_path,
+        "src_storage_uri": str(volume.storage_uri),
         "dst_path": volume.container_path,
         "read_only": bool(volume.read_only),
     }
@@ -542,11 +542,11 @@ def _volume_to_api(volume: Volume) -> Dict[str, Any]:
 
 
 def _volume_from_api(data: Dict[str, Any]) -> Volume:
-    storage_path = data["src_storage_uri"]
+    storage_uri = URL(data["src_storage_uri"])
     container_path = data["dst_path"]
     read_only = data.get("read_only", True)
     return Volume(
-        storage_path=storage_path, container_path=container_path, read_only=read_only
+        storage_uri=storage_uri, container_path=container_path, read_only=read_only
     )
 
 

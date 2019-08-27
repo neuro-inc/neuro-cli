@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, Optional
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
+from yarl import URL
 
 from neuromation.api import (
     Client,
@@ -615,9 +616,11 @@ async def test_job_run(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
-            Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
-                "storage://test-user/path_read_write",
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
                 "/container/path_read_write",
                 False,
             ),
@@ -713,9 +716,11 @@ async def test_job_run_with_name_and_description(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
-            Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
-                "storage://test-user/path_read_write",
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
                 "/container/path_read_write",
                 False,
             ),
@@ -896,9 +901,11 @@ async def test_job_run_preemptible(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
-            Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
-                "storage://test-user/path_read_write",
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
                 "/container/path_read_write",
                 False,
             ),
@@ -1199,7 +1206,7 @@ class TestVolumeParsing:
             (
                 "storage://user/dir:/var/www",
                 Volume(
-                    storage_path="storage://user/dir",
+                    storage_uri=URL("storage://user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
@@ -1207,7 +1214,7 @@ class TestVolumeParsing:
             (
                 "storage://user/dir:/var/www:rw",
                 Volume(
-                    storage_path="storage://user/dir",
+                    storage_uri=URL("storage://user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
@@ -1215,7 +1222,7 @@ class TestVolumeParsing:
             (
                 "storage://user:/var/www:ro",
                 Volume(
-                    storage_path="storage://user",
+                    storage_uri=URL("storage://user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1223,7 +1230,7 @@ class TestVolumeParsing:
             (
                 "storage://~/:/var/www:ro",
                 Volume(
-                    storage_path="storage://user",
+                    storage_uri=URL("storage://user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1231,7 +1238,7 @@ class TestVolumeParsing:
             (
                 "storage:dir:/var/www:ro",
                 Volume(
-                    storage_path="storage://user/dir",
+                    storage_uri=URL("storage://user/dir"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1239,7 +1246,7 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_path="storage://user",
+                    storage_uri=URL("storage://user"),
                     container_path="/var/www",
                     read_only=True,
                 ),

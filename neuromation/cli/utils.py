@@ -431,7 +431,7 @@ def alias(
 
 def volume_to_verbose_str(volume: Volume) -> str:
     return (
-        f"'{volume.storage_path}' mounted to '{volume.container_path}' "
+        f"'{volume.storage_uri}' mounted to '{volume.container_path}' "
         f"in {('ro' if volume.read_only else 'rw')} mode"
     )
 
