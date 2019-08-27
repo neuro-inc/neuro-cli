@@ -882,15 +882,15 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-    storage_nmrc_folder = f"storage://{root.username}/nmrc/"
-    storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
+    storage_nmrc_folder = URL(f"storage://{root.username}/nmrc/")
+    storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     local_nmrc_folder = "/var/storage/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
         click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
     await root.client.storage.mkdirs(
-        URL(storage_nmrc_folder), parents=True, exist_ok=True
+        storage_nmrc_folder, parents=True, exist_ok=True
     )
     await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
     # specify a container volume and mount the storage path
@@ -898,7 +898,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     return (
         local_nmrc_path,
         Volume(
-            storage_uri=URL(storage_nmrc_folder),
+            storage_uri=storage_nmrc_folder,
             container_path=local_nmrc_folder,
             read_only=False,
         ),
