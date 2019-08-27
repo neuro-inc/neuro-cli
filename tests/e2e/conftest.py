@@ -41,8 +41,8 @@ from neuromation.api import (
     login_with_token,
 )
 from neuromation.api.config import _CookieSession
+from neuromation.cli.asyncio_utils import run
 from neuromation.cli.const import EX_IOERR
-from neuromation.utils import run
 from tests.e2e.utils import (
     FILE_SIZE_B,
     JOB_TINY_CONTAINER_PARAMS,

@@ -2,8 +2,8 @@ import sys
 from json import dumps
 
 from neuromation.api import get
-from neuromation.utils import run
 
+from .asyncio_utils import run
 from .const import EX_DATAERR, EX_UNAVAILABLE, EX_USAGE
 
 
