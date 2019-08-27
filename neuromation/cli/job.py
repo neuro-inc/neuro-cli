@@ -410,9 +410,12 @@ async def _print_logs(root: Root, job: str) -> None:
     multiple=True,
     type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
     help=(
-        "Filter out job by status (multiple option)."
+        "Filter out jobs by status (multiple option)."
         " Note: option `all` is deprecated, use `neuro ps -a` instead."
     ),
+)
+@click.option(
+    "-o", "--owner", multiple=True, help="Filter out jobs by owner (multiple option)."
 )
 @click.option(
     "-a",
@@ -441,6 +444,7 @@ async def ls(
     status: Sequence[str],
     all: bool,
     name: str,
+    owner: Sequence[str],
     description: str,
     wide: bool,
 ) -> None:
@@ -450,13 +454,15 @@ async def ls(
     Examples:
 
     neuro ps -a
+    neuro ps -a --owner=user-1 --owner=user-2
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
     """
 
     statuses = calc_statuses(status, all)
-    jobs = await root.client.jobs.list(statuses=statuses, name=name)
+    owners = set(owner)
+    jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
 
     # client-side filtering
     if description:
