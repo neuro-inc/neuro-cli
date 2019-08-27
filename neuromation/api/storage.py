@@ -499,6 +499,8 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
 async def _run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
     loop = asyncio.get_event_loop()
     tasks: "Iterable[asyncio.Future[Any]]" = [loop.create_task(coro) for coro in coros]
+    if not tasks:
+        return
     try:
         done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
         for task in done:
@@ -507,7 +509,8 @@ async def _run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
         for task in tasks:
             task.cancel()
         # wait for actual cancellation, ignore all exceptions raised from tasks
-        await asyncio.wait(tasks)
+        if tasks:
+            await asyncio.wait(tasks)
         raise  # pragma: no cover
 
 
