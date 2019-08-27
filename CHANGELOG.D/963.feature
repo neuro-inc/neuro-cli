@@ -1,1 +1,0 @@
-`FileStatus.permission` now is `Action`, was `str`.

@@ -5,10 +5,12 @@ import logging
 import ssl
 import time
 import types
+from datetime import date
 from typing import Any, Callable, Dict, Optional, Type
 
 import aiohttp
 import certifi
+import dateutil.parser
 import pkg_resources
 from yarl import URL
 
@@ -86,29 +88,32 @@ class VersionChecker(AbstractVersionChecker):
             log.exception("Error on fetching data from PyPI")
 
     async def _update_self_version(self) -> None:
-        pypi_version = await self._fetch_pypi("neuromation")
+        payload = await self._fetch_pypi("neuromation")
+        pypi_version = self._parse_max_version(payload)
         self._version = dataclasses.replace(
             self._version, pypi_version=pypi_version, check_timestamp=self._timer()
         )
 
     async def _update_certifi_version(self) -> None:
-        pypi_version = await self._fetch_pypi("certifi")
+        payload = await self._fetch_pypi("certifi")
+        pypi_version = self._parse_max_version(payload)
+        pypi_upload_date = self._parse_version_upload_time(payload, pypi_version)
         self._version = dataclasses.replace(
             self._version,
             certifi_pypi_version=pypi_version,
-            certifi_check_timestamp=self._timer(),
+            certifi_pypi_upload_date=pypi_upload_date,
+            certifi_check_timestamp=int(self._timer()),
         )
 
-    async def _fetch_pypi(self, package: str) -> Any:
+    async def _fetch_pypi(self, package: str) -> Dict[str, Any]:
         url = URL(f"https://pypi.org/pypi/{package}/json")
         async with self._session.get(url) as resp:
             if resp.status != 200:
                 log.debug("%s status on fetching %s", resp.status, url)
-                return _PyPIVersion.NO_VERSION
-            data = await resp.json()
-        return self._get_max_version(data)
+                return {}
+            return await resp.json()
 
-    def _get_max_version(self, pypi_response: Dict[str, Any]) -> Any:
+    def _parse_max_version(self, pypi_response: Dict[str, Any]) -> Any:
         try:
             ret = [
                 pkg_resources.parse_version(version)
@@ -117,3 +122,21 @@ class VersionChecker(AbstractVersionChecker):
             return max(ver for ver in ret if not ver.is_prerelease)  # type: ignore
         except (KeyError, ValueError):
             return _PyPIVersion.NO_VERSION
+
+    def _parse_version_upload_time(
+        self, pypi_response: Dict[str, Any], target_version: Any
+    ) -> date:
+        try:
+            dates = [
+                self._parse_date(info["upload_time"])
+                for version, info_list in pypi_response["releases"].items()
+                for info in info_list
+                if pkg_resources.parse_version(version) == target_version
+            ]
+            return max(dates)
+        except (KeyError, ValueError):
+            return date.min
+
+    def _parse_date(self, value: str) -> date:
+        # from format: "2019-08-19"
+        return dateutil.parser.parse(value).date()

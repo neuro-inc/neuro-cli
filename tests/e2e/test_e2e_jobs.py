@@ -644,8 +644,16 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
         params=("-n", job_name),
         wait_state=JobStatus.RUNNING,
     )
+    img_uri = f"image://{helper.username}/{image}"
     captured = helper.run_cli(["job", "save", job_name, image_neuro_name])
-    assert captured.out == image_neuro_name
+    out = captured.out
+    assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
+    assert f"Using remote image '{img_uri}'" in out
+    assert "Creating image from the job container" in out
+    assert "Image created" in out
+    assert f"Using local image '{helper.username}/{image}'" in out
+    assert "Pushing image..." in out
+    assert out.endswith(img_uri)
 
     # wait to free the job name:
     helper.run_cli(["job", "kill", job_name])
@@ -1071,3 +1079,21 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
     )
     assert "Browsing https://job-" in captured.out
     assert "Open job URL: https://job-" in captured.err
+
+
+@pytest.mark.e2e
+def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
+    command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
+
+    # first, run without --volume=HOME
+    helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME, command=command, wait_state=JobStatus.FAILED
+    )
+
+    # then, run with --volume=HOME
+    helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME,
+        command=command,
+        params=("--volume", "HOME"),
+        wait_state=JobStatus.SUCCEEDED,
+    )

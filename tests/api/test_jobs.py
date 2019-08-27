@@ -1,6 +1,8 @@
+import json
 from typing import Any, Callable, Dict, List, Optional
 
 import pytest
+from aiodocker.exceptions import DockerError
 from aiohttp import web
 
 from neuromation.api import (
@@ -14,7 +16,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.api.jobs import _job_description_from_api
+from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
 from neuromation.api.parsing_utils import _ImageNameParser
 from tests import _TestServerFactory
 
@@ -205,8 +207,39 @@ async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> Non
 async def test_save_ok(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        return web.Response(status=web.HTTPCreated.status_code)
+    JSON = [
+        {
+            "status": "CommitStarted",
+            "details": {"container": "cont_id", "image": f"ubuntu:latest"},
+        },
+        {"status": "CommitFinished"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+        {"status": "Preparing", "progressDetail": {}, "id": "a31dbd3063d7"},
+        {
+            "status": "Pushing",
+            "progressDetail": {"current": 3584},
+            "progress": " 3.584kB",
+            "id": "0acd017a4b67",
+        },
+        {"status": "Pushed", "progressDetail": {}, "id": "0acd017a4b67"},
+        {"status": "job-id: digest: sha256:DIGEST size: 1359"},
+        {
+            "progressDetail": {},
+            "aux": {"Tag": "job-id", "Digest": "sha256:DIGEST", "Size": 1359},
+        },
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
 
     app = web.Application()
     app.router.add_post("/jobs/job-id/save", handler)
@@ -216,6 +249,174 @@ async def test_save_ok(
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage(registry="gcr.io", owner="me", name="img")
         await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_started_invalid_status_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    invalid = "invalid status"
+    JSON = [
+        {"status": invalid, "details": {"container": "cnt", "image": "img"}},
+        {"status": "CommitFinished"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(
+            DockerError,
+            match=f"Invalid commit status: '{invalid}', expecting: 'CommitStarted'",
+        ):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_started_missing_image_details_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = [
+        {"status": "CommitStarted", "details": {"container": "cnt"}},
+        {"status": "CommitFinished"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(DockerError, match="Missing required details: 'image'"):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_finished_invalid_status_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    invalid = "invalid status"
+    JSON = [
+        {"status": "CommitStarted", "details": {"container": "cnt", "image": "img"}},
+        {"status": invalid},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(
+            DockerError,
+            match=(f"Invalid commit status: '{invalid}', expecting: 'CommitFinished'"),
+        ):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_started_missing_status_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = [
+        {"not-a-status": "value"},
+        {"status": "CommitFinished"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(DockerError, match='Missing required field: "status"'):
+            await client.jobs.save("job-id", image)
+
+
+async def test_save_commit_finished_missing_status_fails(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = [
+        {"status": "CommitStarted", "details": {"container": "cnt", "image": "img"}},
+        {"not-a-status": "value"},
+        {"status": "The push refers to repository [localhost:5000/alpine]"},
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        encoding = "utf-8"
+        response = web.StreamResponse(status=200)
+        response.enable_compression(web.ContentCoding.identity)
+        response.content_type = "application/x-ndjson"
+        response.charset = encoding
+        await response.prepare(request)
+        for chunk in JSON:
+            chunk_str = json.dumps(chunk) + "\r\n"
+            await response.write(chunk_str.encode(encoding))
+        return response
+
+    app = web.Application()
+    app.router.add_post("/jobs/job-id/save", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        with pytest.raises(DockerError, match='Missing required field: "status"'):
+            await client.jobs.save("job-id", image)
 
 
 async def test_status_failed(
@@ -796,7 +997,7 @@ async def test_job_run_schedule_timeout(
 
 
 def create_job_response(
-    id: str, status: str, name: Optional[str] = None
+    id: str, status: str, name: Optional[str] = None, image: str = "submit-image-name"
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -811,7 +1012,7 @@ def create_job_response(
         },
         "ssh_auth_server": "ssh://my_host.ssh:22",
         "container": {
-            "image": "submit-image-name",
+            "image": image,
             "command": "submit-command",
             "resources": {
                 "cpu": 1.0,
@@ -933,6 +1134,38 @@ async def test_list_filter_by_statuses(
     )
     job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
     assert ret == [job for job in job_descriptions if job.status in statuses]
+
+
+async def test_list_incorrect_image(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    jobs = [
+        create_job_response("job-id-1", "running"),
+        create_job_response("job-id-2", "pending", image="some.com/path/:tag"),
+        create_job_response(
+            "job-id-3", "failed", image="registry-dev.neu.ro/path/:tag"
+        ),
+        create_job_response("job-id-4", "failed", image=""),
+        create_job_response("job-id-5", "failed", image=":"),
+    ]
+
+    async def handler(request: web.Request) -> web.Response:
+
+        JSON = {"jobs": jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.list(statuses=statuses)
+    for job in ret:
+        if job.status == JobStatus.FAILED:
+            assert job.container.image.name == INVALID_IMAGE_NAME
+        else:
+            assert job.container.image.name != INVALID_IMAGE_NAME
 
 
 class TestVolumeParsing:

@@ -194,8 +194,8 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-#   storage://~           --> /var/storage/home (in read-write mode),
-#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+#   storage://<home-directory>   --> /var/storage/home (in read-write mode),
+#   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
@@ -215,7 +215,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -268,7 +268,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1284,8 +1284,8 @@ neuro run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-#   storage://~           --> /var/storage/home (in read-write mode),
-#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+#   storage://<home-directory>   --> /var/storage/home (in read-write mode),
+#   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
@@ -1305,7 +1305,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1358,7 +1358,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|

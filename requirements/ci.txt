@@ -11,7 +11,7 @@ pytest-testmon==0.9.18
 flake8==3.7.8
 isort==4.3.21
 black==19.3b0
-setuptools==41.1.0
+setuptools==41.2.0
 wheel==0.33.6
 cmarkgfm==0.4.2
 twine==1.13.0
