@@ -33,6 +33,10 @@ if sys.platform == "win32":
         WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
 
     asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
+else:
+    if sys.version_info < (3, 8):
+        from .asyncio_utils import ThreadedChildWatcher
+        asyncio.set_child_watcher(ThreadedChildWatcher())
 
 
 log = logging.getLogger(__name__)
