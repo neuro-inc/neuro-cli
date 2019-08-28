@@ -943,8 +943,6 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
     storage_nmrc_folder = URL(f"storage://{root.username}/nmrc/")
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
-    # TODO (artem) if user has directory `storage:nmrc`,
-    #  then `--volume=ALL` will cause a conflict (issue #1002)
     local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
