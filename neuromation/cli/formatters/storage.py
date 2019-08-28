@@ -638,8 +638,9 @@ class TTYProgress(BaseStorageProgress):
         self.printer = TTYPrinter()
         self.half_width = (root.terminal_size[0] - 10) // 2
         self.full_width = root.terminal_size[0] - 20
-        self.lines: List[Tuple[bool, str]] = []
-        self.dir_stack: List[str] = []
+        self.lines: List[Tuple[URL, bool, str]] = []
+        self.dir_stack: Dict[URL, str] = {}
+        self.cur_dir: str = ""
         self.verbose = root.verbosity > 0
 
     def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
@@ -702,32 +703,33 @@ class TTYProgress(BaseStorageProgress):
 
     def enter(self, data: StorageProgressEnterDir) -> None:
         src = self.fmt_url(data.src, FileStatusType.DIRECTORY, half=False)
-        self.dir_stack.append(src)
-        self.append(f"{src}", is_dir=True)
+        self.dir_stack[data.src] = self.cur_dir
+        self.cur_dir = src
+        self.append(data.src, f"{self.cur_dir}", is_dir=True)
 
     def leave(self, data: StorageProgressLeaveDir) -> None:
-        del self.dir_stack[-1]
+        self.cur_dir = self.dir_stack.pop(data.src)
         if self.dir_stack:
-            self.append(f"{self.dir_stack[-1]}", is_dir=True)
+            self.append(data.src, f"{self.cur_dir}", is_dir=True)
 
     def start(self, data: StorageProgressStart) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = 0
         current = self.fmt_size(0)
         total = self.fmt_size(data.size)
-        self.append(f"{src} [{progress:.2f}%] {current} of {total}")
+        self.append(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
 
     def complete(self, data: StorageProgressComplete) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
         total = self.fmt_size(data.size)
-        self.replace(f"{src} {total}")
+        self.replace(data.src, f"{src} {total}")
 
     def step(self, data: StorageProgressStep) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = (100 * data.current) / data.size
         current = self.fmt_size(data.current)
         total = self.fmt_size(data.size)
-        self.replace(f"{src} [{progress:.2f}%] {current} of {total}")
+        self.replace(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
 
     def fail(self, data: StorageProgressFail) -> None:
         src = self.fmt_str(str(data.src), FileStatusType.FILE)
@@ -739,23 +741,31 @@ class TTYProgress(BaseStorageProgress):
         # clear lines to sync with writing to stderr
         self.lines = []
 
-    def append(self, msg: str, is_dir: bool = False) -> None:
-        self.lines.append((is_dir, msg))
+    def append(self, key: URL, msg: str, is_dir: bool = False) -> None:
+        self.lines.append((key, is_dir, msg))
         if len(self.lines) > self.HEIGHT:
-            if not self.lines[0][0]:
+            if not self.lines[0][1]:
                 # top line is not a dir, drop it.
                 del self.lines[0]
             else:
-                if any(line[0] for line in self.lines[1:]):
+                if any(line[1] for line in self.lines[1:]):
                     # there are folder lines below
                     del self.lines[0]
                 else:
                     # there is only top folder line, drop next file line
                     del self.lines[1]
         for lineno, line in enumerate(self.lines):
-            self.printer.print(line[1], lineno)
+            self.printer.print(line[2], lineno)
 
-    def replace(self, msg: str) -> None:
-        # replace last line
-        self.lines[-1] = (False, msg)
-        self.printer.print(msg, len(self.lines) - 1)
+    def replace(self, key: URL, msg: str) -> None:
+        for i in range(len(self.lines))[::-1]:
+            line = self.lines[i]
+            if line[0] == key:
+                break
+        else:
+            self.append(key, msg)
+            return
+        del self.lines[i]
+        self.lines.append((key, False, msg))
+        for lineno in range(i, len(self.lines)):
+            self.printer.print(self.lines[lineno][2], lineno)
