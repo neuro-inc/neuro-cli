@@ -1157,12 +1157,3 @@ def test_job_run_volume_all_and_another(helper: Helper) -> None:
         captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
         msg = "Cannot use `--volume=ALL` together with other `--volume` options"
         assert msg in captured.err
-
-
-@pytest.mark.e2e
-def test_job_run_volume_all_and_pass_config(helper: Helper) -> None:
-    with pytest.raises(subprocess.CalledProcessError):
-        args = ["--volume", "ALL", "--pass-config"]
-        captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
-        msg = "Option `--volume=ALL` is not allowed together with `--pass-config`"
-        assert msg in captured.err

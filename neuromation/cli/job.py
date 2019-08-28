@@ -834,10 +834,6 @@ async def run_job(
     volumes = await _build_volumes(root, volume, env_dict)
 
     if pass_config:
-        if "ALL" in volume:
-            raise click.UsageError(
-                f"Option `--volume=ALL` is not allowed together with `--pass-config`"
-            )
         if CONFIG_ENV_NAME in env_dict:
             raise ValueError(
                 f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
@@ -924,11 +920,14 @@ async def _build_volumes(
         for vol in input_volumes_set:
             if vol == "HOME":
                 volumes.add(
-                    root.client.parse.volume(f"storage://~:{STORAGE_MOUNTPOINT}/home:rw")
+                    root.client.parse.volume(
+                        f"storage://~:{STORAGE_MOUNTPOINT}/home:rw"
+                    )
                 )
                 volumes.add(
                     root.client.parse.volume(
-                        f"storage://neuromation/public:{STORAGE_MOUNTPOINT}/neuromation:ro"
+                        f"storage://neuromation/public:"
+                        f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
                 # TODO (artem) print deprecation warning (issue #1009)
