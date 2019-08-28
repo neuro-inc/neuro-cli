@@ -47,19 +47,14 @@ INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 
 
 @dataclass(frozen=True)
-class TPUResource:
-    type: str
-    software_version: str
-
-
-@dataclass(frozen=True)
 class Resources:
     memory_mb: int
     cpu: float
     gpu: Optional[int]
     gpu_model: Optional[str]
     shm: Optional[bool]
-    tpu: Optional[TPUResource] = None
+    tpu_type: Optional[str]
+    tpu_software_version: Optional[str]
 
 
 class JobStatus(str, enum.Enum):
@@ -437,32 +432,30 @@ def _resources_to_api(resources: Resources) -> Dict[str, Any]:
     if resources.gpu:
         value["gpu"] = resources.gpu
         value["gpu_model"] = resources.gpu_model
-    if resources.tpu:
-        value["tpu"] = _tpu_resource_to_api(resources.tpu)
+    if resources.tpu_type:
+        assert resources.tpu_software_version
+        value["tpu"] = {
+            "type": resources.tpu_type,
+            "software_version": resources.tpu_software_version,
+        }
     return value
 
 
 def _resources_from_api(data: Dict[str, Any]) -> Resources:
-    tpu = None
+    tpu_type = tpu_software_version = None
     if "tpu" in data:
-        tpu = _tpu_resource_from_api(data["tpu"])
+        tpu = data["tpu"]
+        tpu_type = tpu["type"]
+        tpu_software_version = tpu["software_version"]
     return Resources(
         memory_mb=data["memory_mb"],
         cpu=data["cpu"],
         shm=data.get("shm", None),
         gpu=data.get("gpu", None),
         gpu_model=data.get("gpu_model", None),
-        tpu=tpu,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
     )
-
-
-def _tpu_resource_to_api(tpu: TPUResource) -> Dict[str, Any]:
-    value = {"type": tpu.type, "software_version": tpu.software_version}
-    return value
-
-
-def _tpu_resource_from_api(data: Dict[str, Any]) -> TPUResource:
-    return TPUResource(type=data["type"], software_version=data["software_version"])
 
 
 def _http_port_to_api(port: HTTPPort) -> Dict[str, Any]:

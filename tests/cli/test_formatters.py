@@ -26,7 +26,6 @@ from neuromation.api import (
     LocalImage,
     RemoteImage,
     Resources,
-    TPUResource,
 )
 from neuromation.api.abc import (
     ImageCommitFinished,
@@ -84,7 +83,7 @@ def job_descr_no_name() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
-            resources=Resources(16, 0.1, 0, None, False),
+            resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         ssh_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -108,7 +107,7 @@ def job_descr() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
-            resources=Resources(16, 0.1, 0, None, False),
+            resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         ssh_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -208,7 +207,7 @@ class TestJobStartProgress:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
@@ -276,7 +275,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_server=URL("ssh-auth"),
@@ -324,7 +323,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_server=URL("ssh-auth"),
@@ -368,7 +367,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -405,7 +404,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage("test-image"),
                 command="test-command",
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -442,7 +441,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage("test-image"),
                 command="test-command",
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -480,7 +479,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
@@ -584,7 +583,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -604,7 +603,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -641,7 +640,7 @@ class TestTabularJobRow:
             ),
             container=Container(
                 image=remote_image,
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="ls",
             ),
             ssh_server=URL("ssh-auth"),
@@ -715,7 +714,7 @@ class TestTabularJobsFormatter:
             ),
             container=Container(
                 image=RemoteImage("i", "l"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="c",
             ),
             ssh_server=URL("ssh-auth"),
@@ -756,7 +755,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
                 ssh_server=URL("ssh-auth"),
@@ -778,7 +777,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
                 ssh_server=URL("ssh-auth"),
@@ -1242,7 +1241,15 @@ class TestFilesFormatter:
 
 class TestResourcesFormatter:
     def test_tiny_container(self) -> None:
-        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=False)
+        resources = Resources(
+            cpu=0.1,
+            gpu=0,
+            gpu_model=None,
+            memory_mb=16,
+            shm=False,
+            tpu_type=None,
+            tpu_software_version=None,
+        )
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
@@ -1252,7 +1259,13 @@ class TestResourcesFormatter:
 
     def test_gpu_container(self) -> None:
         resources = Resources(
-            cpu=2, gpu=1, gpu_model="nvidia-tesla-p4", memory_mb=1024, shm=False
+            cpu=2,
+            gpu=1,
+            gpu_model="nvidia-tesla-p4",
+            memory_mb=1024,
+            shm=False,
+            tpu_type=None,
+            tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
         assert (
@@ -1263,7 +1276,15 @@ class TestResourcesFormatter:
         )
 
     def test_shm_container(self) -> None:
-        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True)
+        resources = Resources(
+            cpu=0.1,
+            gpu=0,
+            gpu_model=None,
+            memory_mb=16,
+            shm=True,
+            tpu_type=None,
+            tpu_software_version=None,
+        )
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
@@ -1273,9 +1294,14 @@ class TestResourcesFormatter:
         )
 
     def test_tpu_container(self) -> None:
-        tpu = TPUResource(type="v2-8", software_version="1.14")
         resources = Resources(
-            cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True, tpu=tpu
+            cpu=0.1,
+            gpu=0,
+            gpu_model=None,
+            memory_mb=16,
+            shm=True,
+            tpu_type="v2-8",
+            tpu_software_version="1.14",
         )
         resource_formatter = ResourcesFormatter()
         assert (

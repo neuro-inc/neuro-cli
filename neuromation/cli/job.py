@@ -20,7 +20,6 @@ from neuromation.api import (
     JobStatus,
     RemoteImage,
     Resources,
-    TPUResource,
     Volume,
 )
 from neuromation.cli.formatters import DockerImageProgress
@@ -831,15 +830,20 @@ async def run_job(
 
     log.info(f"Using image '{image}'")
 
-    tpu = None
     if tpu_type:
-        if tpu_software_version:
-            tpu = TPUResource(type=tpu_type, software_version=tpu_software_version)
-        else:
+        if not tpu_software_version:
             raise ValueError(
                 "--tpu-sw-version cannot be empty while --tpu-type specified"
             )
-    resources = Resources(memory, cpu, gpu, gpu_model, extshm, tpu)
+    resources = Resources(
+        memory_mb=memory,
+        cpu=cpu,
+        gpu=gpu,
+        gpu_model=gpu_model,
+        shm=extshm,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
+    )
 
     volumes: Set[Volume] = set()
     for v in volume:

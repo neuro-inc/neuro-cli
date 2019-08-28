@@ -15,7 +15,6 @@ from neuromation.api import (
     RemoteImage,
     ResourceNotFound,
     Resources,
-    TPUResource,
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
@@ -606,9 +605,8 @@ async def test_status_with_tpu(
         client._config.auth_token.username, client._config.cluster_config.registry_url
     )
     assert ret == _job_description_from_api(JSON, parser)
-    assert ret.container.resources.tpu == TPUResource(
-        type="v3-8", software_version="1.14"
-    )
+    assert ret.container.resources.tpu_type == "v3-8"
+    assert ret.container.resources.tpu_software_version == "1.14"
 
 
 async def test_job_run(
@@ -681,7 +679,7 @@ async def test_job_run(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -781,7 +779,7 @@ async def test_job_run_with_name_and_description(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -873,7 +871,7 @@ async def test_job_run_no_volumes(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
             image=RemoteImage("submit-image-name"),
             command="submit-command",
@@ -966,7 +964,7 @@ async def test_job_run_preemptible(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1056,7 +1054,7 @@ async def test_job_run_schedule_timeout(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
             image=RemoteImage("submit-image-name"),
             command="submit-command",
@@ -1130,14 +1128,7 @@ async def test_job_run_tpu(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(
-            16384,
-            7,
-            1,
-            "test-gpu-model",
-            True,
-            TPUResource(type="v3-8", software_version="1.14"),
-        )
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, "v3-8", "1.14")
         container = Container(
             image=RemoteImage("submit-image-name"),
             command="submit-command",
@@ -1149,9 +1140,8 @@ async def test_job_run_tpu(
         client._config.auth_token.username, client._config.cluster_config.registry_url
     )
     assert ret == _job_description_from_api(JSON, parser)
-    assert ret.container.resources.tpu == TPUResource(
-        type="v3-8", software_version="1.14"
-    )
+    assert ret.container.resources.tpu_type == "v3-8"
+    assert ret.container.resources.tpu_software_version == "1.14"
 
 
 def create_job_response(
