@@ -405,11 +405,14 @@ class Storage(metaclass=NoPublicConstructor):
                 # This case is for uploading non-regular file,
                 # e.g. blocking device or unix socket
                 # Coverage temporary skipped, the line is waiting for a champion
-                progress.fail(
-                    StorageProgressFail(
-                        src / name,
-                        dst / name,
-                        f"Cannot upload {child}, not regular file/directory",
+                await queue.put(
+                    (
+                        progress.fail,
+                        StorageProgressFail(
+                            src / name,
+                            dst / name,
+                            f"Cannot upload {child}, not regular file/directory",
+                        ),
                     )
                 )  # pragma: no cover
         await _run_concurrently(tasks)
@@ -513,11 +516,14 @@ class Storage(metaclass=NoPublicConstructor):
                     )
                 )
             else:
-                progress.fail(
-                    StorageProgressFail(
-                        src / name,
-                        dst / name,
-                        f"Cannot download {child}, not regular file/directory",
+                await queue.put(
+                    (
+                        progress.fail,
+                        StorageProgressFail(
+                            src / name,
+                            dst / name,
+                            f"Cannot download {child}, not regular file/directory",
+                        ),
                     )
                 )  # pragma: no cover
         await _run_concurrently(tasks)
