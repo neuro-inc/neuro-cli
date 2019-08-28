@@ -347,7 +347,7 @@ class Helper:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             while target_state != job.status:
-                if stop_state == job.status:
+                if stop_state and stop_state == job.status:
                     raise JobWaitStateStopReached(
                         f"failed running job {job_id}: '{stop_state}'"
                     )

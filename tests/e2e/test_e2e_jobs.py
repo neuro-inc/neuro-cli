@@ -1098,3 +1098,62 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
         params=("--volume", "HOME"),
         wait_state=JobStatus.SUCCEEDED,
     )
+
+
+@pytest.mark.e2e
+def test_job_run_volume_all(helper: Helper) -> None:
+    root_mountpoint = "/var/neuro"
+    cmd = " && ".join(
+        [
+            f"[ -d {root_mountpoint}/{helper.username} ]",
+            f"[ -d {root_mountpoint}/neuromation ]",  # must be public
+            f"[ -d {root_mountpoint}/test2/public ]",  # must be public
+            f"[ $NEUROMATION_ROOT == {root_mountpoint} ]",
+            f"[ $NEUROMATION_HOME == {root_mountpoint}/{helper.username} ]",
+        ]
+    )
+    command = f"bash -c '{cmd}'"
+    img = UBUNTU_IMAGE_NAME
+
+    # first, run without --volume=ALL
+    captured = helper.run_cli(
+        ["--quiet", "run", "--detach", "-s", "cpu-small", img, command]
+    )
+    job_id = captured.out
+    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
+
+    # then, run with --volume=ALL
+    captured = helper.run_cli(
+        ["run", "--detach", "-s", "cpu-small", "--volume=ALL", img, command]
+    )
+    assert not captured.err
+    msg = (
+        "Storage mountpoints will be available as the environment variables:\n"
+        f"  NEUROMATION_ROOT={root_mountpoint}\n"
+        f"  NEUROMATION_HOME={root_mountpoint}/{helper.username}"
+    )
+    assert msg in captured.out
+    found_job_ids = re.findall("Job ID: (job-.+) Status:", captured.out)
+    assert len(found_job_ids) == 1
+    job_id = found_job_ids[0]
+    helper.wait_job_change_state_to(
+        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
+    )
+
+
+@pytest.mark.e2e
+def test_job_run_volume_all_and_home(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError):
+        args = ["--volume", "ALL", "--volume", "HOME"]
+        captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
+        msg = "Cannot use `--volume=ALL` together with other `--volume` options"
+        assert msg in captured.err
+
+
+@pytest.mark.e2e
+def test_job_run_volume_all_and_another(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError):
+        args = ["--volume", "ALL", "--volume", "storage::/home:ro"]
+        captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
+        msg = "Cannot use `--volume=ALL` together with other `--volume` options"
+        assert msg in captured.err

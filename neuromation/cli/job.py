@@ -59,6 +59,16 @@ from .utils import (
 
 log = logging.getLogger(__name__)
 
+ROOT_MOUNTPOINT = "/var/neuro"
+
+NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
+NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
+RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
+
+
+def _get_neuro_mountpoint(username: str) -> str:
+    return f"{ROOT_MOUNTPOINT}/{username}"
+
 
 def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     if env_file:
@@ -68,12 +78,16 @@ def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     env_dict = {}
     for line in env:
         splitted = line.split("=", 1)
+        name = splitted[0]
         if len(splitted) == 1:
             val = os.environ.get(splitted[0], "")
-            env_dict[splitted[0]] = val
         else:
-            env_dict[splitted[0]] = splitted[1]
-
+            val = splitted[1]
+        if name in RESERVED_ENV_VARS:
+            raise click.UsageError(
+                f"Unable to re-define system-reserved environment variable: {name}"
+            )
+        env_dict[name] = val
     return env_dict
 
 
@@ -168,8 +182,8 @@ def job() -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation/public:/var/storage/neuromation:ro",
+    f"--volume=HOME is an alias for storage://~:{ROOT_MOUNTPOINT}/home:rw and "
+    f"storage://neuromation/public:{ROOT_MOUNTPOINT}/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
@@ -634,8 +648,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation/public:/var/storage/neuromation:ro",
+    f"--volume=HOME is an alias for storage://~:{ROOT_MOUNTPOINT}/home:rw and "
+    f"storage://neuromation/public:{ROOT_MOUNTPOINT}/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
@@ -816,18 +830,7 @@ async def run_job(
     log.info(f"Using image '{image}'")
 
     resources = Resources(memory, cpu, gpu, gpu_model, extshm)
-
-    volumes: Set[Volume] = set()
-    for v in volume:
-        if v == "HOME":
-            volumes.add(root.client.parse.volume("storage://~:/var/storage/home:rw"))
-            volumes.add(
-                root.client.parse.volume(
-                    "storage://neuromation/public:/var/storage/neuromation:ro"
-                )
-            )
-        else:
-            volumes.add(root.client.parse.volume(v))
+    volumes = await _build_volumes(root, volume, env_dict)
 
     if pass_config:
         if CONFIG_ENV_NAME in env_dict:
@@ -883,6 +886,52 @@ async def run_job(
     return job
 
 
+async def _build_volumes(
+    root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
+) -> Set[Volume]:
+    input_volumes_set = set(input_volumes)
+    volumes: Set[Volume] = set()
+
+    if "ALL" in input_volumes_set:
+        if len(input_volumes_set) > 1:
+            raise click.UsageError(
+                f"Cannot use `--volume=ALL` together with other `--volume` options"
+            )
+        available = await root.client.users.get_acl(root.username, scheme="storage")
+        volumes.update(
+            Volume(
+                storage_uri=perm.uri,
+                container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
+                read_only=perm.action not in ("write", "manage"),
+            )
+            for perm in available
+        )
+        neuro_mountpoint = _get_neuro_mountpoint(root.username)
+        env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
+        env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
+        if not root.quiet:
+            click.echo(
+                "Storage mountpoints will be available as the environment variables:\n"
+                f"  {NEUROMATION_ROOT_ENV_VAR}={ROOT_MOUNTPOINT}\n"
+                f"  {NEUROMATION_HOME_ENV_VAR}={neuro_mountpoint}"
+            )
+    else:
+        for vol in input_volumes_set:
+            if vol == "HOME":
+                volumes.add(
+                    root.client.parse.volume(f"storage://~:{ROOT_MOUNTPOINT}/home:rw")
+                )
+                volumes.add(
+                    root.client.parse.volume(
+                        f"storage://neuromation/public:{ROOT_MOUNTPOINT}/neuromation:ro"
+                    )
+                )
+                # TODO (artem) print deprecation warning (issue #1009)
+            else:
+                volumes.add(root.client.parse.volume(vol))
+    return volumes
+
+
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 
     # store the Neuro CLI config on the storage under some random path
@@ -890,7 +939,9 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
     storage_nmrc_folder = URL(f"storage://{root.username}/nmrc/")
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
-    local_nmrc_folder = "/var/storage/nmrc/"
+    # TODO (artem) if user has directory `storage:nmrc`,
+    #  then `--volume=ALL` will cause a conflict (issue #1002)
+    local_nmrc_folder = f"{ROOT_MOUNTPOINT}/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
