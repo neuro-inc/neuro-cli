@@ -833,6 +833,10 @@ async def run_job(
     volumes = await _build_volumes(root, volume, env_dict)
 
     if pass_config:
+        if "ALL" in volume:
+            raise click.UsageError(
+                f"Option `--volume=ALL` is not allowed together with `--pass-config`"
+            )
         if CONFIG_ENV_NAME in env_dict:
             raise ValueError(
                 f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
