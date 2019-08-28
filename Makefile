@@ -18,7 +18,7 @@ DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
 README_PATTERN := README.XXXXXXXX.md
 
-PYTEST_XDIST_NUM_PROCESSES ?= auto
+PYTEST_XDIST_NUM_PROCESSES := 40
 
 .PHONY: help
 .SILENT: help
