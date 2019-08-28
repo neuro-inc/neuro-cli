@@ -6,6 +6,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from stat import S_ISREG
 from typing import (
     Any,
     AsyncIterator,
@@ -277,7 +278,12 @@ class Storage(metaclass=NoPublicConstructor):
                 progress.complete(StorageProgressComplete(src_url, dst, size))
 
     async def upload_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -297,14 +303,14 @@ class Storage(metaclass=NoPublicConstructor):
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
         try:
-            stats = await self.stats(dst)
-            if stats.is_dir():
+            dst_stat = await self.stats(dst)
+            if dst_stat.is_dir():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
         except ResourceNotFound:
             # target doesn't exist, lookup for parent dir
             try:
-                stats = await self.stats(dst.parent)
-                if not stats.is_dir():
+                dst_parent_stat = await self.stats(dst.parent)
+                if not dst_parent_stat.is_dir():
                     # parent path should be a folder
                     raise NotADirectoryError(
                         errno.ENOTDIR, "Not a directory", str(dst.parent)
@@ -313,10 +319,22 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
-        await self._upload_file(path, dst, progress=progress)
+        else:
+            try:
+                src_stat = path.stat()
+            except OSError:
+                pass
+            else:
+                if (
+                    S_ISREG(src_stat.st_mode)
+                    and dst_stat.size == src_stat.st_size
+                    and dst_stat.modification_time >= src_stat.st_mtime
+                ):
+                    return
+        await self._upload_file(path, dst, update=update, progress=progress)
 
     async def _upload_file(
-        self, src_path: Path, dst: URL, *, progress: AbstractFileProgress
+        self, src_path: Path, dst: URL, *, update: bool, progress: AbstractFileProgress
     ) -> None:
         await self.create(dst, self._iterate_file(src_path, dst, progress=progress))
 
@@ -325,6 +343,7 @@ class Storage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         *,
+        update: bool = False,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
@@ -336,7 +355,7 @@ class Storage(metaclass=NoPublicConstructor):
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
         if not path.is_dir():
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
-        await self._upload_dir(src, path, dst, progress=progress)
+        await self._upload_dir(src, path, dst, update=update, progress=progress)
 
     async def _upload_dir(
         self,
@@ -344,6 +363,7 @@ class Storage(metaclass=NoPublicConstructor):
         src_path: Path,
         dst: URL,
         *,
+        update: bool,
         progress: AbstractRecursiveFileProgress,
     ) -> None:
         try:
@@ -352,6 +372,10 @@ class Storage(metaclass=NoPublicConstructor):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         progress.enter(StorageProgressEnterDir(src, dst))
         tasks = []
+        if update:
+            dst_entries = {item.name: item for item in await self.ls(dst)}
+        else:
+            dst_entries = {}
         async with self._file_sem:
             folder = sorted(
                 src_path.iterdir(), key=lambda item: (item.is_dir(), item.name)
@@ -359,13 +383,28 @@ class Storage(metaclass=NoPublicConstructor):
         for child in folder:
             name = child.name
             if child.is_file():
+                if name in dst_entries:
+                    src_stat = child.stat()
+                    dst_entry = dst_entries[name]
+                    if (
+                        dst_entry.is_file()
+                        and dst_entry.size == src_stat.st_size
+                        and dst_entry.modification_time >= src_stat.st_mtime
+                    ):
+                        continue
                 tasks.append(
-                    self._upload_file(src_path / name, dst / name, progress=progress)
+                    self._upload_file(
+                        src_path / name, dst / name, update=update, progress=progress
+                    )
                 )
             elif child.is_dir():
                 tasks.append(
                     self._upload_dir(
-                        src / name, src_path / name, dst / name, progress=progress
+                        src / name,
+                        src_path / name,
+                        dst / name,
+                        update=update,
+                        progress=progress,
                     )
                 )
             else:
@@ -383,17 +422,35 @@ class Storage(metaclass=NoPublicConstructor):
         progress.leave(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        stat = await self.stats(src)
-        if not stat.is_file():
+        src_stat = await self.stats(src)
+        if not src_stat.is_file():
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
-        await self._download_file(src, dst, path, stat.size, progress=progress)
+        try:
+            dst_stat = path.stat()
+        except OSError:
+            pass
+        else:
+            if (
+                S_ISREG(dst_stat.st_mode)
+                and dst_stat.st_size == src_stat.size
+                and dst_stat.st_mtime >= src_stat.modification_time
+            ):
+                return
+        await self._download_file(
+            src, dst, path, src_stat.size, update=update, progress=progress
+        )
 
     async def _download_file(
         self,
@@ -402,6 +459,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst_path: Path,
         size: int,
         *,
+        update: bool,
         progress: AbstractFileProgress,
     ) -> None:
         loop = asyncio.get_event_loop()
@@ -420,6 +478,7 @@ class Storage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         *,
+        update: bool = False,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
@@ -427,7 +486,7 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        await self._download_dir(src, dst, path, progress=progress)
+        await self._download_dir(src, dst, path, update=update, progress=progress)
 
     async def _download_dir(
         self,
@@ -435,28 +494,48 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         dst_path: Path,
         *,
+        update: bool,
         progress: AbstractRecursiveFileProgress,
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         progress.enter(StorageProgressEnterDir(src, dst))
         tasks = []
+        if update:
+            async with self._file_sem:
+                dst_entries = {item.name: item for item in dst_path.iterdir()}
+        else:
+            dst_entries = {}
         folder = sorted(await self.ls(src), key=lambda item: (item.is_dir(), item.name))
         for child in folder:
             name = child.name
             if child.is_file():
+                if name in dst_entries:
+                    dst_entry = dst_entries[name]
+                    if dst_entry.is_file():
+                        dst_stat = dst_entry.stat()
+                        if (
+                            dst_stat.st_size == child.size
+                            and dst_stat.st_mtime >= child.modification_time
+                        ):
+                            continue
                 tasks.append(
                     self._download_file(
                         src / name,
                         dst / name,
                         dst_path / name,
                         child.size,
+                        update=update,
                         progress=progress,
                     )
                 )
             elif child.is_dir():
                 tasks.append(
                     self._download_dir(
-                        src / name, dst / name, dst_path / name, progress=progress
+                        src / name,
+                        dst / name,
+                        dst_path / name,
+                        update=update,
+                        progress=progress,
                     )
                 )
             else:
