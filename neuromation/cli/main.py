@@ -36,6 +36,7 @@ if sys.platform == "win32":
 else:
     if sys.version_info < (3, 8):
         from .asyncio_utils import ThreadedChildWatcher
+
         asyncio.set_child_watcher(ThreadedChildWatcher())
 
 
