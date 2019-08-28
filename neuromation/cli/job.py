@@ -105,13 +105,13 @@ def job() -> None:
     default=JOB_GPU_MODEL,
     show_default=True,
 )
-@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU to use")
+@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
 @click.option(
     "tpu_software_version",
     "--tpu-sw-version",
     metavar="VERSION",
     type=str,
-    help="Requested TPU version",
+    help="Requested TPU software version",
 )
 @click.option(
     "-c",

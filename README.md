@@ -259,8 +259,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
-|_\--tpu-type TYPE_|TPU to use|
-|_\--tpu-sw-version VERSION_|Requested TPU version|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
@@ -1353,8 +1353,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
-|_\--tpu-type TYPE_|TPU to use|
-|_\--tpu-sw-version VERSION_|Requested TPU version|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
