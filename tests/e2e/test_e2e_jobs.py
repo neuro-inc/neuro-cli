@@ -19,6 +19,7 @@ from yarl import URL
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
 from tests.e2e import Helper
+from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
 
 
 ALPINE_IMAGE_NAME = "alpine:latest"
@@ -57,12 +58,7 @@ def test_job_lifecycle(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--http",
             "80",
             "--non-preemptible",
@@ -152,12 +148,7 @@ def test_job_description(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--http",
             "80",
             "--description",
@@ -235,12 +226,7 @@ def test_e2e_no_env(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
@@ -267,12 +253,7 @@ def test_e2e_env(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "-e",
             "VAR=VAL",
             "--non-preemptible",
@@ -302,11 +283,7 @@ def test_e2e_env_from_local(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
+            *JOB_TINY_CONTAINER_PARAMS,
             "0",
             "-e",
             "VAR",
@@ -336,12 +313,7 @@ def test_e2e_multiple_env(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "-e",
             "VAR=VAL",
             "-e",
@@ -375,12 +347,7 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
             "-q",
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "-e",
             "VAR=VAL",
             "-e",
@@ -410,10 +377,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             "-n",
@@ -447,10 +411,7 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
@@ -478,10 +439,7 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
@@ -507,10 +465,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
@@ -537,10 +492,7 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
@@ -568,10 +520,7 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
@@ -607,10 +556,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
@@ -677,12 +623,7 @@ def nginx_job(helper: Helper) -> Iterator[str]:
         [
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--detach",
             NGINX_IMAGE_NAME,
@@ -832,7 +773,7 @@ def test_job_run(helper: Helper) -> None:
             "job",
             "run",
             "-s",
-            "cpu-small",
+            JOB_TINY_CONTAINER_PRESET,
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
@@ -908,7 +849,7 @@ def test_pass_config(image: str, helper: Helper) -> None:
             "run",
             "-q",
             "-s",
-            "cpu-small",
+            JOB_TINY_CONTAINER_PRESET,
             "--no-wait-start",
             "--pass-config",
             image_full_str,
@@ -936,12 +877,7 @@ def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
             [
                 "job",
                 "submit",
-                "-m",
-                "20M",
-                "-c",
-                "0.1",
-                "-g",
-                "0",
+                *JOB_TINY_CONTAINER_PARAMS,
                 http_auth,
                 "--no-wait-start",
                 UBUNTU_IMAGE_NAME,
@@ -961,7 +897,16 @@ def fakebrowser(monkeypatch: Any) -> None:
 def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
-        ["-q", "job", "run", "-s", "cpu-small", "--detach", UBUNTU_IMAGE_NAME, "true"]
+        [
+            "-q",
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            "--detach",
+            UBUNTU_IMAGE_NAME,
+            "true",
+        ]
     )
     job_id = captured.out
 
@@ -981,7 +926,7 @@ def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
             "job",
             "run",
             "-s",
-            "cpu-small",
+            JOB_TINY_CONTAINER_PRESET,
             "--detach",
             "--name",
             job_name,
@@ -1005,7 +950,7 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
             "job",
             "run",
             "-s",
-            "cpu-small",
+            JOB_TINY_CONTAINER_PRESET,
             "--detach",
             "--browse",
             UBUNTU_IMAGE_NAME,
@@ -1021,7 +966,15 @@ def test_job_run_no_detach(helper: Helper) -> None:
     token = uuid4()
     # Run a new job
     captured = helper.run_cli(
-        ["-v", "job", "run", "-s", "cpu-small", UBUNTU_IMAGE_NAME, f"echo {token}"]
+        [
+            "-v",
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            UBUNTU_IMAGE_NAME,
+            f"echo {token}",
+        ]
     )
     assert str(token) in captured.out
     detach_notification = """\
@@ -1041,12 +994,7 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
                 "-v",
                 "job",
                 "submit",
-                "-m",
-                "20M",
-                "-c",
-                "0.1",
-                "-g",
-                "0",
+                *JOB_TINY_CONTAINER_PARAMS,
                 "--http",
                 "80",
                 UBUNTU_IMAGE_NAME,
@@ -1064,12 +1012,7 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
             "-v",
             "job",
             "submit",
-            "-m",
-            "20M",
-            "-c",
-            "0.1",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--http",
             "80",
             "--detach",
