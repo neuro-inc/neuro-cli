@@ -59,6 +59,7 @@ from .utils import (
 
 log = logging.getLogger(__name__)
 
+STORAGE_MOUNTPOINT = "/var/storage"
 ROOT_MOUNTPOINT = "/var/neuro"
 
 NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
@@ -182,8 +183,8 @@ def job() -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    f"--volume=HOME is an alias for storage://~:{ROOT_MOUNTPOINT}/home:rw and "
-    f"storage://neuromation/public:{ROOT_MOUNTPOINT}/neuromation:ro",
+    f"--volume=HOME is an alias for storage://~:{STORAGE_MOUNTPOINT}/home:rw and "
+    f"storage://neuromation/public:{STORAGE_MOUNTPOINT}/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
@@ -648,8 +649,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    f"--volume=HOME is an alias for storage://~:{ROOT_MOUNTPOINT}/home:rw and "
-    f"storage://neuromation/public:{ROOT_MOUNTPOINT}/neuromation:ro",
+    f"--volume=HOME is an alias for storage://~:{STORAGE_MOUNTPOINT}/home:rw and "
+    f"storage://neuromation/public:{STORAGE_MOUNTPOINT}/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
@@ -923,11 +924,11 @@ async def _build_volumes(
         for vol in input_volumes_set:
             if vol == "HOME":
                 volumes.add(
-                    root.client.parse.volume(f"storage://~:{ROOT_MOUNTPOINT}/home:rw")
+                    root.client.parse.volume(f"storage://~:{STORAGE_MOUNTPOINT}/home:rw")
                 )
                 volumes.add(
                     root.client.parse.volume(
-                        f"storage://neuromation/public:{ROOT_MOUNTPOINT}/neuromation:ro"
+                        f"storage://neuromation/public:{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
                 # TODO (artem) print deprecation warning (issue #1009)
@@ -945,7 +946,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     # TODO (artem) if user has directory `storage:nmrc`,
     #  then `--volume=ALL` will cause a conflict (issue #1002)
-    local_nmrc_folder = f"{ROOT_MOUNTPOINT}/nmrc/"
+    local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
