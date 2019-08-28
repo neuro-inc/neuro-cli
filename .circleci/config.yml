@@ -113,8 +113,9 @@ jobs:
       - run:
           name: trigger platform-e2e tests
           command: |
-              curl --fail -u ${E2E_CIRCLECI_TOKEN}: -X POST --header "Content-Type: application/json" \
-                  https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/tree/master
+              curl -X POST --fail --header "Content-Type: application/json" \
+                   -d '{"branch":"master"}' \
+                   https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
 
 
 workflows:
