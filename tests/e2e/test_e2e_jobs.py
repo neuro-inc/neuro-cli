@@ -284,7 +284,6 @@ def test_e2e_env_from_local(helper: Helper) -> None:
             "job",
             "submit",
             *JOB_TINY_CONTAINER_PARAMS,
-            "0",
             "-e",
             "VAR",
             "--non-preemptible",
