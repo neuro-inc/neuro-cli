@@ -6,7 +6,8 @@ import os
 import sys
 import threading
 import warnings
-from typing import Awaitable, TypeVar
+from types import TracebackType
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
 
 
 _T = TypeVar("_T")
@@ -108,7 +109,10 @@ def _cancel_all_tasks(
             )
 
 
-class ThreadedChildWatcher(asyncio.AbstractChildWatcher):
+_Callback = Callable[..., None]
+
+
+class ThreadedChildWatcher(asyncio.AbstractChildWatcher):  # type: ignore
     # Backport from Python 3.8
 
     """Threaded child watcher implementation.
@@ -123,20 +127,25 @@ class ThreadedChildWatcher(asyncio.AbstractChildWatcher):
     on amount of spawn processes.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._pid_counter = itertools.count(0)
-        self._threads = {}
+        self._threads: Dict[int, threading.Thread] = {}
 
-    def close(self):
+    def close(self) -> None:
         pass
 
-    def __enter__(self):
+    def __enter__(self) -> "ThreadedChildWatcher":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         pass
 
-    def __del__(self, _warn=warnings.warn):
+    def __del__(self, _warn: Any = warnings.warn) -> None:
         threads = [
             thread for thread in list(self._threads.values()) if thread.is_alive()
         ]
@@ -147,7 +156,7 @@ class ThreadedChildWatcher(asyncio.AbstractChildWatcher):
                 source=self,
             )
 
-    def add_child_handler(self, pid, callback, *args):
+    def add_child_handler(self, pid: int, callback: _Callback, *args: Any) -> None:
         loop = asyncio.get_running_loop()
         thread = threading.Thread(
             target=self._do_waitpid,
@@ -158,16 +167,22 @@ class ThreadedChildWatcher(asyncio.AbstractChildWatcher):
         self._threads[pid] = thread
         thread.start()
 
-    def remove_child_handler(self, pid):
+    def remove_child_handler(self, pid: int) -> bool:
         # asyncio never calls remove_child_handler() !!!
         # The method is no-op but is implemented because
         # abstract base classe requires it
         return True
 
-    def attach_loop(self, loop):
+    def attach_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         pass
 
-    def _do_waitpid(self, loop, expected_pid, callback, args):
+    def _do_waitpid(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        expected_pid: int,
+        callback: _Callback,
+        args: List[Any],
+    ) -> None:
         assert expected_pid > 0
 
         try:
@@ -195,7 +210,7 @@ class ThreadedChildWatcher(asyncio.AbstractChildWatcher):
         self._threads.pop(expected_pid)
 
 
-def _compute_returncode(status):
+def _compute_returncode(status: int) -> int:
     if os.WIFSIGNALED(status):
         # The child process died because of a signal.
         return -os.WTERMSIG(status)
