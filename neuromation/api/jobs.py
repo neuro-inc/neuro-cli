@@ -2,6 +2,7 @@ import asyncio
 import enum
 import json
 import shlex
+import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -9,17 +10,31 @@ from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, 
 
 import async_timeout
 import attr
+import psutil
+from aiodocker.exceptions import DockerError
 from aiohttp import WSServerHandshakeError
 from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
 
-from neuromation.utils import kill_proc_tree
+from neuromation.api.abc import (
+    AbstractDockerImageProgress,
+    ImageCommitFinished,
+    ImageCommitStarted,
+    ImageProgressPush,
+    ImageProgressSave,
+)
 
 from .config import _Config
 from .core import IllegalArgumentError, _Core
+from .images import (
+    _DummyProgress,
+    _raise_on_error_chunk,
+    _try_parse_image_progress_step,
+)
 from .parser import Volume
 from .parsing_utils import (
+    LocalImage,
     RemoteImage,
     _as_repo_str,
     _ImageNameParser,
@@ -144,7 +159,11 @@ class Jobs(metaclass=NoPublicConstructor):
             return _job_description_from_api(res, parser)
 
     async def list(
-        self, *, statuses: Optional[Set[JobStatus]] = None, name: Optional[str] = None
+        self,
+        *,
+        statuses: Optional[Set[JobStatus]] = None,
+        name: Optional[str] = None,
+        owners: Optional[Set[str]] = None,
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
@@ -153,6 +172,9 @@ class Jobs(metaclass=NoPublicConstructor):
                 params.add("status", status.value)
         if name:
             params.add("name", name)
+        if owners:
+            for owner in owners:
+                params.add("owner", owner)
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
@@ -163,15 +185,6 @@ class Jobs(metaclass=NoPublicConstructor):
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
         async with self._core.request("DELETE", url):
-            # an error is raised for status >= 400
-            return None  # 201 status code
-
-    async def save(self, id: str, image: RemoteImage) -> None:
-        if not _is_in_neuro_registry(image):
-            raise ValueError(f"Image `{image}` must be in the neuromation registry")
-        payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
-        async with self._core.request("POST", url, json=payload):
             # an error is raised for status >= 400
             return None  # 201 status code
 
@@ -206,6 +219,46 @@ class Jobs(metaclass=NoPublicConstructor):
             if e.status == 400:
                 raise ValueError(f"Job not found. Job Id = {id}")
             raise
+
+    async def save(
+        self,
+        id: str,
+        image: RemoteImage,
+        *,
+        progress: Optional[AbstractDockerImageProgress] = None,
+    ) -> None:
+        if not _is_in_neuro_registry(image):
+            raise ValueError(f"Image `{image}` must be in the neuromation registry")
+        if progress is None:
+            progress = _DummyProgress()
+
+        image_parser = _ImageNameParser(
+            self._config.auth_token.username, self._config.cluster_config.registry_url
+        )
+
+        payload = {"container": {"image": _as_repo_str(image)}}
+        url = self._config.cluster_config.monitoring_url / f"{id}/save"
+
+        async with self._core.request("POST", url, json=payload) as resp:
+            # first, we expect exactly two docker-commit messages
+            progress.save(ImageProgressSave(id, image))
+
+            chunk_1 = await resp.content.readline()
+            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), image_parser)
+            progress.commit_started(data_1)
+
+            chunk_2 = await resp.content.readline()
+            data_2 = _parse_commit_finished_chunk(id, _load_chunk(chunk_2))
+            progress.commit_finished(data_2)
+
+            # then, we expect stream for docker-push
+            src = LocalImage(f"{image.owner}/{image.name}", image.tag)
+            progress.push(ImageProgressPush(src, dst=image))
+            async for chunk in resp.content:
+                obj = _load_chunk(chunk)
+                push_step = _try_parse_image_progress_step(obj, image.tag)
+                if push_step:
+                    progress.step(push_step)
 
     async def exec(
         self,
@@ -249,7 +302,7 @@ class Jobs(metaclass=NoPublicConstructor):
             async with async_timeout.timeout(timeout):
                 return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid, timeout=10)
+            await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
@@ -323,12 +376,49 @@ class Jobs(metaclass=NoPublicConstructor):
                 raise ValueError(f"error code {result}")
             return
         finally:
-            await kill_proc_tree(proc.pid, timeout=10)
+            await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
 
 #  ############## Internal helpers ###################
+
+
+def _load_chunk(chunk: bytes) -> Dict[str, Any]:
+    return json.loads(chunk, encoding="utf-8")
+
+
+def _parse_commit_started_chunk(
+    job_id: str, obj: Dict[str, Any], image_parser: _ImageNameParser
+) -> ImageCommitStarted:
+    _raise_for_invalid_commit_chunk(obj, expect_started=True)
+    details_json = obj.get("details", {})
+    image = details_json.get("image")
+    if not image:
+        error_details = {"message": "Missing required details: 'image'"}
+        raise DockerError(400, error_details)
+    return ImageCommitStarted(job_id, image_parser.parse_remote(image))
+
+
+def _parse_commit_finished_chunk(
+    job_id: str, obj: Dict[str, Any]
+) -> ImageCommitFinished:
+    _raise_for_invalid_commit_chunk(obj, expect_started=False)
+    return ImageCommitFinished(job_id)
+
+
+def _raise_for_invalid_commit_chunk(obj: Dict[str, Any], expect_started: bool) -> None:
+    _raise_on_error_chunk(obj)
+    if "status" not in obj.keys():
+        error_details = {"message": 'Missing required field: "status"'}
+        raise DockerError(400, error_details)
+    status = obj["status"]
+    expected = "CommitStarted" if expect_started else "CommitFinished"
+    if status != expected:
+        error_details = {
+            "message": f"Invalid commit status: '{status}', expecting: '{expected}'"
+        }
+        raise DockerError(400, error_details)
 
 
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:
@@ -445,7 +535,7 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
 
 def _volume_to_api(volume: Volume) -> Dict[str, Any]:
     resp: Dict[str, Any] = {
-        "src_storage_uri": volume.storage_path,
+        "src_storage_uri": str(volume.storage_uri),
         "dst_path": volume.container_path,
         "read_only": bool(volume.read_only),
     }
@@ -453,11 +543,11 @@ def _volume_to_api(volume: Volume) -> Dict[str, Any]:
 
 
 def _volume_from_api(data: Dict[str, Any]) -> Volume:
-    storage_path = data["src_storage_uri"]
+    storage_uri = URL(data["src_storage_uri"])
     container_path = data["dst_path"]
     read_only = data.get("read_only", True)
     return Volume(
-        storage_path=storage_path, container_path=container_path, read_only=read_only
+        storage_uri=storage_uri, container_path=container_path, read_only=read_only
     )
 
 
@@ -465,3 +555,50 @@ def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
     if dt is None:
         return None
     return isoparse(dt)
+
+
+async def _kill_proc_tree(
+    pid: int,
+    sig: int = signal.SIGTERM,
+    include_parent: bool = True,
+    timeout: int = None,
+) -> None:
+    """Kill a process tree (including grandchildren) with signal
+    "sig".
+    """
+
+    def inner() -> None:
+        try:
+            parent = psutil.Process(pid)
+            children = parent.children(recursive=True)
+            zombies: List[psutil.Process] = []
+            # Try to kill all children first
+            for p in children:
+                try:
+                    p.send_signal(sig)
+                except psutil.NoSuchProcess:
+                    pass
+            _, children_alive = psutil.wait_procs(children, timeout=timeout)
+            # then kill parent
+            if include_parent:
+                parent.send_signal(sig)
+                try:
+                    parent.wait(timeout=timeout)
+                    # and try to kill again left childrent
+                    _, children_alive = psutil.wait_procs(
+                        children_alive, timeout=timeout
+                    )
+                    zombies.extend(children_alive)
+                except psutil.TimeoutExpired:
+                    zombies.append(parent)
+            else:
+                zombies.extend(children_alive)
+
+            if zombies:
+                raise RuntimeWarning(f"Possible zombie subprocesses: {zombies}")
+
+        except psutil.NoSuchProcess:
+            pass
+
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, inner)

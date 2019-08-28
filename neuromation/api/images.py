@@ -1,7 +1,7 @@
 import contextlib
 import re
 from dataclasses import replace
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import aiodocker
 import aiohttp
@@ -10,8 +10,11 @@ from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
+    ImageCommitFinished,
+    ImageCommitStarted,
     ImageProgressPull,
     ImageProgressPush,
+    ImageProgressSave,
     ImageProgressStep,
 )
 from .config import _Config
@@ -94,15 +97,9 @@ class Images(metaclass=NoPublicConstructor):
                 raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
         async for obj in stream:
-            if "error" in obj.keys():
-                error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                raise DockerError(900, error_details)
-            elif "id" in obj.keys() and obj["id"] != remote.tag:
-                if "progress" in obj.keys():
-                    message = f"{obj['id']}: {obj['status']} {obj['progress']}"
-                else:
-                    message = f"{obj['id']}: {obj['status']}"
-                progress.step(ImageProgressStep(message, obj["id"]))
+            step = _try_parse_image_progress_step(obj, remote.tag)
+            if step:
+                progress.step(step)
         return remote
 
     async def pull(
@@ -140,15 +137,9 @@ class Images(metaclass=NoPublicConstructor):
             raise  # pragma: no cover
 
         async for obj in stream:
-            if "error" in obj.keys():
-                error_details = obj.get("errorDetail", {"message": "Unknown error"})
-                raise DockerError(900, error_details)
-            elif "id" in obj.keys() and obj["id"] != remote.tag:
-                if "progress" in obj.keys():
-                    message = f"{obj['id']}: {obj['status']} {obj['progress']}"
-                else:
-                    message = f"{obj['id']}: {obj['status']}"
-                progress.step(ImageProgressStep(message, obj["id"]))
+            step = _try_parse_image_progress_step(obj, remote.tag)
+            if step:
+                progress.step(step)
 
         await self._docker.images.tag(repo, local)
 
@@ -186,6 +177,25 @@ class Images(metaclass=NoPublicConstructor):
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]
 
 
+def _try_parse_image_progress_step(
+    obj: Dict[str, Any], target_image_tag: Optional[str]
+) -> Optional[ImageProgressStep]:
+    _raise_on_error_chunk(obj)
+    if "id" in obj.keys() and obj["id"] != target_image_tag:
+        if "progress" in obj.keys():
+            message = f"{obj['id']}: {obj['status']} {obj['progress']}"
+        else:
+            message = f"{obj['id']}: {obj['status']}"
+        return ImageProgressStep(message, obj["id"])
+    return None
+
+
+def _raise_on_error_chunk(obj: Dict[str, Any]) -> None:
+    if "error" in obj.keys():
+        error_details = obj.get("errorDetail", {"message": "Unknown error"})
+        raise DockerError(900, error_details)
+
+
 class _DummyProgress(AbstractDockerImageProgress):
     def pull(self, data: ImageProgressPull) -> None:
         pass
@@ -194,4 +204,13 @@ class _DummyProgress(AbstractDockerImageProgress):
         pass
 
     def step(self, data: ImageProgressStep) -> None:
+        pass
+
+    def save(self, data: ImageProgressSave) -> None:
+        pass
+
+    def commit_started(self, data: ImageCommitStarted) -> None:
+        pass
+
+    def commit_finished(self, data: ImageCommitFinished) -> None:
         pass

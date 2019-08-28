@@ -6,6 +6,7 @@ import shlex
 import sys
 import time
 from contextlib import suppress
+from datetime import date, timedelta
 from functools import wraps
 from typing import (
     Any,
@@ -41,9 +42,9 @@ from neuromation.api import (
 from neuromation.api.config import _CookieSession, _PyPIVersion
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import uri_from_cli
-from neuromation.strings.parse import to_megabytes
-from neuromation.utils import run
 
+from .asyncio_utils import run
+from .parse_utils import to_megabytes
 from .root import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
@@ -62,7 +63,9 @@ JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
 
 
 def warn_if_has_newer_version(
-    version: _PyPIVersion, check_neuromation: bool = True
+    version: _PyPIVersion,
+    check_neuromation: bool = True,
+    cerfiti_warning_delay_days: int = 14,
 ) -> None:
     if check_neuromation:
         current = pkg_resources.parse_version(neuromation.__version__)
@@ -77,9 +80,11 @@ def warn_if_has_newer_version(
                 fg="yellow",
             )
 
-    certifi_version = certifi.__version__  # type: ignore
-    certifi_current = pkg_resources.parse_version(certifi_version)
-    if certifi_current < version.certifi_pypi_version:
+    certifi_current = pkg_resources.parse_version(certifi.__version__)  # type: ignore
+
+    if certifi_current < version.certifi_pypi_version and _need_to_warn_after_delay(
+        version.certifi_pypi_upload_date, cerfiti_warning_delay_days
+    ):
         pip_update_command = "pip install --upgrade certifi"
         conda_update_command = "conda update certifi"
         click.secho(
@@ -93,6 +98,11 @@ def warn_if_has_newer_version(
             err=True,
             fg="red",
         )
+
+
+def _need_to_warn_after_delay(release_date: date, delay_days: int) -> bool:
+    warn_since = date.today() - timedelta(days=delay_days)
+    return release_date < warn_since
 
 
 async def _run_async_function(
@@ -421,7 +431,7 @@ def alias(
 
 def volume_to_verbose_str(volume: Volume) -> str:
     return (
-        f"'{volume.storage_path}' mounted to '{volume.container_path}' "
+        f"'{volume.storage_uri}' mounted to '{volume.container_path}' "
         f"in {('ro' if volume.read_only else 'rw')} mode"
     )
 

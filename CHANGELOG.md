@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.8.23 (2019-08-23)
+================================
+
+Features
+--------
+
+
+- `FileStatus.permission` now is `Action`, was `str`. ([#963](https://github.com/neuromation/platform-api-clients/issues/963))
+
+
+Bugfixes
+--------
+
+
+- Fix regression: restore port-forward functionality. ([#979](https://github.com/neuromation/platform-api-clients/issues/979))
+
+
 Neuromation 19.8.19 (2019-08-19)
 ================================
 

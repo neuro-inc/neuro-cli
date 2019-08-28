@@ -27,6 +27,11 @@ from neuromation.api import (
     RemoteImage,
     Resources,
 )
+from neuromation.api.abc import (
+    ImageCommitFinished,
+    ImageCommitStarted,
+    ImageProgressSave,
+)
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
@@ -1307,6 +1312,32 @@ class TestDockerImageProgress:
         assert err == ""
         assert out == ""
 
+    def test_quiet_save(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.save(ImageProgressSave("job-id", RemoteImage("output")))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_quiet_commit_started(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.commit_started(
+            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_quiet_commit_finished(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
     def test_no_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(tty=False, quiet=False)
         formatter.pull(
@@ -1347,6 +1378,43 @@ class TestDockerImageProgress:
         assert "message2" not in out
         assert CSI not in out
 
+    def test_no_tty_save(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.save(
+            ImageProgressSave(
+                "job-id",
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert "Saving job 'job-id' to image 'image://bob/output:stream'" in out
+        assert err == ""
+
+    def test_no_tty_commit_started(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.commit_started(
+            ImageCommitStarted(
+                job_id="job-id",
+                target_image=RemoteImage(
+                    "output", "stream", "bob", "https://registry-dev.neu.ro"
+                ),
+            )
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert "Using remote image 'image://bob/output:stream'" in out
+        assert f"Creating image from the job container..." in out
+        assert err == ""
+
+    def test_no_tty_commit_finished(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert out.startswith("Image created")
+        assert err == ""
+
     def test_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=False)
         formatter.pull(
@@ -1384,3 +1452,38 @@ class TestDockerImageProgress:
         assert "message1" in out
         assert "message2" in out
         assert CSI in out
+
+    def test_tty_save(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.save(
+            ImageProgressSave(
+                "job-id",
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "job-id" in out
+        assert "image://bob/output:stream" in out
+        assert CSI in out
+
+    def test_tty_commit_started(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.commit_started(
+            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "img" in out
+        assert CSI in out
+
+    def test_tty_commit_finished(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out.startswith("Image created")
+        assert CSI not in out  # no styled strings

@@ -418,9 +418,7 @@ ln -s /mnt /mnt/{minio_dir}/bucket
 minio server /mnt/{minio_dir}
 """
     volume = Volume(
-        storage_path=str(storage_uri.with_path("")),
-        container_path="/mnt",
-        read_only=False,
+        storage_uri=storage_uri.with_path(""), container_path="/mnt", read_only=False
     )
     server_container = Container(
         image=RemoteImage(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),

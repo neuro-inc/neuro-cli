@@ -6,7 +6,7 @@ import subprocess
 import sys
 import tarfile
 from pathlib import Path
-from time import sleep, time
+from time import time
 from typing import Any, AsyncIterator, Callable, Dict, Iterator, Tuple
 from uuid import uuid4
 
@@ -17,7 +17,7 @@ from aiohttp.test_utils import unused_port
 from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
-from neuromation.utils import run as run_async
+from neuromation.cli.asyncio_utils import run
 from tests.e2e import Helper
 
 
@@ -644,8 +644,16 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
         params=("-n", job_name),
         wait_state=JobStatus.RUNNING,
     )
+    img_uri = f"image://{helper.username}/{image}"
     captured = helper.run_cli(["job", "save", job_name, image_neuro_name])
-    assert captured.out == image_neuro_name
+    out = captured.out
+    assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
+    assert f"Using remote image '{img_uri}'" in out
+    assert "Creating image from the job container" in out
+    assert "Image created" in out
+    assert f"Using local image '{helper.username}/{image}'" in out
+    assert "Pushing image..." in out
+    assert out.endswith(img_uri)
 
     # wait to free the job name:
     helper.run_cli(["job", "kill", job_name])
@@ -744,7 +752,7 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
                 except aiohttp.ClientConnectionError:
                     status = 599
                 if status != 200:
-                    sleep(loop_sleep)
+                    await asyncio.sleep(loop_sleep)
         return status
 
     async with api_get(path=nmrc_path) as client:
@@ -779,7 +787,7 @@ def test_job_submit_http_auth(
                             break
                 except aiohttp.ClientConnectionError:
                     pass
-                sleep(loop_sleep)
+                await asyncio.sleep(loop_sleep)
             else:
                 raise AssertionError("HTTP Auth not detected")
 
@@ -787,6 +795,7 @@ def test_job_submit_http_auth(
         url: URL, cookies: Dict[str, str], secret: str
     ) -> None:
         start_time = time()
+        ntries = 0
         async with aiohttp.ClientSession(cookies=cookies) as session:  # type: ignore
             while time() - start_time < service_wait_time:
                 try:
@@ -795,22 +804,22 @@ def test_job_submit_http_auth(
                             body = await resp.text()
                             if secret == body.strip():
                                 break
-                        raise AssertionError("Secret not match")
+                        ntries += 1
+                        if ntries > 10:
+                            raise AssertionError("Secret not match")
                 except aiohttp.ClientConnectionError:
                     pass
-                sleep(loop_sleep)
+                await asyncio.sleep(loop_sleep)
             else:
                 raise AssertionError("Cannot fetch secret via forwarded http")
 
     http_job = secret_job(http_port=True, http_auth=True)
     ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
 
-    run_async(_test_http_auth_redirect(ingress_secret_url))
+    run(_test_http_auth_redirect(ingress_secret_url))
 
     cookies = {"dat": helper.token}
-    run_async(
-        _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
-    )
+    run(_test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"]))
 
 
 @pytest.mark.e2e
@@ -1071,3 +1080,21 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
     )
     assert "Browsing https://job-" in captured.out
     assert "Open job URL: https://job-" in captured.err
+
+
+@pytest.mark.e2e
+def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
+    command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
+
+    # first, run without --volume=HOME
+    helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME, command=command, wait_state=JobStatus.FAILED
+    )
+
+    # then, run with --volume=HOME
+    helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME,
+        command=command,
+        params=("--volume", "HOME"),
+        wait_state=JobStatus.SUCCEEDED,
+    )
