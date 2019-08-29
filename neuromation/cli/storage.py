@@ -102,9 +102,20 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     default="name",
     help="sort by given field, default is name",
 )
+@click.option(
+    "-d",
+    "--directory",
+    is_flag=True,
+    help="list directories themselves, not their contents",
+)
 @async_cmd()
 async def ls(
-    root: Root, paths: Sequence[str], human_readable: bool, format_long: bool, sort: str
+    root: Root,
+    paths: Sequence[str],
+    human_readable: bool,
+    format_long: bool,
+    sort: str,
+    directory: bool,
 ) -> None:
     """
     List directory contents.
@@ -127,14 +138,16 @@ async def ls(
                 formatter = SimpleFilesFormatter(root.color)
 
         uri = parse_file_resource(path, root)
-        if root.verbosity > 0:
-            painter = get_painter(root.color, quote=True)
-            curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
-            click.echo(f"List of {curi}:")
+        if directory:
+            files = [await root.client.storage.stats(uri)]
+        else:
+            if root.verbosity > 0:
+                painter = get_painter(root.color, quote=True)
+                curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
+                click.echo(f"List of {curi}:")
 
-        files = await root.client.storage.ls(uri)
-
-        files = sorted(files, key=FilesSorter(sort).key())
+            files = await root.client.storage.ls(uri)
+            files = sorted(files, key=FilesSorter(sort).key())
 
         for line in formatter.__call__(files):
             click.echo(line)
