@@ -2,6 +2,7 @@ import asyncio
 import enum
 import json
 import shlex
+import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -9,6 +10,7 @@ from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, 
 
 import async_timeout
 import attr
+import psutil
 from aiodocker.exceptions import DockerError
 from aiohttp import WSServerHandshakeError
 from dateutil.parser import isoparse
@@ -22,7 +24,6 @@ from neuromation.api.abc import (
     ImageProgressPush,
     ImageProgressSave,
 )
-from neuromation.utils import kill_proc_tree
 
 from .config import _Config
 from .core import IllegalArgumentError, _Core
@@ -158,7 +159,11 @@ class Jobs(metaclass=NoPublicConstructor):
             return _job_description_from_api(res, parser)
 
     async def list(
-        self, *, statuses: Iterable[JobStatus] = (), name: str = ""
+        self,
+        *,
+        statuses: Iterable[JobStatus] = (),
+        name: str = "",
+        owners: Iterable[str] = (),
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
@@ -166,6 +171,8 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("status", status.value)
         if name:
             params.add("name", name)
+        for owner in owners:
+            params.add("owner", owner)
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
@@ -293,7 +300,7 @@ class Jobs(metaclass=NoPublicConstructor):
             async with async_timeout.timeout(timeout):
                 return await proc.wait()
         finally:
-            await kill_proc_tree(proc.pid, timeout=10)
+            await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
@@ -367,7 +374,7 @@ class Jobs(metaclass=NoPublicConstructor):
                 raise ValueError(f"error code {result}")
             return
         finally:
-            await kill_proc_tree(proc.pid, timeout=10)
+            await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
@@ -526,7 +533,7 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
 
 def _volume_to_api(volume: Volume) -> Dict[str, Any]:
     resp: Dict[str, Any] = {
-        "src_storage_uri": volume.storage_path,
+        "src_storage_uri": str(volume.storage_uri),
         "dst_path": volume.container_path,
         "read_only": bool(volume.read_only),
     }
@@ -534,11 +541,11 @@ def _volume_to_api(volume: Volume) -> Dict[str, Any]:
 
 
 def _volume_from_api(data: Dict[str, Any]) -> Volume:
-    storage_path = data["src_storage_uri"]
+    storage_uri = URL(data["src_storage_uri"])
     container_path = data["dst_path"]
     read_only = data.get("read_only", True)
     return Volume(
-        storage_path=storage_path, container_path=container_path, read_only=read_only
+        storage_uri=storage_uri, container_path=container_path, read_only=read_only
     )
 
 
@@ -546,3 +553,50 @@ def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
     if dt is None:
         return None
     return isoparse(dt)
+
+
+async def _kill_proc_tree(
+    pid: int,
+    sig: int = signal.SIGTERM,
+    include_parent: bool = True,
+    timeout: int = None,
+) -> None:
+    """Kill a process tree (including grandchildren) with signal
+    "sig".
+    """
+
+    def inner() -> None:
+        try:
+            parent = psutil.Process(pid)
+            children = parent.children(recursive=True)
+            zombies: List[psutil.Process] = []
+            # Try to kill all children first
+            for p in children:
+                try:
+                    p.send_signal(sig)
+                except psutil.NoSuchProcess:
+                    pass
+            _, children_alive = psutil.wait_procs(children, timeout=timeout)
+            # then kill parent
+            if include_parent:
+                parent.send_signal(sig)
+                try:
+                    parent.wait(timeout=timeout)
+                    # and try to kill again left childrent
+                    _, children_alive = psutil.wait_procs(
+                        children_alive, timeout=timeout
+                    )
+                    zombies.extend(children_alive)
+                except psutil.TimeoutExpired:
+                    zombies.append(parent)
+            else:
+                zombies.extend(children_alive)
+
+            if zombies:
+                raise RuntimeWarning(f"Possible zombie subprocesses: {zombies}")
+
+        except psutil.NoSuchProcess:
+            pass
+
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, inner)

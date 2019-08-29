@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, Optional
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
+from yarl import URL
 
 from neuromation.api import (
     Client,
@@ -615,9 +616,11 @@ async def test_job_run(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
-            Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
-                "storage://test-user/path_read_write",
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
                 "/container/path_read_write",
                 False,
             ),
@@ -713,9 +716,11 @@ async def test_job_run_with_name_and_description(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
-            Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
-                "storage://test-user/path_read_write",
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
                 "/container/path_read_write",
                 False,
             ),
@@ -896,9 +901,11 @@ async def test_job_run_preemptible(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True)
         volumes: List[Volume] = [
-            Volume("storage://test-user/path_read_only", "/container/read_only", True),
             Volume(
-                "storage://test-user/path_read_write",
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
                 "/container/path_read_write",
                 False,
             ),
@@ -997,7 +1004,11 @@ async def test_job_run_schedule_timeout(
 
 
 def create_job_response(
-    id: str, status: str, name: Optional[str] = None, image: str = "submit-image-name"
+    id: str,
+    status: str,
+    owner: str = "owner",
+    name: Optional[str] = None,
+    image: str = "submit-image-name",
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -1022,7 +1033,7 @@ def create_job_response(
             },
         },
         "is_preemptible": True,
-        "owner": "owner",
+        "owner": owner,
     }
     if name:
         result["name"] = name
@@ -1195,7 +1206,7 @@ class TestVolumeParsing:
             (
                 "storage://user/dir:/var/www",
                 Volume(
-                    storage_path="storage://user/dir",
+                    storage_uri=URL("storage://user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
@@ -1203,7 +1214,7 @@ class TestVolumeParsing:
             (
                 "storage://user/dir:/var/www:rw",
                 Volume(
-                    storage_path="storage://user/dir",
+                    storage_uri=URL("storage://user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
@@ -1211,7 +1222,7 @@ class TestVolumeParsing:
             (
                 "storage://user:/var/www:ro",
                 Volume(
-                    storage_path="storage://user",
+                    storage_uri=URL("storage://user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1219,7 +1230,7 @@ class TestVolumeParsing:
             (
                 "storage://~/:/var/www:ro",
                 Volume(
-                    storage_path="storage://user",
+                    storage_uri=URL("storage://user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1227,7 +1238,7 @@ class TestVolumeParsing:
             (
                 "storage:dir:/var/www:ro",
                 Volume(
-                    storage_path="storage://user/dir",
+                    storage_uri=URL("storage://user/dir"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1235,7 +1246,7 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_path="storage://user",
+                    storage_uri=URL("storage://user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1286,6 +1297,54 @@ async def test_list_filter_by_name_and_statuses(
     name = "job-name-1"
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses, name=name)
+
+    parser = _ImageNameParser(
+        client._config.auth_token.username, client._config.cluster_config.registry_url
+    )
+    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
+    assert ret == job_descriptions[:2]
+
+
+async def test_list_filter_by_name_and_statuses_and_owners(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    name_1 = "job-name-1"
+    name_2 = "job-name-2"
+    owner_1 = "owner-1"
+    owner_2 = "owner-2"
+    jobs = [
+        create_job_response("job-id-1", "running", name=name_1, owner=owner_1),
+        create_job_response("job-id-2", "running", name=name_1, owner=owner_2),
+        create_job_response("job-id-3", "running", name=name_2, owner=owner_1),
+        create_job_response("job-id-4", "running", name=name_2, owner=owner_2),
+        create_job_response("job-id-5", "succeeded", name=name_1, owner=owner_1),
+        create_job_response("job-id-6", "succeeded", name=name_1, owner=owner_2),
+        create_job_response("job-id-7", "succeeded", name=name_2, owner=owner_1),
+        create_job_response("job-id-8", "succeeded", name=name_2, owner=owner_2),
+    ]
+
+    async def handler(request: web.Request) -> web.Response:
+        statuses = request.query.getall("status")
+        name = request.query.get("name")
+        owners = request.query.getall("owner")
+        filtered_jobs = [
+            job
+            for job in jobs
+            if job["status"] in statuses
+            and job.get("name") == name
+            and job.get("owner") in owners
+        ]
+        return web.json_response({"jobs": filtered_jobs})
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    statuses = {JobStatus.RUNNING}
+    name = name_1
+    owners = {owner_1, owner_2}
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.list(statuses=statuses, name=name, owners=owners)
 
     parser = _ImageNameParser(
         client._config.auth_token.username, client._config.cluster_config.registry_url

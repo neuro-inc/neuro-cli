@@ -43,6 +43,7 @@ Jobs
 
    .. comethod:: list(*, statuses: Iterable[JobStatus] = (), \
                       name: str = "" \
+                      owners: Iterable[str] = (),
                  ) -> List[JobDescription]
 
       List user jobs, all scheduled, running and finished jobs by default.
@@ -65,6 +66,15 @@ Jobs
       :param str name: Filter jobs by :attr:`~JobDescription.name` (exact match).
 
                        Empty string means that no filter is applied (default).
+
+      :param ~typing.Iterable[str] owners: filter jobs by their owners.
+
+                                           The parameter can be a set or list of owner
+                                           usernames (see :attr:`JobDescription.owner`
+                                           for details).
+
+                                           No owners filter is applied if the iterable
+                                           is empty.
 
       :return: a :class:`list` of :class:`JobDescription` objects.
 

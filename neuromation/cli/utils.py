@@ -42,9 +42,9 @@ from neuromation.api import (
 from neuromation.api.config import _CookieSession, _PyPIVersion
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import uri_from_cli
-from neuromation.strings.parse import to_megabytes
-from neuromation.utils import run
 
+from .asyncio_utils import run
+from .parse_utils import to_megabytes
 from .root import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
@@ -431,7 +431,7 @@ def alias(
 
 def volume_to_verbose_str(volume: Volume) -> str:
     return (
-        f"'{volume.storage_path}' mounted to '{volume.container_path}' "
+        f"'{volume.storage_uri}' mounted to '{volume.container_path}' "
         f"in {('ro' if volume.read_only else 'rw')} mode"
     )
 
