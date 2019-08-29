@@ -10,9 +10,26 @@ Initialization
 API functions
 =============
 
-.. cofunction:: get()
+.. cofunction:: get(
+                    *,
+                    path: Optional[Path] = None,
+                    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+                ) -> AsyncContextManager[Client]
    :async-with:
 
+      The handy API for getting initialized :class:`Client` instance.
+
+      A shortcut for :meth:`Factory.get` that acts as asynchronous context manager.
+
+      The usage is::
+
+         async with neuromation.api.get() as client:
+             ret = await client.jobs.list()
+
+      See :meth:`Factory.get` for optional function arguments meaning.
+
+
+.. cofunction:: login
 
 
 Config Factory
