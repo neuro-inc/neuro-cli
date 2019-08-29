@@ -6,7 +6,7 @@ import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
+from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
 import async_timeout
 import attr
@@ -161,20 +161,18 @@ class Jobs(metaclass=NoPublicConstructor):
     async def list(
         self,
         *,
-        statuses: Optional[Set[JobStatus]] = None,
-        name: Optional[str] = None,
-        owners: Optional[Set[str]] = None,
+        statuses: Iterable[JobStatus] = (),
+        name: str = "",
+        owners: Iterable[str] = (),
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
-        if statuses:
-            for status in statuses:
-                params.add("status", status.value)
+        for status in statuses:
+            params.add("status", status.value)
         if name:
             params.add("name", name)
-        if owners:
-            for owner in owners:
-                params.add("owner", owner)
+        for owner in owners:
+            params.add("owner", owner)
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )

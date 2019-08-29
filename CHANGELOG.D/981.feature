@@ -1,0 +1,1 @@
+Uploading/downloading of a directory containing many small files is now 4-10 times faster.
