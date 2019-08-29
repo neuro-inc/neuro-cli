@@ -10,26 +10,59 @@ Initialization
 API functions
 =============
 
-.. cofunction:: get(
-                    *,
-                    path: Optional[Path] = None,
-                    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+.. cofunction:: get( \
+                    *, \
+                    path: Optional[Path] = None, \
+                    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT \
                 ) -> AsyncContextManager[Client]
    :async-with:
 
-      The handy API for getting initialized :class:`Client` instance.
+   The handy API for getting initialized :class:`Client` instance.
 
-      A shortcut for :meth:`Factory.get` that acts as asynchronous context manager.
+   A shortcut for :meth:`Factory.get` that acts as asynchronous context manager.
 
-      The usage is::
+   The usage is::
 
-         async with neuromation.api.get() as client:
-             ret = await client.jobs.list()
+      async with neuromation.api.get() as client:
+          ret = await client.jobs.list()
 
-      See :meth:`Factory.get` for optional function arguments meaning.
+   See :meth:`Factory.get` for optional function arguments meaning.
 
 
-.. cofunction:: login
+.. cofunction:: login( \
+                    show_browser_cb: Callable[[URL], Awaitable[None]], \
+                    *, \
+                    url: URL = DEFAULT_API_URL, \
+                    path: Optional[Path] = None, \
+                    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT \
+                ) -> None
+
+   A shortcut for :meth:`Factory.login`. See the method for details.
+
+
+.. cofunction:: login_with_headless( \
+                    get_auth_code_cb: Callable[[URL], Awaitable[str]], \
+                    *, \
+                    url: URL = DEFAULT_API_URL, \
+                    path: Optional[Path] = None, \
+                    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT \
+                ) -> None
+
+   A shortcut for :meth:`Factory.login_headless`. See the method for details.
+
+.. cofunction:: login_with_token( \
+                    token: str, \
+                    *, \
+                    url: URL = DEFAULT_API_URL, \
+                    path: Optional[Path] = None, \
+                    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT \
+                ) -> None
+
+   A shortcut for :meth:`Factory.login_with_token`. See the method for details.
+
+.. cofunction:: logout(*, path: Optional[Path] = None) -> None
+
+   A shortcut for :meth:`Factory.logout`. See the method for details.
 
 
 Config Factory
