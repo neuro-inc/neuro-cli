@@ -555,7 +555,7 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     for path in paths:
         uri = parse_file_resource(path, root)
 
-        await root.client.storage.mkdirs(uri, parents=parents, exist_ok=parents)
+        await root.client.storage.mkdir(uri, parents=parents, exist_ok=parents)
         if root.verbosity > 0:
             painter = get_painter(root.color, quote=True)
             curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
@@ -661,7 +661,7 @@ async def mv(
         assert dst
         if root.verbosity > 0:
             painter = get_painter(root.color, quote=True)
-            src_status = await root.client.storage.stats(src)
+            src_status = await root.client.storage.stat(src)
         await root.client.storage.mv(src, dst)
         if root.verbosity > 0:
             csrc = painter.paint(str(src), src_status.type)
