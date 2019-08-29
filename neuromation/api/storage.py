@@ -136,7 +136,7 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> AsyncIterator[URL]:
         uri = parent / basename
         try:
-            await self.stats(uri)
+            await self.stat(uri)
         except ResourceNotFound:
             return
         yield uri
@@ -156,12 +156,12 @@ class Storage(metaclass=NoPublicConstructor):
                     async for y in self._rlistdir(x, dironly):
                         yield y
 
-    async def mkdirs(
+    async def mkdir(
         self, uri: URL, *, parents: bool = False, exist_ok: bool = False
     ) -> None:
         if not exist_ok:
             try:
-                await self.stats(uri)
+                await self.stat(uri)
             except ResourceNotFound:
                 pass
             else:
@@ -174,7 +174,7 @@ class Storage(metaclass=NoPublicConstructor):
             parent = parent.parent
             if parent != parent.parent:
                 try:
-                    await self.stats(parent)
+                    await self.stat(parent)
                 except ResourceNotFound:
                     raise FileNotFoundError(
                         errno.ENOENT, "No such directory", str(parent)
@@ -196,7 +196,7 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("PUT", url, data=data, timeout=timeout) as resp:
             resp  # resp.status == 201
 
-    async def stats(self, uri: URL) -> FileStatus:
+    async def stat(self, uri: URL) -> FileStatus:
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
@@ -207,7 +207,7 @@ class Storage(metaclass=NoPublicConstructor):
     async def _is_dir(self, uri: URL) -> bool:
         if uri.scheme == "storage":
             try:
-                stat = await self.stats(uri)
+                stat = await self.stat(uri)
                 return stat.is_dir()
             except ResourceNotFound:
                 pass
@@ -239,7 +239,7 @@ class Storage(metaclass=NoPublicConstructor):
         #     raise ValueError("Invalid path value.")
 
         if not recursive:
-            stats = await self.stats(uri)
+            stats = await self.stat(uri)
             if stats.type is FileStatusType.DIRECTORY:
                 raise IsADirectoryError(
                     errno.EISDIR, "Is a directory, use recursive remove", str(uri)
@@ -310,13 +310,13 @@ class Storage(metaclass=NoPublicConstructor):
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
         try:
-            stats = await self.stats(dst)
+            stats = await self.stat(dst)
             if stats.is_dir():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
         except ResourceNotFound:
             # target doesn't exist, lookup for parent dir
             try:
-                stats = await self.stats(dst.parent)
+                stats = await self.stat(dst.parent)
                 if not stats.is_dir():
                     # parent path should be a folder
                     raise NotADirectoryError(
@@ -374,7 +374,7 @@ class Storage(metaclass=NoPublicConstructor):
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         try:
-            await self.mkdirs(dst, exist_ok=True)
+            await self.mkdir(dst, exist_ok=True)
         except neuromation.api.IllegalArgumentError:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
@@ -426,7 +426,7 @@ class Storage(metaclass=NoPublicConstructor):
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        stat = await self.stats(src)
+        stat = await self.stat(src)
         if not stat.is_file():
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()

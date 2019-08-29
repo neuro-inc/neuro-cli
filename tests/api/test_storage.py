@@ -440,7 +440,7 @@ async def test_storage_mkdir_parents_exist_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(
+        await client.storage.mkdir(
             URL("storage://~/folder/sub"), parents=True, exist_ok=True
         )
 
@@ -465,7 +465,7 @@ async def test_storage_mkdir_parents(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(URL("storage://~/folder/sub"), parents=True)
+        await client.storage.mkdir(URL("storage://~/folder/sub"), parents=True)
 
 
 async def test_storage_mkdir_exist_ok(
@@ -498,7 +498,7 @@ async def test_storage_mkdir_exist_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(URL("storage://~/folder/sub"), exist_ok=True)
+        await client.storage.mkdir(URL("storage://~/folder/sub"), exist_ok=True)
 
 
 async def test_storage_mkdir(
@@ -537,7 +537,7 @@ async def test_storage_mkdir(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(URL("storage://~/folder/sub"))
+        await client.storage.mkdir(URL("storage://~/folder/sub"))
 
 
 async def test_storage_create(
@@ -587,7 +587,7 @@ async def test_storage_stats(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        stats = await client.storage.stats(URL("storage://~/folder"))
+        stats = await client.storage.stat(URL("storage://~/folder"))
         assert stats == FileStatus(
             path="/user/folder",
             type=FileStatusType.DIRECTORY,

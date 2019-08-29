@@ -896,7 +896,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
         click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
-    await root.client.storage.mkdirs(storage_nmrc_folder, parents=True, exist_ok=True)
+    await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
     await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
     # specify a container volume and mount the storage path
     # into specific container path
