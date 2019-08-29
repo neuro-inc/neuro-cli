@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to neuromation's documentation!
-=======================================
+Neuromation SDK for Python
+==========================
 
 .. toctree::
    :maxdepth: 2

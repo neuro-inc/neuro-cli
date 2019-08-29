@@ -35,7 +35,7 @@ Parser
 
       Parse *image* string into :class:`LocalImage`.
 
-      The string should fit to the following schema: ``name[:tag]``,
+      The string should fit to the following pattern: ``name[:tag]``,
       e.g. ``"ubuntu:latest"``.
 
       :raise: :exc:`ValueError` if *image* has invalid format.
@@ -44,7 +44,7 @@ Parser
 
       Parse *image* string into :class:`RemoteImage`.
 
-      The string should fit to ``name[:tag]`` or ``image:name[tag]`` schemas,
+      The string should fit to ``name[:tag]`` or ``image:name[tag]`` patterns,
       e.g. ``"ubuntu:latest"`` or ``image:my-image:latest``. The former is used for
       public DockerHub_ images, the later is for Neuromation image registry.
 
