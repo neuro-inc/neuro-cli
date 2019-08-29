@@ -56,8 +56,8 @@ Storage
       :return: a :class:`list` or :class:`FileStatus` objects with the directory
                contents.
 
-   .. comethod:: mkdirs(uri: URL, *, parents: bool = False, \
-                        exist_ok: bool = False \
+   .. comethod:: mkdir(uri: URL, *, parents: bool = False, \
+                       exist_ok: bool = False \
                  ) -> None
 
       Create a directory *uri*. Also create parent directories if *parents* is ``True``,
@@ -104,7 +104,7 @@ Storage
       :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
                flag is not set.
 
-   .. comethod:: stats(uri: URL) -> FileStatus
+   .. comethod:: stat(uri: URL) -> FileStatus
 
       Return information about *uri*.
 
