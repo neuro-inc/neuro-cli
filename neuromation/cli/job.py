@@ -432,6 +432,7 @@ async def _print_logs(root: Root, job: str) -> None:
     "-d",
     "--description",
     metavar="DESCRIPTION",
+    default="",
     help="Filter out jobs by description (exact match)",
 )
 @deprecated_quiet_option
