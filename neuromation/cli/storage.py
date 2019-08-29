@@ -139,7 +139,7 @@ async def ls(
 
         uri = parse_file_resource(path, root)
         if directory:
-            files = [await root.client.storage.stats(uri)]
+            files = [await root.client.storage.stat(uri)]
         else:
             if root.verbosity > 0:
                 painter = get_painter(root.color, quote=True)
