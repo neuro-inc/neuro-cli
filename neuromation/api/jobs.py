@@ -95,10 +95,10 @@ class Container:
 class JobStatusHistory:
     status: JobStatus
     reason: str
+    description: str
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
-    description: Optional[str] = None
     exit_code: Optional[int] = None
 
 
@@ -261,7 +261,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def exec(
         self,
         id: str,
-        cmd: List[str],
+        cmd: Iterable[str],
         *,
         tty: bool = False,
         no_key_check: bool = False,
@@ -277,7 +277,7 @@ class Jobs(metaclass=NoPublicConstructor):
             {
                 "method": "job_exec",
                 "token": self._config.auth_token.token,
-                "params": {"job": id, "command": cmd},
+                "params": {"job": id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
