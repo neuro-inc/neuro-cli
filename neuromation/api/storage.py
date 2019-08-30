@@ -106,17 +106,19 @@ class Storage(metaclass=NoPublicConstructor):
         self._max_time_diff = response_time - server_time
 
     def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        # Adjust by 0.5 because remote.modification_time has been truncated
+        # and is 0.5 seconds less than the actulal value in average
         return (
             local.st_size != remote.size
             or local.st_mtime - remote.modification_time
-            > self._min_time_diff - TIME_THRESHOLD
+            > self._min_time_diff - TIME_THRESHOLD + 0.5
         )
 
     def _is_remote_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
         return (
             local.st_size != remote.size
             or local.st_mtime - remote.modification_time
-            < self._max_time_diff + TIME_THRESHOLD
+            < self._max_time_diff + TIME_THRESHOLD + 0.5
         )
 
     async def ls(self, uri: URL) -> List[FileStatus]:
