@@ -288,6 +288,9 @@ class ResourcesFormatter:
         if resources.gpu:
             lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")
 
+        if resources.tpu_type:
+            lines.append(f"TPU: {resources.tpu_type}/{resources.tpu_software_version}")
+
         additional = list()
         if resources.shm:
             additional.append("Extended SHM space")

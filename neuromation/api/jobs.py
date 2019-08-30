@@ -53,6 +53,8 @@ class Resources:
     gpu: Optional[int]
     gpu_model: Optional[str]
     shm: Optional[bool]
+    tpu_type: Optional[str]
+    tpu_software_version: Optional[str]
 
 
 class JobStatus(str, enum.Enum):
@@ -95,10 +97,10 @@ class Container:
 class JobStatusHistory:
     status: JobStatus
     reason: str
+    description: str
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
-    description: Optional[str] = None
     exit_code: Optional[int] = None
 
 
@@ -261,7 +263,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def exec(
         self,
         id: str,
-        cmd: List[str],
+        cmd: Iterable[str],
         *,
         tty: bool = False,
         no_key_check: bool = False,
@@ -277,7 +279,7 @@ class Jobs(metaclass=NoPublicConstructor):
             {
                 "method": "job_exec",
                 "token": self._config.auth_token.token,
-                "params": {"job": id, "command": cmd},
+                "params": {"job": id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
@@ -420,24 +422,37 @@ def _raise_for_invalid_commit_chunk(obj: Dict[str, Any], expect_started: bool) -
 
 
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:
-    value = {
+    value: Dict[str, Any] = {
         "memory_mb": resources.memory_mb,
         "cpu": resources.cpu,
         "shm": resources.shm,
     }
     if resources.gpu:
         value["gpu"] = resources.gpu
-        value["gpu_model"] = resources.gpu_model  # type: ignore
+        value["gpu_model"] = resources.gpu_model
+    if resources.tpu_type:
+        assert resources.tpu_software_version
+        value["tpu"] = {
+            "type": resources.tpu_type,
+            "software_version": resources.tpu_software_version,
+        }
     return value
 
 
 def _resources_from_api(data: Dict[str, Any]) -> Resources:
+    tpu_type = tpu_software_version = None
+    if "tpu" in data:
+        tpu = data["tpu"]
+        tpu_type = tpu["type"]
+        tpu_software_version = tpu["software_version"]
     return Resources(
         memory_mb=data["memory_mb"],
         cpu=data["cpu"],
         shm=data.get("shm", None),
         gpu=data.get("gpu", None),
         gpu_model=data.get("gpu_model", None),
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
     )
 
 

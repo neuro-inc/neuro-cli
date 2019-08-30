@@ -47,6 +47,14 @@ stages:
     - script: |
         make lint
       displayName: 'Run linters'
+
+    - script: |
+        sudo apt install libenchant-dev
+        pip install -r requirements/doc.txt
+
+    - script: |
+        make api-doc-spelling
+      displayName: 'Run docs spelling'
       
 - stage: test
   displayName: "Run tests"

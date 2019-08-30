@@ -259,6 +259,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
@@ -620,6 +622,7 @@ Name | Description|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
+|_\-d, --directory_|list directories themselves, not their contents|
 |_--help_|Show this message and exit.|
 
 
@@ -1352,6 +1355,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
@@ -1700,6 +1705,7 @@ Name | Description|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
+|_\-d, --directory_|list directories themselves, not their contents|
 |_--help_|Show this message and exit.|
 
 

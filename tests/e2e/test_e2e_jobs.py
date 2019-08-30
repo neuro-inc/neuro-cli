@@ -652,7 +652,7 @@ async def nginx_job_async(
         container = Container(
             image=RemoteImage("nginx", "latest"),
             command=command,
-            resources=Resources(20, 0.1, None, None, True),
+            resources=Resources(20, 0.1, None, None, True, None, None),
         )
 
         job = await client.jobs.run(
