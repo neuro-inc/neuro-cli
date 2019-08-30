@@ -12,7 +12,7 @@ from .utils import NoPublicConstructor
 class Volume:
     storage_uri: URL
     container_path: str
-    read_only: bool
+    read_only: bool = False
 
 
 class Parser(metaclass=NoPublicConstructor):
