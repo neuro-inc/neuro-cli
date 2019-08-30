@@ -105,12 +105,14 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         self._req_id_seq = itertools.count()
         self._responses: Dict[int, asyncio.Future[Tuple[Dict[str, Any], bytes]]] = {}
         self._send_queue: asyncio.Queue[Optional[bytes]] = asyncio.Queue()
-        self._comm_task = asyncio.gather(self._send_loop(), self._receive_loop())
+        loop = asyncio.get_event_loop()
+        self._send_task = loop.create_task(self._send_loop())
+        self._receive_task = loop.create_task(self._receive_loop())
         self._read_sem = asyncio.BoundedSemaphore(MAX_WS_READS)
 
     async def close(self) -> None:
         await self._send_queue.put(None)
-        await self._comm_task
+        await _wait_tasks({self._send_task, self._receive_task})
 
     def _new_req_id(self) -> int:
         return next(self._req_id_seq)
@@ -296,7 +298,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                         ),
                     )
                 )  # pragma: no cover
-        await asyncio.gather(*tasks)
+        await _run_concurrently(tasks)
         await queue.put((progress.leave, StorageProgressLeaveDir(src_uri, dst_uri)))
 
     async def download_file(
@@ -333,7 +335,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         for pos in range(0, size, READ_SIZE):
             chunk_size = min(READ_SIZE, size - pos)
             tasks.append(read_coro(dst, pos, chunk_size))
-        await asyncio.gather(*tasks)
+        await _run_concurrently(tasks)
         await queue.put(
             (progress.complete, StorageProgressComplete(src_uri, dst_uri, size))
         )
@@ -390,7 +392,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                         ),
                     )
                 )  # pragma: no cover
-        await asyncio.gather(*tasks)
+        await _run_concurrently(tasks)
         await queue.put((progress.leave, StorageProgressLeaveDir(src_uri, dst_uri)))
 
 
@@ -965,9 +967,7 @@ def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
     )
 
 
-async def _run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
-    loop = asyncio.get_event_loop()
-    tasks: "Iterable[asyncio.Future[Any]]" = [loop.create_task(coro) for coro in coros]
+async def _wait_tasks(tasks: "Iterable[asyncio.Future[Any]]") -> None:
     if not tasks:
         return
     try:
@@ -981,6 +981,11 @@ async def _run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
         if tasks:
             await asyncio.wait(tasks)
         raise  # pragma: no cover
+
+
+async def _run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
+    loop = asyncio.get_event_loop()
+    await _wait_tasks([loop.create_task(coro) for coro in coros])
 
 
 async def _run_progress(
