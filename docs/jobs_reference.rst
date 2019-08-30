@@ -441,9 +441,18 @@ Volume
    *Read-only* :class:`~dataclasses.dataclass` for describing mounted volumes of a
    container.
 
-   .. attribute:: storage_path
+   .. attribute:: storage_uri
 
-      
+      An URL on remotes storage, :class:`yarl.URL`.
+
+   .. attribute:: container_path
+
+      A path on container filesystem, :class:`str`.
+
+   .. attribute:: read_only
+
+      ``True`` is the volume is mounted in read-only mode, ``False`` for read-write
+      (default).
 
 
 .. _ENTRYPOINT: https://docs.docker.com/engine/reference/builder/#entrypoint
