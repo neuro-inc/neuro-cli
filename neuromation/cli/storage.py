@@ -438,7 +438,15 @@ minio server /mnt/{minio_dir}
         entrypoint="sh",
         command=f"-c {shlex.quote(minio_script)}",
         http=HTTPPort(port=9000, requires_auth=False),
-        resources=Resources(memory_mb=1024, cpu=1, gpu=0, gpu_model=None, shm=True),
+        resources=Resources(
+            memory_mb=1024,
+            cpu=1,
+            gpu=0,
+            gpu_model=None,
+            shm=True,
+            tpu_type=None,
+            tpu_software_version=None,
+        ),
         env={"MINIO_ACCESS_KEY": access_key, "MINIO_SECRET_KEY": secret_key},
         volumes=[volume],
     )

@@ -544,6 +544,71 @@ async def test_status_with_ssh_and_http(
     assert ret == _job_description_from_api(JSON, parser)
 
 
+async def test_status_with_tpu(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "status": "running",
+        "id": "job-id",
+        "description": "This is job description, not a history description",
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "history": {
+            "created_at": "2018-08-29T12:23:13.981621+00:00",
+            "started_at": "2018-08-29T12:23:15.988054+00:00",
+            "finished_at": "2018-08-29T12:59:31.427795+00:00",
+            "reason": "OK",
+            "description": "Everything is fine",
+        },
+        "is_preemptible": True,
+        "owner": "owner",
+        "container": {
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "http": {"port": 8181},
+            "resources": {
+                "memory_mb": "4096",
+                "cpu": 7.0,
+                "shm": True,
+                "gpu": 1,
+                "gpu_model": "test-gpu-model",
+                "tpu": {"type": "v3-8", "software_version": "1.14"},
+            },
+            "volumes": [
+                {
+                    "src_storage_uri": "storage://test-user/path_read_only",
+                    "dst_path": "/container/read_only",
+                    "read_only": True,
+                },
+                {
+                    "src_storage_uri": "storage://test-user/path_read_write",
+                    "dst_path": "/container/path_read_write",
+                    "read_only": False,
+                },
+            ],
+        },
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.status("job-id")
+
+    parser = _ImageNameParser(
+        client._config.auth_token.username, client._config.cluster_config.registry_url
+    )
+    assert ret == _job_description_from_api(JSON, parser)
+    assert ret.container.resources.tpu_type == "v3-8"
+    assert ret.container.resources.tpu_software_version == "1.14"
+
+
 async def test_job_run(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -614,7 +679,7 @@ async def test_job_run(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -714,7 +779,7 @@ async def test_job_run_with_name_and_description(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -806,7 +871,7 @@ async def test_job_run_no_volumes(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
             image=RemoteImage("submit-image-name"),
             command="submit-command",
@@ -899,7 +964,7 @@ async def test_job_run_preemptible(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -989,7 +1054,7 @@ async def test_job_run_schedule_timeout(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True)
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
             image=RemoteImage("submit-image-name"),
             command="submit-command",
@@ -1001,6 +1066,82 @@ async def test_job_run_schedule_timeout(
         client._config.auth_token.username, client._config.cluster_config.registry_url
     )
     assert ret == _job_description_from_api(JSON, parser)
+
+
+async def test_job_run_tpu(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+                "tpu": {"type": "v3-8", "software_version": "1.14"},
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "resources": {
+                    "memory_mb": 16384,
+                    "cpu": 7,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                    "tpu": {"type": "v3-8", "software_version": "1.14"},
+                },
+            },
+            "is_preemptible": False,
+            "schedule_timeout": 5,
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, "v3-8", "1.14")
+        container = Container(
+            image=RemoteImage("submit-image-name"),
+            command="submit-command",
+            resources=resources,
+        )
+        ret = await client.jobs.run(container=container, schedule_timeout=5)
+
+    parser = _ImageNameParser(
+        client._config.auth_token.username, client._config.cluster_config.registry_url
+    )
+    assert ret == _job_description_from_api(JSON, parser)
+    assert ret.container.resources.tpu_type == "v3-8"
+    assert ret.container.resources.tpu_software_version == "1.14"
 
 
 def create_job_response(
