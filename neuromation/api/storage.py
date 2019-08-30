@@ -1,10 +1,13 @@
 import asyncio
+import datetime
 import enum
 import errno
 import fnmatch
 import os
 import re
+import time
 from dataclasses import dataclass
+from email.utils import parsedate
 from pathlib import Path
 from stat import S_ISREG
 from typing import (
@@ -19,6 +22,7 @@ from typing import (
     Tuple,
 )
 
+import aiohttp
 import attr
 from yarl import URL
 
@@ -47,6 +51,7 @@ from .utils import NoPublicConstructor
 
 MAX_OPEN_FILES = 100
 READ_SIZE = 2 ** 20  # 1 MiB
+TIME_THRESHOLD = 1.0
 
 Printer = Callable[[str], None]
 ProgressQueueItem = Optional[Tuple[Callable[[Any], None], Any]]
@@ -81,17 +86,46 @@ class Storage(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
+        self._min_time_diff = 0.0
+        self._max_time_diff = 0.0
 
     def _uri_to_path(self, uri: URL) -> str:
         uri = normalize_storage_path_uri(uri, self._config.auth_token.username)
         prefix = uri.host + "/" if uri.host else ""
         return prefix + uri.path.lstrip("/")
 
+    def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
+        response_time = time.time()
+        server_timetuple = parsedate(resp.headers.get("Date"))
+        if not server_timetuple:
+            return
+        server_time = datetime.datetime(
+            *server_timetuple[:6], tzinfo=datetime.timezone.utc
+        ).timestamp()
+        self._min_time_diff = request_time - server_time
+        self._max_time_diff = response_time - server_time
+
+    def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        return (
+            local.st_size != remote.size
+            or local.st_mtime - remote.modification_time
+            > self._min_time_diff - TIME_THRESHOLD
+        )
+
+    def _is_remote_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        return (
+            local.st_size != remote.size
+            or local.st_mtime - remote.modification_time
+            < self._max_time_diff + TIME_THRESHOLD
+        )
+
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
+        request_time = time.time()
         async with self._core.request("GET", url) as resp:
+            self._set_time_diff(request_time, resp)
             res = await resp.json()
             return [
                 _file_status_from_api(status)
@@ -201,7 +235,9 @@ class Storage(metaclass=NoPublicConstructor):
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
+        request_time = time.time()
         async with self._core.request("GET", url) as resp:
+            self._set_time_diff(request_time, resp)
             res = await resp.json()
             return _file_status_from_api(res["FileStatus"])
 
@@ -289,12 +325,6 @@ class Storage(metaclass=NoPublicConstructor):
                 await queue.put(
                     (progress.complete, StorageProgressComplete(src_url, dst, size))
                 )
-
-    def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
-        return local.st_size != remote.size or local.st_mtime > remote.modification_time
-
-    def _is_remote_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
-        return local.st_size != remote.size or local.st_mtime < remote.modification_time
 
     async def upload_file(
         self,
