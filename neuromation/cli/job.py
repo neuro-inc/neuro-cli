@@ -191,8 +191,8 @@ def job() -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    f"--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    f"storage://neuromation/public:/var/storage/neuromation:ro",
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation/public:/var/storage/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
@@ -662,8 +662,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     multiple=True,
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
-    f"--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    f"storage://neuromation/public:/var/storage/neuromation:ro",
+    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+    "storage://neuromation/public:/var/storage/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
