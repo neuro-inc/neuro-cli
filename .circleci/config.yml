@@ -43,6 +43,7 @@ build:
         run:
           name: run docs speller
           command: |
+            sudo apt update
             sudo apt install libenchant-dev
             . .venv/bin/activate
             pip install -r requirements/doc.txt
