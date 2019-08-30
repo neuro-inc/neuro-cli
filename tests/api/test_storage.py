@@ -440,7 +440,7 @@ async def test_storage_mkdir_parents_exist_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(
+        await client.storage.mkdir(
             URL("storage://~/folder/sub"), parents=True, exist_ok=True
         )
 
@@ -465,7 +465,7 @@ async def test_storage_mkdir_parents(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(URL("storage://~/folder/sub"), parents=True)
+        await client.storage.mkdir(URL("storage://~/folder/sub"), parents=True)
 
 
 async def test_storage_mkdir_exist_ok(
@@ -498,7 +498,7 @@ async def test_storage_mkdir_exist_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(URL("storage://~/folder/sub"), exist_ok=True)
+        await client.storage.mkdir(URL("storage://~/folder/sub"), exist_ok=True)
 
 
 async def test_storage_mkdir(
@@ -537,7 +537,7 @@ async def test_storage_mkdir(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdirs(URL("storage://~/folder/sub"))
+        await client.storage.mkdir(URL("storage://~/folder/sub"))
 
 
 async def test_storage_create(
@@ -587,7 +587,7 @@ async def test_storage_stats(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        stats = await client.storage.stats(URL("storage://~/folder"))
+        stats = await client.storage.stat(URL("storage://~/folder"))
         assert stats == FileStatus(
             path="/user/folder",
             type=FileStatusType.DIRECTORY,
@@ -842,6 +842,21 @@ async def test_storage_upload_recursive_target_is_a_file(
             )
 
 
+async def test_storage_upload_empty_dir(
+    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+) -> None:
+    target_dir = storage_path / "folder"
+    assert not target_dir.exists()
+    src_dir = tmp_path / "empty"
+    src_dir.mkdir()
+    assert list(src_dir.iterdir()) == []
+
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(URL(src_dir.as_uri()), URL("storage:folder"))
+
+    assert list(target_dir.iterdir()) == []
+
+
 async def test_storage_upload_recursive_ok(
     storage_server: Any, make_client: _MakeClient, storage_path: Path
 ) -> None:
@@ -964,6 +979,23 @@ async def test_storage_download_regular_file_to_non_file(
         await client.storage.download_file(
             URL("storage:file.txt"), URL(Path(os.devnull).absolute().as_uri())
         )
+
+
+async def test_storage_download_empty_dir(
+    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+) -> None:
+    storage_dir = storage_path / "folder"
+    storage_dir.mkdir()
+    assert list(storage_dir.iterdir()) == []
+    target_dir = tmp_path / "empty"
+    assert not target_dir.exists()
+
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(
+            URL("storage:folder"), URL(target_dir.as_uri())
+        )
+
+    assert list(target_dir.iterdir()) == []
 
 
 async def test_storage_download_dir(

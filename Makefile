@@ -60,6 +60,10 @@ help:
 	* CI \n\
 	- coverage: upload coverage information to codecov.io \n\
 	- ci: run CI related targets \n\
+\n\
+        * API-DOC \n\
+        - api-doc: generate sphinx html docs \n\
+        - api-doc-spelling: check dockumentation spelling \n\
     "
 
 .PHONY: init
@@ -249,3 +253,13 @@ update-deps-fast: REQUIREMENTS_CHANGED:=$(shell git diff --name-status --diff-fi
 update-deps-fast:
 	@ [ -z "${REQUIREMENTS_CHANGED}" ] || (make update-deps)
 
+
+.PHONY: api-doc
+api-doc:
+	make -C docs html SPHINXOPTS="-W -E"
+	@echo "open file://`pwd`/docs/_build/html/index.html"
+
+.PHONY: api-doc-spelling
+api-doc-spelling:
+	make -C docs spelling SPHINXOPTS="-W -E"
+	@echo "open file://`pwd`/docs/_build/html/index.html"

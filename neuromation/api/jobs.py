@@ -6,7 +6,7 @@ import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Set
+from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
 import async_timeout
 import attr
@@ -95,10 +95,10 @@ class Container:
 class JobStatusHistory:
     status: JobStatus
     reason: str
+    description: str
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
-    description: Optional[str] = None
     exit_code: Optional[int] = None
 
 
@@ -161,20 +161,18 @@ class Jobs(metaclass=NoPublicConstructor):
     async def list(
         self,
         *,
-        statuses: Optional[Set[JobStatus]] = None,
-        name: Optional[str] = None,
-        owners: Optional[Set[str]] = None,
+        statuses: Iterable[JobStatus] = (),
+        name: str = "",
+        owners: Iterable[str] = (),
     ) -> List[JobDescription]:
         url = URL(f"jobs")
         params: MultiDict[str] = MultiDict()
-        if statuses:
-            for status in statuses:
-                params.add("status", status.value)
+        for status in statuses:
+            params.add("status", status.value)
         if name:
             params.add("name", name)
-        if owners:
-            for owner in owners:
-                params.add("owner", owner)
+        for owner in owners:
+            params.add("owner", owner)
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
@@ -263,7 +261,7 @@ class Jobs(metaclass=NoPublicConstructor):
     async def exec(
         self,
         id: str,
-        cmd: List[str],
+        cmd: Iterable[str],
         *,
         tty: bool = False,
         no_key_check: bool = False,
@@ -279,7 +277,7 @@ class Jobs(metaclass=NoPublicConstructor):
             {
                 "method": "job_exec",
                 "token": self._config.auth_token.token,
-                "params": {"job": id, "command": cmd},
+                "params": {"job": id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
