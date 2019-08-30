@@ -49,6 +49,7 @@ stages:
       displayName: 'Run linters'
 
     - script: |
+        sudo apt update
         sudo apt install libenchant-dev
         pip install -r requirements/doc.txt
 
