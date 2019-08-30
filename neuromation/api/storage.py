@@ -190,7 +190,13 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                 raise RuntimeError(f"Unsupported WebSocket message type: {msg.type}")
 
     async def upload_file(
-        self, src: Path, dst: str, size: int, *, progress: AbstractFileProgress
+        self,
+        src: Path,
+        dst: str,
+        size: int,
+        *,
+        progress: AbstractFileProgress,
+        queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
@@ -207,10 +213,12 @@ class WSStorageClient(metaclass=NoPublicConstructor):
             finally:
                 del chunk
                 self._read_sem.release()
-            progress.step(StorageProgressStep(src_uri, dst_uri, sumsize, size))
+            await queue.put(
+                (progress.step, StorageProgressStep(src_uri, dst_uri, sumsize, size))
+            )
 
         await self._request(WSStorageOperation.CREATE, dst, {"size": size})
-        progress.start(StorageProgressStart(src_uri, dst_uri, size))
+        await queue.put((progress.start, StorageProgressStart(src_uri, dst_uri, size)))
         tasks = []
         with src.open("rb") as stream:
             pos = 0
@@ -228,10 +236,17 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                 pos += len(chunk)
                 del chunk
         await asyncio.gather(*tasks)
-        progress.complete(StorageProgressComplete(src_uri, dst_uri, size))
+        await queue.put(
+            (progress.complete, StorageProgressComplete(src_uri, dst_uri, size))
+        )
 
     async def upload_dir(
-        self, src: Path, dst: str, *, progress: AbstractRecursiveFileProgress
+        self,
+        src: Path,
+        dst: str,
+        *,
+        progress: AbstractRecursiveFileProgress,
+        queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
@@ -241,7 +256,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
             )
         except FileExistsError:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
-        progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
+        await queue.put((progress.enter, StorageProgressEnterDir(src_uri, dst_uri)))
         tasks = []
         with os.scandir(src) as it:
             folder = sorted(it, key=lambda item: (item.is_dir(), item.name))
@@ -251,31 +266,47 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                 size = child.stat().st_size
                 tasks.append(
                     self.upload_file(
-                        src / name, _join_path(dst, name), size, progress=progress
+                        src / name,
+                        _join_path(dst, name),
+                        size,
+                        progress=progress,
+                        queue=queue,
                     )
                 )
             elif child.is_dir():
                 tasks.append(
                     self.upload_dir(
-                        src / name, _join_path(dst, name), progress=progress
+                        src / name,
+                        _join_path(dst, name),
+                        progress=progress,
+                        queue=queue,
                     )
                 )
             else:
                 # This case is for uploading non-regular file,
                 # e.g. blocking device or unix socket
                 # Coverage temporary skipped, the line is waiting for a champion
-                progress.fail(
-                    StorageProgressFail(
-                        src_uri / name,
-                        dst_uri / name,
-                        f"Cannot upload {child}, not regular file/directory",
+                await queue.put(
+                    (
+                        progress.fail,
+                        StorageProgressFail(
+                            src_uri / name,
+                            dst_uri / name,
+                            f"Cannot upload {child}, not regular file/directory",
+                        ),
                     )
                 )  # pragma: no cover
         await asyncio.gather(*tasks)
-        progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
+        await queue.put((progress.leave, StorageProgressLeaveDir(src_uri, dst_uri)))
 
     async def download_file(
-        self, src: str, dst: Path, size: int, *, progress: AbstractFileProgress
+        self,
+        src: str,
+        dst: Path,
+        size: int,
+        *,
+        progress: AbstractFileProgress,
+        queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         src_uri = self._root / src if src else self._root
         dst_uri = URL(dst.as_uri())
@@ -291,26 +322,35 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                 await loop.run_in_executor(None, f.write, data)
             nonlocal sumsize
             sumsize += chunk_size
-            progress.step(StorageProgressStep(src_uri, dst_uri, sumsize, size))
+            await queue.put(
+                (progress.step, StorageProgressStep(src_uri, dst_uri, sumsize, size))
+            )
 
         with open(dst, "wb", buffering=0):
             pass
-        progress.start(StorageProgressStart(src_uri, dst_uri, size))
+        await queue.put((progress.start, StorageProgressStart(src_uri, dst_uri, size)))
         tasks = []
         for pos in range(0, size, READ_SIZE):
             chunk_size = min(READ_SIZE, size - pos)
             tasks.append(read_coro(dst, pos, chunk_size))
         await asyncio.gather(*tasks)
-        progress.complete(StorageProgressComplete(src_uri, dst_uri, size))
+        await queue.put(
+            (progress.complete, StorageProgressComplete(src_uri, dst_uri, size))
+        )
 
     async def download_dir(
-        self, src: str, dst: Path, *, progress: AbstractRecursiveFileProgress
+        self,
+        src: str,
+        dst: Path,
+        *,
+        progress: AbstractRecursiveFileProgress,
+        queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         src_uri = self._root / src if src else self._root
         dst_uri = URL(dst.as_uri())
 
         payload, data = await self._request(WSStorageOperation.LIST, src)
-        progress.enter(StorageProgressEnterDir(src_uri, dst_uri))
+        await queue.put((progress.enter, StorageProgressEnterDir(src_uri, dst_uri)))
         tasks = []
         folder = [
             _file_status_from_api(status)
@@ -323,26 +363,35 @@ class WSStorageClient(metaclass=NoPublicConstructor):
             if child.is_file():
                 tasks.append(
                     self.download_file(
-                        _join_path(src, name), dst / name, child.size, progress=progress
+                        _join_path(src, name),
+                        dst / name,
+                        child.size,
+                        progress=progress,
+                        queue=queue,
                     )
                 )
             elif child.is_dir():
                 tasks.append(
                     self.download_dir(
-                        _join_path(src, name), dst / name, progress=progress
+                        _join_path(src, name),
+                        dst / name,
+                        progress=progress,
+                        queue=queue,
                     )
                 )
             else:
-                assert progress is not None
-                progress.fail(
-                    StorageProgressFail(
-                        src_uri / name,
-                        dst_uri / name,
-                        f"Cannot download {child}, not regular file/directory",
+                await queue.put(
+                    (
+                        progress.fail,
+                        StorageProgressFail(
+                            src_uri / name,
+                            dst_uri / name,
+                            f"Cannot download {child}, not regular file/directory",
+                        ),
                     )
                 )  # pragma: no cover
         await asyncio.gather(*tasks)
-        progress.leave(StorageProgressLeaveDir(src_uri, dst_uri))
+        await queue.put((progress.leave, StorageProgressLeaveDir(src_uri, dst_uri)))
 
 
 class Storage(metaclass=NoPublicConstructor):
@@ -587,6 +636,8 @@ class Storage(metaclass=NoPublicConstructor):
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
             size = 0
+
+        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         if use_websockets:
             async with self._ws_connect(dst.parent, "WEBSOCKET_WRITE") as ws:
                 try:
@@ -603,7 +654,12 @@ class Storage(metaclass=NoPublicConstructor):
                         errno.ENOTDIR, "Not a directory", str(dst.parent)
                     )
                 assert progress
-                await ws.upload_file(path, dst.name, size, progress=progress)
+                await _run_progress(
+                    queue,
+                    ws.upload_file(
+                        path, dst.name, size, progress=progress, queue=queue
+                    ),
+                )
             return
 
         try:
@@ -623,7 +679,6 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
-        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue, self._upload_file(path, dst, progress=progress, queue=queue)
         )
@@ -658,12 +713,14 @@ class Storage(metaclass=NoPublicConstructor):
         if not path.is_dir():
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
 
+        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         if use_websockets:
             async with self._ws_connect(dst, "WEBSOCKET_WRITE") as ws:
-                await ws.upload_dir(path, "", progress=progress)
+                await _run_progress(
+                    queue, ws.upload_dir(path, "", progress=progress, queue=queue)
+                )
             return
 
-        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue, self._upload_dir(src, path, dst, progress=progress, queue=queue)
         )
@@ -736,6 +793,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
 
+        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         if use_websockets:
             async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
                 payload, data = await ws._request(WSStorageOperation.STAT, "")
@@ -743,13 +801,17 @@ class Storage(metaclass=NoPublicConstructor):
                 if not stat.is_file():
                     raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
                 assert progress
-                await ws.download_file("", path, stat.size, progress=progress)
+                await _run_progress(
+                    queue,
+                    ws.download_file(
+                        "", path, stat.size, progress=progress, queue=queue
+                    ),
+                )
             return
 
         stat = await self.stat(src)
         if not stat.is_file():
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
-        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue,
             self._download_file(
@@ -796,12 +858,14 @@ class Storage(metaclass=NoPublicConstructor):
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
 
+        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         if use_websockets:
             async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
-                await ws.download_dir("", path, progress=progress)
+                await _run_progress(
+                    queue, ws.download_dir("", path, progress=progress, queue=queue)
+                )
             return
 
-        queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue, self._download_dir(src, dst, path, progress=progress, queue=queue)
         )
