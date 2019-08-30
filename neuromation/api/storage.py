@@ -102,7 +102,9 @@ class Storage(metaclass=NoPublicConstructor):
         server_time = datetime.datetime(
             *server_timetuple[:6], tzinfo=datetime.timezone.utc
         ).timestamp()
-        self._min_time_diff = request_time - server_time
+        # Remove 1 because server time has been truncated
+        # and can be up to 1 second less than the actulal value
+        self._min_time_diff = request_time - server_time - 1.0
         self._max_time_diff = response_time - server_time
 
     def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
@@ -446,7 +448,7 @@ class Storage(metaclass=NoPublicConstructor):
                     update = False
             if not exists:
                 await self.mkdir(dst, exist_ok=True)
-        except neuromation.api.IllegalArgumentError:
+        except (FileExistsError, neuromation.api.IllegalArgumentError):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
         async with self._file_sem:
