@@ -19,6 +19,7 @@ file_format_re = (
 )
 
 JOB_TINY_CONTAINER_PARAMS = ["-m", "20M", "-c", "0.1", "-g", "0"]
+JOB_TINY_CONTAINER_PRESET = "cpu-micro"
 
 
 class JobWaitStateStopReached(AssertionError):

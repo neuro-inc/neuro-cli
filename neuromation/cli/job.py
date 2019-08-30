@@ -104,6 +104,14 @@ def job() -> None:
     default=JOB_GPU_MODEL,
     show_default=True,
 )
+@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
+@click.option(
+    "tpu_software_version",
+    "--tpu-sw-version",
+    metavar="VERSION",
+    type=str,
+    help="Requested TPU software version",
+)
 @click.option(
     "-c",
     "--cpu",
@@ -217,6 +225,8 @@ async def submit(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -259,6 +269,8 @@ async def submit(
         image=image,
         gpu=gpu,
         gpu_model=gpu_model,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
         cpu=cpu,
         memory=memory,
         extshm=extshm,
@@ -432,6 +444,7 @@ async def _print_logs(root: Root, job: str) -> None:
     "-d",
     "--description",
     metavar="DESCRIPTION",
+    default="",
     help="Filter out jobs by description (exact match)",
 )
 @deprecated_quiet_option
@@ -477,7 +490,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width)
+        formatter = TabularJobsFormatter(width, root.username)
 
     for line in formatter(jobs):
         click.echo(line)
@@ -726,7 +739,6 @@ async def run(
         click.echo(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
-
     log.info(f"Using preset '{preset}': {job_preset}")
 
     await run_job(
@@ -734,6 +746,8 @@ async def run(
         image=image,
         gpu=job_preset.gpu,
         gpu_model=job_preset.gpu_model,
+        tpu_type=job_preset.tpu_type,
+        tpu_software_version=job_preset.tpu_software_version,
         cpu=job_preset.cpu,
         memory=job_preset.memory_mb,
         extshm=extshm,
@@ -777,6 +791,8 @@ async def run_job(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -817,7 +833,20 @@ async def run_job(
 
     log.info(f"Using image '{image}'")
 
-    resources = Resources(memory, cpu, gpu, gpu_model, extshm)
+    if tpu_type:
+        if not tpu_software_version:
+            raise ValueError(
+                "--tpu-sw-version cannot be empty while --tpu-type specified"
+            )
+    resources = Resources(
+        memory_mb=memory,
+        cpu=cpu,
+        gpu=gpu,
+        gpu_model=gpu_model,
+        shm=extshm,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
+    )
 
     volumes: Set[Volume] = set()
     for v in volume:
@@ -897,7 +926,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
         click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
-    await root.client.storage.mkdirs(storage_nmrc_folder, parents=True, exist_ok=True)
+    await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
     await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
     # specify a container volume and mount the storage path
     # into specific container path

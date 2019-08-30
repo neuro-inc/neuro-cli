@@ -1,0 +1,1 @@
+Added the `-d` (`--directory`) option in `neuro storage ls` which makes the command to list directories themselves, not their contents.
