@@ -39,6 +39,15 @@ build:
             . .venv/bin/activate
             make lint
 
+      - &spell_step
+        run:
+          name: run docs speller
+          command: |
+            sudo apt install libenchant-dev
+            . .venv/bin/activate
+            pip install -r requirements/doc.txt
+            make api-doc-spelling
+
       - &unit_step
         run:
           name: run unit tests
@@ -84,6 +93,7 @@ jobs:
       - *py37_step
       - *py_deps_step
       - *lint_step
+      - *spell_step
       - *unit_step
       - *e2e_step
       - *cov_step
