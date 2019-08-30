@@ -38,6 +38,7 @@ setup(
         "humanize>=0.5",
         "psutil>=5.5.0",
         "typing_extensions>=3.7.2",
+        "tabulate>=0.8.3",
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",

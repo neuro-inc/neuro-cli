@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import os
 import shlex
@@ -21,6 +22,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.cli.formatters import DockerImageProgress
 
 from .defaults import (
     GPU_MODELS,
@@ -102,6 +104,14 @@ def job() -> None:
     default=JOB_GPU_MODEL,
     show_default=True,
 )
+@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
+@click.option(
+    "tpu_software_version",
+    "--tpu-sw-version",
+    metavar="VERSION",
+    type=str,
+    help="Requested TPU software version",
+)
 @click.option(
     "-c",
     "--cpu",
@@ -167,7 +177,7 @@ def job() -> None:
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
     "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation:/var/storage/neuromation:ro",
+    "storage://neuromation/public:/var/storage/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
@@ -215,6 +225,8 @@ async def submit(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -257,6 +269,8 @@ async def submit(
         image=image,
         gpu=gpu,
         gpu_model=gpu_model,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
         cpu=cpu,
         memory=memory,
         extshm=extshm,
@@ -376,6 +390,11 @@ async def port_forward(
             )
 
         click.echo("Press ^C to stop forwarding")
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            pass
 
 
 @command()
@@ -403,9 +422,12 @@ async def _print_logs(root: Root, job: str) -> None:
     multiple=True,
     type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
     help=(
-        "Filter out job by status (multiple option)."
+        "Filter out jobs by status (multiple option)."
         " Note: option `all` is deprecated, use `neuro ps -a` instead."
     ),
+)
+@click.option(
+    "-o", "--owner", multiple=True, help="Filter out jobs by owner (multiple option)."
 )
 @click.option(
     "-a",
@@ -422,6 +444,7 @@ async def _print_logs(root: Root, job: str) -> None:
     "-d",
     "--description",
     metavar="DESCRIPTION",
+    default="",
     help="Filter out jobs by description (exact match)",
 )
 @deprecated_quiet_option
@@ -434,6 +457,7 @@ async def ls(
     status: Sequence[str],
     all: bool,
     name: str,
+    owner: Sequence[str],
     description: str,
     wide: bool,
 ) -> None:
@@ -443,13 +467,15 @@ async def ls(
     Examples:
 
     neuro ps -a
+    neuro ps -a --owner=user-1 --owner=user-2
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
     """
 
     statuses = calc_statuses(status, all)
-    jobs = await root.client.jobs.list(statuses=statuses, name=name)
+    owners = set(owner)
+    jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
 
     # client-side filtering
     if description:
@@ -527,9 +553,10 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     neuro job save my-favourite-job image://bob/ubuntu-patched
     """
     id = await resolve_job(root.client, job)
-    await root.client.jobs.save(id, image)
-    if not root.quiet:
-        click.echo(image)
+    progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
+    with contextlib.closing(progress):
+        await root.client.jobs.save(id, image, progress=progress)
+    click.echo(image)
 
 
 @command()
@@ -621,7 +648,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Mounts directory from vault into container. "
     "Use multiple options to mount more than one volume. "
     "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation:/var/storage/neuromation:ro",
+    "storage://neuromation/public:/var/storage/neuromation:ro",
 )
 @click.option(
     "--entrypoint",
@@ -695,8 +722,8 @@ async def run(
 
     # Starts a container pytorch:latest on a machine with smaller GPU resources
     # (see exact values in `neuro config show`) and with two volumes mounted:
-    #   storage://~           --> /var/storage/home (in read-write mode),
-    #   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+    #   storage://<home-directory>   --> /var/storage/home (in read-write mode),
+    #   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
     neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuromation
@@ -710,7 +737,6 @@ async def run(
         click.echo(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
-
     log.info(f"Using preset '{preset}': {job_preset}")
 
     await run_job(
@@ -718,6 +744,8 @@ async def run(
         image=image,
         gpu=job_preset.gpu,
         gpu_model=job_preset.gpu_model,
+        tpu_type=job_preset.tpu_type,
+        tpu_software_version=job_preset.tpu_software_version,
         cpu=job_preset.cpu,
         memory=job_preset.memory_mb,
         extshm=extshm,
@@ -761,6 +789,8 @@ async def run_job(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -801,7 +831,20 @@ async def run_job(
 
     log.info(f"Using image '{image}'")
 
-    resources = Resources(memory, cpu, gpu, gpu_model, extshm)
+    if tpu_type:
+        if not tpu_software_version:
+            raise ValueError(
+                "--tpu-sw-version cannot be empty while --tpu-type specified"
+            )
+    resources = Resources(
+        memory_mb=memory,
+        cpu=cpu,
+        gpu=gpu,
+        gpu_model=gpu_model,
+        shm=extshm,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
+    )
 
     volumes: Set[Volume] = set()
     for v in volume:
@@ -809,7 +852,7 @@ async def run_job(
             volumes.add(root.client.parse.volume("storage://~:/var/storage/home:rw"))
             volumes.add(
                 root.client.parse.volume(
-                    "storage://neuromation:/var/storage/neuromation:ro"
+                    "storage://neuromation/public:/var/storage/neuromation:ro"
                 )
             )
         else:
@@ -874,23 +917,21 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-    storage_nmrc_folder = f"storage://{root.username}/nmrc/"
-    storage_nmrc_path = URL(f"{storage_nmrc_folder}{random_nmrc_filename}")
+    storage_nmrc_folder = URL(f"storage://{root.username}/nmrc/")
+    storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     local_nmrc_folder = "/var/storage/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
         click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
-    await root.client.storage.mkdirs(
-        URL(storage_nmrc_folder), parents=True, exist_ok=True
-    )
+    await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
     await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
     # specify a container volume and mount the storage path
     # into specific container path
     return (
         local_nmrc_path,
         Volume(
-            storage_path=storage_nmrc_folder,
+            storage_uri=storage_nmrc_folder,
             container_path=local_nmrc_folder,
             read_only=False,
         ),

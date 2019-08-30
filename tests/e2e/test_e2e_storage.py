@@ -67,6 +67,12 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_ls_directory_itself(helper: Helper) -> None:
+    captured = helper.run_cli(["storage", "ls", "--directory", helper.tmpstorage])
+    assert captured.out.splitlines() == [helper.tmpstoragename]
+
+
+@pytest.mark.e2e
 def test_e2e_mkdir(helper: Helper) -> None:
     helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder"])
     helper.check_dir_exists_on_storage("folder", "")

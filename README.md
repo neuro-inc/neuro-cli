@@ -194,8 +194,8 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-#   storage://~           --> /var/storage/home (in read-write mode),
-#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+#   storage://<home-directory>   --> /var/storage/home (in read-write mode),
+#   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
@@ -215,7 +215,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -259,6 +259,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
@@ -268,7 +270,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -296,6 +298,7 @@ neuro job ls [OPTIONS]
 ```bash
 
 neuro ps -a
+neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
@@ -306,7 +309,8 @@ neuro ps -s failed -s succeeded -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
@@ -618,6 +622,7 @@ Name | Description|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
+|_\-d, --directory_|list directories themselves, not their contents|
 |_--help_|Show this message and exit.|
 
 
@@ -1285,8 +1290,8 @@ neuro run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-#   storage://~           --> /var/storage/home (in read-write mode),
-#   storage://neuromation --> /var/storage/neuromation (in read-only mode).
+#   storage://<home-directory>   --> /var/storage/home (in read-write mode),
+#   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
 neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
@@ -1306,7 +1311,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1350,6 +1355,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
@@ -1359,7 +1366,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1387,6 +1394,7 @@ neuro ps [OPTIONS]
 ```bash
 
 neuro ps -a
+neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
@@ -1397,7 +1405,8 @@ neuro ps -s failed -s succeeded -q
 
 Name | Description|
 |----|------------|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out job by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)|
 |_\-n, --name NAME_|Filter out jobs by name|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
@@ -1696,6 +1705,7 @@ Name | Description|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
 |_-l_|use a long listing format|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
+|_\-d, --directory_|list directories themselves, not their contents|
 |_--help_|Show this message and exit.|
 
 

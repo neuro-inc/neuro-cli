@@ -27,6 +27,12 @@ from neuromation.api import (
     RemoteImage,
     Resources,
 )
+from neuromation.api.abc import (
+    ImageCommitFinished,
+    ImageCommitStarted,
+    ImageProgressSave,
+)
+from neuromation.api.login import RunPreset
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
@@ -77,7 +83,7 @@ def job_descr_no_name() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
-            resources=Resources(16, 0.1, 0, None, False),
+            resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         ssh_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -101,7 +107,7 @@ def job_descr() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage("ubuntu", "latest"),
-            resources=Resources(16, 0.1, 0, None, False),
+            resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         ssh_server=URL("ssh-auth"),
         is_preemptible=True,
@@ -201,7 +207,7 @@ class TestJobStartProgress:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
@@ -269,7 +275,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_server=URL("ssh-auth"),
@@ -317,7 +323,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             ssh_server=URL("ssh-auth"),
@@ -361,7 +367,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -398,7 +404,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage("test-image"),
                 command="test-command",
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -435,7 +441,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage("test-image"),
                 command="test-command",
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -473,7 +479,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage("test-image"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
@@ -577,7 +583,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -597,7 +603,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("ubuntu", "latest"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
@@ -634,7 +640,7 @@ class TestTabularJobRow:
             ),
             container=Container(
                 image=remote_image,
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="ls",
             ),
             ssh_server=URL("ssh-auth"),
@@ -708,7 +714,7 @@ class TestTabularJobsFormatter:
             ),
             container=Container(
                 image=RemoteImage("i", "l"),
-                resources=Resources(16, 0.1, 0, None, False),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="c",
             ),
             ssh_server=URL("ssh-auth"),
@@ -749,7 +755,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
                 ssh_server=URL("ssh-auth"),
@@ -771,7 +777,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage("some-image-name", "with-long-tag"),
-                    resources=Resources(16, 0.1, 0, None, False),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
                 ssh_server=URL("ssh-auth"),
@@ -1235,7 +1241,15 @@ class TestFilesFormatter:
 
 class TestResourcesFormatter:
     def test_tiny_container(self) -> None:
-        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=False)
+        resources = Resources(
+            cpu=0.1,
+            gpu=0,
+            gpu_model=None,
+            memory_mb=16,
+            shm=False,
+            tpu_type=None,
+            tpu_software_version=None,
+        )
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
@@ -1245,7 +1259,13 @@ class TestResourcesFormatter:
 
     def test_gpu_container(self) -> None:
         resources = Resources(
-            cpu=2, gpu=1, gpu_model="nvidia-tesla-p4", memory_mb=1024, shm=False
+            cpu=2,
+            gpu=1,
+            gpu_model="nvidia-tesla-p4",
+            memory_mb=1024,
+            shm=False,
+            tpu_type=None,
+            tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
         assert (
@@ -1256,12 +1276,39 @@ class TestResourcesFormatter:
         )
 
     def test_shm_container(self) -> None:
-        resources = Resources(cpu=0.1, gpu=0, gpu_model=None, memory_mb=16, shm=True)
+        resources = Resources(
+            cpu=0.1,
+            gpu=0,
+            gpu_model=None,
+            memory_mb=16,
+            shm=True,
+            tpu_type=None,
+            tpu_software_version=None,
+        )
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
             "  Memory: 16 MB\n"
             "  CPU: 0.1\n"
+            "  Additional: Extended SHM space"
+        )
+
+    def test_tpu_container(self) -> None:
+        resources = Resources(
+            cpu=0.1,
+            gpu=0,
+            gpu_model=None,
+            memory_mb=16,
+            shm=True,
+            tpu_type="v2-8",
+            tpu_software_version="1.14",
+        )
+        resource_formatter = ResourcesFormatter()
+        assert (
+            resource_formatter(resources=resources) == "Resources:\n"
+            "  Memory: 16 MB\n"
+            "  CPU: 0.1\n"
+            "  TPU: v2-8/1.14\n"
             "  Additional: Extended SHM space"
         )
 
@@ -1272,7 +1319,7 @@ class TestConfigFormatter:
         if platform == "win32":
             no = "No"
         else:
-            no = "✖︎"
+            no = " " + "✖︎"
         assert click.unstyle(out) == textwrap.dedent(
             f"""\
             User Configuration:
@@ -1280,11 +1327,54 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name         #CPU  Memory Preemptible #GPU  GPU Model
-                gpu-small       7   30720     {no}         1  nvidia-tesla-k80
-                gpu-large       7   61440     {no}         1  nvidia-tesla-v100
-                cpu-small       7    2048     {no}
-                cpu-large       7   14336     {no}"""
+            Name         #CPU    Memory   Preemptible   GPU
+            gpu-small       7     30720       {no}        1 x nvidia-tesla-k80
+            gpu-large       7     61440       {no}        1 x nvidia-tesla-v100
+            cpu-small       7      2048       {no}
+            cpu-large       7     14336       {no}"""
+        )
+
+    async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
+        presets = dict(root.resource_presets)
+
+        presets["tpu-small"] = RunPreset(
+            cpu=2,
+            memory_mb=2048,
+            is_preemptible=False,
+            tpu_type="v3-8",
+            tpu_software_version="1.14",
+        )
+        presets["hybrid"] = RunPreset(
+            cpu=4,
+            memory_mb=30720,
+            is_preemptible=False,
+            gpu=2,
+            gpu_model="nvidia-tesla-v100",
+            tpu_type="v3-64",
+            tpu_software_version="1.14",
+        )
+
+        monkeypatch.setattr("neuromation.cli.root.Root.resource_presets", presets)
+        out = ConfigFormatter()(root)
+        if platform == "win32":
+            no = "No"
+        else:
+            no = " " + "✖︎"
+
+        assert click.unstyle(out) == textwrap.dedent(
+            f"""\
+            User Configuration:
+              User Name: user
+              API URL: https://dev.neu.ro/api/v1
+              Docker Registry URL: https://registry-dev.neu.ro
+              Resource Presets:
+            Name         #CPU    Memory   Preemptible   GPU                    TPU
+            gpu-small       7     30720       {no}        1 x nvidia-tesla-k80
+            gpu-large       7     61440       {no}        1 x nvidia-tesla-v100
+            cpu-small       7      2048       {no}
+            cpu-large       7     14336       {no}
+            tpu-small       2      2048       {no}                               v3-8/1.14
+            hybrid          4     30720       {no}        2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 
@@ -1302,6 +1392,32 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
         formatter.push(ImageProgressPush(LocalImage("output"), RemoteImage("input")))
         formatter.step(ImageProgressStep("message1", "layer1"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_quiet_save(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.save(ImageProgressSave("job-id", RemoteImage("output")))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_quiet_commit_started(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.commit_started(
+            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_quiet_commit_finished(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=True)
+        formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
@@ -1347,6 +1463,43 @@ class TestDockerImageProgress:
         assert "message2" not in out
         assert CSI not in out
 
+    def test_no_tty_save(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.save(
+            ImageProgressSave(
+                "job-id",
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert "Saving job 'job-id' to image 'image://bob/output:stream'" in out
+        assert err == ""
+
+    def test_no_tty_commit_started(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.commit_started(
+            ImageCommitStarted(
+                job_id="job-id",
+                target_image=RemoteImage(
+                    "output", "stream", "bob", "https://registry-dev.neu.ro"
+                ),
+            )
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert "Using remote image 'image://bob/output:stream'" in out
+        assert f"Creating image from the job container..." in out
+        assert err == ""
+
+    def test_no_tty_commit_finished(self, capfd: Any) -> None:
+        formatter = DockerImageProgress.create(tty=False, quiet=False)
+        formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert out.startswith("Image created")
+        assert err == ""
+
     def test_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=False)
         formatter.pull(
@@ -1384,3 +1537,38 @@ class TestDockerImageProgress:
         assert "message1" in out
         assert "message2" in out
         assert CSI in out
+
+    def test_tty_save(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.save(
+            ImageProgressSave(
+                "job-id",
+                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+            )
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "job-id" in out
+        assert "image://bob/output:stream" in out
+        assert CSI in out
+
+    def test_tty_commit_started(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.commit_started(
+            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
+        )
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "img" in out
+        assert CSI in out
+
+    def test_tty_commit_finished(self, capfd: Any, click_tty_emulation: Any) -> None:
+        formatter = DockerImageProgress.create(tty=True, quiet=False)
+        formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        formatter.close()
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out.startswith("Image created")
+        assert CSI not in out  # no styled strings

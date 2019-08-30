@@ -257,6 +257,8 @@ class Factory:
             "memory_mb": resource_preset.memory_mb,
             "gpu": resource_preset.gpu,
             "gpu_model": resource_preset.gpu_model,
+            "tpu_type": resource_preset.tpu_type,
+            "tpu_software_version": resource_preset.tpu_software_version,
             "is_preemptible": resource_preset.is_preemptible,
         }
 
@@ -298,6 +300,8 @@ class Factory:
                 memory_mb=payload["memory_mb"],
                 gpu=payload.get("gpu"),
                 gpu_model=payload.get("gpu_model"),
+                tpu_type=payload.get("tpu_type", None),
+                tpu_software_version=payload.get("tpu_software_version", None),
                 is_preemptible=payload.get("is_preemptible", False),
             ),
         )

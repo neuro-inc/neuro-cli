@@ -1,11 +1,8 @@
 import asyncio
 import gc
-import signal
 import sys
 import warnings
-from typing import Awaitable, List, TypeVar
-
-import psutil
+from typing import Awaitable, TypeVar
 
 
 _T = TypeVar("_T")
@@ -102,50 +99,3 @@ def _cancel_all_tasks(
                     "task": task,
                 }
             )
-
-
-async def kill_proc_tree(
-    pid: int,
-    sig: int = signal.SIGTERM,
-    include_parent: bool = True,
-    timeout: int = None,
-) -> None:
-    """Kill a process tree (including grandchildren) with signal
-    "sig".
-    """
-
-    def _kill_proc_tree() -> None:
-        try:
-            parent = psutil.Process(pid)
-            children = parent.children(recursive=True)
-            zombies: List[psutil.Process] = []
-            # Try to kill all children first
-            for p in children:
-                try:
-                    p.send_signal(sig)
-                except psutil.NoSuchProcess:
-                    pass
-            _, children_alive = psutil.wait_procs(children, timeout=timeout)
-            # then kill parent
-            if include_parent:
-                parent.send_signal(sig)
-                try:
-                    parent.wait(timeout=timeout)
-                    # and try to kill again left childrent
-                    _, children_alive = psutil.wait_procs(
-                        children_alive, timeout=timeout
-                    )
-                    zombies.extend(children_alive)
-                except psutil.TimeoutExpired:
-                    zombies.append(parent)
-            else:
-                zombies.extend(children_alive)
-
-            if zombies:
-                raise RuntimeWarning(f"Possible zombie subprocesses: {zombies}")
-
-        except psutil.NoSuchProcess:
-            pass
-
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _kill_proc_tree)

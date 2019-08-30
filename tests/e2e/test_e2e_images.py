@@ -113,8 +113,7 @@ def test_images_complete_lifecycle(
         [
             "-q",
             "submit",
-            "-g",
-            "0",
+            *JOB_TINY_CONTAINER_PARAMS,
             "--non-preemptible",
             "--no-wait-start",
             str(image_url),

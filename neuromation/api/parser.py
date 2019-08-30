@@ -10,7 +10,7 @@ from .utils import NoPublicConstructor
 
 @dataclass(frozen=True)
 class Volume:
-    storage_path: str
+    storage_uri: URL
     container_path: str
     read_only: bool
 
@@ -32,12 +32,10 @@ class Parser(metaclass=NoPublicConstructor):
             raise ValueError(f"Invalid volume specification '{volume}'")
 
         container_path = parts.pop()
-        storage_path = normalize_storage_path_uri(URL(":".join(parts)), self._username)
+        storage_uri = normalize_storage_path_uri(URL(":".join(parts)), self._username)
 
         return Volume(
-            storage_path=str(storage_path),
-            container_path=container_path,
-            read_only=read_only,
+            storage_uri=storage_uri, container_path=container_path, read_only=read_only
         )
 
     def local_image(self, image: str) -> LocalImage:
