@@ -1,7 +1,7 @@
 import re
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Union
 
 from yarl import URL
 
@@ -51,7 +51,8 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
     return _normalize_uri(uri, username)
 
 
-def _normalize_uri(uri: URL, username: str) -> URL:
+def _normalize_uri(resource: Union[URL, str], username: str) -> URL:
+    uri = resource if isinstance(resource, URL) else URL(resource)
     path = uri.path
     if not uri.host:
         if path.startswith("~"):
