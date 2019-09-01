@@ -10,12 +10,14 @@ from neuromation.api import Action, Client
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
     LocalRemotePortParamType,
+    parse_and_resolve_resource_for_sharing,
     parse_file_resource,
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
 )
 from tests import _TestServerFactory
+from tests.cli.conftest import _create_root
 
 
 _MakeClient = Callable[..., Client]
@@ -390,7 +392,7 @@ async def test_resolve_job_id__from_uri__missing_job_id(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
 
-    uri = "job://job-name"
+    uri = "job://job-owner"
 
     app = web.Application()
     srv = await aiohttp_server(app)
@@ -398,9 +400,69 @@ async def test_resolve_job_id__from_uri__missing_job_id(
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(
             ValueError,
-            match="Invalid job URI: owner='job-name', missing job-id or job-name",
+            match="Invalid job URI: owner='job-owner', missing job-id or job-name",
         ):
             await resolve_job(uri, client=client, default_user="default-owner")
+
+
+async def test_parse_and_resolve_resource_for_sharing_job_name_with_owner(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    job_name = "job-name"
+    owner_name = "owner-name"
+    uri = f"job://{owner_name}/{job_name}"
+    job_id = "job-id-1"
+    JSON = {"jobs": [_job_entry(job_id)]}
+
+    async def handler(request: web.Request) -> web.Response:
+        # Since `resolve_job` excepts any Exception, `assert` will be caught there
+        name = request.query.get("name")
+        if name != job_name:
+            pytest.fail(f"received: {name}")
+        owner = request.query.get("owner")
+        if owner != owner_name:
+            pytest.fail(f"received: {owner}")
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        root = _create_root(config_path=Path(), client=client)
+        resolved = await parse_and_resolve_resource_for_sharing(uri, root=root)
+        assert resolved == URL(f"job://{owner_name}/{job_id}")
+
+
+async def test_parse_and_resolve_resource_for_sharing_job_name_without_owner(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    job_name = "job-name"
+    uri = f"job:{job_name}"
+    job_id = "job-id-1"
+    JSON = {"jobs": [_job_entry(job_id)]}
+
+    async def handler(request: web.Request) -> web.Response:
+        # Since `resolve_job` excepts any Exception, `assert` will be caught there
+        name = request.query.get("name")
+        if name != job_name:
+            pytest.fail(f"received: {name}")
+        owner = request.query.get("owner")
+        if owner != "user":
+            # "user" comes from `root.username`
+            pytest.fail(f"received: {owner}")
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        root = _create_root(config_path=Path(), client=client)
+        resolved = await parse_and_resolve_resource_for_sharing(uri, root=root)
+        assert resolved == URL(f"job://{root.username}/{job_id}")
 
 
 def test_parse_file_resource_no_scheme(root: Root) -> None:

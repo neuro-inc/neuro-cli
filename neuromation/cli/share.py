@@ -2,6 +2,7 @@ import logging
 from typing import Any, Optional
 
 import click
+from yarl import URL
 
 from neuromation.api import Permission, Share
 
@@ -10,8 +11,8 @@ from .utils import (
     async_cmd,
     command,
     group,
+    parse_and_resolve_resource_for_sharing,
     parse_permission_action,
-    parse_resource_for_sharing,
 )
 
 
@@ -37,18 +38,25 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
         Examples:
         neuro acl grant storage:///sample_data/ alice manage
         neuro acl grant image:resnet50 bob read
-        neuro acl grant job:///my_job_id alice write
+        neuro acl grant job:job_id alice write
+        neuro acl grant job://other-user/job-name alice write
     """
+    uri_obj: Optional[URL] = None
     try:
-        uri_obj = parse_resource_for_sharing(uri, root)
+        uri_obj = await parse_and_resolve_resource_for_sharing(uri, root)
         action_obj = parse_permission_action(permission)
         permission_obj = Permission(uri=uri_obj, action=action_obj)
         log.info(f"Using resource '{permission_obj.uri}'")
 
         await root.client.users.share(user, permission_obj)
+        if not root.quiet:
+            click.echo(
+                f"Shared resource '{permission_obj.uri}' with user "
+                f"'{user}' on '{permission_obj.action}'"
+            )
 
     except ValueError as e:
-        raise ValueError(f"Could not share resource '{uri}': {e}") from e
+        raise ValueError(f"Could not share resource '{uri_obj or uri}': {e}") from e
 
 
 @command()
@@ -62,16 +70,20 @@ async def revoke(root: Root, uri: str, user: str) -> None:
         Examples:
         neuro acl revoke storage:///sample_data/ alice
         neuro acl revoke image:resnet50 bob
-        neuro acl revoke job:///my_job_id alice
+        neuro acl revoke job:my-job-id alice
+        neuro acl revoke job://other-user/job-name alice
     """
+    uri_obj: Optional[URL] = None
     try:
-        uri_obj = parse_resource_for_sharing(uri, root)
-        log.info(f"Using resource '{uri_obj}'")
-
+        uri_obj = await parse_and_resolve_resource_for_sharing(uri, root)
         await root.client.users.revoke(user, uri_obj)
+        if not root.quiet:
+            click.echo(
+                f"Revoked all permissions on resource '{uri_obj}' from user '{user}'"
+            )
 
     except ValueError as e:
-        raise ValueError(f"Could not unshare resource '{uri}': {e}") from e
+        raise ValueError(f"Could not unshare resource '{uri_obj or uri}': {e}") from e
 
 
 @command()

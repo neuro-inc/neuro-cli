@@ -462,8 +462,8 @@ async def resolve_job(
         )
     if jobs:
         if len(jobs) > 1:
-            log.warning(
-                f"Found {len(jobs)} jobs matching {details}: "
+            log.debug(
+                f"Found {len(jobs)} jobs matching name={id_or_name} owner={owner}: "
                 ", ".join(job.id for job in jobs)
             )
         job_id = jobs[-1].id
@@ -487,6 +487,25 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         uri = str(image)
 
     return uri_from_cli(uri, root.username, allowed_schemes=("storage", "image", "job"))
+
+
+async def parse_and_resolve_resource_for_sharing(uri: str, root: Root) -> URL:
+    """ Parses the neuromation resource URI string + resolves job-name to job-ID.
+    Available schemes: storage, image, job. For image URIs, tags are not allowed.
+    """
+    uri_obj = parse_resource_for_sharing(uri, root)
+    if uri_obj.scheme == "job":
+        job_id = await resolve_job(
+            str(uri_obj), client=root.client, default_user=root.username
+        )
+        uri_obj = uri_obj.with_path(f"/{job_id}")
+    return uri_obj
+
+
+async def normalize_job_resource(uri: URL, root: Root) -> URL:
+    job_id = await resolve_job(str(uri), client=root.client, default_user=root.username)
+    owner = root.username if not uri.host or uri.host == "~" else uri.host
+    return uri.with_host(owner).with_path(job_id)
 
 
 def parse_file_resource(uri: str, root: Root) -> URL:

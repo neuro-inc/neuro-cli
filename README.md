@@ -1180,7 +1180,8 @@ neuro acl grant [OPTIONS] URI USER [read|write|manage]
 
 neuro acl grant storage:///sample_data/ alice manage
 neuro acl grant image:resnet50 bob read
-neuro acl grant job:///my_job_id alice write
+neuro acl grant job:job_id alice write
+neuro acl grant job://other-user/job-name alice write
 
 ```
 
@@ -1209,7 +1210,8 @@ neuro acl revoke [OPTIONS] URI USER
 
 neuro acl revoke storage:///sample_data/ alice
 neuro acl revoke image:resnet50 bob
-neuro acl revoke job:///my_job_id alice
+neuro acl revoke job:my-job-id alice
+neuro acl revoke job://other-user/job-name alice
 
 ```
 
@@ -1902,7 +1904,8 @@ neuro share [OPTIONS] URI USER [read|write|manage]
 
 neuro acl grant storage:///sample_data/ alice manage
 neuro acl grant image:resnet50 bob read
-neuro acl grant job:///my_job_id alice write
+neuro acl grant job:job_id alice write
+neuro acl grant job://other-user/job-name alice write
 
 ```
 

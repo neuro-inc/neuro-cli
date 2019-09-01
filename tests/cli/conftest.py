@@ -2,13 +2,13 @@ import asyncio
 import logging
 from collections import namedtuple
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List
+from typing import Any, AsyncIterator, Callable, List, Optional
 
 import pytest
 from yarl import URL
 
 import neuromation
-from neuromation.api import Factory
+from neuromation.api import Client, Factory
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -58,16 +58,21 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     return nmrc_path
 
 
-@pytest.fixture()
-async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterator[Root]:
-    root = Root(
+def _create_root(config_path: Path, client: Optional[Client] = None) -> Root:
+    return Root(
         color=False,
         tty=False,
         terminal_size=(80, 24),
         disable_pypi_version_check=True,
         network_timeout=60,
-        config_path=nmrc_path,
+        config_path=config_path,
+        _client=client,
     )
+
+
+@pytest.fixture()
+async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterator[Root]:
+    root = _create_root(nmrc_path)
 
     await root.init_client()
     yield root
