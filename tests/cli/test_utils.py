@@ -392,7 +392,7 @@ async def test_resolve_job_id__from_uri__missing_job_id(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
 
-    uri = "job://job-owner"
+    uri = "job://job-name"
 
     app = web.Application()
     srv = await aiohttp_server(app)
@@ -400,7 +400,7 @@ async def test_resolve_job_id__from_uri__missing_job_id(
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(
             ValueError,
-            match="Invalid job URI: owner='job-owner', missing job-id or job-name",
+            match="Invalid job URI: owner='job-name', missing job-id or job-name",
         ):
             await resolve_job(uri, client=client, default_user="default-owner")
 
