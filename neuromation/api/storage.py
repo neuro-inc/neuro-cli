@@ -1,11 +1,15 @@
 import asyncio
+import datetime
 import enum
 import errno
 import fnmatch
 import os
 import re
+import time
 from dataclasses import dataclass
+from email.utils import parsedate
 from pathlib import Path
+from stat import S_ISREG
 from typing import (
     Any,
     AsyncIterator,
@@ -18,6 +22,7 @@ from typing import (
     Tuple,
 )
 
+import aiohttp
 import attr
 from yarl import URL
 
@@ -46,6 +51,7 @@ from .utils import NoPublicConstructor
 
 MAX_OPEN_FILES = 100
 READ_SIZE = 2 ** 20  # 1 MiB
+TIME_THRESHOLD = 1.0
 
 Printer = Callable[[str], None]
 ProgressQueueItem = Optional[Tuple[Callable[[Any], None], Any]]
@@ -80,17 +86,50 @@ class Storage(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
+        self._min_time_diff = 0.0
+        self._max_time_diff = 0.0
 
     def _uri_to_path(self, uri: URL) -> str:
         uri = normalize_storage_path_uri(uri, self._config.auth_token.username)
         prefix = uri.host + "/" if uri.host else ""
         return prefix + uri.path.lstrip("/")
 
+    def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
+        response_time = time.time()
+        server_timetuple = parsedate(resp.headers.get("Date"))
+        if not server_timetuple:
+            return
+        server_time = datetime.datetime(
+            *server_timetuple[:6], tzinfo=datetime.timezone.utc
+        ).timestamp()
+        # Remove 1 because server time has been truncated
+        # and can be up to 1 second less than the actulal value
+        self._min_time_diff = request_time - server_time - 1.0
+        self._max_time_diff = response_time - server_time
+
+    def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        return (
+            local.st_size != remote.size
+            or local.st_mtime - remote.modification_time
+            > self._min_time_diff - TIME_THRESHOLD
+        )
+
+    def _is_remote_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        # Add 1 because remote.modification_time has been truncated
+        # and can be up to 1 second less than the actulal value
+        return (
+            local.st_size != remote.size
+            or local.st_mtime - remote.modification_time
+            < self._max_time_diff + TIME_THRESHOLD + 1.0
+        )
+
     async def ls(self, uri: URL) -> List[FileStatus]:
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
+        request_time = time.time()
         async with self._core.request("GET", url) as resp:
+            self._set_time_diff(request_time, resp)
             res = await resp.json()
             return [
                 _file_status_from_api(status)
@@ -200,7 +239,9 @@ class Storage(metaclass=NoPublicConstructor):
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
+        request_time = time.time()
         async with self._core.request("GET", url) as resp:
+            self._set_time_diff(request_time, resp)
             res = await resp.json()
             return _file_status_from_api(res["FileStatus"])
 
@@ -290,7 +331,12 @@ class Storage(metaclass=NoPublicConstructor):
                 )
 
     async def upload_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
@@ -310,14 +356,14 @@ class Storage(metaclass=NoPublicConstructor):
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
         try:
-            stats = await self.stat(dst)
-            if stats.is_dir():
+            dst_stat = await self.stat(dst)
+            if dst_stat.is_dir():
                 raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
         except ResourceNotFound:
             # target doesn't exist, lookup for parent dir
             try:
-                stats = await self.stat(dst.parent)
-                if not stats.is_dir():
+                dst_parent_stat = await self.stat(dst.parent)
+                if not dst_parent_stat.is_dir():
                     # parent path should be a folder
                     raise NotADirectoryError(
                         errno.ENOTDIR, "Not a directory", str(dst.parent)
@@ -326,6 +372,17 @@ class Storage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
+        else:
+            if update:
+                try:
+                    src_stat = path.stat()
+                except OSError:
+                    pass
+                else:
+                    if S_ISREG(src_stat.st_mode) and not self._is_local_modified(
+                        src_stat, dst_stat
+                    ):
+                        return
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue, self._upload_file(path, dst, progress=progress, queue=queue)
@@ -348,6 +405,7 @@ class Storage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         *,
+        update: bool = False,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
@@ -361,7 +419,10 @@ class Storage(metaclass=NoPublicConstructor):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
-            queue, self._upload_dir(src, path, dst, progress=progress, queue=queue)
+            queue,
+            self._upload_dir(
+                src, path, dst, update=update, progress=progress, queue=queue
+            ),
         )
 
     async def _upload_dir(
@@ -370,15 +431,26 @@ class Storage(metaclass=NoPublicConstructor):
         src_path: Path,
         dst: URL,
         *,
+        update: bool,
         progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
+        tasks = []
         try:
-            await self.mkdir(dst, exist_ok=True)
-        except neuromation.api.IllegalArgumentError:
+            exists = False
+            if update:
+                try:
+                    dst_files = {
+                        item.name: item for item in await self.ls(dst) if item.is_file()
+                    }
+                    exists = True
+                except ResourceNotFound:
+                    update = False
+            if not exists:
+                await self.mkdir(dst, exist_ok=True)
+        except (FileExistsError, neuromation.api.IllegalArgumentError):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
-        tasks = []
         async with self._file_sem:
             folder = sorted(
                 src_path.iterdir(), key=lambda item: (item.is_dir(), item.name)
@@ -386,6 +458,12 @@ class Storage(metaclass=NoPublicConstructor):
         for child in folder:
             name = child.name
             if child.is_file():
+                if (
+                    update
+                    and name in dst_files
+                    and not self._is_local_modified(child.stat(), dst_files[name])
+                ):
+                    continue
                 tasks.append(
                     self._upload_file(
                         src_path / name, dst / name, progress=progress, queue=queue
@@ -397,6 +475,7 @@ class Storage(metaclass=NoPublicConstructor):
                         src / name,
                         src_path / name,
                         dst / name,
+                        update=update,
                         progress=progress,
                         queue=queue,
                     )
@@ -419,21 +498,36 @@ class Storage(metaclass=NoPublicConstructor):
         await queue.put((progress.leave, StorageProgressLeaveDir(src, dst)))
 
     async def download_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
         src = normalize_storage_path_uri(src, self._config.auth_token.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        stat = await self.stat(src)
-        if not stat.is_file():
+        src_stat = await self.stat(src)
+        if not src_stat.is_file():
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
+        if update:
+            try:
+                dst_stat = path.stat()
+            except OSError:
+                pass
+            else:
+                if S_ISREG(dst_stat.st_mode) and not self._is_remote_modified(
+                    dst_stat, src_stat
+                ):
+                    return
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue,
             self._download_file(
-                src, dst, path, stat.size, progress=progress, queue=queue
+                src, dst, path, src_stat.size, progress=progress, queue=queue
             ),
         )
 
@@ -467,6 +561,7 @@ class Storage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         *,
+        update: bool = False,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
@@ -476,7 +571,10 @@ class Storage(metaclass=NoPublicConstructor):
         path = _extract_path(dst)
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
-            queue, self._download_dir(src, dst, path, progress=progress, queue=queue)
+            queue,
+            self._download_dir(
+                src, dst, path, update=update, progress=progress, queue=queue
+            ),
         )
 
     async def _download_dir(
@@ -485,16 +583,28 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         dst_path: Path,
         *,
+        update: bool,
         progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
         tasks = []
+        if update:
+            async with self._file_sem:
+                dst_files = {
+                    item.name: item for item in dst_path.iterdir() if item.is_file()
+                }
         folder = sorted(await self.ls(src), key=lambda item: (item.is_dir(), item.name))
         for child in folder:
             name = child.name
             if child.is_file():
+                if (
+                    update
+                    and name in dst_files
+                    and not self._is_remote_modified(dst_files[name].stat(), child)
+                ):
+                    continue
                 tasks.append(
                     self._download_file(
                         src / name,
@@ -511,6 +621,7 @@ class Storage(metaclass=NoPublicConstructor):
                         src / name,
                         dst / name,
                         dst_path / name,
+                        update=update,
                         progress=progress,
                         queue=queue,
                     )

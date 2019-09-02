@@ -1,0 +1,1 @@
+Added the `--update` option in `neuro storage cp`.  It makes the command copying the source file only when it is newer than the destination file or when the destination file is missing.
