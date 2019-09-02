@@ -41,7 +41,6 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
         neuro acl grant job:job_id alice write
         neuro acl grant job://other-user/job-name alice write
     """
-    uri_obj: Optional[URL] = None
     try:
         uri_obj = await parse_and_resolve_resource_for_sharing(uri, root)
         action_obj = parse_permission_action(permission)
@@ -49,14 +48,9 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
         log.info(f"Using resource '{permission_obj.uri}'")
 
         await root.client.users.share(user, permission_obj)
-        if not root.quiet:
-            click.echo(
-                f"Shared resource '{permission_obj.uri}' with user "
-                f"'{user}' on '{permission_obj.action}'"
-            )
 
     except ValueError as e:
-        raise ValueError(f"Could not share resource '{uri_obj or uri}': {e}") from e
+        raise ValueError(f"Could not share resource '{uri}': {e}") from e
 
 
 @command()
@@ -73,8 +67,10 @@ async def revoke(root: Root, uri: str, user: str) -> None:
         neuro acl revoke job:my-job-id alice
         neuro acl revoke job://other-user/job-name alice
     """
-    uri_obj: Optional[URL] = None
     try:
+        uri_obj = parse_and_resolve_resource_for_sharing(uri, root)
+        log.info(f"Using resource '{uri_obj}'")
+
         uri_obj = await parse_and_resolve_resource_for_sharing(uri, root)
         await root.client.users.revoke(user, uri_obj)
         if not root.quiet:
@@ -83,7 +79,7 @@ async def revoke(root: Root, uri: str, user: str) -> None:
             )
 
     except ValueError as e:
-        raise ValueError(f"Could not unshare resource '{uri_obj or uri}': {e}") from e
+        raise ValueError(f"Could not unshare resource '{uri}': {e}") from e
 
 
 @command()
