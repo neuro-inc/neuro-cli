@@ -259,6 +259,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
@@ -596,6 +598,7 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default|
 |_--help_|Show this message and exit.|
 
@@ -1352,6 +1355,8 @@ Name | Description|
 |----|------------|
 |_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
 |_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
+|_\--tpu-type TYPE_|TPU type to use|
+|_\--tpu-sw-version VERSION_|Requested TPU software version|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
@@ -1676,6 +1681,7 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default|
 |_--help_|Show this message and exit.|
 

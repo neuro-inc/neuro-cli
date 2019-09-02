@@ -41,7 +41,7 @@ from neuromation.api import (
 )
 from neuromation.api.config import _CookieSession, _PyPIVersion
 from neuromation.api.parsing_utils import _ImageNameParser
-from neuromation.api.url_utils import uri_from_cli
+from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
 from .asyncio_utils import run
 from .parse_utils import to_megabytes
@@ -436,13 +436,36 @@ def volume_to_verbose_str(volume: Volume) -> str:
     )
 
 
-async def resolve_job(client: Client, id_or_name: str) -> str:
+async def resolve_job(
+    id_or_name_or_uri: str, *, client: Client, default_user: str
+) -> str:
+    if id_or_name_or_uri.startswith("job:"):
+        uri = _normalize_uri(id_or_name_or_uri, username=default_user)
+        id_or_name = uri.path.lstrip("/")
+        owner = uri.host or default_user
+        if not id_or_name:
+            raise ValueError(
+                f"Invalid job URI: owner='{owner}', missing job-id or job-name"
+            )
+    else:
+        id_or_name = id_or_name_or_uri
+        owner = default_user
+
     jobs: List[JobDescription] = []
+    details = f"name={id_or_name}, owner={owner}"
     try:
-        jobs = await client.jobs.list(name=id_or_name)
+        jobs = await client.jobs.list(name=id_or_name, owners={owner})
     except Exception as e:
-        log.error(f"Failed to resolve job-name '{id_or_name}' to a job-ID: {e}")
+        log.error(
+            f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
+            f"{details} to a job-ID: {e}"
+        )
     if jobs:
+        if len(jobs) > 1:
+            log.warning(
+                f"Found {len(jobs)} jobs matching {details}: "
+                ", ".join(job.id for job in jobs)
+            )
         job_id = jobs[-1].id
         log.debug(f"Job name '{id_or_name}' resolved to job ID '{job_id}'")
     else:

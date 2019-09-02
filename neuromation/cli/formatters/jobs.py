@@ -187,11 +187,12 @@ class TabularJobRow:
     status: str
     when: str
     image: str
+    owner: str
     description: str
     command: str
 
     @classmethod
-    def from_job(cls, job: JobDescription) -> "TabularJobRow":
+    def from_job(cls, job: JobDescription, username: str) -> "TabularJobRow":
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -211,20 +212,23 @@ class TabularJobRow:
             status=job.status,
             when=when_humanized,
             image=str(job.container.image),
+            owner=("<you>" if job.owner == username else job.owner),
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
         )
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int):
+    def __init__(self, width: int, username: str):
         self.width = width
+        self._username = username
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
             "name": [2, 40],
             "status": [6, 10],
             "when": [4, 15],
             "image": [5, 15],
+            "owner": [5, 25],
             "description": [11, 50],
             "command": [7, 0],
         }
@@ -252,13 +256,14 @@ class TabularJobsFormatter(BaseJobsFormatter):
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[TabularJobRow] = []
         for job in jobs:
-            rows.append(TabularJobRow.from_job(job))
+            rows.append(TabularJobRow.from_job(job, self._username))
         header = TabularJobRow(
             id="ID",
             name="NAME",
             status="STATUS",
             when="WHEN",
             image="IMAGE",
+            owner="OWNER",
             description="DESCRIPTION",
             command="COMMAND",
         )
@@ -287,6 +292,9 @@ class ResourcesFormatter:
         lines.append(f"CPU: {resources.cpu:0.1f}")
         if resources.gpu:
             lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")
+
+        if resources.tpu_type:
+            lines.append(f"TPU: {resources.tpu_type}/{resources.tpu_software_version}")
 
         additional = list()
         if resources.shm:

@@ -20,10 +20,6 @@ class Permission:
     uri: URL
     action: Action
 
-    def to_api(self) -> Dict[str, Any]:
-        primitive: Dict[str, Any] = {"uri": str(self.uri), "action": self.action.value}
-        return primitive
-
 
 @dataclass(frozen=True)
 class Share:
@@ -65,7 +61,7 @@ class Users(metaclass=NoPublicConstructor):
 
     async def share(self, user: str, permission: Permission) -> None:
         url = URL(f"users/{user}/permissions")
-        payload = [permission.to_api()]
+        payload = [_permission_to_api(permission)]
         async with self._core.request("POST", url, json=payload) as resp:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPCreated, this part must me refactored then
@@ -83,3 +79,8 @@ class Users(metaclass=NoPublicConstructor):
                     f"Server return unexpected result: {resp.status}."
                 )  # NOQA
         return None
+
+
+def _permission_to_api(perm: Permission) -> Dict[str, Any]:
+    primitive: Dict[str, Any] = {"uri": str(perm.uri), "action": perm.action.value}
+    return primitive

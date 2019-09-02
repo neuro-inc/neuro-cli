@@ -59,6 +59,17 @@ from .utils import (
 
 log = logging.getLogger(__name__)
 
+STORAGE_MOUNTPOINT = "/var/storage"
+ROOT_MOUNTPOINT = "/var/neuro"
+
+NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
+NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
+RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
+
+
+def _get_neuro_mountpoint(username: str) -> str:
+    return f"{ROOT_MOUNTPOINT}/{username}"
+
 
 def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     if env_file:
@@ -68,12 +79,16 @@ def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     env_dict = {}
     for line in env:
         splitted = line.split("=", 1)
+        name = splitted[0]
         if len(splitted) == 1:
             val = os.environ.get(splitted[0], "")
-            env_dict[splitted[0]] = val
         else:
-            env_dict[splitted[0]] = splitted[1]
-
+            val = splitted[1]
+        if name in RESERVED_ENV_VARS:
+            raise click.UsageError(
+                f"Unable to re-define system-reserved environment variable: {name}"
+            )
+        env_dict[name] = val
     return env_dict
 
 
@@ -103,6 +118,14 @@ def job() -> None:
     help="GPU to use",
     default=JOB_GPU_MODEL,
     show_default=True,
+)
+@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
+@click.option(
+    "tpu_software_version",
+    "--tpu-sw-version",
+    metavar="VERSION",
+    type=str,
+    help="Requested TPU software version",
 )
 @click.option(
     "-c",
@@ -217,6 +240,8 @@ async def submit(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -259,6 +284,8 @@ async def submit(
         image=image,
         gpu=gpu,
         gpu_model=gpu_model,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
         cpu=cpu,
         memory=memory,
         extshm=extshm,
@@ -322,7 +349,7 @@ async def exec(
     neuro exec --no-tty my-job ls -l
     """
     cmd = shlex.split(" ".join(cmd))
-    id = await resolve_job(root.client, job)
+    id = await resolve_job(job, client=root.client, default_user=root.username)
     retcode = await root.client.jobs.exec(
         id,
         cmd,
@@ -364,7 +391,7 @@ async def port_forward(
     neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
     """
-    job_id = await resolve_job(root.client, job)
+    job_id = await resolve_job(job, client=root.client, default_user=root.username)
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
             click.echo(
@@ -392,7 +419,7 @@ async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
     """
-    id = await resolve_job(root.client, job)
+    id = await resolve_job(job, client=root.client, default_user=root.username)
     await _print_logs(root, id)
 
 
@@ -478,7 +505,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width)
+        formatter = TabularJobsFormatter(width, root.username)
 
     for line in formatter(jobs):
         click.echo(line)
@@ -491,7 +518,7 @@ async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
     """
-    id = await resolve_job(root.client, job)
+    id = await resolve_job(job, client=root.client, default_user=root.username)
     res = await root.client.jobs.status(id)
     click.echo(JobStatusFormatter()(res))
 
@@ -503,7 +530,7 @@ async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
     """
-    id = await resolve_job(root.client, job)
+    id = await resolve_job(job, client=root.client, default_user=root.username)
     res = await root.client.jobs.status(id)
     await browse_job(root, res)
 
@@ -516,7 +543,7 @@ async def top(root: Root, job: str) -> None:
     Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
-    id = await resolve_job(root.client, job)
+    id = await resolve_job(job, client=root.client, default_user=root.username)
     print_header = True
     async for res in root.client.jobs.top(id):
         if print_header:
@@ -540,7 +567,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     neuro job save my-favourite-job image://~/ubuntu-patched:v1
     neuro job save my-favourite-job image://bob/ubuntu-patched
     """
-    id = await resolve_job(root.client, job)
+    id = await resolve_job(job, client=root.client, default_user=root.username)
     progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
     with contextlib.closing(progress):
         await root.client.jobs.save(id, image, progress=progress)
@@ -556,7 +583,9 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     errors = []
     for job in jobs:
-        job_resolved = await resolve_job(root.client, job)
+        job_resolved = await resolve_job(
+            job, client=root.client, default_user=root.username
+        )
         try:
             await root.client.jobs.kill(job_resolved)
             # TODO (ajuszkowski) printing should be on the cli level
@@ -725,7 +754,6 @@ async def run(
         click.echo(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
-
     log.info(f"Using preset '{preset}': {job_preset}")
 
     await run_job(
@@ -733,6 +761,8 @@ async def run(
         image=image,
         gpu=job_preset.gpu,
         gpu_model=job_preset.gpu_model,
+        tpu_type=job_preset.tpu_type,
+        tpu_software_version=job_preset.tpu_software_version,
         cpu=job_preset.cpu,
         memory=job_preset.memory_mb,
         extshm=extshm,
@@ -776,6 +806,8 @@ async def run_job(
     image: RemoteImage,
     gpu: Optional[int],
     gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
     cpu: float,
     memory: int,
     extshm: bool,
@@ -816,19 +848,21 @@ async def run_job(
 
     log.info(f"Using image '{image}'")
 
-    resources = Resources(memory, cpu, gpu, gpu_model, extshm)
-
-    volumes: Set[Volume] = set()
-    for v in volume:
-        if v == "HOME":
-            volumes.add(root.client.parse.volume("storage://~:/var/storage/home:rw"))
-            volumes.add(
-                root.client.parse.volume(
-                    "storage://neuromation/public:/var/storage/neuromation:ro"
-                )
+    if tpu_type:
+        if not tpu_software_version:
+            raise ValueError(
+                "--tpu-sw-version cannot be empty while --tpu-type specified"
             )
-        else:
-            volumes.add(root.client.parse.volume(v))
+    resources = Resources(
+        memory_mb=memory,
+        cpu=cpu,
+        gpu=gpu,
+        gpu_model=gpu_model,
+        shm=extshm,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
+    )
+    volumes = await _build_volumes(root, volume, env_dict)
 
     if pass_config:
         if CONFIG_ENV_NAME in env_dict:
@@ -884,6 +918,55 @@ async def run_job(
     return job
 
 
+async def _build_volumes(
+    root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
+) -> Set[Volume]:
+    input_volumes_set = set(input_volumes)
+    volumes: Set[Volume] = set()
+
+    if "ALL" in input_volumes_set:
+        if len(input_volumes_set) > 1:
+            raise click.UsageError(
+                f"Cannot use `--volume=ALL` together with other `--volume` options"
+            )
+        available = await root.client.users.get_acl(root.username, scheme="storage")
+        volumes.update(
+            Volume(
+                storage_uri=perm.uri,
+                container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
+                read_only=perm.action not in ("write", "manage"),
+            )
+            for perm in available
+        )
+        neuro_mountpoint = _get_neuro_mountpoint(root.username)
+        env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
+        env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
+        if not root.quiet:
+            click.echo(
+                "Storage mountpoints will be available as the environment variables:\n"
+                f"  {NEUROMATION_ROOT_ENV_VAR}={ROOT_MOUNTPOINT}\n"
+                f"  {NEUROMATION_HOME_ENV_VAR}={neuro_mountpoint}"
+            )
+    else:
+        for vol in input_volumes_set:
+            if vol == "HOME":
+                volumes.add(
+                    root.client.parse.volume(
+                        f"storage://~:{STORAGE_MOUNTPOINT}/home:rw"
+                    )
+                )
+                volumes.add(
+                    root.client.parse.volume(
+                        f"storage://neuromation/public:"
+                        f"{STORAGE_MOUNTPOINT}/neuromation:ro"
+                    )
+                )
+                # TODO (artem) print deprecation warning (issue #1009)
+            else:
+                volumes.add(root.client.parse.volume(vol))
+    return volumes
+
+
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 
     # store the Neuro CLI config on the storage under some random path
@@ -891,7 +974,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
     storage_nmrc_folder = URL(f"storage://{root.username}/nmrc/")
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
-    local_nmrc_folder = "/var/storage/nmrc/"
+    local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
