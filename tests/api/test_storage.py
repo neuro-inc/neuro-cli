@@ -2,6 +2,7 @@ import errno
 import os
 import struct
 import sys
+import time
 from errno import errorcode
 from filecmp import dircmp
 from pathlib import Path
@@ -14,6 +15,7 @@ import pytest
 from aiohttp import WSMsgType, web
 from yarl import URL
 
+import neuromation.api.storage
 from neuromation.api import (
     Action,
     Client,
@@ -159,6 +161,8 @@ async def storage_server(
             return web.Response(status=201)
 
         elif op == "LISTSTATUS":
+            if not local_path.exists():
+                raise web.HTTPNotFound()
             result = {"FileStatuses": {"FileStatus": get_list_result(local_path)}}
             return web.json_response(result)
 
@@ -1315,3 +1319,144 @@ async def test_storage_download_dir_slash_ending(
 
     diff = dircmp(DATA_FOLDER / "nested", local_dir / "nested")  # type: ignore
     assert not calc_diff(diff)  # type: ignore
+
+
+@pytest.fixture
+def zero_time_threshold(monkeypatch: Any) -> None:
+    monkeypatch.setattr(neuromation.api.storage, "TIME_THRESHOLD", 0.0)
+
+
+async def test_storage_upload_file_update(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    storage_file = storage_path / "file.txt"
+    local_file = tmp_path / "file.txt"
+
+    local_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(
+            URL(local_file.as_uri()), URL("storage:file.txt"), update=True
+        )
+    assert storage_file.read_bytes() == b"old"
+
+    local_file.write_bytes(b"new")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(
+            URL(local_file.as_uri()), URL("storage:file.txt"), update=True
+        )
+    assert storage_file.read_bytes() == b"new"
+
+    time.sleep(1)
+    storage_file.write_bytes(b"xxx")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(
+            URL(local_file.as_uri()), URL("storage:file.txt"), update=True
+        )
+    assert storage_file.read_bytes() == b"xxx"
+
+
+async def test_storage_upload_dir_update(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    storage_file = storage_path / "folder" / "nested" / "file.txt"
+    local_dir = tmp_path / "folder"
+    local_file = local_dir / "nested" / "file.txt"
+    local_file.parent.mkdir(parents=True)
+
+    local_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(
+            URL(local_dir.as_uri()), URL("storage:folder"), update=True
+        )
+    assert storage_file.read_bytes() == b"old"
+
+    local_file.write_bytes(b"new")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(
+            URL(local_dir.as_uri()), URL("storage:folder"), update=True
+        )
+    assert storage_file.read_bytes() == b"new"
+
+    time.sleep(1)
+    storage_file.write_bytes(b"xxx")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(
+            URL(local_dir.as_uri()), URL("storage:folder"), update=True
+        )
+    assert storage_file.read_bytes() == b"xxx"
+
+
+async def test_storage_download_file_update(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    storage_file = storage_path / "file.txt"
+    local_file = tmp_path / "file.txt"
+
+    storage_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(
+            URL("storage:file.txt"), URL(local_file.as_uri()), update=True
+        )
+    assert local_file.read_bytes() == b"old"
+
+    storage_file.write_bytes(b"new")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(
+            URL("storage:file.txt"), URL(local_file.as_uri()), update=True
+        )
+    assert local_file.read_bytes() == b"new"
+
+    time.sleep(2)
+    local_file.write_bytes(b"xxx")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(
+            URL("storage:file.txt"), URL(local_file.as_uri()), update=True
+        )
+    assert local_file.read_bytes() == b"xxx"
+
+
+async def test_storage_download_dir_update(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    storage_file = storage_path / "folder" / "nested" / "file.txt"
+    local_dir = tmp_path / "folder"
+    local_file = local_dir / "nested" / "file.txt"
+    storage_file.parent.mkdir(parents=True)
+
+    storage_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(
+            URL("storage:folder"), URL(local_dir.as_uri()), update=True
+        )
+    assert local_file.read_bytes() == b"old"
+
+    storage_file.write_bytes(b"new")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(
+            URL("storage:folder"), URL(local_dir.as_uri()), update=True
+        )
+    assert local_file.read_bytes() == b"new"
+
+    time.sleep(2)
+    local_file.write_bytes(b"xxx")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(
+            URL("storage:folder"), URL(local_dir.as_uri()), update=True
+        )
+    assert local_file.read_bytes() == b"xxx"

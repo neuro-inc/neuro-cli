@@ -195,6 +195,13 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     help="Treat DESTINATION as a normal file",
 )
 @click.option(
+    "-u",
+    "--update",
+    is_flag=True,
+    help="Copy only when the SOURCE file is newer than the destination file "
+    "or when the destination file is missing",
+)
+@click.option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
@@ -216,6 +223,7 @@ async def cp(
     glob: bool,
     target_directory: Optional[str],
     no_target_directory: bool,
+    update: bool,
     progress: bool,
     use_websockets: bool,
 ) -> None:
@@ -301,20 +309,36 @@ async def cp(
         if src.scheme == "file" and dst.scheme == "storage":
             if recursive:
                 await root.client.storage.upload_dir(
-                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                    src,
+                    dst,
+                    update=update,
+                    progress=progress_obj,
+                    use_websockets=use_websockets,
                 )
             else:
                 await root.client.storage.upload_file(
-                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                    src,
+                    dst,
+                    update=update,
+                    progress=progress_obj,
+                    use_websockets=use_websockets,
                 )
         elif src.scheme == "storage" and dst.scheme == "file":
             if recursive:
                 await root.client.storage.download_dir(
-                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                    src,
+                    dst,
+                    update=update,
+                    progress=progress_obj,
+                    use_websockets=use_websockets,
                 )
             else:
                 await root.client.storage.download_file(
-                    src, dst, progress=progress_obj, use_websockets=use_websockets
+                    src,
+                    dst,
+                    update=update,
+                    progress=progress_obj,
+                    use_websockets=use_websockets,
                 )
         else:
             raise RuntimeError(
