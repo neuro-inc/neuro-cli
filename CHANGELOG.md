@@ -5,6 +5,32 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.9.2 (2019-09-02)
+===============================
+
+Features
+--------
+
+
+- Due to `certifi` update delays, show certifi package error not earlier than two weeks after the latest version was released. ([#944](https://github.com/neuromation/platform-api-clients/issues/944))
+
+- Support streaming output for `neuro-save` command. ([#946](https://github.com/neuromation/platform-api-clients/issues/946))
+
+- Implement mounting all available volumes: `neuro run --volume=ALL`. ([#974](https://github.com/neuromation/platform-api-clients/issues/974))
+
+- Uploading/downloading of a directory containing many small files is now 4-10 times faster. ([#981](https://github.com/neuromation/platform-api-clients/issues/981))
+
+- Support Cloud TPU: new cli options `--tpu-type`, `--tpu-sw-version` added. ([#982](https://github.com/neuromation/platform-api-clients/issues/982))
+
+- Support job operations via job-URI (e.g., `neuro status job://owner-name/job-name`). ([#988](https://github.com/neuromation/platform-api-clients/issues/988))
+
+- Support job filtering by owner: `neuro ps -o user-1 --owner=user-2`. ([#990](https://github.com/neuromation/platform-api-clients/issues/990))
+
+- Added the `--update` option in `neuro storage cp`.  It makes the command copying the source file only when it is newer than the destination file or when the destination file is missing. ([#1007](https://github.com/neuromation/platform-api-clients/issues/1007))
+
+- Added the `-d` (`--directory`) option in `neuro storage ls` which makes the command to list directories themselves, not their contents. ([#1012](https://github.com/neuromation/platform-api-clients/issues/1012))
+
+
 Neuromation 19.8.23 (2019-08-23)
 ================================
 
