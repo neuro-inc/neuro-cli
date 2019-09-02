@@ -502,12 +502,6 @@ async def parse_and_resolve_resource_for_sharing(uri: str, root: Root) -> URL:
     return uri_obj
 
 
-async def normalize_job_resource(uri: URL, root: Root) -> URL:
-    job_id = await resolve_job(str(uri), client=root.client, default_user=root.username)
-    owner = root.username if not uri.host or uri.host == "~" else uri.host
-    return uri.with_host(owner).with_path(job_id)
-
-
 def parse_file_resource(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: file, storage.

@@ -59,10 +59,10 @@ async def test_resolve_job_id__from_string__no_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_id:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -89,10 +89,10 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != job_owner:
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -116,10 +116,10 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -143,10 +143,10 @@ async def test_resolve_job_id__from_string__single_job_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -174,10 +174,10 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != job_owner:
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -202,10 +202,10 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -230,10 +230,10 @@ async def test_resolve_job_id__from_string__multiple_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -262,10 +262,10 @@ async def test_resolve_job_id__from_uri_with_owner__multiple_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != job_owner:
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -291,10 +291,10 @@ async def test_resolve_job_id__from_uri_without_owner__multiple_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -317,10 +317,10 @@ async def test_resolve_job_id__server_error(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         raise web.HTTPError()
 
     app = web.Application()
@@ -346,10 +346,10 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != job_owner:
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         raise web.HTTPError()
 
     app = web.Application()
@@ -372,10 +372,10 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "default-owner":
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         raise web.HTTPError()
 
     app = web.Application()
@@ -418,10 +418,10 @@ async def test_parse_and_resolve_resource_for_sharing_job_name_with_owner(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != owner_name:
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -447,11 +447,11 @@ async def test_parse_and_resolve_resource_for_sharing_job_name_without_owner(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_name:
-            pytest.fail(f"received: {name}")
+            pytest.fail(f"received name: {name}")
         owner = request.query.get("owner")
         if owner != "user":
             # "user" comes from `root.username`
-            pytest.fail(f"received: {owner}")
+            pytest.fail(f"received owner {owner}")
         return web.json_response(JSON)
 
     app = web.Application()
