@@ -26,10 +26,9 @@ from typing import (
     Union,
 )
 
-import aiohttp
 import attr
 import cbor
-from aiohttp import ClientWebSocketResponse, WSCloseCode, WSMsgType
+from aiohttp import ClientResponse, ClientWebSocketResponse, WSCloseCode, WSMsgType
 from yarl import URL
 
 import neuromation
@@ -114,6 +113,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         loop = asyncio.get_event_loop()
         self._send_task = loop.create_task(self._send_loop())
         self._receive_task = loop.create_task(self._receive_loop())
+        self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
         self._read_sem = asyncio.BoundedSemaphore(MAX_WS_READS)
         self._min_time_diff = -1.0
         self._max_time_diff = 1.0
@@ -278,21 +278,22 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         await self._request(WSStorageOperation.CREATE, dst, {"size": size})
         await queue.put((progress.start, StorageProgressStart(src_uri, dst_uri, size)))
         tasks = []
-        with src.open("rb") as stream:
-            pos = 0
-            while True:
-                await self._read_sem.acquire()
-                try:
-                    chunk = stream.read(READ_SIZE)
-                except:  # noqa: E722
-                    self._read_sem.release()
-                    raise
-                if not chunk:
-                    self._read_sem.release()
-                    break
-                tasks.append(loop.create_task(write_coro(pos, chunk)))
-                pos += len(chunk)
-                del chunk
+        async with self._file_sem:
+            with src.open("rb") as stream:
+                pos = 0
+                while True:
+                    await self._read_sem.acquire()
+                    try:
+                        chunk = stream.read(READ_SIZE)
+                    except:  # noqa: E722
+                        self._read_sem.release()
+                        raise
+                    if not chunk:
+                        self._read_sem.release()
+                        break
+                    tasks.append(loop.create_task(write_coro(pos, chunk)))
+                    pos += len(chunk)
+                    del chunk
         await asyncio.gather(*tasks)
         await queue.put(
             (progress.complete, StorageProgressComplete(src_uri, dst_uri, size))
@@ -430,7 +431,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         await queue.put((progress.enter, StorageProgressEnterDir(src_uri, dst_uri)))
         tasks = []
         if update:
-            async with self._read_sem:
+            async with self._file_sem:
                 dst_files = {
                     item.name: item for item in dst.iterdir() if item.is_file()
                 }
@@ -492,7 +493,7 @@ class Storage(metaclass=NoPublicConstructor):
         prefix = uri.host + "/" if uri.host else ""
         return prefix + uri.path.lstrip("/")
 
-    def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
+    def _set_time_diff(self, request_time: float, resp: ClientResponse) -> None:
         response_time = time.time()
         server_timetuple = parsedate(resp.headers.get("Date"))
         if not server_timetuple:
