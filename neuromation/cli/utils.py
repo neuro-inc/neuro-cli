@@ -5,6 +5,7 @@ import re
 import shlex
 import sys
 import time
+from asyncio import CancelledError
 from contextlib import suppress
 from datetime import date, timedelta
 from functools import wraps
@@ -455,6 +456,8 @@ async def resolve_job(
     details = f"name={id_or_name}, owner={owner}"
     try:
         jobs = await client.jobs.list(name=id_or_name, owners={owner})
+    except (MemoryError, RecursionError, CancelledError, AssertionError):
+        raise
     except Exception as e:
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
