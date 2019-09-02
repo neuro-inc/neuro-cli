@@ -1,1 +1,0 @@
-Support Cloud TPU: new cli options `--tpu-type`, `--tpu-sw-version` added.
