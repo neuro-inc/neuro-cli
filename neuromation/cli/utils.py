@@ -462,7 +462,7 @@ async def resolve_job(
         )
     if jobs:
         if len(jobs) > 1:
-            log.debug(
+            log.warning(
                 f"Found {len(jobs)} jobs matching name={id_or_name} owner={owner}: "
                 ", ".join(job.id for job in jobs)
             )
