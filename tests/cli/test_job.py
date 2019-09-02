@@ -1,11 +1,12 @@
 import logging
+from pathlib import Path
 from typing import Any, Tuple
 
 import click
 import pytest
 
 from neuromation.api import JobStatus
-from neuromation.cli.job import calc_statuses
+from neuromation.cli.job import NEUROMATION_ROOT_ENV_VAR, build_env, calc_statuses
 
 
 logger = logging.getLogger(__name__)
@@ -96,3 +97,33 @@ def test_calc_statuses__check_defaults__all_statuses_true(
     assert not std.out
     assert not std.err
     assert not caplog.text
+
+
+@pytest.mark.parametrize(
+    "env_var", [NEUROMATION_ROOT_ENV_VAR, f"{NEUROMATION_ROOT_ENV_VAR}=value"]
+)
+def test_build_env_reserved_env_var_conflict_passed_as_parameter(env_var: str) -> None:
+    env = ("ENV_VAR_1=value", "ENV_VAR_2=value", env_var)
+    with pytest.raises(
+        click.UsageError,
+        match="Unable to re-define system-reserved environment variable",
+    ):
+        build_env(env, env_file=None)
+
+
+@pytest.mark.parametrize(
+    "env_var", [NEUROMATION_ROOT_ENV_VAR, f"{NEUROMATION_ROOT_ENV_VAR}=value"]
+)
+def test_build_env_reserved_env_var_conflict_passed_in_file(
+    env_var: str, tmp_path: Path
+) -> None:
+    env_1 = ("ENV_VAR_1=value",)
+    env_2 = ("ENV_VAR_2=value", env_var)
+    env_file = tmp_path / "env_var.txt"
+    env_file.write_text("\n".join(env_2))
+
+    with pytest.raises(
+        click.UsageError,
+        match="Unable to re-define system-reserved environment variable",
+    ):
+        build_env(env_1, env_file=str(env_file))
