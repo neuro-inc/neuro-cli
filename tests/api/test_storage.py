@@ -109,7 +109,7 @@ async def ws_send_ack(
     result: Dict[str, Any] = {},
     data: bytes = b"",
 ) -> None:
-    payload = {"rop": rop, "rid": rid, **result}
+    payload = {"rop": rop, "rid": rid, "timestamp": int(time.time()), **result}
     await ws_send(ws, "ACK", payload, data)
 
 
@@ -120,7 +120,7 @@ async def ws_send_error(
     error: str,
     errno: Optional[int] = None,
 ) -> None:
-    payload = {"rop": rop, "rid": rid, "error": error}
+    payload = {"rop": rop, "rid": rid, "timestamp": int(time.time()), "error": error}
     if errno is not None:
         payload["errno"] = errorcode.get(errno, errno)
     await ws_send(ws, "ERROR", payload)
@@ -1350,7 +1350,7 @@ async def test_storage_upload_file_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    time.sleep(2)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
@@ -1385,7 +1385,7 @@ async def test_storage_upload_dir_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    time.sleep(2)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(

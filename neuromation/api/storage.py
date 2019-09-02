@@ -115,6 +115,8 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         self._send_task = loop.create_task(self._send_loop())
         self._receive_task = loop.create_task(self._receive_loop())
         self._read_sem = asyncio.BoundedSemaphore(MAX_WS_READS)
+        self._min_time_diff = -1.0
+        self._max_time_diff = 1.0
 
     async def close(self) -> None:
         await self._send_queue.put(None)
@@ -197,6 +199,54 @@ class WSStorageClient(metaclass=NoPublicConstructor):
             else:
                 raise RuntimeError(f"Unsupported WebSocket message type: {msg.type}")
 
+    def _set_time_diff(self, request_time: float, payload: Dict[str, Any]) -> None:
+        response_time = time.time()
+        server_time: Optional[int] = payload.get("timestamp")
+        if server_time is None:
+            return
+        # Remove 1 because server time has been truncated
+        # and can be up to 1 second less than the actulal value
+        self._min_time_diff = request_time - server_time - 1.0
+        self._max_time_diff = response_time - server_time
+
+    def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        return (
+            local.st_size != remote.size
+            or local.st_mtime - remote.modification_time
+            > self._min_time_diff - TIME_THRESHOLD
+        )
+
+    def _is_remote_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        # Add 1 because remote.modification_time has been truncated
+        # and can be up to 1 second less than the actulal value
+        return (
+            local.st_size != remote.size
+            or local.st_mtime - remote.modification_time
+            < self._max_time_diff + TIME_THRESHOLD + 1.0
+        )
+
+    async def stat(self, path: str) -> FileStatus:
+        request_time = time.time()
+        payload, data = await self._request(WSStorageOperation.STAT, path)
+        self._set_time_diff(request_time, payload)
+        return _file_status_from_api(payload["FileStatus"])
+
+    async def ls(self, path: str) -> List[FileStatus]:
+        request_time = time.time()
+        payload, data = await self._request(WSStorageOperation.LIST, path)
+        self._set_time_diff(request_time, payload)
+        return [
+            _file_status_from_api(status)
+            for status in payload["FileStatuses"]["FileStatus"]
+        ]
+
+    async def mkdir(
+        self, path: str, *, parents: bool = False, exist_ok: bool = False
+    ) -> None:
+        await self._request(
+            WSStorageOperation.MKDIRS, path, {"parents": parents, "exist_ok": exist_ok}
+        )
+
     async def upload_file(
         self,
         src: Path,
@@ -253,24 +303,41 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         src: Path,
         dst: str,
         *,
+        update: bool,
         progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         src_uri = URL(src.as_uri())
         dst_uri = self._root / dst
+        tasks = []
         try:
-            await self._request(
-                WSStorageOperation.MKDIRS, dst, {"parents": True, "exist_ok": True}
-            )
+            exists = False
+            if update:
+                try:
+                    dst_files = {
+                        item.name: item for item in await self.ls(dst) if item.is_file()
+                    }
+                    exists = True
+                except FileNotFoundError:
+                    update = False
+            if not exists:
+                await self._request(
+                    WSStorageOperation.MKDIRS, dst, {"parents": True, "exist_ok": True}
+                )
         except FileExistsError:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst_uri))
         await queue.put((progress.enter, StorageProgressEnterDir(src_uri, dst_uri)))
-        tasks = []
         with os.scandir(src) as it:
             folder = sorted(it, key=lambda item: (item.is_dir(), item.name))
         for child in folder:
             name = child.name
             if child.is_file():
+                if (
+                    update
+                    and name in dst_files
+                    and not self._is_local_modified(child.stat(), dst_files[name])
+                ):
+                    continue
                 size = child.stat().st_size
                 tasks.append(
                     self.upload_file(
@@ -286,6 +353,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                     self.upload_dir(
                         src / name,
                         _join_path(dst, name),
+                        update=update,
                         progress=progress,
                         queue=queue,
                     )
@@ -351,24 +419,32 @@ class WSStorageClient(metaclass=NoPublicConstructor):
         src: str,
         dst: Path,
         *,
+        update: bool,
         progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         src_uri = self._root / src if src else self._root
         dst_uri = URL(dst.as_uri())
 
-        payload, data = await self._request(WSStorageOperation.LIST, src)
+        dst.mkdir(parents=True, exist_ok=True)
         await queue.put((progress.enter, StorageProgressEnterDir(src_uri, dst_uri)))
         tasks = []
-        folder = [
-            _file_status_from_api(status)
-            for status in payload["FileStatuses"]["FileStatus"]
-        ]
+        if update:
+            async with self._read_sem:
+                dst_files = {
+                    item.name: item for item in dst.iterdir() if item.is_file()
+                }
+        folder = await self.ls(src)
         folder.sort(key=lambda item: (item.is_dir(), item.path))
-        dst.mkdir(parents=True, exist_ok=True)
         for child in folder:
             name = child.name
             if child.is_file():
+                if (
+                    update
+                    and name in dst_files
+                    and not self._is_remote_modified(dst_files[name].stat(), child)
+                ):
+                    continue
                 tasks.append(
                     self.download_file(
                         _join_path(src, name),
@@ -383,6 +459,7 @@ class WSStorageClient(metaclass=NoPublicConstructor):
                     self.download_dir(
                         _join_path(src, name),
                         dst / name,
+                        update=update,
                         progress=progress,
                         queue=queue,
                     )
@@ -407,8 +484,8 @@ class Storage(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
-        self._min_time_diff = 0.0
-        self._max_time_diff = 0.0
+        self._min_time_diff = -1.0
+        self._max_time_diff = 1.0
 
     def _uri_to_path(self, uri: URL) -> str:
         uri = normalize_storage_path_uri(uri, self._config.auth_token.username)
@@ -685,18 +762,31 @@ class Storage(metaclass=NoPublicConstructor):
         if use_websockets:
             async with self._ws_connect(dst.parent, "WEBSOCKET_WRITE") as ws:
                 try:
-                    payload, data = await ws._request(WSStorageOperation.STAT, "")
+                    dst_stat = await ws.stat(dst.name)
                 except FileNotFoundError:
-                    # target's parent doesn't exist
-                    raise NotADirectoryError(
-                        errno.ENOTDIR, "Not a directory", str(dst.parent)
-                    )
-                stat = _file_status_from_api(payload["FileStatus"])
-                if not stat.is_dir():
-                    # parent path should be a folder
-                    raise NotADirectoryError(
-                        errno.ENOTDIR, "Not a directory", str(dst.parent)
-                    )
+                    try:
+                        dst_parent_stat = await ws.stat("")
+                    except FileNotFoundError:
+                        # target's parent doesn't exist
+                        raise NotADirectoryError(
+                            errno.ENOTDIR, "Not a directory", str(dst.parent)
+                        )
+                    if not dst_parent_stat.is_dir():
+                        # parent path should be a folder
+                        raise NotADirectoryError(
+                            errno.ENOTDIR, "Not a directory", str(dst.parent)
+                        )
+                else:
+                    if update:
+                        try:
+                            src_stat = path.stat()
+                        except OSError:
+                            pass
+                        else:
+                            if S_ISREG(
+                                src_stat.st_mode
+                            ) and not self._is_local_modified(src_stat, dst_stat):
+                                return
                 assert progress
                 await _run_progress(
                     queue,
@@ -773,7 +863,10 @@ class Storage(metaclass=NoPublicConstructor):
         if use_websockets:
             async with self._ws_connect(dst, "WEBSOCKET_WRITE") as ws:
                 await _run_progress(
-                    queue, ws.upload_dir(path, "", progress=progress, queue=queue)
+                    queue,
+                    ws.upload_dir(
+                        path, "", update=update, progress=progress, queue=queue
+                    ),
                 )
             return
 
@@ -874,15 +967,24 @@ class Storage(metaclass=NoPublicConstructor):
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         if use_websockets:
             async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
-                payload, data = await ws._request(WSStorageOperation.STAT, "")
-                stat = _file_status_from_api(payload["FileStatus"])
-                if not stat.is_file():
+                src_stat = await ws.stat("")
+                if not src_stat.is_file():
                     raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
+                if update:
+                    try:
+                        dst_stat = path.stat()
+                    except OSError:
+                        pass
+                    else:
+                        if S_ISREG(dst_stat.st_mode) and not self._is_remote_modified(
+                            dst_stat, src_stat
+                        ):
+                            return
                 assert progress
                 await _run_progress(
                     queue,
                     ws.download_file(
-                        "", path, stat.size, progress=progress, queue=queue
+                        "", path, src_stat.size, progress=progress, queue=queue
                     ),
                 )
             return
@@ -951,7 +1053,10 @@ class Storage(metaclass=NoPublicConstructor):
         if use_websockets:
             async with self._ws_connect(src, "WEBSOCKET_READ") as ws:
                 await _run_progress(
-                    queue, ws.download_dir("", path, progress=progress, queue=queue)
+                    queue,
+                    ws.download_dir(
+                        "", path, update=update, progress=progress, queue=queue
+                    ),
                 )
             return
 
