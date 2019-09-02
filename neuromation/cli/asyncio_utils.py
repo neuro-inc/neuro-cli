@@ -110,7 +110,7 @@ def _cancel_all_tasks(
 
 
 if sys.platform != "win32":
-    from asyncio.unix_events import AbstractChildWatcher
+    from asyncio.unix_events import AbstractChildWatcher  # type: ignore
 
     _Callback = Callable[..., None]
 
