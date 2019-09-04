@@ -136,7 +136,7 @@ You need to bridge this *remote* ``12345`` port into a local TCP namespace
     async with client.jobs.port_forward(job.id, 23456, 12345):
         # open gRPC client and use it
 
-        channel = Channel('127.0.0.1', 50051)
+        channel = Channel('127.0.0.1', 23456)
         greeter = GreeterStub(channel)
 
         reply: HelloReply = await greeter.SayHello(HelloRequest(name='Dr. Strange'))
