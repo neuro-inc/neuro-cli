@@ -747,7 +747,7 @@ Name | Description|
 
 ### neuro storage load
 
-Copy files and directories using MinIO \(EXPERIMENTAL).<br/><br/>Same as "cp", but uses MinIO and the Amazon S3 protocol.
+Copy files and directories using MinIO \(EXPERIMENTAL).<br/><br/>Same as "cp", but uses MinIO and the Amazon S3 protocol.<br/>\(DEPRECATED)
 
 **Usage:**
 
