@@ -59,7 +59,7 @@ async def test_resolve_job_id__from_string__no_jobs_found(
         if name != job_id:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         return web.json_response(JSON)
 
@@ -69,9 +69,7 @@ async def test_resolve_job_id__from_string__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(
-            job_id, client=client, default_user="default-owner"
-        )
+        resolved = await resolve_job(job_id, client=client)
         assert resolved == job_id
 
 
@@ -99,7 +97,7 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_name
 
 
@@ -116,7 +114,7 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
         if name != job_name:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         return web.json_response(JSON)
 
@@ -126,7 +124,7 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_name
 
 
@@ -143,7 +141,7 @@ async def test_resolve_job_id__from_string__single_job_found(
         if name != job_name:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         return web.json_response(JSON)
 
@@ -154,7 +152,7 @@ async def test_resolve_job_id__from_string__single_job_found(
 
     async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(
-            job_name, client=client, default_user="default-owner"
+            job_name, client=client
         )
         assert resolved == job_id
 
@@ -184,7 +182,7 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_id
 
 
@@ -202,7 +200,7 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
         if name != job_name:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         return web.json_response(JSON)
 
@@ -212,7 +210,7 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_id
 
 
@@ -230,7 +228,7 @@ async def test_resolve_job_id__from_string__multiple_jobs_found(
         if name != job_name:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         return web.json_response(JSON)
 
@@ -240,9 +238,7 @@ async def test_resolve_job_id__from_string__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(
-            job_name, client=client, default_user="default-owner"
-        )
+        resolved = await resolve_job(job_name, client=client)
         assert resolved == job_id_2
 
 
@@ -272,7 +268,7 @@ async def test_resolve_job_id__from_uri_with_owner__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_id_2
 
 
@@ -291,7 +287,7 @@ async def test_resolve_job_id__from_uri_without_owner__multiple_jobs_found(
         if name != job_name:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         return web.json_response(JSON)
 
@@ -301,7 +297,7 @@ async def test_resolve_job_id__from_uri_without_owner__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_id_2
 
 
@@ -317,7 +313,7 @@ async def test_resolve_job_id__server_error(
         if name != job_name:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         raise web.HTTPError()
 
@@ -327,9 +323,7 @@ async def test_resolve_job_id__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(
-            job_name, client=client, default_user="default-owner"
-        )
+        resolved = await resolve_job(job_name, client=client)
         assert resolved == job_id
 
 
@@ -356,7 +350,7 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_name
 
 
@@ -372,7 +366,7 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
         if name != job_name:
             pytest.fail(f"received: {name}")
         owner = request.query.get("owner")
-        if owner != "default-owner":
+        if owner != "user":
             pytest.fail(f"received: {owner}")
         raise web.HTTPError()
 
@@ -382,7 +376,7 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, default_user="default-owner")
+        resolved = await resolve_job(uri, client=client)
         assert resolved == job_name
 
 
@@ -400,7 +394,7 @@ async def test_resolve_job_id__from_uri__missing_job_id(
             ValueError,
             match="Invalid job URI: owner='job-name', missing job-id or job-name",
         ):
-            await resolve_job(uri, client=client, default_user="default-owner")
+            await resolve_job(uri, client=client)
 
 
 def test_parse_file_resource_no_scheme(root: Root) -> None:

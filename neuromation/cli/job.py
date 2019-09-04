@@ -349,7 +349,7 @@ async def exec(
     neuro exec --no-tty my-job ls -l
     """
     cmd = shlex.split(" ".join(cmd))
-    id = await resolve_job(job, client=root.client, default_user=root.username)
+    id = await resolve_job(job, client=root.client)
     retcode = await root.client.jobs.exec(
         id,
         cmd,
@@ -391,7 +391,7 @@ async def port_forward(
     neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
     """
-    job_id = await resolve_job(job, client=root.client, default_user=root.username)
+    job_id = await resolve_job(job, client=root.client)
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
             click.echo(
@@ -419,7 +419,7 @@ async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
     """
-    id = await resolve_job(job, client=root.client, default_user=root.username)
+    id = await resolve_job(job, client=root.client)
     await _print_logs(root, id)
 
 
@@ -518,7 +518,7 @@ async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
     """
-    id = await resolve_job(job, client=root.client, default_user=root.username)
+    id = await resolve_job(job, client=root.client)
     res = await root.client.jobs.status(id)
     click.echo(JobStatusFormatter()(res))
 
@@ -530,7 +530,7 @@ async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
     """
-    id = await resolve_job(job, client=root.client, default_user=root.username)
+    id = await resolve_job(job, client=root.client)
     res = await root.client.jobs.status(id)
     await browse_job(root, res)
 
@@ -543,7 +543,7 @@ async def top(root: Root, job: str) -> None:
     Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
-    id = await resolve_job(job, client=root.client, default_user=root.username)
+    id = await resolve_job(job, client=root.client)
     print_header = True
     async for res in root.client.jobs.top(id):
         if print_header:
@@ -567,7 +567,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     neuro job save my-favourite-job image://~/ubuntu-patched:v1
     neuro job save my-favourite-job image://bob/ubuntu-patched
     """
-    id = await resolve_job(job, client=root.client, default_user=root.username)
+    id = await resolve_job(job, client=root.client)
     progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
     with contextlib.closing(progress):
         await root.client.jobs.save(id, image, progress=progress)
@@ -583,9 +583,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     errors = []
     for job in jobs:
-        job_resolved = await resolve_job(
-            job, client=root.client, default_user=root.username
-        )
+        job_resolved = await resolve_job(job, client=root.client)
         try:
             await root.client.jobs.kill(job_resolved)
             # TODO (ajuszkowski) printing should be on the cli level
