@@ -6,6 +6,12 @@
 Jobs Usage
 ==========
 
+Use Jobs API (awailable as :attr:`Client.jobs`) for starting a job, killing it, getting
+list of running jobs etc.  This chapter describes several common scenarios.
+
+Here we descibe the most common scenarios, see :ref:`jobs-reference` for the full list
+of job namespace methods.
+
 
 Start a Job
 ===========
@@ -164,13 +170,3 @@ e.g. Google Compute, AWS or Azure).
 
 Jobs are *non-preeptible* by default, you can change this by passing
 ``is_preemptible=True`` flag to :meth:`Jobs.run`.
-
-
-
-
-.. _job-tty:
-
-Interactive mode
-================
-
-TBD
