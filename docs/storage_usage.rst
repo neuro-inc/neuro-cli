@@ -50,7 +50,7 @@ local disk.
 The method is a counterpart to :meth:`Storage.upload_dir` and has the same arguments::
 
    await client.storage.download_dir(
-       URL("storage:"remote_folder"),
+       URL("storage:remote_folder"),
        URL("file:local_folder"),
    )
 
