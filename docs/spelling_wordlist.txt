@@ -8,5 +8,6 @@ login
 neuromation
 namespace
 preemptible
+startup
 usernames
 timestamp
