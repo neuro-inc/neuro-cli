@@ -55,4 +55,4 @@ The method is a counterpart to :meth:`Storage.upload_dir` and has the same argum
    )
 
 The example above recursively downloads files and directories from
-``storage:"remote_folder`` to ``./local_folder``.
+``storage:remote_folder`` to ``./local_folder``.
