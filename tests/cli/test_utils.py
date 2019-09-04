@@ -151,9 +151,7 @@ async def test_resolve_job_id__from_string__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(
-            job_name, client=client
-        )
+        resolved = await resolve_job(job_name, client=client)
         assert resolved == job_id
 
 
