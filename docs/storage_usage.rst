@@ -37,7 +37,7 @@ Storage::
 
    await client.storage.upload_dir(
        URL("file:local_folder"),
-       URL("storage:"remote_folder"),
+       URL("storage:remote_folder"),
        update=True,
    )
 
