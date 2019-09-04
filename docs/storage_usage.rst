@@ -7,7 +7,7 @@ Storage Usage
 =============
 
 
-Use Storage API (awailable as :attr:`Client.storage`) for uploading files to the
+Use Storage API (available as :attr:`Client.storage`) for uploading files to the
 Neuromation Storage and downloading them back.  This chapter describes several common
 scenarios like uploading / downloading directories recursively.
 

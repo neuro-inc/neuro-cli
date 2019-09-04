@@ -6,10 +6,10 @@
 Jobs Usage
 ==========
 
-Use Jobs API (awailable as :attr:`Client.jobs`) for starting a job, killing it, getting
+Use Jobs API (available as :attr:`Client.jobs`) for starting a job, killing it, getting
 list of running jobs etc.  This chapter describes several common scenarios.
 
-Here we descibe the most common scenarios, see :ref:`jobs-reference` for the full list
+Here we describe the most common scenarios, see :ref:`jobs-reference` for the full list
 of job namespace methods.
 
 
