@@ -120,9 +120,8 @@ class Helper:
                 self.rm("")
             self._closed = True
         if self._executed_jobs:
-            with suppress(Exception):
-                with suppress(Exception):
-                    self.run_cli(["job", "kill"] + self._executed_jobs)
+            for job in self._executed_jobs:
+                self.kill_job(job)
 
     @property
     def username(self) -> str:
@@ -511,7 +510,8 @@ class Helper:
     async def kill_job(self, id_or_name: str) -> None:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(id_or_name, client=client)
-            await client.jobs.kill(id)
+            with suppress(ResourceNotFound):
+                await client.jobs.kill(id)
 
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:

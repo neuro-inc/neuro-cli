@@ -1,4 +1,5 @@
 import re
+import subprocess
 from typing import List
 from uuid import uuid4
 
@@ -55,11 +56,16 @@ def test_e2e_job_top(helper: Helper) -> None:
         params=JOB_TINY_CONTAINER_PARAMS + aux_params,
     )
 
-    captured = helper.run_cli(["job", "top", job_name, "--timeout", "10"])
+    try:
+        helper.run_cli(["job", "top", job_name, "--timeout", "10"])
+    except subprocess.CalledProcessError as ex:
+        stdout = ex.output
+    else:
+        assert False, "timeout don't caught"
 
     helper.kill_job(job_name)
 
-    header, *lines = split_non_empty_parts(captured.out, sep="\n")
+    header, *lines = split_non_empty_parts(stdout, sep="\n")
     header_parts = split_non_empty_parts(header, sep="\t")
     assert header_parts == [
         "TIMESTAMP",
