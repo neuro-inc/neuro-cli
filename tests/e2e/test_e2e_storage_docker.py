@@ -15,6 +15,7 @@ _Data = Tuple[str, str]
     sys.platform == "win32", reason="Docker is not configured on Windows"
 )
 @pytest.mark.e2e
+@pytest.mark.xfail
 def test_load_local_file_to_platform_home_directory(
     helper: Helper, data: _Data
 ) -> None:
@@ -36,6 +37,7 @@ def test_load_local_file_to_platform_home_directory(
     sys.platform == "win32", reason="Docker is not configured on Windows"
 )
 @pytest.mark.e2e
+@pytest.mark.xfail
 def test_load_local_file_to_platform_directory(helper: Helper, data: _Data) -> None:
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
@@ -57,6 +59,7 @@ def test_load_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
     sys.platform == "win32", reason="Docker is not configured on Windows"
 )
 @pytest.mark.e2e
+@pytest.mark.xfail
 def test_load_local_single_file_to_platform_file(helper: Helper, data: _Data) -> None:
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
@@ -83,6 +86,7 @@ def test_load_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     sys.platform == "win32", reason="Docker is not configured on Windows"
 )
 @pytest.mark.e2e
+@pytest.mark.xfail
 def test_e2e_load_recursive_to_platform(
     helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path
 ) -> None:
