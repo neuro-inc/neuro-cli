@@ -43,6 +43,7 @@ from neuromation.api import (
 from neuromation.api.config import _CookieSession
 from neuromation.cli.asyncio_utils import run
 from neuromation.cli.const import EX_IOERR
+from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import (
     FILE_SIZE_B,
     JOB_TINY_CONTAINER_PARAMS,
@@ -505,6 +506,12 @@ class Helper:
                     history=tuple(),
                     request_info=resp.request_info,
                 )
+
+    @run_async
+    async def kill_job(self, id_or_name: str) -> None:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            id = await resolve_job(id_or_name, client=client)
+            await client.jobs.kill(id)
 
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:

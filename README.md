@@ -465,6 +465,7 @@ neuro job top [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
 
@@ -1561,6 +1562,7 @@ neuro top [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
 
