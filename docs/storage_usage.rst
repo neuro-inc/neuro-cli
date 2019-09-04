@@ -26,7 +26,7 @@ Use :meth:`Storage.upload_dir` to upload a local directory on the Neuromation St
    async with get() as client:
        await client.storage.upload_dir(
            URL("file:local_folder"),
-           URL("storage:"remote_folder"),
+           URL("storage:remote_folder"),
        )
 
 The example above recursively uploads all files and directories ``./local_folder`` to
