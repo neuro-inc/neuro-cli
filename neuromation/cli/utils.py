@@ -436,9 +436,8 @@ def volume_to_verbose_str(volume: Volume) -> str:
     )
 
 
-async def resolve_job(
-    id_or_name_or_uri: str, *, client: Client, default_user: str
-) -> str:
+async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
+    default_user = client.username
     if id_or_name_or_uri.startswith("job:"):
         uri = _normalize_uri(id_or_name_or_uri, username=default_user)
         id_or_name = uri.path.lstrip("/")
