@@ -18,7 +18,7 @@ DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
 README_PATTERN := README.XXXXXXXX.md
 
-PYTEST_XDIST_NUM_PROCESSES := 40
+PYTEST_XDIST_NUM_PROCESSES ?= auto
 
 .PHONY: help
 .SILENT: help
@@ -87,7 +87,6 @@ e2e_ci:
 e2e:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_PROCESSES} \
-	    --timeout_method=thread --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -100,7 +99,6 @@ e2e:
 _e2e:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_PROCESSES} \
-	    --timeout_method=thread --timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
@@ -114,7 +112,6 @@ _e2e:
 _e2e_win:
 	pytest \
 		-n 4 \
-		--timeout=300 \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
