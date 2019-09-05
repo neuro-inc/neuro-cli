@@ -9,6 +9,7 @@ import uuid
 import webbrowser
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
+import async_timeout
 import click
 from yarl import URL
 
@@ -537,20 +538,28 @@ async def browse(root: Root, job: str) -> None:
 
 @command()
 @click.argument("job")
+@click.option(
+    "--timeout",
+    default=0,
+    type=float,
+    show_default=True,
+    help="Maximum allowed time for executing the command, 0 for no timeout",
+)
 @async_cmd()
-async def top(root: Root, job: str) -> None:
+async def top(root: Root, job: str, timeout: float) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
     id = await resolve_job(job, client=root.client)
     print_header = True
-    async for res in root.client.jobs.top(id):
-        if print_header:
-            click.echo(formatter.header())
-            print_header = False
-        line = formatter(res)
-        click.echo(f"\r{line}", nl=False)
+    async with async_timeout.timeout(timeout if timeout else None):
+        async for res in root.client.jobs.top(id):
+            if print_header:
+                click.echo(formatter.header())
+                print_header = False
+            line = formatter(res)
+            click.echo(f"\r{line}", nl=False)
 
 
 @command()
