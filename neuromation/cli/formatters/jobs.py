@@ -227,7 +227,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
             "name": [4, 40],
             "status": [6, 10],
             "when": [4, 15],
-            "image": [5, 15],
+            "image": [5, 40],
             "owner": [5, 25],
             "description": [11, 50],
             "command": [7, 0],

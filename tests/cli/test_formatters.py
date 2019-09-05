@@ -792,7 +792,12 @@ class TestTabularJobsFormatter:
                     finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
-                    image=RemoteImage("some-image-name", "with-long-tag"),
+                    image=RemoteImage(
+                        "some-image-name",
+                        "with-long-tag",
+                        registry="https://registry.neu.ro",
+                        owner="bob",
+                    ),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
@@ -803,9 +808,9 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(0, "owner")
         result = [item for item in formatter(jobs)]
         assert result == [
-            "ID                                        NAME   STATUS   WHEN         IMAGE            OWNER  DESCRIPTION                           COMMAND",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag  {owner_printed}  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  some-image-name:with-long-tag  {owner_printed}  some description        ls -la /some/path",  # noqa: E501
+            "ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  DESCRIPTION                           COMMAND",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  some description long long long long  ls -la /some/path",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-tag  {owner_printed}  some description                     ls -la /some/path",  # noqa: E501
         ]
 
 
