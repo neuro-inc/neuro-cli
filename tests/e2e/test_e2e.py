@@ -1,5 +1,6 @@
 import re
 import subprocess
+import time
 from typing import List
 from uuid import uuid4
 
@@ -56,8 +57,10 @@ def test_e2e_job_top(helper: Helper) -> None:
         params=JOB_TINY_CONTAINER_PARAMS + aux_params,
     )
 
+    time.sleep(10)  # it makes top command a little stablier
+
     try:
-        helper.run_cli(["job", "top", job_name, "--timeout", "15"])
+        helper.run_cli(["job", "top", job_name, "--timeout", "10"])
     except subprocess.CalledProcessError as ex:
         stdout = ex.output
         stderr = ex.stderr
