@@ -69,6 +69,7 @@ The following snippet waits for job's *starting execution* or *failure*::
        else:
            await asyncio.sleep(1)
 
+.. _jobs-usage-mounts:
 
 Mount Neuromation Storage folders
 =================================
@@ -179,8 +180,9 @@ Job preemption
 ==============
 
 Job preemption means that unlike normal jobs preemptible ones can be stopped by kernel
-when the system has lack of resources and restarted later.  All memory changes are lost
-but disk data is persistent.
+when the system has lack of resources and restarted later.  All memory and local disk
+changes are lost but data written to the Neuromation Storage (see
+:ref:`jobs-usage-mounts` ) is persistent.
 
 To support preemption job's code should be organized in the following way: it dumps
 *snapshots* on disk periodically. On restart the code checks for last saved snapshot and
