@@ -16,3 +16,7 @@ EX_SOFTWARE = 70
 EX_TEMPFAIL = 75
 EX_UNAVAILABLE = 69
 EX_USAGE = 64
+
+# os module has no this constant but timeout posix command exits with 124,
+# see 'man 1 timeout'
+EX_TIMEOUT = 124
