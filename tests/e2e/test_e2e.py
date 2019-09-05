@@ -57,7 +57,7 @@ def test_e2e_job_top(helper: Helper) -> None:
     )
 
     try:
-        helper.run_cli(["job", "top", job_name, "--timeout", "10"])
+        helper.run_cli(["job", "top", job_name, "--timeout", "15"])
     except subprocess.CalledProcessError as ex:
         stdout = ex.output
     else:
