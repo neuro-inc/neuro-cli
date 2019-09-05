@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from math import floor
 from typing import Iterable, Iterator, List, Mapping
+
 import humanize
 from click import style, unstyle
 
@@ -215,6 +216,7 @@ class TabularJobRow:
             description=job.description if job.description else "",
             command=job.container.command if job.container.command else "",
         )
+
 
 class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(self, width: int, username: str):
