@@ -6,7 +6,6 @@ import time
 from dataclasses import dataclass
 from math import floor
 from typing import Iterable, Iterator, List, Mapping
-
 import humanize
 from click import style, unstyle
 
@@ -217,14 +216,13 @@ class TabularJobRow:
             command=job.container.command if job.container.command else "",
         )
 
-
 class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(self, width: int, username: str):
         self.width = width
         self._username = username
         self.column_length: Mapping[str, List[int]] = {
             "id": [2, 40],
-            "name": [2, 40],
+            "name": [4, 40],
             "status": [6, 10],
             "when": [4, 15],
             "image": [5, 15],
