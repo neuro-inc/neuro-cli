@@ -1,4 +1,5 @@
 import re
+import subprocess
 from typing import List
 from uuid import uuid4
 
@@ -45,13 +46,9 @@ def test_e2e_job_top(helper: Helper) -> None:
     def split_non_empty_parts(line: str, sep: str) -> List[str]:
         return [part.strip() for part in line.split(sep) if part.strip()]
 
-    bash_script = (
-        "COUNTER=0; while [[ ! -f /data/dummy ]] && [[ $COUNTER -lt 100 ]]; "
-        "do sleep 1; let COUNTER+=1; done; sleep 30"
-    )
-    command = f"bash -c '{bash_script}'"
+    command = f"sleep 300"
     job_name = f"test-job-{str(uuid4())[:8]}"
-    aux_params = ["--volume", f"{helper.tmpstorage}:/data:ro", "--name", job_name]
+    aux_params = ["--name", job_name]
 
     helper.run_job_and_wait_state(
         image=UBUNTU_IMAGE_NAME,
@@ -59,13 +56,20 @@ def test_e2e_job_top(helper: Helper) -> None:
         params=JOB_TINY_CONTAINER_PARAMS + aux_params,
     )
 
-    # the job is running
-    # upload a file and unblock the job
-    helper.check_upload_file_to_storage("dummy", "", __file__)
+    try:
+        helper.run_cli(["job", "top", job_name, "--timeout", "30"])
+    except subprocess.CalledProcessError as ex:
+        stdout = ex.output
+        stderr = ex.stderr
+    else:
+        assert False, "timeout is not caught"
 
-    captured = helper.run_cli(["job", "top", job_name])
+    helper.kill_job(job_name)
 
-    header, *lines = split_non_empty_parts(captured.out, sep="\n")
+    try:
+        header, *lines = split_non_empty_parts(stdout, sep="\n")
+    except ValueError:
+        assert False, f"cannot unpack\n{stdout}\n{stderr}"
     header_parts = split_non_empty_parts(header, sep="\t")
     assert header_parts == [
         "TIMESTAMP",

@@ -16,7 +16,15 @@ from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
 from neuromation.cli.root import Root
 
 from . import completion, config, image, job, share, storage
-from .const import EX_DATAERR, EX_IOERR, EX_NOPERM, EX_OSFILE, EX_PROTOCOL, EX_SOFTWARE
+from .const import (
+    EX_DATAERR,
+    EX_IOERR,
+    EX_NOPERM,
+    EX_OSFILE,
+    EX_PROTOCOL,
+    EX_SOFTWARE,
+    EX_TIMEOUT,
+)
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
 
@@ -285,6 +293,11 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(e.exit_code)
     except ClickExit as e:
         sys.exit(e.exit_code)  # type: ignore
+
+    except asyncio.TimeoutError:
+        LOG_ERROR("Timeout")
+        sys.exit(EX_TIMEOUT)
+
     except neuromation.api.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
         sys.exit(EX_DATAERR)

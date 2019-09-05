@@ -325,7 +325,7 @@ async def cp(
             )
 
 
-@command()
+@command(deprecated=True)  # Deprecated since 19.9.4
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
 @click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
