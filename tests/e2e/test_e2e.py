@@ -60,12 +60,16 @@ def test_e2e_job_top(helper: Helper) -> None:
         helper.run_cli(["job", "top", job_name, "--timeout", "15"])
     except subprocess.CalledProcessError as ex:
         stdout = ex.output
+        stderr = ex.stderr
     else:
         assert False, "timeout don't caught"
 
     helper.kill_job(job_name)
 
-    header, *lines = split_non_empty_parts(stdout, sep="\n")
+    try:
+        header, *lines = split_non_empty_parts(stdout, sep="\n")
+    except ValueError:
+        assert False, f"cannot unpack\n{stdout}\n{stderr}"
     header_parts = split_non_empty_parts(header, sep="\t")
     assert header_parts == [
         "TIMESTAMP",
