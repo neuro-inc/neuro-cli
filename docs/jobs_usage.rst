@@ -104,6 +104,32 @@ format that is used in :term:`CLI`::
 
    volume = client.parse.volume("storage:folder:/var/data")
 
+
+To specify *read-only* mount point please pass ``read_only=True`` to :class:`Volume`
+constructor, e.g. the following code mounts public shared
+``storage://neuromation/public`` folder in read-only mode::
+
+   public_volume = Volume(
+       storage_uri=URL("storage:neuromation/public"),
+       container_path="/var/neuro/neuromation/public",
+       read_only=True,
+   )
+
+
+The same effect can be achieved by using a parser API::
+
+   public_volume = client.parse.volume(
+       "storage:neuromation/public:/var/neuro/neuromation/public:ro")
+
+Pass a list of *volumes* into container to supporm multiple mount points::
+
+   Container(
+       image=...,
+       resources=...,
+       command=...,
+       volumes=[volume, public_volume],
+   )
+
 .. seealso:: :ref:`storage-usage` for the storage manipulation API.
 
 
