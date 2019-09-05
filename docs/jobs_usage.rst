@@ -122,7 +122,7 @@ The same effect can be achieved by using a parser API::
    public_volume = client.parse.volume(
        "storage:neuromation/public:/var/neuro/neuromation/public:ro")
 
-Pass a list of *volumes* into container to supporm multiple mount points::
+Pass a list of *volumes* into container to support multiple mount points::
 
    Container(
        image=...,
