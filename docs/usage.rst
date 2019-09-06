@@ -1,3 +1,5 @@
+.. _usage:
+
 =====
 Usage
 =====
@@ -7,3 +9,4 @@ Usage
    :maxdepth: 2
 
    jobs_usage
+   storage_usage
