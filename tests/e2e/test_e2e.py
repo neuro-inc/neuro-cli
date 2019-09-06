@@ -57,12 +57,12 @@ def test_e2e_job_top(helper: Helper) -> None:
     )
 
     try:
-        helper.run_cli(["job", "top", job_name, "--timeout", "30"])
+        capture = helper.run_cli(["job", "top", job_name, "--timeout", "30"])
     except subprocess.CalledProcessError as ex:
         stdout = ex.output
         stderr = ex.stderr
     else:
-        assert False, "timeout is not caught"
+        assert False, f"timeout is not caught\n{capture.out}\n{capture.err}"
 
     helper.kill_job(job_name)
 

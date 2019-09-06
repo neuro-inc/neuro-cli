@@ -1,3 +1,5 @@
+.. _storage-reference:
+
 =====================
 Storage API Reference
 =====================

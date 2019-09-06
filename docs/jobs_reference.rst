@@ -1,3 +1,5 @@
+.. _jobs-reference:
+
 ==================
 Jobs API Reference
 ==================
@@ -27,7 +29,7 @@ Jobs
       :param ~typing.Iterable[str] cmd: the command to execute, a sequence of
                                         :class:`str`, e.g. :class:`list` of strings.
 
-      :param bool tty: ``True`` if :ref:`TTY<job-tty>` mode is requested, default is
+      :param bool tty: ``True`` if :term:`tty` mode is requested, default is
                        ``False``.
 
       :param float timeout: maximum time in seconds to wait for the command execution
