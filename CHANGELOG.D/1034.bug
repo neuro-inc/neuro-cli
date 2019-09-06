@@ -1,0 +1,1 @@
+Fix bug with job-name resolution introduced in release 19.8.19: do not print annoying warning messages if more than one job with specified name was found.
