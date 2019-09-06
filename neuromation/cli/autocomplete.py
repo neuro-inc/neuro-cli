@@ -1,9 +1,9 @@
 import json
-from pathlib import Path
-import tempfile
 import os
 import socket
 import struct
+import tempfile
+from pathlib import Path
 from typing import List, Tuple
 
 import click
@@ -51,6 +51,7 @@ def getfolder() -> Path:
     except FileExistsError:
         if (ret / "autocomplete.json").exists():
             pass
+
 
 def get_socket() -> socket.socket:
     pass
