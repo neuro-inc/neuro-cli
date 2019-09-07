@@ -1,8 +1,8 @@
 import json
-import sys
 import os
 import socket
 import struct
+import sys
 import tempfile
 from pathlib import Path
 from typing import List, Tuple
@@ -43,7 +43,7 @@ def send_cmd(request: Request) -> List[Tuple[str, str]]:
         return json.loads(buf.decode("utf8"))
 
 
-def maybe_start_server():
+def maybe_start_server() -> None:
     folder = get_folder()
     try:
         # restrict the access to current user only
@@ -76,7 +76,7 @@ def getid() -> str:
 
 
 def get_folder() -> Path:
-    if sys.implementation.platform == "linux":
+    if sys.platform == "linux":
         # Linux has user-specific non-persistent location
         tmpdir = Path(f"/var/run/user/{os.getuid()}")
     else:
@@ -89,7 +89,7 @@ def get_socket() -> socket.socket:
     pass
 
 
-def main():
+def main() -> None:
     """Enrypoint for autocomplete sugesstion server."""
 
     pass
