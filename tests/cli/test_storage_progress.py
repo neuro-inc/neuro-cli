@@ -468,7 +468,7 @@ def test_tty_append_second_dir() -> None:
         ]
         report.append(URL("d"), "d")
         assert report.lines == [
-            (URL("b"), False, "b"),
+            (URL("a"), True, "a"),
             (URL("c"), True, "c"),
             (URL("d"), False, "d"),
         ]

@@ -757,13 +757,12 @@ class TTYProgress(BaseStorageProgress):
             if not self.lines[0][1]:
                 # top line is not a dir, drop it.
                 del self.lines[0]
+            elif self.lines[1][1]:
+                # second line is a dir, drop the first line.
+                del self.lines[0]
             else:
-                if any(line[1] for line in self.lines[1:]):
-                    # there are folder lines below
-                    del self.lines[0]
-                else:
-                    # there is only top folder line, drop next file line
-                    del self.lines[1]
+                # there is a file line under a dir line, drop the file line.
+                del self.lines[1]
         for lineno, line in enumerate(self.lines):
             self.printer.print(line[2], lineno)
 
