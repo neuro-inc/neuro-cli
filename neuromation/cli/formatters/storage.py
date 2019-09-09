@@ -701,9 +701,9 @@ class TTYProgress(BaseStorageProgress):
             click.echo(f"Copy {src_label} => {dst_label}")
 
     def enter(self, data: StorageProgressEnterDir) -> None:
-        self._enter(data.src)
+        self._enter_dir(data.src)
 
-    def _enter(self, src: URL) -> None:
+    def _enter_dir(self, src: URL) -> None:
         fmt_src = self.fmt_url(src, FileStatusType.DIRECTORY, half=False)
         self.append(src, f"{fmt_src} ...", is_dir=True)
         self.cur_dir = src
@@ -748,7 +748,7 @@ class TTYProgress(BaseStorageProgress):
     def _append_file(self, key: URL, msg: str) -> None:
         parent = key.parent
         if self.cur_dir != parent:
-            self._enter(parent)
+            self._enter_dir(parent)
         self.append(key, msg)
 
     def append(self, key: URL, msg: str, is_dir: bool = False) -> None:
