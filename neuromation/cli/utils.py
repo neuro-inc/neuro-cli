@@ -460,11 +460,6 @@ async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
             f"{details} to a job-ID: {e}"
         )
     if jobs:
-        if len(jobs) > 1:
-            log.warning(
-                f"Found {len(jobs)} jobs matching {details}: "
-                ", ".join(job.id for job in jobs)
-            )
         job_id = jobs[-1].id
         log.debug(f"Job name '{id_or_name}' resolved to job ID '{job_id}'")
     else:
