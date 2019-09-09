@@ -1,0 +1,1 @@
+Improved displaying a progress of copying many files.
