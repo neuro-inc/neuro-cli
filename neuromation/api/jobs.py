@@ -211,7 +211,7 @@ class Jobs(metaclass=NoPublicConstructor):
         try:
             received_any = False
             async for resp in self._core.ws_connect(url):
-                yield _job_telemetry_from_api(resp.json())  # type: ignore
+                yield _job_telemetry_from_api(resp.json())
                 received_any = True
             if not received_any:
                 raise ValueError(f"Job is not running. Job Id = {id}")
