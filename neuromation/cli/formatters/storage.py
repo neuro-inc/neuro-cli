@@ -720,7 +720,7 @@ class TTYProgress(BaseStorageProgress):
         progress = 0
         current = self.fmt_size(0)
         total = self.fmt_size(data.size)
-        self.append(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
+        self._append_file(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
 
     def complete(self, data: StorageProgressComplete) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
