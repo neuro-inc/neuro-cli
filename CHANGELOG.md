@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 19.9.10 (2019-09-10)
+================================
+
+Features
+--------
+
+
+- Improved displaying a progress of copying many files. ([#1034](https://github.com/neuromation/platform-api-clients/issues/1034))
+
+
+Deprecations and Removals
+-------------------------
+
+
+- Deprecate `neuro storage load` command. ([#1028](https://github.com/neuromation/platform-api-clients/issues/1028))
+
+
 Neuromation 19.9.2 (2019-09-02)
 ===============================
 
