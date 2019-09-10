@@ -743,11 +743,10 @@ class TTYProgress(BaseStorageProgress):
         )
         # clear lines to sync with writing to stderr
         self.lines = []
-        self.cur_dir = None
 
     def _append_file(self, key: URL, msg: str) -> None:
         parent = key.parent
-        if self.cur_dir != parent:
+        if self.cur_dir is not None and self.cur_dir != parent:
             self._enter_dir(parent)
         self.append(key, msg)
 
