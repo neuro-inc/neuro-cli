@@ -167,22 +167,26 @@ def test_tty_progress(capsys: Any) -> None:
     assert captured.out == f"Copy 'file:///abc' => 'storage:xyz'\n"
 
     report.enter(StorageProgressEnterDir(src, dst))
-    assert unstyle(report) == ["'file:///abc'"]
+    assert unstyle(report) == ["'file:///abc' ..."]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [0.00%] 0B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [0.00%] 0B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [50.00%] 300B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [50.00%] 300B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [66.67%] 400B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [66.67%] 400B of 600B"]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600B"]
 
     report.leave(StorageProgressLeaveDir(src, dst))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' 600B",
+        "'file:///abc' DONE",
+    ]
 
 
 def test_tty_verbose(capsys: Any) -> None:
@@ -207,63 +211,68 @@ def test_tty_nested() -> None:
     dst2_f = URL("storage:xyz/cde/file.txt")
 
     report.enter(StorageProgressEnterDir(src, dst))
-    assert unstyle(report) == ["'file:///abc'"]
+    assert unstyle(report) == ["'file:///abc' ..."]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [0.00%] 0B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [0.00%] 0B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [50.00%] 300B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [50.00%] 300B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [66.67%] 400B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [66.67%] 400B of 600B"]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600B"]
 
     report.enter(StorageProgressEnterDir(src2, dst2))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B", "'file:///abc/cde'"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' 600B",
+        "'file:///abc/cde' ...",
+    ]
 
     report.start(StorageProgressStart(src2_f, dst2_f, 800))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' [0.00%] 0B of 800B",
     ]
 
     report.step(StorageProgressStep(src2_f, dst2_f, 300, 800))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' [37.50%] 300B of 800B",
     ]
 
     report.complete(StorageProgressComplete(src2_f, dst_f, 800))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' 800B",
     ]
 
     report.leave(StorageProgressLeaveDir(src2, dst2))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' 800B",
-        "'file:///abc'",
+        "'file:///abc/cde' DONE",
     ]
 
     report.leave(StorageProgressLeaveDir(src, dst))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' 800B",
-        "'file:///abc'",
+        "'file:///abc/cde' DONE",
+        "'file:///abc' DONE",
     ]
 
 
@@ -425,19 +434,19 @@ def test_tty_append_dir() -> None:
         assert report.lines == []
         report.append(URL("a"), "a", is_dir=True)
         assert report.lines == [(URL("a"), True, "a")]
-        report.append(URL("b"), "b")
-        assert report.lines == [(URL("a"), True, "a"), (URL("b"), False, "b")]
-        report.append(URL("c"), "c")
+        report.append(URL("a/b"), "b")
+        assert report.lines == [(URL("a"), True, "a"), (URL("a/b"), False, "b")]
+        report.append(URL("a/c"), "c")
         assert report.lines == [
             (URL("a"), True, "a"),
-            (URL("b"), False, "b"),
-            (URL("c"), False, "c"),
+            (URL("a/b"), False, "b"),
+            (URL("a/c"), False, "c"),
         ]
-        report.append(URL("d"), "d")
+        report.append(URL("a/d"), "d")
         assert report.lines == [
             (URL("a"), True, "a"),
-            (URL("c"), False, "c"),
-            (URL("d"), False, "d"),
+            (URL("a/c"), False, "c"),
+            (URL("a/d"), False, "d"),
         ]
 
 
@@ -459,7 +468,7 @@ def test_tty_append_second_dir() -> None:
         ]
         report.append(URL("d"), "d")
         assert report.lines == [
-            (URL("b"), False, "b"),
+            (URL("a"), True, "a"),
             (URL("c"), True, "c"),
             (URL("d"), False, "d"),
         ]

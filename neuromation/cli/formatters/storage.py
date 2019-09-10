@@ -639,8 +639,7 @@ class TTYProgress(BaseStorageProgress):
         self.half_width = (root.terminal_size[0] - 10) // 2
         self.full_width = root.terminal_size[0] - 20
         self.lines: List[Tuple[URL, bool, str]] = []
-        self.dir_stack: Dict[URL, str] = {}
-        self.cur_dir: str = ""
+        self.cur_dir: Optional[URL] = None
         self.verbose = root.verbosity > 0
 
     def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
@@ -702,22 +701,26 @@ class TTYProgress(BaseStorageProgress):
             click.echo(f"Copy {src_label} => {dst_label}")
 
     def enter(self, data: StorageProgressEnterDir) -> None:
-        src = self.fmt_url(data.src, FileStatusType.DIRECTORY, half=False)
-        self.dir_stack[data.src] = self.cur_dir
+        self._enter_dir(data.src)
+
+    def _enter_dir(self, src: URL) -> None:
+        fmt_src = self.fmt_url(src, FileStatusType.DIRECTORY, half=False)
+        self.append(src, f"{fmt_src} ...", is_dir=True)
         self.cur_dir = src
-        self.append(data.src, f"{self.cur_dir}", is_dir=True)
 
     def leave(self, data: StorageProgressLeaveDir) -> None:
-        self.cur_dir = self.dir_stack.pop(data.src)
-        if self.dir_stack:
-            self.append(data.src, f"{self.cur_dir}", is_dir=True)
+        src = self.fmt_url(data.src, FileStatusType.DIRECTORY, half=False)
+        if self.lines and self.lines[-1][0] == data.src:
+            self.lines.pop()
+        self.append(data.src, f"{src} DONE", is_dir=True)
+        self.cur_dir = None
 
     def start(self, data: StorageProgressStart) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
         progress = 0
         current = self.fmt_size(0)
         total = self.fmt_size(data.size)
-        self.append(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
+        self._append_file(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
 
     def complete(self, data: StorageProgressComplete) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
@@ -741,19 +744,24 @@ class TTYProgress(BaseStorageProgress):
         # clear lines to sync with writing to stderr
         self.lines = []
 
+    def _append_file(self, key: URL, msg: str) -> None:
+        parent = key.parent
+        if self.cur_dir is not None and self.cur_dir != parent:
+            self._enter_dir(parent)
+        self.append(key, msg)
+
     def append(self, key: URL, msg: str, is_dir: bool = False) -> None:
         self.lines.append((key, is_dir, msg))
         if len(self.lines) > self.HEIGHT:
             if not self.lines[0][1]:
                 # top line is not a dir, drop it.
                 del self.lines[0]
+            elif self.lines[1][1]:
+                # second line is a dir, drop the first line.
+                del self.lines[0]
             else:
-                if any(line[1] for line in self.lines[1:]):
-                    # there are folder lines below
-                    del self.lines[0]
-                else:
-                    # there is only top folder line, drop next file line
-                    del self.lines[1]
+                # there is a file line under a dir line, drop the file line.
+                del self.lines[1]
         for lineno, line in enumerate(self.lines):
             self.printer.print(line[2], lineno)
 
@@ -761,11 +769,8 @@ class TTYProgress(BaseStorageProgress):
         for i in range(len(self.lines))[::-1]:
             line = self.lines[i]
             if line[0] == key:
+                self.lines[i] = (key, False, msg)
+                self.printer.print(self.lines[i][2], i)
                 break
         else:
-            self.append(key, msg)
-            return
-        del self.lines[i]
-        self.lines.append((key, False, msg))
-        for lineno in range(i, len(self.lines)):
-            self.printer.print(self.lines[lineno][2], lineno)
+            self._append_file(key, msg)
