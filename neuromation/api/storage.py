@@ -451,10 +451,9 @@ class Storage(metaclass=NoPublicConstructor):
         except (FileExistsError, neuromation.api.IllegalArgumentError):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
+        loop = asyncio.get_event_loop()
         async with self._file_sem:
-            folder = sorted(
-                src_path.iterdir(), key=lambda item: (item.is_dir(), item.name)
-            )
+            folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
         for child in folder:
             name = child.name
             if child.is_file():
@@ -591,11 +590,15 @@ class Storage(metaclass=NoPublicConstructor):
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
         tasks = []
         if update:
+            loop = asyncio.get_event_loop()
             async with self._file_sem:
-                dst_files = {
-                    item.name: item for item in dst_path.iterdir() if item.is_file()
-                }
-        folder = sorted(await self.ls(src), key=lambda item: (item.is_dir(), item.name))
+                dst_files = await loop.run_in_executor(
+                    None,
+                    lambda: {
+                        item.name: item for item in dst_path.iterdir() if item.is_file()
+                    },
+                )
+        folder = await self.ls(src)
         for child in folder:
             name = child.name
             if child.is_file():
