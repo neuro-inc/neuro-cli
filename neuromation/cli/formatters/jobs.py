@@ -73,7 +73,6 @@ class JobStatusFormatter:
             result += f"Name: {job_status.name}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         result += f"Cluster: {job_status.cluster_name}\n"
-
         if job_status.description:
             result += f"Description: {job_status.description}\n"
         result += f"Status: {job_status.status}"
