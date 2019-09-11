@@ -1,9 +1,3 @@
-import os
-from contextlib import contextmanager
-from pathlib import Path
-from typing import Iterator
-
-
 BLOCK_SIZE_MB = 16
 FILE_SIZE_MB = 16
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
@@ -30,14 +24,3 @@ JOB_TINY_CONTAINER_PRESET = "cpu-micro"
 
 class JobWaitStateStopReached(AssertionError):
     pass
-
-
-@contextmanager
-def working_directory(path: Path) -> Iterator[None]:
-    """Changes working directory and returns to previous on exit."""
-    prev_cwd = str(Path.cwd())
-    try:
-        os.chdir(str(path))
-        yield
-    finally:
-        os.chdir(prev_cwd)

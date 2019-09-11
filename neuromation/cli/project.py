@@ -24,20 +24,11 @@ async def init(root: Root) -> None:
 
     Examples:
 
-    # Initializes a scaffolding for the new project with the recommended
-    # project structure:
-    #   .
-    #   ├── {project_name}     # directory with your code
-    #   ├── data               # directory with your dataset
-    #   ├── notebooks          # directory with your jupyter notebooks
-    #   ├── Makefile           # directory with your datasets
-    #   ├── apt.txt            # system-wide requirements (apt-get install ...)
-    #   ├── requirements.txt   # Python requirements (pip install ...)
-    #   ├── setup.py           # project configuration script
-    #   └── setup.cfg          # project configuration file
+    # Initializes a scaffolding for the new project with the recommended project
+    # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
     neuro project init my-wunderbar-project
     """
-    cookiecutter("gh:neuromation/cookiecutter-neuro-project")
+    cookiecutter(f"gh:neuromation/cookiecutter-neuro-project")
 
 
 project.add_command(init)
