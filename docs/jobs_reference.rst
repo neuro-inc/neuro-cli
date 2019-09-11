@@ -241,6 +241,7 @@ JobDescription
       A name of cluster where job was scheduled, :class:`str`.
 
       .. versionadded:: 19.9.11
+
    .. attribute:: status
 
       Current status of job, :class:`JobStatus` enumeration.
