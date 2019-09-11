@@ -1,10 +1,12 @@
 import subprocess
 from pathlib import Path
 
-from .conftest import working_directory
+from .conftest import Helper
+from .utils import working_directory
 
 
-def test_project_init(tmp_path: Path) -> None:
+def test_project_init(helper: Helper, tmp_path: Path) -> None:
+    # depend on `helper` fixture so that `neuro` is already logged-in
     with working_directory(tmp_path):
         project_path = tmp_path / "yes"
         # answer "yes" to all annoying questions and thus set project_name = "yes"
