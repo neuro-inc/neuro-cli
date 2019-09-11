@@ -236,6 +236,10 @@ JobDescription
 
       A name of user who created a job, :class:`str`.
 
+   .. attribute:: cluster_name
+
+      A name of cluster where job was scheduled, :class:`str`.
+
    .. attribute:: status
 
       Current status of job, :class:`JobStatus` enumeration.
