@@ -41,6 +41,7 @@ setup(
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
+        "cookiecutter==1.6.0",
     ],
     include_package_data=True,
     description="Neuromation Platform API client",
