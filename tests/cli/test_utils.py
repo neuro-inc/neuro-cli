@@ -25,6 +25,7 @@ def _job_entry(job_id: str) -> Dict[str, Any]:
     return {
         "id": job_id,
         "owner": "job-owner",
+        "cluster_name": "default",
         "status": "running",
         "history": {
             "status": "running",

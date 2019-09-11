@@ -73,6 +73,7 @@ def job_descr_no_name() -> JobDescription:
         status=JobStatus.PENDING,
         id=TEST_JOB_ID,
         owner="owner",
+        cluster_name="default",
         history=JobStatusHistory(
             status=JobStatus.PENDING,
             reason="ErrorReason",
@@ -97,6 +98,7 @@ def job_descr() -> JobDescription:
         id=TEST_JOB_ID,
         name=TEST_JOB_NAME,
         owner="owner",
+        cluster_name="default",
         history=JobStatusHistory(
             status=JobStatus.PENDING,
             reason="ErrorReason",
@@ -193,6 +195,7 @@ class TestJobStartProgress:
         return JobDescription(
             status=status,
             owner="test-user",
+            cluster_name="default",
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -259,6 +262,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            cluster_name="default",
             id="test-job",
             name="test-job-name",
             description="test job description",
@@ -288,6 +292,7 @@ class TestJobOutputFormatter:
             status == "Job: test-job\n"
             "Name: test-job-name\n"
             "Owner: test-user\n"
+            "Cluster: default\n"
             "Description: test job description\n"
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
@@ -308,6 +313,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            cluster_name="default",
             id="test-job",
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -335,6 +341,7 @@ class TestJobOutputFormatter:
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
+            "Cluster: default\n"
             "Description: test job description\n"
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
@@ -372,6 +379,7 @@ class TestJobOutputFormatter:
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
+            cluster_name="default",
         )
 
         status = JobStatusFormatter()(description)
@@ -379,6 +387,7 @@ class TestJobOutputFormatter:
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
+            "Cluster: default\n"
             "Description: test job description\n"
             "Status: pending\n"
             "Image: test-image\n"
@@ -409,6 +418,7 @@ class TestJobOutputFormatter:
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
+            cluster_name="default",
         )
 
         status = JobStatusFormatter()(description)
@@ -416,6 +426,7 @@ class TestJobOutputFormatter:
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
+            "Cluster: default\n"
             "Description: test job description\n"
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
@@ -446,6 +457,7 @@ class TestJobOutputFormatter:
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
+            cluster_name="default",
         )
 
         status = JobStatusFormatter()(description)
@@ -453,6 +465,7 @@ class TestJobOutputFormatter:
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
+            "Cluster: default\n"
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
@@ -465,6 +478,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
+            cluster_name="default",
             id="test-job",
             description="test job description",
             history=JobStatusHistory(
@@ -491,6 +505,7 @@ class TestJobOutputFormatter:
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
+            "Cluster: default\n"
             "Description: test job description\n"
             "Status: running\n"
             "Image: test-image\n"
@@ -573,6 +588,7 @@ class TestSimpleJobsFormatter:
                 status=JobStatus.PENDING,
                 id="job-42687e7c-6c76-4857-a6a7-1166f8295391",
                 owner="owner",
+                cluster_name="default",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
                     reason="ErrorReason",
@@ -593,6 +609,7 @@ class TestSimpleJobsFormatter:
                 id="job-cf33bd55-9e3b-4df7-a894-9c148a908a66",
                 name="this-job-has-a-name",
                 owner="owner",
+                cluster_name="default",
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
@@ -629,6 +646,7 @@ class TestTabularJobRow:
             id="job-1f5ab792-e534-4bb4-be56-8af1ce722692",
             name=name,
             owner="owner",
+            cluster_name="default",
             description="some",
             history=JobStatusHistory(
                 status=status,
@@ -692,6 +710,7 @@ class TestTabularJobsFormatter:
         "WHEN",
         "IMAGE",
         "OWNER",
+        "CLUSTER",
         "DESCRIPTION",
         "COMMAND",
     ]
@@ -715,6 +734,7 @@ class TestTabularJobsFormatter:
             status=JobStatus.FAILED,
             id="j",
             owner=owner_name,
+            cluster_name="dc",
             name="name",
             description="d",
             history=JobStatusHistory(
@@ -737,16 +757,16 @@ class TestTabularJobsFormatter:
         result = [item for item in formatter([job])]
         assert result in [
             [
-                "ID  NAME  STATUS  WHEN  IMAGE  OWNER  DESCRIPTION  COMMAND",
-                f"j   name  failed  now   i:l    {owner_printed}  d            c",
+                "ID  NAME  STATUS  WHEN  IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",
+                f"j   name  failed  now   i:l    {owner_printed}  dc       d            c",  # noqa: E501
             ],
             [
-                "ID  NAME  STATUS  WHEN          IMAGE  OWNER  DESCRIPTION  COMMAND",
-                f"j   name  failed  a second ago  i:l    {owner_printed}  d            c",  # noqa: E501
+                "ID  NAME  STATUS  WHEN          IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",  # noqa: E501
+                f"j   name  failed  a second ago  i:l    {owner_printed}  dc       d            c",  # noqa: E501
             ],
             [
-                "ID  NAME  STATUS  WHEN           IMAGE  OWNER  DESCRIPTION  COMMAND",
-                f"j   name  failed  2 seconds ago  i:l    {owner_printed}  d            c",  # noqa: E501
+                "ID  NAME  STATUS  WHEN           IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",  # noqa: E501
+                f"j   name  failed  2 seconds ago  i:l    {owner_printed}  dc       d            c",  # noqa: E501
             ],
         ]
 
@@ -760,6 +780,7 @@ class TestTabularJobsFormatter:
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c82",
                 name="name1",
                 owner=owner_name,
+                cluster_name="default",
                 description="some description long long long long",
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
@@ -782,6 +803,7 @@ class TestTabularJobsFormatter:
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c84",
                 name="name2",
                 owner=owner_name,
+                cluster_name="default",
                 description="some description",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
@@ -808,9 +830,9 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(0, "owner")
         result = [item for item in formatter(jobs)]
         assert result == [
-            "ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  DESCRIPTION                           COMMAND",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-tag  {owner_printed}  some description                     ls -la /some/path",  # noqa: E501
+            "ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-tag  {owner_printed}  default  some description                     ls -la /some/path",  # noqa: E501
         ]
 
 

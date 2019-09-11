@@ -108,6 +108,7 @@ class JobStatusHistory:
 class JobDescription:
     id: str
     owner: str
+    cluster_name: str
     status: JobStatus
     history: JobStatusHistory
     container: Container
@@ -506,6 +507,7 @@ def _job_description_from_api(
 ) -> JobDescription:
     container = _container_from_api(res["container"], parser)
     owner = res["owner"]
+    cluster_name = res["cluster_name"]
     name = res.get("name")
     description = res.get("description")
     history = JobStatusHistory(
@@ -525,6 +527,7 @@ def _job_description_from_api(
         status=JobStatus(res["status"]),
         id=res["id"],
         owner=owner,
+        cluster_name=cluster_name,
         history=history,
         container=container,
         is_preemptible=res["is_preemptible"],
