@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import os
 from collections import namedtuple
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List
+from typing import Any, AsyncIterator, Callable, Iterator, List
 
 import pytest
 from yarl import URL
@@ -105,3 +107,14 @@ def run_cli(
 @pytest.fixture()
 def click_tty_emulation(monkeypatch: Any) -> None:
     monkeypatch.setattr("click._compat.isatty", lambda stream: True)
+
+
+@contextmanager
+def working_directory(path: Path) -> Iterator[None]:
+    """Changes working directory and returns to previous on exit."""
+    prev_cwd = str(Path.cwd())
+    try:
+        os.chdir(str(path))
+        yield
+    finally:
+        os.chdir(prev_cwd)

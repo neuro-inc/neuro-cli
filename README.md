@@ -15,6 +15,8 @@
 		* [neuro job top](#neuro-job-top)
 		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
+	* [neuro project](#neuro-project)
+		* [neuro project init](#neuro-project-init)
 	* [neuro storage](#neuro-storage)
 		* [neuro storage cp](#neuro-storage-cp)
 		* [neuro storage ls](#neuro-storage-ls)
@@ -105,6 +107,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro job](#neuro-job)_| Job operations |
+| _[neuro project](#neuro-project)_| Project operations |
 | _[neuro storage](#neuro-storage)_| Storage operations |
 | _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro config](#neuro-config)_| Client configuration |
@@ -508,6 +511,70 @@ Opens a job's URL in a web browser.
 
 ```bash
 neuro job browse [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro project
+
+Project operations.
+
+**Usage:**
+
+```bash
+neuro project [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro project init](#neuro-project-init)_| Initialize an empty project |
+
+
+
+
+### neuro project init
+
+Initialize an empty project.<br/>
+
+**Usage:**
+
+```bash
+neuro project init [OPTIONS]
+```
+
+**Examples:**
+
+```bash
+
+# Initializes a scaffolding for the new project with the recommended
+# project structure:
+#   .
+#   ├── {project_name}     # directory with your code
+#   ├── data               # directory with your dataset
+#   ├── notebooks          # directory with your jupyter notebooks
+#   ├── Makefile           # directory with your datasets
+#   ├── apt.txt            # system-wide requirements (apt-get install ...)
+#   ├── requirements.txt   # Python requirements (pip install ...)
+#   ├── setup.py           # project configuration script
+#   └── setup.cfg          # project configuration file
+neuro project init my-wunderbar-project
+
 ```
 
 **Options:**
