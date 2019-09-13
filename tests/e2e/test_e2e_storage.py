@@ -359,6 +359,23 @@ def test_e2e_copy_recursive_to_platform(
 
 
 @pytest.mark.e2e
+def test_e2e_copy_recursive_file(helper: Helper, tmp_path: Path) -> None:
+    srcfile = tmp_path / "testfile"
+    dstfile = tmp_path / "copyfile"
+    srcfile.write_bytes(b"abc")
+
+    captured = helper.run_cli(["storage", "cp", "-r", str(srcfile), helper.tmpstorage])
+    assert not captured.out
+
+    captured = helper.run_cli(
+        ["storage", "cp", "-r", helper.tmpstorage + "testfile", str(dstfile)]
+    )
+    assert not captured.out
+
+    assert dstfile.read_bytes() == b"abc"
+
+
+@pytest.mark.e2e
 def test_e2e_rename(helper: Helper) -> None:
     helper.check_create_dir_on_storage("folder")
     helper.run_cli(
