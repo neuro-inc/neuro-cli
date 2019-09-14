@@ -4,6 +4,7 @@ import logging
 import os
 import secrets
 import shlex
+import sys
 from typing import List, Optional, Sequence
 
 import aiodocker
@@ -17,11 +18,13 @@ from neuromation.api import (
     IllegalArgumentError,
     JobStatus,
     RemoteImage,
+    ResourceNotFound,
     Resources,
     Volume,
 )
 from neuromation.api.url_utils import _extract_path
 
+from .const import EX_OSFILE
 from .formatters import (
     BaseFilesFormatter,
     FilesSorter,
@@ -78,13 +81,20 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     neuro rm --recursive storage://{username}/foo/
     neuro rm storage:foo/**/*.tmp
     """
+    errors = False
     for uri in await _expand(paths, root, glob):
-        if root.verbosity > 0:
-            painter = get_painter(root.color, quote=True)
-            curi = painter.paint(str(uri), FileStatusType.FILE)
-        await root.client.storage.rm(uri, recursive=recursive)
-        if root.verbosity > 0:
-            click.echo(f"removed {curi}")
+        try:
+            await root.client.storage.rm(uri, recursive=recursive)
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot remove {uri}: {error}")
+            errors = True
+        else:
+            if root.verbosity > 0:
+                painter = get_painter(root.color, quote=True)
+                curi = painter.paint(str(uri), FileStatusType.FILE)
+                click.echo(f"removed {curi}")
+    if errors:
+        sys.exit(EX_OSFILE)
 
 
 @command()
@@ -124,33 +134,42 @@ async def ls(
     """
     if not paths:
         paths = ["storage:"]
-    for path in paths:
-        if format_long:
-            formatter: BaseFilesFormatter = LongFilesFormatter(
-                human_readable=human_readable, color=root.color
-            )
+    uris = [parse_file_resource(path, root) for path in paths]
+
+    errors = False
+    for uri in uris:
+        try:
+            if directory:
+                files = [await root.client.storage.stat(uri)]
+            else:
+                if root.verbosity > 0:
+                    painter = get_painter(root.color, quote=True)
+                    curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
+                    click.echo(f"List of {curi}:")
+
+                files = await root.client.storage.ls(uri)
+                files = sorted(files, key=FilesSorter(sort).key())
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot access {uri}: {error}")
+            errors = True
         else:
-            if root.tty:
-                formatter = VerticalColumnsFilesFormatter(
-                    width=root.terminal_size[0], color=root.color
+            if format_long:
+                formatter: BaseFilesFormatter = LongFilesFormatter(
+                    human_readable=human_readable, color=root.color
                 )
             else:
-                formatter = SimpleFilesFormatter(root.color)
+                if root.tty:
+                    formatter = VerticalColumnsFilesFormatter(
+                        width=root.terminal_size[0], color=root.color
+                    )
+                else:
+                    formatter = SimpleFilesFormatter(root.color)
 
-        uri = parse_file_resource(path, root)
-        if directory:
-            files = [await root.client.storage.stat(uri)]
-        else:
-            if root.verbosity > 0:
-                painter = get_painter(root.color, quote=True)
-                curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
-                click.echo(f"List of {curi}:")
+            for line in formatter.__call__(files):
+                click.echo(line)
 
-            files = await root.client.storage.ls(uri)
-            files = sorted(files, key=FilesSorter(sort).key())
-
-        for line in formatter.__call__(files):
-            click.echo(line)
+    if errors:
+        sys.exit(EX_OSFILE)
 
 
 @command()
@@ -291,6 +310,7 @@ async def cp(
 
     show_progress = root.tty and progress
 
+    errors = False
     for src in srcs:
         if target_dir:
             dst = target_dir / src.name
@@ -299,30 +319,37 @@ async def cp(
         progress_obj = create_storage_progress(root, show_progress)
         progress_obj.begin(src, dst)
 
-        if src.scheme == "file" and dst.scheme == "storage":
-            if recursive:
-                await root.client.storage.upload_dir(
-                    src, dst, update=update, progress=progress_obj
-                )
+        try:
+            if src.scheme == "file" and dst.scheme == "storage":
+                if recursive:
+                    await root.client.storage.upload_dir(
+                        src, dst, update=update, progress=progress_obj
+                    )
+                else:
+                    await root.client.storage.upload_file(
+                        src, dst, update=update, progress=progress_obj
+                    )
+            elif src.scheme == "storage" and dst.scheme == "file":
+                if recursive:
+                    await root.client.storage.download_dir(
+                        src, dst, update=update, progress=progress_obj
+                    )
+                else:
+                    await root.client.storage.download_file(
+                        src, dst, update=update, progress=progress_obj
+                    )
             else:
-                await root.client.storage.upload_file(
-                    src, dst, update=update, progress=progress_obj
+                raise RuntimeError(
+                    f"Copy operation of the file with scheme '{src.scheme}'"
+                    f" to the file with scheme '{dst.scheme}'"
+                    f" is not supported"
                 )
-        elif src.scheme == "storage" and dst.scheme == "file":
-            if recursive:
-                await root.client.storage.download_dir(
-                    src, dst, update=update, progress=progress_obj
-                )
-            else:
-                await root.client.storage.download_file(
-                    src, dst, update=update, progress=progress_obj
-                )
-        else:
-            raise RuntimeError(
-                f"Copy operation of the file with scheme '{src.scheme}'"
-                f" to the file with scheme '{dst.scheme}'"
-                f" is not supported"
-            )
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot copy {src} to {dst}: {error}")
+            errors = True
+
+    if errors:
+        sys.exit(EX_OSFILE)
 
 
 @command(deprecated=True)  # Deprecated since 19.9.4
@@ -589,14 +616,23 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     """
     Make directories.
     """
-    for path in paths:
-        uri = parse_file_resource(path, root)
+    uris = [parse_file_resource(path, root) for path in paths]
 
-        await root.client.storage.mkdir(uri, parents=parents, exist_ok=parents)
-        if root.verbosity > 0:
-            painter = get_painter(root.color, quote=True)
-            curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
-            click.echo(f"created directory {curi}")
+    errors = False
+    for uri in uris:
+        try:
+            await root.client.storage.mkdir(uri, parents=parents, exist_ok=parents)
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot create directory {uri}: {error}")
+            errors = True
+        else:
+            if root.verbosity > 0:
+                painter = get_painter(root.color, quote=True)
+                curi = painter.paint(str(uri), FileStatusType.DIRECTORY)
+                click.echo(f"created directory {curi}")
+
+    if errors:
+        sys.exit(EX_OSFILE)
 
 
 @command()
@@ -692,18 +728,27 @@ async def mv(
     if no_target_directory and len(srcs) > 1:
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
+    errors = False
     for src in srcs:
         if target_dir:
             dst = target_dir / src.name
         assert dst
-        if root.verbosity > 0:
-            painter = get_painter(root.color, quote=True)
-            src_status = await root.client.storage.stat(src)
-        await root.client.storage.mv(src, dst)
-        if root.verbosity > 0:
-            csrc = painter.paint(str(src), src_status.type)
-            cdst = painter.paint(str(dst), src_status.type)
-            click.echo(f"{csrc} -> {cdst}")
+        try:
+            if root.verbosity > 0:
+                painter = get_painter(root.color, quote=True)
+                src_status = await root.client.storage.stat(src)
+            await root.client.storage.mv(src, dst)
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot move {src} to {dst}: {error}")
+            errors = True
+        else:
+            if root.verbosity > 0:
+                csrc = painter.paint(str(src), src_status.type)
+                cdst = painter.paint(str(dst), src_status.type)
+                click.echo(f"{csrc} -> {cdst}")
+
+    if errors:
+        sys.exit(EX_OSFILE)
 
 
 async def _expand(
