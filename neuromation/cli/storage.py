@@ -321,7 +321,7 @@ async def cp(
 
         try:
             if src.scheme == "file" and dst.scheme == "storage":
-                if recursive:
+                if recursive and await root.client.storage._is_dir(src):
                     await root.client.storage.upload_dir(
                         src, dst, update=update, progress=progress_obj
                     )
@@ -330,7 +330,7 @@ async def cp(
                         src, dst, update=update, progress=progress_obj
                     )
             elif src.scheme == "storage" and dst.scheme == "file":
-                if recursive:
+                if recursive and await root.client.storage._is_dir(src):
                     await root.client.storage.download_dir(
                         src, dst, update=update, progress=progress_obj
                     )
