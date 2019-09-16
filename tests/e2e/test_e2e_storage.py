@@ -80,7 +80,7 @@ def test_e2e_mkdir(helper: Helper) -> None:
     # Create existing directory
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder"])
-    assert cm.value.returncode == 74
+    assert cm.value.returncode == 72
     helper.check_create_dir_on_storage("folder", exist_ok=True)
 
     # Create a subdirectory in existing directory
