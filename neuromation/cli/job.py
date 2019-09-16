@@ -927,7 +927,7 @@ async def run_job(
         # Even if we detached, but the job has failed to start
         # (most common reason - no resources), the command fails
         if job.status == JobStatus.FAILED:
-            exit_code = 1
+            exit_code = 125
 
     if exit_code is not None:
         sys.exit(exit_code)
