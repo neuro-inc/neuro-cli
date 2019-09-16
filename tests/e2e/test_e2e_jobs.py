@@ -912,7 +912,7 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
             ]
         )
     assert captured is None
-    assert exc_info.value.returncode == 1
+    assert exc_info.value.returncode == 125
 
 
 @pytest.mark.e2e
