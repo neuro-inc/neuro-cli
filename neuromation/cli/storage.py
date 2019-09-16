@@ -298,7 +298,7 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if no_target_directory or not await root.client.storage._is_dir(dst):
+        if no_target_directory or not await _is_dir(root, dst):
             target_dir = None
         else:
             target_dir = dst
@@ -321,7 +321,7 @@ async def cp(
 
         try:
             if src.scheme == "file" and dst.scheme == "storage":
-                if recursive and await root.client.storage._is_dir(src):
+                if recursive and await _is_dir(root, src):
                     await root.client.storage.upload_dir(
                         src, dst, update=update, progress=progress_obj
                     )
@@ -330,7 +330,7 @@ async def cp(
                         src, dst, update=update, progress=progress_obj
                     )
             elif src.scheme == "storage" and dst.scheme == "file":
-                if recursive and await root.client.storage._is_dir(src):
+                if recursive and await _is_dir(root, src):
                     await root.client.storage.download_dir(
                         src, dst, update=update, progress=progress_obj
                     )
@@ -427,7 +427,7 @@ async def load(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if no_target_directory or not await root.client.storage._is_dir(dst):
+        if no_target_directory or not await _is_dir(root, dst):
             target_dir = None
         else:
             target_dir = dst
@@ -718,7 +718,7 @@ async def mv(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         dst = parse_file_resource(destination, root)
-        if no_target_directory or not await root.client.storage._is_dir(dst):
+        if no_target_directory or not await _is_dir(root, dst):
             target_dir = None
         else:
             target_dir = dst
@@ -774,6 +774,19 @@ async def _expand(
         else:
             uris.append(uri)
     return uris
+
+
+async def _is_dir(root: Root, uri: URL) -> bool:
+    if uri.scheme == "storage":
+        try:
+            stat = await root.client.storage.stat(uri)
+            return stat.is_dir()
+        except ResourceNotFound:
+            pass
+    elif uri.scheme == "file":
+        path = _extract_path(uri)
+        return path.is_dir()
+    return False
 
 
 storage.add_command(cp)

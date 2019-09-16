@@ -245,18 +245,6 @@ class Storage(metaclass=NoPublicConstructor):
             res = await resp.json()
             return _file_status_from_api(res["FileStatus"])
 
-    async def _is_dir(self, uri: URL) -> bool:
-        if uri.scheme == "storage":
-            try:
-                stat = await self.stat(uri)
-                return stat.is_dir()
-            except ResourceNotFound:
-                pass
-        elif uri.scheme == "file":
-            path = _extract_path(uri)
-            return path.is_dir()
-        return False
-
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
