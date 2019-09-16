@@ -924,7 +924,8 @@ async def run_job(
         job = await root.client.jobs.status(job.id)
         exit_code = job.history.exit_code
     else:
-        # Even if we detached, but the job has failed to start (most common reason - no resources), the command fails
+        # Even if we detached, but the job has failed to start
+        # (most common reason - no resources), the command fails
         if job.status == JobStatus.FAILED:
             exit_code = 1
 
