@@ -19,7 +19,11 @@ from yarl import URL
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
 from tests.e2e import Helper
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
+from tests.e2e.utils import (
+    JOB_LARGE_GPU_CONTAINER_PRESET,
+    JOB_TINY_CONTAINER_PARAMS,
+    JOB_TINY_CONTAINER_PRESET,
+)
 
 
 ALPINE_IMAGE_NAME = "alpine:latest"
@@ -887,6 +891,28 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
             ]
         )
     assert exc_info.value.returncode == 127
+
+
+@pytest.mark.e2e
+def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
+    # Run a new job
+    captured = None
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        captured = helper.run_cli(
+            [
+                "-v",
+                "job",
+                "run",
+                "-s",
+                JOB_LARGE_GPU_CONTAINER_PRESET,
+                "--detach",
+                "--browse",
+                UBUNTU_IMAGE_NAME,
+                f"exit 123",
+            ]
+        )
+    assert captured is None
+    assert exc_info.value.returncode == 1
 
 
 @pytest.mark.e2e
