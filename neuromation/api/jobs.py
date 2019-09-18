@@ -239,7 +239,10 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = {"container": {"image": _as_repo_str(image)}}
         url = self._config.cluster_config.monitoring_url / f"{id}/save"
 
-        async with self._core.request("POST", url, json=payload) as resp:
+        timeout = attr.evolve(self._core.timeout, sock_read=None)
+        # `self._code.request` implicitly sets `total=3 * 60`
+        # unless `sock_read is None`
+        async with self._core.request("POST", url, json=payload, timeout=timeout) as resp:
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))
 
