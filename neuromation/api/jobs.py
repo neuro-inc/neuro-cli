@@ -242,7 +242,9 @@ class Jobs(metaclass=NoPublicConstructor):
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         # `self._code.request` implicitly sets `total=3 * 60`
         # unless `sock_read is None`
-        async with self._core.request("POST", url, json=payload, timeout=timeout) as resp:
+        async with self._core.request(
+            "POST", url, json=payload, timeout=timeout
+        ) as resp:
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))
 
