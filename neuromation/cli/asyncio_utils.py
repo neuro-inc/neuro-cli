@@ -86,8 +86,6 @@ def _exception_handler(
         # validate we have the right exception, transport and protocol
         exception = context.get("exception")
         if isinstance(exception, ssl.SSLError) and exception.reason == "KRB5_S_INIT":
-            if loop.get_debug():
-                asyncio.log.logger.debug("Ignoring asyncio SSL KRB5_S_INIT error")
             return
 
     loop.default_exception_handler(context)
