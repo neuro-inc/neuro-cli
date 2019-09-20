@@ -3,6 +3,7 @@ import gc
 import itertools
 import logging
 import os
+import ssl
 import sys
 import threading
 import warnings
@@ -54,6 +55,7 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
         raise ValueError("a coroutine was expected, got {!r}".format(main))
 
     loop = asyncio.new_event_loop()
+    _setup_exception_handler(loop, debug)
     try:
         asyncio.set_event_loop(loop)
         loop.set_debug(debug)
@@ -72,6 +74,29 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
                 loop.close()
                 del loop
                 gc.collect()
+
+
+def _exception_handler(
+    loop: asyncio.AbstractEventLoop, context: Dict[str, Any]
+) -> None:
+    if context.get("message") in {
+        "SSL error in data received",
+        "Fatal error on transport",
+    }:
+        # validate we have the right exception, transport and protocol
+        exception = context.get("exception")
+        if isinstance(exception, ssl.SSLError) and exception.reason == "KRB5_S_INIT":
+            if loop.get_debug():
+                asyncio.log.logger.debug("Ignoring asyncio SSL KRB5_S_INIT error")
+            return
+
+    loop.default_exception_handler(context)
+
+
+def _setup_exception_handler(loop: asyncio.AbstractEventLoop, debug: bool) -> None:
+    if debug:
+        return
+    loop.set_exception_handler(_exception_handler)
 
 
 def _cancel_all_tasks(
