@@ -186,7 +186,8 @@ def async_cmd(
         @wraps(callback)
         def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
             return run(
-                _run_async_function(init_client, callback, root, *args, **kwargs)
+                _run_async_function(init_client, callback, root, *args, **kwargs),
+                debug=root.verbosity >= 2,  # see main:setup_logging for constants
             )
 
         return wrapper
