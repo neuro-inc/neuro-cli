@@ -23,7 +23,7 @@ setup(
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
-        "aiohttp>=3.5",
+        "aiohttp>=3.6.1",
         'dataclasses>=0.5; python_version<"3.7"',
         "pyyaml>=3.0",
         'async-generator>=1.5; python_version<"3.7"',
@@ -31,7 +31,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "yarl>=1.3.0",
-        "aiodocker>=0.14.0",
+        "aiodocker>=0.15.0",
         "click>=7.0",
         "colorama>=0.4",
         "humanize>=0.5",
