@@ -5,6 +5,26 @@
 
 [comment]: # (towncrier release notes start)
 
+
+Neuromation 19.9.23 (2019-09-23)
+================================
+
+Features
+--------
+
+
+- Introduce `neuro project init` for scaffolding an empty project. ([#1043](https://github.com/neuromation/platform-api-clients/issues/1043))
+
+- `neuro cp -r` now works with non-directories. ([#1053](https://github.com/neuromation/platform-api-clients/issues/1053))
+
+- Disable logging of annoying SSL errors. ([#1065](https://github.com/neuromation/platform-api-clients/issues/1065))
+
+- Make image commands work on Windows. ([#1067](https://github.com/neuromation/platform-api-clients/issues/1067))
+
+- Fix bug with job-name resolution introduced in release 19.8.19: do not print annoying warning messages if more than one job with specified name was found. ([#1034](https://github.com/neuromation/platform-api-clients/issues/1034))
+
+- Fix `neuro job save` timing out too early. ([#1062](https://github.com/neuromation/platform-api-clients/issues/1062))
+
 Neuromation 19.9.10 (2019-09-10)
 ================================
 
