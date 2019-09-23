@@ -88,7 +88,7 @@ class Images(metaclass=NoPublicConstructor):
                     f"Image {local} was not found " "in your local docker images"
                 ) from error
         try:
-            async for obj in await self._docker.images.push(
+            async for obj in self._docker.images.push(
                 repo, auth=self._auth(), stream=True
             ):
                 step = _try_parse_image_progress_step(obj, remote.tag)
