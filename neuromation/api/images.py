@@ -28,7 +28,7 @@ class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
-        self._temporary_images: Set[str] = {}
+        self._temporary_images: Set[str] = set()
         try:
             self._docker = aiodocker.Docker()
         except ValueError as error:
