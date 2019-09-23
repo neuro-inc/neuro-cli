@@ -31,7 +31,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "yarl>=1.3.0",
-        "aiodocker>=0.15.0",
+        "aiodocker>=0.16.0",
         "click>=7.0",
         "colorama>=0.4",
         "humanize>=0.5",
