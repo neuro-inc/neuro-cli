@@ -1,7 +1,7 @@
 import contextlib
 import re
 from dataclasses import replace
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import aiodocker
 import aiohttp
@@ -28,7 +28,7 @@ class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
-        self._temporary_images: List[str] = list()
+        self._temporary_images: Set[str] = {}
         try:
             self._docker = aiodocker.Docker()
         except ValueError as error:
@@ -88,18 +88,17 @@ class Images(metaclass=NoPublicConstructor):
                     f"Image {local} was not found " "in your local docker images"
                 ) from error
         try:
-            stream = await self._docker.images.push(
+            async for obj in await self._docker.images.push(
                 repo, auth=self._auth(), stream=True
-            )
+            ):
+                step = _try_parse_image_progress_step(obj, remote.tag)
+                if step:
+                    progress.step(step)
         except DockerError as error:
             # TODO check this part when registry fixed
             if error.status == 403:
                 raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
-        async for obj in stream:
-            step = _try_parse_image_progress_step(obj, remote.tag)
-            if step:
-                progress.step(step)
         return remote
 
     async def pull(
@@ -122,10 +121,13 @@ class Images(metaclass=NoPublicConstructor):
 
         repo = _as_repo_str(remote)
         try:
-            stream = await self._docker.pull(
+            async for obj in self._docker.pull(
                 repo, auth=self._auth(), repo=repo, stream=True
-            )
-            self._temporary_images.append(repo)
+            ):
+                self._temporary_images.add(repo)
+                step = _try_parse_image_progress_step(obj, remote.tag)
+                if step:
+                    progress.step(step)
         except DockerError as error:
             if error.status == 404:
                 raise ValueError(
@@ -135,11 +137,6 @@ class Images(metaclass=NoPublicConstructor):
             elif error.status == 403:
                 raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
-
-        async for obj in stream:
-            step = _try_parse_image_progress_step(obj, remote.tag)
-            if step:
-                progress.step(step)
 
         await self._docker.images.tag(repo, local)
 
