@@ -941,7 +941,7 @@ async def _build_volumes(
             Volume(
                 storage_uri=perm.uri,
                 container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
-                read_only=perm.action not in ("write", "manage"),
+                read_only=not perm.can_write(),
             )
             for perm in available
         )
