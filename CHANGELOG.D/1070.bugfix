@@ -1,0 +1,1 @@
+Provide default arguments for api.Resources constructor to keep broken backward compatibility.

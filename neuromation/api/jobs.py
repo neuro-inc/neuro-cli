@@ -50,11 +50,11 @@ INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 class Resources:
     memory_mb: int
     cpu: float
-    gpu: Optional[int]
-    gpu_model: Optional[str]
-    shm: Optional[bool]
-    tpu_type: Optional[str]
-    tpu_software_version: Optional[str]
+    gpu: Optional[int] = None
+    gpu_model: Optional[str] = None
+    shm: bool = True
+    tpu_type: Optional[str] = None
+    tpu_software_version: Optional[str] = None
 
 
 class JobStatus(str, enum.Enum):
@@ -453,7 +453,7 @@ def _resources_from_api(data: Dict[str, Any]) -> Resources:
     return Resources(
         memory_mb=data["memory_mb"],
         cpu=data["cpu"],
-        shm=data.get("shm", None),
+        shm=data.get("shm", True),
         gpu=data.get("gpu", None),
         gpu_model=data.get("gpu_model", None),
         tpu_type=tpu_type,
