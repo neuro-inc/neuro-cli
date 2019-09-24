@@ -25,6 +25,17 @@ from tests import _TestServerFactory
 _MakeClient = Callable[..., Client]
 
 
+def test_resources_default() -> None:
+    resources = Resources(16, 0.5)
+    assert resources.memory_mb == 16
+    assert resources.cpu == 0.5
+    assert resources.gpu is None
+    assert resources.gpu_model is None
+    assert resources.shm is True
+    assert resources.tpu_type is None
+    assert resources.tpu_software_version is None
+
+
 async def test_jobs_monitor(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
