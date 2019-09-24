@@ -8,7 +8,6 @@ from math import ceil
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
-import humanize
 from click import style, unstyle
 from yarl import URL
 
@@ -27,6 +26,7 @@ from neuromation.api import (
 from neuromation.api.url_utils import _extract_path
 from neuromation.cli.printer import TTYPrinter
 from neuromation.cli.root import Root
+from neuromation.cli.utils import format_size
 
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
@@ -468,9 +468,10 @@ class LongFilesFormatter(BaseFilesFormatter):
 
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
 
-        size = file.size
         if self.human_readable:
-            size = humanize.naturalsize(size, gnu=True).rstrip("B")
+            size = format_size(file.size).rstrip("B")
+        else:
+            size = str(file.size)
 
         name = self.painter.paint(file.name, file.type)
 
@@ -687,7 +688,7 @@ class TTYProgress(BaseStorageProgress):
         return self.painter.paint(label, type)
 
     def fmt_size(self, size: int) -> str:
-        return humanize.naturalsize(size, gnu=True)
+        return format_size(size)
 
     def begin(self, src: URL, dst: URL) -> None:
         if self.verbose:

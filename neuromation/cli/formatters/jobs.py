@@ -12,6 +12,7 @@ from click import style, unstyle
 
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
+from neuromation.cli.utils import format_size
 
 
 COLORS = {
@@ -288,7 +289,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
 class ResourcesFormatter:
     def __call__(self, resources: Resources) -> str:
         lines = list()
-        lines.append(f"Memory: {resources.memory_mb} MB")
+        lines.append("Memory: " + format_size(resources.memory_mb * 1024 ** 2))
         lines.append(f"CPU: {resources.cpu:0.1f}")
         if resources.gpu:
             lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")

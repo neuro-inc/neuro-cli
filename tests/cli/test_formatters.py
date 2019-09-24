@@ -1191,11 +1191,11 @@ class TestFilesFormatter:
 
         formatter = LongFilesFormatter(human_readable=True, color=False)
         assert list(formatter(self.files_and_folders)) == [
-            "-r    2.0K 2018-01-01 03:00:00 File1",
-            "-r    1.0K 2018-10-10 13:10:10 File2",
-            "-r 1000.0K 2019-02-02 05:02:02 File3 with space",
-            "dm       0 2017-03-03 06:03:03 Folder1",
-            "dm       0 2017-03-03 06:03:02 1Folder with space",
+            "-r    2K 2018-01-01 03:00:00 File1",
+            "-r    1K 2018-10-10 13:10:10 File2",
+            "-r 1000K 2019-02-02 05:02:02 File3 with space",
+            "dm     0 2017-03-03 06:03:03 Folder1",
+            "dm     0 2017-03-03 06:03:02 1Folder with space",
         ]
 
     def test_column_formatter(self) -> None:
@@ -1274,7 +1274,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
-            "  Memory: 16 MB\n"
+            "  Memory: 16M\n"
             "  CPU: 0.1"
         )
 
@@ -1291,7 +1291,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
-            "  Memory: 1024 MB\n"
+            "  Memory: 1G\n"
             "  CPU: 2.0\n"
             "  GPU: 1.0 x nvidia-tesla-p4"
         )
@@ -1309,7 +1309,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
-            "  Memory: 16 MB\n"
+            "  Memory: 16M\n"
             "  CPU: 0.1\n"
             "  Additional: Extended SHM space"
         )
@@ -1327,7 +1327,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources=resources) == "Resources:\n"
-            "  Memory: 16 MB\n"
+            "  Memory: 16M\n"
             "  CPU: 0.1\n"
             "  TPU: v2-8/1.14\n"
             "  Additional: Extended SHM space"
@@ -1349,10 +1349,10 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
             Name         #CPU    Memory   Preemptible   GPU
-            gpu-small       7     30720       {no}        1 x nvidia-tesla-k80
-            gpu-large       7     61440       {no}        1 x nvidia-tesla-v100
-            cpu-small       7      2048       {no}
-            cpu-large       7     14336       {no}"""
+            gpu-small       7       30G       {no}        1 x nvidia-tesla-k80
+            gpu-large       7       60G       {no}        1 x nvidia-tesla-v100
+            cpu-small       7        2G       {no}
+            cpu-large       7       14G       {no}"""
         )
 
     async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
@@ -1390,12 +1390,12 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
             Name         #CPU    Memory   Preemptible   GPU                    TPU
-            gpu-small       7     30720       {no}        1 x nvidia-tesla-k80
-            gpu-large       7     61440       {no}        1 x nvidia-tesla-v100
-            cpu-small       7      2048       {no}
-            cpu-large       7     14336       {no}
-            tpu-small       2      2048       {no}                               v3-8/1.14
-            hybrid          4     30720       {no}        2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+            gpu-small       7       30G       {no}        1 x nvidia-tesla-k80
+            gpu-large       7       60G       {no}        1 x nvidia-tesla-v100
+            cpu-small       7        2G       {no}
+            cpu-large       7       14G       {no}
+            tpu-small       2        2G       {no}                               v3-8/1.14
+            hybrid          4       30G       {no}        2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 
