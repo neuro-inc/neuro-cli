@@ -79,7 +79,7 @@ stages:
     pool:
       vmImage: $[ variables['image'] ]
 
-    timeoutInMinutes: 20
+    timeoutInMinutes: 30
 
     steps:
     - checkout: self
