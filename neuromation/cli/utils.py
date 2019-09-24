@@ -25,6 +25,7 @@ from typing import (
 
 import certifi
 import click
+import humanize
 import pkg_resources
 from click import BadParameter
 from yarl import URL
@@ -647,3 +648,7 @@ if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import AsyncExitStack  # noqa
 else:
     from async_exit_stack import AsyncExitStack  # noqa
+
+
+def format_size(value: float) -> str:
+    return humanize.naturalsize(value, gnu=True, format="%.4g")

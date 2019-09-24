@@ -6,6 +6,7 @@ from tabulate import tabulate
 
 from neuromation.api.login import RunPreset
 from neuromation.cli.root import Root
+from neuromation.cli.utils import format_size
 
 
 class ConfigFormatter:
@@ -50,7 +51,7 @@ class ConfigFormatter:
             row = [
                 name,
                 preset.cpu,
-                preset.memory_mb,
+                format_size(preset.memory_mb * 1024 ** 2),
                 yes if preset.is_preemptible else no,
                 gpu,
             ]
