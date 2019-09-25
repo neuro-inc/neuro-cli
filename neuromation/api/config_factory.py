@@ -19,7 +19,7 @@ from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
     HeadlessNegotiator,
-    RunPreset,
+    Preset,
     _AuthConfig,
     _AuthToken,
     _ClusterConfig,
@@ -249,7 +249,7 @@ class Factory:
         }
 
     def _serialize_resource_preset(
-        self, name: str, resource_preset: RunPreset
+        self, name: str, resource_preset: Preset
     ) -> Dict[str, Any]:
         return {
             "name": name,
@@ -292,10 +292,10 @@ class Factory:
 
     def _deserialize_resource_preset(
         self, payload: Dict[str, Any]
-    ) -> Tuple[str, RunPreset]:
+    ) -> Tuple[str, Preset]:
         return (
             payload["name"],
-            RunPreset(
+            Preset(
                 cpu=payload["cpu"],
                 memory_mb=payload["memory_mb"],
                 gpu=payload.get("gpu"),

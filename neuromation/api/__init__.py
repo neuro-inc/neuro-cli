@@ -18,7 +18,7 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from .client import Client
+from .client import Client, Preset
 from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
@@ -66,6 +66,7 @@ __all__ = (
     "Permission",
     "Share",
     "Client",
+    "Preset",
     "FileStatusType",
     "FileStatus",
     "Container",

@@ -1,8 +1,8 @@
 import time
 from http.cookies import Morsel  # noqa
 from http.cookies import SimpleCookie
-from types import TracebackType
-from typing import Optional, Type
+from types import MappingProxyType, TracebackType
+from typing import Mapping, Optional, Type
 
 import aiohttp
 
@@ -10,6 +10,7 @@ from .config import _Config
 from .core import DEFAULT_TIMEOUT, _Core
 from .images import Images
 from .jobs import Jobs
+from .login import Preset
 from .parser import Parser
 from .storage import Storage
 from .users import Users
@@ -73,6 +74,10 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def username(self) -> str:
         return self._config.auth_token.username
+
+    @property
+    def presets(self) -> Mapping[str, Preset]:
+        return MappingProxyType(self._config.cluster_config.resource_presets)
 
     @property
     def jobs(self) -> Jobs:

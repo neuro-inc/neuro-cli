@@ -7,10 +7,9 @@ from typing import Dict, Optional, Tuple
 import aiohttp
 from yarl import URL
 
-from neuromation.api import Client, Factory
+from neuromation.api import Client, Factory, Preset
 from neuromation.api.config import _Config
 from neuromation.api.config_factory import ConfigError
-from neuromation.api.login import RunPreset
 
 
 log = logging.getLogger(__name__)
@@ -69,7 +68,7 @@ class Root:
         return self._config.cluster_config.registry_url
 
     @property
-    def resource_presets(self) -> Dict[str, RunPreset]:
+    def resource_presets(self) -> Dict[str, Preset]:
         if self._client is None or not self._config.cluster_config.is_initialized():
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.resource_presets
