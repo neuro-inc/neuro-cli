@@ -372,25 +372,7 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
 def test_e2e_ssh_exec_true(helper: Helper) -> None:
     job_name = f"test-job-{str(uuid4())[:8]}"
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            "-n",
-            job_name,
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command, name=job_name)
 
     captured = helper.run_cli(
         ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "true"]
@@ -406,23 +388,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_ssh_exec_false(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
@@ -434,23 +400,7 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id])
@@ -460,23 +410,7 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_ssh_exec_echo(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(
         ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "echo 1"]
@@ -487,23 +421,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
@@ -515,23 +433,7 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(
         ["job", "exec", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
