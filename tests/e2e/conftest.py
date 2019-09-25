@@ -21,7 +21,6 @@ from typing import (
     Iterator,
     List,
     Optional,
-    Sequence,
     Tuple,
     Union,
 )
@@ -32,12 +31,14 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    Container,
     Factory,
     FileStatusType,
     IllegalArgumentError,
     JobDescription,
     JobStatus,
     ResourceNotFound,
+    Resources,
     get as api_get,
     login_with_token,
 )
@@ -362,9 +363,19 @@ class Helper:
             assert job.status == state
 
     @run_async
-    async def job_info(self, job_id: str) -> JobDescription:
+    async def job_info(self, job_id: str, wait_start: bool = False) -> JobDescription:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            return await client.jobs.status(job_id)
+            job = await client.jobs.status(job_id)
+            start_time = time()
+            while (
+                wait_start
+                and job.status == JobStatus.PENDING
+                and time() - start_time < JOB_TIMEOUT
+            ):
+                job = await client.jobs.status(job_id)
+            if int(time() - start_time) > JOB_TIMEOUT:
+                raise AssertionError(f"timeout exceeded, last output: '{job.status}'")
+            return job
 
     @run_async
     async def check_job_output(
@@ -460,32 +471,46 @@ class Helper:
                 f"Retries exceeded during 'neuro {' '.join(arguments)}'"
             )
 
-    def run_job(self, image: str, command: str = "", params: Sequence[str] = ()) -> str:
-        captured = self.run_cli(
-            ["-q", "job", "run", "--detach"]
-            + list(params)
-            + ([image, command] if command else [image])
-        )
-        assert not captured.err
-        return captured.out
-
-    def run_job_and_wait_state(
+    @run_async
+    async def run_job_and_wait_state(
         self,
         image: str,
         command: str = "",
         *,
         description: Optional[str] = None,
+        name: Optional[str] = None,
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
-        params = ["--preset=cpu-micro"]
-        if description:
-            params.extend(["-d", description])
-        job_id = self.run_job(image, command, params=params)
-        assert job_id
-        self.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
-        self.wait_job_change_state_to(job_id, wait_state, stop_state)
-        return job_id
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            preset = client.presets["cpu-micro"]
+            resources = Resources(memory_mb=preset.memory_mb, cpu=preset.cpu)
+            container = Container(
+                image=client.parse.remote_image(image),
+                command=command,
+                resources=resources,
+            )
+            job = await client.jobs.run(
+                container,
+                is_preemptible=preset.is_preemptible,
+                description=description,
+                name=name,
+            )
+
+            start_time = time()
+            while job.status != wait_state:
+                if stop_state == job.status:
+                    raise JobWaitStateStopReached(
+                        f"failed running job {job.id}: {stop_state}"
+                    )
+                if int(time() - start_time) > JOB_TIMEOUT:
+                    raise AssertionError(
+                        f"timeout exceeded, last output: '{job.status}'"
+                    )
+                await asyncio.sleep(JOB_WAIT_SLEEP_SECONDS)
+                job = await client.jobs.status(job.id)
+
+            return job.id
 
     @run_async
     async def check_http_get(self, url: Union[URL, str]) -> str:
@@ -625,10 +650,9 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
                 if http_auth:
                     description += " with authentication"
         args += ["-d", description]
-        http_job_id = helper.run_job_and_wait_state(
-            NGINX_IMAGE_NAME, command, description=description
-        )
-        status: JobDescription = helper.job_info(http_job_id)
+        capture = helper.run_cli(["-q", "job", "run", "--detach", *args, NGINX_IMAGE_NAME, command])
+        http_job_id = capture.out
+        status: JobDescription = helper.job_info(http_job_id, wait_start=True)
         return {
             "id": http_job_id,
             "secret": secret,

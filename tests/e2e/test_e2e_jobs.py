@@ -610,30 +610,6 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
 
 
 @pytest.fixture
-def nginx_job(helper: Helper) -> Iterator[str]:
-    command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--detach",
-            NGINX_IMAGE_NAME,
-            command,
-        ]
-    )
-    match = re.match("Job ID: (.+) Status:", captured.out)
-    assert match is not None
-    job_id = match.group(1)
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
-
-    yield job_id
-
-    helper.run_cli(["job", "kill", job_id])
-
-
-@pytest.fixture
 async def nginx_job_async(
     nmrc_path: Path, loop: asyncio.AbstractEventLoop
 ) -> AsyncIterator[Tuple[str, str]]:
