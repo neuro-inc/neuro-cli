@@ -7,7 +7,7 @@ import sys
 import tarfile
 from pathlib import Path
 from time import time
-from typing import Any, AsyncIterator, Callable, Dict, Iterator, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, Tuple
 from uuid import uuid4
 
 import aiodocker
