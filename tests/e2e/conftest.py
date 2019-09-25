@@ -45,12 +45,7 @@ from neuromation.api.config import _CookieSession
 from neuromation.cli.asyncio_utils import run
 from neuromation.cli.const import EX_IOERR
 from neuromation.cli.utils import resolve_job
-from tests.e2e.utils import (
-    FILE_SIZE_B,
-    JOB_TINY_CONTAINER_PARAMS,
-    NGINX_IMAGE_NAME,
-    JobWaitStateStopReached,
-)
+from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
 
 JOB_TIMEOUT = 60 * 5
@@ -467,7 +462,7 @@ class Helper:
 
     def run_job(self, image: str, command: str = "", params: Sequence[str] = ()) -> str:
         captured = self.run_cli(
-            ["-q", "job", "submit", "--detach"]
+            ["-q", "job", "run", "--detach"]
             + list(params)
             + ([image, command] if command else [image])
         )
@@ -478,12 +473,15 @@ class Helper:
         self,
         image: str,
         command: str = "",
-        params: Sequence[str] = (),
         *,
+        description: Optional[str] = None,
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
-        job_id = self.run_job(image, command, params)
+        params = ["--preset=cpu-micro"]
+        if description:
+            params.extend(["-d", description])
+        job_id = self.run_job(image, command, params=params)
         assert job_id
         self.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
         self.wait_job_change_state_to(job_id, wait_state, stop_state)
@@ -628,7 +626,7 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
                     description += " with authentication"
         args += ["-d", description]
         http_job_id = helper.run_job_and_wait_state(
-            NGINX_IMAGE_NAME, command, JOB_TINY_CONTAINER_PARAMS + args
+            NGINX_IMAGE_NAME, command, description=description
         )
         status: JobDescription = helper.job_info(http_job_id)
         return {

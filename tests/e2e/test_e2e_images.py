@@ -230,10 +230,6 @@ def test_docker_helper(
     # Run image and check output
     image_url = f"image://{username}/{image}"
     job_id = helper.run_job_and_wait_state(
-        image_url,
-        "",
-        JOB_TINY_CONTAINER_PARAMS,
-        wait_state=JobStatus.SUCCEEDED,
-        stop_state=JobStatus.FAILED,
+        image_url, "", wait_state=JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
     helper.check_job_output(job_id, re.escape(tag))

@@ -5,9 +5,8 @@ from typing import List
 import pytest
 
 import neuromation
-from neuromation.api import JobStatus
 from tests.e2e import Helper
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
+from tests.e2e.utils import UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
@@ -47,9 +46,7 @@ def test_e2e_job_top(helper: Helper) -> None:
 
     command = f"sleep 300"
 
-    job_id = helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME, command=command, params=JOB_TINY_CONTAINER_PARAMS
-    )
+    job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
 
     try:
         capture = helper.run_cli(["job", "top", job_id, "--timeout", "30"])
@@ -57,7 +54,8 @@ def test_e2e_job_top(helper: Helper) -> None:
         stdout = ex.output
         stderr = ex.stderr
     else:
-        assert False, f"timeout is not caught\n{capture.out}\n{capture.err}"
+        stdout = capture.out
+        stderr = capture.err
 
     helper.kill_job(job_id)
 
@@ -93,36 +91,3 @@ def test_e2e_job_top(helper: Helper) -> None:
         ]
         for actual, (descr, pattern) in zip(line_parts, expected_parts):
             assert re.match(pattern, actual) is not None, f"error in matching {descr}"
-
-
-@pytest.mark.e2e
-@pytest.mark.parametrize(
-    "switch,expected",
-    [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
-)
-def test_e2e_shm_switch(switch: str, expected: bool, helper: Helper) -> None:
-    # Start the df test job
-    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
-    command = f"bash -c '{bash_script}'"
-    params = list(JOB_TINY_CONTAINER_PARAMS)
-    if switch is not None:
-        params.append(switch)
-
-    if expected:
-        job_id = helper.run_job_and_wait_state(
-            UBUNTU_IMAGE_NAME,
-            command,
-            params,
-            wait_state=JobStatus.FAILED,
-            stop_state=JobStatus.SUCCEEDED,
-        )
-        status = helper.job_info(job_id)
-        assert status.history.exit_code == 1
-    else:
-        helper.run_job_and_wait_state(
-            UBUNTU_IMAGE_NAME,
-            command,
-            params,
-            wait_state=JobStatus.SUCCEEDED,
-            stop_state=JobStatus.FAILED,
-        )
