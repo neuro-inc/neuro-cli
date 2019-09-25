@@ -1076,14 +1076,14 @@ def test_job_run_volume_all(helper: Helper) -> None:
 
     # first, run without --volume=ALL
     captured = helper.run_cli(
-        ["--quiet", "run", "--detach", "-s", "cpu-tiny", img, command]
+        ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
     )
     job_id = captured.out
     helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
-        ["run", "--detach", "-s", "cpu-tiny", "--volume=ALL", img, command]
+        ["run", "--detach", "-s", "cpu-micro", "--volume=ALL", img, command]
     )
     assert not captured.err
     msg = (

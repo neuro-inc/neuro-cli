@@ -479,6 +479,7 @@ class Helper:
         image: str,
         command: str = "",
         params: Sequence[str] = (),
+        *,
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
