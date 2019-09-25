@@ -49,7 +49,7 @@ def test_e2e_job_top(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
 
     try:
-        capture = helper.run_cli(["job", "top", job_id, "--timeout", "30"])
+        capture = helper.run_cli(["job", "top", job_id, "--timeout", "60"])
     except subprocess.CalledProcessError as ex:
         stdout = ex.output
         stderr = ex.stderr
