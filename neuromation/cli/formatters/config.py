@@ -4,7 +4,7 @@ from typing import Dict
 from click import style
 from tabulate import tabulate
 
-from neuromation.api.login import RunPreset
+from neuromation.api import Preset
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
@@ -26,9 +26,7 @@ class ConfigFormatter:
             + self._format_presets(root.resource_presets)
         )
 
-    def _format_presets(
-        self, presets: Dict[str, RunPreset], indent: str = "    "
-    ) -> str:
+    def _format_presets(self, presets: Dict[str, Preset], indent: str = "    ") -> str:
         if platform == "win32":
             yes, no = "Yes", "No"
         else:

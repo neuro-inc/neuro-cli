@@ -362,7 +362,7 @@ class AuthTokenClient:
 
 
 @dataclass(frozen=True)
-class RunPreset:
+class Preset:
     cpu: float
     memory_mb: int
     is_preemptible: bool = False
@@ -378,7 +378,7 @@ class _ClusterConfig:
     storage_url: URL
     users_url: URL
     monitoring_url: URL
-    resource_presets: Dict[str, RunPreset]
+    resource_presets: Dict[str, Preset]
 
     @classmethod
     def create(
@@ -387,7 +387,7 @@ class _ClusterConfig:
         storage_url: URL,
         users_url: URL,
         monitoring_url: URL,
-        resource_presets: Dict[str, RunPreset],
+        resource_presets: Dict[str, Preset],
     ) -> "_ClusterConfig":
         return cls(
             registry_url, storage_url, users_url, monitoring_url, resource_presets
@@ -600,14 +600,14 @@ async def get_server_config(
                 callback_urls=callback_urls,
                 headless_callback_url=headless_callback_url,
             )
-            resource_presets: Dict[str, RunPreset] = {}
+            resource_presets: Dict[str, Preset] = {}
             for data in payload.get("resource_presets", ()):
                 tpu_type = tpu_software_version = None
                 if "tpu" in data:
                     tpu_payload = data.get("tpu")
                     tpu_type = tpu_payload["type"]
                     tpu_software_version = tpu_payload["software_version"]
-                resource_presets[data["name"]] = RunPreset(
+                resource_presets[data["name"]] = Preset(
                     cpu=data["cpu"],
                     memory_mb=data["memory_mb"],
                     gpu=data.get("gpu"),

@@ -164,13 +164,9 @@ class TestConfigFileInteraction:
         _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
-        assert len(client._config.cluster_config.resource_presets) > 0
-        assert not client._config.cluster_config.resource_presets[
-            "cpu-large"
-        ].is_preemptible
-        assert client._config.cluster_config.resource_presets[
-            "cpu-large-p"
-        ].is_preemptible
+        assert len(client.presets) > 0
+        assert not client.presets["cpu-large"].is_preemptible
+        assert client.presets["cpu-large-p"].is_preemptible
 
     async def test_shorten_path(
         self,

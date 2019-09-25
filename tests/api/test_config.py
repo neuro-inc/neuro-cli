@@ -2,6 +2,7 @@ import pytest
 from yarl import URL
 
 import neuromation
+from neuromation.api import Preset
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -10,7 +11,6 @@ from neuromation.api.config import (
     _CookieSession,
     _PyPIVersion,
 )
-from neuromation.api.login import RunPreset
 
 
 class TestConfig:
@@ -29,7 +29,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -66,7 +66,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
         assert cluster_config_good.is_initialized()
 
@@ -104,7 +104,7 @@ class TestConfig:
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
         assert not cluster_config_good.is_initialized()
 

@@ -24,6 +24,7 @@ from neuromation.api import (
     JobStatusHistory,
     JobTelemetry,
     LocalImage,
+    Preset,
     RemoteImage,
     Resources,
 )
@@ -32,7 +33,6 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.api.login import RunPreset
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
@@ -1358,14 +1358,14 @@ class TestConfigFormatter:
     async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
         presets = dict(root.resource_presets)
 
-        presets["tpu-small"] = RunPreset(
+        presets["tpu-small"] = Preset(
             cpu=2,
             memory_mb=2048,
             is_preemptible=False,
             tpu_type="v3-8",
             tpu_software_version="1.14",
         )
-        presets["hybrid"] = RunPreset(
+        presets["hybrid"] = Preset(
             cpu=4,
             memory_mb=30720,
             is_preemptible=False,
