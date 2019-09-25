@@ -48,4 +48,4 @@ class Parser(metaclass=NoPublicConstructor):
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
-        return parser.parse_as_neuro_image(image)
+        return parser.parse_remote(image)
