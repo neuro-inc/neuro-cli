@@ -3,8 +3,8 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
+from neuromation.api import Preset
 from neuromation.api.login import (
-    RunPreset,
     _AuthConfig,
     _ClusterConfig,
     _ServerConfig,
@@ -181,14 +181,14 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
             users_url=URL(users_url),
             monitoring_url=URL(monitoring_url),
             resource_presets={
-                "gpu-small": RunPreset(
+                "gpu-small": Preset(
                     cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
                 ),
-                "gpu-large": RunPreset(
+                "gpu-large": Preset(
                     cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
                 ),
-                "cpu-small": RunPreset(cpu=2, memory_mb=2 * 1024),
-                "cpu-large": RunPreset(cpu=3, memory_mb=14 * 1024),
+                "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
+                "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
             },
         ),
     )

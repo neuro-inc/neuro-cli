@@ -432,6 +432,14 @@ Resources
       Use Linux shared memory or not, :class:`bool`. Provide ``True`` if you don't know
       what ``/dev/shm`` device means.
 
+   .. attribute:: tpu_type
+
+      Requested TPU type, see also https://en.wikipedia.org/wiki/Tensor_processing_unit
+
+   .. attribute:: tpu_software_version
+
+      Requested TPU software version.
+
 
 Volume
 ======
