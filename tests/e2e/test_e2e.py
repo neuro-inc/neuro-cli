@@ -47,24 +47,20 @@ def test_e2e_job_top(helper: Helper) -> None:
         return [part.strip() for part in line.split(sep) if part.strip()]
 
     command = f"sleep 300"
-    job_name = f"test-job-{str(uuid4())[:8]}"
-    aux_params = ["--name", job_name]
 
-    helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME,
-        command=command,
-        params=JOB_TINY_CONTAINER_PARAMS + aux_params,
+    job_id = helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME, command=command, params=JOB_TINY_CONTAINER_PARAMS
     )
 
     try:
-        capture = helper.run_cli(["job", "top", job_name, "--timeout", "30"])
+        capture = helper.run_cli(["job", "top", job_id, "--timeout", "30"])
     except subprocess.CalledProcessError as ex:
         stdout = ex.output
         stderr = ex.stderr
     else:
         assert False, f"timeout is not caught\n{capture.out}\n{capture.err}"
 
-    helper.kill_job(job_name)
+    helper.kill_job(job_id)
 
     try:
         header, *lines = split_non_empty_parts(stdout, sep="\n")

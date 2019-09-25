@@ -584,13 +584,10 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     image_neuro_name = f"image://{helper.username}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
-        ALPINE_IMAGE_NAME,
-        command=command,
-        params=("-n", job_name),
-        wait_state=JobStatus.RUNNING,
+        ALPINE_IMAGE_NAME, command=command, wait_state=JobStatus.RUNNING
     )
     img_uri = f"image://{helper.username}/{image}"
-    captured = helper.run_cli(["job", "save", job_name, image_neuro_name])
+    captured = helper.run_cli(["job", "save", job_id_1, image_neuro_name])
     out = captured.out
     assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
     assert f"Using remote image '{img_uri}'" in out
@@ -601,15 +598,12 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     assert out.endswith(img_uri)
 
     # wait to free the job name:
-    helper.run_cli(["job", "kill", job_name])
+    helper.run_cli(["job", "kill", job_id_1])
     helper.wait_job_change_state_to(job_id_1, JobStatus.SUCCEEDED)
 
     command = 'sh -c \'[ "$(cat /test)" = "123" ]\''
     helper.run_job_and_wait_state(
-        image_neuro_name,
-        command=command,
-        params=("-n", job_name),
-        wait_state=JobStatus.SUCCEEDED,
+        image_neuro_name, command=command, wait_state=JobStatus.SUCCEEDED
     )
 
     # TODO (A.Yushkovskiy): delete the pushed image in GCR
@@ -1029,17 +1023,40 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
 
     # first, run without --volume=HOME
-    helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME, command=command, wait_state=JobStatus.FAILED
+    capture = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "--detach",
+            "--preset=cpu-micro",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
+    job_id_1 = capture.out
+
+    helper.wait_job_change_state_from(job_id_1, JobStatus.PENDING, JobStatus.FAILED)
+    helper.wait_job_change_state_to(job_id_1, JobStatus.FAILED, JobStatus.FAILED)
 
     # then, run with --volume=HOME
-    helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME,
-        command=command,
-        params=("--volume", "HOME"),
-        wait_state=JobStatus.SUCCEEDED,
+    capture = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "--detach",
+            "--preset=cpu-micro",
+            "--volume",
+            "HOME",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
+
+    job_id_2 = capture.out
+    helper.wait_job_change_state_from(job_id_2, JobStatus.PENDING, JobStatus.FAILED)
+    helper.wait_job_change_state_to(job_id_2, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
 @pytest.mark.e2e
