@@ -453,24 +453,9 @@ def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     command = "true"
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+    job_id = helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME, command, wait_state=JobStatus.SUCCEEDED
     )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
