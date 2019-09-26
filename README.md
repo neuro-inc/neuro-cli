@@ -564,7 +564,7 @@ neuro project init [OPTIONS]
 
 # Initializes a scaffolding for the new project with the recommended project
 # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
-neuro project init my-wunderbar-project
+neuro project init
 
 ```
 

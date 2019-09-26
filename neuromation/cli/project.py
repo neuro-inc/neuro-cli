@@ -26,7 +26,7 @@ async def init(root: Root) -> None:
 
     # Initializes a scaffolding for the new project with the recommended project
     # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
-    neuro project init my-wunderbar-project
+    neuro project init
     """
     cookiecutter(f"gh:neuromation/cookiecutter-neuro-project")
 
