@@ -48,16 +48,10 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
 
     # Non-recursive removing should not have any effect
     with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
-        helper.check_rmdir_on_storage("folder2", recursive=False)
+        helper.rm("folder2", recursive=False)
     assert cm.value.errno == errno.EISDIR
     helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
-
-    # Remove test dir
-    helper.check_rmdir_on_storage("folder2", recursive=True)
-
-    # And confirm
-    helper.check_dir_absent_on_storage("folder2", "")
-
+2
 
 @pytest.mark.e2e
 def test_empty_directory_ls_output(helper: Helper) -> None:
@@ -356,12 +350,6 @@ def test_e2e_copy_recursive_to_platform(
     print("source file", srcfile)
     print("target file", targetfile)
     assert helper.hash_hex(targetfile) == checksum
-
-    # Remove test dir
-    helper.check_rmdir_on_storage("nested")
-
-    # And confirm
-    helper.check_dir_absent_on_storage("nested", "")
 
 
 @pytest.mark.e2e

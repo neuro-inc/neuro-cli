@@ -113,7 +113,7 @@ class Helper:
     def close(self) -> None:
         if not self._closed:
             with suppress(Exception):
-                self.rm("")
+                self.rm("", recursive=True)
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
@@ -248,14 +248,6 @@ class Helper:
             assert (
                 self.hash_hex(target_file) == checksum
             ), "checksum test failed for {url}"
-
-    @run_async
-    async def check_rmdir_on_storage(
-        self, path: str, *, recursive: bool = True
-    ) -> None:
-        url = URL(self.tmpstorage + path)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.rm(url, recursive=recursive)
 
     @run_async
     async def check_rm_file_on_storage(
