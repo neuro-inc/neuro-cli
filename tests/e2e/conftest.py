@@ -151,10 +151,10 @@ class Helper:
             await client.storage.mkdir(url, **kwargs)
 
     @run_async
-    async def rm(self, path: str) -> None:
+    async def rm(self, path: str, *, recursive: bool = False) -> None:
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.rm(url, recursive=True)
+            await client.storage.rm(url, recursive=recursive)
 
     @run_async
     async def check_file_exists_on_storage(
