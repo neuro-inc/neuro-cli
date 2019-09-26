@@ -1,14 +1,12 @@
 import re
 import subprocess
 from typing import List
-from uuid import uuid4
 
 import pytest
 
 import neuromation
-from neuromation.api import JobStatus
 from tests.e2e import Helper
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
+from tests.e2e.utils import UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
@@ -47,24 +45,22 @@ def test_e2e_job_top(helper: Helper) -> None:
         return [part.strip() for part in line.split(sep) if part.strip()]
 
     command = f"sleep 300"
-    job_name = f"test-job-{str(uuid4())[:8]}"
-    aux_params = ["--name", job_name]
 
-    helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME,
-        command=command,
-        params=JOB_TINY_CONTAINER_PARAMS + aux_params,
-    )
+    job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
 
     try:
-        capture = helper.run_cli(["job", "top", job_name, "--timeout", "30"])
+        # TODO: implement progressive timeout
+        # even 15 secs usually enough for low-load testing
+        # but under high load the value should be increased
+        capture = helper.run_cli(["job", "top", job_id, "--timeout", "60"])
     except subprocess.CalledProcessError as ex:
         stdout = ex.output
         stderr = ex.stderr
     else:
-        assert False, f"timeout is not caught\n{capture.out}\n{capture.err}"
+        stdout = capture.out
+        stderr = capture.err
 
-    helper.kill_job(job_name)
+    helper.kill_job(job_id)
 
     try:
         header, *lines = split_non_empty_parts(stdout, sep="\n")
@@ -98,28 +94,3 @@ def test_e2e_job_top(helper: Helper) -> None:
         ]
         for actual, (descr, pattern) in zip(line_parts, expected_parts):
             assert re.match(pattern, actual) is not None, f"error in matching {descr}"
-
-
-@pytest.mark.e2e
-@pytest.mark.parametrize(
-    "switch,expected",
-    [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
-)
-def test_e2e_shm_switch(switch: str, expected: bool, helper: Helper) -> None:
-    # Start the df test job
-    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
-    command = f"bash -c '{bash_script}'"
-    params = list(JOB_TINY_CONTAINER_PARAMS)
-    if switch is not None:
-        params.append(switch)
-
-    if expected:
-        job_id = helper.run_job_and_wait_state(
-            UBUNTU_IMAGE_NAME, command, params, JobStatus.FAILED, JobStatus.SUCCEEDED
-        )
-        status = helper.job_info(job_id)
-        assert status.history.exit_code == 1
-    else:
-        helper.run_job_and_wait_state(
-            UBUNTU_IMAGE_NAME, command, params, JobStatus.SUCCEEDED, JobStatus.FAILED
-        )
