@@ -173,38 +173,6 @@ class Helper:
         raise AssertionError(f"File {name} with size {size} not found in {url}")
 
     @run_async
-    async def check_file_exists_on_storage_retries(
-        self,
-        name: str,
-        path: str,
-        size: int,
-        *,
-        fromhome: bool = False,
-        retries: float = 180,
-    ) -> None:
-        url = self.make_uri(path, fromhome=fromhome)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            t0 = time()
-            delay = 0.2
-            while time() - t0 < retries:
-                try:
-                    files = await client.storage.ls(url)
-                except ResourceNotFound:
-                    await asyncio.sleep(delay)
-                    delay = min(delay * 2, 15)
-                else:
-                    for file in files:
-                        if (
-                            file.type == FileStatusType.FILE
-                            and file.name == name
-                            and file.size == size
-                        ):
-                            return
-                    await asyncio.sleep(delay)
-                    delay = min(delay * 2, 15)
-        raise AssertionError(f"File {name} with size {size} not found in {url}")
-
-    @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str) -> None:
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
