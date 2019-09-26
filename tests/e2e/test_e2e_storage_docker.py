@@ -42,7 +42,7 @@ def test_load_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
     # Upload local file to existing directory
     helper.run_cli(
         ["storage", "load", srcfile, helper.tmpstorage + "/folder"], verbosity=2
@@ -65,7 +65,7 @@ def test_load_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
     # Upload local file to platform
     helper.run_cli(
         ["storage", "load", srcfile, helper.tmpstorage + "/folder/different_name.txt"],

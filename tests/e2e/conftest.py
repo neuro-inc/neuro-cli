@@ -109,7 +109,6 @@ class Helper:
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
         self._closed = False
         self._executed_jobs: List[str] = []
-        self.mkdir("")
 
     def close(self) -> None:
         if not self._closed:
@@ -249,12 +248,6 @@ class Helper:
             assert (
                 self.hash_hex(target_file) == checksum
             ), "checksum test failed for {url}"
-
-    @run_async
-    async def check_create_dir_on_storage(self, path: str, **kwargs: bool) -> None:
-        url = URL(self.tmpstorage + path)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.mkdir(url, **kwargs)
 
     @run_async
     async def check_rmdir_on_storage(
