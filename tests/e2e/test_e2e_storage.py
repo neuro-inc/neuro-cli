@@ -51,7 +51,7 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
         helper.rm("folder2", recursive=False)
     assert cm.value.errno == errno.EISDIR
     helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
-2
+
 
 @pytest.mark.e2e
 def test_empty_directory_ls_output(helper: Helper) -> None:
@@ -107,12 +107,6 @@ def test_copy_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
 
-    # Remove the file from platform
-    helper.check_rm_file_on_storage(file_name, "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage(file_name, "folder")
-
 
 @pytest.mark.e2e
 def test_copy_local_file_to_platform_directory_explicit(
@@ -127,12 +121,6 @@ def test_copy_local_file_to_platform_directory_explicit(
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
-
-    # Remove the file from platform
-    helper.check_rm_file_on_storage(file_name, "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage(file_name, "folder")
 
 
 @pytest.mark.e2e
@@ -150,12 +138,6 @@ def test_copy_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     # Ensure file is there
     helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
     helper.check_file_absent_on_storage(file_name, "folder")
-
-    # Remove the file from platform
-    helper.check_rm_file_on_storage("different_name.txt", "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage("different_name.txt", "folder")
 
 
 @pytest.mark.e2e
@@ -181,12 +163,6 @@ def test_copy_local_single_file_to_platform_file_explicit(
     # Ensure file is there
     helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
     helper.check_file_absent_on_storage(file_name, "folder")
-
-    # Remove the file from platform
-    helper.check_rm_file_on_storage("different_name.txt", "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage("different_name.txt", "folder")
 
 
 @pytest.mark.e2e
