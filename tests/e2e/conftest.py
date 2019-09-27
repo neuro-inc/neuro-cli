@@ -109,12 +109,11 @@ class Helper:
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
         self._closed = False
         self._executed_jobs: List[str] = []
-        self.mkdir("")
 
     def close(self) -> None:
         if not self._closed:
             with suppress(Exception):
-                self.rm("")
+                self.rm("", recursive=True)
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
@@ -152,10 +151,10 @@ class Helper:
             await client.storage.mkdir(url, **kwargs)
 
     @run_async
-    async def rm(self, path: str) -> None:
+    async def rm(self, path: str, *, recursive: bool = False) -> None:
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.rm(url, recursive=True)
+            await client.storage.rm(url, recursive=recursive)
 
     @run_async
     async def check_file_exists_on_storage(
@@ -171,38 +170,6 @@ class Helper:
                     and file.size == size
                 ):
                     return
-        raise AssertionError(f"File {name} with size {size} not found in {url}")
-
-    @run_async
-    async def check_file_exists_on_storage_retries(
-        self,
-        name: str,
-        path: str,
-        size: int,
-        *,
-        fromhome: bool = False,
-        retries: float = 180,
-    ) -> None:
-        url = self.make_uri(path, fromhome=fromhome)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            t0 = time()
-            delay = 0.2
-            while time() - t0 < retries:
-                try:
-                    files = await client.storage.ls(url)
-                except ResourceNotFound:
-                    await asyncio.sleep(delay)
-                    delay = min(delay * 2, 15)
-                else:
-                    for file in files:
-                        if (
-                            file.type == FileStatusType.FILE
-                            and file.name == name
-                            and file.size == size
-                        ):
-                            return
-                    await asyncio.sleep(delay)
-                    delay = min(delay * 2, 15)
         raise AssertionError(f"File {name} with size {size} not found in {url}")
 
     @run_async
@@ -249,20 +216,6 @@ class Helper:
             assert (
                 self.hash_hex(target_file) == checksum
             ), "checksum test failed for {url}"
-
-    @run_async
-    async def check_create_dir_on_storage(self, path: str, **kwargs: bool) -> None:
-        url = URL(self.tmpstorage + path)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.mkdir(url, **kwargs)
-
-    @run_async
-    async def check_rmdir_on_storage(
-        self, path: str, *, recursive: bool = True
-    ) -> None:
-        url = URL(self.tmpstorage + path)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.rm(url, recursive=recursive)
 
     @run_async
     async def check_rm_file_on_storage(
