@@ -146,12 +146,14 @@ class Helper:
 
     @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mkdir(url, **kwargs)
 
     @run_async
     async def rm(self, path: str, *, recursive: bool = False) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url, recursive=recursive)
@@ -160,6 +162,7 @@ class Helper:
     async def check_file_exists_on_storage(
         self, name: str, path: str, size: int, *, fromhome: bool = False
     ) -> None:
+        __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -174,6 +177,7 @@ class Helper:
 
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -184,6 +188,7 @@ class Helper:
 
     @run_async
     async def check_dir_absent_on_storage(self, name: str, path: str) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -193,6 +198,7 @@ class Helper:
 
     @run_async
     async def check_file_absent_on_storage(self, name: str, path: str) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -204,6 +210,7 @@ class Helper:
     async def check_file_on_storage_checksum(
         self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
     ) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         if tmpname:
             target = join(tmpdir, tmpname)
@@ -221,6 +228,7 @@ class Helper:
     async def check_rm_file_on_storage(
         self, name: str, path: str, *, fromhome: bool = False
     ) -> None:
+        __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url / name)
@@ -229,6 +237,7 @@ class Helper:
     async def check_upload_file_to_storage(
         self, name: str, path: str, local_file: str
     ) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             if name is None:
@@ -242,6 +251,7 @@ class Helper:
     async def check_rename_file_on_storage(
         self, name_from: str, path_from: str, name_to: str, path_to: str
     ) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}/{name_from}"),
@@ -259,12 +269,14 @@ class Helper:
     async def check_rename_directory_on_storage(
         self, path_from: str, path_to: str
     ) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}"), URL(f"{self.tmpstorage}{path_to}")
             )
 
     def hash_hex(self, file: Union[str, Path]) -> str:
+        __tracebackhide__ = True
         _hash = sha1()
         with open(file, "rb") as f:
             for block in iter(lambda: f.read(16 * 1024 * 1024), b""):
@@ -276,6 +288,7 @@ class Helper:
     async def wait_job_change_state_from(
         self, job_id: str, wait_state: JobStatus, stop_state: Optional[JobStatus] = None
     ) -> None:
+        __tracebackhide__ = True
         start_time = time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -294,6 +307,7 @@ class Helper:
         target_state: JobStatus,
         stop_state: Optional[JobStatus] = None,
     ) -> None:
+        __tracebackhide__ = True
         start_time = time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -311,12 +325,14 @@ class Helper:
 
     @run_async
     async def assert_job_state(self, job_id: str, state: JobStatus) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             assert job.status == state
 
     @run_async
     async def job_info(self, job_id: str, wait_start: bool = False) -> JobDescription:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             start_time = time()
@@ -337,6 +353,7 @@ class Helper:
         """
             Wait until job output satisfies given regexp
         """
+        __tracebackhide__ = True
 
         async def _check_job_output() -> AsyncIterator[bytes]:
             async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
@@ -361,6 +378,7 @@ class Helper:
         )
 
     def run_cli(self, arguments: List[str], *, verbosity: int = 0) -> SysCap:
+        __tracebackhide__ = True
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
@@ -435,6 +453,7 @@ class Helper:
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             preset = client.presets["cpu-micro"]
             resources = Resources(memory_mb=preset.memory_mb, cpu=preset.cpu)
@@ -470,6 +489,7 @@ class Helper:
         """
             Try to fetch given url few times.
         """
+        __tracebackhide__ = True
         async with aiohttp.ClientSession() as session:
             for i in range(3):
                 async with session.get(url) as resp:
@@ -486,6 +506,7 @@ class Helper:
 
     @run_async
     async def kill_job(self, id_or_name: str) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(id_or_name, client=client)
             with suppress(ResourceNotFound, IllegalArgumentError):
