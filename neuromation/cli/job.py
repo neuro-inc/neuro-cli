@@ -906,8 +906,7 @@ async def run_job(
         job = await root.client.jobs.status(job.id)
         progress(job)
     progress.close()
-    # Nothing to browse unless job is running
-    if browse and job.status == JobStatus.RUNNING:
+    if browse and job.status != JobStatus.FAILED:
         await browse_job(root, job)
 
     exit_code = None
