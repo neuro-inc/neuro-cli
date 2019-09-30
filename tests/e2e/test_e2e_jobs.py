@@ -1000,11 +1000,22 @@ def test_job_run_volume_all(helper: Helper) -> None:
     command = f"bash -c '{cmd}'"
     img = UBUNTU_IMAGE_NAME
 
-    # first, run without --volume=ALL
-    captured = helper.run_cli(
-        ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
-    )
-    job_id = captured.out
+    job_name = "test-job-" + str(uuid4())[:10]
+    with pytest.raises(subprocess.CalledProcessError):
+        # first, run without --volume=ALL
+        captured = helper.run_cli(
+            [
+                "--quiet",
+                "run",
+                "--detach",
+                f"--name={job_name}",
+                "-s",
+                "cpu-micro",
+                img,
+                command,
+            ]
+        )
+    job_id = helper.resolve_job_name_to_id(job_name)
     helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
 
     # then, run with --volume=ALL
