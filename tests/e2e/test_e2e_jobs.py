@@ -890,6 +890,28 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
+    # Run a new job
+    captured = None
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        captured = helper.run_cli(
+            [
+                "-v",
+                "job",
+                "run",
+                "-s",
+                JOB_TINY_CONTAINER_PRESET,
+                "--detach",
+                "--browse",
+                UBUNTU_IMAGE_NAME,
+                f"exit 123",
+            ]
+        )
+    assert captured is None
+    assert exc_info.value.returncode == 125
+
+
+@pytest.mark.e2e
 def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
@@ -913,32 +935,40 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
 @pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
-
-    # first, run without --volume=HOME
-    capture = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "--detach",
-            "--preset=cpu-micro",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+    job_name_1, job_name_2 = (
+        "test-job-" + str(uuid4())[:10],
+        "test-job-" + str(uuid4())[:10],
     )
-    job_id_1 = capture.out
+
+    with pytest.raises(subprocess.CalledProcessError):
+        # first, run without --volume=HOME
+        helper.run_cli(
+            [
+                "-q",
+                "job",
+                "run",
+                "--detach",
+                "--preset=cpu-micro",
+                f"--name={job_name_1}",
+                UBUNTU_IMAGE_NAME,
+                command,
+            ]
+        )
+
+    job_id_1 = helper.resolve_job_name_to_id(job_name_1)
 
     helper.wait_job_change_state_from(job_id_1, JobStatus.PENDING, JobStatus.FAILED)
     helper.wait_job_change_state_to(job_id_1, JobStatus.FAILED, JobStatus.FAILED)
 
     # then, run with --volume=HOME
-    capture = helper.run_cli(
+    helper.run_cli(
         [
             "-q",
             "job",
             "run",
             "--detach",
             "--preset=cpu-micro",
+            f"--name={job_name_2}",
             "--volume",
             "HOME",
             UBUNTU_IMAGE_NAME,
@@ -946,7 +976,7 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
         ]
     )
 
-    job_id_2 = capture.out
+    job_id_2 = helper.resolve_job_name_to_id(job_name_2)
     helper.wait_job_change_state_from(job_id_2, JobStatus.PENDING, JobStatus.FAILED)
     helper.wait_job_change_state_to(job_id_2, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
@@ -966,11 +996,22 @@ def test_job_run_volume_all(helper: Helper) -> None:
     command = f"bash -c '{cmd}'"
     img = UBUNTU_IMAGE_NAME
 
-    # first, run without --volume=ALL
-    captured = helper.run_cli(
-        ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
-    )
-    job_id = captured.out
+    job_name = "test-job-" + str(uuid4())[:10]
+    with pytest.raises(subprocess.CalledProcessError):
+        # first, run without --volume=ALL
+        captured = helper.run_cli(
+            [
+                "--quiet",
+                "run",
+                "--detach",
+                f"--name={job_name}",
+                "-s",
+                "cpu-micro",
+                img,
+                command,
+            ]
+        )
+    job_id = helper.resolve_job_name_to_id(job_name)
     helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
 
     # then, run with --volume=ALL
