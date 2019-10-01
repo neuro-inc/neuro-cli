@@ -32,6 +32,7 @@ class Client(metaclass=NoPublicConstructor):
         config.check_initialized()
         self._config = config
         self._connector = connector
+        self._timeout = timeout
         if time.time() - config.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
             # expired
             cookie: Optional["Morsel[str]"] = None

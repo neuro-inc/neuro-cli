@@ -7,9 +7,6 @@ from yarl import URL
 from .core import _Core
 
 
-TIMEOUT = aiohttp.ClientTimeout(None, None, 30, 30)
-
-
 class _Registry(_Core):
     """Transport provider for registry client.
 
@@ -17,10 +14,15 @@ class _Registry(_Core):
     """
 
     def __init__(
-        self, connector: aiohttp.BaseConnector, base_url: URL, token: str, username: str
+        self,
+        connector: aiohttp.BaseConnector,
+        base_url: URL,
+        token: str,
+        timeout: aiohttp.ClientTimeout,
+        username: str,
     ) -> None:
         self._username = username
-        super().__init__(connector, base_url, token, None, TIMEOUT)
+        super().__init__(connector, base_url, token, None, timeout)
 
     def _auth_headers(self) -> Dict[str, str]:
         assert self._username
