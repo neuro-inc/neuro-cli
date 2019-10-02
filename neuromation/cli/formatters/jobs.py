@@ -73,6 +73,7 @@ class JobStatusFormatter:
         if job_status.name:
             result += f"Name: {job_status.name}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
+        result += f"Cluster: {job_status.cluster_name}\n"
         if job_status.description:
             result += f"Description: {job_status.description}\n"
         result += f"Status: {job_status.status}"
@@ -190,6 +191,7 @@ class TabularJobRow:
     image: str
     owner: str
     description: str
+    cluster_name: str
     command: str
 
     @classmethod
@@ -215,6 +217,7 @@ class TabularJobRow:
             image=str(job.container.image),
             owner=("<you>" if job.owner == username else job.owner),
             description=job.description if job.description else "",
+            cluster_name=job.cluster_name,
             command=job.container.command if job.container.command else "",
         )
 
@@ -230,6 +233,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
             "when": [4, 15],
             "image": [5, 40],
             "owner": [5, 25],
+            "cluster_name": [7, 15],
             "description": [11, 50],
             "command": [7, 0],
         }
@@ -265,6 +269,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
             when="WHEN",
             image="IMAGE",
             owner="OWNER",
+            cluster_name="CLUSTER",
             description="DESCRIPTION",
             command="COMMAND",
         )

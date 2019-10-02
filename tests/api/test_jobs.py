@@ -450,6 +450,7 @@ async def test_status_failed(
         },
         "is_preemptible": True,
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -512,6 +513,7 @@ async def test_status_with_ssh_and_http(
         },
         "is_preemptible": True,
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -574,6 +576,7 @@ async def test_status_with_tpu(
         },
         "is_preemptible": True,
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -635,6 +638,7 @@ async def test_job_run(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -733,6 +737,7 @@ async def test_job_run_with_name_and_description(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -837,6 +842,7 @@ async def test_job_run_no_volumes(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -918,6 +924,7 @@ async def test_job_run_preemptible(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1021,6 +1028,7 @@ async def test_job_run_schedule_timeout(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1094,6 +1102,7 @@ async def test_job_run_tpu(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "cluster_name": "default",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1186,6 +1195,7 @@ def create_job_response(
         },
         "is_preemptible": True,
         "owner": owner,
+        "cluster_name": "default",
     }
     if name:
         result["name"] = name

@@ -906,9 +906,10 @@ async def run_job(
         job = await root.client.jobs.status(job.id)
         progress(job)
     progress.close()
-    if browse:
+    if browse and job.status != JobStatus.FAILED:
         await browse_job(root, job)
 
+    exit_code = None
     if not detach:
         msg = textwrap.dedent(
             """\
@@ -919,8 +920,16 @@ async def run_job(
         )
         click.echo(click.style(msg, dim=True))
         await _print_logs(root, job.id)
-        res = await root.client.jobs.status(job.id)
-        sys.exit(res.history.exit_code)
+        job = await root.client.jobs.status(job.id)
+        exit_code = job.history.exit_code
+    else:
+        # Even if we detached, but the job has failed to start
+        # (most common reason - no resources), the command fails
+        if job.status == JobStatus.FAILED:
+            exit_code = 125
+
+    if exit_code is not None:
+        sys.exit(exit_code)
 
     return job
 

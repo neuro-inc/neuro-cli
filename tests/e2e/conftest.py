@@ -159,6 +159,12 @@ class Helper:
             await client.storage.rm(url, recursive=recursive)
 
     @run_async
+    async def resolve_job_name_to_id(self, job_name: str) -> str:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            return await resolve_job(job_name, client=client)
+
+    @run_async
     async def check_file_exists_on_storage(
         self, name: str, path: str, size: int, *, fromhome: bool = False
     ) -> None:
