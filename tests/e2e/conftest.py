@@ -383,7 +383,13 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(self, arguments: List[str], *, verbosity: int = 0) -> SysCap:
+    def run_cli(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+    ) -> SysCap:
         __tracebackhide__ = True
 
         log.info("Run 'neuro %s'", " ".join(arguments))
@@ -396,7 +402,7 @@ class Helper:
                 "--show-traceback",
                 "--disable-pypi-version-check",
                 "--color=no",
-                f"--network-timeout={NETWORK_TIMEOUT}",
+                f"--network-timeout={network_timeout}",
             ]
 
             if verbosity < 0:
