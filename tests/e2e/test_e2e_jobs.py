@@ -989,15 +989,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=ALL
         captured = helper.run_cli(
-            [
-                "--quiet",
-                "run",
-                "--detach",
-                "-s",
-                "cpu-micro",
-                img,
-                command,
-            ]
+            ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
         )
     assert cm.value.returncode == 125
 
