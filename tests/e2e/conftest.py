@@ -565,7 +565,10 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
 def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
     yield ret
-    ret.close()
+    with suppress(Exception):
+        # ignore exceptions in helper closing
+        # nothing to do here anyway
+        ret.close()
 
 
 def generate_random_file(path: Path, size: int) -> Tuple[str, str]:
