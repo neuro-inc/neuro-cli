@@ -558,9 +558,9 @@ async def nginx_job_async(
 
 
 @pytest.mark.e2e
-async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
+async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
     loop_sleep = 1
-    service_wait_time = 60
+    service_wait_time = 3 * 60
 
     async def get_(url: str) -> int:
         status = 999
