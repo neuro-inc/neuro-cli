@@ -935,12 +935,8 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
 @pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
-    job_name_1, job_name_2 = (
-        "test-job-" + str(uuid4())[:10],
-        "test-job-" + str(uuid4())[:10],
-    )
 
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=HOME
         helper.run_cli(
             [
@@ -949,26 +945,21 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
                 "run",
                 "--detach",
                 "--preset=cpu-micro",
-                f"--name={job_name_1}",
                 UBUNTU_IMAGE_NAME,
                 command,
             ]
         )
 
-    job_id_1 = helper.resolve_job_name_to_id(job_name_1)
-
-    helper.wait_job_change_state_from(job_id_1, JobStatus.PENDING, JobStatus.FAILED)
-    helper.wait_job_change_state_to(job_id_1, JobStatus.FAILED, JobStatus.FAILED)
+    assert cm.value.returncode == 125
 
     # then, run with --volume=HOME
-    helper.run_cli(
+    capture = helper.run_cli(
         [
             "-q",
             "job",
             "run",
             "--detach",
             "--preset=cpu-micro",
-            f"--name={job_name_2}",
             "--volume",
             "HOME",
             UBUNTU_IMAGE_NAME,
@@ -976,8 +967,7 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
         ]
     )
 
-    job_id_2 = helper.resolve_job_name_to_id(job_name_2)
-    helper.wait_job_change_state_from(job_id_2, JobStatus.PENDING, JobStatus.FAILED)
+    job_id_2 = capture.out
     helper.wait_job_change_state_to(job_id_2, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
@@ -996,23 +986,20 @@ def test_job_run_volume_all(helper: Helper) -> None:
     command = f"bash -c '{cmd}'"
     img = UBUNTU_IMAGE_NAME
 
-    job_name = "test-job-" + str(uuid4())[:10]
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=ALL
         captured = helper.run_cli(
             [
                 "--quiet",
                 "run",
                 "--detach",
-                f"--name={job_name}",
                 "-s",
                 "cpu-micro",
                 img,
                 command,
             ]
         )
-    job_id = helper.resolve_job_name_to_id(job_name)
-    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
+    assert cm.value.returncode == 125
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
