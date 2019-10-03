@@ -111,7 +111,7 @@ stages:
         CODECOV_TOKEN: '$(codecov.token)'
 
 - stage: e2e
-  displayName: "Run tests"
+  displayName: "Run e2e"
   jobs:
   - job:
     displayName: " "
