@@ -1,6 +1,6 @@
+import asyncio
 import errno
 import os
-import time
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
@@ -1066,7 +1066,7 @@ async def test_storage_upload_file_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    await asyncio.sleep(1)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
@@ -1101,7 +1101,7 @@ async def test_storage_upload_dir_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    await asyncio.sleep(1)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
@@ -1134,7 +1134,7 @@ async def test_storage_download_file_update(
         )
     assert local_file.read_bytes() == b"new"
 
-    time.sleep(2)
+    await asyncio.sleep(2)
     local_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
@@ -1169,7 +1169,7 @@ async def test_storage_download_dir_update(
         )
     assert local_file.read_bytes() == b"new"
 
-    time.sleep(2)
+    await asyncio.sleep(2)
     local_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_dir(
