@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import tarfile
+from contextlib import suppress
 from pathlib import Path
 from time import time
 from typing import Any, AsyncIterator, Callable, Dict, Tuple
@@ -554,7 +555,8 @@ async def nginx_job_async(
                 raise AssertionError("Cannot start NGINX job")
             yield job.id, str(secret)
         finally:
-            await client.jobs.kill(job.id)
+            with suppress(Exception):
+                await client.jobs.kill(job.id)
 
 
 @pytest.mark.e2e
