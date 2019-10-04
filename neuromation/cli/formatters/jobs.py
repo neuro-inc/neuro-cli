@@ -4,7 +4,6 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from math import floor
 from typing import Iterable, Iterator, List, Mapping
 
 import humanize
@@ -13,6 +12,8 @@ from click import style, unstyle
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
+
+from .ftable import table
 
 
 COLORS = {
@@ -221,13 +222,26 @@ class TabularJobRow:
             command=job.container.command if job.container.command else "",
         )
 
+    def to_list(self) -> List[str]:
+        return [
+            self.id,
+            self.name,
+            self.status,
+            self.when,
+            self.image,
+            self.owner,
+            self.description,
+            self.cluster_name,
+            self.command,
+        ]
+
 
 class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(self, width: int, username: str):
         self.width = width
         self._username = username
         self.column_length: Mapping[str, List[int]] = {
-            "id": [2, 40],
+            "id": [40, 0],
             "name": [4, 40],
             "status": [6, 10],
             "when": [4, 15],
@@ -235,59 +249,34 @@ class TabularJobsFormatter(BaseJobsFormatter):
             "owner": [5, 25],
             "cluster_name": [7, 15],
             "description": [11, 50],
-            "command": [7, 0],
+            "command": [7, 100],
         }
 
-    def _positions(self, rows: Iterable[TabularJobRow]) -> Mapping[str, int]:
-        positions = {}
-        position = 0
-        for name in self.column_length:
-            if rows:
-                sorted_length = sorted(
-                    [len(getattr(row, name)) for row in rows], reverse=True
-                )
-                n90 = floor(len(sorted_length) / 10)
-                length = sorted_length[n90]
-                if self.column_length[name][0]:
-                    length = max(length, self.column_length[name][0])
-                if self.column_length[name][1]:
-                    length = min(length, self.column_length[name][1])
-            else:
-                length = self.column_length[name][0]
-            positions[name] = position
-            position += 2 + length
-        return positions
-
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
-        rows: List[TabularJobRow] = []
-        for job in jobs:
-            rows.append(TabularJobRow.from_job(job, self._username))
-        header = TabularJobRow(
-            id="ID",
-            name="NAME",
-            status="STATUS",
-            when="WHEN",
-            image="IMAGE",
-            owner="OWNER",
-            cluster_name="CLUSTER",
-            description="DESCRIPTION",
-            command="COMMAND",
+        rows: List[List[str]] = []
+        rows.append(
+            TabularJobRow(
+                id="ID",
+                name="NAME",
+                status="STATUS",
+                when="WHEN",
+                image="IMAGE",
+                owner="OWNER",
+                cluster_name="CLUSTER",
+                description="DESCRIPTION",
+                command="COMMAND",
+            ).to_list()
         )
-        positions = self._positions(rows)
-        for row in [header] + rows:
-            line = ""
-            for name in positions.keys():
-                value = getattr(row, name)
-                if line:
-                    position = positions[name]
-                    if len(line) > position - 2:
-                        line += "  " + value
-                    else:
-                        line = line.ljust(position) + value
-                else:
-                    line = value
-            if self.width:
-                line = line[: self.width]
+        for job in jobs:
+            rows.append(TabularJobRow.from_job(job, self._username).to_list())
+        for line in table(
+            rows,
+            widths=[
+                range(w[0], w[1] + 1) if w[1] else w[0]
+                for w in self.column_length.values()
+            ],
+            max_width=self.width if self.width else None,
+        ):
             yield line
 
 
