@@ -152,8 +152,9 @@ def gen_group(index, group, target_path, parent_ctx):
         out.append("### Commands")
         out.append("")
         for cmd in commands:
+            cmd_path = f"/docs/cli/{group.name}/{cmd.name}"
             out.append(
-                f"- [neuro {group.name} {cmd.name}](/docs/cli/{group.name}/{cmd.name}): "
+                f"- [neuro {group.name} {cmd.name}]({cmd_path}): "
                 f"{cmd.get_short_help_str()}"
             )
 
