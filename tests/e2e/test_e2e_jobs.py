@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import tarfile
+from contextlib import suppress
 from pathlib import Path
 from time import time
 from typing import Any, AsyncIterator, Callable, Dict, Tuple
@@ -18,7 +19,7 @@ from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
-from tests.e2e import Helper
+from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
 
 
@@ -554,13 +555,14 @@ async def nginx_job_async(
                 raise AssertionError("Cannot start NGINX job")
             yield job.id, str(secret)
         finally:
-            await client.jobs.kill(job.id)
+            with suppress(Exception):
+                await client.jobs.kill(job.id)
 
 
 @pytest.mark.e2e
-async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
+async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
     loop_sleep = 1
-    service_wait_time = 60
+    service_wait_time = 3 * 60
 
     async def get_(url: str) -> int:
         status = 999
@@ -581,7 +583,7 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
                     await asyncio.sleep(loop_sleep)
         return status
 
-    async with api_get(path=nmrc_path) as client:
+    async with api_get(path=nmrc_path, timeout=CLIENT_TIMEOUT) as client:
         port = unused_port()
         # We test client instead of run_cli as asyncio subprocesses do
         # not work if run from thread other than main.
@@ -935,12 +937,8 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
 @pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
-    job_name_1, job_name_2 = (
-        "test-job-" + str(uuid4())[:10],
-        "test-job-" + str(uuid4())[:10],
-    )
 
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=HOME
         helper.run_cli(
             [
@@ -949,26 +947,21 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
                 "run",
                 "--detach",
                 "--preset=cpu-micro",
-                f"--name={job_name_1}",
                 UBUNTU_IMAGE_NAME,
                 command,
             ]
         )
 
-    job_id_1 = helper.resolve_job_name_to_id(job_name_1)
-
-    helper.wait_job_change_state_from(job_id_1, JobStatus.PENDING, JobStatus.FAILED)
-    helper.wait_job_change_state_to(job_id_1, JobStatus.FAILED, JobStatus.FAILED)
+    assert cm.value.returncode == 125
 
     # then, run with --volume=HOME
-    helper.run_cli(
+    capture = helper.run_cli(
         [
             "-q",
             "job",
             "run",
             "--detach",
             "--preset=cpu-micro",
-            f"--name={job_name_2}",
             "--volume",
             "HOME",
             UBUNTU_IMAGE_NAME,
@@ -976,8 +969,7 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
         ]
     )
 
-    job_id_2 = helper.resolve_job_name_to_id(job_name_2)
-    helper.wait_job_change_state_from(job_id_2, JobStatus.PENDING, JobStatus.FAILED)
+    job_id_2 = capture.out
     helper.wait_job_change_state_to(job_id_2, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
@@ -996,23 +988,12 @@ def test_job_run_volume_all(helper: Helper) -> None:
     command = f"bash -c '{cmd}'"
     img = UBUNTU_IMAGE_NAME
 
-    job_name = "test-job-" + str(uuid4())[:10]
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=ALL
         captured = helper.run_cli(
-            [
-                "--quiet",
-                "run",
-                "--detach",
-                f"--name={job_name}",
-                "-s",
-                "cpu-micro",
-                img,
-                command,
-            ]
+            ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
         )
-    job_id = helper.resolve_job_name_to_id(job_name)
-    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
+    assert cm.value.returncode == 125
 
     # then, run with --volume=ALL
     captured = helper.run_cli(

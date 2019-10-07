@@ -59,7 +59,7 @@ stages:
 - stage: test
   displayName: "Run tests"
   jobs:
-  - job: test
+  - job:
     displayName: " "
     strategy:
       matrix:
@@ -102,6 +102,56 @@ stages:
     - script: |
         make test
       displayName: 'Run unittests'
+
+    - script: |
+        pip install codecov
+        python -m codecov -f coverage.xml -X gcov
+      displayName: 'Upload coverage reports'
+      env:
+        CODECOV_TOKEN: '$(codecov.token)'
+
+- stage: e2e
+  displayName: "Run e2e"
+  jobs:
+  - job:
+    displayName: " "
+    strategy:
+      matrix:
+        Py36-Linux:
+          python.version: '3.6'
+          image: 'ubuntu-latest'
+        Py37-Linux:
+          python.version: '3.7'
+          image: 'ubuntu-latest'
+        Py36-Win64:
+          python.version: '3.6'
+          image: 'vs2017-win2016'
+        Py37-Win64:
+          python.version: '3.7'
+          image: 'vs2017-win2016'
+
+    pool:
+      vmImage: $[ variables['image'] ]
+
+    timeoutInMinutes: 30
+
+    steps:
+    - checkout: self
+      clean: true
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(python.version)'
+      displayName: "Use Python $(python.version)"
+
+    - script: |
+        python -m pip install -U pip wheel
+      displayName: 'Install prerequirements'
+
+    - script: |
+        pip install -r requirements/ci.txt pytest-azurepipelines
+        pip install .
+      displayName: 'Install dependencies'
 
     - script: |
         make e2e_ci
