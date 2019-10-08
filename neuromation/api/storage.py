@@ -1,8 +1,10 @@
 import asyncio
+import contextlib
 import datetime
 import enum
 import errno
 import fnmatch
+import logging
 import os
 import re
 import time
@@ -15,8 +17,10 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
+    ContextManager,
     Dict,
     Iterable,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -52,6 +56,9 @@ from .utils import NoPublicConstructor
 MAX_OPEN_FILES = 100
 READ_SIZE = 2 ** 20  # 1 MiB
 TIME_THRESHOLD = 1.0
+ATTEMPTS = 10
+
+log = logging.getLogger(__name__)
 
 Printer = Callable[[str], None]
 ProgressQueueItem = Optional[Tuple[Callable[[Any], None], Any]]
@@ -384,9 +391,13 @@ class Storage(metaclass=NoPublicConstructor):
         progress: AbstractFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
-        await self.create(
-            dst, self._iterate_file(src_path, dst, progress=progress, queue=queue)
-        )
+        for retry in retries(f"Fail to upload {dst}"):
+            with retry:
+                await self.create(
+                    dst,
+                    self._iterate_file(src_path, dst, progress=progress, queue=queue),
+                )
+                break
 
     async def upload_dir(
         self,
@@ -428,14 +439,22 @@ class Storage(metaclass=NoPublicConstructor):
             exists = False
             if update:
                 try:
-                    dst_files = {
-                        item.name: item for item in await self.ls(dst) if item.is_file()
-                    }
+                    for retry in retries(f"Fail to list {dst}"):
+                        with retry:
+                            dst_files = {
+                                item.name: item
+                                for item in await self.ls(dst)
+                                if item.is_file()
+                            }
+                            break
                     exists = True
                 except ResourceNotFound:
                     update = False
             if not exists:
-                await self.mkdir(dst, exist_ok=True)
+                for retry in retries(f"Fail to create {dst}"):
+                    with retry:
+                        await self.mkdir(dst, exist_ok=True)
+                        break
         except (FileExistsError, neuromation.api.IllegalArgumentError):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
@@ -532,13 +551,19 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._file_sem:
             with dst_path.open("wb") as stream:
                 await queue.put((progress.start, StorageProgressStart(src, dst, size)))
-                pos = 0
-                async for chunk in self.open(src):
-                    pos += len(chunk)
-                    await queue.put(
-                        (progress.step, StorageProgressStep(src, dst, pos, size))
-                    )
-                    await loop.run_in_executor(None, stream.write, chunk)
+                for retry in retries(f"Fail to download {src}"):
+                    with retry:
+                        pos = 0
+                        async for chunk in self.open(src):
+                            pos += len(chunk)
+                            await queue.put(
+                                (
+                                    progress.step,
+                                    StorageProgressStep(src, dst, pos, size),
+                                )
+                            )
+                            await loop.run_in_executor(None, stream.write, chunk)
+                        break
                 await queue.put(
                     (progress.complete, StorageProgressComplete(src, dst, size))
                 )
@@ -586,7 +611,12 @@ class Storage(metaclass=NoPublicConstructor):
                         item.name: item for item in dst_path.iterdir() if item.is_file()
                     },
                 )
-        folder = await self.ls(src)
+
+        for retry in retries(f"Fail to list {src}"):
+            with retry:
+                folder = await self.ls(src)
+                break
+
         for child in folder:
             name = child.name
             if child.is_file():
@@ -713,3 +743,22 @@ class _DummyProgress(AbstractRecursiveFileProgress):
 
     def fail(self, data: StorageProgressFail) -> None:
         pass
+
+
+def retries(msg: str) -> Iterator[ContextManager[None]]:
+    sleeptime = 0.0
+    for r in range(ATTEMPTS)[::-1]:
+        if r:
+
+            @contextlib.contextmanager
+            def retry() -> Iterator[None]:
+                try:
+                    yield
+                except aiohttp.ClientError as err:
+                    log.debug(f"{msg}: {err}.  Retry...")
+                    asyncio.sleep(sleeptime)
+
+            sleeptime += 0.1
+            yield retry()
+        else:
+            yield contextlib.ExitStack()  # type: ignore
