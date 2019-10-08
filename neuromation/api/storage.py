@@ -390,7 +390,6 @@ class Storage(metaclass=NoPublicConstructor):
                     dst,
                     self._iterate_file(src_path, dst, progress=progress, queue=queue),
                 )
-                break
 
     async def upload_dir(
         self,
@@ -439,7 +438,6 @@ class Storage(metaclass=NoPublicConstructor):
                                 for item in await self.ls(dst)
                                 if item.is_file()
                             }
-                            break
                     exists = True
                 except ResourceNotFound:
                     update = False
@@ -447,7 +445,6 @@ class Storage(metaclass=NoPublicConstructor):
                 for retry in retries(f"Fail to create {dst}"):
                     async with retry:
                         await self.mkdir(dst, exist_ok=True)
-                        break
         except (FileExistsError, neuromation.api.IllegalArgumentError):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
@@ -556,7 +553,6 @@ class Storage(metaclass=NoPublicConstructor):
                                 )
                             )
                             await loop.run_in_executor(None, stream.write, chunk)
-                        break
                 await queue.put(
                     (progress.complete, StorageProgressComplete(src, dst, size))
                 )
@@ -608,7 +604,6 @@ class Storage(metaclass=NoPublicConstructor):
         for retry in retries(f"Fail to list {src}"):
             async with retry:
                 folder = await self.ls(src)
-                break
 
         for child in folder:
             name = child.name
