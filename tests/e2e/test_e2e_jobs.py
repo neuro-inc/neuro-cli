@@ -990,3 +990,64 @@ def test_job_run_volume_all_and_another(helper: Helper) -> None:
         captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
         msg = "Cannot use `--volume=ALL` together with other `--volume` options"
         assert msg in captured.err
+
+
+@pytest.mark.e2e
+def test_e2e_job_top(helper: Helper) -> None:
+    def split_non_empty_parts(line: str, sep: str) -> List[str]:
+        return [part.strip() for part in line.split(sep) if part.strip()]
+
+    command = f"sleep 300"
+
+    job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
+
+    for i in range(5 * 6):  # 5 * 6 * 15 = 7.5 min
+        try:
+            capture = helper.run_cli(["job", "top", job_id, "--timeout", "15"])
+        except subprocess.CalledProcessError as ex:
+            stdout = ex.output
+            stderr = ex.stderr
+        else:
+            stdout = capture.out
+            stderr = capture.err
+
+        if "TIMESTAMP" in stdout and "MEMORY (MB)" in stdout:
+            # got response from job top telemetery
+            break
+
+        # otherwise timeout is reached without info from server
+    else:
+        assert False, "Cannot get response from server"
+
+    try:
+        header, *lines = split_non_empty_parts(stdout, sep="\n")
+    except ValueError:
+        assert False, f"cannot unpack\n{stdout}\n{stderr}"
+    header_parts = split_non_empty_parts(header, sep="\t")
+    assert header_parts == [
+        "TIMESTAMP",
+        "CPU",
+        "MEMORY (MB)",
+        "GPU (%)",
+        "GPU_MEMORY (MB)",
+    ]
+
+    for line in lines:
+        line_parts = split_non_empty_parts(line, sep="\t")
+        timestamp_pattern_parts = [
+            ("weekday", "[A-Z][a-z][a-z]"),
+            ("month", "[A-Z][a-z][a-z]"),
+            ("day", r"\d+"),
+            ("day", r"\d\d:\d\d:\d\d"),
+            ("year", "2019"),
+        ]
+        timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
+        expected_parts = [
+            ("timestamp", timestamp_pattern),
+            ("cpu", r"\d.\d\d\d"),
+            ("memory", r"\d.\d\d\d"),
+            ("gpu", "0"),
+            ("gpu memory", "0"),
+        ]
+        for actual, (descr, pattern) in zip(line_parts, expected_parts):
+            assert re.match(pattern, actual) is not None, f"error in matching {descr}"
