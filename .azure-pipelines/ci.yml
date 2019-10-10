@@ -29,8 +29,8 @@ stages:
 - template: stage-lint.yml
 - template: stage-unit.yml
   parameters:
-    codecov.token: codecov.token
+    codecov.token: $(codecov.token)
 - template: stage-e2e.yml
   parameters:
-    e2e.token: e2e.token
-    codecov.token: codecov.token
+    e2e.token: $(e2e.token)
+    codecov.token: $(codecov.token)
