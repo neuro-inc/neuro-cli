@@ -4,7 +4,8 @@ trigger:
     include:
     - master
   tags:
-    - '*'
+    include:
+      - '*'
 pr:
   autoCancel: true
   branches:
