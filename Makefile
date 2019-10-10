@@ -139,7 +139,7 @@ dist-clean:
 
 .PHONY: dist
 dist: dist-clean
-	python setup.py bdist_wheel
+	python setup.py sdist bdist_wheel
 
 .PHONY: publish-lint
 publish-lint:
