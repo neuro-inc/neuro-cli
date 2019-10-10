@@ -1,0 +1,29 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - refs/tags/*
+
+
+- stage: deployment
+  displayName: "Deploy"
+  jobs:
+  - job: deploy
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+      clean: true
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.7'
+      displayName: "User Python 3.7"
+
+    - script: |
+        make init
+      displayName: 'Install dependencies'
+
+    - script: |
+        make publish
+      displayName: 'PyPI upload'
