@@ -1066,7 +1066,7 @@ async def test_storage_upload_file_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    await asyncio.sleep(1)
+    await asyncio.sleep(5)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
@@ -1101,7 +1101,7 @@ async def test_storage_upload_dir_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    await asyncio.sleep(1)
+    await asyncio.sleep(5)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(

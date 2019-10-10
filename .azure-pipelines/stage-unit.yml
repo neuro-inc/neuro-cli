@@ -1,6 +1,6 @@
 stages:
 - stage: test
-  displayName: "Test"
+  displayName: "Unit"
   jobs:
   - job:
     displayName: " "
