@@ -95,68 +95,6 @@ def test_job_submit(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run(helper: Helper) -> None:
-
-    job_name = f"job-{os.urandom(5).hex()}"
-
-    # Kill another active jobs with same name, if any
-    captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
-    if captured.out:
-        jobs_same_name = captured.out.split("\n")
-        assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
-        job_id = jobs_same_name[0]
-        helper.kill_job(job_id)
-
-    # Remember original running jobs
-    captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
-    )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("  ")[0] for x in store_out_list]
-
-    command = 'bash -c "sleep 10m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "run",
-            "--non-preemptible",
-            "--no-wait-start",
-            "--name",
-            job_name,
-            "--preset=cpu-micro",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    match = re.match("Job ID: (.+) Status:", captured.out)
-    assert match is not None
-    job_id = match.group(1)
-    assert job_id.startswith("job-")
-    assert job_id not in jobs_orig
-    assert f"Name: {job_name}" in captured.out
-    assert re.search("Http URL: http", captured.out), captured.out
-
-    # Check it is in a running,pending job list now
-    captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
-    )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("  ")[0] for x in store_out_list]
-    assert job_id in jobs_updated
-
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
-
-    # Check that it is in a running job list
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
-    # Check that the command is in the list
-    assert command in store_out
-
-
-
-@pytest.mark.e2e
 def test_job_description(helper: Helper) -> None:
     # Remember original running jobs
     captured = helper.run_cli(
