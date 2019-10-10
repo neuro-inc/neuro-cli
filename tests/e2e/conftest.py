@@ -49,12 +49,12 @@ from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
 
-JOB_TIMEOUT = 60 * 5
+JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
-JOB_OUTPUT_TIMEOUT = 60 * 5
+JOB_OUTPUT_TIMEOUT = 5 * 60
 JOB_OUTPUT_SLEEP_SECONDS = 2
-CLI_MAX_WAIT = 180
-NETWORK_TIMEOUT = 60.0 * 3
+CLI_MAX_WAIT = 5 * 60
+NETWORK_TIMEOUT = 3 * 60.0
 CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIMEOUT)
 
 log = logging.getLogger(__name__)
@@ -396,7 +396,7 @@ class Helper:
 
         t0 = time()
         delay = 0.5
-        while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
+        while time() - t0 < CLI_MAX_WAIT:
             args = [
                 "neuro",
                 "--show-traceback",

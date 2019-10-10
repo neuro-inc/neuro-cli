@@ -22,5 +22,5 @@ schedules:
 
 stages:
 - template: stage-lint.yml
-- template: stage-test.yml
+- template: stage-unit.yml
 - template: stage-e2e.yml
