@@ -20,3 +20,4 @@ EX_USAGE = 64
 # os module has no this constant but timeout posix command exits with 124,
 # see 'man 1 timeout'
 EX_TIMEOUT = 124
+EX_PLATFORMERROR = 125  # neuro platform misfunctioning

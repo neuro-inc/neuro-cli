@@ -21,6 +21,7 @@ from .const import (
     EX_IOERR,
     EX_NOPERM,
     EX_OSFILE,
+    EX_PLATFORMERROR,
     EX_PROTOCOL,
     EX_SOFTWARE,
     EX_TIMEOUT,
@@ -317,6 +318,10 @@ def main(args: Optional[List[str]] = None) -> None:
     except neuromation.api.ClientError as error:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(EX_SOFTWARE)
+
+    except neuromation.api.ServerNotAvailable as error:
+        LOG_ERROR(f"Application error ({error})")
+        sys.exit(EX_PLATFORMERROR)
 
     except ConfigError as error:
         LOG_ERROR(f"{error}")

@@ -40,6 +40,10 @@ class ResourceNotFound(ValueError):
     pass
 
 
+class ServerNotAvailable(ValueError):
+    pass
+
+
 class _Core:
     """Transport provider for public API client.
 
@@ -74,6 +78,7 @@ class _Core:
             403: AuthorizationError,
             404: ResourceNotFound,
             405: ClientError,
+            502: ServerNotAvailable,
         }
 
     @property
