@@ -523,6 +523,10 @@ class Helper:
             id = await resolve_job(id_or_name, client=client)
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
+                while True:
+                    stat = await client.jobs.status(id)
+                    if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
+                        break
 
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
