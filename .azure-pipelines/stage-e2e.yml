@@ -43,11 +43,11 @@ stages:
       displayName: 'Install dependencies'
 
     - script: |
-        make e2e_ci
+        make e2e
       displayName: 'Run e2e'
       env:
         CLIENT_TEST_E2E_USER_NAME: '$(e2e.token)'
-        PYTEST_XDIST_NUM_PROCESSES: 64
+        PYTEST_XDIST_NUM_THREADS: 16
 
     - script: |
         pip install codecov

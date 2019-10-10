@@ -117,7 +117,7 @@ class Helper:
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
-                self.kill_job(job)
+                self.kill_job(job, wait=False)
 
     @property
     def username(self) -> str:
@@ -517,16 +517,17 @@ class Helper:
                 )
 
     @run_async
-    async def kill_job(self, id_or_name: str) -> None:
+    async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(id_or_name, client=client)
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
-                while True:
-                    stat = await client.jobs.status(id)
-                    if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
-                        break
+                if wait:
+                    while True:
+                        stat = await client.jobs.status(id)
+                        if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
+                            break
 
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
