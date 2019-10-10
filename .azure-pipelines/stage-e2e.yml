@@ -1,3 +1,7 @@
+parameters:
+  e2e.token: ''
+  codecov.token: ''
+
 stages:
 - stage: e2e
   displayName: "E2E"
@@ -46,7 +50,7 @@ stages:
         make e2e
       displayName: 'Run e2e'
       env:
-        CLIENT_TEST_E2E_USER_NAME: '$(e2e.token)'
+        CLIENT_TEST_E2E_USER_NAME: ${{ e2e.token }}
         PYTEST_XDIST_NUM_THREADS: 16
 
     - script: |
@@ -54,4 +58,4 @@ stages:
         python -m codecov -f coverage.xml -X gcov
       displayName: 'Upload coverage reports'
       env:
-        CODECOV_TOKEN: '$(codecov.token)'
+        CODECOV_TOKEN: ${{ codecov.token }}

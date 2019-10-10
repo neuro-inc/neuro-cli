@@ -20,7 +20,17 @@ schedules:
       - master
   always: true
 
+variables:
+- group: twine
+- group: e2e
+- group: codecov
+
 stages:
 - template: stage-lint.yml
 - template: stage-unit.yml
+  parameters:
+    codecov.token: codecov.token
 - template: stage-e2e.yml
+  parameters:
+    e2e.token: e2e.token
+    codecov.token: codecov.token
