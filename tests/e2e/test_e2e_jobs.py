@@ -154,19 +154,6 @@ def test_job_description(helper: Helper) -> None:
     assert description not in store_out
     assert command not in store_out
 
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
-
 
 @pytest.mark.e2e
 def test_job_kill_non_existing(helper: Helper) -> None:
