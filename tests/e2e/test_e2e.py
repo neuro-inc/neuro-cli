@@ -1,12 +1,7 @@
-import re
-import subprocess
-from typing import List
-
 import pytest
 
 import neuromation
 from tests.e2e import Helper
-from tests.e2e.utils import UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
