@@ -517,7 +517,7 @@ class Helper:
                 )
 
     @run_async
-    async def kill_job(self, id_or_name: str, *, wait: bool=True) -> None:
+    async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(id_or_name, client=client)
