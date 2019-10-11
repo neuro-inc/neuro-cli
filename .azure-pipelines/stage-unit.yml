@@ -1,6 +1,3 @@
-parameters:
-  codecov.token: ''
-
 stages:
 - stage: test
   displayName: "Unit"
@@ -54,5 +51,5 @@ stages:
         python -m codecov -f coverage.xml -X gcov
       displayName: 'Upload coverage reports'
       env:
-        CODECOV_TOKEN: ${{ parameters.codecov.token }}
+        CODECOV_TOKEN: $(codecov.token)
 
