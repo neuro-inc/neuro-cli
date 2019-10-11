@@ -1,3 +1,4 @@
+import errno
 import logging
 from http.cookies import Morsel  # noqa
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
@@ -119,7 +120,16 @@ class _Core:
             timeout=timeout,
         ) as resp:
             if 400 <= resp.status:
-                err_text = await resp.text()
+                if resp.content_type.lower() == "application/json":
+                    payload = await resp.json()
+                    err_text = payload.pop("error")
+                else:
+                    payload = {}
+                    err_text = await resp.text()
+                if resp.status == 400 and "errno" in payload:
+                    os_errno: Any = payload["errno"]
+                    os_errno = errno.__dict__.get(os_errno, os_errno)
+                    raise OSError(os_errno, err_text)
                 err_cls = self._exception_map.get(resp.status, IllegalArgumentError)
                 raise err_cls(err_text)
             else:

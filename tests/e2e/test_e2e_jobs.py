@@ -8,7 +8,7 @@ import tarfile
 from contextlib import suppress
 from pathlib import Path
 from time import time
-from typing import Any, AsyncIterator, Callable, Dict, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
 from uuid import uuid4
 
 import aiodocker
@@ -32,7 +32,7 @@ MAX_PORT = 65535
 
 
 @pytest.mark.e2e
-def test_job_lifecycle(helper: Helper) -> None:
+def test_job_submit(helper: Helper) -> None:
 
     job_name = f"job-{os.urandom(5).hex()}"
 
@@ -42,10 +42,7 @@ def test_job_lifecycle(helper: Helper) -> None:
         jobs_same_name = captured.out.split("\n")
         assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
         job_id = jobs_same_name[0]
-        helper.run_cli(["job", "kill", job_name])
-        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-        captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
-        assert not captured.out
+        helper.kill_job(job_id)
 
     # Remember original running jobs
     captured = helper.run_cli(
@@ -95,43 +92,6 @@ def test_job_lifecycle(helper: Helper) -> None:
     assert job_id in store_out
     # Check that the command is in the list
     assert command in store_out
-
-    # Check that no command is in the list if quite
-    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert command not in store_out
-
-    # Kill the job by name
-    captured = helper.run_cli(["job", "kill", job_name])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
-
-    # Check job ls by name
-    captured = helper.run_cli(["job", "ls", "-n", job_name, "-s", "succeeded"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert job_name in store_out
-
-    # Check job status by id
-    captured = helper.run_cli(["job", "status", job_id])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
-    # Check correct exit code is returned
-    # assert "Exit code: 0" in store_out
-
-    # Check job status by name
-    captured = helper.run_cli(["job", "status", job_name])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
 
 
 @pytest.mark.e2e
@@ -193,19 +153,6 @@ def test_job_description(helper: Helper) -> None:
     assert job_id in store_out
     assert description not in store_out
     assert command not in store_out
-
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
 
 
 @pytest.mark.e2e
@@ -1030,3 +977,64 @@ def test_job_run_volume_all_and_another(helper: Helper) -> None:
         captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
         msg = "Cannot use `--volume=ALL` together with other `--volume` options"
         assert msg in captured.err
+
+
+@pytest.mark.e2e
+def test_e2e_job_top(helper: Helper) -> None:
+    def split_non_empty_parts(line: str, sep: str) -> List[str]:
+        return [part.strip() for part in line.split(sep) if part.strip()]
+
+    command = f"sleep 300"
+
+    job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
+
+    for i in range(5 * 6):  # 5 * 6 * 15 = 7.5 min
+        try:
+            capture = helper.run_cli(["job", "top", job_id, "--timeout", "15"])
+        except subprocess.CalledProcessError as ex:
+            stdout = ex.output
+            stderr = ex.stderr
+        else:
+            stdout = capture.out
+            stderr = capture.err
+
+        if "TIMESTAMP" in stdout and "MEMORY (MB)" in stdout:
+            # got response from job top telemetery
+            break
+
+        # otherwise timeout is reached without info from server
+    else:
+        assert False, "Cannot get response from server"
+
+    try:
+        header, *lines = split_non_empty_parts(stdout, sep="\n")
+    except ValueError:
+        assert False, f"cannot unpack\n{stdout}\n{stderr}"
+    header_parts = split_non_empty_parts(header, sep="\t")
+    assert header_parts == [
+        "TIMESTAMP",
+        "CPU",
+        "MEMORY (MB)",
+        "GPU (%)",
+        "GPU_MEMORY (MB)",
+    ]
+
+    for line in lines:
+        line_parts = split_non_empty_parts(line, sep="\t")
+        timestamp_pattern_parts = [
+            ("weekday", "[A-Z][a-z][a-z]"),
+            ("month", "[A-Z][a-z][a-z]"),
+            ("day", r"\d+"),
+            ("day", r"\d\d:\d\d:\d\d"),
+            ("year", "2019"),
+        ]
+        timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
+        expected_parts = [
+            ("timestamp", timestamp_pattern),
+            ("cpu", r"\d.\d\d\d"),
+            ("memory", r"\d.\d\d\d"),
+            ("gpu", "0"),
+            ("gpu memory", "0"),
+        ]
+        for actual, (descr, pattern) in zip(line_parts, expected_parts):
+            assert re.match(pattern, actual) is not None, f"error in matching {descr}"

@@ -1,14 +1,8 @@
-# Python package
-# Create and test a Python package on multiple Python versions.
-# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/python
-
 trigger:
   batch: true
   branches:
     include:
     - master
-    - refs/tags/*
 pr:
   autoCancel: true
   branches:
@@ -23,146 +17,11 @@ schedules:
       - master
   always: true
 
+variables:
+- group: e2e
+- group: codecov
+
 stages:
-- stage: linters
-  displayName: "Linters"
-  jobs:
-  - job: lint
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - checkout: self
-      clean: true
-
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.7'
-      displayName: "User Python 3.7"
-
-    - script: |
-        pip install -U pip wheel
-        pip install -r requirements/ci.txt
-      displayName: 'Install dependencies'
-
-    - script: |
-        make lint
-      displayName: 'Run linters'
-
-    - script: |
-        sudo apt install libenchant-dev
-        pip install -r requirements/doc.txt
-
-    - script: |
-        make api-doc-spelling
-      displayName: 'Run docs spelling'
-      
-- stage: test
-  displayName: "Run tests"
-  jobs:
-  - job:
-    displayName: " "
-    strategy:
-      matrix:
-        Py36-Linux:
-          python.version: '3.6'
-          image: 'ubuntu-latest'
-        Py37-Linux:
-          python.version: '3.7'
-          image: 'ubuntu-latest'
-        Py36-Win64:
-          python.version: '3.6'
-          image: 'vs2017-win2016'
-        Py37-Win64:
-          python.version: '3.7'
-          image: 'vs2017-win2016'
-
-    pool:
-      vmImage: $[ variables['image'] ]
-
-    timeoutInMinutes: 30
-
-    steps:
-    - checkout: self
-      clean: true
-
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '$(python.version)'
-      displayName: "Use Python $(python.version)"
-
-    - script: |
-        python -m pip install -U pip wheel
-      displayName: 'Install prerequirements'
-
-    - script: |
-        pip install -r requirements/ci.txt pytest-azurepipelines
-        pip install .
-      displayName: 'Install dependencies'
-
-    - script: |
-        make test
-      displayName: 'Run unittests'
-
-    - script: |
-        pip install codecov
-        python -m codecov -f coverage.xml -X gcov
-      displayName: 'Upload coverage reports'
-      env:
-        CODECOV_TOKEN: '$(codecov.token)'
-
-- stage: e2e
-  displayName: "Run e2e"
-  jobs:
-  - job:
-    displayName: " "
-    strategy:
-      matrix:
-        Py36-Linux:
-          python.version: '3.6'
-          image: 'ubuntu-latest'
-        Py37-Linux:
-          python.version: '3.7'
-          image: 'ubuntu-latest'
-        Py36-Win64:
-          python.version: '3.6'
-          image: 'vs2017-win2016'
-        Py37-Win64:
-          python.version: '3.7'
-          image: 'vs2017-win2016'
-
-    pool:
-      vmImage: $[ variables['image'] ]
-
-    timeoutInMinutes: 30
-
-    steps:
-    - checkout: self
-      clean: true
-
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '$(python.version)'
-      displayName: "Use Python $(python.version)"
-
-    - script: |
-        python -m pip install -U pip wheel
-      displayName: 'Install prerequirements'
-
-    - script: |
-        pip install -r requirements/ci.txt pytest-azurepipelines
-        pip install .
-      displayName: 'Install dependencies'
-
-    - script: |
-        make e2e_ci
-      displayName: 'Run e2e'
-      env:
-        CLIENT_TEST_E2E_USER_NAME: '$(e2e.token)'
-        PYTEST_XDIST_NUM_PROCESSES: 64
-
-    - script: |
-        pip install codecov
-        python -m codecov -f coverage.xml -X gcov
-      displayName: 'Upload coverage reports'
-      env:
-        CODECOV_TOKEN: '$(codecov.token)'
+- template: stage-lint.yml
+- template: stage-unit.yml
+- template: stage-e2e.yml

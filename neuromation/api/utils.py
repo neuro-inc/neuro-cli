@@ -1,15 +1,22 @@
+import asyncio
+import logging
 import sys
 from types import TracebackType
 from typing import (
     Any,
+    AsyncIterator,
     Awaitable,
+    Callable,
     Coroutine,
     Generator,
     Generic,
+    Iterator,
     Optional,
     Type,
     TypeVar,
 )
+
+import aiohttp
 
 
 if sys.version_info >= (3, 7):  # pragma: no cover
@@ -73,3 +80,31 @@ class _ContextManager(Generic[_T], Awaitable[_T], AsyncContextManager[_T]):
         # Need to teach mypy about this facility
         await self._ret.close()  # type: ignore
         return None
+
+
+log = logging.getLogger(__name__)
+
+
+def retries(
+    msg: str, attempts: int = 10, logger: Callable[[str], None] = log.info
+) -> Iterator[AsyncContextManager[None]]:
+    sleeptime = 0.0
+    while attempts:
+
+        @asynccontextmanager
+        async def retry() -> AsyncIterator[None]:
+            nonlocal attempts
+            if attempts:
+                try:
+                    yield
+                except aiohttp.ClientError as err:
+                    logger(f"{msg}: {err}.  Retry...")
+                    await asyncio.sleep(sleeptime)
+                else:
+                    attempts = 0
+            else:
+                yield
+
+        sleeptime += 0.1
+        attempts -= 1
+        yield retry()

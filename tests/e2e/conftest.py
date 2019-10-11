@@ -49,12 +49,12 @@ from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
 
-JOB_TIMEOUT = 60 * 5
+JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
-JOB_OUTPUT_TIMEOUT = 60 * 5
+JOB_OUTPUT_TIMEOUT = 5 * 60
 JOB_OUTPUT_SLEEP_SECONDS = 2
-CLI_MAX_WAIT = 180
-NETWORK_TIMEOUT = 60.0 * 3
+CLI_MAX_WAIT = 5 * 60
+NETWORK_TIMEOUT = 3 * 60.0
 CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIMEOUT)
 
 log = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ class Helper:
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
-                self.kill_job(job)
+                self.kill_job(job, wait=False)
 
     @property
     def username(self) -> str:
@@ -396,7 +396,7 @@ class Helper:
 
         t0 = time()
         delay = 0.5
-        while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
+        while time() - t0 < CLI_MAX_WAIT:
             args = [
                 "neuro",
                 "--show-traceback",
@@ -517,12 +517,17 @@ class Helper:
                 )
 
     @run_async
-    async def kill_job(self, id_or_name: str) -> None:
+    async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(id_or_name, client=client)
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
+                if wait:
+                    while True:
+                        stat = await client.jobs.status(id)
+                        if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
+                            break
 
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:

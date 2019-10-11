@@ -46,7 +46,7 @@ from .url_utils import (
     normalize_storage_path_uri,
 )
 from .users import Action
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, retries
 
 
 MAX_OPEN_FILES = 100
@@ -384,9 +384,12 @@ class Storage(metaclass=NoPublicConstructor):
         progress: AbstractFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
-        await self.create(
-            dst, self._iterate_file(src_path, dst, progress=progress, queue=queue)
-        )
+        for retry in retries(f"Fail to upload {dst}"):
+            async with retry:
+                await self.create(
+                    dst,
+                    self._iterate_file(src_path, dst, progress=progress, queue=queue),
+                )
 
     async def upload_dir(
         self,
@@ -428,14 +431,20 @@ class Storage(metaclass=NoPublicConstructor):
             exists = False
             if update:
                 try:
-                    dst_files = {
-                        item.name: item for item in await self.ls(dst) if item.is_file()
-                    }
+                    for retry in retries(f"Fail to list {dst}"):
+                        async with retry:
+                            dst_files = {
+                                item.name: item
+                                for item in await self.ls(dst)
+                                if item.is_file()
+                            }
                     exists = True
                 except ResourceNotFound:
                     update = False
             if not exists:
-                await self.mkdir(dst, exist_ok=True)
+                for retry in retries(f"Fail to create {dst}"):
+                    async with retry:
+                        await self.mkdir(dst, exist_ok=True)
         except (FileExistsError, neuromation.api.IllegalArgumentError):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
@@ -532,13 +541,18 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._file_sem:
             with dst_path.open("wb") as stream:
                 await queue.put((progress.start, StorageProgressStart(src, dst, size)))
-                pos = 0
-                async for chunk in self.open(src):
-                    pos += len(chunk)
-                    await queue.put(
-                        (progress.step, StorageProgressStep(src, dst, pos, size))
-                    )
-                    await loop.run_in_executor(None, stream.write, chunk)
+                for retry in retries(f"Fail to download {src}"):
+                    async with retry:
+                        pos = 0
+                        async for chunk in self.open(src):
+                            pos += len(chunk)
+                            await queue.put(
+                                (
+                                    progress.step,
+                                    StorageProgressStep(src, dst, pos, size),
+                                )
+                            )
+                            await loop.run_in_executor(None, stream.write, chunk)
                 await queue.put(
                     (progress.complete, StorageProgressComplete(src, dst, size))
                 )
@@ -586,7 +600,11 @@ class Storage(metaclass=NoPublicConstructor):
                         item.name: item for item in dst_path.iterdir() if item.is_file()
                     },
                 )
-        folder = await self.ls(src)
+
+        for retry in retries(f"Fail to list {src}"):
+            async with retry:
+                folder = await self.ls(src)
+
         for child in folder:
             name = child.name
             if child.is_file():
