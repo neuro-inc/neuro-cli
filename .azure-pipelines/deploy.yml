@@ -1,10 +1,26 @@
 trigger:
-  batch: true
-  branches:
+  batch: false
+  tags:
     include:
-    - refs/tags/*
+    - v*
+pr: none
 
 
+variables:
+- group: twine
+- group: e2e
+- group: codecov
+
+
+stages:
+- template: stage-lint.yml
+- template: stage-unit.yml
+  parameters:
+    codecov.token: $(codecov.token)
+- template: stage-e2e.yml
+  parameters:
+    e2e.token: $(e2e.token)
+    codecov.token: $(codecov.token)
 - stage: deployment
   displayName: "Deploy"
   jobs:
@@ -27,3 +43,7 @@ trigger:
     - script: |
         make publish
       displayName: 'PyPI upload'
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: $(twine.token)
+      

@@ -3,9 +3,6 @@ trigger:
   branches:
     include:
     - master
-  tags:
-    include:
-      - '*'
 pr:
   autoCancel: true
   branches:
@@ -19,6 +16,10 @@ schedules:
     include:
       - master
   always: true
+
+variables:
+- group: e2e
+- group: codecov
 
 stages:
 - template: stage-lint.yml
