@@ -509,7 +509,7 @@ async def nginx_job_async(
 @pytest.mark.e2e
 async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
     loop_sleep = 1
-    service_wait_time = 3 * 60
+    service_wait_time = 10 * 60
 
     async def get_(url: str) -> int:
         status = 999
@@ -548,7 +548,7 @@ def test_job_submit_http_auth(
     helper: Helper, secret_job: Callable[..., Dict[str, Any]]
 ) -> None:
     loop_sleep = 1
-    service_wait_time = 60
+    service_wait_time = 10 * 60
 
     async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
