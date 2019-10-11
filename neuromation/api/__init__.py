@@ -34,6 +34,7 @@ from .core import (
     ClientError,
     IllegalArgumentError,
     ResourceNotFound,
+    ServerNotAvailable,
 )
 from .jobs import (
     Container,
@@ -76,6 +77,7 @@ __all__ = (
     "AuthError",
     "AuthenticationError",
     "AuthorizationError",
+    "ServerNotAvailable",
     "AbstractFileProgress",
     "AbstractRecursiveFileProgress",
     "AbstractDockerImageProgress",
