@@ -1364,7 +1364,9 @@ class TestConfigFormatter:
             no = "No"
         else:
             no = " " + "✖︎"
-        assert "\n".join(line.rstrip() for line in click.unstyle(out).splitlines()) == textwrap.dedent(
+        assert "\n".join(
+            line.rstrip() for line in click.unstyle(out).splitlines()
+        ) == textwrap.dedent(
             f"""\
             User Configuration:
               User Name: user
@@ -1405,7 +1407,9 @@ class TestConfigFormatter:
         else:
             no = " " + "✖︎"
 
-        assert "\n".join(line.rstrip() for line in click.unstyle(out).splitlines()) == textwrap.dedent(
+        assert "\n".join(
+            line.rstrip() for line in click.unstyle(out).splitlines()
+        ) == textwrap.dedent(
             f"""\
             User Configuration:
               User Name: user
