@@ -89,7 +89,7 @@ def _row(
 
 def _cell(val: str, width: int, align: Optional[Align] = Align.LEFT) -> Iterator[str]:
     if width <= 0:
-        raise TypeError(f"Width must be positive integer")
+        raise TypeError("Width must be positive integer")
     else:
         if align == Align.LEFT or align is None:
             format_func = "ljust"
