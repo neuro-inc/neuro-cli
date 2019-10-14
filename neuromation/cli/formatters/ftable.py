@@ -61,7 +61,7 @@ def table(
             else:
                 calc_widths.append(max_cell_width)
         else:
-            raise TypeError(f"Unsopported width[{i}]: {width!r}")
+            raise TypeError(f"Unsupported width[{i}]: {width!r}")
 
     # How many empty columns can be displayed
     max_empty_columns = len(rows[0])
