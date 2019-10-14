@@ -39,7 +39,7 @@ def table(
             else:
                 calc_widths.append(width[-1])
         else:
-            raise TypeError(f"Unsopported width[{i}]: {widths[i]}")
+            raise TypeError(f"Unsopported width[{i}]: {width!r}")
 
     # How many empty columns can be displayed
     max_empty_columns = len(rows[0])
