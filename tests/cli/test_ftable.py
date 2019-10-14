@@ -42,10 +42,6 @@ class TestRow:
         result = list(_row(fields=["one", "two"], widths=[3, 3]))
         assert result == ["one  two"]
 
-    def test_partial_width(self) -> None:
-        with pytest.raises(TypeError, match=r"positive integer"):
-            list(_row(["one", "two"], [3], [Align.LEFT]))
-
     def test_multiline(self) -> None:
         result = _row(fields=["one", "two and more"], widths=[3, 4])
         assert result
