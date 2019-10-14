@@ -4,7 +4,7 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List, Mapping
+from typing import Iterable, Iterator, List
 
 import humanize
 from click import style, unstyle
@@ -13,7 +13,7 @@ from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
-from .ftable import table
+from .ftable import ColumnWidth, table
 
 
 COLORS = {
@@ -230,8 +230,8 @@ class TabularJobRow:
             self.when,
             self.image,
             self.owner,
-            self.description,
             self.cluster_name,
+            self.description,
             self.command,
         ]
 
@@ -240,17 +240,6 @@ class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(self, width: int, username: str):
         self.width = width
         self._username = username
-        self.column_length: Mapping[str, List[int]] = {
-            "id": [40, 0],
-            "name": [4, 40],
-            "status": [6, 10],
-            "when": [4, 15],
-            "image": [5, 40],
-            "owner": [5, 25],
-            "cluster_name": [7, 15],
-            "description": [11, 50],
-            "command": [7, 100],
-        }
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[List[str]] = []
@@ -272,8 +261,15 @@ class TabularJobsFormatter(BaseJobsFormatter):
         for line in table(
             rows,
             widths=[
-                range(w[0], w[1] + 1) if w[1] else w[0]
-                for w in self.column_length.values()
+                None,
+                ColumnWidth(max=20),
+                ColumnWidth(max=10),
+                ColumnWidth(max=15),
+                ColumnWidth(max=40),
+                ColumnWidth(max=25),
+                ColumnWidth(max=15),
+                ColumnWidth(max=50),
+                ColumnWidth(max=100),
             ],
             max_width=self.width if self.width else None,
         ):

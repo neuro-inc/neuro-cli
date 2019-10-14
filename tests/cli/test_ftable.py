@@ -1,6 +1,6 @@
 import pytest
 
-from neuromation.cli.formatters.ftable import Align, _cell, _row, table
+from neuromation.cli.formatters.ftable import Align, ColumnWidth, _cell, _row, table
 
 
 class TestCell:
@@ -102,12 +102,12 @@ class TestTable:
 
     def test_width_range_simple(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
-        result = list(table(rows, widths=[range(1, 2), range(1, 6)]))
+        result = list(table(rows, widths=[ColumnWidth(1, 1), ColumnWidth(1, 5)]))
         assert result == ["a  Alpha", "b  Bravo"]
 
     def test_width_range_overflow(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
-        result = list(table(rows, widths=[range(1, 2), range(1, 5)]))
+        result = list(table(rows, widths=[ColumnWidth(1, 1), ColumnWidth(1, 4)]))
         assert len(result) == 4
 
     def test_empty_first_columns(self) -> None:

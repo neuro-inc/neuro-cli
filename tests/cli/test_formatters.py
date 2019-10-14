@@ -754,7 +754,7 @@ class TestTabularJobsFormatter:
             is_preemptible=True,
         )
         formatter = TabularJobsFormatter(0, "owner")
-        result = [item for item in formatter([job])]
+        result = [item.rstrip() for item in formatter([job])]
         assert result in [
             [
                 "ID  NAME  STATUS  WHEN  IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",
@@ -828,11 +828,12 @@ class TestTabularJobsFormatter:
             ),
         ]
         formatter = TabularJobsFormatter(0, "owner")
-        result = [item for item in formatter(jobs)]
+        result = [item.rstrip() for item in formatter(jobs)]
         assert result == [
-            "ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
+            f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
             f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-tag  {owner_printed}  default  some description                     ls -la /some/path",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-    {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
+            f"                                                                       tag",  # noqa: E501
         ]
 
 
