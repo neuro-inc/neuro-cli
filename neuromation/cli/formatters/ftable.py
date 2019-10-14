@@ -61,7 +61,7 @@ def table(
             else:
                 calc_widths.append(max_cell_width)
         else:
-            raise TypeError(f"Unsopported width[{i}]: {widths[i]}")
+            raise TypeError(f"Unsopported width[{i}]: {width!r}")
 
     # How many empty columns can be displayed
     max_empty_columns = len(rows[0])
@@ -111,7 +111,7 @@ def _row(
 
 
 def _cell(val: str, width: int, align: Optional[Align] = Align.LEFT) -> Iterator[str]:
-    if not width or width <= 0:
+    if width <= 0:
         raise TypeError(f"Width must be positive integer")
     try:
         format_func = _align_to_format[align]
