@@ -56,7 +56,11 @@ class ConfigFormatter:
                 gpu,
             ]
             if has_tpu:
-                tpu = f"{preset.tpu_type}/{preset.tpu_software_version}" if preset.tpu_type else ''
+                tpu = (
+                    f"{preset.tpu_type}/{preset.tpu_software_version}"
+                    if preset.tpu_type
+                    else ""
+                )
                 row.append(tpu)
             rows.append(row)
         yield from table(
