@@ -1380,10 +1380,7 @@ class TestConfigFormatter:
             cpu-large     7     14G       {no}"""
         )
 
-    @pytest.mark.parametrize("platform", ["linux", "win32"])
-    async def test_output_for_tpu_presets(
-        self, root: Root, monkeypatch: Any, platform: str
-    ) -> None:
+    async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
         presets = dict(root.resource_presets)
 
         presets["tpu-small"] = Preset(
@@ -1404,7 +1401,6 @@ class TestConfigFormatter:
         )
 
         monkeypatch.setattr("neuromation.cli.root.Root.resource_presets", presets)
-        monkeypatch.setattr("neuromation.cli.formatters.config.platform", platform)
 
         out = ConfigFormatter()(root)
         if platform == "win32":
