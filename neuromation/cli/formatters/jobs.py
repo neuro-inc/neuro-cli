@@ -261,7 +261,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
         for line in table(
             rows,
             widths=[
-                None,
+                ColumnWidth(),
                 ColumnWidth(max=20),
                 ColumnWidth(max=10),
                 ColumnWidth(max=15),

@@ -50,7 +50,9 @@ class TestRow:
 class TestTable:
     def test_simple(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
-        result = list(table(rows, widths=[10, 10]))
+        result = list(
+            table(rows, widths=[ColumnWidth(width=10), ColumnWidth(width=10)])
+        )
         print("\n" + "\n".join(result))
         assert len(result) == 2
         assert "a" in result[0]
@@ -64,7 +66,13 @@ class TestTable:
             ["b", "Bravo and Delta And Epsilon"],
             ["two line here", "1213241324141413134"],
         ]
-        result = list(table(rows, aligns=[Align.CENTER, Align.RIGHT], widths=[10, 10]))
+        result = list(
+            table(
+                rows,
+                aligns=[Align.CENTER, Align.RIGHT],
+                widths=[ColumnWidth(width=10), ColumnWidth(width=10)],
+            )
+        )
         assert len(result) == 6
         assert "a" in result[0]
         assert "Alpha" in result[0]
@@ -81,13 +89,13 @@ class TestTable:
 
     def test_partial_row_width(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
-        result = list(table(rows, widths=[None, 10]))
+        result = list(table(rows, widths=[ColumnWidth(), ColumnWidth(width=10)]))
         assert result == ["a  Alpha     ", "b  Bravo     "]
 
-        result = list(table(rows, widths=[5]))
+        result = list(table(rows, widths=[ColumnWidth(width=5)]))
         assert result == ["a      Alpha", "b      Bravo"]
 
-        result = list(table(rows, widths=[5, None]))
+        result = list(table(rows, widths=[ColumnWidth(width=5), ColumnWidth()]))
         assert result == ["a      Alpha", "b      Bravo"]
 
     def test_max_width(self) -> None:
@@ -108,5 +116,9 @@ class TestTable:
 
     def test_empty_first_columns(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
-        result = list(table(rows, max_width=2, widths=[1, 2]))
+        result = list(
+            table(
+                rows, max_width=2, widths=[ColumnWidth(width=1), ColumnWidth(width=2)]
+            )
+        )
         assert result == ["a ", "b "]

@@ -2,6 +2,7 @@ import textwrap
 import time
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from sys import platform
 from typing import Any, List, Optional
 
 import click
@@ -1357,9 +1358,7 @@ class TestResourcesFormatter:
 
 
 class TestConfigFormatter:
-    @pytest.mark.parametrize("platform", ["linux", "win32"])
-    async def test_output(self, root: Root, monkeypatch: Any, platform: str) -> None:
-        monkeypatch.setattr("neuromation.cli.formatters.config.platform", platform)
+    async def test_output(self, root: Root) -> None:
         out = ConfigFormatter()(root)
         if platform == "win32":
             no = "No"

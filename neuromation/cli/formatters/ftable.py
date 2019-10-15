@@ -2,21 +2,26 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import zip_longest
 from textwrap import wrap
-from typing import Any, Iterator, List, Optional, Sequence, Union
+from typing import Any, Iterator, List, Optional, Sequence
 
 
 __all__ = ["table"]
 __version__ = "0.1"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ColumnWidth:
     min: Optional[int] = None
     max: Optional[int] = None
+    width: Optional[int] = None
 
     def __post_init__(self) -> None:
-        assert not self.min or self.min > 0
-        assert not self.max or self.max > 0
+        if self.width and self.width < 0:
+            raise ValueError("Width must be positive integer")
+        if self.min and self.min < 0:
+            raise ValueError("Min must be positive integer")
+        if self.max and self.max < 0:
+            raise ValueError("Max must be positive integer")
 
 
 class Align(str, Enum):
@@ -35,40 +40,35 @@ _align_to_format = {
 
 def table(
     rows: Sequence[Sequence[str]],
-    widths: Sequence[Optional[Union[int, ColumnWidth]]] = (),
+    widths: Sequence[ColumnWidth] = (),
     aligns: Sequence[Align] = (),
     max_width: Optional[int] = None,
 ) -> Iterator[str]:
 
     # Columns widths calculation
     if len(widths) < len(rows[0]):
-        widths = tuple(widths) + tuple([None]) * (len(rows[0]) - len(widths))
+        widths = tuple(widths) + tuple([ColumnWidth()]) * (len(rows[0]) - len(widths))
     calc_widths: List[int] = []
     for i, width in enumerate(widths):
-        if isinstance(width, int):
-            calc_widths.append(width)
-            continue
         max_cell_width: int = max(len(row[i]) for row in rows)
-        if width is None:
+        width_min = width.min if width.min else width.width
+        width_max = width.max if width.max else width.width
+
+        if (not width_min or width_min <= max_cell_width) and (
+            not width_max or width_max >= max_cell_width
+        ):
             calc_widths.append(max_cell_width)
-        elif isinstance(width, ColumnWidth):
-            if (not width.min or width.min <= max_cell_width) and (
-                not width.max or width.max >= max_cell_width
-            ):
-                calc_widths.append(max_cell_width)
-            elif width.max:
-                calc_widths.append(width.max)
-            else:
-                calc_widths.append(max_cell_width)
+        elif width_max:
+            calc_widths.append(width_max)
         else:
-            raise TypeError(f"Unsupported width[{i}]: {width!r}")
+            calc_widths.append(max_cell_width)
 
     # How many empty columns can be displayed
     max_empty_columns = len(rows[0])
     if max_width:
         sum_width = 0
-        for i, width in enumerate(calc_widths):
-            sum_width += width
+        for i, column_width in enumerate(calc_widths):
+            sum_width += column_width
             if sum_width > max_width:
                 max_empty_columns = i
                 break
