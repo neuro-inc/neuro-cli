@@ -89,7 +89,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
         )
-        connector = aiohttp.TCPConnector()
-        return Client._create(connector, config)
+        session = aiohttp.ClientSession()
+        return Client._create(session, config)
 
     return go

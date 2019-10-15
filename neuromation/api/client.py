@@ -7,7 +7,7 @@ from typing import Mapping, Optional, Type
 import aiohttp
 
 from .config import _Config
-from .core import DEFAULT_TIMEOUT, _Core
+from .core import _Core
 from .images import Images
 from .jobs import Jobs
 from .login import Preset
@@ -21,18 +21,11 @@ SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 
 
 class Client(metaclass=NoPublicConstructor):
-    def __init__(
-        self,
-        connector: aiohttp.BaseConnector,
-        config: _Config,
-        *,
-        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
-    ) -> None:
+    def __init__(self, session: aiohttp.ClientSession, config: _Config) -> None:
         self._closed = False
         config.check_initialized()
         self._config = config
-        self._connector = connector
-        self._timeout = timeout
+        self._session = session
         if time.time() - config.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
             # expired
             cookie: Optional["Morsel[str]"] = None
@@ -44,7 +37,7 @@ class Client(metaclass=NoPublicConstructor):
             cookie["domain"] = config.url.raw_host
             cookie["path"] = "/"
         self._core = _Core(
-            connector, self._config.url, self._config.auth_token.token, cookie, timeout
+            session, self._config.url, self._config.auth_token.token, cookie
         )
         self._jobs = Jobs._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
@@ -59,7 +52,7 @@ class Client(metaclass=NoPublicConstructor):
         await self._core.close()
         if self._images is not None:
             await self._images._close()
-        await self._connector.close()
+        await self._session.close()
 
     async def __aenter__(self) -> "Client":
         return self

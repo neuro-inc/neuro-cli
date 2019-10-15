@@ -201,10 +201,7 @@ class TestConfigFileInteraction:
         new_token = jwt.encode({"identity": "new_user"}, "secret", algorithm="HS256")
 
         async def _refresh_token_mock(
-            connector: aiohttp.BaseConnector,
-            config: _AuthConfig,
-            token: _AuthToken,
-            timeout: aiohttp.ClientTimeout,
+            connector: aiohttp.ClientSession, config: _AuthConfig, token: _AuthToken
         ) -> _AuthToken:
             return _AuthToken.create_non_expiring(new_token)
 

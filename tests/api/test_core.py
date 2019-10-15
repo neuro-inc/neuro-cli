@@ -12,7 +12,7 @@ from typing_extensions import AsyncContextManager
 from yarl import URL
 
 from neuromation.api import IllegalArgumentError, ServerNotAvailable
-from neuromation.api.core import DEFAULT_TIMEOUT, _Core
+from neuromation.api.core import _Core
 from tests import _TestServerFactory
 
 
@@ -34,10 +34,11 @@ async def api_factory() -> AsyncIterator[_ApiFactory]:
         ssl_context = ssl.SSLContext()
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
-        api = _Core(connector, url, "token", cookie, DEFAULT_TIMEOUT)
+        session = aiohttp.ClientSession(connector=connector)
+        api = _Core(session, url, "token", cookie)
         yield api
         await api.close()
-        await connector.close()
+        await session.close()
 
     yield factory
 
