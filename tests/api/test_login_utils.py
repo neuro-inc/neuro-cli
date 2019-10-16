@@ -10,10 +10,10 @@ from neuromation.api.login import (
     _ServerConfig,
     get_server_config,
 )
-from tests import _TestServerFactory
+from tests import _TestClientFactory
 
 
-async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
+async def test_get_server_config(aiohttp_client: _TestClientFactory) -> None:
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
@@ -41,10 +41,9 @@ async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
 
     app = web.Application()
     app.router.add_get("/config", handler)
-    srv = await aiohttp_server(app)
+    client = await aiohttp_client(app)
 
-    async with aiohttp.TCPConnector() as connector:
-        config = await get_server_config(connector, srv.make_url("/"))
+    config = await get_server_config(client.session, client.make_url("/"))
     assert config == _ServerConfig(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
@@ -66,7 +65,7 @@ async def test_get_server_config(aiohttp_server: _TestServerFactory) -> None:
 
 
 async def test_get_server_config_no_callback_urls(
-    aiohttp_server: _TestServerFactory
+    aiohttp_client: _TestClientFactory
 ) -> None:
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
@@ -89,10 +88,9 @@ async def test_get_server_config_no_callback_urls(
 
     app = web.Application()
     app.router.add_get("/config", handler)
-    srv = await aiohttp_server(app)
+    client = await aiohttp_client(app)
 
-    async with aiohttp.TCPConnector() as connector:
-        config = await get_server_config(connector, srv.make_url("/"))
+    config = await get_server_config(client.session, client.make_url("/"))
     assert config == _ServerConfig(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
@@ -112,7 +110,7 @@ async def test_get_server_config_no_callback_urls(
     )
 
 
-async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) -> None:
+async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) -> None:
     registry_url = "https://registry.dev.neuromation.io"
     storage_url = "https://storage.dev.neuromation.io"
     users_url = "https://dev.neuromation.io/users"
@@ -160,12 +158,11 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
 
     app = web.Application()
     app.router.add_get("/config", handler)
-    srv = await aiohttp_server(app)
+    client = await aiohttp_client(app)
 
-    async with aiohttp.TCPConnector() as connector:
-        config = await get_server_config(
-            connector, srv.make_url("/"), token="bananatoken"
-        )
+    config = await get_server_config(
+        client.session, client.make_url("/"), token="bananatoken"
+    )
     assert config == _ServerConfig(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
@@ -194,14 +191,13 @@ async def test_get_server_config_with_token(aiohttp_server: _TestServerFactory) 
     )
 
 
-async def test_get_server_config__fail(aiohttp_server: _TestServerFactory) -> None:
+async def test_get_server_config__fail(aiohttp_client: _TestClientFactory) -> None:
     async def handler(request: web.Request) -> web.Response:
         raise aiohttp.web.HTTPInternalServerError(reason="unexpected server error")
 
     app = web.Application()
     app.router.add_get("/config", handler)
-    srv = await aiohttp_server(app)
+    client = await aiohttp_client(app)
 
     with pytest.raises(RuntimeError, match="Unable to get server configuration: 500"):
-        async with aiohttp.TCPConnector() as connector:
-            await get_server_config(connector, srv.make_url("/"))
+        await get_server_config(client.session, client.make_url("/"))

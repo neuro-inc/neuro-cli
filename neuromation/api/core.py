@@ -4,8 +4,8 @@ from http.cookies import Morsel  # noqa
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
-import attr
 from aiohttp import WSMessage
+from multidict import CIMultiDict
 from yarl import URL
 
 from .utils import asynccontextmanager
@@ -52,25 +52,19 @@ class _Core:
 
     def __init__(
         self,
-        connector: aiohttp.BaseConnector,
+        session: aiohttp.ClientSession,
         base_url: URL,
         token: str,
         cookie: Optional["Morsel[str]"],
-        timeout: aiohttp.ClientTimeout,
     ) -> None:
-        self._connector = connector
+        self._session = session
         self._base_url = base_url
         self._token = token
-        self._timeout = timeout
-        self._session = aiohttp.ClientSession(
-            connector=connector,
-            connector_owner=False,
-            timeout=timeout,
-            headers=self._auth_headers(),
-        )
+        self._headers = self._auth_headers()
         if cookie is not None:
             self._session.cookie_jar.update_cookies(  # type: ignore
                 {"NEURO_SESSION": cookie}
+                # TODO: pass cookie["domain"]
             )
         self._exception_map = {
             400: IllegalArgumentError,
@@ -82,15 +76,16 @@ class _Core:
         }
 
     @property
-    def connector(self) -> aiohttp.BaseConnector:
-        return self._connector
+    def timeout(self) -> aiohttp.ClientTimeout:
+        # TODO: implement ClientSession.timeout public property for session
+        return self._session._timeout
 
     @property
-    def timeout(self) -> aiohttp.ClientTimeout:
-        return self._timeout
+    def session(self) -> aiohttp.ClientSession:
+        return self._session
 
     async def close(self) -> None:
-        await self._session.close()
+        pass
 
     def _auth_headers(self) -> Dict[str, str]:
         headers = {"Authorization": f"Bearer {self._token}"} if self._token else {}
@@ -111,14 +106,15 @@ class _Core:
         if not url.is_absolute():
             url = (self._base_url / "").join(url)
         log.debug("Fetch [%s] %s", method, url)
-        if timeout is None:
-            timeout = self._timeout
-        if timeout.sock_read is not None:
-            timeout = attr.evolve(timeout, total=3 * 60)
+        if headers is not None:
+            real_headers = CIMultiDict(headers)
+        else:
+            real_headers = CIMultiDict()
+        real_headers.update(self._headers)
         async with self._session.request(
             method,
             url,
-            headers=headers,
+            headers=real_headers,
             params=params,
             json=json,
             data=data,

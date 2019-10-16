@@ -45,10 +45,9 @@ class Images(metaclass=NoPublicConstructor):
                 )
             raise
         self._registry = _Registry(
-            self._core.connector,
+            self._core.session,
             self._config.cluster_config.registry_url.with_path("/v2/"),
             self._config.auth_token.token,
-            self._core.timeout,
             self._config.auth_token.username,
         )
 
