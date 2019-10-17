@@ -11,7 +11,7 @@ from contextlib import suppress
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
-from time import sleep, time
+from time import time
 from typing import (
     Any,
     AsyncIterator,
@@ -44,7 +44,6 @@ from neuromation.api import (
 )
 from neuromation.api.config import _CookieSession
 from neuromation.cli.asyncio_utils import run
-from neuromation.cli.const import EX_IOERR
 from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
@@ -73,10 +72,6 @@ def loop() -> Iterator[asyncio.AbstractEventLoop]:
     yield loop
     loop.run_until_complete(loop.shutdown_asyncgens())
     loop.close()
-
-
-class TestRetriesExceeded(Exception):
-    pass
 
 
 SysCap = namedtuple("SysCap", "out err")
@@ -394,65 +389,51 @@ class Helper:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
-        t0 = time()
-        delay = 0.5
-        while time() - t0 < CLI_MAX_WAIT:
-            args = [
-                "neuro",
-                "--show-traceback",
-                "--disable-pypi-version-check",
-                "--color=no",
-                f"--network-timeout={network_timeout}",
-            ]
+        args = [
+            "neuro",
+            "--show-traceback",
+            "--disable-pypi-version-check",
+            "--color=no",
+            f"--network-timeout={network_timeout}",
+        ]
 
-            if verbosity < 0:
-                args.append("-" + "q" * (-verbosity))
-            if verbosity > 0:
-                args.append("-" + "v" * verbosity)
+        if verbosity < 0:
+            args.append("-" + "q" * (-verbosity))
+        if verbosity > 0:
+            args.append("-" + "v" * verbosity)
 
-            if self._nmrc_path:
-                args.append(f"--neuromation-config={self._nmrc_path}")
+        if self._nmrc_path:
+            args.append(f"--neuromation-config={self._nmrc_path}")
 
-            # 5 min timeout is overkill
-            proc = subprocess.run(
-                args + arguments,
-                timeout=300,
-                encoding="utf8",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            if proc.returncode == EX_IOERR and "mkdir" not in arguments:
-                # network problem
-                # TODO: Drop this retry maybe?
-                sleep(delay)
-                delay *= 2
-                continue
-            else:
-                try:
-                    proc.check_returncode()
-                except subprocess.CalledProcessError:
-                    log.error(f"Last stdout: '{proc.stdout}'")
-                    log.error(f"Last stderr: '{proc.stderr}'")
-                    raise
-            out = proc.stdout
-            err = proc.stderr
-            if any(
-                start in " ".join(arguments)
-                for start in ("submit", "job submit", "run", "job run")
-            ):
-                match = job_id_pattern.search(out)
-                if match:
-                    self._executed_jobs.append(match.group(1))
-            out = out.strip()
-            err = err.strip()
-            if verbosity > 0:
-                print(f"nero stdout: {out}")
-                print(f"nero stderr: {err}")
-            return SysCap(out, err)
-        else:
-            raise TestRetriesExceeded(
-                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
-            )
+        # 5 min timeout is overkill
+        proc = subprocess.run(
+            args + arguments,
+            timeout=300,
+            encoding="utf8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        try:
+            proc.check_returncode()
+        except subprocess.CalledProcessError:
+            log.error(f"Last stdout: '{proc.stdout}'")
+            log.error(f"Last stderr: '{proc.stderr}'")
+            raise
+        out = proc.stdout
+        err = proc.stderr
+        if any(
+            start in " ".join(arguments)
+            for start in ("submit", "job submit", "run", "job run")
+        ):
+            match = job_id_pattern.search(out)
+            if match:
+                self._executed_jobs.append(match.group(1))
+        out = out.strip()
+        err = err.strip()
+        if verbosity > 0:
+            print(f"nero stdout: {out}")
+            print(f"nero stderr: {err}")
+        return SysCap(out, err)
 
     @run_async
     async def run_job_and_wait_state(
