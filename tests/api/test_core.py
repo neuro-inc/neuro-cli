@@ -120,7 +120,7 @@ async def test_pass_cookie(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    tmp = SimpleCookie()
+    tmp = SimpleCookie()  # type: ignore
     tmp["NEURO_SESSION"] = "cookie_value"
     cookie = tmp["NEURO_SESSION"]
     async with api_factory(srv.make_url("/"), cookie) as api:

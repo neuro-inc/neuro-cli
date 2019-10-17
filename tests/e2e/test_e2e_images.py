@@ -144,7 +144,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
-    assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
+    assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
 
     image_full_str_latest_tag = image_full_str.replace(f":{tag}", ":latest")
@@ -152,7 +152,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
-    assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
+    assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
 
 
@@ -219,14 +219,14 @@ def test_docker_helper(
     )
     assert (
         not result.returncode
-    ), f"Command {tag_cmd} failed: {result.stdout} {result.stderr} "
+    ), f"Command {tag_cmd} failed: {result.stdout!r} {result.stderr!r} "
     push_cmd = f"docker push {full_tag}"
     result = subprocess.run(
         push_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     assert (
         not result.returncode
-    ), f"Command {push_cmd} failed: {result.stdout} {result.stderr} "
+    ), f"Command {push_cmd} failed: {result.stdout!r} {result.stderr!r} "
     # Run image and check output
     image_url = f"image://{username}/{image}"
     job_id = helper.run_job_and_wait_state(

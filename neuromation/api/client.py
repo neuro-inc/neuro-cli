@@ -30,7 +30,7 @@ class Client(metaclass=NoPublicConstructor):
             # expired
             cookie: Optional["Morsel[str]"] = None
         else:
-            tmp = SimpleCookie()
+            tmp = SimpleCookie()  # type: ignore
             tmp["NEURO_SESSION"] = config.cookie_session.cookie
             cookie = tmp["NEURO_SESSION"]
             assert config.url.raw_host is not None
