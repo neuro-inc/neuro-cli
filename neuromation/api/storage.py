@@ -26,8 +26,6 @@ import aiohttp
 import attr
 from yarl import URL
 
-import neuromation
-
 from .abc import (
     AbstractFileProgress,
     AbstractRecursiveFileProgress,
@@ -445,7 +443,7 @@ class Storage(metaclass=NoPublicConstructor):
                 for retry in retries(f"Fail to create {dst}"):
                     async with retry:
                         await self.mkdir(dst, exist_ok=True)
-        except (FileExistsError, neuromation.api.core.IllegalArgumentError):
+        except FileExistsError:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
         loop = asyncio.get_event_loop()
