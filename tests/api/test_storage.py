@@ -1,5 +1,6 @@
 import asyncio
 import errno
+import json
 import os
 from filecmp import dircmp
 from pathlib import Path
@@ -89,7 +90,13 @@ async def storage_server(
                 }
             )
         elif op == "MKDIRS":
-            local_path.mkdir(parents=True, exist_ok=True)
+            try:
+                local_path.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
+                raise web.HTTPBadRequest(
+                    text=json.dumps({"error": "File exists", "errno": "EEXIST"}),
+                    content_type="application/json",
+                )
             return web.Response(status=201)
         elif op == "LISTSTATUS":
             if not local_path.exists():
