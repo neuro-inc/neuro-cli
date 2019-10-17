@@ -292,10 +292,11 @@ async def test_storage_glob(
 
     srv = await aiohttp_server(app)
 
-    async def glob(pattern: str) -> List[URL]:
-        return [uri async for uri in client.storage.glob(URL(pattern))]
-
     async with make_client(srv.make_url("/")) as client:
+
+        async def glob(pattern: str) -> List[URL]:
+            return [uri async for uri in client.storage.glob(URL(pattern))]
+
         assert await glob("storage:folder") == [URL("storage:folder")]
         assert await glob("storage:folder/") == [URL("storage:folder/")]
         assert await glob("storage:folder/*") == [

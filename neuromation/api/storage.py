@@ -445,7 +445,7 @@ class Storage(metaclass=NoPublicConstructor):
                 for retry in retries(f"Fail to create {dst}"):
                     async with retry:
                         await self.mkdir(dst, exist_ok=True)
-        except (FileExistsError, neuromation.api.IllegalArgumentError):
+        except (FileExistsError, neuromation.api.core.IllegalArgumentError):
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
         await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
         loop = asyncio.get_event_loop()
