@@ -62,8 +62,8 @@ class _Core:
         self._token = token
         self._headers = self._auth_headers()
         if cookie is not None:
-            self._session.cookie_jar.update_cookies(  # type: ignore
-                {"NEURO_SESSION": cookie}
+            self._session.cookie_jar.update_cookies(
+                {"NEURO_SESSION": cookie}  # type: ignore
                 # TODO: pass cookie["domain"]
             )
         self._exception_map = {
