@@ -987,10 +987,13 @@ def test_e2e_job_top(helper: Helper) -> None:
     command = f"sleep 300"
 
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
+    t0 = time()
+    ok = False
+    delay = 15
 
-    for i in range(5 * 6):  # 5 * 6 * 15 = 7.5 min
+    while not ok and time() - t0 < 8 * 60:
         try:
-            capture = helper.run_cli(["job", "top", job_id, "--timeout", "15"])
+            capture = helper.run_cli(["job", "top", job_id, "--timeout", str(delay)])
         except subprocess.CalledProcessError as ex:
             stdout = ex.output
             stderr = ex.stderr
@@ -1000,11 +1003,13 @@ def test_e2e_job_top(helper: Helper) -> None:
 
         if "TIMESTAMP" in stdout and "MEMORY (MB)" in stdout:
             # got response from job top telemetery
+            ok = True
             break
+        else:
+            delay = min(delay * 1.5, 60)
 
-        # otherwise timeout is reached without info from server
-    else:
-        assert False, "Cannot get response from server"
+    # timeout is reached without info from server
+    assert ok, "Cannot get response from server"
 
     try:
         header, *lines = split_non_empty_parts(stdout, sep="\n")
