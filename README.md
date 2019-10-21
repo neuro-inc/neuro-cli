@@ -99,6 +99,7 @@ Name | Description|
 |_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_--version_|Show the version and exit.|
+|_--trace_|Trace sent HTTP requests and received replies to stderr.|
 |_--help_|Show this message and exit.|
 
 
