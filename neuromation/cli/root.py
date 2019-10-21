@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import aiohttp
 import click
@@ -85,6 +85,7 @@ class Root:
         return self._client
 
     async def init_client(self) -> None:
+        trace_configs: Optional[List[aiohttp.TraceConfig]]
         if self.trace:
             trace_configs = [self._create_trace_config()]
         else:
@@ -96,10 +97,14 @@ class Root:
 
     def _create_trace_config(self) -> aiohttp.TraceConfig:
         trace_config = aiohttp.TraceConfig()
-        trace_config.on_request_start.append(self._on_request_start)
-        trace_config.on_request_chunk_sent.append(self._on_request_chunk_sent)
-        trace_config.on_request_end.append(self._on_request_end)
-        trace_config.on_response_chunk_received.append(self._on_response_chunk_received)
+        trace_config.on_request_start.append(self._on_request_start)  # type: ignore
+        trace_config.on_request_chunk_sent.append(
+            self._on_request_chunk_sent  # type: ignore
+        )
+        trace_config.on_request_end.append(self._on_request_end)  # type: ignore
+        trace_config.on_response_chunk_received.append(
+            self._on_response_chunk_received  # type: ignore
+        )
         return trace_config
 
     async def close(self) -> None:
@@ -111,11 +116,11 @@ class Root:
             return None
         return self._client._get_session_cookie()
 
-    def print_debug(self, lines):
+    def _print_debug(self, lines: List[str]) -> None:
         txt = "\n".join(click.style(line, dim=True) for line in lines)
         click.echo(txt, err=True)
 
-    def process_chunk(self, chunk, printable):
+    def _process_chunk(self, chunk: bytes, printable: bool) -> List[str]:
         if not chunk:
             return []
         if printable:
@@ -136,7 +141,7 @@ class Root:
         for key, val in data.headers.items():
             lines.append(f"> {key}: {val}")
         lines.append("> ")
-        self.print_debug(lines)
+        self._print_debug(lines)
 
         content_type = data.headers.get("Content-Type", "")
         context.request_printable = content_type.startswith(TEXT_TYPE)
@@ -149,9 +154,10 @@ class Root:
     ) -> None:
         chunk = data.chunk
         lines = [
-            "> " + line for line in self.process_chunk(chunk, context.request_printable)
+            "> " + line
+            for line in self._process_chunk(chunk, context.request_printable)
         ]
-        self.print_debug(lines)
+        self._print_debug(lines)
 
     async def _on_request_end(
         self,
@@ -162,7 +168,7 @@ class Root:
         lines = [f"< HTTP/1.1 {data.response.status} {data.response.reason}"]
         for key, val in data.response.headers.items():
             lines.append(f"< {key}: {val}")
-        self.print_debug(lines)
+        self._print_debug(lines)
 
         content_type = data.response.headers.get("Content-Type", "")
         context.response_printable = content_type.startswith(TEXT_TYPE)
@@ -176,6 +182,6 @@ class Root:
         chunk = data.chunk
         lines = [
             "< " + line
-            for line in self.process_chunk(chunk, context.response_printable)
+            for line in self._process_chunk(chunk, context.response_printable)
         ]
-        self.print_debug(lines)
+        self._print_debug(lines)
