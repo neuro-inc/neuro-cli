@@ -989,7 +989,7 @@ def test_e2e_job_top(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
     t0 = time()
     ok = False
-    delay = 15
+    delay = 15.0
 
     while not ok and time() - t0 < 8 * 60:
         try:
