@@ -989,10 +989,11 @@ def test_e2e_job_top(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
     t0 = time()
     ok = False
+    delay = 15
 
     while not ok and time() - t0 < 8 * 60:
         try:
-            capture = helper.run_cli(["job", "top", job_id, "--timeout", "15"])
+            capture = helper.run_cli(["job", "top", job_id, "--timeout", str(delay)])
         except subprocess.CalledProcessError as ex:
             stdout = ex.output
             stderr = ex.stderr
@@ -1004,6 +1005,8 @@ def test_e2e_job_top(helper: Helper) -> None:
             # got response from job top telemetery
             ok = True
             break
+        else:
+            delay = min(delay * 1.5, 60)
 
     # timeout is reached without info from server
     assert ok, "Cannot get response from server"
