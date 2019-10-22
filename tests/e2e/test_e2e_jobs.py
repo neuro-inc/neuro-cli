@@ -986,13 +986,16 @@ def test_e2e_job_top(helper: Helper) -> None:
 
     command = f"sleep 300"
 
+    print("Run job... ")
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
+    print("... done")
     t0 = time()
     returncode = -1
     delay = 15.0
 
     while returncode and time() - t0 < 3 * 60:
         try:
+            print("Try job top")
             capture = helper.run_cli(["job", "top", job_id, "--timeout", str(delay)])
         except subprocess.CalledProcessError as ex:
             stdout = ex.output
@@ -1008,6 +1011,7 @@ def test_e2e_job_top(helper: Helper) -> None:
             returncode = 0
             break
         else:
+            print(f"job top has failed, increase timeout to {delay}")
             delay = min(delay * 1.5, 60)
 
     # timeout is reached without info from server
