@@ -67,6 +67,8 @@ async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterato
         disable_pypi_version_check=True,
         network_timeout=60,
         config_path=nmrc_path,
+        verbosity=0,
+        trace=False,
     )
 
     await root.init_client()

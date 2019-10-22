@@ -15,6 +15,8 @@ def root_uninitialized() -> Root:
         disable_pypi_version_check=False,
         network_timeout=60,
         config_path=Path("~/.nmrc"),
+        verbosity=0,
+        trace=False,
     )
 
 

@@ -173,6 +173,11 @@ def print_options(
     hidden=True,
     help="Show common options.",
 )
+@click.option(
+    "--trace",
+    is_flag=True,
+    help="Trace sent HTTP requests and received replies to stderr.",
+)
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -183,6 +188,7 @@ def cli(
     color: str,
     disable_pypi_version_check: bool,
     network_timeout: float,
+    trace: bool,
 ) -> None:
     #   ▇ ◣
     #   ▇ ◥ ◣
@@ -213,6 +219,7 @@ def cli(
         disable_pypi_version_check=disable_pypi_version_check,
         network_timeout=network_timeout,
         config_path=Path(neuromation_config),
+        trace=trace,
     )
     ctx.obj = root
     if not ctx.invoked_subcommand:
