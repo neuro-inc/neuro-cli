@@ -2,9 +2,11 @@ import logging
 from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from types import SimpleNamespace
+from typing import Dict, List, Optional, Tuple
 
 import aiohttp
+import click
 from yarl import URL
 
 from neuromation.api import Client, Factory, Preset
@@ -15,6 +17,9 @@ from neuromation.api.config_factory import ConfigError
 log = logging.getLogger(__name__)
 
 
+TEXT_TYPE = ("application/json", "text")
+
+
 @dataclass
 class Root:
     color: bool
@@ -23,10 +28,11 @@ class Root:
     disable_pypi_version_check: bool
     network_timeout: float
     config_path: Path
+    trace: bool
+    verbosity: int
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
-    verbosity: int = 0
 
     @property
     def _config(self) -> _Config:
@@ -79,10 +85,27 @@ class Root:
         return self._client
 
     async def init_client(self) -> None:
-        self._factory = Factory(path=self.config_path)
+        trace_configs: Optional[List[aiohttp.TraceConfig]]
+        if self.trace:
+            trace_configs = [self._create_trace_config()]
+        else:
+            trace_configs = None
+        self._factory = Factory(path=self.config_path, trace_configs=trace_configs)
         client = await self._factory.get(timeout=self.timeout)
 
         self._client = client
+
+    def _create_trace_config(self) -> aiohttp.TraceConfig:
+        trace_config = aiohttp.TraceConfig()
+        trace_config.on_request_start.append(self._on_request_start)  # type: ignore
+        trace_config.on_request_chunk_sent.append(
+            self._on_request_chunk_sent  # type: ignore
+        )
+        trace_config.on_request_end.append(self._on_request_end)  # type: ignore
+        trace_config.on_response_chunk_received.append(
+            self._on_response_chunk_received  # type: ignore
+        )
+        return trace_config
 
     async def close(self) -> None:
         if self._client is not None:
@@ -92,3 +115,73 @@ class Root:
         if self._client is None:
             return None
         return self._client._get_session_cookie()
+
+    def _print_debug(self, lines: List[str]) -> None:
+        txt = "\n".join(click.style(line, dim=True) for line in lines)
+        click.echo(txt, err=True)
+
+    def _process_chunk(self, chunk: bytes, printable: bool) -> List[str]:
+        if not chunk:
+            return []
+        if printable:
+            return chunk.decode(errors="replace").split("\n")
+        else:
+            return [f"[binary {len(chunk)} bytes]"]
+
+    async def _on_request_start(
+        self,
+        session: aiohttp.ClientSession,
+        context: SimpleNamespace,
+        data: aiohttp.TraceRequestStartParams,
+    ) -> None:
+        path = data.url.raw_path
+        if data.url.raw_query_string:
+            path += "?" + data.url.raw_query_string
+        lines = [f"> {data.method} {path} HTTP/1.1"]
+        for key, val in data.headers.items():
+            lines.append(f"> {key}: {val}")
+        lines.append("> ")
+        self._print_debug(lines)
+
+        content_type = data.headers.get("Content-Type", "")
+        context.request_printable = content_type.startswith(TEXT_TYPE)
+
+    async def _on_request_chunk_sent(
+        self,
+        session: aiohttp.ClientSession,
+        context: SimpleNamespace,
+        data: aiohttp.TraceRequestChunkSentParams,
+    ) -> None:
+        chunk = data.chunk
+        lines = [
+            "> " + line
+            for line in self._process_chunk(chunk, context.request_printable)
+        ]
+        self._print_debug(lines)
+
+    async def _on_request_end(
+        self,
+        session: aiohttp.ClientSession,
+        context: SimpleNamespace,
+        data: aiohttp.TraceRequestEndParams,
+    ) -> None:
+        lines = [f"< HTTP/1.1 {data.response.status} {data.response.reason}"]
+        for key, val in data.response.headers.items():
+            lines.append(f"< {key}: {val}")
+        self._print_debug(lines)
+
+        content_type = data.response.headers.get("Content-Type", "")
+        context.response_printable = content_type.startswith(TEXT_TYPE)
+
+    async def _on_response_chunk_received(
+        self,
+        session: aiohttp.ClientSession,
+        context: SimpleNamespace,
+        data: aiohttp.TraceResponseChunkReceivedParams,
+    ) -> None:
+        chunk = data.chunk
+        lines = [
+            "< " + line
+            for line in self._process_chunk(chunk, context.response_printable)
+        ]
+        self._print_debug(lines)
