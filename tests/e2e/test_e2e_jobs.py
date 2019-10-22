@@ -1011,10 +1011,12 @@ def test_e2e_job_top(helper: Helper) -> None:
             delay = min(delay * 1.5, 60)
 
     # timeout is reached without info from server
-    assert not returncode, (f"Cannot get response from server "
-                            f"in {time() - t0} secs, delay={delay} "
-                            f"returncode={returncode}\n"
-                            f"stdout = {stdout}\nstdderr = {stderr}")
+    assert not returncode, (
+        f"Cannot get response from server "
+        f"in {time() - t0} secs, delay={delay} "
+        f"returncode={returncode}\n"
+        f"stdout = {stdout}\nstdderr = {stderr}"
+    )
 
     try:
         header, *lines = split_non_empty_parts(stdout, sep="\n")
