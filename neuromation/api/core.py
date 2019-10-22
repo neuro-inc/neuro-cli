@@ -143,7 +143,13 @@ class _Core:
         assert abs_url.is_absolute(), abs_url
         log.debug("Fetch web socket: %s", abs_url)
 
-        async with self._session.ws_connect(abs_url, headers=headers) as ws:
+        if headers is not None:
+            real_headers = CIMultiDict(headers)
+        else:
+            real_headers = CIMultiDict()
+        real_headers.update(self._headers)
+
+        async with self._session.ws_connect(abs_url, headers=real_headers) as ws:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg
