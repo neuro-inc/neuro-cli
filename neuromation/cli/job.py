@@ -569,10 +569,9 @@ async def top(root: Root, job: str, timeout: float) -> None:
 @async_cmd()
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
-    Save job's state to an image
+    Save job's state to an image.
 
     Examples:
-
     neuro job save job-id image:ubuntu-patched
     neuro job save my-favourite-job image://~/ubuntu-patched:v1
     neuro job save my-favourite-job image://bob/ubuntu-patched
