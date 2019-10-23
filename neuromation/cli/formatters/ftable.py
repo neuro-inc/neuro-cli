@@ -51,8 +51,8 @@ def table(
     calc_widths: List[int] = []
     for i, width in enumerate(widths):
         max_cell_width: int = max(len(row[i]) for row in rows)
-        width_min = width.min if width.min else width.width
-        width_max = width.max if width.max else width.width
+        width_min = width.min or width.width
+        width_max = width.max or width.width
 
         if (not width_min or width_min <= max_cell_width) and (
             not width_max or width_max >= max_cell_width
@@ -60,8 +60,8 @@ def table(
             calc_widths.append(max_cell_width)
         elif width_max:
             calc_widths.append(width_max)
-        else:
-            calc_widths.append(max_cell_width)
+        elif width_min:
+            calc_widths.append(width_min)
 
     # How many empty columns can be displayed
     max_empty_columns = len(rows[0])
@@ -72,6 +72,7 @@ def table(
             if sum_width > max_width:
                 max_empty_columns = i
                 break
+            sum_width += 2
 
     for row in rows:
         for line in _row(row, calc_widths, aligns, max_width, max_empty_columns):
@@ -83,7 +84,7 @@ def _row(
     widths: Sequence[int],
     aligns: Sequence[Align] = None,
     max_width: Optional[int] = None,
-    max_empty_columns: Optional[int] = None,
+    max_empty_columns: int = None,
 ) -> Iterator[str]:
     if aligns is None:
         aligns = []

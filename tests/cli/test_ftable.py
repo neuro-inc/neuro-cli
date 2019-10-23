@@ -92,18 +92,18 @@ class TestTable:
         assert "Epsilon" in result[3]
         assert "here" in result[5]
 
-    def test_no_row_width(self) -> None:
+    def test_no_any_width(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(table(rows))
         assert result == ["a  Alpha", "b  Bravo"]
 
-    def test_max_width(self) -> None:
+    def test_max_table_width(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(table(rows, max_width=5))
         for line in result:
             assert len(line) == 5
 
-    def test_partial_width(self) -> None:
+    def test_partial_column_width(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(table(rows, widths=[ColumnWidth(), ColumnWidth(width=10)]))
         assert result == ["a  Alpha     ", "b  Bravo     "]
@@ -114,20 +114,27 @@ class TestTable:
         result = list(table(rows, widths=[ColumnWidth(width=5), ColumnWidth()]))
         assert result == ["a      Alpha", "b      Bravo"]
 
-    def test_width_range_simple(self) -> None:
+    def test_column_width_range_simple(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(table(rows, widths=[ColumnWidth(1, 1), ColumnWidth(1, 5)]))
         assert result == ["a  Alpha", "b  Bravo"]
 
-    def test_width_range_overflow(self) -> None:
-        rows = [["a", "Alpha"], ["b", "Bravo"]]
-        result = list(table(rows, widths=[ColumnWidth(1, 1), ColumnWidth(1, 4)]))
-        assert len(result) == 4
+    def test_column_width_range_violation(self) -> None:
+        rows = [["12345"]]
+        result = list(table(rows, widths=[ColumnWidth(2, 3)]))
+        assert result == ["123", "45 "]
 
-    def test_width_range_less_than_min(self) -> None:
+        rows = [["12"]]
+        result = list(table(rows, widths=[ColumnWidth(3, 5)]))
+        assert result == ["12".ljust(5)]
+
+        rows = [["12"]]
+        result = list(table(rows, widths=[ColumnWidth(min=3)]))
+        assert result == ["12".ljust(3)]
+
         rows = [["123"]]
-        result = list(table(rows, widths=[ColumnWidth(min=5)]))
-        assert result == ["123"]
+        result = list(table(rows, widths=[ColumnWidth(max=2)]))
+        assert result == ["12", "3 "]
 
     def test_empty_first_columns(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
