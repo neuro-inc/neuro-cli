@@ -73,7 +73,7 @@ def warn_if_has_newer_version(
         if current < version.pypi_version:
             update_command = "pip install --upgrade neuromation"
             click.secho(
-                f"You are using Neuromation Platform Client {current}, "
+                f"You are using Neuro Platform Client {current}, "
                 f"however {version.pypi_version} is available.\n"
                 f"You should consider upgrading via "
                 f"the '{update_command}' command.",

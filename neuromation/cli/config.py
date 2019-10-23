@@ -52,7 +52,7 @@ async def show_token(root: Root) -> None:
 @async_cmd(init_client=False)
 async def login(root: Root, url: URL) -> None:
     """
-    Log into Neuromation Platform.
+    Log into Neuro Platform.
 
     URL is a platform entrypoint URL.
     """
@@ -80,9 +80,9 @@ async def login(root: Root, url: URL) -> None:
 @async_cmd(init_client=False)
 async def login_with_token(root: Root, token: str, url: URL) -> None:
     """
-    Log into Neuromation Platform with token.
+    Log into Neuro Platform with token.
 
-    TOKEN is authentication token provided by Neuromation administration team.
+    TOKEN is authentication token provided by administration team.
     URL is a platform entrypoint URL.
     """
     try:
@@ -103,7 +103,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
 @async_cmd(init_client=False)
 async def login_headless(root: Root, url: URL) -> None:
     """
-    Log into Neuromation Platform from non-GUI server environment.
+    Log into Neuro Platform from non-GUI server environment.
 
     URL is a platform entrypoint URL.
 

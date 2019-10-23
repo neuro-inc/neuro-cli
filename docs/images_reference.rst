@@ -13,7 +13,7 @@ Images
 
    Docker image subsystem.
 
-   Used for pushing docker images onto Neuromation docker registry for later usage by
+   Used for pushing docker images onto Neuro docker registry for later usage by
    :meth:`Jobs.run` and pulling these images back to local docker.
 
    .. comethod:: push(local: LocalImage, \
@@ -26,9 +26,9 @@ Images
       Push *local* docker image to *remote* side.
 
       :param LocalImage local: a spec of local docker image (e.g. created by ``docker
-                               build``) for pushing on Neuromation registry.
+                               build``) for pushing on Neuro registry.
 
-      :param RemoteImage remote: a spec for remote image on Neuromation
+      :param RemoteImage remote: a spec for remote image on Neuro
                                  registry. Calculated from *local* image automatically
                                  if ``None`` (default).
 
@@ -48,9 +48,9 @@ Images
                  ) -> RemoteImage
 
 
-      Pull *remote* image from Neuromation registry to *local* docker side.
+      Pull *remote* image from Neuro registry to *local* docker side.
 
-      :param RemoteImage remote: a spec for remote image on Neuromation
+      :param RemoteImage remote: a spec for remote image on Neuro
                                  registry.
 
       :param LocalImage local: a spec of local docker image to pull. Calculated from
@@ -76,7 +76,7 @@ AbstractDockerImageProgress
 
    .. method:: pull(data: ImageProgressPull) -> None
 
-      Pulling image from remote Neuromation registry to local Docker is started.
+      Pulling image from remote Neuro registry to local Docker is started.
 
       :param ImageProgressPull data: additional data, e.g. local and remote image
                                      objects.
@@ -84,7 +84,7 @@ AbstractDockerImageProgress
 
    .. method:: push(data: ImageProgressPush) -> None
 
-      Pushing image from local Docker to remote Neuromation registry is started.
+      Pushing image from local Docker to remote Neuro registry is started.
 
       :param ImageProgressPush data: additional data, e.g. local and remote image
                                      objects.
@@ -162,7 +162,7 @@ RemoteImage
 .. class:: RemoteImage
 
    *Read-only* :class:`~dataclasses.dataclass` for describing *image* in remote
-   registry (Neuromation hosted or other registries like DockerHub_).
+   registry (Neuro hosted or other registries like DockerHub_).
 
    .. attribute:: name
 
@@ -182,7 +182,7 @@ RemoteImage
 
    .. attribute:: registry
 
-      Host name for images hosted on Neuromation registry (:class:`str`), ``None`` for
+      Host name for images hosted on Neuro registry (:class:`str`), ``None`` for
       other registries like DockerHub_.
 
 

@@ -44,7 +44,7 @@ setup(
         "cookiecutter==1.6.0",
     ],
     include_package_data=True,
-    description="Neuromation Platform API client",
+    description="Neuro Platform API client",
     long_description=readme,
     long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
     author="Neuromation Team",

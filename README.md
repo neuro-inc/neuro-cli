@@ -96,7 +96,7 @@ Name | Description|
 |_\--neuromation-config PATH_|Path to config file.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
-|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
+|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro CLI is available for download.|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_--version_|Show the version and exit.|
 |_--trace_|Trace sent HTTP requests and received replies to stderr.|
@@ -131,7 +131,7 @@ Name | Description|
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
 | _[neuro save](#neuro-save)_| Save job's state to an image Examples: neuro job save job-id... |
-| _[neuro login](#neuro-login)_| Log into Neuromation Platform |
+| _[neuro login](#neuro-login)_| Log into Neuro Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
 | _[neuro cp](#neuro-cp)_| Copy files and directories |
 | _[neuro ls](#neuro-ls)_| List directory contents |
@@ -987,9 +987,9 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
-| _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuromation Platform with token |
-| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuromation Platform from non-GUI server environment |
+| _[neuro config login](#neuro-config-login)_| Log into Neuro Platform |
+| _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuro Platform with token |
+| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
@@ -1000,7 +1000,7 @@ Name | Description|
 
 ### neuro config login
 
-Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
+Log into Neuro Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
@@ -1019,7 +1019,7 @@ Name | Description|
 
 ### neuro config login-with-token
 
-Log into Neuromation Platform with token.<br/><br/>TOKEN is authentication token provided by Neuromation administration team.<br/>URL is a platform entrypoint URL.
+Log into Neuro Platform with token.<br/><br/>TOKEN is authentication token provided by administration team. URL is a<br/>platform entrypoint URL.
 
 **Usage:**
 
@@ -1038,7 +1038,7 @@ Name | Description|
 
 ### neuro config login-headless
 
-Log into Neuromation Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back<br/>in neuro command to finish the login process.
+Log into Neuro Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back<br/>in neuro command to finish the login process.
 
 **Usage:**
 
@@ -1658,7 +1658,7 @@ Name | Description|
 
 ## neuro login
 
-Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
+Log into Neuro Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 

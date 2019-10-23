@@ -5,7 +5,7 @@ Client class
 
 .. class:: Client
 
-   Neuromation client.
+   Neuro client.
 
    For creating a client instance use :class:`Factory` or :func:`get`.
 
@@ -13,7 +13,7 @@ Client class
 
    .. attribute:: username
 
-      User name used for working with Neuromation platform, read-only :class:`str`.
+      User name used for working with Neuro platform, read-only :class:`str`.
 
    .. attribute:: presets
 
@@ -40,12 +40,12 @@ Client class
 
    .. attribute:: parse
 
-      A set or helpers used for parsing different Neuromation API definitions, see
+      A set or helpers used for parsing different Neuro API definitions, see
       :class:`Parser` for details.
 
    .. comethod:: close()
 
-      Close Neuromation client, all calls after closing are forbidden.
+      Close Neuro client, all calls after closing are forbidden.
 
       The method is idempotent.
 
@@ -54,9 +54,9 @@ Preset
 ======
 
    *Read-only* :class:`~dataclasses.dataclass` for describing a job configuration
-   provided by Neuromation platform.
+   provided by Neuro platform.
 
-   Presets list is loaded on login to the Neuromation platform and depends on used
+   Presets list is loaded on login to the Neuro platform and depends on used
    cluster.
 
    .. attribute:: cpu
