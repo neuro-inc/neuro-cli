@@ -3,6 +3,16 @@ import pytest
 from neuromation.cli.formatters.ftable import Align, ColumnWidth, _cell, _row, table
 
 
+class TestColumnWidth:
+    def test_negative_widths(self) -> None:
+        with pytest.raises(ValueError, match="Width must be positive integer"):
+            ColumnWidth(width=-1)
+        with pytest.raises(ValueError, match="Min must be positive integer"):
+            ColumnWidth(min=-1)
+        with pytest.raises(ValueError, match="Max must be positive integer"):
+            ColumnWidth(max=-1)
+
+
 class TestCell:
     def test_align_left(self) -> None:
         assert list(_cell("text", 6, Align.LEFT)) == ["text  "]
@@ -87,7 +97,13 @@ class TestTable:
         result = list(table(rows))
         assert result == ["a  Alpha", "b  Bravo"]
 
-    def test_partial_row_width(self) -> None:
+    def test_max_width(self) -> None:
+        rows = [["a", "Alpha"], ["b", "Bravo"]]
+        result = list(table(rows, max_width=5))
+        for line in result:
+            assert len(line) == 5
+
+    def test_partial_width(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(table(rows, widths=[ColumnWidth(), ColumnWidth(width=10)]))
         assert result == ["a  Alpha     ", "b  Bravo     "]
@@ -98,12 +114,6 @@ class TestTable:
         result = list(table(rows, widths=[ColumnWidth(width=5), ColumnWidth()]))
         assert result == ["a      Alpha", "b      Bravo"]
 
-    def test_max_width(self) -> None:
-        rows = [["a", "Alpha"], ["b", "Bravo"]]
-        result = list(table(rows, max_width=5))
-        for line in result:
-            assert len(line) == 5
-
     def test_width_range_simple(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(table(rows, widths=[ColumnWidth(1, 1), ColumnWidth(1, 5)]))
@@ -113,6 +123,11 @@ class TestTable:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(table(rows, widths=[ColumnWidth(1, 1), ColumnWidth(1, 4)]))
         assert len(result) == 4
+
+    def test_width_range_less_than_min(self) -> None:
+        rows = [["123"]]
+        result = list(table(rows, widths=[ColumnWidth(min=5)]))
+        assert result == ["123"]
 
     def test_empty_first_columns(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
