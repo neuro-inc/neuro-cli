@@ -1285,7 +1285,7 @@ Name | Description|
 
 ### neuro acl list
 
-List shared resources.<br/><br/>The command displays a list of resources shared BY current user \(default).<br/><br/>To display a list of resources shared WITH current user use --shared option.<br/>
+List shared resources.<br/><br/>The command displays a list of resources shared BY current user \(default).<br/><br/>To display a list of resources shared WITH current user apply --shared<br/>option.<br/>
 
 **Usage:**
 
@@ -1308,8 +1308,8 @@ neuro acl list --shared --scheme image
 
 Name | Description|
 |----|------------|
-|_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user|
-|_--shared_|Output the resources shared by the user|
+|_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
+|_--shared_|Output the resources shared by the user.|
 |_--help_|Show this message and exit.|
 
 
