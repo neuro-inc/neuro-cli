@@ -101,8 +101,7 @@ def _row(
         if max_empty_columns and cells[:max_empty_columns] == empty_pattern:
             continue
         line = "  ".join(
-            cell if cell else "".ljust(width) if width else ""
-            for cell, width in zip_longest(cells, widths)
+            cell or "".ljust(width or 0) for cell, width in zip_longest(cells, widths)
         )
         if max_width:
             yield line[:max_width]

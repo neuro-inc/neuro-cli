@@ -24,7 +24,7 @@ class ConfigFormatter:
             + indent
             + f"\n{indent}".join(lines)
             + "\n"
-            + f"\n".join(line for line in self._format_presets(root.resource_presets))
+            + f"\n".join(self._format_presets(root.resource_presets))
         )
 
     def _format_presets(self, presets: Dict[str, Preset]) -> Iterator[str]:
