@@ -85,6 +85,8 @@ class JobStatusFormatter:
             result += f" ({job_status.history.reason})"
         result += f"\nImage: {job_status.container.image}\n"
 
+        if job_status.container.entrypoint:
+            result += f"Entrypoint: {job_status.container.entrypoint}\n"
         result += f"Command: {job_status.container.command}\n"
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"

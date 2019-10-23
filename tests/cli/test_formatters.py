@@ -518,6 +518,52 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:24.759433+00:00"
         )
 
+    def test_job_with_entrypoint(self) -> None:
+        description = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+            ),
+            http_url=URL("http://local.host.test/"),
+            container=Container(
+                entrypoint="/usr/bin/make",
+                command="test",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+            internal_hostname="host.local",
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: running\n"
+            "Image: test-image\n"
+            "Entrypoint: /usr/bin/make\n"
+            "Command: test\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Internal Hostname: host.local\n"
+            "Http URL: http://local.host.test/\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:24.759433+00:00"
+        )
+
 
 class TestJobTelemetryFormatter:
     def _format(
