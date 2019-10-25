@@ -112,6 +112,9 @@ class _Core:
         else:
             real_headers = CIMultiDict()
         real_headers.update(self._headers)
+        if "Content-Type" not in real_headers:
+            if json is not None:
+                real_headers["Content-Type"] = "application/json"
         async with self._session.request(
             method,
             url,
