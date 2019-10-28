@@ -3,7 +3,7 @@ import enum
 import json
 import shlex
 import signal
-from contextlib import suppress
+from asyncio import Task
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
@@ -312,18 +312,14 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
-    @asynccontextmanager
-    async def port_forward(
+    def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> AsyncIterator[None]:
+    ) -> Task:
         loop = asyncio.get_event_loop()
         task = loop.create_task(
             self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
         )
-        yield
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+        return task
 
     async def _port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
@@ -332,8 +328,9 @@ class Jobs(metaclass=NoPublicConstructor):
             job_status = await self.status(id)
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
-        if job_status.status != "running":
+        if job_status.status != JobStatus.RUNNING:
             raise ValueError(f"Job is not running. Job Id = {id}")
+
         payload = json.dumps(
             {
                 "method": "job_port_forward",
@@ -341,7 +338,15 @@ class Jobs(metaclass=NoPublicConstructor):
                 "params": {"job": id, "port": job_port},
             }
         )
-        proxy_command = ["ssh"]
+        proxy_command = [
+            "ssh",
+            "-o",
+            "ExitOnForwardFailure=yes",
+            "-o",
+            "ServerAliveInterval=10",
+            "-o",
+            "ServerAliveCountMax=2",
+        ]
         if no_key_check:  # pragma: no branch
             proxy_command += [
                 "-o",
