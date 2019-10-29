@@ -65,7 +65,7 @@ async def test_get_server_config(aiohttp_client: _TestClientFactory) -> None:
 
 
 async def test_get_server_config_no_callback_urls(
-    aiohttp_client: _TestClientFactory
+    aiohttp_client: _TestClientFactory,
 ) -> None:
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
