@@ -179,7 +179,7 @@ async def _run_async_function(
 
 
 def async_cmd(
-    init_client: bool = True
+    init_client: bool = True,
 ) -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
     def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
         # N.B. the decorator implies @click.pass_obj
