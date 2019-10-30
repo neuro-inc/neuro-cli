@@ -1,5 +1,5 @@
 import base64
-from typing import Dict
+from typing import Dict, Optional
 
 import aiohttp
 from yarl import URL
@@ -14,10 +14,15 @@ class _Registry(_Core):
     """
 
     def __init__(
-        self, session: aiohttp.ClientSession, base_url: URL, token: str, username: str
+        self,
+        session: aiohttp.ClientSession,
+        base_url: URL,
+        token: str,
+        trace_id: Optional[str],
+        username: str,
     ) -> None:
         self._username = username
-        super().__init__(session, base_url, token, None)
+        super().__init__(session, base_url, token, None, trace_id)
 
     def _auth_headers(self) -> Dict[str, str]:
         assert self._username

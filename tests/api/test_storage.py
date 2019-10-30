@@ -61,6 +61,7 @@ async def storage_server(
     PREFIX_LEN = len(PREFIX)
 
     async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         op = request.query["op"]
         path = request.path
         assert path.startswith(PREFIX)
@@ -145,6 +146,7 @@ async def test_storage_ls(
     }
 
     async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "LISTSTATUS"}
         return web.json_response(JSON)
@@ -179,6 +181,7 @@ async def test_storage_glob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler_home(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/"
         assert request.query == {"op": "LISTSTATUS"}
         return web.json_response(
@@ -198,6 +201,7 @@ async def test_storage_glob(
         )
 
     async def handler_folder(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path.rstrip("/") == "/storage/user/folder"
         assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         if request.query["op"] == "GETFILESTATUS":
@@ -239,6 +243,7 @@ async def test_storage_glob(
             raise web.HTTPInternalServerError
 
     async def handler_foo(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/folder/foo"
         assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         assert request.query == {"op": "GETFILESTATUS"}

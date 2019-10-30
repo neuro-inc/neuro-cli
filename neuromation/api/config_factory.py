@@ -26,6 +26,7 @@ from .login import (
     get_server_config,
     refresh_token,
 )
+from .tracing import _make_trace_config
 from .utils import _ContextManager
 
 
@@ -63,11 +64,15 @@ class Factory:
         self,
         path: Optional[Path] = None,
         trace_configs: Optional[List[aiohttp.TraceConfig]] = None,
+        trace_id: Optional[str] = None,
     ) -> None:
         if path is None:
             path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
         self._path = path.expanduser()
-        self._trace_configs = trace_configs
+        self._trace_configs = [_make_trace_config()]
+        if trace_configs:
+            self._trace_configs += list(trace_configs)
+        self._trace_id = trace_id
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         saved_config = config = self._read()
@@ -98,7 +103,7 @@ class Factory:
             await session.close()
             raise
         else:
-            return Client._create(session, config)
+            return Client._create(session, config, self._trace_id)
 
     async def login(
         self,

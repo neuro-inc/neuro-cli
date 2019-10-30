@@ -9,7 +9,7 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.api import Client, Factory, Preset
+from neuromation.api import Client, Factory, Preset, gen_trace_id
 from neuromation.api.config import _Config
 from neuromation.api.config_factory import ConfigError
 
@@ -90,7 +90,9 @@ class Root:
             trace_configs = [self._create_trace_config()]
         else:
             trace_configs = None
-        self._factory = Factory(path=self.config_path, trace_configs=trace_configs)
+        self._factory = Factory(
+            path=self.config_path, trace_configs=trace_configs, trace_id=gen_trace_id()
+        )
         client = await self._factory.get(timeout=self.timeout)
 
         self._client = client

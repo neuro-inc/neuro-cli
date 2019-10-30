@@ -242,6 +242,7 @@ async def test_save_ok(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -274,6 +275,7 @@ async def test_save_commit_started_invalid_status_fails(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -309,6 +311,7 @@ async def test_save_commit_started_missing_image_details_fails(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)

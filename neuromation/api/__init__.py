@@ -48,6 +48,7 @@ from .jobs import (
 )
 from .parsing_utils import LocalImage, RemoteImage
 from .storage import FileStatus, FileStatusType
+from .tracing import gen_trace_id
 from .users import Action, Permission, Share
 from .utils import _ContextManager
 
@@ -98,6 +99,7 @@ __all__ = (
     "login_with_token",
     "logout",
     "ConfigError",
+    "gen_trace_id",
 )
 
 
