@@ -13,7 +13,7 @@ def gen_trace_id() -> str:
 
     The id is used for distributed tracing.
     """
-    return str(binascii.hexlify(os.urandom(8)).decode("utf-8"))
+    return os.urandom(8).hex()
 
 
 def _update_headers(headers: "CIMultiDict[str]", trace_id: str, span_id: str) -> None:
