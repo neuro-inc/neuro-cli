@@ -1,4 +1,5 @@
 import errno
+import json as jsonmodule
 import logging
 from http.cookies import Morsel  # noqa
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
@@ -121,12 +122,13 @@ class _Core:
             timeout=timeout,
         ) as resp:
             if 400 <= resp.status:
+                err_text = await resp.text()
                 if resp.content_type.lower() == "application/json":
-                    payload = await resp.json()
-                    err_text = payload.pop("error")
+                    payload = jsonmodule.loads(err_text)
+                    if "error" in payload:
+                        err_text = payload["error"]
                 else:
                     payload = {}
-                    err_text = await resp.text()
                 if resp.status == 400 and "errno" in payload:
                     os_errno: Any = payload["errno"]
                     os_errno = errno.__dict__.get(os_errno, os_errno)
@@ -143,7 +145,13 @@ class _Core:
         assert abs_url.is_absolute(), abs_url
         log.debug("Fetch web socket: %s", abs_url)
 
-        async with self._session.ws_connect(abs_url, headers=headers) as ws:
+        if headers is not None:
+            real_headers = CIMultiDict(headers)
+        else:
+            real_headers = CIMultiDict()
+        real_headers.update(self._headers)
+
+        async with self._session.ws_connect(abs_url, headers=real_headers) as ws:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg

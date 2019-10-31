@@ -130,7 +130,7 @@ Name | Description|
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
-| _[neuro save](#neuro-save)_| Save job's state to an image Examples: neuro job save job-id... |
+| _[neuro save](#neuro-save)_| Save job's state to an image |
 | _[neuro login](#neuro-login)_| Log into Neuro Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
 | _[neuro cp](#neuro-cp)_| Copy files and directories |
@@ -141,7 +141,7 @@ Name | Description|
 | _[neuro images](#neuro-images)_| List images |
 | _[neuro push](#neuro-push)_| Push an image to platform registry |
 | _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
-| _[neuro share](#neuro-share)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro acl... |
+| _[neuro share](#neuro-share)_| Shares resource with another user |
 
 
 
@@ -176,7 +176,7 @@ Name | Description|
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
-| _[neuro job save](#neuro-job-save)_| Save job's state to an image Examples: neuro job save job-id... |
+| _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 
 
@@ -477,7 +477,7 @@ Name | Description|
 
 ### neuro job save
 
-Save job's state to an image<br/>
+Save job's state to an image.<br/>
 
 **Usage:**
 
@@ -1218,16 +1218,16 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro acl grant](#neuro-acl-grant)_| Shares resource specified by URI to a USER with PERMISSION Examples: neuro acl... |
-| _[neuro acl revoke](#neuro-acl-revoke)_| Revoke from a USER permissions for previously shared resource specified by URI... |
-| _[neuro acl list](#neuro-acl-list)_| List resource available to a USER or shared by a USER Examples: neuro acl list... |
+| _[neuro acl grant](#neuro-acl-grant)_| Shares resource with another user |
+| _[neuro acl revoke](#neuro-acl-revoke)_| Revoke user access from another user |
+| _[neuro acl list](#neuro-acl-list)_| List shared resources |
 
 
 
 
 ### neuro acl grant
 
-Shares resource specified by URI to a USER with PERMISSION<br/>
+Shares resource with another user.<br/><br/>URI shared resource.<br/><br/>USER username to share resource with.<br/><br/>PERMISSION sharing access right: read, write, or manage.<br/>
 
 **Usage:**
 
@@ -1256,7 +1256,7 @@ Name | Description|
 
 ### neuro acl revoke
 
-Revoke from a USER permissions for previously shared resource specified by<br/>URI<br/>
+Revoke user access from another user.<br/><br/>URI previously shared resource to revoke.<br/><br/>USER to revoke URI resource from.<br/>
 
 **Usage:**
 
@@ -1285,7 +1285,7 @@ Name | Description|
 
 ### neuro acl list
 
-List resource available to a USER or shared by a USER<br/>
+List shared resources.<br/><br/>The command displays a list of resources shared BY current user \(default).<br/><br/>To display a list of resources shared WITH current user apply --shared<br/>option.<br/>
 
 **Usage:**
 
@@ -1308,8 +1308,8 @@ neuro acl list --shared --scheme image
 
 Name | Description|
 |----|------------|
-|_\-s, --scheme TEXT_|Filter resources by scheme|
-|_--shared_|Output the resources shared by the user|
+|_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
+|_--shared_|Output the resources shared by the user.|
 |_--help_|Show this message and exit.|
 
 
@@ -1629,7 +1629,7 @@ Name | Description|
 
 ## neuro save
 
-Save job's state to an image<br/>
+Save job's state to an image.<br/>
 
 **Usage:**
 
@@ -1951,7 +1951,7 @@ Name | Description|
 
 ## neuro share
 
-Shares resource specified by URI to a USER with PERMISSION<br/>
+Shares resource with another user.<br/><br/>URI shared resource.<br/><br/>USER username to share resource with.<br/><br/>PERMISSION sharing access right: read, write, or manage.<br/>
 
 **Usage:**
 

@@ -822,7 +822,7 @@ async def test_storage_upload_regular_file_to_not_existing(
 
 
 async def test_storage_upload_recursive_src_doesnt_exist(
-    make_client: _MakeClient
+    make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
