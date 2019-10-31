@@ -71,7 +71,7 @@ class Factory:
         self._path = path.expanduser()
         self._trace_configs = [_make_trace_config()]
         if trace_configs:
-            self._trace_configs += list(trace_configs)
+            self._trace_configs += trace_configs
         self._trace_id = trace_id
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:

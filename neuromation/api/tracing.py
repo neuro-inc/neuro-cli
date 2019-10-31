@@ -1,6 +1,5 @@
 # Distributed tracing support
 
-import binascii
 import os
 import types
 
@@ -9,7 +8,7 @@ from multidict import CIMultiDict
 
 
 def gen_trace_id() -> str:
-    """Returns a 64 bit UTF-8 encoded string.
+    """Return 16 random hexadecimal digits.
 
     The id is used for distributed tracing.
     """
