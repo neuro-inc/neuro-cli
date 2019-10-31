@@ -96,7 +96,7 @@ Name | Description|
 |_\--neuromation-config PATH_|Path to config file.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
-|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro CLI is available for download.|
+|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_--version_|Show the version and exit.|
 |_--trace_|Trace sent HTTP requests and received replies to stderr.|
