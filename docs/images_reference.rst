@@ -26,10 +26,10 @@ Images
       Push *local* docker image to *remote* side.
 
       :param LocalImage local: a spec of local docker image (e.g. created by ``docker
-                               build``) for pushing on Neuro registry.
+                               build``) for pushing on Neuro Registry.
 
       :param RemoteImage remote: a spec for remote image on Neuro
-                                 registry. Calculated from *local* image automatically
+                                 Registry. Calculated from *local* image automatically
                                  if ``None`` (default).
 
       :param AbstractDockerImageProgress progress:
@@ -162,7 +162,7 @@ RemoteImage
 .. class:: RemoteImage
 
    *Read-only* :class:`~dataclasses.dataclass` for describing *image* in remote
-   registry (Neuro hosted or other registries like DockerHub_).
+   registry (Neuro Platform hosted or other registries like DockerHub_).
 
    .. attribute:: name
 
@@ -182,7 +182,7 @@ RemoteImage
 
    .. attribute:: registry
 
-      Host name for images hosted on Neuro registry (:class:`str`), ``None`` for
+      Host name for images hosted on Neuro Registry (:class:`str`), ``None`` for
       other registries like DockerHub_.
 
 

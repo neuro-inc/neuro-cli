@@ -85,7 +85,7 @@ class Factory:
                     or config_authorized.auth_config != config.auth_config
                 ):
                     raise ConfigError(
-                        "Neuro CLI updated. Please logout and login again."
+                        "Neuro Platform CLI updated. Please logout and login again."
                     )
                 config = replace(config, version=neuromation.__version__)
             if new_token != config.auth_token:

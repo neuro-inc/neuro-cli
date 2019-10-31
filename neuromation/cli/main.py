@@ -156,7 +156,7 @@ def print_options(
     "--disable-pypi-version-check",
     is_flag=True,
     help="Don't periodically check PyPI to determine whether a new version of "
-    "Neuro CLI is available for download.",
+    "Neuro Platform CLI is available for download.",
 )
 @click.option(
     "--network-timeout", type=float, help="Network read timeout, seconds.", default=60.0

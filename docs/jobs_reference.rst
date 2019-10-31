@@ -217,7 +217,7 @@ HTTPPort
 
    .. attribute:: requires_auth
 
-      Authentication in Neuro platform is required for access to exposed HTTP
+      Authentication in Neuro Platform is required for access to exposed HTTP
       server if ``True``, the port is open publicly otherwise.
 
 

@@ -72,7 +72,7 @@ Config Factory
 .. class:: Factory(path: Optional[Path])
 
    A *factory* that used for making :class:`Client` instances, logging into Neuro
-   platform and logging out.
+   Platform and logging out.
 
    *path* (:class:`pathlib.Path`) can be provided for pointing on a *custom*
    configuration file (``~/.nmrc`` by default). The default value can be overridden by
@@ -89,7 +89,7 @@ Config Factory
       :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
                                             also :ref:`timeouts`.
 
-      :return: :class:`Client` that can be used for working with Neuro platform.
+      :return: :class:`Client` that can be used for working with Neuro Platform.
 
       :raise: :exc:`ConfigError` if configuration file doesn't exist, malformed or not
               compatible with SDK version.
@@ -101,7 +101,7 @@ Config Factory
                      timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT, \
                  ) -> None
 
-      Log into Neuro platform using in-browser authorization method.
+      Log into Neuro Platform using in-browser authorization method.
 
       The method is dedicated for login from workstation with GUI system. For
       logging in from server please use :meth:`login_headless`.
@@ -111,13 +111,13 @@ Config Factory
       The callback should open a browser with this URL (:func:`webbrowser.open` can be
       used).
 
-      After the call Neuro config file is created, call :meth:`get` for making a
-      client and performing Neuro platform operations.
+      After the call the configuration file is created, call :meth:`get` for
+      making a client and performing Neuro Platform operations.
 
       :param show_browser_cb: a callback that should open a browser with specified URL
                               for handling authorization.
 
-      :param ~yarl.URL url: Neuro platform API URL,
+      :param ~yarl.URL url: Neuro Platform API URL,
                             ``URL("https://staging.neu.ro/api/v1")`` by default.
 
       :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
@@ -130,7 +130,7 @@ Config Factory
                       timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT, \
                   ) -> None
 
-      Log into Neuro platform using two-step authorization method.
+      Log into Neuro Platform using two-step authorization method.
 
       The method is dedicated for login from remote server that has no GUI system.
       For logging in from GUI equipped workstation please use :meth:`login`.
@@ -142,13 +142,13 @@ Config Factory
       User copies the URL from remote terminal session into local browser, authorizes
       and enters authorization code shown in the browser back into prompt.
 
-      After the call Neuro config file is created, call :meth:`get` for making a
-      client and performing Neuro platform operations.
+      After the call the configuration file is created, call :meth:`get` for
+      making a client and performing Neuro Platform operations.
 
       :param get_auth_code_cb: a callback that receives an URL and returns
                                authorization code.
 
-      :param ~yarl.URL url: Neuro platform API URL,
+      :param ~yarl.URL url: Neuro Platform API URL,
                             ``URL("https://staging.neu.ro/api/v1")`` by default.
 
       :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
@@ -161,13 +161,13 @@ Config Factory
                       timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT, \
                   ) -> None
 
-       Log into Neuro platform using previously acquired token.  The method is
+       Log into Neuro Platform using previously acquired token.  The method is
        deprecated and not recommended to use.  Provided tokens will be revoked
        eventually.
 
        :param str token: authorization token.
 
-       :param ~yarl.URL url: Neuro platform API URL,
+       :param ~yarl.URL url: Neuro Platform API URL,
                              ``URL("https://staging.neu.ro/api/v1")`` by default.
 
        :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
@@ -175,7 +175,7 @@ Config Factory
 
    .. comethod:: logout()
 
-      Log out from Neuro platform.
+      Log out from Neuro Platform.
 
 .. _timeouts:
 

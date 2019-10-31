@@ -35,6 +35,7 @@ async def async_main(action: str) -> None:
 
 def main() -> None:
     if len(sys.argv) == 1 or sys.argv[1] not in ["store", "get", "erase"]:
-        error("Neuro docker credential helper.\nService tool, not for use", EX_USAGE)
+        error("Neuro Platform docker credential helper.\n"
+              :Service tool, not for use", EX_USAGE)
     action = sys.argv[1]
     run(async_main(action))

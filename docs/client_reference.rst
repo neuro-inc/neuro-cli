@@ -5,7 +5,7 @@ Client class
 
 .. class:: Client
 
-   Neuro client.
+   Neuro Platform client.
 
    For creating a client instance use :class:`Factory` or :func:`get`.
 
@@ -13,7 +13,7 @@ Client class
 
    .. attribute:: username
 
-      User name used for working with Neuro platform, read-only :class:`str`.
+      User name used for working with Neuro Platform, read-only :class:`str`.
 
    .. attribute:: presets
 
@@ -45,7 +45,7 @@ Client class
 
    .. comethod:: close()
 
-      Close Neuro client, all calls after closing are forbidden.
+      Close Neuro API client, all calls after closing are forbidden.
 
       The method is idempotent.
 
@@ -54,7 +54,7 @@ Preset
 ======
 
    *Read-only* :class:`~dataclasses.dataclass` for describing a job configuration
-   provided by Neuro platform.
+   provided by Neuro Platform.
 
    Presets list is loaded on login to the Neuro platform and depends on used
    cluster.
