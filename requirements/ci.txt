@@ -18,4 +18,4 @@ markdown-toc==1.2.6
 towncrier==19.2.0
 asynctest==0.13.0
 cryptography==2.8  # temporary pin the version until trusme fixes deprecation warning
-trustme==0.5.2
+trustme==0.5.3
