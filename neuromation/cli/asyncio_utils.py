@@ -7,6 +7,7 @@ import ssl
 import sys
 import threading
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
 
@@ -55,6 +56,8 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
         raise ValueError("a coroutine was expected, got {!r}".format(main))
 
     loop = asyncio.new_event_loop()
+    executor = ThreadPoolExecutor()
+    loop.set_default_executor(executor)
     _setup_exception_handler(loop, debug)
     try:
         asyncio.set_event_loop(loop)
@@ -66,6 +69,7 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
             _cancel_all_tasks(loop, main_task)
             loop.run_until_complete(loop.shutdown_asyncgens())
         finally:
+            executor.shutdown(wait=True)
             asyncio.set_event_loop(None)
             # simple workaround for:
             # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
