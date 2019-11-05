@@ -25,6 +25,7 @@ from neuromation.api import (
 )
 from neuromation.cli.formatters import DockerImageProgress
 
+from .const import EX_PLATFORMERROR
 from .defaults import (
     GPU_MODELS,
     JOB_CPU_NUMBER,
@@ -568,10 +569,9 @@ async def top(root: Root, job: str, timeout: float) -> None:
 @async_cmd()
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
-    Save job's state to an image
+    Save job's state to an image.
 
     Examples:
-
     neuro job save job-id image:ubuntu-patched
     neuro job save my-favourite-job image://~/ubuntu-patched:v1
     neuro job save my-favourite-job image://bob/ubuntu-patched
@@ -926,7 +926,7 @@ async def run_job(
         # Even if we detached, but the job has failed to start
         # (most common reason - no resources), the command fails
         if job.status == JobStatus.FAILED:
-            exit_code = 125
+            exit_code = EX_PLATFORMERROR
 
     if exit_code is not None:
         sys.exit(exit_code)

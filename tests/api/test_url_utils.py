@@ -210,7 +210,7 @@ async def test_normalize_local_path_uri__4_slashes_relative() -> None:
 
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path(
-    client: Client
+    client: Client,
 ) -> None:
     url = URL("storage:~/path/to/file.txt")
     with pytest.raises(ValueError, match=".*Cannot expand user.*"):
@@ -218,7 +218,7 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path(
 
 
 async def test_normalize_local_path_uri__tilde_in_relative_path(
-    fake_homedir: Path
+    fake_homedir: Path,
 ) -> None:
     url = URL("file:~/path/to/file.txt")
     url = normalize_local_path_uri(url)
@@ -229,7 +229,7 @@ async def test_normalize_local_path_uri__tilde_in_relative_path(
 
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path_2(
-    client: Client
+    client: Client,
 ) -> None:
     url = URL("storage:./~/path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
@@ -240,7 +240,7 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path_2(
 
 
 async def test_normalize_local_path_uri__tilde_in_relative_path_2(
-    fake_homedir: Path
+    fake_homedir: Path,
 ) -> None:
     url = URL("file:./~/path/to/file.txt")
     url = normalize_local_path_uri(url)
@@ -251,7 +251,7 @@ async def test_normalize_local_path_uri__tilde_in_relative_path_2(
 
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path_3(
-    client: Client
+    client: Client,
 ) -> None:
     url = URL("storage:path/to~file.txt")
     url = normalize_storage_path_uri(url, client.username)
@@ -273,7 +273,7 @@ async def test_normalize_local_path_uri__tilde_in_relative_path_3(
 
 
 async def test_normalize_storage_path_uri__tilde_in_absolute_path(
-    client: Client
+    client: Client,
 ) -> None:
     url = URL("storage:/~/path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username)
@@ -349,7 +349,7 @@ async def test_normalize_storage_path_uri__tilde_slash__double(client: Client) -
 
 
 async def test_normalize_local_path_uri__tilde_slash__double(
-    fake_homedir: Path
+    fake_homedir: Path,
 ) -> None:
     url = URL("file:~/path/to/file.txt")
     url = normalize_local_path_uri(url)

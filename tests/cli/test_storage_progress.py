@@ -45,7 +45,16 @@ def test_format_url_file() -> None:
 
 
 def make_root(color: bool, tty: bool, verbose: bool) -> Root:
-    return Root(color, tty, (80, 25), True, 60, Path("~/.nmrc"), verbosity=int(verbose))
+    return Root(
+        color,
+        tty,
+        (80, 25),
+        True,
+        60,
+        Path("~/.nmrc"),
+        verbosity=int(verbose),
+        trace=False,
+    )
 
 
 def test_progress_factory_none() -> None:

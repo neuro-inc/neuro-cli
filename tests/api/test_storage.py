@@ -1,6 +1,7 @@
+import asyncio
 import errno
+import json
 import os
-import time
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
@@ -89,7 +90,13 @@ async def storage_server(
                 }
             )
         elif op == "MKDIRS":
-            local_path.mkdir(parents=True, exist_ok=True)
+            try:
+                local_path.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
+                raise web.HTTPBadRequest(
+                    text=json.dumps({"error": "File exists", "errno": "EEXIST"}),
+                    content_type="application/json",
+                )
             return web.Response(status=201)
         elif op == "LISTSTATUS":
             if not local_path.exists():
@@ -292,10 +299,11 @@ async def test_storage_glob(
 
     srv = await aiohttp_server(app)
 
-    async def glob(pattern: str) -> List[URL]:
-        return [uri async for uri in client.storage.glob(URL(pattern))]
-
     async with make_client(srv.make_url("/")) as client:
+
+        async def glob(pattern: str) -> List[URL]:
+            return [uri async for uri in client.storage.glob(URL(pattern))]
+
         assert await glob("storage:folder") == [URL("storage:folder")]
         assert await glob("storage:folder/") == [URL("storage:folder/")]
         assert await glob("storage:folder/*") == [
@@ -814,7 +822,7 @@ async def test_storage_upload_regular_file_to_not_existing(
 
 
 async def test_storage_upload_recursive_src_doesnt_exist(
-    make_client: _MakeClient
+    make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
@@ -1066,7 +1074,7 @@ async def test_storage_upload_file_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    await asyncio.sleep(5)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
@@ -1101,7 +1109,7 @@ async def test_storage_upload_dir_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    await asyncio.sleep(5)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
@@ -1134,7 +1142,7 @@ async def test_storage_download_file_update(
         )
     assert local_file.read_bytes() == b"new"
 
-    time.sleep(2)
+    await asyncio.sleep(2)
     local_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
@@ -1169,7 +1177,7 @@ async def test_storage_download_dir_update(
         )
     assert local_file.read_bytes() == b"new"
 
-    time.sleep(2)
+    await asyncio.sleep(2)
     local_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_dir(

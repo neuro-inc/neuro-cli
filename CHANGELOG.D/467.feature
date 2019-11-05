@@ -1,0 +1,1 @@
+Trace sent HTTP requests and received replies to stderr if `--trace` flag is passed.

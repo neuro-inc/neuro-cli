@@ -152,8 +152,9 @@ def gen_group(index, group, target_path, parent_ctx):
         out.append("### Commands")
         out.append("")
         for cmd in commands:
+            cmd_path = f"/docs/cli/{group.name}/{cmd.name}"
             out.append(
-                f"- [neuro {group.name} {cmd.name}](/{group.name}/{cmd.name}): "
+                f"- [neuro {group.name} {cmd.name}]({cmd_path}): "
                 f"{cmd.get_short_help_str()}"
             )
 
@@ -179,7 +180,7 @@ def gen_shortcuts(index, commands, target_path, ctx):
 
     for cmd in commands:
         out.append(
-            f"- [neuro {cmd.name}](/shortcuts/{cmd.name}): "
+            f"- [neuro {cmd.name}](/docs/cli/shortcuts/{cmd.name}): "
             f"{cmd.get_short_help_str()}"
         )
 
@@ -197,7 +198,7 @@ def gen_shortcuts(index, commands, target_path, ctx):
         exists=True, file_okay=False, dir_okay=True, writable=True, resolve_path=True
     ),
     help="Target dir in platform-web project",
-    default=str(HERE.parent.parent / "platform-web/docs"),
+    default=str(HERE.parent.parent / "platform-web/content/cli"),
     show_default=True,
 )
 def main(target_dir):

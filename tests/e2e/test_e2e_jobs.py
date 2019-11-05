@@ -5,9 +5,10 @@ import re
 import subprocess
 import sys
 import tarfile
+from contextlib import suppress
 from pathlib import Path
 from time import time
-from typing import Any, AsyncIterator, Callable, Dict, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
 from uuid import uuid4
 
 import aiodocker
@@ -18,7 +19,7 @@ from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
-from tests.e2e import Helper
+from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
 
 
@@ -31,7 +32,7 @@ MAX_PORT = 65535
 
 
 @pytest.mark.e2e
-def test_job_lifecycle(helper: Helper) -> None:
+def test_job_submit(helper: Helper) -> None:
 
     job_name = f"job-{os.urandom(5).hex()}"
 
@@ -41,10 +42,7 @@ def test_job_lifecycle(helper: Helper) -> None:
         jobs_same_name = captured.out.split("\n")
         assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
         job_id = jobs_same_name[0]
-        helper.run_cli(["job", "kill", job_name])
-        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-        captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
-        assert not captured.out
+        helper.kill_job(job_id)
 
     # Remember original running jobs
     captured = helper.run_cli(
@@ -94,43 +92,6 @@ def test_job_lifecycle(helper: Helper) -> None:
     assert job_id in store_out
     # Check that the command is in the list
     assert command in store_out
-
-    # Check that no command is in the list if quite
-    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert command not in store_out
-
-    # Kill the job by name
-    captured = helper.run_cli(["job", "kill", job_name])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
-
-    # Check job ls by name
-    captured = helper.run_cli(["job", "ls", "-n", job_name, "-s", "succeeded"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert job_name in store_out
-
-    # Check job status by id
-    captured = helper.run_cli(["job", "status", job_id])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
-    # Check correct exit code is returned
-    # assert "Exit code: 0" in store_out
-
-    # Check job status by name
-    captured = helper.run_cli(["job", "status", job_name])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
 
 
 @pytest.mark.e2e
@@ -192,19 +153,6 @@ def test_job_description(helper: Helper) -> None:
     assert job_id in store_out
     assert description not in store_out
     assert command not in store_out
-
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
 
 
 @pytest.mark.e2e
@@ -554,13 +502,14 @@ async def nginx_job_async(
                 raise AssertionError("Cannot start NGINX job")
             yield job.id, str(secret)
         finally:
-            await client.jobs.kill(job.id)
+            with suppress(Exception):
+                await client.jobs.kill(job.id)
 
 
 @pytest.mark.e2e
-async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
+async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
     loop_sleep = 1
-    service_wait_time = 60
+    service_wait_time = 10 * 60
 
     async def get_(url: str) -> int:
         status = 999
@@ -581,7 +530,7 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
                     await asyncio.sleep(loop_sleep)
         return status
 
-    async with api_get(path=nmrc_path) as client:
+    async with api_get(path=nmrc_path, timeout=CLIENT_TIMEOUT) as client:
         port = unused_port()
         # We test client instead of run_cli as asyncio subprocesses do
         # not work if run from thread other than main.
@@ -599,7 +548,7 @@ def test_job_submit_http_auth(
     helper: Helper, secret_job: Callable[..., Dict[str, Any]]
 ) -> None:
     loop_sleep = 1
-    service_wait_time = 60
+    service_wait_time = 10 * 60
 
     async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
@@ -935,12 +884,8 @@ def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
 @pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
-    job_name_1, job_name_2 = (
-        "test-job-" + str(uuid4())[:10],
-        "test-job-" + str(uuid4())[:10],
-    )
 
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=HOME
         helper.run_cli(
             [
@@ -949,26 +894,21 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
                 "run",
                 "--detach",
                 "--preset=cpu-micro",
-                f"--name={job_name_1}",
                 UBUNTU_IMAGE_NAME,
                 command,
             ]
         )
 
-    job_id_1 = helper.resolve_job_name_to_id(job_name_1)
-
-    helper.wait_job_change_state_from(job_id_1, JobStatus.PENDING, JobStatus.FAILED)
-    helper.wait_job_change_state_to(job_id_1, JobStatus.FAILED, JobStatus.FAILED)
+    assert cm.value.returncode == 125
 
     # then, run with --volume=HOME
-    helper.run_cli(
+    capture = helper.run_cli(
         [
             "-q",
             "job",
             "run",
             "--detach",
             "--preset=cpu-micro",
-            f"--name={job_name_2}",
             "--volume",
             "HOME",
             UBUNTU_IMAGE_NAME,
@@ -976,8 +916,7 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
         ]
     )
 
-    job_id_2 = helper.resolve_job_name_to_id(job_name_2)
-    helper.wait_job_change_state_from(job_id_2, JobStatus.PENDING, JobStatus.FAILED)
+    job_id_2 = capture.out
     helper.wait_job_change_state_to(job_id_2, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
@@ -996,23 +935,12 @@ def test_job_run_volume_all(helper: Helper) -> None:
     command = f"bash -c '{cmd}'"
     img = UBUNTU_IMAGE_NAME
 
-    job_name = "test-job-" + str(uuid4())[:10]
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=ALL
         captured = helper.run_cli(
-            [
-                "--quiet",
-                "run",
-                "--detach",
-                f"--name={job_name}",
-                "-s",
-                "cpu-micro",
-                img,
-                command,
-            ]
+            ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
         )
-    job_id = helper.resolve_job_name_to_id(job_name)
-    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
+    assert cm.value.returncode == 125
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
@@ -1049,3 +977,80 @@ def test_job_run_volume_all_and_another(helper: Helper) -> None:
         captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
         msg = "Cannot use `--volume=ALL` together with other `--volume` options"
         assert msg in captured.err
+
+
+@pytest.mark.e2e
+def test_e2e_job_top(helper: Helper) -> None:
+    def split_non_empty_parts(line: str, sep: str) -> List[str]:
+        return [part.strip() for part in line.split(sep) if part.strip()]
+
+    command = f"sleep 300"
+
+    print("Run job... ")
+    job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
+    print("... done")
+    t0 = time()
+    returncode = -1
+    delay = 15.0
+
+    while returncode and time() - t0 < 3 * 60:
+        try:
+            print("Try job top")
+            capture = helper.run_cli(["job", "top", job_id, "--timeout", str(delay)])
+        except subprocess.CalledProcessError as ex:
+            stdout = ex.output
+            stderr = ex.stderr
+            returncode = ex.returncode
+        else:
+            stdout = capture.out
+            stderr = capture.err
+            returncode = 0
+
+        if "TIMESTAMP" in stdout and "MEMORY (MB)" in stdout:
+            # got response from job top telemetery
+            returncode = 0
+            break
+        else:
+            print(f"job top has failed, increase timeout to {delay}")
+            delay = min(delay * 1.5, 60)
+
+    # timeout is reached without info from server
+    assert not returncode, (
+        f"Cannot get response from server "
+        f"in {time() - t0} secs, delay={delay} "
+        f"returncode={returncode}\n"
+        f"stdout = {stdout}\nstdderr = {stderr}"
+    )
+
+    try:
+        header, *lines = split_non_empty_parts(stdout, sep="\n")
+    except ValueError:
+        assert False, f"cannot unpack\n{stdout}\n{stderr}"
+    header_parts = split_non_empty_parts(header, sep="\t")
+    assert header_parts == [
+        "TIMESTAMP",
+        "CPU",
+        "MEMORY (MB)",
+        "GPU (%)",
+        "GPU_MEMORY (MB)",
+    ]
+
+    for line in lines:
+        line_parts = split_non_empty_parts(line, sep="\t")
+        timestamp_pattern_parts = [
+            ("weekday", "[A-Z][a-z][a-z]"),
+            ("month", "[A-Z][a-z][a-z]"),
+            ("day", r"\d+"),
+            ("day", r"\d\d:\d\d:\d\d"),
+            ("year", "2019"),
+        ]
+        timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
+        expected_parts = [
+            ("timestamp", timestamp_pattern),
+            ("cpu", r"\d.\d\d\d"),
+            ("memory", r"\d.\d\d\d"),
+            ("gpu", "0"),
+            ("gpu memory", "0"),
+        ]
+        for actual, (descr, pattern) in zip(line_parts, expected_parts):
+            assert re.match(pattern, actual) is not None, f"error in matching {descr}"

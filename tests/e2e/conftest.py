@@ -11,7 +11,7 @@ from contextlib import suppress
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
-from time import sleep, time
+from time import time
 from typing import (
     Any,
     AsyncIterator,
@@ -44,17 +44,16 @@ from neuromation.api import (
 )
 from neuromation.api.config import _CookieSession
 from neuromation.cli.asyncio_utils import run
-from neuromation.cli.const import EX_IOERR
 from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
 
-JOB_TIMEOUT = 60 * 5
+JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
-JOB_OUTPUT_TIMEOUT = 60 * 5
+JOB_OUTPUT_TIMEOUT = 5 * 60
 JOB_OUTPUT_SLEEP_SECONDS = 2
-CLI_MAX_WAIT = 180
-NETWORK_TIMEOUT = 60.0 * 3
+CLI_MAX_WAIT = 5 * 60
+NETWORK_TIMEOUT = 3 * 60.0
 CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIMEOUT)
 
 log = logging.getLogger(__name__)
@@ -73,10 +72,6 @@ def loop() -> Iterator[asyncio.AbstractEventLoop]:
     yield loop
     loop.run_until_complete(loop.shutdown_asyncgens())
     loop.close()
-
-
-class TestRetriesExceeded(Exception):
-    pass
 
 
 SysCap = namedtuple("SysCap", "out err")
@@ -117,7 +112,7 @@ class Helper:
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
-                self.kill_job(job)
+                self.kill_job(job, wait=False)
 
     @property
     def username(self) -> str:
@@ -394,65 +389,51 @@ class Helper:
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
-        t0 = time()
-        delay = 0.5
-        while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
-            args = [
-                "neuro",
-                "--show-traceback",
-                "--disable-pypi-version-check",
-                "--color=no",
-                f"--network-timeout={network_timeout}",
-            ]
+        args = [
+            "neuro",
+            "--show-traceback",
+            "--disable-pypi-version-check",
+            "--color=no",
+            f"--network-timeout={network_timeout}",
+        ]
 
-            if verbosity < 0:
-                args.append("-" + "q" * (-verbosity))
-            if verbosity > 0:
-                args.append("-" + "v" * verbosity)
+        if verbosity < 0:
+            args.append("-" + "q" * (-verbosity))
+        if verbosity > 0:
+            args.append("-" + "v" * verbosity)
 
-            if self._nmrc_path:
-                args.append(f"--neuromation-config={self._nmrc_path}")
+        if self._nmrc_path:
+            args.append(f"--neuromation-config={self._nmrc_path}")
 
-            # 5 min timeout is overkill
-            proc = subprocess.run(
-                args + arguments,
-                timeout=300,
-                encoding="utf8",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            if proc.returncode == EX_IOERR and "mkdir" not in arguments:
-                # network problem
-                # TODO: Drop this retry maybe?
-                sleep(delay)
-                delay *= 2
-                continue
-            else:
-                try:
-                    proc.check_returncode()
-                except subprocess.CalledProcessError:
-                    log.error(f"Last stdout: '{proc.stdout}'")
-                    log.error(f"Last stderr: '{proc.stderr}'")
-                    raise
-            out = proc.stdout
-            err = proc.stderr
-            if any(
-                start in " ".join(arguments)
-                for start in ("submit", "job submit", "run", "job run")
-            ):
-                match = job_id_pattern.search(out)
-                if match:
-                    self._executed_jobs.append(match.group(1))
-            out = out.strip()
-            err = err.strip()
-            if verbosity > 0:
-                print(f"nero stdout: {out}")
-                print(f"nero stderr: {err}")
-            return SysCap(out, err)
-        else:
-            raise TestRetriesExceeded(
-                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
-            )
+        # 5 min timeout is overkill
+        proc = subprocess.run(
+            args + arguments,
+            timeout=300,
+            encoding="utf8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        try:
+            proc.check_returncode()
+        except subprocess.CalledProcessError:
+            log.error(f"Last stdout: '{proc.stdout}'")
+            log.error(f"Last stderr: '{proc.stderr}'")
+            raise
+        out = proc.stdout
+        err = proc.stderr
+        if any(
+            start in " ".join(arguments)
+            for start in ("submit", "job submit", "run", "job run")
+        ):
+            match = job_id_pattern.search(out)
+            if match:
+                self._executed_jobs.append(match.group(1))
+        out = out.strip()
+        err = err.strip()
+        if verbosity > 0:
+            print(f"nero stdout: {out}")
+            print(f"nero stderr: {err}")
+        return SysCap(out, err)
 
     @run_async
     async def run_job_and_wait_state(
@@ -517,12 +498,17 @@ class Helper:
                 )
 
     @run_async
-    async def kill_job(self, id_or_name: str) -> None:
+    async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(id_or_name, client=client)
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
+                if wait:
+                    while True:
+                        stat = await client.jobs.status(id)
+                        if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
+                            break
 
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
@@ -565,7 +551,10 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
 def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
     yield ret
-    ret.close()
+    with suppress(Exception):
+        # ignore exceptions in helper closing
+        # nothing to do here anyway
+        ret.close()
 
 
 def generate_random_file(path: Path, size: int) -> Tuple[str, str]:

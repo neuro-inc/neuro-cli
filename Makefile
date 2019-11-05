@@ -18,7 +18,7 @@ DEPS_REGEXP := ^(requirements/.+|setup.py+)
 
 README_PATTERN := README.XXXXXXXX.md
 
-PYTEST_XDIST_NUM_PROCESSES ?= auto
+PYTEST_XDIST_NUM_THREADS ?= auto
 
 .PHONY: help
 .SILENT: help
@@ -75,48 +75,14 @@ init: _init-readme update-deps
 _init-readme:
 	cp -n README.in.md README.md
 
-.PHONY: e2e_ci
-e2e_ci:
-	if [ "${AGENT_OS}" = "Windows_NT" ]; then \
-	    make _e2e_win; \
-	else \
-	    make _e2e; \
-	fi
-
 .PHONY: e2e
 e2e:
 	pytest \
-	    -n ${PYTEST_XDIST_NUM_PROCESSES} \
+	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
-		--verbose \
-		--durations 10 \
-		tests
-
-.PHONY: _e2e
-_e2e:
-	pytest \
-	    -n ${PYTEST_XDIST_NUM_PROCESSES} \
-		-m "e2e" \
-		--cov=neuromation \
-		--cov-report term-missing:skip-covered \
-		--cov-report xml:coverage.xml \
-		--cov-append \
-		--verbose \
-		--durations 10 \
-		tests
-
-.PHONY: _e2e_win
-_e2e_win:
-	pytest \
-		-n 4 \
-		-m "e2e" \
-		--cov=neuromation \
-		--cov-report term-missing:skip-covered \
-		--cov-report xml:coverage.xml \
-		--cov-append \
 		--verbose \
 		--durations 10 \
 		tests
@@ -173,7 +139,7 @@ dist-clean:
 
 .PHONY: dist
 dist: dist-clean
-	python setup.py bdist_wheel
+	python setup.py sdist bdist_wheel
 
 .PHONY: publish-lint
 publish-lint:

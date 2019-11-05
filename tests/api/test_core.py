@@ -11,7 +11,8 @@ from aiohttp import web
 from typing_extensions import AsyncContextManager
 from yarl import URL
 
-from neuromation.api.core import DEFAULT_TIMEOUT, IllegalArgumentError, _Core
+from neuromation.api import IllegalArgumentError, ServerNotAvailable
+from neuromation.api.core import _Core
 from tests import _TestServerFactory
 
 
@@ -33,10 +34,11 @@ async def api_factory() -> AsyncIterator[_ApiFactory]:
         ssl_context = ssl.SSLContext()
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
-        api = _Core(connector, url, "token", cookie, DEFAULT_TIMEOUT)
+        session = aiohttp.ClientSession(connector=connector)
+        api = _Core(session, url, "token", cookie)
         yield api
         await api.close()
-        await connector.close()
+        await session.close()
 
     yield factory
 
@@ -118,9 +120,26 @@ async def test_pass_cookie(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    tmp = SimpleCookie()
+    tmp = SimpleCookie()  # type: ignore
     tmp["NEURO_SESSION"] = "cookie_value"
     cookie = tmp["NEURO_SESSION"]
     async with api_factory(srv.make_url("/"), cookie) as api:
         async with api.request(method="GET", url=URL("/test")) as resp:
             assert resp.status == 200
+
+
+async def test_server_bad_gateway(
+    aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPBadGateway()
+
+    app = web.Application()
+    app.router.add_get("/test", handler)
+    srv = await aiohttp_server(app)
+
+    async with api_factory(srv.make_url("/"), None) as api:
+        url = srv.make_url("test")
+        with pytest.raises(ServerNotAvailable, match="^502: Bad Gateway$"):
+            async with api.request(method="GET", url=url) as resp:
+                assert resp.status == 200

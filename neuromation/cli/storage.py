@@ -537,7 +537,7 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
         docker = aiodocker.Docker()
         try:
             aws_image = f"{AWS_IMAGE_NAME}:{AWS_IMAGE_TAG}"
-            async for info in await docker.images.pull(aws_image, stream=True):
+            async for info in docker.images.pull(aws_image, stream=True):
                 # TODO Use some of Progress classes
                 log.debug(str(info))
             client_container = await docker.containers.create(
@@ -559,7 +559,7 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
                 tasks = [client_container.wait()]
 
                 async def printlogs(err: bool) -> None:
-                    async for piece in await client_container.log(
+                    async for piece in client_container.log(
                         stdout=not err,
                         stderr=err,
                         follow=True,
