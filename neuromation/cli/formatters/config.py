@@ -1,12 +1,13 @@
 from sys import platform
-from typing import Dict
+from typing import Dict, Iterator
 
 from click import style
-from tabulate import tabulate
 
 from neuromation.api import Preset
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
+
+from .ftable import Align, table
 
 
 class ConfigFormatter:
@@ -23,10 +24,10 @@ class ConfigFormatter:
             + indent
             + f"\n{indent}".join(lines)
             + "\n"
-            + self._format_presets(root.resource_presets)
+            + f"\n".join(self._format_presets(root.resource_presets))
         )
 
-    def _format_presets(self, presets: Dict[str, Preset], indent: str = "    ") -> str:
+    def _format_presets(self, presets: Dict[str, Preset]) -> Iterator[str]:
         if platform == "win32":
             yes, no = "Yes", "No"
         else:
@@ -37,8 +38,9 @@ class ConfigFormatter:
                 has_tpu = True
                 break
 
-        table = []
+        rows = []
         headers = ["Name", "#CPU", "Memory", "Preemptible", "GPU"]
+        rows.append(headers)
         if has_tpu:
             headers.append("TPU")
 
@@ -48,18 +50,19 @@ class ConfigFormatter:
                 gpu = f"{preset.gpu} x {preset.gpu_model}"
             row = [
                 name,
-                preset.cpu,
+                str(preset.cpu),
                 format_size(preset.memory_mb * 1024 ** 2),
                 yes if preset.is_preemptible else no,
                 gpu,
             ]
-            if preset.tpu_type:
-                tpu = f"{preset.tpu_type}/{preset.tpu_software_version}"
+            if has_tpu:
+                tpu = (
+                    f"{preset.tpu_type}/{preset.tpu_software_version}"
+                    if preset.tpu_type
+                    else ""
+                )
                 row.append(tpu)
-            table.append(row)
-        return tabulate(  # type: ignore
-            table,
-            headers=headers,
-            tablefmt="plain",
-            colalign=("left", "right", "right", "center"),
+            rows.append(row)
+        yield from table(
+            rows=rows, aligns=[Align.LEFT, Align.RIGHT, Align.RIGHT, Align.CENTER]
         )

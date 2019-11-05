@@ -13,5 +13,4 @@ humanize==0.5.1
 certifi==2019.9.11
 psutil==5.6.4
 typing_extensions==3.7.4.1
-tabulate==0.8.5
 -e .

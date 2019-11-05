@@ -754,7 +754,7 @@ class TestTabularJobsFormatter:
             is_preemptible=True,
         )
         formatter = TabularJobsFormatter(0, "owner")
-        result = [item for item in formatter([job])]
+        result = [item.rstrip() for item in formatter([job])]
         assert result in [
             [
                 "ID  NAME  STATUS  WHEN  IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",
@@ -828,11 +828,12 @@ class TestTabularJobsFormatter:
             ),
         ]
         formatter = TabularJobsFormatter(0, "owner")
-        result = [item for item in formatter(jobs)]
+        result = [item.rstrip() for item in formatter(jobs)]
         assert result == [
-            "ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
+            f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
             f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-tag  {owner_printed}  default  some description                     ls -la /some/path",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-    {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
+            f"                                                                       tag",  # noqa: E501
         ]
 
 
@@ -1362,19 +1363,21 @@ class TestConfigFormatter:
         if platform == "win32":
             no = "No"
         else:
-            no = " " + "✖︎"
-        assert click.unstyle(out) == textwrap.dedent(
+            no = "✖︎"
+        assert "\n".join(
+            line.rstrip() for line in click.unstyle(out).splitlines()
+        ) == textwrap.dedent(
             f"""\
             User Configuration:
               User Name: user
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-            Name         #CPU    Memory   Preemptible   GPU
-            gpu-small       7       30G       {no}        1 x nvidia-tesla-k80
-            gpu-large       7       60G       {no}        1 x nvidia-tesla-v100
-            cpu-small       7        2G       {no}
-            cpu-large       7       14G       {no}"""
+            Name       #CPU  Memory  Preemptible  GPU
+            gpu-small     7     30G       {no}      1 x nvidia-tesla-k80
+            gpu-large     7     60G       {no}      1 x nvidia-tesla-v100
+            cpu-small     7      2G       {no}
+            cpu-large     7     14G       {no}"""
         )
 
     async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
@@ -1398,26 +1401,29 @@ class TestConfigFormatter:
         )
 
         monkeypatch.setattr("neuromation.cli.root.Root.resource_presets", presets)
+
         out = ConfigFormatter()(root)
         if platform == "win32":
             no = "No"
         else:
-            no = " " + "✖︎"
+            no = "✖︎"
 
-        assert click.unstyle(out) == textwrap.dedent(
+        assert "\n".join(
+            line.rstrip() for line in click.unstyle(out).splitlines()
+        ) == textwrap.dedent(
             f"""\
             User Configuration:
               User Name: user
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-            Name         #CPU    Memory   Preemptible   GPU                    TPU
-            gpu-small       7       30G       {no}        1 x nvidia-tesla-k80
-            gpu-large       7       60G       {no}        1 x nvidia-tesla-v100
-            cpu-small       7        2G       {no}
-            cpu-large       7       14G       {no}
-            tpu-small       2        2G       {no}                               v3-8/1.14
-            hybrid          4       30G       {no}        2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+            Name       #CPU  Memory  Preemptible  GPU                    TPU
+            gpu-small     7     30G       {no}      1 x nvidia-tesla-k80
+            gpu-large     7     60G       {no}      1 x nvidia-tesla-v100
+            cpu-small     7      2G       {no}
+            cpu-large     7     14G       {no}
+            tpu-small     2      2G       {no}                             v3-8/1.14
+            hybrid        4     30G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 
