@@ -14,6 +14,7 @@ from .utils import (
     command,
     deprecated_quiet_option,
     group,
+    pager_maybe,
 )
 
 
@@ -102,8 +103,7 @@ async def ls(root: Root) -> None:
     """
 
     images = await root.client.images.ls()
-    for image in images:
-        click.echo(image)
+    pager_maybe(images, root.tty, root.terminal_size)
 
 
 @command()
@@ -122,8 +122,7 @@ async def tags(root: Root, image: RemoteImage) -> None:
     """
 
     tags = await root.client.images.tags(image)
-    for tag in tags:
-        click.echo(tag)
+    pager_maybe(tags, root.tty, root.terminal_size)
 
 
 image.add_command(ls)

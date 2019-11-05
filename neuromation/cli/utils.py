@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+import itertools
 import logging
 import re
 import shlex
@@ -13,6 +14,7 @@ from typing import (
     Awaitable,
     Callable,
     Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -652,3 +654,21 @@ else:
 
 def format_size(value: float) -> str:
     return humanize.naturalsize(value, gnu=True, format="%.4g")
+
+
+def pager_maybe(
+    lines: Iterator[str], tty: bool, terminal_size: Tuple[int, int]
+) -> None:
+    if not tty:
+        for line in lines:
+            click.echo(line)
+        return
+    count = int(terminal_size[1] * 2 / 3)
+    handled = [i for i in itertools.islice(lines, count)]
+    if len(handled) < count:
+        # lines list is short, just print it
+        for line in handled:
+            click.echo(line)
+    else:
+        handled.extend(lines)
+        click.echo_via_pager(line + "\n" for line in handled)
