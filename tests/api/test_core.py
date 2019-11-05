@@ -35,7 +35,7 @@ async def api_factory() -> AsyncIterator[_ApiFactory]:
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         session = aiohttp.ClientSession(connector=connector)
-        api = _Core(session, url, "token", cookie)
+        api = _Core(session, url, "token", cookie, "bd7a977555f6b982")
         yield api
         await api.close()
         await session.close()

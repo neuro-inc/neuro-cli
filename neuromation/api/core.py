@@ -2,6 +2,7 @@ import errno
 import json as jsonmodule
 import logging
 from http.cookies import Morsel  # noqa
+from types import SimpleNamespace
 from typing import Any, AsyncIterator, Dict, Mapping, Optional
 
 import aiohttp
@@ -9,6 +10,7 @@ from aiohttp import WSMessage
 from multidict import CIMultiDict
 from yarl import URL
 
+from .tracing import gen_trace_id
 from .utils import asynccontextmanager
 
 
@@ -57,10 +59,12 @@ class _Core:
         base_url: URL,
         token: str,
         cookie: Optional["Morsel[str]"],
+        trace_id: Optional[str],
     ) -> None:
         self._session = session
         self._base_url = base_url
         self._token = token
+        self._trace_id = trace_id
         self._headers = self._auth_headers()
         if cookie is not None:
             self._session.cookie_jar.update_cookies(
@@ -112,6 +116,11 @@ class _Core:
         else:
             real_headers = CIMultiDict()
         real_headers.update(self._headers)
+        trace_request_ctx = SimpleNamespace()
+        trace_id = self._trace_id
+        if trace_id is None:
+            trace_id = gen_trace_id()
+        trace_request_ctx.trace_id = trace_id
         async with self._session.request(
             method,
             url,
@@ -120,6 +129,7 @@ class _Core:
             json=json,
             data=data,
             timeout=timeout,
+            trace_request_ctx=trace_request_ctx,
         ) as resp:
             if 400 <= resp.status:
                 err_text = await resp.text()

@@ -15,6 +15,7 @@ from neuromation.api.config import (
     _PyPIVersion,
 )
 from neuromation.api.login import _ClusterConfig
+from neuromation.api.tracing import _make_trace_config
 
 
 @pytest.fixture
@@ -62,7 +63,11 @@ def cluster_config() -> _ClusterConfig:
 
 @pytest.fixture
 def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
-    def go(url_str: str, registry_url: str = "https://registry-dev.neu.ro") -> Client:
+    def go(
+        url_str: str,
+        registry_url: str = "https://registry-dev.neu.ro",
+        trace_id: str = "bd7a977555f6b982",
+    ) -> Client:
         url = URL(url_str)
         cluster_config = _ClusterConfig(
             registry_url=URL(registry_url),
@@ -89,7 +94,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
         )
-        session = aiohttp.ClientSession()
-        return Client._create(session, config)
+        session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
+        return Client._create(session, config, trace_id)
 
     return go
