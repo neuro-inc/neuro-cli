@@ -14,7 +14,6 @@ from typing import (
     Awaitable,
     Callable,
     Iterable,
-    Iterator,
     List,
     Optional,
     Sequence,
@@ -657,18 +656,18 @@ def format_size(value: float) -> str:
 
 
 def pager_maybe(
-    lines: Iterator[str], tty: bool, terminal_size: Tuple[int, int]
+    lines: Iterable[Any], tty: bool, terminal_size: Tuple[int, int]
 ) -> None:
     if not tty:
         for line in lines:
-            click.echo(line)
+            click.echo(str(line))
         return
     count = int(terminal_size[1] * 2 / 3)
     handled = [i for i in itertools.islice(lines, count)]
     if len(handled) < count:
         # lines list is short, just print it
         for line in handled:
-            click.echo(line)
+            click.echo(str(line))
     else:
         handled.extend(lines)
-        click.echo_via_pager(line + "\n" for line in handled)
+        click.echo_via_pager(str(line) + "\n" for line in handled)
