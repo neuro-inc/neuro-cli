@@ -663,11 +663,12 @@ def pager_maybe(
             click.echo(str(line))
         return
     count = int(terminal_size[1] * 2 / 3)
-    handled = [i for i in itertools.islice(lines, count)]
+    handled = list(itertools.islice(lines, count))
     if len(handled) < count:
         # lines list is short, just print it
         for line in handled:
             click.echo(str(line))
     else:
-        handled.extend(lines)
-        click.echo_via_pager(str(line) + "\n" for line in handled)
+        click.echo_via_pager(
+            chain(["\n".join(handled)], (f"\n{line}" for line in lines))
+        )
