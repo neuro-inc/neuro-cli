@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import click
 
@@ -10,6 +10,7 @@ from .utils import (
     async_cmd,
     command,
     group,
+    pager_maybe,
     parse_permission_action,
     parse_resource_for_sharing,
 )
@@ -112,6 +113,7 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
         neuro acl list --shared
         neuro acl list --shared --scheme image
     """
+    out: List[str] = []
     if not shared:
 
         def permission_key(p: Permission) -> Any:
@@ -120,7 +122,7 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
         for p in sorted(
             await root.client.users.get_acl(root.username, scheme), key=permission_key
         ):
-            click.echo(f"{p.uri} {p.action.value}")
+            out.append(f"{p.uri} {p.action.value}")
     else:
 
         def shared_permission_key(share: Share) -> Any:
@@ -130,7 +132,7 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
             await root.client.users.get_shares(root.username, scheme),
             key=shared_permission_key,
         ):
-            click.echo(
+            out.append(
                 " ".join(
                     [
                         str(share.permission.uri),
@@ -139,6 +141,7 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
                     ]
                 )
             )
+    pager_maybe(out, root.tty, root.terminal_size)
 
 
 acl.add_command(grant)

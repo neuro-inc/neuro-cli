@@ -54,6 +54,7 @@ from .utils import (
     command,
     deprecated_quiet_option,
     group,
+    pager_maybe,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -509,8 +510,7 @@ async def ls(
             width = root.terminal_size[0]
         formatter = TabularJobsFormatter(width, root.username)
 
-    for line in formatter(jobs):
-        click.echo(line)
+    pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 
 
 @command()

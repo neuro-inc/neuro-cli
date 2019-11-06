@@ -36,7 +36,7 @@ from .formatters import (
     get_painter,
 )
 from .root import Root
-from .utils import async_cmd, command, group, parse_file_resource
+from .utils import async_cmd, command, group, pager_maybe, parse_file_resource
 
 
 MINIO_IMAGE_NAME = "minio/minio"
@@ -165,8 +165,7 @@ async def ls(
                 else:
                     formatter = SimpleFilesFormatter(root.color)
 
-            for line in formatter.__call__(files):
-                click.echo(line)
+            pager_maybe(formatter(files), root.tty, root.terminal_size)
 
     if errors:
         sys.exit(EX_OSFILE)
