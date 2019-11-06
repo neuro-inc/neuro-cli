@@ -371,6 +371,10 @@ class Jobs(metaclass=NoPublicConstructor):
             f"ProxyCommand={proxy_command_str}",
             "-o",
             "ExitOnForwardFailure=yes",
+            "-o",
+            "ServerAliveInterval=5",
+            "-o",
+            "ServerAliveCountMax=2",
         ]
         if no_key_check:  # pragma: no branch
             command += [
@@ -384,8 +388,7 @@ class Jobs(metaclass=NoPublicConstructor):
         try:
             result = await proc.wait()
             if result != 0:
-                raise ValueError(f"error code {result}")
-            return
+                raise SystemExit(result)
         finally:
             await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks

@@ -402,67 +402,67 @@ async def port_forward(
     """
 
     from asyncio import Task
+    from aiohttp import ClientConnectionError
 
-    _tasks: List[Task] = []
-    _stopped: bool = False
+    stopped: bool = False
 
-    def _done(local_remote_port: Tuple[int, int], task: Task):
-        nonlocal reconnect
-        nonlocal _stopped
-        nonlocal _tasks
+    print(f"Start with reconnect={reconnect}")
 
-        print("Done: ", local_remote_port, task)
 
-        if not _stopped and reconnect:
-            if task.exception():
-                if type(task.exception()) is not ValueError:
-                    _forward(local_remote_port)
-                else:
-                    _stop()
-
-    def _forward(local_remote_port: Tuple[int, int]):
-        nonlocal _tasks
-
-        print("Forward: ", local_remote_port)
-
-        task = root.client.jobs.port_forward(
-            job_id,
-            local_remote_port[0],
-            local_remote_port[1],
-            no_key_check=no_key_check,
-        )
-        _tasks.append(task)
-        task.add_done_callback(partial(_done, local_remote_port))
-
-    def _stop():
-        nonlocal _stopped
-
+    async def stop():
+        nonlocal stopped
         print("Stop")
+        stopped = True
+        for task in tasks:
+                if not task.done():
+                    task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
 
-        _stopped = True
-        for task in _tasks:
-            task.cancel()
-
-    job_id = await resolve_job(job, client=root.client)
+    job_id = await resolve_job(job, client=root.client, raise_error=True)
+    tasks: Dict[Task, Tuple[int, int]] = {}
     for local_port, job_port in local_remote_port:
         click.echo(
             f"Port localhost:{local_port} will be forwarded "
             f"to port {job_port} of {job_id}"
         )
-        _forward((local_port, job_port))
+        # forward(local_port, job_port, True)
+        task = root.client.jobs.port_forward(
+            job_id, local_port, job_port, no_key_check=no_key_check
+        )
+        tasks[task] = (local_port, job_port)
+
     click.echo("Press ^C to stop forwarding")
-    try:
-        while not _stopped:
-            await asyncio.sleep(1)
+    while not stopped:
+        try:
+            await asyncio.gather(*tasks.keys())
+            # Server closes connections self, or ssh killed
+            await stop()
+        except KeyboardInterrupt:
+            await stop()
+        except (SystemExit, ClientConnectionError) as error:
+            for task, (local_port, job_port) in tasks.items():
+                    if task.done():
+                        exc = None
+                        with suppress(asyncio.CancelledError):
+                            exc = task.exception()
+                        if exc == error:
+                            tasks.pop(task)
+                            await task
+                            click.echo(
+                                f"Port localhost:{local_port} will be forwarded again"
+                                f"to port {job_port} of {job_id}"
+                            )
+                            new_task = root.client.jobs.port_forward(
+                                job_id, local_port, job_port, no_key_check=no_key_check
+                            )
+                            tasks[new_task] = (local_port, job_port)
+        except Exception as error:
+            await stop()
+            raise error
 
-    except KeyboardInterrupt:
-        _stopped = True
-        pass
 
-    for task in _tasks:
-        with suppress(asyncio.CancelledError):
-            await task
-        _tasks.pop(_tasks.index(task))
+
 
 
 @command()
