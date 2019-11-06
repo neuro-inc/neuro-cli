@@ -103,7 +103,7 @@ async def ls(root: Root) -> None:
     """
 
     images = await root.client.images.ls()
-    pager_maybe(images, root.tty, root.terminal_size)
+    pager_maybe((str(image) for image in images), root.tty, root.terminal_size)
 
 
 @command()
@@ -122,7 +122,7 @@ async def tags(root: Root, image: RemoteImage) -> None:
     """
 
     tags = await root.client.images.tags(image)
-    pager_maybe(tags, root.tty, root.terminal_size)
+    pager_maybe((str(tag) for tag in tags), root.tty, root.terminal_size)
 
 
 image.add_command(ls)

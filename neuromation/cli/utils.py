@@ -656,19 +656,19 @@ def format_size(value: float) -> str:
 
 
 def pager_maybe(
-    lines: Iterable[Any], tty: bool, terminal_size: Tuple[int, int]
+    lines: Iterable[str], tty: bool, terminal_size: Tuple[int, int]
 ) -> None:
     if not tty:
         for line in lines:
-            click.echo(str(line))
+            click.echo(line)
         return
     count = int(terminal_size[1] * 2 / 3)
     handled = list(itertools.islice(lines, count))
     if len(handled) < count:
         # lines list is short, just print it
         for line in handled:
-            click.echo(str(line))
+            click.echo(line)
     else:
         click.echo_via_pager(
-            chain(["\n".join(handled)], (f"\n{line}" for line in lines))
+            itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines))
         )
