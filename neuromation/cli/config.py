@@ -17,6 +17,7 @@ from neuromation.api import (
     login_with_token as api_login_with_token,
     logout as api_logout,
 )
+from neuromation.cli.formatters.config import QuotaInfoFormatter
 
 from .formatters import ConfigFormatter
 from .root import Root
@@ -28,6 +29,11 @@ def config() -> None:
     """Client configuration."""
 
 
+@group()
+def quota() -> None:
+    """Quota configuration."""
+
+
 @command()
 @async_cmd()
 async def show(root: Root) -> None:
@@ -36,6 +42,17 @@ async def show(root: Root) -> None:
     """
     fmt = ConfigFormatter()
     click.echo(fmt(root))
+
+
+@command("show")
+@async_cmd()
+async def quota_show(root: Root) -> None:
+    """
+    Print current settings.
+    """
+    quota = await root.client.quota.get()
+    fmt = QuotaInfoFormatter()
+    click.echo(fmt(quota))
 
 
 @command()
@@ -194,3 +211,6 @@ config.add_command(show_token)
 config.add_command(docker)
 
 config.add_command(logout)
+config.add_command(quota)
+
+quota.add_command(quota_show)

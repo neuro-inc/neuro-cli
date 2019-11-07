@@ -31,6 +31,8 @@
 		* [neuro image pull](#neuro-image-pull)
 		* [neuro image tags](#neuro-image-tags)
 	* [neuro config](#neuro-config)
+		* [neuro config quota](#neuro-config-quota)
+			* [neuro config quota show](#neuro-config-quota-show)
 		* [neuro config login](#neuro-config-login)
 		* [neuro config login-with-token](#neuro-config-login-with-token)
 		* [neuro config login-headless](#neuro-config-login-headless)
@@ -983,6 +985,13 @@ Name | Description|
 |_--help_|Show this message and exit.|
 
 
+**Command Groups:**
+
+|Usage|Description|
+|---|---|
+| _[neuro config quota](#neuro-config-quota)_| Quota configuration |
+
+
 **Commands:**
 
 |Usage|Description|
@@ -994,6 +1003,51 @@ Name | Description|
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
+
+
+
+
+### neuro config quota
+
+Quota configuration.
+
+**Usage:**
+
+```bash
+neuro config quota [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro config quota show](#neuro-config-quota-show)_| Print current settings |
+
+
+
+
+#### neuro config quota show
+
+Print current settings.
+
+**Usage:**
+
+```bash
+neuro config quota show [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
