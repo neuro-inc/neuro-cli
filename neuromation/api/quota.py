@@ -11,19 +11,17 @@ from neuromation.api.utils import NoPublicConstructor
 @dataclass(frozen=True)
 class QuotaInfo:
     name: str
-
     cpu_time_spent: float
     cpu_time_limit: float
-
     gpu_time_spent: float
     gpu_time_limit: float
 
     @property
-    def cpu_time_remaining(self) -> float:
+    def cpu_time_left(self) -> float:
         return self._get_remaining_time(self.cpu_time_spent, self.cpu_time_limit)
 
     @property
-    def gpu_time_remaining(self) -> float:
+    def gpu_time_left(self) -> float:
         return self._get_remaining_time(self.gpu_time_spent, self.gpu_time_limit)
 
     def _get_remaining_time(self, time_spent: float, time_limit: float) -> float:
@@ -47,23 +45,15 @@ class Quota(metaclass=NoPublicConstructor):
 
 def _quota_info_from_api(payload: Dict[str, Any]) -> QuotaInfo:
     jobs = payload["jobs"]
-    spent_gpu_minutes = int(jobs["total_gpu_run_time_minutes"])
-    spent_cpu_minutes = int(jobs["total_non_gpu_run_time_minutes"])
-
+    spent_gpu = float(int(jobs["total_gpu_run_time_minutes"]) * 60)
+    spent_cpu = float(int(jobs["total_non_gpu_run_time_minutes"]) * 60)
     quota = payload["quota"]
-    limit_gpu_minutes_str = quota.get("total_gpu_run_time_minutes")
-    limit_gpu_seconds = (
-        float(limit_gpu_minutes_str) * 60 if limit_gpu_minutes_str else float("inf")
-    )
-    limit_cpu_minutes_str = quota.get("total_non_gpu_run_time_minutes")
-    limit_cpu_seconds = (
-        float(limit_cpu_minutes_str) * 60 if limit_cpu_minutes_str else float("inf")
-    )
-
+    limit_gpu = float(quota.get("total_gpu_run_time_minutes", "inf")) * 60
+    limit_cpu = float(quota.get("total_non_gpu_run_time_minutes", "inf")) * 60
     return QuotaInfo(
         name=payload["name"],
-        cpu_time_spent=float(spent_cpu_minutes) * 60,
-        gpu_time_spent=float(spent_gpu_minutes) * 60,
-        cpu_time_limit=limit_cpu_seconds,
-        gpu_time_limit=limit_gpu_seconds,
+        gpu_time_spent=spent_gpu,
+        gpu_time_limit=limit_gpu,
+        cpu_time_spent=spent_cpu,
+        cpu_time_limit=limit_cpu,
     )

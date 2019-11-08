@@ -74,10 +74,10 @@ class QuotaInfoFormatter:
 
     def __call__(self, quota: QuotaInfo) -> str:
         gpu_details = self._format_quota_details(
-            quota.gpu_time_spent, quota.gpu_time_limit, quota.gpu_time_remaining
+            quota.gpu_time_spent, quota.gpu_time_limit, quota.gpu_time_left
         )
         cpu_details = self._format_quota_details(
-            quota.cpu_time_spent, quota.cpu_time_limit, quota.cpu_time_remaining
+            quota.cpu_time_spent, quota.cpu_time_limit, quota.cpu_time_left
         )
         return (
             f"{style('GPU:', bold=True)}"
@@ -88,22 +88,24 @@ class QuotaInfoFormatter:
         )
 
     def _format_quota_details(
-        self, time_spent: float, time_limit: float, time_remain: float
+        self, time_spent: float, time_limit: float, time_left: float
     ) -> str:
         spent_str = f"spent: {self._format_time(time_spent)}"
         quota_str = "quota: "
         if time_limit < float("inf"):
-            assert time_remain < float("inf")
+            assert time_left < float("inf")
             quota_str += self._format_time(time_limit)
-            quota_str += f", left: {self._format_time(time_remain)}"
+            quota_str += f", left: {self._format_time(time_left)}"
         else:
             quota_str += self.QUOTA_NOT_SET
         return f"{spent_str} ({quota_str})"
 
-    def _format_time(self, seconds_total: float) -> str:
-        minutes_total = int(seconds_total // 60)
-        hours = minutes_total // 60
-        minutes = minutes_total % 60
+    def _format_time(self, total_seconds: float) -> str:
+        # Since API for `GET /stats/users/{name}` returns time in minutes,
+        #  we need to display it in minutes as well.
+        total_minutes = int(total_seconds // 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
         minutes_zero_padded = "{0:02d}m".format(minutes)
         hours_zero_padded = "{0:02d}".format(hours)
         hours_space_padded = f"{hours_zero_padded:>2}h"
