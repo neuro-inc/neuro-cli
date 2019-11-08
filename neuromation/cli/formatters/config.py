@@ -4,7 +4,7 @@ from typing import Dict, Iterator
 from click import style
 
 from neuromation.api import Preset
-from neuromation.api.quota import QuotaDetails, QuotaInfo
+from neuromation.api.quota import QuotaInfo
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
@@ -73,21 +73,29 @@ class QuotaInfoFormatter:
     QUOTA_NOT_SET = "infinity"
 
     def __call__(self, quota: QuotaInfo) -> str:
+        gpu_details = self._format_quota_details(
+            quota.gpu_time_spent, quota.gpu_time_limit, quota.gpu_time_remaining
+        )
+        cpu_details = self._format_quota_details(
+            quota.cpu_time_spent, quota.cpu_time_limit, quota.cpu_time_remaining
+        )
         return (
             f"{style('GPU:', bold=True)}"
-            f" {self._format_quota_details(quota.gpu_details)}"
+            f" {gpu_details}"
             "\n"
             f"{style('CPU:', bold=True)}"
-            f" {self._format_quota_details(quota.cpu_details)}"
+            f" {cpu_details}"
         )
 
-    def _format_quota_details(self, details: QuotaDetails) -> str:
-        spent_str = f"spent: {self._format_time(details.time_spent)}"
+    def _format_quota_details(
+        self, time_spent: float, time_limit: float, time_remain: float
+    ) -> str:
+        spent_str = f"spent: {self._format_time(time_spent)}"
         quota_str = "quota: "
-        if details.time_limit is not None:
-            quota_str += self._format_time(details.time_limit)
-            assert details.time_remain is not None
-            quota_str += f", left: {self._format_time(details.time_remain)}"
+        if time_limit < float("inf"):
+            assert time_remain < float("inf")
+            quota_str += self._format_time(time_limit)
+            quota_str += f", left: {self._format_time(time_remain)}"
         else:
             quota_str += self.QUOTA_NOT_SET
         return f"{spent_str} ({quota_str})"

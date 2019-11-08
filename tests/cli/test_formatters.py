@@ -34,7 +34,7 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
-from neuromation.api.quota import QuotaDetails, QuotaInfo
+from neuromation.api.quota import QuotaInfo
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
@@ -1483,11 +1483,10 @@ class TestQuotaInfoFormatter:
     def test_output(self) -> None:
         quota = QuotaInfo(
             name="user",
-            gpu_details=QuotaDetails(time_spent=0.0, time_limit=0.0,),
-            cpu_details=QuotaDetails(
-                time_spent=float((9 * 60 + 19) * 60),
-                time_limit=float((9 * 60 + 39) * 60),
-            ),
+            gpu_time_spent=0.0,
+            gpu_time_limit=0.0,
+            cpu_time_spent=float((9 * 60 + 19) * 60),
+            cpu_time_limit=float((9 * 60 + 39) * 60),
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
@@ -1502,10 +1501,10 @@ class TestQuotaInfoFormatter:
     def test_output_no_quota(self) -> None:
         quota = QuotaInfo(
             name="user",
-            gpu_details=QuotaDetails(time_spent=0.0, time_limit=None,),
-            cpu_details=QuotaDetails(
-                time_spent=float((9 * 60 + 19) * 60), time_limit=None,
-            ),
+            gpu_time_spent=0.0,
+            gpu_time_limit=float("inf"),
+            cpu_time_spent=float((9 * 60 + 19) * 60),
+            cpu_time_limit=float("inf"),
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
@@ -1518,14 +1517,10 @@ class TestQuotaInfoFormatter:
     def test_output_too_many_hours(self) -> None:
         quota = QuotaInfo(
             name="user",
-            gpu_details=QuotaDetails(
-                time_spent=float((1 * 60 + 29) * 60),
-                time_limit=float((9 * 60 + 59) * 60),
-            ),
-            cpu_details=QuotaDetails(
-                time_spent=float((9999 * 60 + 29) * 60),
-                time_limit=float((99999 * 60 + 59) * 60),
-            ),
+            gpu_time_spent=float((1 * 60 + 29) * 60),
+            gpu_time_limit=float((9 * 60 + 59) * 60),
+            cpu_time_spent=float((9999 * 60 + 29) * 60),
+            cpu_time_limit=float((99999 * 60 + 59) * 60),
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
@@ -1540,12 +1535,10 @@ class TestQuotaInfoFormatter:
     def test_output_spent_more_than_quota_left_zero(self) -> None:
         quota = QuotaInfo(
             name="user",
-            gpu_details=QuotaDetails(
-                time_spent=float(9 * 60 * 60), time_limit=float(1 * 60 * 60),
-            ),
-            cpu_details=QuotaDetails(
-                time_spent=float(9 * 60 * 60), time_limit=float(2 * 60 * 60),
-            ),
+            gpu_time_spent=float(9 * 60 * 60),
+            gpu_time_limit=float(1 * 60 * 60),
+            cpu_time_spent=float(9 * 60 * 60),
+            cpu_time_limit=float(2 * 60 * 60),
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(

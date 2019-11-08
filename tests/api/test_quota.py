@@ -4,7 +4,7 @@ import pytest
 from aiohttp import web
 
 from neuromation.api import AuthorizationError, Client
-from neuromation.api.quota import QuotaDetails, QuotaInfo
+from neuromation.api.quota import QuotaInfo
 from tests import _TestServerFactory
 
 
@@ -37,12 +37,10 @@ async def test_quota_get_self(
         quota = await client.quota.get()
         assert quota == QuotaInfo(
             name=client.username,
-            gpu_details=QuotaDetails(
-                time_spent=float(101 * 60), time_limit=float(201 * 60)
-            ),
-            cpu_details=QuotaDetails(
-                time_spent=float(102 * 60), time_limit=float(202 * 60)
-            ),
+            gpu_time_spent=float(101 * 60),
+            gpu_time_limit=float(201 * 60),
+            cpu_time_spent=float(102 * 60),
+            cpu_time_limit=float(202 * 60),
         )
 
 
@@ -72,12 +70,10 @@ async def test_quota_get_another_user(
         quota = await client.quota.get("another-user")
         assert quota == QuotaInfo(
             name="another-user",
-            gpu_details=QuotaDetails(
-                time_spent=float(101 * 60), time_limit=float(201 * 60)
-            ),
-            cpu_details=QuotaDetails(
-                time_spent=float(102 * 60), time_limit=float(202 * 60)
-            ),
+            gpu_time_spent=float(101 * 60),
+            gpu_time_limit=float(201 * 60),
+            cpu_time_spent=float(102 * 60),
+            cpu_time_limit=float(202 * 60),
         )
 
 
@@ -104,8 +100,10 @@ async def test_quota_get_no_quota(
         quota = await client.quota.get()
         assert quota == QuotaInfo(
             name=client.username,
-            gpu_details=QuotaDetails(time_spent=float(101 * 60), time_limit=None),
-            cpu_details=QuotaDetails(time_spent=float(102 * 60), time_limit=None),
+            gpu_time_spent=float(101 * 60),
+            gpu_time_limit=float("inf"),
+            cpu_time_spent=float(102 * 60),
+            cpu_time_limit=float("inf"),
         )
 
 
