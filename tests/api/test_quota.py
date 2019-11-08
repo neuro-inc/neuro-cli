@@ -4,7 +4,7 @@ import pytest
 from aiohttp import web
 
 from neuromation.api import AuthorizationError, Client
-from neuromation.api.quota import QuotaInfo
+from neuromation.api.quota import _QuotaInfo
 from tests import _TestServerFactory
 
 
@@ -34,8 +34,8 @@ async def test_quota_get_self(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        quota = await client.quota.get()
-        assert quota == QuotaInfo(
+        quota = await client._quota.get()
+        assert quota == _QuotaInfo(
             name=client.username,
             gpu_time_spent=float(101 * 60),
             gpu_time_limit=float(201 * 60),
@@ -67,8 +67,8 @@ async def test_quota_get_another_user(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        quota = await client.quota.get("another-user")
-        assert quota == QuotaInfo(
+        quota = await client._quota.get("another-user")
+        assert quota == _QuotaInfo(
             name="another-user",
             gpu_time_spent=float(101 * 60),
             gpu_time_limit=float(201 * 60),
@@ -97,8 +97,8 @@ async def test_quota_get_no_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        quota = await client.quota.get()
-        assert quota == QuotaInfo(
+        quota = await client._quota.get()
+        assert quota == _QuotaInfo(
             name=client.username,
             gpu_time_spent=float(101 * 60),
             gpu_time_limit=float("inf"),
@@ -124,4 +124,4 @@ async def test_quota_get_another_user_not_enough_permissions(
         with pytest.raises(
             AuthorizationError, match='"uri": "user://another-user", "action": "read"'
         ):
-            await client.quota.get("another-user")
+            await client._quota.get("another-user")

@@ -4,7 +4,7 @@ from typing import Dict, Iterator
 from click import style
 
 from neuromation.api import Preset
-from neuromation.api.quota import QuotaInfo
+from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
@@ -72,7 +72,7 @@ class ConfigFormatter:
 class QuotaInfoFormatter:
     QUOTA_NOT_SET = "infinity"
 
-    def __call__(self, quota: QuotaInfo) -> str:
+    def __call__(self, quota: _QuotaInfo) -> str:
         gpu_details = self._format_quota_details(
             quota.gpu_time_spent, quota.gpu_time_limit, quota.gpu_time_left
         )

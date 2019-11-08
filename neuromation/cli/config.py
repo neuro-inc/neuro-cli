@@ -55,7 +55,7 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
     """
     Print quota and remaining computation time.
     """
-    quota = await root.client.quota.get(user)
+    quota = await root.client._quota.get(user)
     fmt = QuotaInfoFormatter()
     click.echo(fmt(quota))
 

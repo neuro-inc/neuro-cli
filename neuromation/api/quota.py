@@ -9,7 +9,7 @@ from neuromation.api.utils import NoPublicConstructor
 
 
 @dataclass(frozen=True)
-class QuotaInfo:
+class _QuotaInfo:
     name: str
     cpu_time_spent: float
     cpu_time_limit: float
@@ -30,12 +30,12 @@ class QuotaInfo:
         return 0.0
 
 
-class Quota(metaclass=NoPublicConstructor):
+class _Quota(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: _Config) -> None:
         self._core = core
         self._config = config
 
-    async def get(self, user: Optional[str] = None) -> QuotaInfo:
+    async def get(self, user: Optional[str] = None) -> _QuotaInfo:
         user = user or self._config.auth_token.username
         url = URL(f"stats/users/{user}")
         async with self._core.request("GET", url) as resp:
@@ -43,14 +43,14 @@ class Quota(metaclass=NoPublicConstructor):
             return _quota_info_from_api(res)
 
 
-def _quota_info_from_api(payload: Dict[str, Any]) -> QuotaInfo:
+def _quota_info_from_api(payload: Dict[str, Any]) -> _QuotaInfo:
     jobs = payload["jobs"]
     spent_gpu = float(int(jobs["total_gpu_run_time_minutes"]) * 60)
     spent_cpu = float(int(jobs["total_non_gpu_run_time_minutes"]) * 60)
     quota = payload["quota"]
     limit_gpu = float(quota.get("total_gpu_run_time_minutes", "inf")) * 60
     limit_cpu = float(quota.get("total_non_gpu_run_time_minutes", "inf")) * 60
-    return QuotaInfo(
+    return _QuotaInfo(
         name=payload["name"],
         gpu_time_spent=spent_gpu,
         gpu_time_limit=limit_gpu,

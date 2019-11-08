@@ -6,7 +6,7 @@ from typing import Mapping, Optional, Type
 
 import aiohttp
 
-from neuromation.api.quota import Quota
+from neuromation.api.quota import _Quota
 
 from .config import _Config
 from .core import _Core
@@ -48,7 +48,7 @@ class Client(metaclass=NoPublicConstructor):
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core)
         self._parser = Parser._create(self._config, self.username)
-        self._quota = Quota._create(self._core, self._config)
+        self._quota = _Quota._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -100,10 +100,6 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def parse(self) -> Parser:
         return self._parser
-
-    @property
-    def quota(self) -> Quota:
-        return self._quota
 
     def _get_session_cookie(self) -> Optional["Morsel[str]"]:
         for cookie in self._core._session.cookie_jar:
