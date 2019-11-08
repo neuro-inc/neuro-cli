@@ -36,6 +36,7 @@
 		* [neuro config login-headless](#neuro-config-login-headless)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
+		* [neuro config show-quota](#neuro-config-show-quota)
 		* [neuro config docker](#neuro-config-docker)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
@@ -992,6 +993,7 @@ Name | Description|
 | _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuromation Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
+| _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
@@ -1082,6 +1084,25 @@ Print current authorization token.
 
 ```bash
 neuro config show-token [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config show-quota
+
+Print quota and remaining computation time.
+
+**Usage:**
+
+```bash
+neuro config show-quota [OPTIONS] [USER]
 ```
 
 **Options:**
