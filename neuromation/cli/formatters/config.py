@@ -85,21 +85,20 @@ class QuotaInfoFormatter:
         lines: List[str] = []
         lines.append(
             style("GPU left:", bold=True)
-            + self._format_time(quota.spent_gpu_minutes)
-            + f" (quota: {quota_gpu_str})"
+            + f" {self._format_time(quota.spent_gpu_minutes)} "
+            + f"(quota: {quota_gpu_str})"
         )
         lines.append(
             style("CPU left:", bold=True)
-            + self._format_time(quota.spent_non_gpu_minutes)
-            + f" (quota: {quota_non_gpu_str})"
+            + f" {self._format_time(quota.spent_non_gpu_minutes)} "
+            + f"(quota: {quota_non_gpu_str})"
         )
         return "\n".join(lines)
 
     def _format_time(self, minutes_total: int) -> str:
         hours = minutes_total // 60
         minutes = minutes_total % 60
-        assert hours * 60 + minutes == minutes_total
+        minutes_zero_padded = "{0:02d}m".format(minutes)
         hours_zero_padded = "{0:02d}".format(hours)
-        hours_space_padded = f"{hours_zero_padded:>3}h"
-        minutes_zero_padded = "{0:02d}".format(minutes)
-        return f"{hours_space_padded} {minutes_zero_padded}m"
+        hours_space_padded = f"{hours_zero_padded:>2}h"
+        return f"{hours_space_padded} {minutes_zero_padded}"

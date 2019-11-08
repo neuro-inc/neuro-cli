@@ -48,7 +48,7 @@ async def show(root: Root) -> None:
 @async_cmd()
 async def quota_show(root: Root) -> None:
     """
-    Print current settings.
+    Print quota and remaining computation time.
     """
     quota = await root.client.quota.get()
     fmt = QuotaInfoFormatter()

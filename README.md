@@ -1028,14 +1028,14 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro config quota show](#neuro-config-quota-show)_| Print current settings |
+| _[neuro config quota show](#neuro-config-quota-show)_| Print quota and remaining computation time |
 
 
 
 
 #### neuro config quota show
 
-Print current settings.
+Print quota and remaining computation time.
 
 **Usage:**
 
