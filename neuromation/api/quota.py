@@ -9,12 +9,25 @@ from neuromation.api.utils import NoPublicConstructor
 
 
 @dataclass(frozen=True)
+class QuotaDetails:
+    spent_minutes: int
+    limit_minutes: Optional[int]
+
+    @property
+    def remain_minutes(self) -> Optional[int]:
+        if self.limit_minutes is None:
+            # remain: infinity
+            return None
+        if self.limit_minutes > self.spent_minutes:
+            return self.limit_minutes - self.spent_minutes
+        return 0
+
+
+@dataclass(frozen=True)
 class QuotaInfo:
     name: str
-    spent_gpu_minutes: int
-    spent_non_gpu_minutes: int
-    quota_gpu_minutes: Optional[int]
-    quota_non_gpu_minutes: Optional[int]
+    gpu_details: QuotaDetails
+    cpu_details: QuotaDetails
 
 
 class Quota(metaclass=NoPublicConstructor):
@@ -29,13 +42,19 @@ class Quota(metaclass=NoPublicConstructor):
             return _quota_info_from_api(res)
 
 
+# TODO: test!
 def _quota_info_from_api(payload: Dict[str, Any]) -> QuotaInfo:
     total_gpu_str = payload["quota"].get("total_gpu_run_time_minutes")
-    total_non_gpu_str = payload["quota"].get("total_non_gpu_run_time_minutes")
+    total_cpu_str = payload["quota"].get("total_non_gpu_run_time_minutes")
+
+    gpu_details = QuotaDetails(
+        spent_minutes=int(payload["jobs"]["total_gpu_run_time_minutes"]),
+        limit_minutes=int(total_gpu_str) if total_gpu_str else None,
+    )
+    cpu_details = QuotaDetails(
+        spent_minutes=int(payload["jobs"]["total_non_gpu_run_time_minutes"]),
+        limit_minutes=int(total_cpu_str) if total_gpu_str else None,
+    )
     return QuotaInfo(
-        name=payload["name"],
-        spent_gpu_minutes=int(payload["jobs"]["total_gpu_run_time_minutes"]),
-        spent_non_gpu_minutes=int(payload["jobs"]["total_non_gpu_run_time_minutes"]),
-        quota_gpu_minutes=int(total_gpu_str) if total_gpu_str else None,
-        quota_non_gpu_minutes=int(total_non_gpu_str) if total_non_gpu_str else None,
+        name=payload["name"], gpu_details=gpu_details, cpu_details=cpu_details
     )

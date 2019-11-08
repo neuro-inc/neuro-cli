@@ -72,30 +72,37 @@ class ConfigFormatter:
 class QuotaInfoFormatter:
     def __call__(self, quota: QuotaInfo) -> str:
         QUOTA_NOT_SET = "infinity"
-        quota_gpu_str = (
-            self._format_time(quota.quota_gpu_minutes)
-            if quota.quota_gpu_minutes is not None
-            else QUOTA_NOT_SET
-        )
-        quota_non_gpu_str = (
-            self._format_time(quota.quota_non_gpu_minutes)
-            if quota.quota_non_gpu_minutes is not None
-            else QUOTA_NOT_SET
-        )
+
+        quota_gpu_str = "quota: "
+        if quota.gpu_details.limit_minutes is not None:
+            quota_gpu_str += self._format(quota.gpu_details.limit_minutes)
+            assert quota.gpu_details.remain_minutes is not None
+            quota_gpu_str += f", left: {self._format(quota.gpu_details.remain_minutes)}"
+        else:
+            quota_gpu_str += QUOTA_NOT_SET
+
+        quota_cpu_str = "quota: "
+        if quota.cpu_details.limit_minutes is not None:
+            quota_cpu_str += self._format(quota.cpu_details.limit_minutes)
+            assert quota.cpu_details.remain_minutes is not None
+            quota_cpu_str += f", left: {self._format(quota.cpu_details.remain_minutes)}"
+        else:
+            quota_cpu_str += QUOTA_NOT_SET
+
         lines: List[str] = []
         lines.append(
-            style("GPU left:", bold=True)
-            + f" {self._format_time(quota.spent_gpu_minutes)} "
-            + f"(quota: {quota_gpu_str})"
+            style("GPU:", bold=True)
+            + f" spent: {self._format(quota.gpu_details.spent_minutes)} "
+            + f"({quota_gpu_str})"
         )
         lines.append(
-            style("CPU left:", bold=True)
-            + f" {self._format_time(quota.spent_non_gpu_minutes)} "
-            + f"(quota: {quota_non_gpu_str})"
+            style("CPU:", bold=True)
+            + f" spent: {self._format(quota.cpu_details.spent_minutes)} "
+            + f"({quota_cpu_str})"
         )
         return "\n".join(lines)
 
-    def _format_time(self, minutes_total: int) -> str:
+    def _format(self, minutes_total: int) -> str:
         hours = minutes_total // 60
         minutes = minutes_total % 60
         minutes_zero_padded = "{0:02d}m".format(minutes)

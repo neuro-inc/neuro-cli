@@ -3,7 +3,7 @@ from typing import Callable
 from aiohttp import web
 
 from neuromation.api import Client
-from neuromation.api.quota import QuotaInfo
+from neuromation.api.quota import QuotaDetails, QuotaInfo
 from tests import _TestServerFactory
 
 
@@ -21,8 +21,8 @@ async def test_quota_get(
                 "total_non_gpu_run_time_minutes": 102,
             },
             "quota": {
-                "total_gpu_run_time_minutes": 103,
-                "total_non_gpu_run_time_minutes": 104,
+                "total_gpu_run_time_minutes": 201,
+                "total_non_gpu_run_time_minutes": 202,
             },
         }
         return web.json_response(data)
@@ -36,10 +36,8 @@ async def test_quota_get(
         quota = await client.quota.get()
         assert quota == QuotaInfo(
             name=client.username,
-            spent_gpu_minutes=101,
-            spent_non_gpu_minutes=102,
-            quota_gpu_minutes=103,
-            quota_non_gpu_minutes=104,
+            gpu_details=QuotaDetails(spent_minutes=101, limit_minutes=201),
+            cpu_details=QuotaDetails(spent_minutes=102, limit_minutes=202),
         )
 
 
@@ -66,8 +64,6 @@ async def test_quota_get_no_quota(
         quota = await client.quota.get()
         assert quota == QuotaInfo(
             name=client.username,
-            spent_gpu_minutes=101,
-            spent_non_gpu_minutes=102,
-            quota_gpu_minutes=None,
-            quota_non_gpu_minutes=None,
+            gpu_details=QuotaDetails(spent_minutes=101, limit_minutes=None),
+            cpu_details=QuotaDetails(spent_minutes=102, limit_minutes=None),
         )

@@ -34,7 +34,7 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
-from neuromation.api.quota import QuotaInfo
+from neuromation.api.quota import QuotaDetails, QuotaInfo
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
@@ -1483,77 +1483,97 @@ class TestQuotaInfoFormatter:
     def test_output(self) -> None:
         quota = QuotaInfo(
             name="user",
-            spent_gpu_minutes=0,
-            quota_gpu_minutes=0,
-            spent_non_gpu_minutes=9 * 60 + 19,
-            quota_non_gpu_minutes=9 * 60 + 29,
+            gpu_details=QuotaDetails(spent_minutes=0, limit_minutes=0,),
+            cpu_details=QuotaDetails(
+                spent_minutes=9 * 60 + 19, limit_minutes=9 * 60 + 39,
+            ),
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
             [
-                f"{bold_start}GPU left:{bold_end} 00h 00m (quota: 00h 00m)",
-                f"{bold_start}CPU left:{bold_end} 09h 19m (quota: 09h 29m)",
-            ]
-        )
-
-    def test_output_too_many_hours(self) -> None:
-        quota = QuotaInfo(
-            name="user",
-            spent_gpu_minutes=9 * 60 + 59,
-            quota_gpu_minutes=9 * 60 + 59,
-            spent_non_gpu_minutes=99999 * 60,
-            quota_non_gpu_minutes=99999 * 60,
-        )
-        out = QuotaInfoFormatter()(quota)
-        assert out == "\n".join(
-            [
-                f"{bold_start}GPU left:{bold_end} 09h 59m (quota: 09h 59m)",
-                f"{bold_start}CPU left:{bold_end} 99999h 00m (quota: 99999h 00m)",
+                f"{bold_start}GPU:{bold_end} spent: 00h 00m "
+                "(quota: 00h 00m, left: 00h 00m)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 19m "
+                "(quota: 09h 39m, left: 00h 20m)",
             ]
         )
 
     def test_output_no_quota(self) -> None:
         quota = QuotaInfo(
             name="user",
-            spent_gpu_minutes=9 * 60 + 30,
-            quota_gpu_minutes=None,
-            spent_non_gpu_minutes=9 * 60 + 30,
-            quota_non_gpu_minutes=None,
+            gpu_details=QuotaDetails(spent_minutes=0, limit_minutes=None,),
+            cpu_details=QuotaDetails(spent_minutes=9 * 60 + 19, limit_minutes=None,),
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
             [
-                f"{bold_start}GPU left:{bold_end} 09h 30m (quota: infinity)",
-                f"{bold_start}CPU left:{bold_end} 09h 30m (quota: infinity)",
+                f"{bold_start}GPU:{bold_end} spent: 00h 00m (quota: infinity)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 19m (quota: infinity)",
+            ]
+        )
+
+    def test_output_too_many_hours(self) -> None:
+        quota = QuotaInfo(
+            name="user",
+            gpu_details=QuotaDetails(
+                spent_minutes=1 * 60 + 29, limit_minutes=9 * 60 + 59,
+            ),
+            cpu_details=QuotaDetails(
+                spent_minutes=9999 * 60 + 29, limit_minutes=99999 * 60 + 59,
+            ),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 01h 29m "
+                "(quota: 09h 59m, left: 08h 30m)",
+                f"{bold_start}CPU:{bold_end} spent: 9999h 29m "
+                "(quota: 99999h 59m, left: 90000h 30m)",
+            ]
+        )
+
+    def test_output_spent_more_than_quota_left_zero(self) -> None:
+        quota = QuotaInfo(
+            name="user",
+            gpu_details=QuotaDetails(spent_minutes=9 * 60, limit_minutes=1 * 60,),
+            cpu_details=QuotaDetails(spent_minutes=9 * 60, limit_minutes=2 * 60,),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 09h 00m "
+                "(quota: 01h 00m, left: 00h 00m)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 00m "
+                "(quota: 02h 00m, left: 00h 00m)",
             ]
         )
 
     def test_format_time_00h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(minutes_total=0)
+        out = QuotaInfoFormatter()._format(minutes_total=0)
         assert out == "00h 00m"
 
     def test_format_time_00h_09m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(minutes_total=9)
+        out = QuotaInfoFormatter()._format(minutes_total=9)
         assert out == "00h 09m"
 
     def test_format_time_01h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(minutes_total=60)
+        out = QuotaInfoFormatter()._format(minutes_total=60)
         assert out == "01h 00m"
 
     def test_format_time_01h_10m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(minutes_total=60 + 10)
+        out = QuotaInfoFormatter()._format(minutes_total=60 + 10)
         assert out == "01h 10m"
 
     def test_format_time_99h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(minutes_total=99 * 60)
+        out = QuotaInfoFormatter()._format(minutes_total=99 * 60)
         assert out == "99h 00m"
 
     def test_format_time_99h_59m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(minutes_total=99 * 60 + 59)
+        out = QuotaInfoFormatter()._format(minutes_total=99 * 60 + 59)
         assert out == "99h 59m"
 
     def test_format_time_9999h_59m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(minutes_total=9999 * 60 + 59)
+        out = QuotaInfoFormatter()._format(minutes_total=9999 * 60 + 59)
         assert out == "9999h 59m"
 
 
