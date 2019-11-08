@@ -1549,31 +1549,31 @@ class TestQuotaInfoFormatter:
         )
 
     def test_format_time_00h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format(minutes_total=0)
+        out = QuotaInfoFormatter()._format_time(minutes_total=0)
         assert out == "00h 00m"
 
     def test_format_time_00h_09m(self) -> None:
-        out = QuotaInfoFormatter()._format(minutes_total=9)
+        out = QuotaInfoFormatter()._format_time(minutes_total=9)
         assert out == "00h 09m"
 
     def test_format_time_01h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format(minutes_total=60)
+        out = QuotaInfoFormatter()._format_time(minutes_total=60)
         assert out == "01h 00m"
 
     def test_format_time_01h_10m(self) -> None:
-        out = QuotaInfoFormatter()._format(minutes_total=60 + 10)
+        out = QuotaInfoFormatter()._format_time(minutes_total=60 + 10)
         assert out == "01h 10m"
 
     def test_format_time_99h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format(minutes_total=99 * 60)
+        out = QuotaInfoFormatter()._format_time(minutes_total=99 * 60)
         assert out == "99h 00m"
 
     def test_format_time_99h_59m(self) -> None:
-        out = QuotaInfoFormatter()._format(minutes_total=99 * 60 + 59)
+        out = QuotaInfoFormatter()._format_time(minutes_total=99 * 60 + 59)
         assert out == "99h 59m"
 
     def test_format_time_9999h_59m(self) -> None:
-        out = QuotaInfoFormatter()._format(minutes_total=9999 * 60 + 59)
+        out = QuotaInfoFormatter()._format_time(minutes_total=9999 * 60 + 59)
         assert out == "9999h 59m"
 
 

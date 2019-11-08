@@ -1,10 +1,10 @@
 from sys import platform
-from typing import Dict, Iterator, List
+from typing import Dict, Iterator
 
 from click import style
 
 from neuromation.api import Preset
-from neuromation.api.quota import QuotaInfo
+from neuromation.api.quota import QuotaDetails, QuotaInfo
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
@@ -70,39 +70,29 @@ class ConfigFormatter:
 
 
 class QuotaInfoFormatter:
+    QUOTA_NOT_SET = "infinity"
+
     def __call__(self, quota: QuotaInfo) -> str:
-        QUOTA_NOT_SET = "infinity"
-
-        quota_gpu_str = "quota: "
-        if quota.gpu_details.limit_minutes is not None:
-            quota_gpu_str += self._format(quota.gpu_details.limit_minutes)
-            assert quota.gpu_details.remain_minutes is not None
-            quota_gpu_str += f", left: {self._format(quota.gpu_details.remain_minutes)}"
-        else:
-            quota_gpu_str += QUOTA_NOT_SET
-
-        quota_cpu_str = "quota: "
-        if quota.cpu_details.limit_minutes is not None:
-            quota_cpu_str += self._format(quota.cpu_details.limit_minutes)
-            assert quota.cpu_details.remain_minutes is not None
-            quota_cpu_str += f", left: {self._format(quota.cpu_details.remain_minutes)}"
-        else:
-            quota_cpu_str += QUOTA_NOT_SET
-
-        lines: List[str] = []
-        lines.append(
-            style("GPU:", bold=True)
-            + f" spent: {self._format(quota.gpu_details.spent_minutes)} "
-            + f"({quota_gpu_str})"
+        return (
+            f"{style('GPU:', bold=True)}"
+            f" {self._format_quota_details(quota.gpu_details)}"
+            "\n"
+            f"{style('CPU:', bold=True)}"
+            f" {self._format_quota_details(quota.cpu_details)}"
         )
-        lines.append(
-            style("CPU:", bold=True)
-            + f" spent: {self._format(quota.cpu_details.spent_minutes)} "
-            + f"({quota_cpu_str})"
-        )
-        return "\n".join(lines)
 
-    def _format(self, minutes_total: int) -> str:
+    def _format_quota_details(self, details: QuotaDetails) -> str:
+        spent_str = f"spent: {self._format_time(details.spent_minutes)}"
+        quota_str = "quota: "
+        if details.limit_minutes is not None:
+            quota_str += self._format_time(details.limit_minutes)
+            assert details.remain_minutes is not None
+            quota_str += f", left: {self._format_time(details.remain_minutes)}"
+        else:
+            quota_str += self.QUOTA_NOT_SET
+        return f"{spent_str} ({quota_str})"
+
+    def _format_time(self, minutes_total: int) -> str:
         hours = minutes_total // 60
         minutes = minutes_total % 60
         minutes_zero_padded = "{0:02d}m".format(minutes)
