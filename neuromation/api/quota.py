@@ -42,7 +42,6 @@ class Quota(metaclass=NoPublicConstructor):
             return _quota_info_from_api(res)
 
 
-# TODO: test!
 def _quota_info_from_api(payload: Dict[str, Any]) -> QuotaInfo:
     total_gpu_str = payload["quota"].get("total_gpu_run_time_minutes")
     total_cpu_str = payload["quota"].get("total_non_gpu_run_time_minutes")
