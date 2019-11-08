@@ -4,7 +4,7 @@ import os
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import click
 from yarl import URL
@@ -29,11 +29,6 @@ def config() -> None:
     """Client configuration."""
 
 
-@group()
-def quota() -> None:
-    """Quota configuration."""
-
-
 @command()
 @async_cmd()
 async def show(root: Root) -> None:
@@ -44,17 +39,6 @@ async def show(root: Root) -> None:
     click.echo(fmt(root))
 
 
-@command("show")
-@async_cmd()
-async def quota_show(root: Root) -> None:
-    """
-    Print quota and remaining computation time.
-    """
-    quota = await root.client.quota.get()
-    fmt = QuotaInfoFormatter()
-    click.echo(fmt(quota))
-
-
 @command()
 @async_cmd()
 async def show_token(root: Root) -> None:
@@ -62,6 +46,18 @@ async def show_token(root: Root) -> None:
     Print current authorization token.
     """
     click.echo(root.auth)
+
+
+@command()
+@click.argument("user", required=False, default=None, type=str)
+@async_cmd()
+async def show_quota(root: Root, user: Optional[str]) -> None:
+    """
+    Print quota and remaining computation time.
+    """
+    quota = await root.client.quota.get(user)
+    fmt = QuotaInfoFormatter()
+    click.echo(fmt(quota))
 
 
 @command()
@@ -207,10 +203,8 @@ config.add_command(login_with_token)
 config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
+config.add_command(show_quota)
 
 config.add_command(docker)
 
 config.add_command(logout)
-config.add_command(quota)
-
-quota.add_command(quota_show)

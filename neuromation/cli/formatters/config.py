@@ -82,17 +82,18 @@ class QuotaInfoFormatter:
         )
 
     def _format_quota_details(self, details: QuotaDetails) -> str:
-        spent_str = f"spent: {self._format_time(details.spent_minutes)}"
+        spent_str = f"spent: {self._format_time(details.time_spent)}"
         quota_str = "quota: "
-        if details.limit_minutes is not None:
-            quota_str += self._format_time(details.limit_minutes)
-            assert details.remain_minutes is not None
-            quota_str += f", left: {self._format_time(details.remain_minutes)}"
+        if details.time_limit is not None:
+            quota_str += self._format_time(details.time_limit)
+            assert details.time_remain is not None
+            quota_str += f", left: {self._format_time(details.time_remain)}"
         else:
             quota_str += self.QUOTA_NOT_SET
         return f"{spent_str} ({quota_str})"
 
-    def _format_time(self, minutes_total: int) -> str:
+    def _format_time(self, seconds_total: float) -> str:
+        minutes_total = int(seconds_total // 60)
         hours = minutes_total // 60
         minutes = minutes_total % 60
         minutes_zero_padded = "{0:02d}m".format(minutes)
