@@ -442,6 +442,7 @@ async def port_forward(
             await stop()
         except (SystemExit, ClientConnectionError) as error:
             for task, (local_port, job_port) in tasks.items():
+                try:
                     if task.done():
                         exc = None
                         with suppress(asyncio.CancelledError):
@@ -457,6 +458,20 @@ async def port_forward(
                                 job_id, local_port, job_port, no_key_check=no_key_check
                             )
                             tasks[new_task] = (local_port, job_port)
+                except asyncio.CancelledError:
+                    exc = task.exception()
+                    if exc == error:
+                        tasks.pop(task)
+                        await task
+                        click.echo(
+                            f"Port localhost:{local_port} will be forwarded again"
+                            f"to port {job_port} of {job_id}"
+                        )
+                        new_task = root.client.jobs.port_forward(
+                            job_id, local_port, job_port,
+                            no_key_check=no_key_check
+                        )
+                        tasks[new_task] = (local_port, job_port)
         except Exception as error:
             await stop()
             raise error
