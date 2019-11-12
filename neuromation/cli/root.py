@@ -1,4 +1,5 @@
 import logging
+import re
 from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
@@ -18,6 +19,11 @@ log = logging.getLogger(__name__)
 
 
 TEXT_TYPE = ("application/json", "text")
+
+HEADER_TOKEN_PATTERNS = [
+    re.compile(rf"({auth_scheme})\s+([^ ]+\.[^ ]+\.[^ ]+)")
+    for auth_scheme in ("Bearer", "Basic")
+]
 
 
 @dataclass
@@ -141,7 +147,7 @@ class Root:
             path += "?" + data.url.raw_query_string
         lines = [f"> {data.method} {path} HTTP/1.1"]
         for key, val in data.headers.items():
-            lines.append(f"> {key}: {val}")
+            lines.append(f"> {key}: {self._sanitize_header_value(val)}")
         lines.append("> ")
         self._print_debug(lines)
 
@@ -187,3 +193,8 @@ class Root:
             for line in self._process_chunk(chunk, context.response_printable)
         ]
         self._print_debug(lines)
+
+    def _sanitize_header_value(self, text: str) -> str:
+        for pattern in HEADER_TOKEN_PATTERNS:
+            text = pattern.sub(r"\1 <token>", text)
+        return text

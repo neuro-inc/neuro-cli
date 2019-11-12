@@ -50,3 +50,21 @@ def test_resource_presets_uninitialized(root_uninitialized: Root) -> None:
 
 def test_get_session_cookie(root_uninitialized: Root) -> None:
     assert root_uninitialized.get_session_cookie() is None
+
+
+def test_sanitize_header_value_bearer(root_uninitialized: Root) -> None:
+    text = "Bearer eyJhbGciOiJIUzI1N.eyJzdWIiOiIxMjM0NTY3.SflKxwRJ_SsMeKK"
+    clean = root_uninitialized._sanitize_header_value(text)
+    assert clean == "Bearer <token>"
+
+
+def test_sanitize_header_value_basic(root_uninitialized: Root) -> None:
+    text = "Basic eyJhbGciOiJIUzI1N.eyJzdWIiOiIxMjM0NTY3.SflKxwRJ_SsMeKK"
+    clean = root_uninitialized._sanitize_header_value(text)
+    assert clean == "Basic <token>"
+
+
+def test_sanitize_header_value_bearer_not_a_jwt(root_uninitialized: Root) -> None:
+    text = "Basic not_a_jwt"
+    clean = root_uninitialized._sanitize_header_value(text)
+    assert clean == "Basic not_a_jwt"
