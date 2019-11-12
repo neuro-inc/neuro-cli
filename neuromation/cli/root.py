@@ -22,7 +22,7 @@ TEXT_TYPE = ("application/json", "text")
 
 HEADER_TOKEN_PATTERNS = [
     re.compile(rf"({auth_scheme})\s+([^ ]+\.[^ ]+\.[^ ]+)")
-    for auth_scheme in ("Bearer", "Basic")
+    for auth_scheme in ("Bearer", "Basic", "Digest", "Mutual")
 ]
 
 
