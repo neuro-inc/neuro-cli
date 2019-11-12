@@ -71,7 +71,7 @@ class _ImageNameParser:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
 
     def parse_remote(self, value: str) -> RemoteImage:
-        if self.is_in_neuro_registry(value):
+        if self.is_in_neuro_registry(value) or self.seems_in_neuro_registry(value):
             return self.parse_as_neuro_image(value)
         else:
             img = self.parse_as_local_image(value)
@@ -86,7 +86,11 @@ class _ImageNameParser:
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
-        return image.startswith("image:") or image.startswith(f"{self._registry}/")
+        return image.startswith("image:")
+
+    def seems_in_neuro_registry(self, image: str) -> bool:
+        # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
+        return image.startswith(f"{self._registry}/")
 
     def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
         return RemoteImage(
@@ -101,7 +105,7 @@ class _ImageNameParser:
 
     def normalize(self, image: str) -> str:
         try:
-            if self.is_in_neuro_registry(image):
+            if self.is_in_neuro_registry(image) or self.seems_in_neuro_registry(image):
                 remote_image = self.parse_as_neuro_image(image)
                 image_normalized = str(remote_image)
             else:
@@ -137,7 +141,9 @@ class _ImageNameParser:
     def _parse_as_neuro_image(
         self, image: str, default_tag: Optional[str]
     ) -> RemoteImage:
-        if not self.is_in_neuro_registry(image):
+        if not (
+            self.is_in_neuro_registry(image) or self.seems_in_neuro_registry(image)
+        ):
             raise ValueError("scheme 'image://' is required for remote images")
 
         url = URL(image)

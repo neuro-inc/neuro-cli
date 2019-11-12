@@ -482,9 +482,9 @@ class TestImageParser:
         with pytest.raises(ValueError, match="scheme 'image://' is required"):
             self.parser.parse_as_neuro_image(image)
 
-    def test_is_neuro_registry_with_registry_prefix(self) -> None:
-        assert self.parser.is_in_neuro_registry("reg.neu.ro/user/image:tag")
-        assert not self.parser.is_in_neuro_registry('docker.io/library/ubuntu"')
+    def test_looks_like_in_neuro_registry_with_registry_prefix(self) -> None:
+        assert self.parser.seems_in_neuro_registry("reg.neu.ro/user/image:tag")
+        assert not self.parser.seems_in_neuro_registry('docker.io/library/ubuntu"')
 
     def test_parse_as_neuro_image_with_registry_prefix(self) -> None:
         image = self.parser.parse_as_neuro_image("reg.neu.ro/user/image:tag")
@@ -558,13 +558,15 @@ class TestImageParser:
         )
         image = "image://bob/library/ubuntu:v10.04"
         assert my_parser.is_in_neuro_registry(image) is True
+        assert my_parser.seems_in_neuro_registry(image) is False
 
     def test_is_in_neuro_registry__registry_has_port__image_in_good_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice", registry_url=URL("http://localhost:5000")
         )
         image = "localhost:5000/bob/library/ubuntu:v10.04"
-        assert my_parser.is_in_neuro_registry(image) is True
+        assert my_parser.is_in_neuro_registry(image) is False
+        assert my_parser.seems_in_neuro_registry(image) is True
 
     def test_is_in_neuro_registry__registry_has_port__image_in_bad_repo(self) -> None:
         my_parser = _ImageNameParser(
@@ -572,6 +574,7 @@ class TestImageParser:
         )
         image = "localhost:9999/bob/library/ubuntu:v10.04"
         assert my_parser.is_in_neuro_registry(image) is False
+        assert my_parser.seems_in_neuro_registry(image) is False
 
     def test_is_in_neuro_registry__registry_has_port__local_image(self) -> None:
         my_parser = _ImageNameParser(
@@ -579,6 +582,7 @@ class TestImageParser:
         )
         image = "ubuntu:v10.04"
         assert my_parser.is_in_neuro_registry(image) is False
+        assert my_parser.seems_in_neuro_registry(image) is False
 
     def test_is_in_neuro_registry__registry_has_port(self) -> None:
         my_parser = _ImageNameParser(
