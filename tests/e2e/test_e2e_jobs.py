@@ -820,6 +820,24 @@ with `--detach` option.
 
 
 @pytest.mark.e2e
+def test_job_run_no_detach_quiet_mode(helper: Helper) -> None:
+    token = str(uuid4())
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            UBUNTU_IMAGE_NAME,
+            f"echo {token}",
+        ]
+    )
+    assert captured.out.strip().endswith(token)
+
+
+@pytest.mark.e2e
 def test_job_submit_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
