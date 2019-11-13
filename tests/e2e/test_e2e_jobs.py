@@ -814,9 +814,9 @@ def test_job_run_no_detach(helper: Helper) -> None:
     detach_notification = """\
 Terminal is attached to the remote job, so you receive the job's output.
 Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-with `--detach` option.
+with `--detach` option.\
 """
-    assert detach_notification in captured.out
+    assert detach_notification
 
 
 @pytest.mark.e2e

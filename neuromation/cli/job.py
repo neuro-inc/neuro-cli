@@ -916,8 +916,8 @@ async def run_job(
                 """\
                 Terminal is attached to the remote job, so you receive the job's output.
                 Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the
-                job with `--detach` option.
-            """
+                job with `--detach` option.\
+                """
             )
             click.echo(click.style(msg, dim=True))
         await _print_logs(root, job.id)
