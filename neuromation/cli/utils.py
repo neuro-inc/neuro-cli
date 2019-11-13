@@ -439,9 +439,7 @@ def volume_to_verbose_str(volume: Volume) -> str:
     )
 
 
-async def resolve_job(
-    id_or_name_or_uri: str, *, client: Client, raise_error: bool = False
-) -> str:
+async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
     default_user = client.username
     if id_or_name_or_uri.startswith("job:"):
         uri = _normalize_uri(id_or_name_or_uri, username=default_user)
@@ -460,8 +458,6 @@ async def resolve_job(
     try:
         jobs = await client.jobs.list(name=id_or_name, owners={owner})
     except Exception as e:
-        if raise_error:
-            raise e
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
             f"{details} to a job-ID: {e}"

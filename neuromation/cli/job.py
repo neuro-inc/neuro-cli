@@ -402,7 +402,7 @@ async def port_forward(
 
     TaskDefininition = namedtuple("TaskDefinition", "task local_port job_port")
 
-    job_id = await resolve_job(job, client=root.client, raise_error=True)
+    job_id = await resolve_job(job, client=root.client)
     tasks: List[TaskDefininition] = []
     for local_port, job_port in local_remote_port:
         click.echo(
