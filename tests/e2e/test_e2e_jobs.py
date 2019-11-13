@@ -834,7 +834,9 @@ def test_job_run_no_detach_quiet_mode(helper: Helper) -> None:
             f"echo {token}",
         ]
     )
-    assert captured.out.strip().endswith(token)
+    out = captured.out.strip()
+    assert "Use 'Ctrl-C' to detach (it will NOT terminate the job)" not in out
+    assert out.endswith(token)
 
 
 @pytest.mark.e2e
