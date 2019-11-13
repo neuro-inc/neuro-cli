@@ -400,8 +400,6 @@ async def port_forward(
 
     """
 
-    print(f"Start with reconnect={reconnect}")
-
     TaskDefininition = namedtuple("TaskDefinition", "task local_port job_port")
 
     job_id = await resolve_job(job, client=root.client, raise_error=True)
