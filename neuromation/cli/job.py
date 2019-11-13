@@ -911,14 +911,15 @@ async def run_job(
 
     exit_code = None
     if not detach:
-        msg = textwrap.dedent(
-            """\
-            Terminal is attached to the remote job, so you receive the job's output.
-            Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-            with `--detach` option.
-        """
-        )
-        click.echo(click.style(msg, dim=True))
+        if not root.quiet:
+            msg = textwrap.dedent(
+                """\
+                Terminal is attached to the remote job, so you receive the job's output.
+                Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the
+                job with `--detach` option.\
+                """
+            )
+            click.echo(click.style(msg, dim=True))
         await _print_logs(root, job.id)
         job = await root.client.jobs.status(job.id)
         exit_code = job.history.exit_code
