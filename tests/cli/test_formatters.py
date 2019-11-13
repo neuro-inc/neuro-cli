@@ -34,6 +34,7 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
+from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
@@ -45,6 +46,7 @@ from neuromation.cli.formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from neuromation.cli.formatters.config import QuotaInfoFormatter
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
@@ -510,6 +512,52 @@ class TestJobOutputFormatter:
             "Status: running\n"
             "Image: test-image\n"
             "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Internal Hostname: host.local\n"
+            "Http URL: http://local.host.test/\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:24.759433+00:00"
+        )
+
+    def test_job_with_entrypoint(self) -> None:
+        description = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+            ),
+            http_url=URL("http://local.host.test/"),
+            container=Container(
+                entrypoint="/usr/bin/make",
+                command="test",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+            internal_hostname="host.local",
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: running\n"
+            "Image: test-image\n"
+            "Entrypoint: /usr/bin/make\n"
+            "Command: test\n"
             f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: False\n"
             "Internal Hostname: host.local\n"
@@ -1425,6 +1473,114 @@ class TestConfigFormatter:
             tpu-small     2      2G       {no}                             v3-8/1.14
             hybrid        4     30G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
+
+
+bold_start = "\x1b[1m"
+bold_end = "\x1b[0m"
+
+
+class TestQuotaInfoFormatter:
+    def test_output(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=0.0,
+            gpu_time_limit=0.0,
+            cpu_time_spent=float((9 * 60 + 19) * 60),
+            cpu_time_limit=float((9 * 60 + 39) * 60),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 00h 00m "
+                "(quota: 00h 00m, left: 00h 00m)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 19m "
+                "(quota: 09h 39m, left: 00h 20m)",
+            ]
+        )
+
+    def test_output_no_quota(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=0.0,
+            gpu_time_limit=float("inf"),
+            cpu_time_spent=float((9 * 60 + 19) * 60),
+            cpu_time_limit=float("inf"),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 00h 00m (quota: infinity)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 19m (quota: infinity)",
+            ]
+        )
+
+    def test_output_too_many_hours(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=float((1 * 60 + 29) * 60),
+            gpu_time_limit=float((9 * 60 + 59) * 60),
+            cpu_time_spent=float((9999 * 60 + 29) * 60),
+            cpu_time_limit=float((99999 * 60 + 59) * 60),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 01h 29m "
+                "(quota: 09h 59m, left: 08h 30m)",
+                f"{bold_start}CPU:{bold_end} spent: 9999h 29m "
+                "(quota: 99999h 59m, left: 90000h 30m)",
+            ]
+        )
+
+    def test_output_spent_more_than_quota_left_zero(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=float(9 * 60 * 60),
+            gpu_time_limit=float(1 * 60 * 60),
+            cpu_time_spent=float(9 * 60 * 60),
+            cpu_time_limit=float(2 * 60 * 60),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 09h 00m "
+                "(quota: 01h 00m, left: 00h 00m)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 00m "
+                "(quota: 02h 00m, left: 00h 00m)",
+            ]
+        )
+
+    def test_format_time_00h_00m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(0 * 60))
+        assert out == "00h 00m"
+
+    def test_format_time_00h_09m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(9 * 60))
+        assert out == "00h 09m"
+
+    def test_format_time_01h_00m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(60 * 60))
+        assert out == "01h 00m"
+
+    def test_format_time_01h_10m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(70 * 60))
+        assert out == "01h 10m"
+
+    def test_format_time_99h_00m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(99 * 60 * 60))
+        assert out == "99h 00m"
+
+    def test_format_time_99h_59m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(
+            total_seconds=float((99 * 60 + 59) * 60)
+        )
+        assert out == "99h 59m"
+
+    def test_format_time_9999h_59m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(
+            total_seconds=float((9999 * 60 + 59) * 60)
+        )
+        assert out == "9999h 59m"
 
 
 class TestDockerImageProgress:

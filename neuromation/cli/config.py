@@ -4,7 +4,7 @@ import os
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import click
 from yarl import URL
@@ -17,6 +17,7 @@ from neuromation.api import (
     login_with_token as api_login_with_token,
     logout as api_logout,
 )
+from neuromation.cli.formatters.config import QuotaInfoFormatter
 
 from .formatters import ConfigFormatter
 from .root import Root
@@ -45,6 +46,18 @@ async def show_token(root: Root) -> None:
     Print current authorization token.
     """
     click.echo(root.auth)
+
+
+@command()
+@click.argument("user", required=False, default=None, type=str)
+@async_cmd()
+async def show_quota(root: Root, user: Optional[str]) -> None:
+    """
+    Print quota and remaining computation time.
+    """
+    quota = await root.client._quota.get(user)
+    fmt = QuotaInfoFormatter()
+    click.echo(fmt(quota))
 
 
 @command()
@@ -190,6 +203,7 @@ config.add_command(login_with_token)
 config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
+config.add_command(show_quota)
 
 config.add_command(docker)
 

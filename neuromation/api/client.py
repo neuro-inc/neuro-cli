@@ -6,6 +6,8 @@ from typing import Mapping, Optional, Type
 
 import aiohttp
 
+from neuromation.api.quota import _Quota
+
 from .config import _Config
 from .core import _Core
 from .images import Images
@@ -46,6 +48,7 @@ class Client(metaclass=NoPublicConstructor):
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core)
         self._parser = Parser._create(self._config, self.username)
+        self._quota = _Quota._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:

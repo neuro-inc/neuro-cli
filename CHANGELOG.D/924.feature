@@ -1,0 +1,1 @@
+Display `Entrypoint` field for job status command.
