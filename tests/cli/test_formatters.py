@@ -128,23 +128,25 @@ class TestJobFormatter:
     def test_non_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_ID}     # check job status\n"
+            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_ID}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
     def test_non_quiet(self, job_descr: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -154,12 +156,13 @@ class TestJobFormatter:
         job_descr_no_name = replace(job_descr_no_name, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Http URL: https://job.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+            f"Http URL: https://job.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_ID}     # check job status\n"
+            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_ID}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
@@ -167,13 +170,14 @@ class TestJobFormatter:
         job_descr = replace(job_descr, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Http URL: https://job.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Http URL: https://job.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -181,13 +185,14 @@ class TestJobFormatter:
         job_descr = replace(job_descr, http_url=URL("https://job-named.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Http URL: https://job-named.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Http URL: https://job-named.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 

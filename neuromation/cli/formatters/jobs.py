@@ -55,16 +55,20 @@ class JobFormatter:
         out.append(style("Shortcuts", bold=True) + ":")
 
         out.append(
-            f"  neuro status {job_alias}  " + style("# check job status", dim=True)
+            f"  neuro status {job_alias}     " + style("# check job status", dim=True)
         )
         out.append(
-            f"  neuro logs {job_alias}    " + style("# monitor job stdout", dim=True)
+            f"  neuro logs {job_alias}       " + style("# monitor job stdout", dim=True)
         )
         out.append(
-            f"  neuro top {job_alias}     "
+            f"  neuro top {job_alias}        "
             + style("# display real-time job telemetry", dim=True)
         )
-        out.append(f"  neuro kill {job_alias}    " + style("# kill job", dim=True))
+        out.append(
+            f"  neuro exec {job_alias} bash  "
+            + style("# execute bash shell to the job", dim=True)
+        )
+        out.append(f"  neuro kill {job_alias}       " + style("# kill job", dim=True))
         return "\n".join(out)
 
 
