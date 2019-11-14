@@ -507,9 +507,7 @@ async def nginx_job_async(
 
 
 @pytest.mark.e2e
-async def test_port_forward(
-    nmrc_path: Path, nginx_job_async: Tuple[str, str], request: Any
-) -> None:
+async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
     loop_sleep = 1
     service_wait_time = 10 * 60
 
@@ -536,15 +534,13 @@ async def test_port_forward(
         port = unused_port()
         # We test client instead of run_cli as asyncio subprocesses do
         # not work if run from thread other than main.
-        forward_task = client.jobs.port_forward(
+        async with client.jobs.port_forward(
             nginx_job_async[0], port, 80, no_key_check=True
-        )
-        request.addfinalizer(lambda: forward_task.cancel())
-
-        await asyncio.sleep(loop_sleep)
-        url = f"http://127.0.0.1:{port}/secret.txt"
-        probe = await get_(url)
-        assert probe == 200
+        ):
+            await asyncio.sleep(loop_sleep)
+            url = f"http://127.0.0.1:{port}/secret.txt"
+            probe = await get_(url)
+            assert probe == 200
 
 
 @pytest.mark.e2e

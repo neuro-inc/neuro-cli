@@ -3,6 +3,7 @@ import enum
 import json
 import shlex
 import signal
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
@@ -39,7 +40,7 @@ from .parsing_utils import (
     _ImageNameParser,
     _is_in_neuro_registry,
 )
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asynccontextmanager
 
 
 INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
@@ -311,25 +312,28 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
-    def port_forward(
+    @asynccontextmanager
+    async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> "asyncio.Task[int]":
+    ) -> AsyncIterator["asyncio.Task[None]"]:
         loop = asyncio.get_event_loop()
         task = loop.create_task(
             self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
         )
-        return task
+        yield task
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
     async def _port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> int:
+    ) -> None:
         try:
             job_status = await self.status(id)
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
-        if job_status.status != JobStatus.RUNNING:
+        if job_status.status != "running":
             raise ValueError(f"Job is not running. Job Id = {id}")
-
         payload = json.dumps(
             {
                 "method": "job_port_forward",
@@ -385,7 +389,8 @@ class Jobs(metaclass=NoPublicConstructor):
         command += [f"{server_url.user}@{server_url.host}"]
         proc = await asyncio.create_subprocess_exec(*command)
         try:
-            return await proc.wait()
+            result = await proc.wait()
+            raise ConnectionError(f"ssh exited with code {result}")
         finally:
             await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
