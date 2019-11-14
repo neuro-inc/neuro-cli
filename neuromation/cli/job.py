@@ -368,7 +368,12 @@ async def exec(
 @command()
 @click.argument("job")
 @click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
-@click.option("--reconnect/--no-reconnect", default=True, is_flag=True, help="TODO")
+@click.option(
+    "--reconnect/--no-reconnect",
+    default=True,
+    is_flag=True,
+    help="Automatic reconnection if the connection to the server is lost.",
+)
 @click.option(
     "--no-key-check",
     is_flag=True,
@@ -451,6 +456,9 @@ async def port_forward(
                             raise error
         except KeyboardInterrupt:
             pass
+        finally:
+            for forward in forwarding:
+                forward.task.cancel()
 
 
 @command()
