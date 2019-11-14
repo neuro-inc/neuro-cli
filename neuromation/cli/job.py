@@ -7,11 +7,12 @@ import sys
 import textwrap
 import uuid
 import webbrowser
-from collections import namedtuple
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
+from aiohttp import ClientConnectionError
 from yarl import URL
 
 from neuromation.api import (
@@ -48,6 +49,7 @@ from .utils import (
     JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
+    AsyncExitStack,
     ImageType,
     alias,
     async_cmd,
@@ -57,7 +59,6 @@ from .utils import (
     pager_maybe,
     resolve_job,
     volume_to_verbose_str,
-    AsyncExitStack
 )
 
 
@@ -400,13 +401,16 @@ async def port_forward(
     neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
     """
-    from typing import NamedTuple
-    TaskDefininition: NamedTuple = namedtuple("TaskDefinition", "task local_port job_port")
+
+    @dataclass(frozen=False)
+    class Forwarding:
+        task: "asyncio.Task[None]"
+        local_port: int
+        job_port: int
 
     job_id = await resolve_job(job, client=root.client)
-    tasks: List[TaskDefininition] = []
+    forwarding: List[Forwarding] = []
     async with AsyncExitStack() as stack:
-
         for local_port, job_port in local_remote_port:
             click.echo(
                 f"Port localhost:{local_port} will be forwarded "
@@ -417,31 +421,37 @@ async def port_forward(
                     job_id, local_port, job_port, no_key_check=no_key_check
                 )
             )
-            tasks.append(TaskDefininition(task,local_port, job_port))
+            forwarding.append(Forwarding(task, local_port, job_port))
 
         click.echo("Press ^C to stop forwarding")
         try:
             while True:
                 await asyncio.sleep(1)
-                for num, task_definition in enumerate(tasks):
-                    task: "asyncio.Task[None]" = task_definition.task
-                    if task.done():
-                        error = task.exception()
-                        if isinstance(error, ConnectionError):
+                for forward in forwarding:
+                    if forward.task.done():
+                        error = forward.task.exception()
+                        if isinstance(error, ConnectionError) or isinstance(
+                            error, ClientConnectionError
+                        ):
                             click.echo(
-                                f"Reconnect localhost:{task_definition.local_port} => {job_id}:{task_definition.job_port}"
+                                f"Reconnect localhost:{forward.local_port}"
+                                f" => {job_id}:{forward.job_port}"
                             )
-                            task = await stack.enter_async_context(
+
+                            forward.task = await stack.enter_async_context(
                                 root.client.jobs.port_forward(
-                                    job_id, task_definition.local_port, task_definition.job_port,
-                                    no_key_check=no_key_check
+                                    job_id,
+                                    forward.local_port,
+                                    forward.job_port,
+                                    no_key_check=no_key_check,
                                 )
                             )
-                            tasks[num] = TaskDefininition(task, task_definition.local_port, task_definition.job_port)
+                            break  # only one try per cycle
                         elif error:
                             raise error
         except KeyboardInterrupt:
             pass
+
 
 @command()
 @click.argument("job")
