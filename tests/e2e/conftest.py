@@ -74,7 +74,7 @@ def loop() -> Iterator[asyncio.AbstractEventLoop]:
     loop.close()
 
 
-SysCap = namedtuple("SysCap", "out err")
+SysCap = namedtuple("SysCap", "out err code")
 
 
 async def _run_async(
@@ -383,6 +383,7 @@ class Helper:
         arguments: List[str],
         *,
         verbosity: int = 0,
+        raise_for_returncode: bool = True,
         network_timeout: float = NETWORK_TIMEOUT,
     ) -> SysCap:
         __tracebackhide__ = True
@@ -413,14 +414,17 @@ class Helper:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        try:
-            proc.check_returncode()
-        except subprocess.CalledProcessError:
-            log.error(f"Last stdout: '{proc.stdout}'")
-            log.error(f"Last stderr: '{proc.stderr}'")
-            raise
+        if raise_for_returncode:
+            try:
+                proc.check_returncode()
+            except subprocess.CalledProcessError:
+                log.error(f"Last return code: '{proc.returncode}'")
+                log.error(f"Last stdout: '{proc.stdout}'")
+                log.error(f"Last stderr: '{proc.stderr}'")
+                raise
         out = proc.stdout
         err = proc.stderr
+        code = proc.returncode
         if any(
             start in " ".join(arguments)
             for start in ("submit", "job submit", "run", "job run")
@@ -431,9 +435,10 @@ class Helper:
         out = out.strip()
         err = err.strip()
         if verbosity > 0:
+            print(f"return code: {code}")
             print(f"nero stdout: {out}")
             print(f"nero stderr: {err}")
-        return SysCap(out, err)
+        return SysCap(out, err, code)
 
     @run_async
     async def run_job_and_wait_state(

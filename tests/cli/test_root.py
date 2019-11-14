@@ -52,12 +52,46 @@ def test_get_session_cookie(root_uninitialized: Root) -> None:
     assert root_uninitialized.get_session_cookie() is None
 
 
-@pytest.mark.parametrize("auth_type", ["Bearer", "Basic", "Digest", "Mutual"])
-def test_sanitize_header_value(root_uninitialized: Root, auth_type: str) -> None:
-    with_token = f"{auth_type} eyJhbGciOiJIUzI1N.eyJzdWIiOiIxMjM0NTY3.SflKxwRJ_SsMeKK"
-    with_token_clean = root_uninitialized._sanitize_header_value(with_token)
-    assert with_token_clean == f"{auth_type} <token>"
+class TestTokenSanitization:
+    @pytest.mark.parametrize(
+        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
+    )
+    def test_sanitize_header_value_single_token(
+        self, root_uninitialized: Root, auth: str
+    ) -> None:
+        line = f"foo Authentication: {auth} eyJhbGciOiJI.eyJzdW0NTY3.SfKxwRJ_SsM bar"
+        expected = f"foo Authentication: {auth} eyJhb<hidden 26 chars>J_SsM bar"
+        line_safe = root_uninitialized._sanitize_header_value(line)
+        assert line_safe == expected
 
-    without_token = f"{auth_type} not_a_jwt"
-    without_token_clean = root_uninitialized._sanitize_header_value(without_token)
-    assert without_token_clean == f"{auth_type} not_a_jwt"
+    @pytest.mark.parametrize(
+        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
+    )
+    def test_sanitize_header_value_many_tokens(
+        self, root_uninitialized: Root, auth: str
+    ) -> None:
+        num = 10
+        line = f"foo Authentication: {auth} eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM bar " * num
+        expected = f"foo Authentication: {auth} eyJhb<hidden 22 chars>J_SsM bar " * num
+        line_safe = root_uninitialized._sanitize_header_value(line)
+        assert line_safe == expected
+
+    @pytest.mark.parametrize(
+        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
+    )
+    def test_sanitize_header_value_not_a_token(
+        self, root_uninitialized: Root, auth: str
+    ) -> None:
+        line = f"foo Authentication: {auth} not_a_jwt bar"
+        line_safe = root_uninitialized._sanitize_header_value(line)
+        assert line_safe == f"foo Authentication: {auth} not_a_jwt bar"
+
+    def test_sanitize_token_tail_too_short(self, root_uninitialized: Root) -> None:
+        token = "eyJhbGciOiJIUz.eyJzdWIjM0NTY3.SflKxwRJ_SsM"
+        with pytest.raises(AssertionError, match="tail too short"):
+            root_uninitialized._sanitize_token(token, tail_len=0)
+
+    def test_sanitize_token_tail_too_long(self, root_uninitialized: Root) -> None:
+        token = "eyJhbGciOiJIUz.eyJzdWIjM0NTY3.SflKxwRJ_SsM"
+        with pytest.raises(AssertionError, match="tail too long"):
+            root_uninitialized._sanitize_token(token, tail_len=len(token) // 2 + 1)

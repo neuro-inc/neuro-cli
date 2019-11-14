@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import aiohttp
 import click
@@ -20,10 +20,9 @@ log = logging.getLogger(__name__)
 
 TEXT_TYPE = ("application/json", "text")
 
-HEADER_TOKEN_PATTERNS = [
-    re.compile(rf"({auth_scheme})\s+([^ ]+\.[^ ]+\.[^ ]+)")
-    for auth_scheme in ("Bearer", "Basic", "Digest", "Mutual")
-]
+HEADER_TOKEN_PATTERN = re.compile(
+    r"(Bearer|Basic|Digest|Mutual)\s+(?P<token>[^ ]+\.[^ ]+\.[^ ]+)"
+)
 
 
 @dataclass
@@ -36,6 +35,7 @@ class Root:
     config_path: Path
     trace: bool
     verbosity: int
+    trace_hide_token: bool = True
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
@@ -147,7 +147,9 @@ class Root:
             path += "?" + data.url.raw_query_string
         lines = [f"> {data.method} {path} HTTP/1.1"]
         for key, val in data.headers.items():
-            lines.append(f"> {key}: {self._sanitize_header_value(val)}")
+            if self.trace_hide_token:
+                val = self._sanitize_header_value(val)
+            lines.append(f"> {key}: {val}")
         lines.append("> ")
         self._print_debug(lines)
 
@@ -195,6 +197,17 @@ class Root:
         self._print_debug(lines)
 
     def _sanitize_header_value(self, text: str) -> str:
-        for pattern in HEADER_TOKEN_PATTERNS:
-            text = pattern.sub(r"\1 <token>", text)
+        for token in self._find_all_tokens(text):
+            token_safe = self._sanitize_token(token)
+            text = text.replace(token, token_safe)
         return text
+
+    def _sanitize_token(self, token: str, tail_len: int = 5) -> str:
+        assert 0 < tail_len, "tail too short"
+        assert tail_len < len(token) // 2, "tail too long"
+        hidden = f"<hidden {len(token) - tail_len*2} chars>"
+        return token[:tail_len] + hidden + token[-tail_len:]
+
+    def _find_all_tokens(self, text: str) -> Iterator[str]:
+        for match in HEADER_TOKEN_PATTERN.finditer(text):
+            yield match.group("token")
