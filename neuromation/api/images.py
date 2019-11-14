@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Set
 import aiodocker
 import aiohttp
 from aiodocker.exceptions import DockerError
-from aiohttp.client_exceptions import ClientConnectorError
 from yarl import URL
 
 from .abc import (
@@ -63,22 +62,6 @@ class Images(metaclass=NoPublicConstructor):
     def _auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._config.auth_token.token}
 
-    def _docker_connection_error(self, error: ClientConnectorError) -> None:
-        connector = self._docker.connector
-        if isinstance(connector, aiohttp.NamedPipeConnector) or isinstance(
-            connector, aiohttp.UnixConnector
-        ):
-            path = connector.path
-        else:
-            path = self._docker.docker_host
-        raise DockerError(
-            900,
-            {
-                "message": f"Cannot connect to Docker engine via {path}, "
-                f"{error.os_error.strerror}"
-            },
-        )
-
     async def push(
         self,
         local: LocalImage,
@@ -103,11 +86,8 @@ class Images(metaclass=NoPublicConstructor):
         except DockerError as error:
             if error.status == 404:
                 raise ValueError(
-                    f"Image {local} was not found in your local docker images"
+                    f"Image {local} was not found " "in your local docker images"
                 ) from error
-        except ClientConnectorError as error:
-            self._docker_connection_error(error)
-
         try:
             async for obj in self._docker.images.push(
                 repo, auth=self._auth(), stream=True
@@ -120,9 +100,6 @@ class Images(metaclass=NoPublicConstructor):
             if error.status == 403:
                 raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
-        except ClientConnectorError as error:
-            self._docker_connection_error(error)
-
         return remote
 
     async def pull(
@@ -161,9 +138,6 @@ class Images(metaclass=NoPublicConstructor):
             elif error.status == 403:
                 raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
-        except ClientConnectorError as error:
-            self._docker_connection_error(error)
-            raise
 
         await self._docker.images.tag(repo, local)
 
