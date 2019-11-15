@@ -978,7 +978,15 @@ async def _build_volumes(
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
-                # TODO (artem) print deprecation warning (issue #1009)
+                click.echo(
+                    click.style(
+                        "DeprecationWarning: Option `--volume=HOME` is deprecated."
+                        " Use `--volume=ALL`.  Mountpoint will be available in "
+                        "container via variable NEUROMATION_HOME",
+                        fg="red",
+                    ),
+                    err=True,
+                )
             else:
                 volumes.add(root.client.parse.volume(vol))
     return volumes
