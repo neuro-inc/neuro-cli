@@ -40,33 +40,3 @@ def test_root_trace_hide_token_default_true(helper: Helper) -> None:
     assert "Authorization: Bearer " in captured.err
     assert "<hidden " in captured.err
     assert " chars>" in captured.err
-
-
-@pytest.mark.e2e
-def test_root_trace_hide_token_explicit_true(helper: Helper) -> None:
-    captured = helper.run_cli(["--trace", "--hide-token", "ls"])
-    assert "Authorization: Bearer " in captured.err
-    assert "<hidden " in captured.err
-    assert " chars>" in captured.err
-
-
-@pytest.mark.e2e
-def test_root_trace_hide_token_explicit_false(helper: Helper) -> None:
-    captured = helper.run_cli(["--trace", "--no-hide-token", "ls"])
-    assert "Authorization: Bearer " in captured.err
-    assert "<hidden " not in captured.err
-    assert " chars>" not in captured.err
-
-
-@pytest.mark.e2e
-def test_root_hide_token_true_without_trace_not_allowed(helper: Helper) -> None:
-    captured = helper.run_cli(["--hide-token", "ls"], raise_for_returncode=False)
-    assert captured.code == 2
-    assert "--hide-token requires --trace" in captured.err
-
-
-@pytest.mark.e2e
-def test_root_hide_token_false_without_trace_not_allowed(helper: Helper) -> None:
-    captured = helper.run_cli(["--no-hide-token", "ls"], raise_for_returncode=False)
-    assert captured.code == 2
-    assert "--no-hide-token requires --trace" in captured.err
