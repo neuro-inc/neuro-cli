@@ -101,7 +101,7 @@ Name | Description|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_--version_|Show the version and exit.|
 |_--trace_|Trace sent HTTP requests and received replies to stderr.|
-|_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'.  \[default: True]|
+|_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'  \[default: True]|
 |_--help_|Show this message and exit.|
 
 

@@ -175,18 +175,18 @@ def print_options(
 )
 @click.option(
     "--trace",
+    default=None,
     is_flag=True,
     help="Trace sent HTTP requests and received replies to stderr.",
 )
 @click.option(
     "--hide-token/--no-hide-token",
     is_flag=True,
-    default=True,
-    show_default=True,
+    default=None,
     help=(
         "Prevent user's token sent in HTTP headers from being "
         "printed out to stderr during HTTP tracing. Can be used only "
-        "together with option '--trace'."
+        "together with option '--trace'  [default: True]"
     ),
 )
 @click.pass_context
