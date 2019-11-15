@@ -202,8 +202,8 @@ class Root:
             text = text.replace(token, token_safe)
         return text
 
-    def _sanitize_token(self, token: str, tail_len: int = 5) -> str:
-        assert tail_len > 0, "invalid tail length"
+    def _sanitize_token(self, token: str) -> str:
+        tail_len: int = 5
         # at least a third part of the token should be hidden
         if tail_len >= len(token) // 3:
             return f"<hidden {len(token)} chars>"
