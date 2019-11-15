@@ -102,7 +102,7 @@ class JobStatusFormatter:
                 (
                     volume.container_path,
                     f"{volume.storage_uri}",
-                    "RO" if volume.read_only else " ",
+                    "READONLY" if volume.read_only else " ",
                 )
                 for volume in job_status.container.volumes
             ]
