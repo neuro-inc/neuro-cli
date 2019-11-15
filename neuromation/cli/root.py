@@ -203,9 +203,10 @@ class Root:
         return text
 
     def _sanitize_token(self, token: str, tail_len: int = 5) -> str:
-        assert 0 < tail_len, "tail too short"
-        assert tail_len < len(token) // 2, "tail too long"
-        hidden = f"<hidden {len(token) - tail_len*2} chars>"
+        if not (0 < tail_len < len(token) // 2):
+            return f"<hidden {len(token)} chars>"
+
+        hidden = f"<hidden {len(token) - tail_len * 2} chars>"
         return token[:tail_len] + hidden + token[-tail_len:]
 
     def _find_all_tokens(self, text: str) -> Iterator[str]:

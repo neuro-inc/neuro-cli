@@ -86,10 +86,19 @@ class TestTokenSanitization:
         line_safe = root_uninitialized._sanitize_header_value(line)
         assert line_safe == f"foo Authentication: {auth} not_a_jwt bar"
 
-    def test_sanitize_token_tail_too_short(self, root_uninitialized: Root) -> None:
-        token = "eyJhbGciOiJIUz.eyJzdWIjM0NTY3.SflKxwRJ_SsM"
-        with pytest.raises(AssertionError, match="tail too short"):
-            root_uninitialized._sanitize_token(token, tail_len=0)
+    @pytest.mark.parametrize(
+        "token,tail_len",
+        [
+            ("sec.ret.token", -1),
+            ("sec.ret.token", 0),
+            ("sec.ret.token", len("sec.ret.token") // 2 + 1),
+        ],
+    )
+    def test_sanitize_token_replaced_overall(
+        self, root_uninitialized: Root, token: str, tail_len: int
+    ) -> None:
+        line_safe = root_uninitialized._sanitize_token(token, tail_len)
+        assert line_safe == "<hidden 13 chars>"
 
     def test_sanitize_token_tail_too_long(self, root_uninitialized: Root) -> None:
         token = "eyJhbGciOiJIUz.eyJzdWIjM0NTY3.SflKxwRJ_SsM"
