@@ -178,6 +178,16 @@ def print_options(
     is_flag=True,
     help="Trace sent HTTP requests and received replies to stderr.",
 )
+@click.option(
+    "--hide-token/--no-hide-token",
+    is_flag=True,
+    default=None,
+    help=(
+        "Prevent user's token sent in HTTP headers from being "
+        "printed out to stderr during HTTP tracing. Can be used only "
+        "together with option '--trace'. On by default."
+    ),
+)
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -189,6 +199,7 @@ def cli(
     disable_pypi_version_check: bool,
     network_timeout: float,
     trace: bool,
+    hide_token: Optional[bool],
 ) -> None:
     #   ▇ ◣
     #   ▇ ◥ ◣
@@ -211,6 +222,13 @@ def cli(
     ctx.color = real_color
     verbosity = verbose - quiet
     setup_logging(verbosity=verbosity, color=real_color)
+    if hide_token is None:
+        hide_token_bool = True
+    else:
+        if not trace:
+            option = "--hide-token" if hide_token else "--no-hide-token"
+            raise click.UsageError(f"{option} requires --trace")
+        hide_token_bool = hide_token
     root = Root(
         verbosity=verbosity,
         color=real_color,
@@ -220,6 +238,7 @@ def cli(
         network_timeout=network_timeout,
         config_path=Path(neuromation_config),
         trace=trace,
+        trace_hide_token=hide_token_bool,
     )
     ctx.obj = root
     if not ctx.invoked_subcommand:
