@@ -87,7 +87,6 @@ class TestTokenSanitization:
         assert line_safe == f"{auth} not_a_jwt"
 
     def test_sanitize_token_replaced_overall(self, root_uninitialized: Root) -> None:
-        token = "eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM"
-        tail_len = len(token) // 3 + 1
-        line_safe = root_uninitialized._sanitize_token(token, tail_len)
-        assert line_safe == "<hidden 32 chars>"
+        token = "a.b.c"
+        line_safe = root_uninitialized._sanitize_token(token)
+        assert line_safe == "<hidden 5 chars>"

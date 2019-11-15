@@ -207,7 +207,6 @@ class Root:
         # at least a third part of the token should be hidden
         if tail_len >= len(token) // 3:
             return f"<hidden {len(token)} chars>"
-
         hidden = f"<hidden {len(token) - tail_len * 2} chars>"
         return token[:tail_len] + hidden + token[-tail_len:]
 
