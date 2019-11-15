@@ -91,8 +91,3 @@ class TestTokenSanitization:
         tail_len = len(token) // 3 + 1
         line_safe = root_uninitialized._sanitize_token(token, tail_len)
         assert line_safe == "<hidden 32 chars>"
-
-    def test_sanitize_token_invalid_tail_len(self, root_uninitialized: Root) -> None:
-        token = "eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM"
-        with pytest.raises(AssertionError, match="invalid tail length"):
-            root_uninitialized._sanitize_token(token, tail_len=0)
