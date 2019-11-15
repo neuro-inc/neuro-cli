@@ -59,8 +59,8 @@ class TestTokenSanitization:
     def test_sanitize_header_value_single_token(
         self, root_uninitialized: Root, auth: str
     ) -> None:
-        line = f"foo Authentication: {auth} eyJhbGciOiJI.eyJzdW0NTY3.SfKxwRJ_SsM bar"
-        expected = f"foo Authentication: {auth} eyJhb<hidden 26 chars>J_SsM bar"
+        line = f"{auth} eyJhbGciOiJI.eyJzdW0NTY3.SfKxwRJ_SsM"
+        expected = f"{auth} eyJhb<hidden 26 chars>J_SsM"
         line_safe = root_uninitialized._sanitize_header_value(line)
         assert line_safe == expected
 
@@ -71,8 +71,8 @@ class TestTokenSanitization:
         self, root_uninitialized: Root, auth: str
     ) -> None:
         num = 10
-        line = f"foo Authentication: {auth} eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM bar " * num
-        expected = f"foo Authentication: {auth} eyJhb<hidden 22 chars>J_SsM bar " * num
+        line = f"{auth} eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM " * num
+        expected = f"{auth} eyJhb<hidden 22 chars>J_SsM " * num
         line_safe = root_uninitialized._sanitize_header_value(line)
         assert line_safe == expected
 
@@ -82,20 +82,17 @@ class TestTokenSanitization:
     def test_sanitize_header_value_not_a_token(
         self, root_uninitialized: Root, auth: str
     ) -> None:
-        line = f"foo Authentication: {auth} not_a_jwt bar"
+        line = f"{auth} not_a_jwt"
         line_safe = root_uninitialized._sanitize_header_value(line)
-        assert line_safe == f"foo Authentication: {auth} not_a_jwt bar"
+        assert line_safe == f"{auth} not_a_jwt"
 
-    @pytest.mark.parametrize(
-        "token,tail_len",
-        [
-            ("sec.ret.token", -1),
-            ("sec.ret.token", 0),
-            ("sec.ret.token", len("sec.ret.token") // 2 + 1),
-        ],
-    )
-    def test_sanitize_token_replaced_overall(
-        self, root_uninitialized: Root, token: str, tail_len: int
-    ) -> None:
+    def test_sanitize_token_replaced_overall(self, root_uninitialized: Root) -> None:
+        token = "eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM"
+        tail_len = len(token) // 3 + 1
         line_safe = root_uninitialized._sanitize_token(token, tail_len)
-        assert line_safe == "<hidden 13 chars>"
+        assert line_safe == "<hidden 32 chars>"
+
+    def test_sanitize_token_invalid_tail_len(self, root_uninitialized: Root) -> None:
+        token = "eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM"
+        with pytest.raises(AssertionError, match="invalid tail length"):
+            root_uninitialized._sanitize_token(token, tail_len=0)

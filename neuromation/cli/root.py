@@ -203,7 +203,9 @@ class Root:
         return text
 
     def _sanitize_token(self, token: str, tail_len: int = 5) -> str:
-        if not (0 < tail_len < len(token) // 2):
+        assert tail_len > 0, "invalid tail length"
+        # at least a third part of the token should be hidden
+        if tail_len >= len(token) // 3:
             return f"<hidden {len(token)} chars>"
 
         hidden = f"<hidden {len(token) - tail_len * 2} chars>"
