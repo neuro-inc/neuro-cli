@@ -185,7 +185,7 @@ def print_options(
     help=(
         "Prevent user's token sent in HTTP headers from being "
         "printed out to stderr during HTTP tracing. Can be used only "
-        "together with option '--trace'  [default: True]"
+        "together with option '--trace'. On by default."
     ),
 )
 @click.pass_context
