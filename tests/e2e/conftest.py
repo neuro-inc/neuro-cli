@@ -416,13 +416,11 @@ class Helper:
         try:
             proc.check_returncode()
         except subprocess.CalledProcessError:
-            log.error(f"Last return code: '{proc.returncode}'")
             log.error(f"Last stdout: '{proc.stdout}'")
             log.error(f"Last stderr: '{proc.stderr}'")
             raise
         out = proc.stdout
         err = proc.stderr
-        code = proc.returncode
         if any(
             start in " ".join(arguments)
             for start in ("submit", "job submit", "run", "job run")
@@ -433,7 +431,6 @@ class Helper:
         out = out.strip()
         err = err.strip()
         if verbosity > 0:
-            print(f"return code: {code}")
             print(f"nero stdout: {out}")
             print(f"nero stderr: {err}")
         return SysCap(out, err)
