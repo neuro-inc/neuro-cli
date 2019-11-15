@@ -181,7 +181,8 @@ def print_options(
 @click.option(
     "--hide-token/--no-hide-token",
     is_flag=True,
-    default=None,
+    default=True,
+    show_default=True,
     help=(
         "Prevent user's token sent in HTTP headers from being "
         "printed out to stderr during HTTP tracing. Can be used only "
