@@ -980,9 +980,9 @@ async def _build_volumes(
                 )
                 click.echo(
                     click.style(
-                        f"DeprecationWarning: Option `--volume=HOME` is deprecated. "
-                        f"Use `--volume=ALL`.  Mountpoint will be available in "
-                        f"container via variable {NEUROMATION_HOME_ENV_VAR}",
+                        "DeprecationWarning: Option `--volume=HOME` is deprecated. "
+                        "Use `--volume=ALL`.  Mountpoint will be available in "
+                        "container via variable NEUROMATION_HOME",
                         fg="red",
                     ),
                     err=True,
