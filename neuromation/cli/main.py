@@ -175,7 +175,6 @@ def print_options(
 )
 @click.option(
     "--trace",
-    default=None,
     is_flag=True,
     help="Trace sent HTTP requests and received replies to stderr.",
 )
