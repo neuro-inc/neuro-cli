@@ -96,6 +96,19 @@ class JobStatusFormatter:
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
+
+        if job_status.container.volumes:
+            rows = [
+                (
+                    volume.container_path,
+                    f"{volume.storage_uri}",
+                    "READONLY" if volume.read_only else " ",
+                )
+                for volume in job_status.container.volumes
+            ]
+            result += "Volumes:" + "\n  "
+            result += "\n  ".join(table(rows)) + "\n"
+
         if job_status.internal_hostname:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
