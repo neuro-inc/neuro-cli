@@ -3,10 +3,21 @@ import enum
 import json
 import shlex
 import signal
-from contextlib import suppress
+from asyncio.subprocess import Process
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+)
 
 import async_timeout
 import attr
@@ -315,19 +326,7 @@ class Jobs(metaclass=NoPublicConstructor):
     @asynccontextmanager
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> AsyncIterator[None]:
-        loop = asyncio.get_event_loop()
-        task = loop.create_task(
-            self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
-        )
-        yield
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
-
-    async def _port_forward(
-        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> None:
+    ) -> AsyncIterator[Awaitable[None]]:
         try:
             job_status = await self.status(id)
         except IllegalArgumentError as e:
@@ -389,12 +388,15 @@ class Jobs(metaclass=NoPublicConstructor):
         command += [f"{server_url.user}@{server_url.host}"]
         proc = await asyncio.create_subprocess_exec(*command)
         try:
-            result = await proc.wait()
-            raise ConnectionError(f"ssh exited with code {result}")
+            yield _AwaitDisconnection(proc)
         finally:
-            await _kill_proc_tree(proc.pid, timeout=10)
-            # add a sleep to get process watcher a chance to execute all callbacks
-            await asyncio.sleep(0.1)
+            try:
+                result = await proc.wait()
+                raise ConnectionError(f"ssh exited with code {result}")
+            finally:
+                await _kill_proc_tree(proc.pid, timeout=10)
+                # add a sleep to get process watcher a chance to execute all callbacks
+                await asyncio.sleep(0.1)
 
 
 #  ############## Internal helpers ###################
@@ -633,3 +635,17 @@ async def _kill_proc_tree(
 
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, inner)
+
+
+class _AwaitDisconnection:
+    __slots__ = ("_proc",)
+
+    def __init__(self, proc: Process) -> None:
+        self._proc = proc
+
+    async def _wait(self) -> None:
+        # the tranpoline is needed to shift the return type from int to None
+        self._proc.wait()
+
+    def __await__(self) -> Generator[Any, None, None]:
+        return self._wait().__await__()

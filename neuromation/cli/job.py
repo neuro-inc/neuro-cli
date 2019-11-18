@@ -5,14 +5,14 @@ import os
 import shlex
 import sys
 import textwrap
+import time
 import uuid
 import webbrowser
-from typing import AsyncIterator, Callable, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Awaitable, Callable, Dict, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
 from aiohttp import ClientConnectionError
-from typing_extensions import AsyncContextManager
 from yarl import URL
 
 from neuromation.api import (
@@ -26,7 +26,6 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.api.utils import asynccontextmanager
 from neuromation.cli.formatters import DockerImageProgress
 
 from .const import EX_PLATFORMERROR
@@ -51,7 +50,6 @@ from .utils import (
     JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
-    AsyncExitStack,
     ImageType,
     alias,
     async_cmd,
@@ -408,27 +406,29 @@ async def port_forward(
     neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
     """
-
+    loop = asyncio.get_event_loop()
     job_id = await resolve_job(job, client=root.client)
     forwarder: Callable[
-        [Root, str, int, int, bool], AsyncContextManager[None]
-    ] = port_forward_reconnect if reconnect else port_forward_simle
-    async with AsyncExitStack() as stack:
-        for local_port, job_port in local_remote_port:
-            click.echo(
-                f"Port localhost:{local_port} will be forwarded "
-                f"to port {job_port} of {job_id}"
-            )
-            await stack.enter_async_context(
+        [Root, str, int, int, bool], Awaitable[None]
+    ] = port_forward_reconnect if reconnect else port_forward_simple
+    tasks: List[asyncio.Task[None]] = []
+    for local_port, job_port in local_remote_port:
+        click.echo(
+            f"Port localhost:{local_port} will be forwarded "
+            f"to port {job_port} of {job_id}"
+        )
+        tasks.append(
+            loop.create_task(
                 forwarder(root, job_id, local_port, job_port, no_key_check)
             )
-
-        click.echo("Press ^C to stop forwarding")
-        try:
-            while True:
-                await asyncio.sleep(1)
-        except KeyboardInterrupt:
-            pass
+        )
+    click.echo("Press ^C to stop forwarding")
+    try:
+        await asyncio.gather(*tasks)
+    except Exception:
+        for t in tasks:
+            t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 @command()
@@ -1076,25 +1076,26 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
     return set(JobStatus(s) for s in statuses)
 
 
-@asynccontextmanager
-async def port_forward_simle(
+async def port_forward_simple(
     root: Root, job_id: str, local_port: int, job_port: int, no_key_check: bool
-) -> AsyncIterator[None]:
+) -> None:
     async with root.client.jobs.port_forward(
         job_id, local_port, job_port, no_key_check=no_key_check
-    ):
-        yield
+    ) as waiter:
+        await waiter
 
 
-@asynccontextmanager
 async def port_forward_reconnect(
     root: Root, job_id: str, local_port: int, job_port: int, no_key_check: bool
-) -> AsyncIterator[None]:
+) -> None:
     while True:
         try:
             async with root.client.jobs.port_forward(
                 job_id, local_port, job_port, no_key_check=no_key_check
-            ):
-                yield
+            ) as waiter:
+                await waiter
         except (ConnectionError, ClientConnectionError):
-            click.echo(f"Reconnect localhost:{local_port} => {job_id}:{job_port}")
+            now = time.asctime()
+            click.echo(
+                f"Reconnect localhost:{local_port} => " f"{job_id}:{job_port} @ {now}"
+            )
