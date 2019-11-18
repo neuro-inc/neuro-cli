@@ -1134,6 +1134,5 @@ async def port_forward_reconnect(root: Root, job_id: str, local_port: int, job_p
                 yield
         except (ConnectionError, ClientConnectionError):
             click.echo(
-                f"Reconnect localhost:{forward.local_port}"
-                f" => {job_id}:{forward.job_port}"
+                f"Reconnect localhost:{local_port} => {job_id}:{job_port}"
             )
