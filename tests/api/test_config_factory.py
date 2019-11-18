@@ -13,7 +13,7 @@ from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
-from neuromation.api import ConfigError, Factory, TRUSTED_CONFIG_PATH
+from neuromation.api import TRUSTED_CONFIG_PATH, ConfigError, Factory
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
