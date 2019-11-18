@@ -374,8 +374,7 @@ async def exec(
     "--reconnect/--no-reconnect",
     default=True,
     is_flag=True,
-    help="Automatic reconnection if the connection to the server is lost, "
-    "on by default.",
+    help="Reconnect if the link to server is lost, on by default.",
 )
 @click.option(
     "--no-key-check",

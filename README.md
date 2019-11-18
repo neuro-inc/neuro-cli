@@ -413,7 +413,7 @@ neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
 Name | Description|
 |----|------------|
-|_\--reconnect / --no-reconnect_|Automatic reconnection if the connection to the server is lost, on by default.|
+|_\--reconnect / --no-reconnect_|Reconnect if the link to server is lost, on by default.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--help_|Show this message and exit.|
 
@@ -1586,7 +1586,7 @@ neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
 Name | Description|
 |----|------------|
-|_\--reconnect / --no-reconnect_|Automatic reconnection if the connection to the server is lost, on by default.|
+|_\--reconnect / --no-reconnect_|Reconnect if the link to server is lost, on by default.|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--help_|Show this message and exit.|
 
