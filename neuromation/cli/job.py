@@ -59,6 +59,7 @@ from .utils import (
     pager_maybe,
     resolve_job,
     volume_to_verbose_str,
+    asynccontextmanager,
 )
 
 
@@ -1093,3 +1094,34 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
             statuses = defaults
 
     return set(JobStatus(s) for s in statuses)
+
+
+@asynccontextmanager
+async def port_forward_simle(root: Root, job_id: str, local_port: int, job_port:int, no_key_check:bool) -> None:
+    click.echo(
+        f"Port localhost:{local_port} will be forwarded "
+        f"to port {job_port} of {job_id}"
+    )
+    async with root.client.jobs.port_forward(
+            job_id, local_port, job_port, no_key_check=no_key_check
+    ):
+        yield
+
+
+@asynccontextmanager
+async def port_forward_reconnect(root: Root, job_id: str, local_port: int, job_port:int, no_key_check:bool) -> None:
+    click.echo(
+        f"Port localhost:{local_port} will be forwarded "
+        f"to port {job_port} of {job_id}"
+    )
+    while True:
+        try:
+            async with root.client.jobs.port_forward(
+                    job_id, local_port, job_port, no_key_check=no_key_check
+            ):
+                yield
+        except (ConnectionError, ClientConnectionError):
+            click.echo(
+                f"Reconnect localhost:{forward.local_port}"
+                f" => {job_id}:{forward.job_port}"
+            )

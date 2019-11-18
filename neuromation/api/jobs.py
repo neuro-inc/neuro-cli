@@ -315,12 +315,12 @@ class Jobs(metaclass=NoPublicConstructor):
     @asynccontextmanager
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
-    ) -> AsyncIterator["asyncio.Task[None]"]:
+    ) -> AsyncIterator[None]:
         loop = asyncio.get_event_loop()
         task = loop.create_task(
             self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
         )
-        yield task
+        yield
         task.cancel()
         with suppress(asyncio.CancelledError):
             await task
