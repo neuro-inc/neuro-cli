@@ -32,3 +32,11 @@ def test_print_config_token(helper: Helper) -> None:
     captured = helper.run_cli(["config", "show-token"])
     assert not captured.err
     assert captured.out  # some secure information was printed
+
+
+@pytest.mark.e2e
+def test_root_trace_hide_token_default_true(helper: Helper) -> None:
+    captured = helper.run_cli(["--trace", "ls"])
+    assert "Authorization: Bearer " in captured.err
+    assert "<hidden " in captured.err
+    assert " chars>" in captured.err

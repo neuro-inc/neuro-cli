@@ -50,3 +50,43 @@ def test_resource_presets_uninitialized(root_uninitialized: Root) -> None:
 
 def test_get_session_cookie(root_uninitialized: Root) -> None:
     assert root_uninitialized.get_session_cookie() is None
+
+
+class TestTokenSanitization:
+    @pytest.mark.parametrize(
+        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
+    )
+    def test_sanitize_header_value_single_token(
+        self, root_uninitialized: Root, auth: str
+    ) -> None:
+        line = f"{auth} eyJhbGciOiJI.eyJzdW0NTY3.SfKxwRJ_SsM"
+        expected = f"{auth} eyJhb<hidden 26 chars>J_SsM"
+        line_safe = root_uninitialized._sanitize_header_value(line)
+        assert line_safe == expected
+
+    @pytest.mark.parametrize(
+        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
+    )
+    def test_sanitize_header_value_many_tokens(
+        self, root_uninitialized: Root, auth: str
+    ) -> None:
+        num = 10
+        line = f"{auth} eyJhbGcOiJI.eyJzdTY3.SfKxwRJ_SsM " * num
+        expected = f"{auth} eyJhb<hidden 22 chars>J_SsM " * num
+        line_safe = root_uninitialized._sanitize_header_value(line)
+        assert line_safe == expected
+
+    @pytest.mark.parametrize(
+        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
+    )
+    def test_sanitize_header_value_not_a_token(
+        self, root_uninitialized: Root, auth: str
+    ) -> None:
+        line = f"{auth} not_a_jwt"
+        line_safe = root_uninitialized._sanitize_header_value(line)
+        assert line_safe == f"{auth} not_a_jwt"
+
+    def test_sanitize_token_replaced_overall(self, root_uninitialized: Root) -> None:
+        token = "a.b.c"
+        line_safe = root_uninitialized._sanitize_token(token)
+        assert line_safe == "<hidden 5 chars>"

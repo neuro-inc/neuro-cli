@@ -82,13 +82,10 @@ def table(
 def _row(
     fields: Sequence[str],
     widths: Sequence[int],
-    aligns: Sequence[Align] = None,
-    max_width: Optional[int] = None,
-    max_empty_columns: int = None,
+    aligns: Sequence[Align],
+    max_width: Optional[int],
+    max_empty_columns: int,
 ) -> Iterator[str]:
-    if aligns is None:
-        aligns = []
-
     if max_empty_columns:
         empty_pattern: Sequence[Any] = tuple([None]) * max_empty_columns
 
@@ -110,7 +107,7 @@ def _row(
             yield line
 
 
-def _cell(val: str, width: int, align: Optional[Align] = Align.LEFT) -> Iterator[str]:
+def _cell(val: str, width: int, align: Optional[Align]) -> Iterator[str]:
     if width <= 0:
         raise TypeError(f"Width must be positive integer")
     try:

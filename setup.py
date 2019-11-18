@@ -33,7 +33,7 @@ setup(
         "yarl>=1.3.0",
         "aiodocker>=0.16.0",
         "click>=7.0",
-        "colorama>=0.4",
+        'colorama>=0.4; platform_system=="Windows"',
         "humanize>=0.5",
         "psutil>=5.5.0",
         "typing_extensions>=3.7.2",

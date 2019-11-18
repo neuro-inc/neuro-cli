@@ -27,6 +27,7 @@ from neuromation.api import (
     Preset,
     RemoteImage,
     Resources,
+    Volume,
 )
 from neuromation.api.abc import (
     ImageCommitFinished,
@@ -128,23 +129,25 @@ class TestJobFormatter:
     def test_non_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_ID}     # check job status\n"
+            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_ID}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
     def test_non_quiet(self, job_descr: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -154,12 +157,13 @@ class TestJobFormatter:
         job_descr_no_name = replace(job_descr_no_name, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Http URL: https://job.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+            f"Http URL: https://job.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_ID}     # check job status\n"
+            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_ID}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
@@ -167,13 +171,14 @@ class TestJobFormatter:
         job_descr = replace(job_descr, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Http URL: https://job.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Http URL: https://job.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -181,13 +186,14 @@ class TestJobFormatter:
         job_descr = replace(job_descr, http_url=URL("https://job-named.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Http URL: https://job-named.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Http URL: https://job-named.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -564,6 +570,72 @@ class TestJobOutputFormatter:
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:24.759433+00:00"
+        )
+
+    def test_job_with_volumes(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+                volumes=[
+                    Volume(
+                        storage_uri=URL("storage://test-user/ro"),
+                        container_path="/mnt/ro",
+                        read_only=True,
+                    ),
+                    Volume(
+                        storage_uri=URL("storage://test-user/rw"),
+                        container_path="/mnt/rw",
+                        read_only=False,
+                    ),
+                ],
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Volumes:\n"
+            "  /mnt/ro  storage://test-user/ro  READONLY\n"
+            "  /mnt/rw  storage://test-user/rw          \n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
         )
 
 

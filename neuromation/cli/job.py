@@ -17,6 +17,7 @@ from yarl import URL
 
 from neuromation.api import (
     CONFIG_ENV_NAME,
+    AuthorizationError,
     Container,
     HTTPPort,
     JobDescription,
@@ -646,6 +647,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
             click.echo(job_resolved)
         except ValueError as e:
             errors.append((job, e))
+        except AuthorizationError:
+            errors.append((job, ValueError(f"Not enough permissions")))
 
     def format_fail(job: str, reason: Exception) -> str:
         return click.style(f"Cannot kill job {job}: {reason}", fg="red")
@@ -958,14 +961,15 @@ async def run_job(
 
     exit_code = None
     if not detach:
-        msg = textwrap.dedent(
-            """\
-            Terminal is attached to the remote job, so you receive the job's output.
-            Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-            with `--detach` option.
-        """
-        )
-        click.echo(click.style(msg, dim=True))
+        if not root.quiet:
+            msg = textwrap.dedent(
+                """\
+                Terminal is attached to the remote job, so you receive the job's output.
+                Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the
+                job with `--detach` option.\
+                """
+            )
+            click.echo(click.style(msg, dim=True))
         await _print_logs(root, job.id)
         job = await root.client.jobs.status(job.id)
         exit_code = job.history.exit_code
@@ -1024,7 +1028,15 @@ async def _build_volumes(
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
-                # TODO (artem) print deprecation warning (issue #1009)
+                click.echo(
+                    click.style(
+                        "DeprecationWarning: Option `--volume=HOME` is deprecated. "
+                        "Use `--volume=ALL`.  Mountpoint will be available in "
+                        "container via variable NEUROMATION_HOME",
+                        fg="red",
+                    ),
+                    err=True,
+                )
             else:
                 volumes.add(root.client.parse.volume(vol))
     return volumes
