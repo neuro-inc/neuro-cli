@@ -600,7 +600,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
             click.echo(job_resolved)
         except ValueError as e:
             errors.append((job, e))
-        except AuthorizationError as e:
+        except AuthorizationError:
             errors.append((job, ValueError(f"Not enough permissions")))
 
     def format_fail(job: str, reason: Exception) -> str:
