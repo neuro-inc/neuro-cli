@@ -7,7 +7,6 @@ import sys
 import textwrap
 import uuid
 import webbrowser
-from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
@@ -26,6 +25,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.api.utils import asynccontextmanager
 from neuromation.cli.formatters import DockerImageProgress
 
 from .const import EX_PLATFORMERROR
@@ -60,7 +60,6 @@ from .utils import (
     pager_maybe,
     resolve_job,
     volume_to_verbose_str,
-    asynccontextmanager,
 )
 
 
@@ -409,58 +408,24 @@ async def port_forward(
 
     """
 
-    @dataclass(frozen=False)
-    class Forwarding:
-        task: "asyncio.Task[None]"
-        local_port: int
-        job_port: int
-
     job_id = await resolve_job(job, client=root.client)
-    forwarding: List[Forwarding] = []
+    forwarder = port_forward_reconnect if reconnect else port_forward_simle
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
             click.echo(
                 f"Port localhost:{local_port} will be forwarded "
                 f"to port {job_port} of {job_id}"
             )
-            task = await stack.enter_async_context(
-                root.client.jobs.port_forward(
-                    job_id, local_port, job_port, no_key_check=no_key_check
-                )
+            await stack.enter_async_context(
+                forwarder(root, job_id, local_port, job_port, no_key_check=no_key_check)
             )
-            forwarding.append(Forwarding(task, local_port, job_port))
 
         click.echo("Press ^C to stop forwarding")
         try:
             while True:
                 await asyncio.sleep(1)
-                for forward in forwarding:
-                    if forward.task.done():
-                        error = forward.task.exception()
-                        if isinstance(error, ConnectionError) or isinstance(
-                            error, ClientConnectionError
-                        ):
-                            click.echo(
-                                f"Reconnect localhost:{forward.local_port}"
-                                f" => {job_id}:{forward.job_port}"
-                            )
-
-                            forward.task = await stack.enter_async_context(
-                                root.client.jobs.port_forward(
-                                    job_id,
-                                    forward.local_port,
-                                    forward.job_port,
-                                    no_key_check=no_key_check,
-                                )
-                            )
-                            break  # only one try per cycle
-                        elif error:
-                            raise error
         except KeyboardInterrupt:
             pass
-        finally:
-            for forward in forwarding:
-                forward.task.cancel()
 
 
 @command()
@@ -1109,30 +1074,24 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
 
 
 @asynccontextmanager
-async def port_forward_simle(root: Root, job_id: str, local_port: int, job_port:int, no_key_check:bool) -> None:
-    click.echo(
-        f"Port localhost:{local_port} will be forwarded "
-        f"to port {job_port} of {job_id}"
-    )
+async def port_forward_simle(
+    root: Root, job_id: str, local_port: int, job_port: int, no_key_check: bool
+) -> None:
     async with root.client.jobs.port_forward(
-            job_id, local_port, job_port, no_key_check=no_key_check
+        job_id, local_port, job_port, no_key_check=no_key_check
     ):
         yield
 
 
 @asynccontextmanager
-async def port_forward_reconnect(root: Root, job_id: str, local_port: int, job_port:int, no_key_check:bool) -> None:
-    click.echo(
-        f"Port localhost:{local_port} will be forwarded "
-        f"to port {job_port} of {job_id}"
-    )
+async def port_forward_reconnect(
+    root: Root, job_id: str, local_port: int, job_port: int, no_key_check: bool
+) -> None:
     while True:
         try:
             async with root.client.jobs.port_forward(
-                    job_id, local_port, job_port, no_key_check=no_key_check
+                job_id, local_port, job_port, no_key_check=no_key_check
             ):
                 yield
         except (ConnectionError, ClientConnectionError):
-            click.echo(
-                f"Reconnect localhost:{local_port} => {job_id}:{job_port}"
-            )
+            click.echo(f"Reconnect localhost:{local_port} => {job_id}:{job_port}")
