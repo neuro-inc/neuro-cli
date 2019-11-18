@@ -7,7 +7,7 @@ import sys
 import textwrap
 import uuid
 import webbrowser
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
+from typing import AsyncIterator, Callable, Dict, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
@@ -420,7 +420,7 @@ async def port_forward(
                 f"to port {job_port} of {job_id}"
             )
             await stack.enter_async_context(
-                forwarder(root, job_id, local_port, job_port, no_key_check=no_key_check)
+                forwarder(root, job_id, local_port, job_port, no_key_check)
             )
 
         click.echo("Press ^C to stop forwarding")
@@ -1079,7 +1079,7 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
 @asynccontextmanager
 async def port_forward_simle(
     root: Root, job_id: str, local_port: int, job_port: int, no_key_check: bool
-) -> None:
+) -> AsyncIterator[None]:
     async with root.client.jobs.port_forward(
         job_id, local_port, job_port, no_key_check=no_key_check
     ):
@@ -1089,7 +1089,7 @@ async def port_forward_simle(
 @asynccontextmanager
 async def port_forward_reconnect(
     root: Root, job_id: str, local_port: int, job_port: int, no_key_check: bool
-) -> None:
+) -> AsyncIterator[None]:
     while True:
         try:
             async with root.client.jobs.port_forward(
