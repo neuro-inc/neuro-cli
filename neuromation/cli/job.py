@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 from aiohttp import ClientConnectionError
+from typing_extensions import AsyncContextManager
 from yarl import URL
 
 from neuromation.api import (
@@ -409,7 +410,9 @@ async def port_forward(
     """
 
     job_id = await resolve_job(job, client=root.client)
-    forwarder = port_forward_reconnect if reconnect else port_forward_simle
+    forwarder: callable[
+        [Root, str, int, int, bool], AsyncContextManager[None]
+    ] = port_forward_reconnect if reconnect else port_forward_simle
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
             click.echo(
