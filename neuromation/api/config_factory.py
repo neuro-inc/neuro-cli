@@ -112,8 +112,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             config_unauthorized = await get_server_config(session, url)
             negotiator = AuthNegotiator(
@@ -142,8 +143,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             config_unauthorized = await get_server_config(session, url)
             negotiator = HeadlessNegotiator(
@@ -172,8 +174,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             server_config = await get_server_config(session, url, token=token)
         config = _Config(
@@ -189,25 +192,32 @@ class Factory:
 
     async def logout(self) -> None:
         # TODO: logout from auth0
-        if self._path.exists():
-            self._path.unlink()
+        config_file = self._path / "db"
+        if config_file.exists():
+            config_file.unlink()
+
+        self._path.rmdir()
+        
 
     def _read(self) -> _Config:
-        if not self._path.exists():
-            raise ConfigError(f"Config file {self._path} does not exists. Please login")
-        if not self._path.is_file():
-            raise ConfigError(f"Config {self._path} is not a regular file")
+        config_file = self._path / "db"
+        if not config_file.exists():
+            raise ConfigError(f"Config at {self._path} does not exists. Please login")
+        if not self._path.is_dir():
+            raise ConfigError(f"Config at {self._path} is not a directory")
+        if not config_file.is_file():
+            raise ConfigError(f"Config {config_file} is not a regular file")
 
-        stat = self._path.stat()
-        if (
-            not WIN32
-            and stat.st_mode & 0o777 != 0o600
-            and Path.home() in self._path.parents
-        ):
-            raise ConfigError(
-                f"Config file {self._path} has compromised permission bits, "
-                f"run 'chmod 600 {self._path}' first"
-            )
+        if not WIN32:
+            stat_dir = self._path.stat()
+            if (
+                and stat.st_mode & 0o777 != 0o600
+                and Path.home() in self._path.parents
+            ):
+                raise ConfigError(
+                    f"Config at {self._path} has compromised permission bits, "
+                    f"run 'chmod 600 {self._path}' first"
+                )
         with self._path.open("r", encoding="utf-8") as f:
             payload = yaml.safe_load(f)
 
