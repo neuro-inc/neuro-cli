@@ -7,7 +7,7 @@ import sys
 import textwrap
 import uuid
 import webbrowser
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
@@ -410,7 +410,7 @@ async def port_forward(
     """
 
     job_id = await resolve_job(job, client=root.client)
-    forwarder: callable[
+    forwarder: Callable[
         [Root, str, int, int, bool], AsyncContextManager[None]
     ] = port_forward_reconnect if reconnect else port_forward_simle
     async with AsyncExitStack() as stack:
