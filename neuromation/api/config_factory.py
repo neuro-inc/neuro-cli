@@ -33,6 +33,7 @@ from .utils import _ContextManager
 WIN32 = sys.platform == "win32"
 DEFAULT_CONFIG_PATH = "~/.nmrc"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
+TRUSTED_CONFIG_PATH = "NEUROMATION_TRUSTED_CONFIG_PATH"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
@@ -198,16 +199,14 @@ class Factory:
         if not self._path.is_file():
             raise ConfigError(f"Config {self._path} is not a regular file")
 
-        stat = self._path.stat()
-        if (
-            not WIN32
-            and stat.st_mode & 0o777 != 0o600
-            and Path.home() in self._path.parents
-        ):
-            raise ConfigError(
-                f"Config file {self._path} has compromised permission bits, "
-                f"run 'chmod 600 {self._path}' first"
-            )
+        trusted_env = WIN32 or bool(os.environ.get(TRUSTED_CONFIG_PATH))
+        if not trusted_env:
+            stat = self._path.stat()
+            if stat.st_mode & 0o777 != 0o600:
+                raise ConfigError(
+                    f"Config file {self._path} has compromised permission bits, "
+                    f"run 'chmod 600 {self._path}' first"
+                )
         with self._path.open("r", encoding="utf-8") as f:
             payload = yaml.safe_load(f)
 

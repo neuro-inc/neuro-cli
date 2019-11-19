@@ -1,0 +1,1 @@
+Suppress security checks for config files if NEUROMATION_TRUSTED_CONFIG_PATH environment variable is on.

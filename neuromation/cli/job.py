@@ -15,6 +15,7 @@ from yarl import URL
 
 from neuromation.api import (
     CONFIG_ENV_NAME,
+    TRUSTED_CONFIG_PATH,
     AuthorizationError,
     Container,
     HTTPPort,
@@ -881,6 +882,7 @@ async def run_job(
             )
         env_var, secret_volume = await upload_and_map_config(root)
         env_dict[CONFIG_ENV_NAME] = env_var
+        env_dict[TRUSTED_CONFIG_PATH] = "1"
         volumes.add(secret_volume)
 
     if volumes:

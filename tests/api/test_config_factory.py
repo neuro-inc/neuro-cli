@@ -13,7 +13,7 @@ from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
-from neuromation.api import ConfigError, Factory
+from neuromation.api import TRUSTED_CONFIG_PATH, ConfigError, Factory
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -230,13 +230,15 @@ class TestConfigFileInteraction:
         sys.platform == "win32",
         reason="Windows does not supports UNIX-like permissions",
     )
-    async def test_file_permissions_not_in_home_folder(
+    async def test_file_permissions_suppress_security_check(
         self,
         tmpdir: Path,
         token: str,
         auth_config: _AuthConfig,
         cluster_config: _ClusterConfig,
+        monkeypatch: Any,
     ) -> None:
+        monkeypatch.setenv(TRUSTED_CONFIG_PATH, "1")
         config_path = Path(tmpdir) / "test.nmrc"
         _create_config(config_path, token, auth_config, cluster_config)
         config_path.chmod(0o644)
