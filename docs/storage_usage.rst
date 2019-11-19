@@ -8,7 +8,7 @@ Storage Usage
 
 
 Use Storage API (available as :attr:`Client.storage`) for uploading files to the
-Neuromation Storage and downloading them back.  This chapter describes several common
+Neuro Storage and downloading them back.  This chapter describes several common
 scenarios like uploading / downloading directories recursively.
 
 There are many methods in :class:`Storage` namespace, here we describe a few.
@@ -18,7 +18,7 @@ Upload a Folder
 ===============
 
 
-Use :meth:`Storage.upload_dir` to upload a local directory on the Neuromation Storage::
+Use :meth:`Storage.upload_dir` to upload a local directory on the Neuro Storage::
 
    from neuromation.api import *
    from yarl import URL
@@ -44,7 +44,7 @@ Storage::
 Download a Folder
 =================
 
-Use :meth:`Storage.download_dir` for downloading data from the Neuromation Storage to
+Use :meth:`Storage.download_dir` for downloading data from the Neuro Storage to
 local disk.
 
 The method is a counterpart to :meth:`Storage.upload_dir` and has the same arguments::

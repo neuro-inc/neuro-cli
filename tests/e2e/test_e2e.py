@@ -6,7 +6,7 @@ from tests.e2e import Helper
 
 @pytest.mark.e2e
 def test_print_version(helper: Helper) -> None:
-    expected_out = f"Neuromation Platform Client {neuromation.__version__}"
+    expected_out = f"Neuro Platform Client {neuromation.__version__}"
 
     captured = helper.run_cli(["--version"])
     assert not captured.err

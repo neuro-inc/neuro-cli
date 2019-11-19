@@ -297,7 +297,7 @@ class TestConfigFileInteraction:
         config["url"] = str(mock_for_login.make_url("/"))
         with config_file.open("w") as f:
             yaml.safe_dump(config, f)
-        with pytest.raises(ConfigError, match="Neuro CLI updated"):
+        with pytest.raises(ConfigError, match="Neuro Platform CLI updated"):
             await Factory(config_file).get()
 
 
