@@ -196,9 +196,10 @@ class Factory:
         config_file = self._path / "db"
         if config_file.exists():
             config_file.unlink()
-
-        self._path.rmdir()
-        
+        try:
+            self._path.rmdir()
+        except NotADirectoryError:
+            pass
 
     def _read(self) -> _Config:
         config_file = self._path / "db"
@@ -211,13 +212,13 @@ class Factory:
 
         trusted_env = WIN32 or bool(os.environ.get(TRUSTED_CONFIG_PATH))
         if not trusted_env:
-            stat = self._path.stat()
-            if stat.st_mode & 0o777 != 0o700:
+            stat_dir = self._path.stat()
+            if stat_dir.st_mode & 0o777 != 0o700:
                 raise ConfigError(
                     f"Config {self._path} has compromised permission bits, "
                     f"run 'chmod 700 {self._path}' first")
-            stat_dir = config_file.stat()
-            if stat.st_mode & 0o777 != 0o600:
+            stat_file = config_file.stat()
+            if stat_file.st_mode & 0o777 != 0o600:
                 raise ConfigError(
                     f"Config at {config_file} has compromised permission bits, "
                     f"run 'chmod 600 {config_file}' first"
