@@ -645,7 +645,7 @@ class _AwaitDisconnection:
 
     async def _wait(self) -> None:
         # the tranpoline is needed to shift the return type from int to None
-        self._proc.wait()
+        await self._proc.wait()
 
     def __await__(self) -> Generator[Any, None, None]:
         return self._wait().__await__()
