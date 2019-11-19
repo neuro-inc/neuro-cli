@@ -1,7 +1,7 @@
 -r base.txt
 
 mypy==0.740
-pytest==5.2.3
+pytest==5.2.4
 pytest-cov==2.8.1
 pytest-aiohttp==0.3.0
 pytest-xdist==1.30.0
@@ -13,7 +13,7 @@ black==19.10b0
 setuptools==41.6.0
 wheel==0.33.6
 cmarkgfm==0.4.2
-twine==2.0.0
+twine==3.0.0
 markdown-toc==1.2.6
 towncrier==19.2.0
 asynctest==0.13.0

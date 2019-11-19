@@ -156,13 +156,13 @@ def print_options(
     "--disable-pypi-version-check",
     is_flag=True,
     help="Don't periodically check PyPI to determine whether a new version of "
-    "Neuromation CLI is available for download.",
+    "Neuro Platform CLI is available for download.",
 )
 @click.option(
     "--network-timeout", type=float, help="Network read timeout, seconds.", default=60.0
 )
 @click.version_option(
-    version=neuromation.__version__, message="Neuromation Platform Client %(version)s"
+    version=neuromation.__version__, message="Neuro Platform Client %(version)s"
 )
 @click.option(
     "--options",
@@ -206,7 +206,7 @@ def cli(
     # ◣ ◥   ▇
     # ▇ ◣   ▇
     # ▇ ◥ ◣ ▇
-    # ▇   ◥ ▇    Neuromation Platform
+    # ▇   ◥ ▇    Neuro Platform
     # ▇   ◣ ◥
     # ◥ ◣ ▇      Deep network training,
     #   ◥ ▇      inference and datasets

@@ -62,7 +62,7 @@ PYPI_JSON = {
             'async-generator (>=1.5) ; python_version < "3.7"',
         ],
         "requires_python": ">=3.6.0",
-        "summary": "Neuromation Platform API client",
+        "summary": "Neuro Platform API client",
         "version": "0.2.1",
     },
     "last_serial": 4757285,
