@@ -94,7 +94,7 @@ Name | Description|
 |----|------------|
 |_\-v, --verbose_|Give more output. Option is additive, and can be used up to 2 times.|
 |_\-q, --quiet_|Give less output. Option is additive, and can be used up to 2 times.|
-|_\--neuromation-config PATH_|Path to config file.|
+|_\--neuromation-config PATH_|Path to config directory.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
 |_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.|

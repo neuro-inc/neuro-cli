@@ -216,7 +216,8 @@ class Factory:
             if stat_dir.st_mode & 0o777 != 0o700:
                 raise ConfigError(
                     f"Config {self._path} has compromised permission bits, "
-                    f"run 'chmod 700 {self._path}' first")
+                    f"run 'chmod 700 {self._path}' first"
+                )
             stat_file = config_file.stat()
             if stat_file.st_mode & 0o777 != 0o600:
                 raise ConfigError(
