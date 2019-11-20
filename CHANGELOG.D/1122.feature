@@ -1,1 +1,0 @@
-`neuro kill` will continue work if multiple jobs specified but you haven't required permissions for some of them.
