@@ -196,10 +196,13 @@ class Factory:
         config_file = self._path / "db"
         if config_file.exists():
             config_file.unlink()
-        try:
-            self._path.rmdir()
-        except NotADirectoryError:
-            pass
+        if self._path.is_file():
+            self._path.unlink()
+        else:
+            try:
+                self._path.rmdir()
+            except NotADirectoryError:
+                pass
 
     def _read(self) -> _Config:
         config_file = self._path / "db"
