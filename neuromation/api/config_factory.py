@@ -203,7 +203,7 @@ class Factory:
 
     def _read(self) -> _Config:
         config_file = self._path / "db"
-        if not config_file.exists():
+        if not self._path.exists():
             raise ConfigError(f"Config at {self._path} does not exists. Please login")
         if not self._path.is_dir():
             raise ConfigError(f"Config at {self._path} is not a directory")
@@ -223,7 +223,7 @@ class Factory:
                     f"Config at {config_file} has compromised permission bits, "
                     f"run 'chmod 600 {config_file}' first"
                 )
-        with self._path.open("r", encoding="utf-8") as f:
+        with config_file.open("r", encoding="utf-8") as f:
             payload = yaml.safe_load(f)
 
         try:
@@ -373,9 +373,10 @@ class Factory:
             def opener(file: str, flags: int) -> int:
                 return os.open(file, flags, 0o600)
 
+            self._path.mkdir(0o700, parents=True, exist_ok=True)
             with open(tmppath, "x", encoding="utf-8", opener=opener) as f:
                 yaml.safe_dump(payload, f, default_flow_style=False)
-            os.replace(tmppath, self._path)
+            os.replace(tmppath, self._path / "db")
         except:  # noqa  # bare 'except' with 'raise' is legal
             try:
                 os.unlink(tmppath)
