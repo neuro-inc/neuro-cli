@@ -1,3 +1,4 @@
+import shutil
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -34,7 +35,7 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 
 
 @pytest.fixture
-def config_file(
+def config_dir(
     tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: _ClusterConfig
 ) -> Path:
     config_path = tmp_home / ".nmrc"
@@ -137,8 +138,15 @@ class TestConfigFileInteraction:
         with pytest.raises(ConfigError, match=r"file.+not exists"):
             await Factory().get()
 
+    async def test_config_dir_is_file(self, tmp_home: Path) -> None:
+        Path(tmp_home / ".nmrc").write_text("something")
+        with pytest.raises(ConfigError, match=r"not a directory"):
+            await Factory().get()
+
     async def test_config_file_is_dir(self, tmp_home: Path) -> None:
-        Path(tmp_home / ".nmrc").mkdir()
+        path = Path(tmp_home / ".nmrc")
+        path.mkdir()
+        (path / "db").mkdir()
         with pytest.raises(ConfigError, match=r"not a regular file"):
             await Factory().get()
 
@@ -196,7 +204,7 @@ class TestConfigFileInteraction:
         assert client._config.auth_token.token == token
 
     async def test_token_autorefreshing(
-        self, config_file: Path, monkeypatch: Any
+        self, config_dir: Path, monkeypatch: Any
     ) -> None:
         new_token = jwt.encode({"identity": "new_user"}, "secret", algorithm="HS256")
 
@@ -208,6 +216,7 @@ class TestConfigFileInteraction:
         monkeypatch.setattr(
             neuromation.api.config_factory, "refresh_token", _refresh_token_mock
         )
+        config_file = config_dir / "db"
         file_stat_before = config_file.stat()
         client = await Factory().get()
         await client.close()
@@ -221,8 +230,8 @@ class TestConfigFileInteraction:
         sys.platform == "win32",
         reason="Windows does not supports UNIX-like permissions",
     )
-    async def test_file_permissions(self, config_file: Path) -> None:
-        Path(config_file).chmod(0o777)
+    async def test_file_permissions(self, config_dir: Path) -> None:
+        Path(config_dir).chmod(0o777)
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
 
@@ -241,14 +250,15 @@ class TestConfigFileInteraction:
         monkeypatch.setenv(TRUSTED_CONFIG_PATH, "1")
         config_path = Path(tmpdir) / "test.nmrc"
         _create_config(config_path, token, auth_config, cluster_config)
-        config_path.chmod(0o644)
+        (config_path / "db").chmod(0o644)
         client = await Factory(config_path).get()
         await client.close()
         assert client
 
-    async def test_mailformed_config(self, config_file: Path) -> None:
+    async def test_mailformed_config(self, config_dir: Path) -> None:
         # await Factory().login(url=mock_for_login)
-        # config_file = tmp_home / ".nmrc"
+        # config_dir = tmp_home / ".nmrc"
+        config_file = config_dir / "db"
         with config_file.open("r") as f:
             original = yaml.safe_load(f)
 
@@ -261,25 +271,26 @@ class TestConfigFileInteraction:
                 await Factory().get()
 
     async def test_silent_update(
-        self, config_file: Path, mock_for_login: _TestServer
+        self, config_dir: Path, mock_for_login: _TestServer
     ) -> None:
         # make config
         async def show_dummy_browser(url: URL) -> None:
             async with aiohttp.ClientSession() as client:
                 await client.get(url, allow_redirects=True)
 
-        config_file.unlink()
+        shutil.rmtree(config_dir)
 
-        await Factory(config_file).login(
+        await Factory(config_dir).login(
             show_dummy_browser, url=mock_for_login.make_url("/")
         )
+        config_file = config_dir / "db"
         with config_file.open("r") as f:
             config = yaml.safe_load(f)
         config["version"] = "10.1.1"  # config belongs old version
         config["url"] = str(mock_for_login.make_url("/"))
         with config_file.open("w") as f:
             yaml.safe_dump(config, f)
-        client = await Factory(config_file).get()
+        client = await Factory(config_dir).get()
         await client.close()
 
         with config_file.open("r") as f:
@@ -287,10 +298,11 @@ class TestConfigFileInteraction:
         assert config["version"] == neuromation.__version__
 
     async def test_explicit_update(
-        self, config_file: Path, mock_for_login: _TestServer
+        self, config_dir: Path, mock_for_login: _TestServer
     ) -> None:
         # await Factory().login(url=mock_for_login)
-        # config_file = tmp_home / ".nmrc"
+        # config_dir = tmp_home / ".nmrc"
+        config_file = config_dir / "db"
         with config_file.open("r") as f:
             config = yaml.safe_load(f)
         config["version"] = "10.1.1"  # config belongs old version
@@ -298,7 +310,7 @@ class TestConfigFileInteraction:
         with config_file.open("w") as f:
             yaml.safe_dump(config, f)
         with pytest.raises(ConfigError, match="Neuro Platform CLI updated"):
-            await Factory(config_file).get()
+            await Factory(config_dir).get()
 
 
 class TestLogin:
@@ -306,7 +318,7 @@ class TestLogin:
         async with aiohttp.ClientSession() as client:
             await client.get(url, allow_redirects=True)
 
-    async def test_login_already_logged(self, config_file: Path) -> None:
+    async def test_login_already_logged(self, config_dir: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
             await Factory().login(self.show_dummy_browser)
 
@@ -322,7 +334,7 @@ class TestLogin:
 
 
 class TestLoginWithToken:
-    async def test_login_with_token_already_logged(self, config_file: Path) -> None:
+    async def test_login_with_token_already_logged(self, config_dir: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
             await Factory().login_with_token(token="tokenstr")
 
@@ -350,7 +362,7 @@ class TestLoginWithToken:
 
 
 class TestHeadlessLogin:
-    async def test_login_headless_already_logged(self, config_file: Path) -> None:
+    async def test_login_headless_already_logged(self, config_dir: Path) -> None:
         async def get_auth_code_cb(url: URL) -> str:
             return ""
 
@@ -385,6 +397,6 @@ class TestHeadlessLogin:
 
 
 class TestLogout:
-    async def test_logout(self, config_file: Path) -> None:
+    async def test_logout(self, config_dir: Path) -> None:
         await Factory().logout()
-        assert not config_file.exists(), "Config not removed after logout"
+        assert not config_dir.exists(), "Config not removed after logout"

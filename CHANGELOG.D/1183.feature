@@ -1,0 +1,1 @@
+Convert configuration file into configuration directory.

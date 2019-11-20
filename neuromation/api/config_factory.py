@@ -113,8 +113,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             config_unauthorized = await get_server_config(session, url)
             negotiator = AuthNegotiator(
@@ -143,8 +144,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             config_unauthorized = await get_server_config(session, url)
             negotiator = HeadlessNegotiator(
@@ -173,8 +175,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             server_config = await get_server_config(session, url, token=token)
         config = _Config(
@@ -190,24 +193,41 @@ class Factory:
 
     async def logout(self) -> None:
         # TODO: logout from auth0
-        if self._path.exists():
+        config_file = self._path / "db"
+        if config_file.exists():
+            config_file.unlink()
+        if self._path.is_file():
             self._path.unlink()
+        else:
+            try:
+                self._path.rmdir()
+            except NotADirectoryError:
+                pass
 
     def _read(self) -> _Config:
+        config_file = self._path / "db"
         if not self._path.exists():
-            raise ConfigError(f"Config file {self._path} does not exists. Please login")
-        if not self._path.is_file():
-            raise ConfigError(f"Config {self._path} is not a regular file")
+            raise ConfigError(f"Config at {self._path} does not exists. Please login")
+        if not self._path.is_dir():
+            raise ConfigError(f"Config at {self._path} is not a directory")
+        if not config_file.is_file():
+            raise ConfigError(f"Config {config_file} is not a regular file")
 
         trusted_env = WIN32 or bool(os.environ.get(TRUSTED_CONFIG_PATH))
         if not trusted_env:
-            stat = self._path.stat()
-            if stat.st_mode & 0o777 != 0o600:
+            stat_dir = self._path.stat()
+            if stat_dir.st_mode & 0o777 != 0o700:
                 raise ConfigError(
-                    f"Config file {self._path} has compromised permission bits, "
-                    f"run 'chmod 600 {self._path}' first"
+                    f"Config {self._path} has compromised permission bits, "
+                    f"run 'chmod 700 {self._path}' first"
                 )
-        with self._path.open("r", encoding="utf-8") as f:
+            stat_file = config_file.stat()
+            if stat_file.st_mode & 0o777 != 0o600:
+                raise ConfigError(
+                    f"Config at {config_file} has compromised permission bits, "
+                    f"run 'chmod 600 {config_file}' first"
+                )
+        with config_file.open("r", encoding="utf-8") as f:
             payload = yaml.safe_load(f)
 
         try:
@@ -357,9 +377,10 @@ class Factory:
             def opener(file: str, flags: int) -> int:
                 return os.open(file, flags, 0o600)
 
+            self._path.mkdir(0o700, parents=True, exist_ok=True)
             with open(tmppath, "x", encoding="utf-8", opener=opener) as f:
                 yaml.safe_dump(payload, f, default_flow_style=False)
-            os.replace(tmppath, self._path)
+            os.replace(tmppath, self._path / "db")
         except:  # noqa  # bare 'except' with 'raise' is legal
             try:
                 os.unlink(tmppath)
