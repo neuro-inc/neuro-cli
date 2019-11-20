@@ -134,9 +134,9 @@ def print_options(
 )
 @click.option(
     "--neuromation-config",
-    type=click.Path(dir_okay=False),
+    type=click.Path(dir_okay=True, file_okay=False),
     required=False,
-    help="Path to config file.",
+    help="Path to config directory.",
     default=DEFAULT_CONFIG_PATH,
     metavar="PATH",
     envvar=CONFIG_ENV_NAME,
