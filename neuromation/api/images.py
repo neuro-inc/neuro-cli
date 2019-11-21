@@ -63,7 +63,7 @@ class Images(metaclass=NoPublicConstructor):
         for image in self._temporary_images:
             with contextlib.suppress(DockerError, aiohttp.ClientError):
                 await self._docker.images.delete(image)
-        if self.__docker is None:
+        if self.__docker is not None:
             await self.__docker.close()
         await self._registry.close()
 
