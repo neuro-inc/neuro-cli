@@ -209,11 +209,15 @@ class Factory:
         if not self._path.exists():
             raise ConfigError(f"Config at {self._path} does not exists. Please login.")
         if not self._path.is_dir():
-            raise ConfigError(f"Config at {self._path} is not a directory. "
-                              "Please logout and login again.")
+            raise ConfigError(
+                f"Config at {self._path} is not a directory. "
+                "Please logout and login again."
+            )
         if not config_file.is_file():
-            raise ConfigError(f"Config {config_file} is not a regular file. "
-                              "Please logout and login again.")
+            raise ConfigError(
+                f"Config {config_file} is not a regular file. "
+                "Please logout and login again."
+            )
 
         trusted_env = WIN32 or bool(os.environ.get(TRUSTED_CONFIG_PATH))
         if not trusted_env:
