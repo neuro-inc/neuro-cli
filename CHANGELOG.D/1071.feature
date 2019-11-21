@@ -1,1 +1,1 @@
-Now `neuro images` do not require installed docker cli
+Now `neuro images` do not require the installed Docker.
