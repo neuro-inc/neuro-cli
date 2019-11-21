@@ -61,7 +61,7 @@ update-deps:
 	touch .update-deps
 
 .PHONY: e2e
-e2e: .update
+e2e: .update-deps
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e" \
@@ -74,7 +74,7 @@ e2e: .update
 
 
 .PHONY: test
-test: .update
+test: .update-deps
 	pytest \
 		-m "not e2e" \
 		--cov=neuromation \
@@ -83,7 +83,7 @@ test: .update
 		tests
 
 .PHONY: test-all
-test-all: .update
+test-all: .update-deps
 	pytest \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
