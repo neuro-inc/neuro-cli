@@ -1,7 +1,4 @@
 SHELL := /bin/bash
-BRANCH := $(shell git branch | grep \* | cut -d ' ' -f2)
-
-MYPY_CACHE_DIR=.mypy_cache/$(shell md5sum setup.py | awk '{print $$1}')-$(shell find requirements -type f -exec md5sum {} \; | sort -k 2 | md5sum | awk '{print $$1}')
 
 ISORT_DIRS := neuromation tests build-tools setup.py
 BLACK_DIRS := $(ISORT_DIRS)
@@ -94,7 +91,7 @@ test-all: .update-deps
 lint: lint-docs
 	isort -c -rc ${ISORT_DIRS}
 	black --check $(BLACK_DIRS)
-	mypy --cache-dir $(MYPY_CACHE_DIR) $(MYPY_DIRS)
+	mypy $(MYPY_DIRS)
 	flake8 $(FLAKE8_DIRS)
 
 .PHONY: publish-lint
