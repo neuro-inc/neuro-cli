@@ -19,13 +19,11 @@ from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
     HeadlessNegotiator,
-    Preset,
     _AuthConfig,
     _AuthToken,
-    _ClusterConfig,
-    get_server_config,
     refresh_token,
 )
+from .server_cfg import Preset, _ClusterConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
 
@@ -280,7 +278,7 @@ class Factory:
     ) -> Dict[str, Any]:
         if not cluster_config.is_initialized():
             raise ValueError("cluster config part is not initialized")
-        return {
+        ret = {
             "registry_url": str(cluster_config.registry_url),
             "storage_url": str(cluster_config.storage_url),
             "users_url": str(cluster_config.users_url),
@@ -290,6 +288,9 @@ class Factory:
                 for name, resource_preset in cluster_config.resource_presets.items()
             ],
         }
+        if cluster_config.name is not None:
+            ret["name"] = cluster_config.name
+        return ret
 
     def _serialize_resource_preset(
         self, name: str, resource_preset: Preset
@@ -331,6 +332,7 @@ class Factory:
                 self._deserialize_resource_preset(data)
                 for data in cluster_config.get("resource_presets", [])
             ),
+            name=cluster_config.get("name"),
         )
 
     def _deserialize_resource_preset(

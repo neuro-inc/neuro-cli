@@ -28,11 +28,11 @@ from neuromation.api.login import (
     HeadlessNegotiator,
     _AuthConfig,
     _AuthToken,
-    _ClusterConfig,
     create_app_server,
     create_app_server_once,
     create_auth_code_app,
 )
+from neuromation.api.server_cfg import _ClusterConfig
 from tests import _TestServerFactory
 
 
