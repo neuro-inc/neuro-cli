@@ -1,5 +1,5 @@
 import sys
-from typing import Dict, Iterator, Sequence
+from typing import Iterator, List, Mapping, Optional, Sequence
 
 from click import style
 
@@ -74,12 +74,14 @@ class QuotaInfoFormatter:
 
 
 class ClustersFormatter:
-    def __call__(self, clusters: Sequence[_ClusterConfig], default_name: str) -> str:
+    def __call__(
+        self, clusters: Sequence[_ClusterConfig], default_name: Optional[str]
+    ) -> List[str]:
         out = [style("Available clusters:", bold=True)]
         for cluster in clusters:
-            name = cluster.name
+            name = cluster.name or ""
             if cluster.name == default_name:
-                name = style(cluster.name, underline=True)
+                name = style(name, underline=True)
             pre = "* " if cluster.name == default_name else "  "
             out.append(pre + style("Name: ", bold=True) + name)
             out.append(style("  Presets:", bold=True))
@@ -87,7 +89,7 @@ class ClustersFormatter:
         return out
 
 
-def _format_presets(presets: Dict[str, Preset], prefix: str) -> Iterator[str]:
+def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]:
     if sys.platform == "win32":
         yes, no = "Yes", "No"
     else:
