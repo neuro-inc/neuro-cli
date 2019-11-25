@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 import aiohttp
 from yarl import URL
@@ -24,7 +24,7 @@ class _ClusterConfig:
     storage_url: URL
     users_url: URL
     monitoring_url: URL
-    resource_presets: Dict[str, Preset]
+    resource_presets: Mapping[str, Preset]
     name: Optional[str]  # can be None for backward compatibility
 
     @classmethod
@@ -34,7 +34,7 @@ class _ClusterConfig:
         storage_url: URL,
         users_url: URL,
         monitoring_url: URL,
-        resource_presets: Dict[str, Preset],
+        resource_presets: Mapping[str, Preset],
         name: Optional[str] = None,
     ) -> "_ClusterConfig":
         return cls(
@@ -64,7 +64,7 @@ class _ServerConfig:
     # clusters are not stored in config file
     # they are exits for fetching from API and displaying by CLI commands
     # Later we maybe change it.
-    clusters: List[_ClusterConfig] = field(default_factory=list)
+    clusters: Sequence[_ClusterConfig] = field(default_factory=list)
 
 
 class ConfigLoadException(Exception):
