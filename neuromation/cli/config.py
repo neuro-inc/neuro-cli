@@ -17,11 +17,12 @@ from neuromation.api import (
     login_with_token as api_login_with_token,
     logout as api_logout,
 )
-from neuromation.cli.formatters.config import QuotaInfoFormatter
+from neuromation.api.server_cfg import get_server_config
+from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
 
 from .formatters import ConfigFormatter
 from .root import Root
-from .utils import async_cmd, command, group
+from .utils import async_cmd, command, group, pager_maybe
 
 
 @group()
@@ -171,7 +172,7 @@ async def logout(root: Root) -> None:
 @async_cmd()
 async def docker(root: Root, docker_config: str) -> None:
     """
-    Configure docker client for working with platform registry
+    Configure docker client for working with platform registry.
     """
     config_path = Path(docker_config)
     if not config_path.exists():
@@ -198,12 +199,28 @@ async def docker(root: Root, docker_config: str) -> None:
     click.echo(f"You can use docker client with neuro registry: {registry_str}")
 
 
+@command()
+@async_cmd()
+async def get_clusters(root: Root) -> None:
+    """
+    Fetch and display the list of available clusters from the Neuro Platform.
+
+    """
+
+    config = await get_server_config(root.client._session, root.url, root.auth)
+    fmt = ClustersFormatter()
+    pager_maybe(
+        fmt(config.clusters, config.cluster_config.name), root.tty, root.terminal_size
+    )
+
+
 config.add_command(login)
 config.add_command(login_with_token)
 config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
 config.add_command(show_quota)
+config.add_command(get_clusters)
 
 config.add_command(docker)
 

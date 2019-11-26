@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Iterator, List, Mapping, Optional, Tuple
 
 import aiohttp
 import click
@@ -80,7 +80,7 @@ class Root:
         return self._config.cluster_config.registry_url
 
     @property
-    def resource_presets(self) -> Dict[str, Preset]:
+    def resource_presets(self) -> Mapping[str, Preset]:
         if self._client is None or not self._config.cluster_config.is_initialized():
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.resource_presets

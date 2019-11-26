@@ -14,7 +14,7 @@ from neuromation.api.config import (
     _CookieSession,
     _PyPIVersion,
 )
-from neuromation.api.login import _ClusterConfig
+from neuromation.api.server_cfg import _ClusterConfig
 from neuromation.api.tracing import _make_trace_config
 
 
@@ -84,6 +84,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
                 "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
                 "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
             },
+            name="default",
         )
         config = _Config(
             auth_config=auth_config,

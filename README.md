@@ -37,6 +37,7 @@
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config show-quota](#neuro-config-show-quota)
+		* [neuro config get-clusters](#neuro-config-get-clusters)
 		* [neuro config docker](#neuro-config-docker)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
@@ -995,6 +996,7 @@ Name | Description|
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time |
+| _[neuro config get-clusters](#neuro-config-get-clusters)_| Fetch and display the list of available clusters from the Neuro Platform |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
@@ -1115,9 +1117,28 @@ Name | Description|
 
 
 
+### neuro config get-clusters
+
+Fetch and display the list of available clusters from the Neuro Platform.
+
+**Usage:**
+
+```bash
+neuro config get-clusters [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro config docker
 
-Configure docker client for working with platform registry
+Configure docker client for working with platform registry.
 
 **Usage:**
 

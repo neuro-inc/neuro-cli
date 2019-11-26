@@ -12,8 +12,8 @@ from .config import _Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
-from .login import Preset
 from .parser import Parser
+from .server_cfg import Preset
 from .storage import Storage
 from .users import Users
 from .utils import NoPublicConstructor

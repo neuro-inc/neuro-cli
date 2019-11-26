@@ -22,7 +22,8 @@ from neuromation.api.config import (
     _CookieSession,
     _PyPIVersion,
 )
-from neuromation.api.login import AuthException, _ClusterConfig
+from neuromation.api.login import AuthException
+from neuromation.api.server_cfg import _ClusterConfig
 from tests import _TestServerFactory
 
 
