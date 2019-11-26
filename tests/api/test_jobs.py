@@ -687,6 +687,7 @@ async def test_job_run(
                 ],
             },
             "is_preemptible": False,
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -788,6 +789,7 @@ async def test_job_run_with_name_and_description(
             "is_preemptible": False,
             "name": "test-job-name",
             "description": "job description",
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -881,6 +883,7 @@ async def test_job_run_no_volumes(
             "is_preemptible": False,
             "name": "test-job-name",
             "description": "job description",
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -975,6 +978,7 @@ async def test_job_run_preemptible(
             "is_preemptible": True,
             "name": "test-job-name",
             "description": "job description",
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -1066,6 +1070,7 @@ async def test_job_run_schedule_timeout(
             },
             "is_preemptible": False,
             "schedule_timeout": 5,
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -1141,6 +1146,7 @@ async def test_job_run_tpu(
             },
             "is_preemptible": False,
             "schedule_timeout": 5,
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)

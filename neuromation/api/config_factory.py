@@ -23,7 +23,7 @@ from .login import (
     _AuthToken,
     refresh_token,
 )
-from .server_cfg import Preset, _ClusterConfig, get_server_config
+from .server_cfg import Preset, _ClusterConfig, _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
 
@@ -124,15 +124,7 @@ class Factory:
             config_authorized = await get_server_config(
                 session, url, token=auth_token.token
             )
-        config = _Config(
-            auth_config=config_authorized.auth_config,
-            auth_token=auth_token,
-            cluster_config=config_authorized.cluster_config,
-            pypi=_PyPIVersion.create_uninitialized(),
-            url=url,
-            cookie_session=_CookieSession.create_uninitialized(),
-            version=neuromation.__version__,
-        )
+        config = self._gen_config(config_authorized, auth_token, url)
         self._save(config)
 
     async def login_headless(
@@ -155,15 +147,7 @@ class Factory:
             config_authorized = await get_server_config(
                 session, url, token=auth_token.token
             )
-        config = _Config(
-            auth_config=config_authorized.auth_config,
-            auth_token=auth_token,
-            cluster_config=config_authorized.cluster_config,
-            pypi=_PyPIVersion.create_uninitialized(),
-            url=url,
-            cookie_session=_CookieSession.create_uninitialized(),
-            version=neuromation.__version__,
-        )
+        config = self._gen_config(config_authorized, auth_token, url)
         self._save(config)
 
     async def login_with_token(
@@ -178,16 +162,29 @@ class Factory:
             raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             server_config = await get_server_config(session, url, token=token)
+        config = self._gen_config(
+            server_config, _AuthToken.create_non_expiring(token), url,
+        )
+        self._save(config)
+
+    def _gen_config(
+        self, server_config: _ServerConfig, token: _AuthToken, url: URL
+    ) -> _Config:
+        if server_config.clusters:
+            cluster_name = server_config.clusters[0].name
+        else:
+            cluster_name = None
         config = _Config(
             auth_config=server_config.auth_config,
-            auth_token=_AuthToken.create_non_expiring(token),
+            auth_token=token,
             cluster_config=server_config.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
+            cluster_name=cluster_name,
         )
-        self._save(config)
+        return config
 
     async def logout(self) -> None:
         # TODO: logout from auth0
@@ -244,6 +241,7 @@ class Factory:
                 payload.get("cookie_session", {})
             )
             version = payload.get("version", "")
+            cluster_name = payload["cluster_name"]
 
             return _Config(
                 auth_config=auth_config,
@@ -253,6 +251,7 @@ class Factory:
                 url=api_url,
                 cookie_session=cookie_session,
                 version=version,
+                cluster_name=cluster_name,
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
@@ -375,6 +374,7 @@ class Factory:
             payload["pypi"] = config.pypi.to_config()
             payload["cookie_session"] = config.cookie_session.to_config()
             payload["version"] = config.version
+            payload["cluster_name"] = config.cluster_name
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
 

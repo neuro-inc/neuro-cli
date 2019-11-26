@@ -68,6 +68,12 @@ class Root:
         return self._config.auth_token.username
 
     @property
+    def cluster_name(self) -> Optional[str]:
+        if self._client is None:
+            raise ConfigError("User is not registered, run 'neuro login'.")
+        return self._config.cluster_name
+
+    @property
     def url(self) -> URL:
         if self._client is None:
             raise ConfigError("User is not registered, run 'neuro login'.")

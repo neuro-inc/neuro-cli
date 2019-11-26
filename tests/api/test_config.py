@@ -48,6 +48,7 @@ class TestConfig:
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
+            cluster_name="default",
         )
         config.check_initialized()  # check no exceptions
 
@@ -85,6 +86,7 @@ class TestConfig:
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
+            cluster_name="default",
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
             config.check_initialized()
@@ -123,6 +125,7 @@ class TestConfig:
             url=URL("https://dev.neu.ro"),
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
+            cluster_name="default",
         )
         with pytest.raises(ValueError, match="Missing server configuration"):
             config.check_initialized()

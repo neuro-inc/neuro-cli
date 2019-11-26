@@ -16,6 +16,7 @@ class ConfigFormatter:
     def __call__(self, root: Root) -> str:
         lines = []
         lines.append(style("User Name", bold=True) + f": {root.username}")
+        lines.append(style("Current Cluster", bold=True) + f": {root.cluster_name}")
         lines.append(style("API URL", bold=True) + f": {root.url}")
         lines.append(style("Docker Registry URL", bold=True) + f": {root.registry_url}")
         lines.append(style("Resource Presets", bold=True) + f":")

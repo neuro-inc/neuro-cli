@@ -1490,6 +1490,7 @@ class TestConfigFormatter:
             f"""\
             User Configuration:
               User Name: user
+              Current Cluster: default
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
@@ -1534,6 +1535,7 @@ class TestConfigFormatter:
             f"""\
             User Configuration:
               User Name: user
+              Current Cluster: default
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:

@@ -128,6 +128,7 @@ def _create_config(
         url=URL("https://dev.neu.ro/api/v1"),
         cookie_session=_CookieSession.create_uninitialized(),
         version=neuromation.__version__,
+        cluster_name=cluster_config.name,
     )
     Factory(nmrc_path)._save(config)
     assert nmrc_path.exists()

@@ -154,6 +154,9 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
+        if self._config.cluster_name is not None:
+            payload["cluster_name"] = self._config.cluster_name
+
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
@@ -179,6 +182,8 @@ class Jobs(metaclass=NoPublicConstructor):
         parser = _ImageNameParser(
             self._config.auth_token.username, self._config.cluster_config.registry_url
         )
+        if self._config.cluster_name is not None:
+            params["cluster_name"] = self._config.cluster_name
         async with self._core.request("GET", url, params=params) as resp:
             ret = await resp.json()
             return [_job_description_from_api(j, parser) for j in ret["jobs"]]

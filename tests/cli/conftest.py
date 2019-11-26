@@ -44,6 +44,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
             "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
         },
+        name="default",
     )
     config = _Config(
         auth_config=auth_config,
@@ -53,6 +54,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         url=URL("https://dev.neu.ro/api/v1"),
         cookie_session=_CookieSession.create_uninitialized(),
         version=neuromation.__version__,
+        cluster_name="default",
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import dateutil.parser
 import pkg_resources
@@ -107,6 +107,7 @@ class _Config:
     url: URL
     cookie_session: _CookieSession
     version: str
+    cluster_name: Optional[str]
 
     def check_initialized(self) -> None:
         if (
