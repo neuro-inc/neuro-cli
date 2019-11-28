@@ -12,7 +12,7 @@ black==19.10b0
 setuptools==42.0.1
 wheel==0.33.6
 cmarkgfm==0.4.2
-twine==3.0.0
+twine==3.1.1
 markdown-toc==1.2.6
 towncrier==19.2.0
 asynctest==0.13.0
