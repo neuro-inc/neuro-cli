@@ -1,7 +1,7 @@
 import time
 from http.cookies import Morsel  # noqa
 from http.cookies import SimpleCookie
-from types import MappingProxyType, TracebackType
+from types import TracebackType
 from typing import Mapping, Optional, Type
 
 import aiohttp
@@ -52,7 +52,7 @@ class Client(metaclass=NoPublicConstructor):
             trace_id,
         )
         self._config = Config._create(self._core, self._config_data)
-        self._parser = Parser._create(self._config_data, self.username)
+        self._parser = Parser._create(self._config_data)
         self._jobs = Jobs._create(self._core, self._config_data, self._parser)
         self._storage = Storage._create(self._core, self._config_data)
         self._users = Users._create(self._core)
@@ -81,13 +81,13 @@ class Client(metaclass=NoPublicConstructor):
 
     @property
     def username(self) -> str:
-        return self._config_data.auth_token.username
+        return self._config.username
 
     @property
     def presets(self) -> Mapping[str, Preset]:
         # TODO: add deprecation warning eventually.
         # The preferred API is client.config now.
-        return MappingProxyType(self._config_data.cluster_config.resource_presets)
+        return self._config.presets
 
     @property
     def config(self) -> Config:

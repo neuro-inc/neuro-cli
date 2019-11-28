@@ -16,9 +16,8 @@ class Volume:
 
 
 class Parser(metaclass=NoPublicConstructor):
-    def __init__(self, config: _Config, username: str) -> None:
-        self._config = config
-        self._username = username
+    def __init__(self, config_data: _Config) -> None:
+        self._config_data = config_data
 
     def volume(self, volume: str) -> Volume:
         parts = volume.split(":")
@@ -32,7 +31,9 @@ class Parser(metaclass=NoPublicConstructor):
             raise ValueError(f"Invalid volume specification '{volume}'")
 
         container_path = parts.pop()
-        storage_uri = normalize_storage_path_uri(URL(":".join(parts)), self._username)
+        storage_uri = normalize_storage_path_uri(
+            URL(":".join(parts)), self._config_data.auth_token.username
+        )
 
         return Volume(
             storage_uri=storage_uri, container_path=container_path, read_only=read_only
@@ -40,12 +41,14 @@ class Parser(metaclass=NoPublicConstructor):
 
     def local_image(self, image: str) -> LocalImage:
         parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
+            self._config_data.auth_token.username,
+            self._config_data.cluster_config.registry_url,
         )
         return parser.parse_as_local_image(image)
 
     def remote_image(self, image: str) -> RemoteImage:
         parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
+            self._config_data.auth_token.username,
+            self._config_data.cluster_config.registry_url,
         )
         return parser.parse_remote(image)

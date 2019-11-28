@@ -1,5 +1,6 @@
 from dataclasses import dataclass, replace
 from datetime import date
+from types import MappingProxyType
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 import dateutil.parser
@@ -8,7 +9,7 @@ from yarl import URL
 
 from .core import _Core
 from .login import _AuthConfig, _AuthToken
-from .server_cfg import ClusterConfig, get_server_config
+from .server_cfg import ClusterConfig, Preset, get_server_config
 from .utils import NoPublicConstructor
 
 
@@ -124,6 +125,14 @@ class Config(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config_data: _Config) -> None:
         self._core = core
         self._config_data = config_data
+
+    @property
+    def username(self) -> str:
+        return self._config_data.auth_token.username
+
+    @property
+    def presets(self) -> Mapping[str, Preset]:
+        return MappingProxyType(self._config_data.cluster_config.resource_presets)
 
     @property
     def clusters(self) -> Mapping[str, ClusterConfig]:
