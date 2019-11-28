@@ -210,7 +210,7 @@ async def get_clusters(root: Root) -> None:
     await root.client.config.fetch()
     fmt = ClustersFormatter()
     pager_maybe(
-        fmt(root.client.config.clusters.values(), root.client.config.current_cluster),
+        fmt(root.client.config.clusters.values(), root.client.config.cluster_name),
         root.tty,
         root.terminal_size,
     )
@@ -247,7 +247,7 @@ async def prompt_cluster(client: Client) -> str:
     clusters = client.config.clusters
     while True:
         fmt = ClustersFormatter()
-        click.echo(fmt(clusters.values(), client.config.current_cluster))
+        click.echo(fmt(clusters.values(), client.config.cluster_name))
         answer = input(f"Select cluster to switch [{client.config.current_cluster}]: ")
         answer = answer.strip()
         if answer not in clusters:

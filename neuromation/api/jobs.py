@@ -124,7 +124,7 @@ class JobTelemetry:
 
 
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config, parse: Parser) -> None:
+    def __init__(self, core: _Core, config: Config, parse: Parser) -> None:
         self._core = core
         self._config = config
         self._parse = parse
@@ -149,8 +149,11 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
-        if self._config.cluster_name is not None:
+        try:
             payload["cluster_name"] = self._config.cluster_name
+        except AssertionError:
+            # transition period, no the current cluster selected
+            pass
         async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
             return _job_description_from_api(res, self._parse)
@@ -170,8 +173,11 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
-        if self._config.cluster_name is not None:
+        try:
             params["cluster_name"] = self._config.cluster_name
+        except AssertionError:
+            # transition period, no the current cluster selected
+            pass
         async with self._core.request("GET", url, params=params) as resp:
             ret = await resp.json()
             return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
