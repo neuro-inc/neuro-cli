@@ -167,3 +167,13 @@ class Config(metaclass=NoPublicConstructor):
 
     def _save(self) -> None:
         pass
+
+    @property
+    def _monitoring_url(self) -> URL:
+        # INTERNAL API
+        return self._config_data.cluster_config.monitoring_url
+
+    @property
+    def _token(self) -> str:
+        # INTERNAL API
+        return self._config_data.auth_token.token

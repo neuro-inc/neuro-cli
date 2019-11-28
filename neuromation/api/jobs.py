@@ -25,7 +25,7 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 
-from .config import _Config
+from .config import Config
 from .core import IllegalArgumentError, _Core
 from .images import (
     _DummyProgress,
@@ -189,7 +189,7 @@ class Jobs(metaclass=NoPublicConstructor):
             return None  # 201 status code
 
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/log"
+        url = self._config._monitoring_url / f"{id}/log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
             "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
@@ -204,7 +204,7 @@ class Jobs(metaclass=NoPublicConstructor):
             return _job_description_from_api(ret, self._parse)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/top"
+        url = self._config._monitoring_url / f"{id}/top"
         try:
             received_any = False
             async for resp in self._core.ws_connect(url):
@@ -230,7 +230,7 @@ class Jobs(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
 
         payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
+        url = self._config._monitoring_url / f"{id}/save"
 
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         # `self._code.request` implicitly sets `total=3 * 60`
@@ -276,7 +276,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_exec",
-                "token": self._config.auth_token.token,
+                "token": self._config._token,
                 "params": {"job": id, "command": list(cmd)},
             }
         )
@@ -329,7 +329,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._config.auth_token.token,
+                "token": self._config._token,
                 "params": {"job": id, "port": job_port},
             }
         )
