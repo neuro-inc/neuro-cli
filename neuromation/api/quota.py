@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from yarl import URL
 
-from neuromation.api.config import _Config
+from neuromation.api.config import Config
 from neuromation.api.core import _Core
 from neuromation.api.utils import NoPublicConstructor
 
@@ -31,12 +31,12 @@ class _QuotaInfo:
 
 
 class _Quota(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
         self._config = config
 
     async def get(self, user: Optional[str] = None) -> _QuotaInfo:
-        user = user or self._config.auth_token.username
+        user = user or self._config.username
         url = URL(f"stats/users/{user}")
         async with self._core.request("GET", url) as resp:
             res = await resp.json()
