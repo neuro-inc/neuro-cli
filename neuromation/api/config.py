@@ -174,6 +174,11 @@ class Config(metaclass=NoPublicConstructor):
         return self._config_data.cluster_config.monitoring_url
 
     @property
+    def _storage_url(self) -> URL:
+        # INTERNAL API
+        return self._config_data.cluster_config.storage_url
+
+    @property
     def _token(self) -> str:
         # INTERNAL API
         return self._config_data.auth_token.token
