@@ -8,7 +8,7 @@ import aiohttp
 
 from neuromation.api.quota import _Quota
 
-from .config import _Config
+from .config import Config, _Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
@@ -45,13 +45,18 @@ class Client(metaclass=NoPublicConstructor):
             cookie["domain"] = config_data.url.raw_host
             cookie["path"] = "/"
         self._core = _Core(
-            session, self._config.url, self._config.auth_token.token, cookie, trace_id
+            session,
+            self._config_data.url,
+            self._config_data.auth_token.token,
+            cookie,
+            trace_id,
         )
-        self._jobs = Jobs._create(self._core, self._config)
-        self._storage = Storage._create(self._core, self._config)
+        self._config = Config._create(self._core, self._config_data)
+        self._jobs = Jobs._create(self._core, self._config_data)
+        self._storage = Storage._create(self._core, self._config_data)
         self._users = Users._create(self._core)
-        self._parser = Parser._create(self._config, self.username)
-        self._quota = _Quota._create(self._core, self._config)
+        self._parser = Parser._create(self._config_data, self.username)
+        self._quota = _Quota._create(self._core, self._config_data)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -76,11 +81,17 @@ class Client(metaclass=NoPublicConstructor):
 
     @property
     def username(self) -> str:
-        return self._config.auth_token.username
+        return self._config_data.auth_token.username
 
     @property
     def presets(self) -> Mapping[str, Preset]:
-        return MappingProxyType(self._config.cluster_config.resource_presets)
+        # TODO: add deprecation warning eventually.
+        # The preferred API is client.config now.
+        return MappingProxyType(self._config_data.cluster_config.resource_presets)
+
+    @property
+    def config(self) -> Config:
+        return self._config
 
     @property
     def jobs(self) -> Jobs:
@@ -97,7 +108,7 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images._create(self._core, self._config)
+            self._images = Images._create(self._core, self._config_data)
         return self._images
 
     @property

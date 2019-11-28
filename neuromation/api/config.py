@@ -121,20 +121,35 @@ class _Config:
 
 
 class Config(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config_data: _Config) -> None:
         self._core = core
-        self._config = config
+        self._config_data = config_data
 
     @property
     def clusters(self) -> Mapping[str, ClusterConfig]:
-        pass
+        # During trh transition period,
+        # clusters and cluster.name can be None
+        if self._config_data.clusters is None:
+            return {}
+        ret: Dict[str, ClusterConfig] = {}
+        for cluster in self._config_data.clusters:
+            assert cluster.name is not None
+            ret[cluster.name] = cluster
+        return ret
 
     @property
     def current_cluster(self) -> str:
-        pass
+        # During the transition period,
+        # clusters and cluster.name can be None
+        name = self._config_data.cluster_name
+        assert name is not None
+        return name
 
     async def fetch(self) -> None:
         pass
 
     async def switch_cluster(self, name: str) -> None:
+        pass
+
+    def _save(self) -> None:
         pass

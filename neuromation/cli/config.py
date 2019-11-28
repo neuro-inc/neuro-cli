@@ -210,7 +210,7 @@ async def get_clusters(root: Root) -> None:
     await root.client.config.fetch()
     fmt = ClustersFormatter()
     pager_maybe(
-        fmt(root.client.config.clusters, root.client.config.current_cluster),
+        fmt(root.client.config.clusters.values(), root.client.config.current_cluster),
         root.tty,
         root.terminal_size,
     )
@@ -244,18 +244,20 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 
 
 async def prompt_cluster(client: Client) -> str:
-    available = {cluster.name for cluster in client.config.clusters}
+    clusters = client.config.clusters
     while True:
         fmt = ClustersFormatter()
-        click.echo(fmt(client.config.clusters, client.config.current_cluster))
+        click.echo(fmt(clusters.values(), client.config.current_cluster))
         answer = input(f"Select cluster to switch [{client.config.current_cluster}]: ")
         answer = answer.strip()
-        if answer not in available:
+        if answer not in clusters:
             click.echo(
                 " ".join(
-                    "Selected cluster ",
-                    click.style(answer, underline=True),
-                    " doesn't exist, please try again.",
+                    [
+                        "Selected cluster ",
+                        click.style(answer, underline=True),
+                        " doesn't exist, please try again.",
+                    ]
                 )
             )
         else:

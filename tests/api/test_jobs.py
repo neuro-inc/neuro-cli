@@ -492,7 +492,8 @@ async def test_status_failed(
         ret = await client.jobs.status("job-id")
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
 
@@ -555,7 +556,8 @@ async def test_status_with_ssh_and_http(
         ret = await client.jobs.status("job-id")
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
 
@@ -619,7 +621,8 @@ async def test_status_with_tpu(
         ret = await client.jobs.status("job-id")
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
     assert ret.container.resources.tpu_type == "v3-8"
@@ -719,7 +722,8 @@ async def test_job_run(
         ret = await client.jobs.run(container=container, is_preemptible=False)
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
 
@@ -826,7 +830,8 @@ async def test_job_run_with_name_and_description(
         )
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
 
@@ -909,7 +914,8 @@ async def test_job_run_no_volumes(
         )
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
 
@@ -1015,7 +1021,8 @@ async def test_job_run_preemptible(
         )
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
 
@@ -1090,7 +1097,8 @@ async def test_job_run_schedule_timeout(
         ret = await client.jobs.run(container=container, schedule_timeout=5)
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
 
@@ -1166,7 +1174,8 @@ async def test_job_run_tpu(
         ret = await client.jobs.run(container=container, schedule_timeout=5)
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     assert ret == _job_description_from_api(JSON, parser)
     assert ret.container.resources.tpu_type == "v3-8"
@@ -1233,7 +1242,8 @@ async def test_list_no_filter(
         ret = await client.jobs.list()
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
     assert ret == job_descriptions
@@ -1272,7 +1282,8 @@ async def test_list_filter_by_name(
         ret = await client.jobs.list(name=name_1)
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
     assert ret == job_descriptions[:3]
@@ -1312,7 +1323,8 @@ async def test_list_filter_by_statuses(
         ret = await client.jobs.list(statuses=statuses)
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
     assert ret == [job for job in job_descriptions if job.status in statuses]
@@ -1470,7 +1482,8 @@ async def test_list_filter_by_name_and_statuses(
         ret = await client.jobs.list(statuses=statuses, name=name)
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
     assert ret == job_descriptions[:2]
@@ -1518,7 +1531,8 @@ async def test_list_filter_by_name_and_statuses_and_owners(
         ret = await client.jobs.list(statuses=statuses, name=name, owners=owners)
 
     parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
+        client._config_data.auth_token.username,
+        client._config_data.cluster_config.registry_url,
     )
     job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
     assert ret == job_descriptions[:2]

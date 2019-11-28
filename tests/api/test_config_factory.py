@@ -161,7 +161,7 @@ class TestConfigFileInteraction:
         token = _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert client._config_data.auth_token.token == token
 
     async def test_preset_serialization(
         self,
@@ -189,7 +189,7 @@ class TestConfigFileInteraction:
         )
         client = await Factory(Path("~/test.nmrc")).get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert client._config_data.auth_token.token == token
 
     async def test_full_path(
         self,
@@ -202,7 +202,7 @@ class TestConfigFileInteraction:
         token = _create_config(config_path, token, auth_config, cluster_config)
         client = await Factory(config_path).get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert client._config_data.auth_token.token == token
 
     async def test_token_autorefreshing(
         self, config_dir: Path, monkeypatch: Any
@@ -222,7 +222,7 @@ class TestConfigFileInteraction:
         client = await Factory().get()
         await client.close()
         file_stat_after = config_file.stat()
-        assert client._config.auth_token.token == new_token
+        assert client._config_data.auth_token.token == new_token
         assert (
             file_stat_before != file_stat_after
         ), "Config file not rewritten while token refreshed"

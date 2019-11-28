@@ -1,5 +1,5 @@
 import sys
-from typing import Iterator, List, Mapping, Optional, Sequence
+from typing import Iterable, Iterator, List, Mapping, Optional
 
 from click import style
 
@@ -75,7 +75,7 @@ class QuotaInfoFormatter:
 
 class ClustersFormatter:
     def __call__(
-        self, clusters: Sequence[ClusterConfig], default_name: Optional[str]
+        self, clusters: Iterable[ClusterConfig], default_name: Optional[str]
     ) -> List[str]:
         out = [style("Available clusters:", bold=True)]
         for cluster in clusters:

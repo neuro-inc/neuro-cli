@@ -517,7 +517,7 @@ async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
         cookie = client._get_session_cookie()
         if cookie is not None:
             new_config = dataclasses.replace(
-                client._config,
+                client._config_data,
                 cookie_session=_CookieSession(
                     cookie=cookie.value, timestamp=int(time())
                 ),
