@@ -44,10 +44,10 @@ class Client(metaclass=NoPublicConstructor):
         self._core = _Core(
             session, self._config.url, self._config.auth_token.token, cookie, trace_id
         )
-        self._jobs = Jobs._create(self._core, self._config)
+        self._parser = Parser._create(self._config, self.username)
+        self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core)
-        self._parser = Parser._create(self._config, self.username)
         self._quota = _Quota._create(self._core, self._config)
         self._images: Optional[Images] = None
 
