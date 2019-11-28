@@ -2,11 +2,10 @@ import pytest
 from yarl import URL
 
 import neuromation
-from neuromation.api import Preset
+from neuromation.api import ClusterConfig, Preset
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
-    _ClusterConfig,
     _Config,
     _CookieSession,
     _PyPIVersion,
@@ -24,7 +23,7 @@ class TestConfig:
         )
         assert auth_config_good.is_initialized()
 
-        cluster_config_good = _ClusterConfig.create(
+        cluster_config_good = ClusterConfig.create(
             registry_url=URL("http://value"),
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
@@ -62,7 +61,7 @@ class TestConfig:
         )
         assert not auth_config_bad.is_initialized()
 
-        cluster_config_good = _ClusterConfig.create(
+        cluster_config_good = ClusterConfig.create(
             registry_url=URL("http://value"),
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
@@ -101,7 +100,7 @@ class TestConfig:
         )
         assert auth_config_bad.is_initialized()
 
-        cluster_config_good = _ClusterConfig.create(
+        cluster_config_good = ClusterConfig.create(
             registry_url=URL(),  # empty
             storage_url=URL("http://value"),
             users_url=URL("http://value"),

@@ -3,9 +3,9 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Preset
+from neuromation.api import ClusterConfig, Preset
 from neuromation.api.login import _AuthConfig
-from neuromation.api.server_cfg import _ClusterConfig, _ServerConfig, get_server_config
+from neuromation.api.server_cfg import _ServerConfig, get_server_config
 from tests import _TestClientFactory
 
 
@@ -50,7 +50,7 @@ async def test_get_server_config(aiohttp_client: _TestClientFactory) -> None:
             callback_urls=tuple(URL(u) for u in callback_urls),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=_ClusterConfig.create(
+        cluster_config=ClusterConfig.create(
             registry_url=URL(),
             storage_url=URL(),
             users_url=URL(),
@@ -96,7 +96,7 @@ async def test_get_server_config_no_callback_urls(
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=_ClusterConfig(
+        cluster_config=ClusterConfig(
             registry_url=URL(),
             storage_url=URL(),
             users_url=URL(),
@@ -171,7 +171,7 @@ async def test_get_server_config_with_token_legacy(
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=_ClusterConfig.create(
+        cluster_config=ClusterConfig.create(
             registry_url=URL(registry_url),
             storage_url=URL(storage_url),
             users_url=URL(users_url),
@@ -276,7 +276,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     config = await get_server_config(
         client.session, client.make_url("/"), token="bananatoken"
     )
-    cluster_config = _ClusterConfig.create(
+    cluster_config = ClusterConfig.create(
         registry_url=URL(registry_url),
         storage_url=URL(storage_url),
         users_url=URL(users_url),

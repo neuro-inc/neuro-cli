@@ -14,7 +14,7 @@ from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
-from neuromation.api import TRUSTED_CONFIG_PATH, ConfigError, Factory
+from neuromation.api import TRUSTED_CONFIG_PATH, ClusterConfig, ConfigError, Factory
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -23,7 +23,6 @@ from neuromation.api.config import (
     _PyPIVersion,
 )
 from neuromation.api.login import AuthException
-from neuromation.api.server_cfg import _ClusterConfig
 from tests import _TestServerFactory
 
 
@@ -37,7 +36,7 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 
 @pytest.fixture
 def config_dir(
-    tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+    tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: ClusterConfig
 ) -> Path:
     config_path = tmp_home / ".nmrc"
     _create_config(config_path, token, auth_config, cluster_config)
@@ -118,7 +117,7 @@ def _create_config(
     nmrc_path: Path,
     token: str,
     auth_config: _AuthConfig,
-    cluster_config: _ClusterConfig,
+    cluster_config: ClusterConfig,
 ) -> str:
     config = _Config(
         auth_config=auth_config,
@@ -157,7 +156,7 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: ClusterConfig,
     ) -> None:
         token = _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
         client = await Factory().get()
@@ -169,7 +168,7 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: ClusterConfig,
     ) -> None:
         _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
         client = await Factory().get()
@@ -183,7 +182,7 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: ClusterConfig,
     ) -> None:
         token = _create_config(
             tmp_home / "test.nmrc", token, auth_config, cluster_config
@@ -197,7 +196,7 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: ClusterConfig,
     ) -> None:
         config_path = tmp_home / "test.nmrc"
         token = _create_config(config_path, token, auth_config, cluster_config)
@@ -246,7 +245,7 @@ class TestConfigFileInteraction:
         tmpdir: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: ClusterConfig,
         monkeypatch: Any,
     ) -> None:
         monkeypatch.setenv(TRUSTED_CONFIG_PATH, "1")

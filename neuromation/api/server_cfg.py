@@ -19,7 +19,7 @@ class Preset:
 
 
 @dataclass(frozen=True)
-class _ClusterConfig:
+class ClusterConfig:
     registry_url: URL
     storage_url: URL
     users_url: URL
@@ -36,7 +36,7 @@ class _ClusterConfig:
         monitoring_url: URL,
         resource_presets: Mapping[str, Preset],
         name: Optional[str] = None,
-    ) -> "_ClusterConfig":
+    ) -> "ClusterConfig":
         return cls(
             registry_url,
             storage_url,
@@ -60,18 +60,18 @@ class _ClusterConfig:
 class _ServerConfig:
     auth_config: _AuthConfig
     # the field exists for the transition period at least
-    cluster_config: _ClusterConfig
+    cluster_config: ClusterConfig
     # clusters are not stored in config file
     # they are exits for fetching from API and displaying by CLI commands
     # Later we maybe change it.
-    clusters: Sequence[_ClusterConfig] = field(default_factory=list)
+    clusters: Sequence[ClusterConfig] = field(default_factory=list)
 
 
 class ConfigLoadException(Exception):
     pass
 
 
-def _parse_cluster_config(payload: Dict[str, Any]) -> _ClusterConfig:
+def _parse_cluster_config(payload: Dict[str, Any]) -> ClusterConfig:
     resource_presets: Dict[str, Preset] = {}
     for data in payload.get("resource_presets", ()):
         tpu_type = tpu_software_version = None
@@ -88,7 +88,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> _ClusterConfig:
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
         )
-    cluster_config = _ClusterConfig(
+    cluster_config = ClusterConfig(
         registry_url=URL(payload.get("registry_url", "")),
         storage_url=URL(payload.get("storage_url", "")),
         users_url=URL(payload.get("users_url", "")),

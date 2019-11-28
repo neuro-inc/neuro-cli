@@ -6,7 +6,7 @@ from jose import jwt
 from yarl import URL
 
 import neuromation
-from neuromation.api import Client, Preset
+from neuromation.api import Client, ClusterConfig, Preset
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -14,7 +14,6 @@ from neuromation.api.config import (
     _CookieSession,
     _PyPIVersion,
 )
-from neuromation.api.server_cfg import _ClusterConfig
 from neuromation.api.tracing import _make_trace_config
 
 
@@ -41,8 +40,8 @@ def auth_config() -> _AuthConfig:
 
 
 @pytest.fixture
-def cluster_config() -> _ClusterConfig:
-    return _ClusterConfig.create(
+def cluster_config() -> ClusterConfig:
+    return ClusterConfig.create(
         registry_url=URL("https://registry-dev.neu.ro"),
         storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
@@ -69,7 +68,7 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
         trace_id: str = "bd7a977555f6b982",
     ) -> Client:
         url = URL(url_str)
-        cluster_config = _ClusterConfig(
+        cluster_config = ClusterConfig(
             registry_url=URL(registry_url),
             monitoring_url=(url / "jobs"),
             storage_url=(url / "storage"),

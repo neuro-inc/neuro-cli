@@ -1,13 +1,15 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 import dateutil.parser
 import pkg_resources
 from yarl import URL
 
+from .core import _Core
 from .login import _AuthConfig, _AuthToken
-from .server_cfg import _ClusterConfig
+from .server_cfg import ClusterConfig
+from .utils import NoPublicConstructor
 
 
 @dataclass
@@ -102,12 +104,13 @@ class _CookieSession:
 class _Config:
     auth_config: _AuthConfig
     auth_token: _AuthToken
-    cluster_config: _ClusterConfig
+    cluster_config: ClusterConfig
     pypi: _PyPIVersion
     url: URL
     cookie_session: _CookieSession
     version: str
     cluster_name: Optional[str]
+    clusters: Optional[Sequence[ClusterConfig]] = None
 
     def check_initialized(self) -> None:
         if (
@@ -115,3 +118,23 @@ class _Config:
             or not self.cluster_config.is_initialized()
         ):
             raise ValueError("Missing server configuration, need to login")
+
+
+class Config(metaclass=NoPublicConstructor):
+    def __init__(self, core: _Core, config: _Config) -> None:
+        self._core = core
+        self._config = config
+
+    @property
+    def clusters(self) -> Mapping[str, ClusterConfig]:
+        pass
+
+    @property
+    def current_cluster(self) -> str:
+        pass
+
+    async def fetch(self) -> None:
+        pass
+
+    async def switch_cluster(self, name: str) -> None:
+        pass

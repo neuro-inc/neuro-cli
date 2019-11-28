@@ -11,13 +11,13 @@ from yarl import URL
 
 from neuromation.api import (
     DEFAULT_API_URL,
+    Client,
     ConfigError,
     login as api_login,
     login_headless as api_login_headless,
     login_with_token as api_login_with_token,
     logout as api_logout,
 )
-from neuromation.api.server_cfg import get_server_config
 from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
 
 from .formatters import ConfigFormatter
@@ -172,7 +172,7 @@ async def logout(root: Root) -> None:
 @async_cmd()
 async def docker(root: Root, docker_config: str) -> None:
     """
-    Configure docker client for working with platform registry.
+    Configure docker client to fit the Neuro Platform.
     """
     config_path = Path(docker_config)
     if not config_path.exists():
@@ -203,15 +203,63 @@ async def docker(root: Root, docker_config: str) -> None:
 @async_cmd()
 async def get_clusters(root: Root) -> None:
     """
-    Fetch and display the list of available clusters from the Neuro Platform.
+    Fetch and display the list of available clusters.
 
     """
-
-    config = await get_server_config(root.client._session, root.url, root.auth)
+    click.secho("Fetch the list of available clusters...", dim=True)
+    await root.client.config.fetch()
     fmt = ClustersFormatter()
     pager_maybe(
-        fmt(config.clusters, config.cluster_config.name), root.tty, root.terminal_size
+        fmt(root.client.config.clusters, root.client.config.current_cluster),
+        root.tty,
+        root.terminal_size,
     )
+
+
+@command()
+@click.argument("cluster_name", required=False, default=None, type=str)
+@async_cmd()
+async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
+    """Switch the active cluster.
+
+    CLUSTER_NAME is the cluster name to select.  The interactive prompt is used if the
+    name is omitted (default).
+
+    """
+    click.secho("Fetch the list of available clusters...", dim=True)
+    await root.client.config.fetch()
+    if cluster_name is None:
+        if not root.tty:
+            raise click.BadArgumentUsage(
+                "Interactive mode is disabled for non-TTY mode, "
+                "please specify the CLUSTER_NAME"
+            )
+        real_cluster_name = await prompt_cluster(root.client)
+    else:
+        real_cluster_name = cluster_name
+    await root.client.config.switch_cluster(real_cluster_name)
+    click.echo(
+        "The current cluster is " + click.style(real_cluster_name, underline=True)
+    )
+
+
+async def prompt_cluster(client: Client) -> str:
+    available = {cluster.name for cluster in client.config.clusters}
+    while True:
+        fmt = ClustersFormatter()
+        click.echo(fmt(client.config.clusters, client.config.current_cluster))
+        answer = input(f"Select cluster to switch [{client.config.current_cluster}]: ")
+        answer = answer.strip()
+        if answer not in available:
+            click.echo(
+                " ".join(
+                    "Selected cluster ",
+                    click.style(answer, underline=True),
+                    " doesn't exist, please try again.",
+                )
+            )
+        else:
+            return answer
 
 
 config.add_command(login)
@@ -221,6 +269,7 @@ config.add_command(show)
 config.add_command(show_token)
 config.add_command(show_quota)
 config.add_command(get_clusters)
+config.add_command(switch_cluster)
 
 config.add_command(docker)
 

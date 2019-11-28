@@ -3,9 +3,8 @@ from typing import Iterator, List, Mapping, Optional, Sequence
 
 from click import style
 
-from neuromation.api import Preset
+from neuromation.api import ClusterConfig, Preset
 from neuromation.api.quota import _QuotaInfo
-from neuromation.api.server_cfg import _ClusterConfig
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
@@ -76,7 +75,7 @@ class QuotaInfoFormatter:
 
 class ClustersFormatter:
     def __call__(
-        self, clusters: Sequence[_ClusterConfig], default_name: Optional[str]
+        self, clusters: Sequence[ClusterConfig], default_name: Optional[str]
     ) -> List[str]:
         out = [style("Available clusters:", bold=True)]
         for cluster in clusters:

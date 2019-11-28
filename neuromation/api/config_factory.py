@@ -23,7 +23,7 @@ from .login import (
     _AuthToken,
     refresh_token,
 )
-from .server_cfg import Preset, _ClusterConfig, _ServerConfig, get_server_config
+from .server_cfg import ClusterConfig, Preset, _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
 
@@ -273,7 +273,7 @@ class Factory:
         }
 
     def _serialize_cluster_config(
-        self, cluster_config: _ClusterConfig
+        self, cluster_config: ClusterConfig
     ) -> Dict[str, Any]:
         if not cluster_config.is_initialized():
             raise ValueError("cluster config part is not initialized")
@@ -320,9 +320,9 @@ class Factory:
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
 
-    def _deserialize_cluster_config(self, payload: Dict[str, Any]) -> _ClusterConfig:
+    def _deserialize_cluster_config(self, payload: Dict[str, Any]) -> ClusterConfig:
         cluster_config = payload["cluster_config"]
-        return _ClusterConfig.create(
+        return ClusterConfig.create(
             registry_url=URL(cluster_config["registry_url"]),
             storage_url=URL(cluster_config["storage_url"]),
             users_url=URL(cluster_config["users_url"]),

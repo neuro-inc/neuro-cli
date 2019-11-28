@@ -24,22 +24,25 @@ SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 
 class Client(metaclass=NoPublicConstructor):
     def __init__(
-        self, session: aiohttp.ClientSession, config: _Config, trace_id: Optional[str]
+        self,
+        session: aiohttp.ClientSession,
+        config_data: _Config,
+        trace_id: Optional[str],
     ) -> None:
         self._closed = False
-        config.check_initialized()
-        self._config = config
+        config_data.check_initialized()
+        self._config_data = config_data
         self._trace_id = trace_id
         self._session = session
-        if time.time() - config.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
+        if time.time() - config_data.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
             # expired
             cookie: Optional["Morsel[str]"] = None
         else:
             tmp = SimpleCookie()  # type: ignore
-            tmp["NEURO_SESSION"] = config.cookie_session.cookie
+            tmp["NEURO_SESSION"] = config_data.cookie_session.cookie
             cookie = tmp["NEURO_SESSION"]
-            assert config.url.raw_host is not None
-            cookie["domain"] = config.url.raw_host
+            assert config_data.url.raw_host is not None
+            cookie["domain"] = config_data.url.raw_host
             cookie["path"] = "/"
         self._core = _Core(
             session, self._config.url, self._config.auth_token.token, cookie, trace_id

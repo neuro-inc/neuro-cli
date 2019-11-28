@@ -19,7 +19,7 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api import Preset
+from neuromation.api import ClusterConfig, Preset
 from neuromation.api.login import (
     AuthCode,
     AuthException,
@@ -32,7 +32,6 @@ from neuromation.api.login import (
     create_app_server_once,
     create_auth_code_app,
 )
-from neuromation.api.server_cfg import _ClusterConfig
 from tests import _TestServerFactory
 
 
@@ -477,7 +476,7 @@ class TestAuthConfig:
 
 class TestClusterConfig:
     def test_is_initialized(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = ClusterConfig.create(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
@@ -487,7 +486,7 @@ class TestClusterConfig:
         assert cluster_config.is_initialized() is True
 
     def test_is_initialized__no_registry_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = ClusterConfig.create(
             registry_url=URL(),
             storage_url=URL("value"),
             users_url=URL("value"),
@@ -497,7 +496,7 @@ class TestClusterConfig:
         assert cluster_config.is_initialized() is False
 
     def test_is_initialized__no_storage_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = ClusterConfig.create(
             registry_url=URL("value"),
             storage_url=URL(),
             users_url=URL("value"),
@@ -507,7 +506,7 @@ class TestClusterConfig:
         assert cluster_config.is_initialized() is False
 
     def test_is_initialized__no_users_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = ClusterConfig.create(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL(),
@@ -517,7 +516,7 @@ class TestClusterConfig:
         assert cluster_config.is_initialized() is False
 
     def test_is_initialized__no_monitoring_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = ClusterConfig.create(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
@@ -527,7 +526,7 @@ class TestClusterConfig:
         assert cluster_config.is_initialized() is False
 
     def test_is_initialized__no_resource_presets(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = ClusterConfig.create(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
