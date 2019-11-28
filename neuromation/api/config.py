@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from typing import Any, Dict, Mapping, Optional, Sequence
 
@@ -8,7 +8,7 @@ from yarl import URL
 
 from .core import _Core
 from .login import _AuthConfig, _AuthToken
-from .server_cfg import ClusterConfig
+from .server_cfg import ClusterConfig, get_server_config
 from .utils import NoPublicConstructor
 
 
@@ -146,7 +146,12 @@ class Config(metaclass=NoPublicConstructor):
         return name
 
     async def fetch(self) -> None:
-        pass
+        server_config = await get_server_config(
+            self._core._session,
+            self._config_data.url,
+            self._config_data.auth_token.token,
+        )
+        self._config_data = replace(self._config_data, clusters=server_config.clusters)
 
     async def switch_cluster(self, name: str) -> None:
         pass
