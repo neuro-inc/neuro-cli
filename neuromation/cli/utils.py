@@ -39,6 +39,7 @@ from neuromation.api import (
     JobDescription,
     LocalImage,
     RemoteImage,
+    TagOption,
     Volume,
 )
 from neuromation.api.config import _CookieSession, _PyPIVersion
@@ -480,7 +481,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """
     if uri.startswith("image:"):
         parser = _ImageNameParser(root.username, root.registry_url)
-        image = parser.parse_as_neuro_image(uri, allow_tag=False)
+        image = parser.parse_as_neuro_image(uri, tag_option=TagOption.DENY)
         uri = str(image)
 
     return uri_from_cli(uri, root.username, allowed_schemes=("storage", "image", "job"))
@@ -551,7 +552,7 @@ class RemoteTaglessImageType(click.ParamType):
         image_parser = _ImageNameParser(
             config.auth_token.username, config.cluster_config.registry_url
         )
-        return image_parser.parse_as_neuro_image(value, allow_tag=False)
+        return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)
 
 
 class LocalRemotePortParamType(click.ParamType):

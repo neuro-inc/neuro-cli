@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from yarl import URL
 
 from .config import _Config
-from .parsing_utils import LocalImage, RemoteImage, _ImageNameParser
+from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
 from .url_utils import normalize_storage_path_uri
 from .utils import NoPublicConstructor
 
@@ -46,9 +46,25 @@ class Parser(metaclass=NoPublicConstructor):
         )
         return parser.parse_as_local_image(image)
 
-    def remote_image(self, image: str) -> RemoteImage:
+    def remote_image(
+        self, image: str, *, tag_option: TagOption = TagOption.DEFAULT
+    ) -> RemoteImage:
         parser = _ImageNameParser(
             self._config_data.auth_token.username,
             self._config_data.cluster_config.registry_url,
         )
-        return parser.parse_remote(image)
+        return parser.parse_remote(image, tag_option=tag_option)
+
+    def _local_to_remote_image(self, image: LocalImage) -> RemoteImage:
+        parser = _ImageNameParser(
+            self._config_data.auth_token.username,
+            self._config_data.cluster_config.registry_url,
+        )
+        return parser.convert_to_neuro_image(image)
+
+    def _remote_to_local_image(self, image: RemoteImage) -> LocalImage:
+        parser = _ImageNameParser(
+            self._config_data.auth_token.username,
+            self._config_data.cluster_config.registry_url,
+        )
+        return parser.convert_to_local_image(image)

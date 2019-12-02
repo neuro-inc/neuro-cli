@@ -108,7 +108,7 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images._create(self._core, self._config_data)
+            self._images = Images._create(self._core, self._config, self._parser)
         return self._images
 
     @property

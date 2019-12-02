@@ -47,7 +47,7 @@ from .jobs import (
     Resources,
     Volume,
 )
-from .parsing_utils import LocalImage, RemoteImage
+from .parsing_utils import LocalImage, RemoteImage, TagOption
 from .server_cfg import ClusterConfig
 from .storage import FileStatus, FileStatusType
 from .tracing import gen_trace_id
@@ -94,6 +94,7 @@ __all__ = (
     "ImageProgressPull",
     "ImageProgressPush",
     "ImageProgressStep",
+    "TagOption",
     "RemoteImage",
     "LocalImage",
     "Factory",
