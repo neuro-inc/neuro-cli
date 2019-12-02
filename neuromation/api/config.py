@@ -1,3 +1,4 @@
+import base64
 from dataclasses import dataclass, replace
 from datetime import date
 from types import MappingProxyType
@@ -192,3 +193,17 @@ class Config(metaclass=NoPublicConstructor):
     def _token(self) -> str:
         # INTERNAL API
         return self._config_data.auth_token.token
+
+    @property
+    def _api_auth(self) -> str:
+        return f"Bearer {self._token}"
+
+    @property
+    def _docker_auth(self) -> Dict[str, str]:
+        return {"username": "token", "password": self._token}
+
+    @property
+    def _registry_auth(self) -> str:
+        return "Basic " + base64.b64encode(
+            f"{self.username}:{self._token}".encode("ascii")
+        ).decode("ascii")

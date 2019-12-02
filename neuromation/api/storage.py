@@ -126,7 +126,7 @@ class Storage(metaclass=NoPublicConstructor):
         url = url.with_query(op="LISTSTATUS")
 
         request_time = time.time()
-        async with self._core.request("GET", url) as resp:
+        async with self._core.request("GET", url, auth=self._config._api_auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
             return [
@@ -220,7 +220,7 @@ class Storage(metaclass=NoPublicConstructor):
         url = self._config._storage_url / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
 
-        async with self._core.request("PUT", url) as resp:
+        async with self._core.request("PUT", url, auth=self._config._api_auth) as resp:
             resp  # resp.status == 201
 
     async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
@@ -230,7 +230,9 @@ class Storage(metaclass=NoPublicConstructor):
         url = url.with_query(op="CREATE")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
 
-        async with self._core.request("PUT", url, data=data, timeout=timeout) as resp:
+        async with self._core.request(
+            "PUT", url, data=data, timeout=timeout, auth=self._config._api_auth
+        ) as resp:
             resp  # resp.status == 201
 
     async def stat(self, uri: URL) -> FileStatus:
@@ -238,7 +240,7 @@ class Storage(metaclass=NoPublicConstructor):
         url = url.with_query(op="GETFILESTATUS")
 
         request_time = time.time()
-        async with self._core.request("GET", url) as resp:
+        async with self._core.request("GET", url, auth=self._config._api_auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
             return _file_status_from_api(res["FileStatus"])
@@ -248,7 +250,9 @@ class Storage(metaclass=NoPublicConstructor):
         url = url.with_query(op="OPEN")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
 
-        async with self._core.request("GET", url, timeout=timeout) as resp:
+        async with self._core.request(
+            "GET", url, timeout=timeout, auth=self._config._api_auth
+        ) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
@@ -275,14 +279,16 @@ class Storage(metaclass=NoPublicConstructor):
         url = self._config._storage_url / path
         url = url.with_query(op="DELETE")
 
-        async with self._core.request("DELETE", url) as resp:
+        async with self._core.request(
+            "DELETE", url, auth=self._config._api_auth
+        ) as resp:
             resp  # resp.status == 204
 
     async def mv(self, src: URL, dst: URL) -> None:
         url = self._config._storage_url / self._uri_to_path(src)
         url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
 
-        async with self._core.request("POST", url) as resp:
+        async with self._core.request("POST", url, auth=self._config._api_auth) as resp:
             resp  # resp.status == 204
 
     # high-level helpers

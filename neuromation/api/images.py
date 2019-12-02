@@ -1,4 +1,3 @@
-import base64
 import contextlib
 import re
 from dataclasses import replace
@@ -33,11 +32,6 @@ class Images(metaclass=NoPublicConstructor):
         self.__docker: Optional[aiodocker.Docker] = None
         self._registry_url = self._config._registry_url.with_path("/v2/")
 
-    def _auth(self) -> str:
-        return "Basic " + base64.b64encode(
-            f"{self._config.username}:{self._config._token}".encode("ascii")
-        ).decode("ascii")
-
     @property
     def _docker(self) -> aiodocker.Docker:
         if not self.__docker:
@@ -66,9 +60,6 @@ class Images(metaclass=NoPublicConstructor):
         if self.__docker is not None:
             await self.__docker.close()
 
-    def _docker_auth(self) -> Dict[str, str]:
-        return {"username": "token", "password": self._config._token}
-
     async def push(
         self,
         local: LocalImage,
@@ -93,7 +84,7 @@ class Images(metaclass=NoPublicConstructor):
                 ) from error
         try:
             async for obj in self._docker.images.push(
-                repo, auth=self._docker_auth(), stream=True
+                repo, auth=self._config._docker_auth, stream=True
             ):
                 step = _try_parse_image_progress_step(obj, remote.tag)
                 if step:
@@ -122,7 +113,7 @@ class Images(metaclass=NoPublicConstructor):
         repo = _as_repo_str(remote)
         try:
             async for obj in self._docker.pull(
-                repo, auth=self._docker_auth(), repo=repo, stream=True
+                repo, auth=self._config._docker_auth, repo=repo, stream=True
             ):
                 self._temporary_images.add(repo)
                 step = _try_parse_image_progress_step(obj, remote.tag)
@@ -144,7 +135,7 @@ class Images(metaclass=NoPublicConstructor):
 
     async def ls(self) -> List[RemoteImage]:
         async with self._core.request(
-            "GET", self._registry_url / "_catalog", auth=self._auth()
+            "GET", self._registry_url / "_catalog", auth=self._config._registry_auth
         ) as resp:
             ret = await resp.json()
             prefix = "image://"
@@ -168,7 +159,9 @@ class Images(metaclass=NoPublicConstructor):
         self._validate_image_for_tags(image)
         name = f"{image.owner}/{image.name}"
         async with self._core.request(
-            "GET", self._registry_url / name / "tags" / "list", auth=self._auth()
+            "GET",
+            self._registry_url / name / "tags" / "list",
+            auth=self._config._registry_auth,
         ) as resp:
             ret = await resp.json()
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]

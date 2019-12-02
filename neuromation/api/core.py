@@ -56,13 +56,10 @@ class _Core:
     def __init__(
         self,
         session: aiohttp.ClientSession,
-        token: str,
         cookie: Optional["Morsel[str]"],
         trace_id: Optional[str],
     ) -> None:
-        assert token is not None
         self._session = session
-        self._token = token
         self._trace_id = trace_id
         if cookie is not None:
             self._session.cookie_jar.update_cookies(
@@ -90,16 +87,13 @@ class _Core:
     async def close(self) -> None:
         pass
 
-    def _default_auth(self) -> str:
-        return f"Bearer {self._token}"
-
     @asynccontextmanager
     async def request(
         self,
         method: str,
         url: URL,
         *,
-        auth: Optional[str] = None,
+        auth: str,
         params: Optional[Mapping[str, str]] = None,
         data: Any = None,
         json: Any = None,
@@ -112,10 +106,7 @@ class _Core:
             real_headers = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
-        if auth is not None:
-            real_headers["Authorization"] = auth
-        else:
-            real_headers["Authorization"] = self._default_auth()
+        real_headers["Authorization"] = auth
         trace_request_ctx = SimpleNamespace()
         trace_id = self._trace_id
         if trace_id is None:
@@ -149,7 +140,7 @@ class _Core:
                 yield resp
 
     async def ws_connect(
-        self, abs_url: URL, *, headers: Optional[Dict[str, str]] = None
+        self, abs_url: URL, auth: str, *, headers: Optional[Dict[str, str]] = None
     ) -> AsyncIterator[WSMessage]:
         # TODO: timeout
         assert abs_url.is_absolute(), abs_url
@@ -159,7 +150,7 @@ class _Core:
             real_headers = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
-        real_headers["Authorization"] = self._default_auth()
+        real_headers["Authorization"] = auth
 
         async with self._session.ws_connect(abs_url, headers=real_headers) as ws:
             async for msg in ws:

@@ -35,7 +35,7 @@ async def api_factory() -> AsyncIterator[_ApiFactory]:
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         session = aiohttp.ClientSession(connector=connector)
-        api = _Core(session, "token", cookie, "bd7a977555f6b982")
+        api = _Core(session, cookie, "bd7a977555f6b982")
         yield api
         await api.close()
         await session.close()
@@ -60,8 +60,8 @@ async def test_relative_url(
     async with api_factory(srv.make_url("/"), None) as api:
         relative_url = URL("test")
         with pytest.raises(AssertionError):
-            async with api.request(method="GET", url=relative_url) as resp:
-                pass
+            async with api.request(method="GET", url=relative_url, auth="auth") as resp:
+                resp
     assert not called
 
 
@@ -77,7 +77,7 @@ async def test_absolute_url(
 
     async with api_factory(srv.make_url("/"), None) as api:
         absolute_url = srv.make_url("test")
-        async with api.request(method="GET", url=absolute_url) as resp:
+        async with api.request(method="GET", url=absolute_url, auth="auth") as resp:
             assert resp.status == 200
 
 
@@ -93,7 +93,7 @@ async def test_raise_for_status_no_error_message(
 
     async with api_factory(srv.make_url("/"), None) as api:
         with pytest.raises(IllegalArgumentError, match="^400: Bad Request$"):
-            async with api.request(method="GET", url=srv.make_url("test")):
+            async with api.request(method="GET", url=srv.make_url("test"), auth="auth"):
                 pass
 
 
@@ -111,7 +111,7 @@ async def test_raise_for_status_contains_error_message(
 
     async with api_factory(srv.make_url("/"), None) as api:
         with pytest.raises(IllegalArgumentError, match=f"^{ERROR_MSG}$"):
-            async with api.request(method="GET", url=srv.make_url("test")):
+            async with api.request(method="GET", url=srv.make_url("test"), auth="auth"):
                 pass
 
 
@@ -130,7 +130,9 @@ async def test_pass_cookie(
     tmp["NEURO_SESSION"] = "cookie_value"
     cookie = tmp["NEURO_SESSION"]
     async with api_factory(srv.make_url("/"), cookie) as api:
-        async with api.request(method="GET", url=srv.make_url("/test")) as resp:
+        async with api.request(
+            method="GET", url=srv.make_url("/test"), auth="auth"
+        ) as resp:
             assert resp.status == 200
 
 
@@ -147,5 +149,5 @@ async def test_server_bad_gateway(
     async with api_factory(srv.make_url("/"), None) as api:
         url = srv.make_url("test")
         with pytest.raises(ServerNotAvailable, match="^502: Bad Gateway$"):
-            async with api.request(method="GET", url=url) as resp:
+            async with api.request(method="GET", url=url, auth="auth") as resp:
                 assert resp.status == 200

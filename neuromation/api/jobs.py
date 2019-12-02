@@ -154,7 +154,9 @@ class Jobs(metaclass=NoPublicConstructor):
         except AssertionError:
             # transition period, no the current cluster selected
             pass
-        async with self._core.request("POST", url, json=payload) as resp:
+        async with self._core.request(
+            "POST", url, json=payload, auth=self._config._api_auth
+        ) as resp:
             res = await resp.json()
             return _job_description_from_api(res, self._parse)
 
@@ -178,13 +180,15 @@ class Jobs(metaclass=NoPublicConstructor):
         except AssertionError:
             # transition period, no the current cluster selected
             pass
-        async with self._core.request("GET", url, params=params) as resp:
+        async with self._core.request(
+            "GET", url, params=params, auth=self._config._api_auth
+        ) as resp:
             ret = await resp.json()
             return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = self._config._api_url / "jobs" / id
-        async with self._core.request("DELETE", url):
+        async with self._core.request("DELETE", url, auth=self._config._api_auth):
             # an error is raised for status >= 400
             return None  # 201 status code
 
@@ -192,14 +196,18 @@ class Jobs(metaclass=NoPublicConstructor):
         url = self._config._monitoring_url / id / "log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
-            "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
+            "GET",
+            url,
+            headers={"Accept-Encoding": "identity"},
+            timeout=timeout,
+            auth=self._config._api_auth,
         ) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
     async def status(self, id: str) -> JobDescription:
         url = self._config._api_url / "jobs" / id
-        async with self._core.request("GET", url) as resp:
+        async with self._core.request("GET", url, auth=self._config._api_auth) as resp:
             ret = await resp.json()
             return _job_description_from_api(ret, self._parse)
 
@@ -207,7 +215,7 @@ class Jobs(metaclass=NoPublicConstructor):
         url = self._config._monitoring_url / id / "top"
         try:
             received_any = False
-            async for resp in self._core.ws_connect(url):
+            async for resp in self._core.ws_connect(url, self._config._api_auth):
                 yield _job_telemetry_from_api(resp.json())
                 received_any = True
             if not received_any:
@@ -236,7 +244,7 @@ class Jobs(metaclass=NoPublicConstructor):
         # `self._code.request` implicitly sets `total=3 * 60`
         # unless `sock_read is None`
         async with self._core.request(
-            "POST", url, json=payload, timeout=timeout
+            "POST", url, json=payload, timeout=timeout, auth=self._config._api_auth
         ) as resp:
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))

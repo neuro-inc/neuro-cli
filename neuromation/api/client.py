@@ -44,9 +44,7 @@ class Client(metaclass=NoPublicConstructor):
             assert config_data.url.raw_host is not None
             cookie["domain"] = config_data.url.raw_host
             cookie["path"] = "/"
-        self._core = _Core(
-            session, self._config_data.auth_token.token, cookie, trace_id,
-        )
+        self._core = _Core(session, cookie, trace_id,)
         self._config = Config._create(self._core, self._config_data)
         self._parser = Parser._create(self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)

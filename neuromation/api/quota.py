@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from yarl import URL
-
 from neuromation.api.config import Config
 from neuromation.api.core import _Core
 from neuromation.api.utils import NoPublicConstructor
@@ -38,7 +36,7 @@ class _Quota(metaclass=NoPublicConstructor):
     async def get(self, user: Optional[str] = None) -> _QuotaInfo:
         user = user or self._config.username
         url = self._config._api_url / "stats" / "users" / user
-        async with self._core.request("GET", url) as resp:
+        async with self._core.request("GET", url, auth=self._config._api_auth) as resp:
             res = await resp.json()
             return _quota_info_from_api(res)
 
