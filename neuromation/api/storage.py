@@ -122,7 +122,7 @@ class Storage(metaclass=NoPublicConstructor):
         )
 
     async def ls(self, uri: URL) -> List[FileStatus]:
-        url = self._config._storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
         request_time = time.time()
@@ -217,7 +217,7 @@ class Storage(metaclass=NoPublicConstructor):
                         errno.ENOENT, "No such directory", str(parent)
                     )
 
-        url = self._config._storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
 
         async with self._core.request("PUT", url, auth=self._config._api_auth) as resp:
@@ -226,7 +226,7 @@ class Storage(metaclass=NoPublicConstructor):
     async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
         path = self._uri_to_path(uri)
         assert path, "Creation in root is not allowed"
-        url = self._config._storage_url / path
+        url = self._config.storage_url / path
         url = url.with_query(op="CREATE")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
 
@@ -236,7 +236,7 @@ class Storage(metaclass=NoPublicConstructor):
             resp  # resp.status == 201
 
     async def stat(self, uri: URL) -> FileStatus:
-        url = self._config._storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
 
         request_time = time.time()
@@ -246,7 +246,7 @@ class Storage(metaclass=NoPublicConstructor):
             return _file_status_from_api(res["FileStatus"])
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
-        url = self._config._storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
 
@@ -276,7 +276,7 @@ class Storage(metaclass=NoPublicConstructor):
                     errno.EISDIR, "Is a directory, use recursive remove", str(uri)
                 )
 
-        url = self._config._storage_url / path
+        url = self._config.storage_url / path
         url = url.with_query(op="DELETE")
 
         async with self._core.request(
@@ -285,7 +285,7 @@ class Storage(metaclass=NoPublicConstructor):
             resp  # resp.status == 204
 
     async def mv(self, src: URL, dst: URL) -> None:
-        url = self._config._storage_url / self._uri_to_path(src)
+        url = self._config.storage_url / self._uri_to_path(src)
         url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
 
         async with self._core.request("POST", url, auth=self._config._api_auth) as resp:

@@ -10,7 +10,12 @@ from yarl import URL
 
 from .core import _Core
 from .login import _AuthConfig, _AuthToken
-from .server_cfg import ClusterConfig, Preset, get_server_config
+from .server_cfg import (
+    ClusterConfig,
+    Preset,
+    _is_cluster_config_initialized,
+    get_server_config,
+)
 from .utils import NoPublicConstructor
 
 
@@ -115,9 +120,8 @@ class _Config:
     clusters: Optional[Sequence[ClusterConfig]] = None
 
     def check_initialized(self) -> None:
-        if (
-            not self.auth_config.is_initialized()
-            or not self.cluster_config.is_initialized()
+        if not self.auth_config.is_initialized() or not _is_cluster_config_initialized(
+            self.cluster_config
         ):
             raise ValueError("Missing server configuration, need to login")
 
@@ -170,40 +174,35 @@ class Config(metaclass=NoPublicConstructor):
         pass
 
     @property
-    def _api_url(self) -> URL:
-        # INTERNAL API
+    def api_url(self) -> URL:
         return self._config_data.url
 
     @property
-    def _monitoring_url(self) -> URL:
-        # INTERNAL API
+    def monitoring_url(self) -> URL:
         return self._config_data.cluster_config.monitoring_url
 
     @property
-    def _storage_url(self) -> URL:
-        # INTERNAL API
+    def storage_url(self) -> URL:
         return self._config_data.cluster_config.storage_url
 
     @property
-    def _registry_url(self) -> URL:
-        # INTERNAL API
+    def registry_url(self) -> URL:
         return self._config_data.cluster_config.registry_url
 
     @property
-    def _token(self) -> str:
-        # INTERNAL API
+    def token(self) -> str:
         return self._config_data.auth_token.token
 
     @property
     def _api_auth(self) -> str:
-        return f"Bearer {self._token}"
+        return f"Bearer {self.token}"
 
     @property
     def _docker_auth(self) -> Dict[str, str]:
-        return {"username": "token", "password": self._token}
+        return {"username": "token", "password": self.token}
 
     @property
     def _registry_auth(self) -> str:
         return "Basic " + base64.b64encode(
-            f"{self.username}:{self._token}".encode("ascii")
+            f"{self.username}:{self.token}".encode("ascii")
         ).decode("ascii")

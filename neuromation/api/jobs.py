@@ -138,7 +138,7 @@ class Jobs(metaclass=NoPublicConstructor):
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
     ) -> JobDescription:
-        url = self._config._api_url / "jobs"
+        url = self._config.api_url / "jobs"
         payload: Dict[str, Any] = {
             "container": _container_to_api(container),
             "is_preemptible": is_preemptible,
@@ -167,7 +167,7 @@ class Jobs(metaclass=NoPublicConstructor):
         name: str = "",
         owners: Iterable[str] = (),
     ) -> List[JobDescription]:
-        url = self._config._api_url / "jobs"
+        url = self._config.api_url / "jobs"
         params: MultiDict[str] = MultiDict()
         for status in statuses:
             params.add("status", status.value)
@@ -187,13 +187,13 @@ class Jobs(metaclass=NoPublicConstructor):
             return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
-        url = self._config._api_url / "jobs" / id
+        url = self._config.api_url / "jobs" / id
         async with self._core.request("DELETE", url, auth=self._config._api_auth):
             # an error is raised for status >= 400
             return None  # 201 status code
 
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
-        url = self._config._monitoring_url / id / "log"
+        url = self._config.monitoring_url / id / "log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request(
             "GET",
@@ -206,13 +206,13 @@ class Jobs(metaclass=NoPublicConstructor):
                 yield data
 
     async def status(self, id: str) -> JobDescription:
-        url = self._config._api_url / "jobs" / id
+        url = self._config.api_url / "jobs" / id
         async with self._core.request("GET", url, auth=self._config._api_auth) as resp:
             ret = await resp.json()
             return _job_description_from_api(ret, self._parse)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
-        url = self._config._monitoring_url / id / "top"
+        url = self._config.monitoring_url / id / "top"
         try:
             received_any = False
             async for resp in self._core.ws_connect(url, self._config._api_auth):
@@ -238,7 +238,7 @@ class Jobs(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
 
         payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config._monitoring_url / id / "save"
+        url = self._config.monitoring_url / id / "save"
 
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         # `self._code.request` implicitly sets `total=3 * 60`
@@ -284,7 +284,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_exec",
-                "token": self._config._token,
+                "token": self._config.token,
                 "params": {"job": id, "command": list(cmd)},
             }
         )
@@ -337,7 +337,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._config._token,
+                "token": self._config.token,
                 "params": {"job": id, "port": job_port},
             }
         )

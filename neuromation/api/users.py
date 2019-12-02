@@ -36,7 +36,7 @@ class Users(metaclass=NoPublicConstructor):
     async def get_acl(
         self, user: str, scheme: Optional[str] = None
     ) -> Sequence[Permission]:
-        url = self._config._api_url / "users" / user / "permissions"
+        url = self._config.api_url / "users" / user / "permissions"
         params = {"scheme": scheme} if scheme else {}
         async with self._core.request(
             "GET", url, params=params, auth=self._config._api_auth
@@ -52,7 +52,7 @@ class Users(metaclass=NoPublicConstructor):
     async def get_shares(
         self, user: str, scheme: Optional[str] = None
     ) -> Sequence[Share]:
-        url = self._config._api_url / "users" / user / "permissions" / "shared"
+        url = self._config.api_url / "users" / user / "permissions" / "shared"
         params = {"scheme": scheme} if scheme else {}
         async with self._core.request(
             "GET", url, params=params, auth=self._config._api_auth
@@ -66,7 +66,7 @@ class Users(metaclass=NoPublicConstructor):
         return ret
 
     async def share(self, user: str, permission: Permission) -> None:
-        url = self._config._api_url / "users" / user / "permissions"
+        url = self._config.api_url / "users" / user / "permissions"
         payload = [_permission_to_api(permission)]
         async with self._core.request(
             "POST", url, json=payload, auth=self._config._api_auth
@@ -78,7 +78,7 @@ class Users(metaclass=NoPublicConstructor):
         return None
 
     async def revoke(self, user: str, uri: URL) -> None:
-        url = self._config._api_url / "users" / user / "permissions"
+        url = self._config.api_url / "users" / user / "permissions"
         async with self._core.request(
             "DELETE", url, params={"uri": str(uri)}, auth=self._config._api_auth
         ) as resp:

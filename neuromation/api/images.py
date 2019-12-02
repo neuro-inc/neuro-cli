@@ -30,7 +30,7 @@ class Images(metaclass=NoPublicConstructor):
         self._parse = parse
         self._temporary_images: Set[str] = set()
         self.__docker: Optional[aiodocker.Docker] = None
-        self._registry_url = self._config._registry_url.with_path("/v2/")
+        self._registry_url = self._config.registry_url.with_path("/v2/")
 
     @property
     def _docker(self) -> aiodocker.Docker:

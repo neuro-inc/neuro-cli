@@ -32,6 +32,7 @@ from neuromation.api.login import (
     create_app_server_once,
     create_auth_code_app,
 )
+from neuromation.api.server_cfg import _is_cluster_config_initialized
 from tests import _TestServerFactory
 
 
@@ -483,7 +484,7 @@ class TestClusterConfig:
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert cluster_config.is_initialized() is True
+        assert _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_registry_url(self) -> None:
         cluster_config = ClusterConfig.create(
@@ -493,7 +494,7 @@ class TestClusterConfig:
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_storage_url(self) -> None:
         cluster_config = ClusterConfig.create(
@@ -503,7 +504,7 @@ class TestClusterConfig:
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_users_url(self) -> None:
         cluster_config = ClusterConfig.create(
@@ -513,7 +514,7 @@ class TestClusterConfig:
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_monitoring_url(self) -> None:
         cluster_config = ClusterConfig.create(
@@ -523,7 +524,7 @@ class TestClusterConfig:
             monitoring_url=URL(),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_resource_presets(self) -> None:
         cluster_config = ClusterConfig.create(
@@ -533,7 +534,7 @@ class TestClusterConfig:
             monitoring_url=URL("value"),
             resource_presets={},
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
 
 class TestAuthNegotiator:

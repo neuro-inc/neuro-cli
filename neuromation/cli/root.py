@@ -10,9 +10,9 @@ import aiohttp
 import click
 from yarl import URL
 
-from neuromation.api import Client, Factory, Preset, gen_trace_id
+from neuromation.api import Client, ConfigError, Factory, Preset, gen_trace_id
 from neuromation.api.config import _Config
-from neuromation.api.config_factory import ConfigError
+from neuromation.api.server_cfg import _is_cluster_config_initialized
 
 
 log = logging.getLogger(__name__)
@@ -81,13 +81,17 @@ class Root:
 
     @property
     def registry_url(self) -> URL:
-        if self._client is None or not self._config.cluster_config.is_initialized():
+        if self._client is None or not _is_cluster_config_initialized(
+            self._config.cluster_config
+        ):
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.registry_url
 
     @property
     def resource_presets(self) -> Mapping[str, Preset]:
-        if self._client is None or not self._config.cluster_config.is_initialized():
+        if self._client is None or not _is_cluster_config_initialized(
+            self._config.cluster_config
+        ):
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.resource_presets
 

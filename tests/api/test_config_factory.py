@@ -23,6 +23,7 @@ from neuromation.api.config import (
     _PyPIVersion,
 )
 from neuromation.api.login import AuthException
+from neuromation.api.server_cfg import _is_cluster_config_initialized
 from tests import _TestServerFactory
 
 
@@ -331,7 +332,7 @@ class TestLogin:
         assert Path(nmrc_path).exists(), "Config file not written after login "
         saved_config = Factory(nmrc_path)._read()
         assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
+        assert _is_cluster_config_initialized(saved_config.cluster_config)
 
 
 class TestLoginWithToken:
@@ -349,7 +350,7 @@ class TestLoginWithToken:
         assert Path(nmrc_path).exists(), "Config file not written after login "
         saved_config = Factory(nmrc_path)._read()
         assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
+        assert _is_cluster_config_initialized(saved_config.cluster_config)
 
     async def test_incorrect_token(
         self, tmp_home: Path, mock_for_login: _TestServer
@@ -394,7 +395,7 @@ class TestHeadlessLogin:
         assert Path(nmrc_path).exists(), "Config file not written after login "
         saved_config = Factory(nmrc_path)._read()
         assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
+        assert _is_cluster_config_initialized(saved_config.cluster_config)
 
 
 class TestLogout:

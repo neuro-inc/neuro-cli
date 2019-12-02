@@ -46,14 +46,15 @@ class ClusterConfig:
             name=name,
         )
 
-    def is_initialized(self) -> bool:
-        return bool(
-            self.registry_url
-            and self.storage_url
-            and self.users_url
-            and self.monitoring_url
-            and self.resource_presets
-        )
+
+def _is_cluster_config_initialized(cfg: ClusterConfig) -> bool:
+    return bool(
+        cfg.registry_url
+        and cfg.storage_url
+        and cfg.users_url
+        and cfg.monitoring_url
+        and cfg.resource_presets
+    )
 
 
 @dataclass(frozen=True)
@@ -130,7 +131,7 @@ async def get_server_config(
         )
         cluster_config = _parse_cluster_config(payload)
         clusters = [_parse_cluster_config(item) for item in payload.get("clusters", [])]
-        if headers and not cluster_config.is_initialized():
+        if headers and not _is_cluster_config_initialized(cluster_config):
             raise AuthException("Cannot authorize user")
         return _ServerConfig(
             cluster_config=cluster_config, auth_config=auth_config, clusters=clusters

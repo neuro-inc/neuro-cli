@@ -3,31 +3,29 @@ from typing import Iterable, Iterator, List, Mapping, Optional
 
 from click import style
 
-from neuromation.api import ClusterConfig, Preset
+from neuromation.api import Client, ClusterConfig, Preset
 from neuromation.api.quota import _QuotaInfo
-from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
 from .ftable import Align, table
 
 
 class ConfigFormatter:
-    def __call__(self, root: Root) -> str:
+    def __call__(self, client: Client) -> str:
+        config = client.config
         lines = []
-        lines.append(style("User Name", bold=True) + f": {root.username}")
-        lines.append(style("Current Cluster", bold=True) + f": {root.cluster_name}")
-        lines.append(style("API URL", bold=True) + f": {root.url}")
-        lines.append(style("Docker Registry URL", bold=True) + f": {root.registry_url}")
-        lines.append(style("Resource Presets", bold=True) + f":")
-        indent: str = "  "
-        return (
-            style("User Configuration", bold=True)
-            + ":\n"
-            + indent
-            + f"\n{indent}".join(lines)
-            + "\n"
-            + f"\n".join(_format_presets(root.resource_presets, "    "))
+        lines.append(style("User Configuration", bold=True) + ":")
+        lines.append("  " + style("User Name", bold=True) + f": {config.username}")
+        lines.append(
+            "  " + style("Current Cluster", bold=True) + f": {config.cluster_name}"
         )
+        lines.append("  " + style("API URL", bold=True) + f": {config.api_url}")
+        lines.append(
+            "  " + style("Docker Registry URL", bold=True) + f": {config.registry_url}"
+        )
+        lines.append("  " + style("Resource Presets", bold=True) + f":")
+        lines.extend(_format_presets(config.presets, "    "))
+        return "\n".join(lines)
 
 
 class QuotaInfoFormatter:

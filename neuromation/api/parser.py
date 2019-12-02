@@ -40,19 +40,19 @@ class Parser(metaclass=NoPublicConstructor):
         )
 
     def local_image(self, image: str) -> LocalImage:
-        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
+        parser = _ImageNameParser(self._config.username, self._config.registry_url,)
         return parser.parse_as_local_image(image)
 
     def remote_image(
         self, image: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
-        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
+        parser = _ImageNameParser(self._config.username, self._config.registry_url,)
         return parser.parse_remote(image, tag_option=tag_option)
 
     def _local_to_remote_image(self, image: LocalImage) -> RemoteImage:
-        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
+        parser = _ImageNameParser(self._config.username, self._config.registry_url,)
         return parser.convert_to_neuro_image(image)
 
     def _remote_to_local_image(self, image: RemoteImage) -> LocalImage:
-        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
+        parser = _ImageNameParser(self._config.username, self._config.registry_url,)
         return parser.convert_to_local_image(image)

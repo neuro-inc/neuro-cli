@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 import aiohttp
 import pytest
@@ -66,25 +66,27 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
         url_str: str,
         registry_url: str = "https://registry-dev.neu.ro",
         trace_id: str = "bd7a977555f6b982",
+        cluster_config: Optional[ClusterConfig] = None,
     ) -> Client:
         url = URL(url_str)
-        cluster_config = ClusterConfig(
-            registry_url=URL(registry_url),
-            monitoring_url=(url / "jobs"),
-            storage_url=(url / "storage"),
-            users_url=url,
-            resource_presets={
-                "gpu-small": Preset(
-                    cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
-                ),
-                "gpu-large": Preset(
-                    cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
-                ),
-                "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
-                "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
-            },
-            name="default",
-        )
+        if cluster_config is None:
+            cluster_config = ClusterConfig(
+                registry_url=URL(registry_url),
+                monitoring_url=(url / "jobs"),
+                storage_url=(url / "storage"),
+                users_url=url,
+                resource_presets={
+                    "gpu-small": Preset(
+                        cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                    ),
+                    "gpu-large": Preset(
+                        cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                    ),
+                    "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
+                    "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
+                },
+                name="default",
+            )
         config = _Config(
             auth_config=auth_config,
             auth_token=_AuthToken.create_non_expiring(token),

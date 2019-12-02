@@ -37,7 +37,7 @@ async def show(root: Root) -> None:
     Print current settings.
     """
     fmt = ConfigFormatter()
-    click.echo(fmt(root))
+    click.echo(fmt(root.client))
 
 
 @command()
@@ -46,7 +46,7 @@ async def show_token(root: Root) -> None:
     """
     Print current authorization token.
     """
-    click.echo(root.auth)
+    click.echo(root.client.config.token)
 
 
 @command()

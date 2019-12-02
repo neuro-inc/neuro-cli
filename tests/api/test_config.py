@@ -10,6 +10,7 @@ from neuromation.api.config import (
     _CookieSession,
     _PyPIVersion,
 )
+from neuromation.api.server_cfg import _is_cluster_config_initialized
 
 
 class TestConfig:
@@ -30,7 +31,7 @@ class TestConfig:
             monitoring_url=URL("http://value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert cluster_config_good.is_initialized()
+        assert _is_cluster_config_initialized(cluster_config_good)
 
         config = _Config(
             auth_config=auth_config_good,
@@ -68,7 +69,7 @@ class TestConfig:
             monitoring_url=URL("http://value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert cluster_config_good.is_initialized()
+        assert _is_cluster_config_initialized(cluster_config_good)
 
         config = _Config(
             auth_config=auth_config_bad,
@@ -107,7 +108,7 @@ class TestConfig:
             monitoring_url=URL("http://value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
         )
-        assert not cluster_config_good.is_initialized()
+        assert not _is_cluster_config_initialized(cluster_config_good)
 
         config = _Config(
             auth_config=auth_config_bad,
