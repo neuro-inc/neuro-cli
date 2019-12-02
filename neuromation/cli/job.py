@@ -510,7 +510,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width, root.username)
+        formatter = TabularJobsFormatter(width, root.client.username)
 
     pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 
@@ -759,8 +759,8 @@ async def run(
     neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
     """
     if not preset:
-        preset = next(iter(root.resource_presets.keys()))
-    job_preset = root.resource_presets[preset]
+        preset = next(iter(root.client.config.presets.keys()))
+    job_preset = root.client.config.presets[preset]
     if preemptible is not None:
         click.echo(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
@@ -951,7 +951,9 @@ async def _build_volumes(
             raise click.UsageError(
                 f"Cannot use `--volume=ALL` together with other `--volume` options"
             )
-        available = await root.client.users.get_acl(root.username, scheme="storage")
+        available = await root.client.users.get_acl(
+            root.client.username, scheme="storage"
+        )
         volumes.update(
             Volume(
                 storage_uri=perm.uri,
@@ -960,7 +962,7 @@ async def _build_volumes(
             )
             for perm in available
         )
-        neuro_mountpoint = _get_neuro_mountpoint(root.username)
+        neuro_mountpoint = _get_neuro_mountpoint(root.client.username)
         env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
         env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
         if not root.quiet:
@@ -1002,7 +1004,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-    storage_nmrc_folder = URL(f"storage://{root.username}/nmrc/")
+    storage_nmrc_folder = URL(f"storage://{root.client.username}/nmrc/")
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"

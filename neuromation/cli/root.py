@@ -4,15 +4,13 @@ from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Iterator, List, Mapping, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
 
 import aiohttp
 import click
-from yarl import URL
 
-from neuromation.api import Client, ConfigError, Factory, Preset, gen_trace_id
+from neuromation.api import Client, Factory, gen_trace_id
 from neuromation.api.config import _Config
-from neuromation.api.server_cfg import _is_cluster_config_initialized
 
 
 log = logging.getLogger(__name__)
@@ -50,50 +48,10 @@ class Root:
         return self.verbosity < 0
 
     @property
-    def auth(self) -> Optional[str]:
-        if self._client is not None:
-            return self._config.auth_token.token
-        return None
-
-    @property
     def timeout(self) -> aiohttp.ClientTimeout:
         return aiohttp.ClientTimeout(
             None, None, self.network_timeout, self.network_timeout
         )
-
-    @property
-    def username(self) -> str:
-        if self._client is None:
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.auth_token.username
-
-    @property
-    def cluster_name(self) -> Optional[str]:
-        if self._client is None:
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.cluster_name
-
-    @property
-    def url(self) -> URL:
-        if self._client is None:
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.url
-
-    @property
-    def registry_url(self) -> URL:
-        if self._client is None or not _is_cluster_config_initialized(
-            self._config.cluster_config
-        ):
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.cluster_config.registry_url
-
-    @property
-    def resource_presets(self) -> Mapping[str, Preset]:
-        if self._client is None or not _is_cluster_config_initialized(
-            self._config.cluster_config
-        ):
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.cluster_config.resource_presets
 
     @property
     def client(self) -> Client:
