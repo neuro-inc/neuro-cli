@@ -56,16 +56,14 @@ class _Core:
     def __init__(
         self,
         session: aiohttp.ClientSession,
-        base_url: URL,
         token: str,
         cookie: Optional["Morsel[str]"],
         trace_id: Optional[str],
     ) -> None:
+        assert token is not None
         self._session = session
-        self._base_url = base_url
         self._token = token
         self._trace_id = trace_id
-        self._headers = self._auth_headers()
         if cookie is not None:
             self._session.cookie_jar.update_cookies(
                 {"NEURO_SESSION": cookie}  # type: ignore
@@ -92,9 +90,8 @@ class _Core:
     async def close(self) -> None:
         pass
 
-    def _auth_headers(self) -> Dict[str, str]:
-        headers = {"Authorization": f"Bearer {self._token}"} if self._token else {}
-        return headers
+    def _default_auth(self) -> str:
+        return f"Bearer {self._token}"
 
     @asynccontextmanager
     async def request(
@@ -102,20 +99,23 @@ class _Core:
         method: str,
         url: URL,
         *,
+        auth: Optional[str] = None,
         params: Optional[Mapping[str, str]] = None,
         data: Any = None,
         json: Any = None,
         headers: Optional[Dict[str, str]] = None,
         timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
-        if not url.is_absolute():
-            url = (self._base_url / "").join(url)
+        assert url.is_absolute()
         log.debug("Fetch [%s] %s", method, url)
         if headers is not None:
             real_headers = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
-        real_headers.update(self._headers)
+        if auth is not None:
+            real_headers["Authorization"] = auth
+        else:
+            real_headers["Authorization"] = self._default_auth()
         trace_request_ctx = SimpleNamespace()
         trace_id = self._trace_id
         if trace_id is None:
@@ -159,7 +159,7 @@ class _Core:
             real_headers = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
-        real_headers.update(self._headers)
+        real_headers["Authorization"] = self._default_auth()
 
         async with self._session.ws_connect(abs_url, headers=real_headers) as ws:
             async for msg in ws:

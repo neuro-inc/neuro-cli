@@ -169,6 +169,11 @@ class Config(metaclass=NoPublicConstructor):
         pass
 
     @property
+    def _api_url(self) -> URL:
+        # INTERNAL API
+        return self._config_data.url
+
+    @property
     def _monitoring_url(self) -> URL:
         # INTERNAL API
         return self._config_data.cluster_config.monitoring_url

@@ -37,7 +37,7 @@ class _Quota(metaclass=NoPublicConstructor):
 
     async def get(self, user: Optional[str] = None) -> _QuotaInfo:
         user = user or self._config.username
-        url = URL(f"stats/users/{user}")
+        url = self._config._api_url / "stats" / "users" / user
         async with self._core.request("GET", url) as resp:
             res = await resp.json()
             return _quota_info_from_api(res)

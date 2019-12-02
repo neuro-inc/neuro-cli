@@ -1,3 +1,4 @@
+import base64
 import contextlib
 import re
 from dataclasses import replace
@@ -6,7 +7,6 @@ from typing import Any, Dict, List, Optional, Set
 import aiodocker
 import aiohttp
 from aiodocker.exceptions import DockerError
-from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
@@ -21,7 +21,6 @@ from .config import Config
 from .core import AuthorizationError, _Core
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _as_repo_str
-from .registry import _Registry
 from .utils import NoPublicConstructor
 
 
@@ -32,13 +31,12 @@ class Images(metaclass=NoPublicConstructor):
         self._parse = parse
         self._temporary_images: Set[str] = set()
         self.__docker: Optional[aiodocker.Docker] = None
-        self._registry = _Registry(
-            self._core.session,
-            self._config._registry_url.with_path("/v2/"),
-            self._config._token,
-            self._core._trace_id,
-            self._config.username,
-        )
+        self._registry_url = self._config._registry_url.with_path("/v2/")
+
+    def _auth(self) -> str:
+        return "Basic " + base64.b64encode(
+            f"{self._config.username}:{self._config._token}".encode("ascii")
+        ).decode("ascii")
 
     @property
     def _docker(self) -> aiodocker.Docker:
@@ -67,9 +65,8 @@ class Images(metaclass=NoPublicConstructor):
                 await self._docker.images.delete(image)
         if self.__docker is not None:
             await self.__docker.close()
-        await self._registry.close()
 
-    def _auth(self) -> Dict[str, str]:
+    def _docker_auth(self) -> Dict[str, str]:
         return {"username": "token", "password": self._config._token}
 
     async def push(
@@ -96,7 +93,7 @@ class Images(metaclass=NoPublicConstructor):
                 ) from error
         try:
             async for obj in self._docker.images.push(
-                repo, auth=self._auth(), stream=True
+                repo, auth=self._docker_auth(), stream=True
             ):
                 step = _try_parse_image_progress_step(obj, remote.tag)
                 if step:
@@ -125,7 +122,7 @@ class Images(metaclass=NoPublicConstructor):
         repo = _as_repo_str(remote)
         try:
             async for obj in self._docker.pull(
-                repo, auth=self._auth(), repo=repo, stream=True
+                repo, auth=self._docker_auth(), repo=repo, stream=True
             ):
                 self._temporary_images.add(repo)
                 step = _try_parse_image_progress_step(obj, remote.tag)
@@ -146,7 +143,9 @@ class Images(metaclass=NoPublicConstructor):
         return local
 
     async def ls(self) -> List[RemoteImage]:
-        async with self._registry.request("GET", URL("_catalog")) as resp:
+        async with self._core.request(
+            "GET", self._registry_url / "_catalog", auth=self._auth()
+        ) as resp:
             ret = await resp.json()
             prefix = "image://"
             result: List[RemoteImage] = []
@@ -168,7 +167,9 @@ class Images(metaclass=NoPublicConstructor):
     async def tags(self, image: RemoteImage) -> List[RemoteImage]:
         self._validate_image_for_tags(image)
         name = f"{image.owner}/{image.name}"
-        async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
+        async with self._core.request(
+            "GET", self._registry_url / name / "tags" / "list", auth=self._auth()
+        ) as resp:
             ret = await resp.json()
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]
 
