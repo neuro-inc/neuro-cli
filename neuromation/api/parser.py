@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from yarl import URL
 
-from .config import _Config
+from .config import Config
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
 from .url_utils import normalize_storage_path_uri
 from .utils import NoPublicConstructor
@@ -16,8 +16,8 @@ class Volume:
 
 
 class Parser(metaclass=NoPublicConstructor):
-    def __init__(self, config_data: _Config) -> None:
-        self._config_data = config_data
+    def __init__(self, config: Config) -> None:
+        self._config = config
 
     def volume(self, volume: str) -> Volume:
         parts = volume.split(":")
@@ -32,7 +32,7 @@ class Parser(metaclass=NoPublicConstructor):
 
         container_path = parts.pop()
         storage_uri = normalize_storage_path_uri(
-            URL(":".join(parts)), self._config_data.auth_token.username
+            URL(":".join(parts)), self._config.username
         )
 
         return Volume(
@@ -40,31 +40,19 @@ class Parser(metaclass=NoPublicConstructor):
         )
 
     def local_image(self, image: str) -> LocalImage:
-        parser = _ImageNameParser(
-            self._config_data.auth_token.username,
-            self._config_data.cluster_config.registry_url,
-        )
+        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
         return parser.parse_as_local_image(image)
 
     def remote_image(
         self, image: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
-        parser = _ImageNameParser(
-            self._config_data.auth_token.username,
-            self._config_data.cluster_config.registry_url,
-        )
+        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
         return parser.parse_remote(image, tag_option=tag_option)
 
     def _local_to_remote_image(self, image: LocalImage) -> RemoteImage:
-        parser = _ImageNameParser(
-            self._config_data.auth_token.username,
-            self._config_data.cluster_config.registry_url,
-        )
+        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
         return parser.convert_to_neuro_image(image)
 
     def _remote_to_local_image(self, image: RemoteImage) -> LocalImage:
-        parser = _ImageNameParser(
-            self._config_data.auth_token.username,
-            self._config_data.cluster_config.registry_url,
-        )
+        parser = _ImageNameParser(self._config.username, self._config._registry_url,)
         return parser.convert_to_local_image(image)

@@ -52,7 +52,7 @@ class Client(metaclass=NoPublicConstructor):
             trace_id,
         )
         self._config = Config._create(self._core, self._config_data)
-        self._parser = Parser._create(self._config_data)
+        self._parser = Parser._create(self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core)
