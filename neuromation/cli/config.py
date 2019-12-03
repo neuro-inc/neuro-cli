@@ -247,16 +247,16 @@ async def prompt_cluster(client: Client) -> str:
     clusters = client.config.clusters
     while True:
         fmt = ClustersFormatter()
-        click.echo(fmt(clusters.values(), client.config.cluster_name))
+        click.echo("\n".join(fmt(clusters.values(), client.config.cluster_name)))
         answer = input(f"Select cluster to switch [{client.config.cluster_name}]: ")
         answer = answer.strip()
         if answer not in clusters:
             click.echo(
                 " ".join(
                     [
-                        "Selected cluster ",
+                        "Selected cluster",
                         click.style(answer, underline=True),
-                        " doesn't exist, please try again.",
+                        "doesn't exist, please try again.",
                     ]
                 )
             )
