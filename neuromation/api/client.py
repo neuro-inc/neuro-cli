@@ -30,7 +30,6 @@ class Client(metaclass=NoPublicConstructor):
         trace_id: Optional[str],
     ) -> None:
         self._closed = False
-        config_data.check_initialized()
         self._config_data = config_data
         self._trace_id = trace_id
         self._session = session

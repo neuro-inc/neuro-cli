@@ -23,13 +23,7 @@ from .login import (
     _AuthToken,
     refresh_token,
 )
-from .server_cfg import (
-    ClusterConfig,
-    Preset,
-    _is_cluster_config_initialized,
-    _ServerConfig,
-    get_server_config,
-)
+from .server_cfg import ClusterConfig, Preset, _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
 
@@ -263,8 +257,6 @@ class Factory:
             raise ConfigError("Malformed config. Please logout and login again.")
 
     def _serialize_auth_config(self, auth_config: _AuthConfig) -> Dict[str, Any]:
-        if not auth_config.is_initialized():
-            raise ValueError("auth config part is not initialized")
         success_redirect_url = None
         if auth_config.success_redirect_url:
             success_redirect_url = str(auth_config.success_redirect_url)
@@ -281,8 +273,6 @@ class Factory:
     def _serialize_cluster_config(
         self, cluster_config: ClusterConfig
     ) -> Dict[str, Any]:
-        if not _is_cluster_config_initialized(cluster_config):
-            raise ValueError("cluster config part is not initialized")
         ret = {
             "registry_url": str(cluster_config.registry_url),
             "storage_url": str(cluster_config.storage_url),

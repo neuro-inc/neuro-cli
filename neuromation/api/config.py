@@ -10,12 +10,7 @@ from yarl import URL
 
 from .core import _Core
 from .login import _AuthConfig, _AuthToken
-from .server_cfg import (
-    ClusterConfig,
-    Preset,
-    _is_cluster_config_initialized,
-    get_server_config,
-)
+from .server_cfg import ClusterConfig, Preset, get_server_config
 from .utils import NoPublicConstructor
 
 
@@ -118,12 +113,6 @@ class _Config:
     version: str
     cluster_name: Optional[str]
     clusters: Optional[Sequence[ClusterConfig]] = None
-
-    def check_initialized(self) -> None:
-        if not self.auth_config.is_initialized() or not _is_cluster_config_initialized(
-            self.cluster_config
-        ):
-            raise ValueError("Missing server configuration, need to login")
 
 
 class Config(metaclass=NoPublicConstructor):
