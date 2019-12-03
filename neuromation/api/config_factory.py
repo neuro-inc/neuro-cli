@@ -4,7 +4,7 @@ import ssl
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
 import certifi
@@ -14,7 +14,7 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import _Config, _CookieSession, _PyPIVersion
+from .config import Config, ConfigError, _Config, _CookieSession, _PyPIVersion
 from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
@@ -52,10 +52,6 @@ async def __make_session(
     return aiohttp.ClientSession(
         timeout=timeout, connector=connector, trace_configs=trace_configs
     )
-
-
-class ConfigError(RuntimeError):
-    pass
 
 
 class Factory:
@@ -102,7 +98,7 @@ class Factory:
             await session.close()
             raise
         else:
-            return Client._create(session, config, self._trace_id)
+            return Client._create(session, config, self._path, self._trace_id)
 
     async def login(
         self,
@@ -253,53 +249,6 @@ class Factory:
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
 
-    def _serialize_auth_config(self, auth_config: _AuthConfig) -> Dict[str, Any]:
-        success_redirect_url = None
-        if auth_config.success_redirect_url:
-            success_redirect_url = str(auth_config.success_redirect_url)
-        return {
-            "auth_url": str(auth_config.auth_url),
-            "token_url": str(auth_config.token_url),
-            "client_id": auth_config.client_id,
-            "audience": auth_config.audience,
-            "headless_callback_url": str(auth_config.headless_callback_url),
-            "success_redirect_url": success_redirect_url,
-            "callback_urls": [str(u) for u in auth_config.callback_urls],
-        }
-
-    def _serialize_clusters(
-        self, clusters: Mapping[str, ClusterConfig]
-    ) -> List[Dict[str, Any]]:
-        ret: List[Dict[str, Any]] = []
-        for cluster in clusters.values():
-            cluster_config = {
-                "name": cluster.name,
-                "registry_url": str(cluster.registry_url),
-                "storage_url": str(cluster.storage_url),
-                "users_url": str(cluster.users_url),
-                "monitoring_url": str(cluster.monitoring_url),
-                "resource_presets": [
-                    self._serialize_resource_preset(name, resource_preset)
-                    for name, resource_preset in cluster.resource_presets.items()
-                ],
-            }
-            ret.append(cluster_config)
-        return ret
-
-    def _serialize_resource_preset(
-        self, name: str, resource_preset: Preset
-    ) -> Dict[str, Any]:
-        return {
-            "name": name,
-            "cpu": resource_preset.cpu,
-            "memory_mb": resource_preset.memory_mb,
-            "gpu": resource_preset.gpu,
-            "gpu_model": resource_preset.gpu_model,
-            "tpu_type": resource_preset.tpu_type,
-            "tpu_software_version": resource_preset.tpu_software_version,
-            "is_preemptible": resource_preset.is_preemptible,
-        }
-
     def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
         auth_config = payload["auth_config"]
         success_redirect_url = auth_config.get("success_redirect_url")
@@ -360,37 +309,6 @@ class Factory:
         )
 
     def _save(self, config: _Config) -> None:
-        payload: Dict[str, Any] = {}
-        try:
-            payload["url"] = str(config.url)
-            payload["auth_config"] = self._serialize_auth_config(config.auth_config)
-            payload["clusters"] = self._serialize_clusters(config.clusters)
-            payload["auth_token"] = {
-                "token": config.auth_token.token,
-                "expiration_time": config.auth_token.expiration_time,
-                "refresh_token": config.auth_token.refresh_token,
-            }
-            payload["pypi"] = config.pypi.to_config()
-            payload["cookie_session"] = config.cookie_session.to_config()
-            payload["version"] = config.version
-            payload["cluster_name"] = config.cluster_name
-        except (AttributeError, KeyError, TypeError, ValueError):
-            raise ConfigError("Malformed config. Please logout and login again.")
-
-        # atomically rewrite the config file
-        tmppath = f"{self._path}.new{os.getpid()}"
-        try:
-            # forbid access to other users
-            def opener(file: str, flags: int) -> int:
-                return os.open(file, flags, 0o600)
-
-            self._path.mkdir(0o700, parents=True, exist_ok=True)
-            with open(tmppath, "x", encoding="utf-8", opener=opener) as f:
-                yaml.safe_dump(payload, f, default_flow_style=False)
-            os.replace(tmppath, self._path / "db")
-        except:  # noqa  # bare 'except' with 'raise' is legal
-            try:
-                os.unlink(tmppath)
-            except FileNotFoundError:
-                pass
-            raise
+        # Trampoline to Config._save() mathod
+        # Looks ugly a little, fix me later.
+        Config._save(config, self._path)

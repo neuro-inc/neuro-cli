@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable, Optional
 
 import aiohttp
@@ -62,7 +63,9 @@ def cluster_config() -> ClusterConfig:
 
 
 @pytest.fixture
-def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
+def make_client(
+    token: str, auth_config: _AuthConfig, tmp_path: Path
+) -> Callable[..., Client]:
     def go(
         url_str: str,
         registry_url: str = "https://registry-dev.neu.ro",
@@ -99,6 +102,6 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             clusters={cluster_config.name: cluster_config},
         )
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
-        return Client._create(session, config, trace_id)
+        return Client._create(session, config, tmp_path / ".nmrc", trace_id)
 
     return go

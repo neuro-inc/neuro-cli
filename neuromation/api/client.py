@@ -1,6 +1,7 @@
 import time
 from http.cookies import Morsel  # noqa
 from http.cookies import SimpleCookie
+from pathlib import Path
 from types import TracebackType
 from typing import Mapping, Optional, Type
 
@@ -27,6 +28,7 @@ class Client(metaclass=NoPublicConstructor):
         self,
         session: aiohttp.ClientSession,
         config_data: _Config,
+        path: Path,
         trace_id: Optional[str],
     ) -> None:
         self._closed = False
@@ -44,7 +46,7 @@ class Client(metaclass=NoPublicConstructor):
             cookie["domain"] = config_data.url.raw_host
             cookie["path"] = "/"
         self._core = _Core(session, cookie, trace_id)
-        self._config = Config._create(self._core, self._config_data)
+        self._config = Config._create(self._core, path, self._config_data)
         self._parser = Parser._create(self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
