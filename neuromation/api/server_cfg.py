@@ -27,25 +27,6 @@ class ClusterConfig:
     resource_presets: Mapping[str, Preset]
     name: Optional[str]  # can be None for backward compatibility
 
-    @classmethod
-    def create(
-        cls,
-        registry_url: URL,
-        storage_url: URL,
-        users_url: URL,
-        monitoring_url: URL,
-        resource_presets: Mapping[str, Preset],
-        name: Optional[str] = None,
-    ) -> "ClusterConfig":
-        return cls(
-            registry_url,
-            storage_url,
-            users_url,
-            monitoring_url,
-            resource_presets,
-            name=name,
-        )
-
 
 def _is_cluster_config_initialized(cfg: ClusterConfig) -> bool:
     return bool(

@@ -24,12 +24,13 @@ class TestConfig:
         )
         assert auth_config_good.is_initialized()
 
-        cluster_config_good = ClusterConfig.create(
+        cluster_config_good = ClusterConfig(
             registry_url=URL("http://value"),
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="default",
         )
         assert _is_cluster_config_initialized(cluster_config_good)
 
@@ -62,12 +63,13 @@ class TestConfig:
         )
         assert not auth_config_bad.is_initialized()
 
-        cluster_config_good = ClusterConfig.create(
+        cluster_config_good = ClusterConfig(
             registry_url=URL("http://value"),
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="default",
         )
         assert _is_cluster_config_initialized(cluster_config_good)
 
@@ -101,12 +103,13 @@ class TestConfig:
         )
         assert auth_config_bad.is_initialized()
 
-        cluster_config_good = ClusterConfig.create(
+        cluster_config_good = ClusterConfig(
             registry_url=URL(),  # empty
             storage_url=URL("http://value"),
             users_url=URL("http://value"),
             monitoring_url=URL("http://value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="default",
         )
         assert not _is_cluster_config_initialized(cluster_config_good)
 

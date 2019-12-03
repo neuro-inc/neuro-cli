@@ -41,7 +41,7 @@ def auth_config() -> _AuthConfig:
 
 @pytest.fixture
 def cluster_config() -> ClusterConfig:
-    return ClusterConfig.create(
+    return ClusterConfig(
         registry_url=URL("https://registry-dev.neu.ro"),
         storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
@@ -57,6 +57,7 @@ def cluster_config() -> ClusterConfig:
             "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
             "cpu-large-p": Preset(cpu=7, memory_mb=14 * 1024, is_preemptible=True),
         },
+        name="default",
     )
 
 

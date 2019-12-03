@@ -477,62 +477,68 @@ class TestAuthConfig:
 
 class TestClusterConfig:
     def test_is_initialized(self) -> None:
-        cluster_config = ClusterConfig.create(
+        cluster_config = ClusterConfig(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
         assert _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_registry_url(self) -> None:
-        cluster_config = ClusterConfig.create(
+        cluster_config = ClusterConfig(
             registry_url=URL(),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_storage_url(self) -> None:
-        cluster_config = ClusterConfig.create(
+        cluster_config = ClusterConfig(
             registry_url=URL("value"),
             storage_url=URL(),
             users_url=URL("value"),
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_users_url(self) -> None:
-        cluster_config = ClusterConfig.create(
+        cluster_config = ClusterConfig(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL(),
             monitoring_url=URL("value"),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_monitoring_url(self) -> None:
-        cluster_config = ClusterConfig.create(
+        cluster_config = ClusterConfig(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL(),
             resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_resource_presets(self) -> None:
-        cluster_config = ClusterConfig.create(
+        cluster_config = ClusterConfig(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
             resource_presets={},
+            name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
 

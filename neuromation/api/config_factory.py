@@ -328,7 +328,7 @@ class Factory:
 
     def _deserialize_cluster_config(self, payload: Dict[str, Any]) -> ClusterConfig:
         cluster_config = payload["cluster_config"]
-        return ClusterConfig.create(
+        return ClusterConfig(
             registry_url=URL(cluster_config["registry_url"]),
             storage_url=URL(cluster_config["storage_url"]),
             users_url=URL(cluster_config["users_url"]),

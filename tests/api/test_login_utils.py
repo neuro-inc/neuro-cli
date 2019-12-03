@@ -50,12 +50,13 @@ async def test_get_server_config(aiohttp_client: _TestClientFactory) -> None:
             callback_urls=tuple(URL(u) for u in callback_urls),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=ClusterConfig.create(
+        cluster_config=ClusterConfig(
             registry_url=URL(),
             storage_url=URL(),
             users_url=URL(),
             monitoring_url=URL(),
             resource_presets={},
+            name=None,
         ),
     )
 
@@ -171,7 +172,7 @@ async def test_get_server_config_with_token_legacy(
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=ClusterConfig.create(
+        cluster_config=ClusterConfig(
             registry_url=URL(registry_url),
             storage_url=URL(storage_url),
             users_url=URL(users_url),
@@ -186,6 +187,7 @@ async def test_get_server_config_with_token_legacy(
                 "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
                 "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
             },
+            name=None,
         ),
     )
 
@@ -276,7 +278,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     config = await get_server_config(
         client.session, client.make_url("/"), token="bananatoken"
     )
-    cluster_config = ClusterConfig.create(
+    cluster_config = ClusterConfig(
         registry_url=URL(registry_url),
         storage_url=URL(storage_url),
         users_url=URL(users_url),
