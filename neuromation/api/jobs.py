@@ -149,11 +149,7 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
-        try:
-            payload["cluster_name"] = self._config.cluster_name
-        except AssertionError:
-            # transition period, no the current cluster selected
-            pass
+        payload["cluster_name"] = self._config.cluster_name
         async with self._core.request(
             "POST", url, json=payload, auth=self._config._api_auth
         ) as resp:
@@ -175,11 +171,7 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
-        try:
-            params["cluster_name"] = self._config.cluster_name
-        except AssertionError:
-            # transition period, no the current cluster selected
-            pass
+        params["cluster_name"] = self._config.cluster_name
         async with self._core.request(
             "GET", url, params=params, auth=self._config._api_auth
         ) as resp:
