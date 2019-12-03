@@ -1532,7 +1532,7 @@ class TestConfigFormatter:
             yes = "Yes"
             no = "No"
         else:
-            yes = "✔︎"
+            yes = " ✔︎"
             no = "✖︎"
 
         assert "\n".join(
@@ -1550,7 +1550,7 @@ class TestConfigFormatter:
                 gpu-large       7     60G       {no}      1 x nvidia-tesla-v100
                 cpu-small       7      2G       {no}
                 cpu-large       7     14G       {no}
-                cpu-large-p     7     14G       {yes}
+                cpu-large-p     7     14G      {yes}
                 tpu-small       2      2G       {no}                             v3-8/1.14
                 hybrid          4     30G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
