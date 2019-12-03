@@ -142,8 +142,6 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def cluster_name(self) -> str:
-        # During the transition period,
-        # clusters and cluster.name can be None
         name = self._config_data.cluster_name
         return name
 
