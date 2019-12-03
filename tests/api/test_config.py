@@ -11,7 +11,9 @@ from tests import _TestServerFactory
 _MakeClient = Callable[..., Client]
 
 
-async def test_username(aiohttp_server: _TestServerFactory, make_client: _MakeClient):
+async def test_username(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     app = web.Application()
     srv = await aiohttp_server(app)
 
@@ -19,7 +21,9 @@ async def test_username(aiohttp_server: _TestServerFactory, make_client: _MakeCl
         assert client.config.username == "user"
 
 
-async def test_presets(aiohttp_server: _TestServerFactory, make_client: _MakeClient):
+async def test_presets(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     app = web.Application()
     srv = await aiohttp_server(app)
 
@@ -66,7 +70,7 @@ async def test_presets(aiohttp_server: _TestServerFactory, make_client: _MakeCli
 
 async def test_cluster_name(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
-):
+) -> None:
     app = web.Application()
     srv = await aiohttp_server(app)
 
@@ -74,7 +78,9 @@ async def test_cluster_name(
         assert client.config.cluster_name == "default"
 
 
-async def test_clusters(aiohttp_server: _TestServerFactory, make_client: _MakeClient):
+async def test_clusters(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
     app = web.Application()
     srv = await aiohttp_server(app)
 
@@ -87,5 +93,69 @@ async def test_clusters(aiohttp_server: _TestServerFactory, make_client: _MakeCl
                 users_url=srv.make_url("/"),
                 monitoring_url=srv.make_url("/jobs"),
                 resource_presets=mock.ANY,
+            )
+        }
+
+
+async def test_fetch(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    registry_url = "https://registry2-dev.neu.ro"
+    storage_url = "https://storage2-dev.neu.ro"
+    users_url = "https://users2-dev.neu.ro"
+    monitoring_url = "https://jobs2-dev.neu.ro"
+    auth_url = "https://dev-neuromation.auth0.com/authorize"
+    token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    client_id = "this_is_client_id"
+    audience = "https://platform.dev.neuromation.io"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    success_redirect_url = "https://platform.neuromation.io"
+    JSON = {
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "client_id": client_id,
+        "audience": audience,
+        "headless_callback_url": headless_callback_url,
+        "success_redirect_url": success_redirect_url,
+        "clusters": [
+            {
+                "registry_url": registry_url,
+                "storage_url": storage_url,
+                "users_url": users_url,
+                "monitoring_url": monitoring_url,
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                ],
+            }
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.config.fetch()
+        assert client.config.clusters == {
+            "default": ClusterConfig(
+                name="default",
+                registry_url=URL("https://registry2-dev.neu.ro"),
+                storage_url=URL("https://storage2-dev.neu.ro"),
+                users_url=URL("https://users2-dev.neu.ro"),
+                monitoring_url=URL("https://jobs2-dev.neu.ro"),
+                resource_presets={
+                    "cpu-small": Preset(
+                        cpu=2,
+                        memory_mb=2048,
+                        is_preemptible=False,
+                        gpu=None,
+                        gpu_model=None,
+                        tpu_type=None,
+                        tpu_software_version=None,
+                    ),
+                },
             )
         }
