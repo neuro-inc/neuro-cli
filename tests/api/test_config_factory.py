@@ -122,12 +122,12 @@ def _create_config(
     config = _Config(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
-        cluster_config=cluster_config,
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
         cookie_session=_CookieSession.create_uninitialized(),
         version=neuromation.__version__,
         cluster_name=cluster_config.name,
+        clusters={cluster_config.name: cluster_config},
     )
     Factory(nmrc_path)._save(config)
     assert nmrc_path.exists()
@@ -263,7 +263,7 @@ class TestConfigFileInteraction:
         with config_file.open("r") as f:
             original = yaml.safe_load(f)
 
-        for key in ["auth_config", "auth_token", "pypi", "cluster_config", "url"]:
+        for key in ["auth_config", "auth_token", "pypi", "clusters", "url"]:
             modified = original.copy()
             del modified[key]
             with config_file.open("w") as f:

@@ -515,7 +515,8 @@ class LocalImageType(click.ParamType):
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
-            config.auth_token.username, config.cluster_config.registry_url
+            config.auth_token.username,
+            config.clusters[config.cluster_name].registry_url,
         )
         if image_parser.is_in_neuro_registry(value):
             raise click.BadParameter(
@@ -536,7 +537,8 @@ class ImageType(click.ParamType):
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
-            config.auth_token.username, config.cluster_config.registry_url
+            config.auth_token.username,
+            config.clusters[config.cluster_name].registry_url,
         )
         return image_parser.parse_remote(value)
 
@@ -551,7 +553,8 @@ class RemoteTaglessImageType(click.ParamType):
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
-            config.auth_token.username, config.cluster_config.registry_url
+            config.auth_token.username,
+            config.clusters[config.cluster_name].registry_url,
         )
         return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)
 

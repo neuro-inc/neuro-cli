@@ -93,10 +93,10 @@ def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
             auth_token=_AuthToken.create_non_expiring(token),
             pypi=_PyPIVersion.create_uninitialized(),
             url=URL(url),
-            cluster_config=cluster_config,
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
             cluster_name="default",
+            clusters={cluster_config.name: cluster_config},
         )
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
         return Client._create(session, config, trace_id)

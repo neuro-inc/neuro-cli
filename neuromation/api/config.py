@@ -2,7 +2,7 @@ import base64
 from dataclasses import dataclass, replace
 from datetime import date
 from types import MappingProxyType
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping
 
 import dateutil.parser
 import pkg_resources
@@ -106,13 +106,12 @@ class _CookieSession:
 class _Config:
     auth_config: _AuthConfig
     auth_token: _AuthToken
-    cluster_config: ClusterConfig
     pypi: _PyPIVersion
     url: URL
     cookie_session: _CookieSession
     version: str
-    cluster_name: Optional[str]
-    clusters: Optional[Sequence[ClusterConfig]] = None
+    cluster_name: str
+    clusters: Mapping[str, ClusterConfig]
 
 
 class Config(metaclass=NoPublicConstructor):
@@ -126,26 +125,18 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def presets(self) -> Mapping[str, Preset]:
-        return MappingProxyType(self._config_data.cluster_config.resource_presets)
+        cluster = self._config_data.clusters[self._config_data.cluster_name]
+        return MappingProxyType(cluster.resource_presets)
 
     @property
     def clusters(self) -> Mapping[str, ClusterConfig]:
-        # During trh transition period,
-        # clusters and cluster.name can be None
-        if self._config_data.clusters is None:
-            return {}
-        ret: Dict[str, ClusterConfig] = {}
-        for cluster in self._config_data.clusters:
-            assert cluster.name is not None
-            ret[cluster.name] = cluster
-        return ret
+        return MappingProxyType(self._config_data.clusters)
 
     @property
     def cluster_name(self) -> str:
         # During the transition period,
         # clusters and cluster.name can be None
         name = self._config_data.cluster_name
-        assert name is not None
         return name
 
     async def fetch(self) -> None:
@@ -154,6 +145,7 @@ class Config(metaclass=NoPublicConstructor):
             self._config_data.url,
             self._config_data.auth_token.token,
         )
+        # TODO: raise an error if the current cluster doesn't exist
         self._config_data = replace(self._config_data, clusters=server_config.clusters)
 
     async def switch_cluster(self, name: str) -> None:
@@ -168,15 +160,18 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def monitoring_url(self) -> URL:
-        return self._config_data.cluster_config.monitoring_url
+        cluster = self._config_data.clusters[self._config_data.cluster_name]
+        return cluster.monitoring_url
 
     @property
     def storage_url(self) -> URL:
-        return self._config_data.cluster_config.storage_url
+        cluster = self._config_data.clusters[self._config_data.cluster_name]
+        return cluster.storage_url
 
     @property
     def registry_url(self) -> URL:
-        return self._config_data.cluster_config.registry_url
+        cluster = self._config_data.clusters[self._config_data.cluster_name]
+        return cluster.registry_url
 
     @property
     def token(self) -> str:

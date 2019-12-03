@@ -9,7 +9,9 @@ from neuromation.api.server_cfg import _ServerConfig, get_server_config
 from tests import _TestClientFactory
 
 
-async def test_get_server_config(aiohttp_client: _TestClientFactory) -> None:
+async def test_get_server_config_no_clusters(
+    aiohttp_client: _TestClientFactory,
+) -> None:
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
@@ -50,14 +52,7 @@ async def test_get_server_config(aiohttp_client: _TestClientFactory) -> None:
             callback_urls=tuple(URL(u) for u in callback_urls),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=ClusterConfig(
-            registry_url=URL(),
-            storage_url=URL(),
-            users_url=URL(),
-            monitoring_url=URL(),
-            resource_presets={},
-            name=None,
-        ),
+        clusters={},
     )
 
 
@@ -97,14 +92,7 @@ async def test_get_server_config_no_callback_urls(
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=ClusterConfig(
-            registry_url=URL(),
-            storage_url=URL(),
-            users_url=URL(),
-            monitoring_url=URL(),
-            resource_presets={},
-            name=None,
-        ),
+        clusters={},
     )
 
 
@@ -172,23 +160,25 @@ async def test_get_server_config_with_token_legacy(
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=ClusterConfig(
-            registry_url=URL(registry_url),
-            storage_url=URL(storage_url),
-            users_url=URL(users_url),
-            monitoring_url=URL(monitoring_url),
-            resource_presets={
-                "gpu-small": Preset(
-                    cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
-                ),
-                "gpu-large": Preset(
-                    cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
-                ),
-                "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
-                "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
-            },
-            name=None,
-        ),
+        clusters={
+            "default": ClusterConfig(
+                registry_url=URL(registry_url),
+                storage_url=URL(storage_url),
+                users_url=URL(users_url),
+                monitoring_url=URL(monitoring_url),
+                resource_presets={
+                    "gpu-small": Preset(
+                        cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                    ),
+                    "gpu-large": Preset(
+                        cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                    ),
+                    "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
+                    "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
+                },
+                name="default",
+            )
+        },
     )
 
 
@@ -304,8 +294,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
-        cluster_config=cluster_config,
-        clusters=[cluster_config],
+        clusters={"default": cluster_config},
     )
 
 

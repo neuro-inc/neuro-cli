@@ -4,7 +4,7 @@ import ssl
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
 
 import aiohttp
 import certifi
@@ -85,7 +85,7 @@ class Factory:
                     session, config.url, token=new_token.token
                 )
                 if (
-                    config_authorized.cluster_config != config.cluster_config
+                    config_authorized.clusters != config.clusters
                     or config_authorized.auth_config != config.auth_config
                 ):
                     raise ConfigError(
@@ -170,19 +170,16 @@ class Factory:
     def _gen_config(
         self, server_config: _ServerConfig, token: _AuthToken, url: URL
     ) -> _Config:
-        if server_config.clusters:
-            cluster_name = server_config.clusters[0].name
-        else:
-            cluster_name = None
+        cluster_name = next(iter(server_config.clusters))
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=token,
-            cluster_config=server_config.cluster_config,
             pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
             cluster_name=cluster_name,
+            clusters=server_config.clusters,
         )
         return config
 
@@ -235,7 +232,7 @@ class Factory:
             api_url = URL(payload["url"])
             pypi_payload = payload["pypi"]
             auth_config = self._deserialize_auth_config(payload)
-            cluster_config = self._deserialize_cluster_config(payload)
+            clusters = self._deserialize_clusters(payload)
             auth_token = self._deserialize_auth_token(payload)
             cookie_session = _CookieSession.from_config(
                 payload.get("cookie_session", {})
@@ -245,13 +242,13 @@ class Factory:
 
             return _Config(
                 auth_config=auth_config,
-                cluster_config=cluster_config,
                 auth_token=auth_token,
                 pypi=_PyPIVersion.from_config(pypi_payload),
                 url=api_url,
                 cookie_session=cookie_session,
                 version=version,
                 cluster_name=cluster_name,
+                clusters=clusters,
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             raise ConfigError("Malformed config. Please logout and login again.")
@@ -270,21 +267,23 @@ class Factory:
             "callback_urls": [str(u) for u in auth_config.callback_urls],
         }
 
-    def _serialize_cluster_config(
-        self, cluster_config: ClusterConfig
-    ) -> Dict[str, Any]:
-        ret = {
-            "registry_url": str(cluster_config.registry_url),
-            "storage_url": str(cluster_config.storage_url),
-            "users_url": str(cluster_config.users_url),
-            "monitoring_url": str(cluster_config.monitoring_url),
-            "resource_presets": [
-                self._serialize_resource_preset(name, resource_preset)
-                for name, resource_preset in cluster_config.resource_presets.items()
-            ],
-        }
-        if cluster_config.name is not None:
-            ret["name"] = cluster_config.name
+    def _serialize_clusters(
+        self, clusters: Mapping[str, ClusterConfig]
+    ) -> List[Dict[str, Any]]:
+        ret: List[Dict[str, Any]] = []
+        for cluster in clusters.values():
+            cluster_config = {
+                "name": cluster.name,
+                "registry_url": str(cluster.registry_url),
+                "storage_url": str(cluster.storage_url),
+                "users_url": str(cluster.users_url),
+                "monitoring_url": str(cluster.monitoring_url),
+                "resource_presets": [
+                    self._serialize_resource_preset(name, resource_preset)
+                    for name, resource_preset in cluster.resource_presets.items()
+                ],
+            }
+            ret.append(cluster_config)
         return ret
 
     def _serialize_resource_preset(
@@ -316,19 +315,25 @@ class Factory:
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
 
-    def _deserialize_cluster_config(self, payload: Dict[str, Any]) -> ClusterConfig:
-        cluster_config = payload["cluster_config"]
-        return ClusterConfig(
-            registry_url=URL(cluster_config["registry_url"]),
-            storage_url=URL(cluster_config["storage_url"]),
-            users_url=URL(cluster_config["users_url"]),
-            monitoring_url=URL(cluster_config["monitoring_url"]),
-            resource_presets=dict(
-                self._deserialize_resource_preset(data)
-                for data in cluster_config.get("resource_presets", [])
-            ),
-            name=cluster_config.get("name"),
-        )
+    def _deserialize_clusters(
+        self, payload: Dict[str, Any]
+    ) -> Dict[str, ClusterConfig]:
+        clusters = payload["clusters"]
+        ret: Dict[str, ClusterConfig] = {}
+        for cluster_config in clusters:
+            cluster = ClusterConfig(
+                name=cluster_config["name"],
+                registry_url=URL(cluster_config["registry_url"]),
+                storage_url=URL(cluster_config["storage_url"]),
+                users_url=URL(cluster_config["users_url"]),
+                monitoring_url=URL(cluster_config["monitoring_url"]),
+                resource_presets=dict(
+                    self._deserialize_resource_preset(data)
+                    for data in cluster_config.get("resource_presets", [])
+                ),
+            )
+            ret[cluster.name] = cluster
+        return ret
 
     def _deserialize_resource_preset(
         self, payload: Dict[str, Any]
@@ -359,9 +364,7 @@ class Factory:
         try:
             payload["url"] = str(config.url)
             payload["auth_config"] = self._serialize_auth_config(config.auth_config)
-            payload["cluster_config"] = self._serialize_cluster_config(
-                config.cluster_config
-            )
+            payload["clusters"] = self._serialize_clusters(config.clusters)
             payload["auth_token"] = {
                 "token": config.auth_token.token,
                 "expiration_time": config.auth_token.expiration_time,
