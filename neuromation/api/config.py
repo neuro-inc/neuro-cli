@@ -207,6 +207,8 @@ class Config(metaclass=NoPublicConstructor):
 
     @classmethod
     def _save(cls, config: _Config, path: Path) -> None:
+        # The wierd method signature is required for communicating with existing
+        # Factory._save()
         payload: Dict[str, Any] = {}
         try:
             payload["url"] = str(config.url)
