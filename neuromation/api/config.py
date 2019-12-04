@@ -13,7 +13,7 @@ from yarl import URL
 
 from .core import _Core
 from .login import _AuthConfig, _AuthToken
-from .server_cfg import ClusterConfig, Preset, get_server_config
+from .server_cfg import Cluster, Preset, get_server_config
 from .utils import NoPublicConstructor
 
 
@@ -118,7 +118,7 @@ class _Config:
     cookie_session: _CookieSession
     version: str
     cluster_name: str
-    clusters: Mapping[str, ClusterConfig]
+    clusters: Mapping[str, Cluster]
 
 
 class Config(metaclass=NoPublicConstructor):
@@ -137,7 +137,7 @@ class Config(metaclass=NoPublicConstructor):
         return MappingProxyType(cluster.presets)
 
     @property
-    def clusters(self) -> Mapping[str, ClusterConfig]:
+    def clusters(self) -> Mapping[str, Cluster]:
         return MappingProxyType(self._config_data.clusters)
 
     @property
@@ -265,7 +265,7 @@ class Config(metaclass=NoPublicConstructor):
 
     @classmethod
     def _serialize_clusters(
-        cls, clusters: Mapping[str, ClusterConfig]
+        cls, clusters: Mapping[str, Cluster]
     ) -> List[Dict[str, Any]]:
         ret: List[Dict[str, Any]] = []
         for cluster in clusters.values():
@@ -284,9 +284,7 @@ class Config(metaclass=NoPublicConstructor):
         return ret
 
     @classmethod
-    def _serialize_resource_preset(
-        cls, name: str, preset: Preset
-    ) -> Dict[str, Any]:
+    def _serialize_resource_preset(cls, name: str, preset: Preset) -> Dict[str, Any]:
         return {
             "name": name,
             "cpu": preset.cpu,

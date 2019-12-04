@@ -48,7 +48,7 @@ from .jobs import (
     Volume,
 )
 from .parsing_utils import LocalImage, RemoteImage, TagOption
-from .server_cfg import ClusterConfig
+from .server_cfg import Cluster
 from .storage import FileStatus, FileStatusType
 from .tracing import gen_trace_id
 from .users import Action, Permission, Share
@@ -104,7 +104,7 @@ __all__ = (
     "logout",
     "ConfigError",
     "gen_trace_id",
-    "ClusterConfig",
+    "Cluster",
 )
 
 

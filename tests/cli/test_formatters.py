@@ -13,7 +13,7 @@ from yarl import URL
 from neuromation.api import (
     Action,
     Client,
-    ClusterConfig,
+    Cluster,
     Container,
     FileStatus,
     FileStatusType,
@@ -1504,7 +1504,7 @@ class TestConfigFormatter:
         )
 
     async def test_output_for_tpu_presets(
-        self, make_client: Callable[..., Client], cluster_config: ClusterConfig
+        self, make_client: Callable[..., Client], cluster_config: Cluster
     ) -> None:
         presets = dict(cluster_config.presets)
 

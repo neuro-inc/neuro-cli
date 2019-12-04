@@ -3,7 +3,7 @@ from typing import Iterable, Iterator, List, Mapping, Optional
 
 from click import style
 
-from neuromation.api import Client, ClusterConfig, Preset
+from neuromation.api import Client, Cluster, Preset
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.utils import format_size
 
@@ -73,7 +73,7 @@ class QuotaInfoFormatter:
 
 class ClustersFormatter:
     def __call__(
-        self, clusters: Iterable[ClusterConfig], default_name: Optional[str]
+        self, clusters: Iterable[Cluster], default_name: Optional[str]
     ) -> List[str]:
         out = [style("Available clusters:", bold=True)]
         for cluster in clusters:

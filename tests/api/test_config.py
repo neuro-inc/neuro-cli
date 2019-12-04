@@ -5,7 +5,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Client, ClusterConfig, Preset
+from neuromation.api import Client, Cluster, Preset
 from tests import _TestServerFactory
 
 
@@ -87,7 +87,7 @@ async def test_clusters(
 
     async with make_client(srv.make_url("/")) as client:
         assert client.config.clusters == {
-            "default": ClusterConfig(
+            "default": Cluster(
                 name="default",
                 registry_url=URL("https://registry-dev.neu.ro"),
                 storage_url=srv.make_url("/storage"),
@@ -142,7 +142,7 @@ async def test_fetch(
     async with make_client(srv.make_url("/")) as client:
         await client.config.fetch()
         assert client.config.clusters == {
-            "default": ClusterConfig(
+            "default": Cluster(
                 name="default",
                 registry_url=URL("https://registry2-dev.neu.ro"),
                 storage_url=URL("https://storage2-dev.neu.ro"),

@@ -3,7 +3,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import ClusterConfig, Preset
+from neuromation.api import Cluster, Preset
 from neuromation.api.login import _AuthConfig
 from neuromation.api.server_cfg import _ServerConfig, get_server_config
 from tests import _TestClientFactory
@@ -161,7 +161,7 @@ async def test_get_server_config_with_token_legacy(
             success_redirect_url=URL(success_redirect_url),
         ),
         clusters={
-            "default": ClusterConfig(
+            "default": Cluster(
                 registry_url=URL(registry_url),
                 storage_url=URL(storage_url),
                 users_url=URL(users_url),
@@ -268,7 +268,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     config = await get_server_config(
         client.session, client.make_url("/"), token="bananatoken"
     )
-    cluster_config = ClusterConfig(
+    cluster_config = Cluster(
         registry_url=URL(registry_url),
         storage_url=URL(storage_url),
         users_url=URL(users_url),

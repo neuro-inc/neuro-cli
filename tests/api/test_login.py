@@ -19,7 +19,7 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api import ClusterConfig, Preset
+from neuromation.api import Cluster, Preset
 from neuromation.api.login import (
     AuthCode,
     AuthException,
@@ -391,7 +391,7 @@ class TestTokenClient:
 
 class TestClusterConfig:
     def test_is_initialized(self) -> None:
-        cluster_config = ClusterConfig(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
@@ -402,7 +402,7 @@ class TestClusterConfig:
         assert _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_registry_url(self) -> None:
-        cluster_config = ClusterConfig(
+        cluster_config = Cluster(
             registry_url=URL(),
             storage_url=URL("value"),
             users_url=URL("value"),
@@ -413,7 +413,7 @@ class TestClusterConfig:
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_storage_url(self) -> None:
-        cluster_config = ClusterConfig(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL(),
             users_url=URL("value"),
@@ -424,7 +424,7 @@ class TestClusterConfig:
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_users_url(self) -> None:
-        cluster_config = ClusterConfig(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL(),
@@ -435,7 +435,7 @@ class TestClusterConfig:
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_monitoring_url(self) -> None:
-        cluster_config = ClusterConfig(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
@@ -446,7 +446,7 @@ class TestClusterConfig:
         assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_resource_presets(self) -> None:
-        cluster_config = ClusterConfig(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),

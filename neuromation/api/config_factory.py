@@ -23,7 +23,7 @@ from .login import (
     _AuthToken,
     refresh_token,
 )
-from .server_cfg import ClusterConfig, Preset, _ServerConfig, get_server_config
+from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
 
@@ -264,13 +264,11 @@ class Factory:
             callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
         )
 
-    def _deserialize_clusters(
-        self, payload: Dict[str, Any]
-    ) -> Dict[str, ClusterConfig]:
+    def _deserialize_clusters(self, payload: Dict[str, Any]) -> Dict[str, Cluster]:
         clusters = payload["clusters"]
-        ret: Dict[str, ClusterConfig] = {}
+        ret: Dict[str, Cluster] = {}
         for cluster_config in clusters:
-            cluster = ClusterConfig(
+            cluster = Cluster(
                 name=cluster_config["name"],
                 registry_url=URL(cluster_config["registry_url"]),
                 storage_url=URL(cluster_config["storage_url"]),

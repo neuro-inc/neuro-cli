@@ -19,7 +19,7 @@ class Preset:
 
 
 @dataclass(frozen=True)
-class ClusterConfig:
+class Cluster:
     name: str
     registry_url: URL
     storage_url: URL
@@ -28,7 +28,7 @@ class ClusterConfig:
     presets: Mapping[str, Preset]
 
 
-def _is_cluster_config_initialized(cfg: ClusterConfig) -> bool:
+def _is_cluster_config_initialized(cfg: Cluster) -> bool:
     return bool(
         cfg.registry_url
         and cfg.storage_url
@@ -41,14 +41,14 @@ def _is_cluster_config_initialized(cfg: ClusterConfig) -> bool:
 @dataclass(frozen=True)
 class _ServerConfig:
     auth_config: _AuthConfig
-    clusters: Mapping[str, ClusterConfig]
+    clusters: Mapping[str, Cluster]
 
 
 class ConfigLoadException(Exception):
     pass
 
 
-def _parse_cluster_config(payload: Dict[str, Any]) -> ClusterConfig:
+def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
     presets: Dict[str, Preset] = {}
     for data in payload.get("resource_presets", ()):
         tpu_type = tpu_software_version = None
@@ -65,7 +65,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> ClusterConfig:
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
         )
-    cluster_config = ClusterConfig(
+    cluster_config = Cluster(
         registry_url=URL(payload.get("registry_url", "")),
         storage_url=URL(payload.get("storage_url", "")),
         users_url=URL(payload.get("users_url", "")),
@@ -76,8 +76,8 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> ClusterConfig:
     return cluster_config
 
 
-def _parse_clusters(payload: Dict[str, Any]) -> Dict[str, ClusterConfig]:
-    ret: Dict[str, ClusterConfig] = {}
+def _parse_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
+    ret: Dict[str, Cluster] = {}
     if "clusters" in payload:
         for item in payload["clusters"]:
             cluster = _parse_cluster_config(item)
