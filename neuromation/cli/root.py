@@ -41,7 +41,7 @@ class Root:
     @property
     def _config(self) -> _Config:
         assert self._client is not None
-        return self._client._config_data
+        return self._client.config._config_data
 
     @property
     def quiet(self) -> bool:

@@ -32,7 +32,6 @@ class Client(metaclass=NoPublicConstructor):
         trace_id: Optional[str],
     ) -> None:
         self._closed = False
-        self._config_data = config_data
         self._trace_id = trace_id
         self._session = session
         if time.time() - config_data.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
@@ -46,7 +45,7 @@ class Client(metaclass=NoPublicConstructor):
             cookie["domain"] = config_data.url.raw_host
             cookie["path"] = "/"
         self._core = _Core(session, cookie, trace_id)
-        self._config = Config._create(self._core, path, self._config_data)
+        self._config = Config._create(self._core, path, config_data)
         self._parser = Parser._create(self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
