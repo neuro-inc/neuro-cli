@@ -85,13 +85,7 @@ def _parse_clusters(payload: Dict[str, Any]) -> Dict[str, ClusterConfig]:
     else:
         # old server without multiple clusters support
         cluster = _parse_cluster_config(payload)
-        if (
-            cluster.registry_url
-            and cluster.storage_url
-            and cluster.users_url
-            and cluster.monitoring_url
-            and cluster.resource_presets
-        ):
+        if _is_cluster_config_initialized(cluster):
             ret[cluster.name] = cluster
     return ret
 

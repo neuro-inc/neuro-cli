@@ -240,7 +240,7 @@ async def test_switch_clusters(
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
                 ],
-            }
+            },
         ],
     }
 
