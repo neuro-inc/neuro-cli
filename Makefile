@@ -41,8 +41,6 @@ help:
 
 .PHONY: init
 init: _init-readme update-deps
-	cp .hooks/* .git/hooks
-	chmod a+x .git/hooks/*
 	rm -rf .mypy_cache
 
 _init-readme:

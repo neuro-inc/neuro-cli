@@ -14,3 +14,4 @@ dist
 .testmondata
 tests/e2e/assets/neuro-cli.tar
 docs/_build
+.update-deps
