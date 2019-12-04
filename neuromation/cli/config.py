@@ -250,7 +250,7 @@ async def prompt_cluster(client: Client) -> str:
         click.echo("\n".join(fmt(clusters.values(), client.config.cluster_name)))
         answer = input(f"Select cluster to switch [{client.config.cluster_name}]: ")
         answer = answer.strip()
-        if answer is None:
+        if answer:
             answer = client.config.cluster_name
         if answer not in clusters:
             click.echo(
