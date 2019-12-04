@@ -152,10 +152,13 @@ class Config(metaclass=NoPublicConstructor):
             self._config_data.auth_token.token,
         )
         if self.cluster_name not in server_config.clusters:
+            # Raise exception here?
+            # if yes there is not way to switch cluster without relogin
             raise RuntimeError(
                 f"Cluster {self.cluster_name} doesn't exist in "
                 f"a list of available clusters "
-                f"{list(server_config.clusters)}"
+                f"{list(server_config.clusters)}. "
+                f"Please logout and login again."
             )
         self._config_data = replace(self._config_data, clusters=server_config.clusters)
 
@@ -163,7 +166,8 @@ class Config(metaclass=NoPublicConstructor):
         if name not in self.clusters:
             raise RuntimeError(
                 f"Cluster {name} doesn't exist in "
-                f"a list of available clusters {list(self.clusters)}"
+                f"a list of available clusters {list(self.clusters)}. "
+                f"Please logout and login again."
             )
         self._config_data = replace(self._config_data, cluster_name=name)
         self._save(self._config_data, self._path)
