@@ -243,12 +243,14 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     )
 
 
-async def prompt_cluster(client: Client, *, input: Callable[[str], str] = input) -> str:
+async def prompt_cluster(
+    client: Client, *, prompt: Callable[[str], str] = input
+) -> str:
     clusters = client.config.clusters
     while True:
         fmt = ClustersFormatter()
         click.echo("\n".join(fmt(clusters.values(), client.config.cluster_name)))
-        answer = input(f"Select cluster to switch [{client.config.cluster_name}]: ")
+        answer = prompt(f"Select cluster to switch [{client.config.cluster_name}]: ")
         answer = answer.strip()
         if not answer:
             answer = client.config.cluster_name

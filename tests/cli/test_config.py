@@ -29,7 +29,7 @@ async def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
 
     client = make_client("https://neu.ro", clusters=clusters)
 
-    ret = await prompt_cluster(client, input=mock.Mock(return_value="second"))
+    ret = await prompt_cluster(client, prompt=mock.Mock(return_value="second"))
     assert ret == "second"
 
 
@@ -55,7 +55,7 @@ async def test_prompt_cluster_default(make_client: Callable[..., Client]) -> Non
 
     client = make_client("https://neu.ro", clusters=clusters)
 
-    ret = await prompt_cluster(client, input=mock.Mock(return_value=""))
+    ret = await prompt_cluster(client, prompt=mock.Mock(return_value=""))
     assert ret == "first"
 
 
@@ -82,6 +82,6 @@ async def test_prompt_cluster_wrong_answer(make_client: Callable[..., Client]) -
     client = make_client("https://neu.ro", clusters=clusters)
 
     ret = await prompt_cluster(
-        client, input=mock.Mock(side_effect=["another", "second"])
+        client, prompt=mock.Mock(side_effect=["another", "second"])
     )
     assert ret == "second"
