@@ -79,7 +79,7 @@ class VersionChecker(AbstractVersionChecker):
             loop = asyncio.get_event_loop()
             task1 = loop.create_task(self._update_self_version())
             task2 = loop.create_task(self._update_certifi_version())
-            await asyncio.gather(task1, task2)
+            await asyncio.gather(task1, task2)  # type: ignore
         except asyncio.CancelledError:
             raise
         except aiohttp.ClientConnectionError:
