@@ -77,7 +77,7 @@ class TestCli:
         assert json_path.is_file()
         with json_path.open() as fp:
             payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
 
     def test_new_file(self, run_cli: _RunCli, tmp_path: Path, config: _Config) -> None:
@@ -88,7 +88,7 @@ class TestCli:
         assert json_path.is_file()
         with json_path.open() as fp:
             payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
 
     def test_merge_file_without_helpers(
@@ -104,7 +104,7 @@ class TestCli:
         assert json_path.is_file()
         with json_path.open() as fp:
             payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
         assert payload["test"] == "value"
 
@@ -121,7 +121,7 @@ class TestCli:
         assert json_path.is_file()
         with json_path.open() as fp:
             payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro", "some.com": "handler"}
         assert payload["test"] == "value"
 
@@ -133,7 +133,7 @@ class TestCli:
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert str(json_path) in capture.out
-        assert config.cluster_config.registry_url.host in capture.out
+        assert config.clusters[config.cluster_name].registry_url.host in capture.out
 
 
 class TestHelper:
@@ -156,7 +156,7 @@ class TestHelper:
     def test_get_operation(
         self, run_dch: _RunDch, monkeypatch: Any, config: _Config, token: str
     ) -> None:
-        registry = config.cluster_config.registry_url.host
+        registry = config.clusters[config.cluster_name].registry_url.host
         assert registry is not None
         monkeypatch.setattr("sys.stdin", io.StringIO(registry))
         capture = run_dch(["get"])

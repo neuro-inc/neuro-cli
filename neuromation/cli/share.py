@@ -120,7 +120,8 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
             return p.uri, p.action
 
         for p in sorted(
-            await root.client.users.get_acl(root.username, scheme), key=permission_key
+            await root.client.users.get_acl(root.client.username, scheme),
+            key=permission_key,
         ):
             out.append(f"{p.uri} {p.action.value}")
     else:
@@ -129,7 +130,7 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
             return share.permission.uri, share.permission.action.value, share.user
 
         for share in sorted(
-            await root.client.users.get_shares(root.username, scheme),
+            await root.client.users.get_shares(root.client.username, scheme),
             key=shared_permission_key,
         ):
             out.append(

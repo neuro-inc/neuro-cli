@@ -1,128 +1,299 @@
+from typing import Callable
+from unittest import mock
+
 import pytest
+from aiohttp import web
 from yarl import URL
 
-import neuromation
-from neuromation.api import Preset
-from neuromation.api.config import (
-    _AuthConfig,
-    _AuthToken,
-    _ClusterConfig,
-    _Config,
-    _CookieSession,
-    _PyPIVersion,
-)
+from neuromation.api import Client, Cluster, Preset
+from tests import _TestServerFactory
 
 
-class TestConfig:
-    def test_check_initialized(self) -> None:
-        auth_config_good = _AuthConfig.create(
-            auth_url=URL("auth_url"),
-            token_url=URL("http://token"),
-            client_id="client-id",
-            audience="everyone",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-        )
-        assert auth_config_good.is_initialized()
+_MakeClient = Callable[..., Client]
 
-        cluster_config_good = _ClusterConfig.create(
-            registry_url=URL("http://value"),
-            storage_url=URL("http://value"),
-            users_url=URL("http://value"),
-            monitoring_url=URL("http://value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert cluster_config_good.is_initialized()
 
-        config = _Config(
-            auth_config=auth_config_good,
-            auth_token=_AuthToken(
-                token="token", expiration_time=10, refresh_token="ok"
+async def test_username(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        assert client.config.username == "user"
+
+
+async def test_presets(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        assert client.config.presets == {
+            "cpu-large": Preset(
+                cpu=7,
+                memory_mb=14336,
+                is_preemptible=False,
+                gpu=None,
+                gpu_model=None,
+                tpu_type=None,
+                tpu_software_version=None,
             ),
-            cluster_config=cluster_config_good,
-            pypi=_PyPIVersion(
-                pypi_version="1.2.3",
-                check_timestamp=20,
-                certifi_pypi_version="3.4.5",
-                certifi_check_timestamp=40,
+            "cpu-small": Preset(
+                cpu=7,
+                memory_mb=2048,
+                is_preemptible=False,
+                gpu=None,
+                gpu_model=None,
+                tpu_type=None,
+                tpu_software_version=None,
             ),
-            url=URL("https://dev.neu.ro"),
-            cookie_session=_CookieSession.create_uninitialized(),
-            version=neuromation.__version__,
-        )
-        config.check_initialized()  # check no exceptions
-
-    def test_check_initialized_bad_auth_config(self) -> None:
-        auth_config_bad = _AuthConfig.create(
-            auth_url=URL(),  # empty
-            token_url=URL("http://token"),
-            client_id="client-id",
-            audience="everyone",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-        )
-        assert not auth_config_bad.is_initialized()
-
-        cluster_config_good = _ClusterConfig.create(
-            registry_url=URL("http://value"),
-            storage_url=URL("http://value"),
-            users_url=URL("http://value"),
-            monitoring_url=URL("http://value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert cluster_config_good.is_initialized()
-
-        config = _Config(
-            auth_config=auth_config_bad,
-            auth_token=_AuthToken(
-                token="token", expiration_time=10, refresh_token="ok"
+            "gpu-large": Preset(
+                cpu=7,
+                memory_mb=61440,
+                is_preemptible=False,
+                gpu=1,
+                gpu_model="nvidia-tesla-v100",
+                tpu_type=None,
+                tpu_software_version=None,
             ),
-            cluster_config=cluster_config_good,
-            pypi=_PyPIVersion(
-                pypi_version="1.2.3",
-                check_timestamp=20,
-                certifi_pypi_version="3.4.5",
-                certifi_check_timestamp=40,
+            "gpu-small": Preset(
+                cpu=7,
+                memory_mb=30720,
+                is_preemptible=False,
+                gpu=1,
+                gpu_model="nvidia-tesla-k80",
+                tpu_type=None,
+                tpu_software_version=None,
             ),
-            url=URL("https://dev.neu.ro"),
-            cookie_session=_CookieSession.create_uninitialized(),
-            version=neuromation.__version__,
-        )
-        with pytest.raises(ValueError, match="Missing server configuration"):
-            config.check_initialized()
+        }
 
-    def test_check_initialized_bad_cluster_config(self) -> None:
-        auth_config_bad = _AuthConfig.create(
-            auth_url=URL("auth_url"),
-            token_url=URL("http://token"),
-            client_id="client-id",
-            audience="everyone",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-        )
-        assert auth_config_bad.is_initialized()
 
-        cluster_config_good = _ClusterConfig.create(
-            registry_url=URL(),  # empty
-            storage_url=URL("http://value"),
-            users_url=URL("http://value"),
-            monitoring_url=URL("http://value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert not cluster_config_good.is_initialized()
+async def test_cluster_name(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
 
-        config = _Config(
-            auth_config=auth_config_bad,
-            auth_token=_AuthToken(
-                token="token", expiration_time=10, refresh_token="ok"
-            ),
-            cluster_config=cluster_config_good,
-            pypi=_PyPIVersion(
-                pypi_version="1.2.3",
-                check_timestamp=20,
-                certifi_pypi_version="3.4.5",
-                certifi_check_timestamp=40,
-            ),
-            url=URL("https://dev.neu.ro"),
-            cookie_session=_CookieSession.create_uninitialized(),
-            version=neuromation.__version__,
-        )
-        with pytest.raises(ValueError, match="Missing server configuration"):
-            config.check_initialized()
+    async with make_client(srv.make_url("/")) as client:
+        assert client.config.cluster_name == "default"
+
+
+async def test_clusters(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        assert client.config.clusters == {
+            "default": Cluster(
+                name="default",
+                registry_url=URL("https://registry-dev.neu.ro"),
+                storage_url=srv.make_url("/storage"),
+                users_url=srv.make_url("/"),
+                monitoring_url=srv.make_url("/jobs"),
+                presets=mock.ANY,
+            )
+        }
+
+
+async def test_fetch(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    registry_url = "https://registry2-dev.neu.ro"
+    storage_url = "https://storage2-dev.neu.ro"
+    users_url = "https://users2-dev.neu.ro"
+    monitoring_url = "https://jobs2-dev.neu.ro"
+    auth_url = "https://dev-neuromation.auth0.com/authorize"
+    token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    client_id = "this_is_client_id"
+    audience = "https://platform.dev.neuromation.io"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    success_redirect_url = "https://platform.neuromation.io"
+    JSON = {
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "client_id": client_id,
+        "audience": audience,
+        "headless_callback_url": headless_callback_url,
+        "success_redirect_url": success_redirect_url,
+        "clusters": [
+            {
+                "name": "default",
+                "registry_url": registry_url,
+                "storage_url": storage_url,
+                "users_url": users_url,
+                "monitoring_url": monitoring_url,
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                ],
+            }
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.config.fetch()
+        assert client.config.clusters == {
+            "default": Cluster(
+                name="default",
+                registry_url=URL("https://registry2-dev.neu.ro"),
+                storage_url=URL("https://storage2-dev.neu.ro"),
+                users_url=URL("https://users2-dev.neu.ro"),
+                monitoring_url=URL("https://jobs2-dev.neu.ro"),
+                presets={
+                    "cpu-small": Preset(
+                        cpu=2,
+                        memory_mb=2048,
+                        is_preemptible=False,
+                        gpu=None,
+                        gpu_model=None,
+                        tpu_type=None,
+                        tpu_software_version=None,
+                    ),
+                },
+            )
+        }
+
+
+async def test_fetch_dropped_selected_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    # the test returns the same as for valid answer but the cluster name is different
+    registry_url = "https://registry2-dev.neu.ro"
+    storage_url = "https://storage2-dev.neu.ro"
+    users_url = "https://users2-dev.neu.ro"
+    monitoring_url = "https://jobs2-dev.neu.ro"
+    auth_url = "https://dev-neuromation.auth0.com/authorize"
+    token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    client_id = "this_is_client_id"
+    audience = "https://platform.dev.neuromation.io"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    success_redirect_url = "https://platform.neuromation.io"
+    JSON = {
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "client_id": client_id,
+        "audience": audience,
+        "headless_callback_url": headless_callback_url,
+        "success_redirect_url": success_redirect_url,
+        "clusters": [
+            {
+                "name": "another",
+                "registry_url": registry_url,
+                "storage_url": storage_url,
+                "users_url": users_url,
+                "monitoring_url": monitoring_url,
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                ],
+            }
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        with pytest.raises(RuntimeError, match="Cluster default doesn't exist"):
+            await client.config.fetch()
+
+
+async def test_switch_clusters(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    # the test returns the same as for valid answer but the cluster name is different
+    JSON = {
+        "auth_url": "https://dev-neuromation.auth0.com/authorize",
+        "token_url": "https://dev-neuromation.auth0.com/oauth/token",
+        "client_id": "this_is_client_id",
+        "audience": "https://platform.dev.neuromation.io",
+        "headless_callback_url": "https://dev.neu.ro/oauth/show-code",
+        "success_redirect_url": "https://platform.neuromation.io",
+        "clusters": [
+            {
+                "name": "default",
+                "registry_url": "https://registry-dev.neu.ro",
+                "storage_url": "https://storage-dev.neu.ro",
+                "users_url": "https://users-dev.neu.ro",
+                "monitoring_url": "https://jobs-dev.neu.ro",
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                ],
+            },
+            {
+                "name": "another",
+                "registry_url": "https://registry2-dev.neu.ro",
+                "storage_url": "https://storage2-dev.neu.ro",
+                "users_url": "https://users2-dev.neu.ro",
+                "monitoring_url": "https://jobs2-dev.neu.ro",
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                ],
+            },
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.config.fetch()
+        assert client.config.cluster_name == "default"
+        await client.config.switch_cluster("another")
+        assert client.config.cluster_name == "another"
+
+
+async def test_switch_clusters_unknown(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    # the test returns the same as for valid answer but the cluster name is different
+    JSON = {
+        "auth_url": "https://dev-neuromation.auth0.com/authorize",
+        "token_url": "https://dev-neuromation.auth0.com/oauth/token",
+        "client_id": "this_is_client_id",
+        "audience": "https://platform.dev.neuromation.io",
+        "headless_callback_url": "https://dev.neu.ro/oauth/show-code",
+        "success_redirect_url": "https://platform.neuromation.io",
+        "clusters": [
+            {
+                "name": "default",
+                "registry_url": "https://registry-dev.neu.ro",
+                "storage_url": "https://storage-dev.neu.ro",
+                "users_url": "https://users-dev.neu.ro",
+                "monitoring_url": "https://jobs-dev.neu.ro",
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                ],
+            },
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.config.fetch()
+        assert client.config.cluster_name == "default"
+        with pytest.raises(RuntimeError, match="Cluster another doesn't exist"):
+            await client.config.switch_cluster("another")
+        assert client.config.cluster_name == "default"

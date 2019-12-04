@@ -127,7 +127,7 @@ class Helper:
     @property
     def registry_url(self) -> URL:
         config = Factory(path=self._nmrc_path)._read()
-        return config.cluster_config.registry_url
+        return config.clusters[config.cluster_name].registry_url
 
     @property
     def tmpstorage(self) -> str:
@@ -517,7 +517,7 @@ async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
         cookie = client._get_session_cookie()
         if cookie is not None:
             new_config = dataclasses.replace(
-                client._config,
+                client.config._config_data,
                 cookie_session=_CookieSession(
                     cookie=cookie.value, timestamp=int(time())
                 ),

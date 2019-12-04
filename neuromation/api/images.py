@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Set
 import aiodocker
 import aiohttp
 from aiodocker.exceptions import DockerError
-from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
@@ -17,26 +16,21 @@ from .abc import (
     ImageProgressSave,
     ImageProgressStep,
 )
-from .config import _Config
+from .config import Config
 from .core import AuthorizationError, _Core
-from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _ImageNameParser
-from .registry import _Registry
+from .parser import Parser
+from .parsing_utils import LocalImage, RemoteImage, TagOption, _as_repo_str
 from .utils import NoPublicConstructor
 
 
 class Images(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: Config, parse: Parser) -> None:
         self._core = core
         self._config = config
+        self._parse = parse
         self._temporary_images: Set[str] = set()
         self.__docker: Optional[aiodocker.Docker] = None
-        self._registry = _Registry(
-            self._core.session,
-            self._config.cluster_config.registry_url.with_path("/v2/"),
-            self._config.auth_token.token,
-            self._core._trace_id,
-            self._config.auth_token.username,
-        )
+        self._registry_url = self._config.registry_url.with_path("/v2/")
 
     @property
     def _docker(self) -> aiodocker.Docker:
@@ -65,10 +59,6 @@ class Images(metaclass=NoPublicConstructor):
                 await self._docker.images.delete(image)
         if self.__docker is not None:
             await self.__docker.close()
-        await self._registry.close()
-
-    def _auth(self) -> Dict[str, str]:
-        return {"username": "token", "password": self._config.auth_token.token}
 
     async def push(
         self,
@@ -78,11 +68,7 @@ class Images(metaclass=NoPublicConstructor):
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> RemoteImage:
         if remote is None:
-            parser = _ImageNameParser(
-                self._config.auth_token.username,
-                self._config.cluster_config.registry_url,
-            )
-            remote = parser.convert_to_neuro_image(local)
+            remote = self._parse._local_to_remote_image(local)
 
         if progress is None:
             progress = _DummyProgress()
@@ -96,10 +82,9 @@ class Images(metaclass=NoPublicConstructor):
                 raise ValueError(
                     f"Image {local} was not found " "in your local docker images"
                 ) from error
+        auth = await self._config._docker_auth()
         try:
-            async for obj in self._docker.images.push(
-                repo, auth=self._auth(), stream=True
-            ):
+            async for obj in self._docker.images.push(repo, auth=auth, stream=True):
                 step = _try_parse_image_progress_step(obj, remote.tag)
                 if step:
                     progress.step(step)
@@ -118,21 +103,16 @@ class Images(metaclass=NoPublicConstructor):
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> LocalImage:
         if local is None:
-            parser = _ImageNameParser(
-                self._config.auth_token.username,
-                self._config.cluster_config.registry_url,
-            )
-            local = parser.convert_to_local_image(remote)
+            local = self._parse._remote_to_local_image(remote)
 
         if progress is None:
             progress = _DummyProgress()
         progress.pull(ImageProgressPull(remote, local))
 
         repo = _as_repo_str(remote)
+        auth = await self._config._docker_auth()
         try:
-            async for obj in self._docker.pull(
-                repo, auth=self._auth(), repo=repo, stream=True
-            ):
+            async for obj in self._docker.pull(repo, auth=auth, repo=repo, stream=True):
                 self._temporary_images.add(repo)
                 step = _try_parse_image_progress_step(obj, remote.tag)
                 if step:
@@ -152,18 +132,17 @@ class Images(metaclass=NoPublicConstructor):
         return local
 
     async def ls(self) -> List[RemoteImage]:
-        async with self._registry.request("GET", URL("_catalog")) as resp:
-            parser = _ImageNameParser(
-                self._config.auth_token.username,
-                self._config.cluster_config.registry_url,
-            )
+        auth = await self._config._registry_auth()
+        async with self._core.request(
+            "GET", self._registry_url / "_catalog", auth=auth
+        ) as resp:
             ret = await resp.json()
             prefix = "image://"
             result: List[RemoteImage] = []
             for repo in ret["repositories"]:
                 if not repo.startswith(prefix):
                     repo = prefix + repo
-                result.append(parser.parse_as_neuro_image(repo, allow_tag=False))
+                result.append(self._parse.remote_image(repo, tag_option=TagOption.DENY))
             return result
 
     def _validate_image_for_tags(self, image: RemoteImage) -> None:
@@ -178,7 +157,10 @@ class Images(metaclass=NoPublicConstructor):
     async def tags(self, image: RemoteImage) -> List[RemoteImage]:
         self._validate_image_for_tags(image)
         name = f"{image.owner}/{image.name}"
-        async with self._registry.request("GET", URL(f"{name}/tags/list")) as resp:
+        auth = await self._config._registry_auth()
+        async with self._core.request(
+            "GET", self._registry_url / name / "tags" / "list", auth=auth
+        ) as resp:
             ret = await resp.json()
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]
 

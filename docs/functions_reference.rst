@@ -75,8 +75,8 @@ Config Factory
    Platform and logging out.
 
    *path* (:class:`pathlib.Path`) can be provided for pointing on a *custom*
-   configuration file (``~/.nmrc`` by default). The default value can be overridden by
-   ``NEUROMATION_CONFIG`` environment variable.
+   configuration directory (``~/.nmrc`` by default). The default value can be overridden
+   by ``NEUROMATION_CONFIG`` environment variable.
 
    .. comethod:: get(*, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client
 

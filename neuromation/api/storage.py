@@ -36,7 +36,7 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from .config import _Config
+from .config import Config
 from .core import ResourceNotFound, _Core
 from .url_utils import (
     _extract_path,
@@ -80,7 +80,7 @@ class FileStatus:
 
 
 class Storage(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
         self._config = config
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
@@ -88,7 +88,7 @@ class Storage(metaclass=NoPublicConstructor):
         self._max_time_diff = 0.0
 
     def _uri_to_path(self, uri: URL) -> str:
-        uri = normalize_storage_path_uri(uri, self._config.auth_token.username)
+        uri = normalize_storage_path_uri(uri, self._config.username)
         prefix = uri.host + "/" if uri.host else ""
         return prefix + uri.path.lstrip("/")
 
@@ -122,11 +122,12 @@ class Storage(metaclass=NoPublicConstructor):
         )
 
     async def ls(self, uri: URL) -> List[FileStatus]:
-        url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
 
         request_time = time.time()
-        async with self._core.request("GET", url) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
             return [
@@ -217,38 +218,44 @@ class Storage(metaclass=NoPublicConstructor):
                         errno.ENOENT, "No such directory", str(parent)
                     )
 
-        url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="MKDIRS")
+        auth = await self._config._api_auth()
 
-        async with self._core.request("PUT", url) as resp:
+        async with self._core.request("PUT", url, auth=auth) as resp:
             resp  # resp.status == 201
 
     async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
         path = self._uri_to_path(uri)
         assert path, "Creation in root is not allowed"
-        url = self._config.cluster_config.storage_url / path
+        url = self._config.storage_url / path
         url = url.with_query(op="CREATE")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
+        auth = await self._config._api_auth()
 
-        async with self._core.request("PUT", url, data=data, timeout=timeout) as resp:
+        async with self._core.request(
+            "PUT", url, data=data, timeout=timeout, auth=auth
+        ) as resp:
             resp  # resp.status == 201
 
     async def stat(self, uri: URL) -> FileStatus:
-        url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="GETFILESTATUS")
+        auth = await self._config._api_auth()
 
         request_time = time.time()
-        async with self._core.request("GET", url) as resp:
+        async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
             return _file_status_from_api(res["FileStatus"])
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
-        url = self._config.cluster_config.storage_url / self._uri_to_path(uri)
+        url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
+        auth = await self._config._api_auth()
 
-        async with self._core.request("GET", url, timeout=timeout) as resp:
+        async with self._core.request("GET", url, timeout=timeout, auth=auth) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
@@ -272,17 +279,19 @@ class Storage(metaclass=NoPublicConstructor):
                     errno.EISDIR, "Is a directory, use recursive remove", str(uri)
                 )
 
-        url = self._config.cluster_config.storage_url / path
+        url = self._config.storage_url / path
         url = url.with_query(op="DELETE")
+        auth = await self._config._api_auth()
 
-        async with self._core.request("DELETE", url) as resp:
+        async with self._core.request("DELETE", url, auth=auth) as resp:
             resp  # resp.status == 204
 
     async def mv(self, src: URL, dst: URL) -> None:
-        url = self._config.cluster_config.storage_url / self._uri_to_path(src)
+        url = self._config.storage_url / self._uri_to_path(src)
         url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
+        auth = await self._config._api_auth()
 
-        async with self._core.request("POST", url) as resp:
+        async with self._core.request("POST", url, auth=auth) as resp:
             resp  # resp.status == 204
 
     # high-level helpers
@@ -327,7 +336,7 @@ class Storage(metaclass=NoPublicConstructor):
         if progress is None:
             progress = _DummyProgress()
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
+        dst = normalize_storage_path_uri(dst, self._config.username)
         path = _extract_path(src)
         try:
             if not path.exists():
@@ -400,7 +409,7 @@ class Storage(metaclass=NoPublicConstructor):
         if progress is None:
             progress = _DummyProgress()
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, self._config.auth_token.username)
+        dst = normalize_storage_path_uri(dst, self._config.username)
         path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
@@ -501,7 +510,7 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
-        src = normalize_storage_path_uri(src, self._config.auth_token.username)
+        src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         src_stat = await self.stat(src)
@@ -565,7 +574,7 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
-        src = normalize_storage_path_uri(src, self._config.auth_token.username)
+        src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()

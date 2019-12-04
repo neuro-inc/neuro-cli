@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Any, Dict, Mapping, Optional, Sequence
+from dataclasses import dataclass
+from typing import Any, Dict, Mapping, Optional
 
 import aiohttp
 from yarl import URL
@@ -19,67 +19,44 @@ class Preset:
 
 
 @dataclass(frozen=True)
-class _ClusterConfig:
+class Cluster:
+    name: str
     registry_url: URL
     storage_url: URL
     users_url: URL
     monitoring_url: URL
-    resource_presets: Mapping[str, Preset]
-    name: Optional[str]  # can be None for backward compatibility
+    presets: Mapping[str, Preset]
 
-    @classmethod
-    def create(
-        cls,
-        registry_url: URL,
-        storage_url: URL,
-        users_url: URL,
-        monitoring_url: URL,
-        resource_presets: Mapping[str, Preset],
-        name: Optional[str] = None,
-    ) -> "_ClusterConfig":
-        return cls(
-            registry_url,
-            storage_url,
-            users_url,
-            monitoring_url,
-            resource_presets,
-            name=name,
-        )
 
-    def is_initialized(self) -> bool:
-        return bool(
-            self.registry_url
-            and self.storage_url
-            and self.users_url
-            and self.monitoring_url
-            and self.resource_presets
-        )
+def _is_cluster_config_initialized(cfg: Cluster) -> bool:
+    return bool(
+        cfg.registry_url
+        and cfg.storage_url
+        and cfg.users_url
+        and cfg.monitoring_url
+        and cfg.presets
+    )
 
 
 @dataclass(frozen=True)
 class _ServerConfig:
     auth_config: _AuthConfig
-    # the field exists for the transition period at least
-    cluster_config: _ClusterConfig
-    # clusters are not stored in config file
-    # they are exits for fetching from API and displaying by CLI commands
-    # Later we maybe change it.
-    clusters: Sequence[_ClusterConfig] = field(default_factory=list)
+    clusters: Mapping[str, Cluster]
 
 
 class ConfigLoadException(Exception):
     pass
 
 
-def _parse_cluster_config(payload: Dict[str, Any]) -> _ClusterConfig:
-    resource_presets: Dict[str, Preset] = {}
+def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
+    presets: Dict[str, Preset] = {}
     for data in payload.get("resource_presets", ()):
         tpu_type = tpu_software_version = None
         if "tpu" in data:
             tpu_payload = data.get("tpu")
             tpu_type = tpu_payload["type"]
             tpu_software_version = tpu_payload["software_version"]
-        resource_presets[data["name"]] = Preset(
+        presets[data["name"]] = Preset(
             cpu=data["cpu"],
             memory_mb=data["memory_mb"],
             gpu=data.get("gpu"),
@@ -88,15 +65,29 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> _ClusterConfig:
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
         )
-    cluster_config = _ClusterConfig(
+    cluster_config = Cluster(
         registry_url=URL(payload.get("registry_url", "")),
         storage_url=URL(payload.get("storage_url", "")),
         users_url=URL(payload.get("users_url", "")),
         monitoring_url=URL(payload.get("monitoring_url", "")),
-        resource_presets=resource_presets,
-        name=payload.get("name"),
+        presets=presets,
+        name=payload.get("name", "default"),
     )
     return cluster_config
+
+
+def _parse_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
+    ret: Dict[str, Cluster] = {}
+    if "clusters" in payload:
+        for item in payload["clusters"]:
+            cluster = _parse_cluster_config(item)
+            ret[cluster.name] = cluster
+    else:
+        # old server without multiple clusters support
+        cluster = _parse_cluster_config(payload)
+        if _is_cluster_config_initialized(cluster):
+            ret[cluster.name] = cluster
+    return ret
 
 
 async def get_server_config(
@@ -128,10 +119,7 @@ async def get_server_config(
             callback_urls=callback_urls,
             headless_callback_url=headless_callback_url,
         )
-        cluster_config = _parse_cluster_config(payload)
-        clusters = [_parse_cluster_config(item) for item in payload.get("clusters", [])]
-        if headers and not cluster_config.is_initialized():
+        clusters = _parse_clusters(payload)
+        if headers and not clusters:
             raise AuthException("Cannot authorize user")
-        return _ServerConfig(
-            cluster_config=cluster_config, auth_config=auth_config, clusters=clusters
-        )
+        return _ServerConfig(auth_config=auth_config, clusters=clusters)

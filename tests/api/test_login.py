@@ -19,7 +19,7 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api import Preset
+from neuromation.api import Cluster, Preset
 from neuromation.api.login import (
     AuthCode,
     AuthException,
@@ -32,7 +32,7 @@ from neuromation.api.login import (
     create_app_server_once,
     create_auth_code_app,
 )
-from neuromation.api.server_cfg import _ClusterConfig
+from neuromation.api.server_cfg import _is_cluster_config_initialized
 from tests import _TestServerFactory
 
 
@@ -389,152 +389,72 @@ class TestTokenClient:
                     await client.refresh(token)
 
 
-class TestAuthConfig:
-    def test_is_initialized__no_auth_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL(),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_token_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL(),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_client_id(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_audience(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_callback_urls(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=[],
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is True
-
-    def test_is_initialized__no_success_redirect_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=None,
-        )
-        assert auth_config.is_initialized() is True
-
-    def test_is_initialized__no_headless_callback_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL(),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=None,
-        )
-        assert auth_config.is_initialized() is False
-
-
 class TestClusterConfig:
     def test_is_initialized(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is True
+        assert _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_registry_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL(),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_storage_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL(),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_users_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL(),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_monitoring_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL(),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_resource_presets(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={},
+            presets={},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
 
 class TestAuthNegotiator:

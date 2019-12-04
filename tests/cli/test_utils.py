@@ -412,31 +412,33 @@ def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
 
 def test_parse_file_resource_user_less(root: Root) -> None:
     user_less_permission = parse_file_resource("storage:resource", root)
-    assert user_less_permission == URL(f"storage://{root.username}/resource")
+    assert user_less_permission == URL(f"storage://{root.client.username}/resource")
 
 
 def test_parse_file_resource_with_user(root: Root) -> None:
-    full_permission = parse_file_resource(f"storage://{root.username}/resource", root)
-    assert full_permission == URL(f"storage://{root.username}/resource")
+    full_permission = parse_file_resource(
+        f"storage://{root.client.username}/resource", root
+    )
+    assert full_permission == URL(f"storage://{root.client.username}/resource")
     full_permission = parse_file_resource(f"storage://alice/resource", root)
     assert full_permission == URL(f"storage://alice/resource")
 
 
 def test_parse_file_resource_with_tilde(root: Root) -> None:
     parsed = parse_file_resource(f"storage://~/resource", root)
-    assert parsed == URL(f"storage://{root.username}/resource")
+    assert parsed == URL(f"storage://{root.client.username}/resource")
 
 
 def test_parse_resource_for_sharing_image_1_no_tag(root: Root) -> None:
     uri = "image://~/ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL(f"image://{root.username}/ubuntu")
+    assert parsed == URL(f"image://{root.client.username}/ubuntu")
 
 
 def test_parse_resource_for_sharing_image_2_no_tag(root: Root) -> None:
     uri = "image:ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL(f"image://{root.username}/ubuntu")
+    assert parsed == URL(f"image://{root.client.username}/ubuntu")
 
 
 def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
@@ -461,21 +463,21 @@ def test_parse_resource_for_sharing_unsupported_scheme(root: Root) -> None:
 
 def test_parse_resource_for_sharing_user_less(root: Root) -> None:
     user_less_permission = parse_resource_for_sharing("storage:resource", root)
-    assert user_less_permission == URL(f"storage://{root.username}/resource")
+    assert user_less_permission == URL(f"storage://{root.client.username}/resource")
 
 
 def test_parse_resource_for_sharing_with_user(root: Root) -> None:
     full_permission = parse_resource_for_sharing(
-        f"storage://{root.username}/resource", root
+        f"storage://{root.client.username}/resource", root
     )
-    assert full_permission == URL(f"storage://{root.username}/resource")
+    assert full_permission == URL(f"storage://{root.client.username}/resource")
     full_permission = parse_resource_for_sharing(f"storage://alice/resource", root)
     assert full_permission == URL(f"storage://alice/resource")
 
 
 def test_parse_resource_for_sharing_with_tilde(root: Root) -> None:
     parsed = parse_resource_for_sharing(f"storage://~/resource", root)
-    assert parsed == URL(f"storage://{root.username}/resource")
+    assert parsed == URL(f"storage://{root.client.username}/resource")
 
 
 def test_parse_resource_for_sharing_with_tilde_relative(root: Root) -> None:

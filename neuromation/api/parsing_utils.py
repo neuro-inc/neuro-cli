@@ -1,7 +1,14 @@
+import enum
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from yarl import URL
+
+
+class TagOption(enum.Enum):
+    ALLOW = enum.auto()
+    DENY = enum.auto()
+    DEFAULT = enum.auto()
 
 
 @dataclass(frozen=True)
@@ -38,8 +45,6 @@ class LocalImage:
 
 
 class _ImageNameParser:
-    default_tag = "latest"
-
     def __init__(self, default_user: str, registry_url: URL):
         self._default_user = default_user
         if not registry_url.host:
@@ -56,23 +61,27 @@ class _ImageNameParser:
         except ValueError as e:
             raise ValueError(f"Invalid local image '{image}': {e}") from e
 
-    def parse_as_neuro_image(self, image: str, allow_tag: bool = True) -> RemoteImage:
+    def parse_as_neuro_image(
+        self, image: str, *, tag_option: TagOption = TagOption.DEFAULT
+    ) -> RemoteImage:
         try:
             self._validate_image_name(image)
             tag: Optional[str]
-            if allow_tag:
-                tag = self.default_tag
+            if tag_option == TagOption.DEFAULT:
+                tag = "latest"
             else:
-                if self.has_tag(image):
+                if tag_option == TagOption.DENY and self.has_tag(image):
                     raise ValueError("tag is not allowed")
                 tag = None
             return self._parse_as_neuro_image(image, default_tag=tag)
         except ValueError as e:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
 
-    def parse_remote(self, value: str) -> RemoteImage:
+    def parse_remote(
+        self, value: str, *, tag_option: TagOption = TagOption.DEFAULT
+    ) -> RemoteImage:
         if self.is_in_neuro_registry(value):
-            return self.parse_as_neuro_image(value)
+            return self.parse_as_neuro_image(value, tag_option=tag_option)
         else:
             img = self.parse_as_local_image(value)
             name = img.name
@@ -131,7 +140,7 @@ class _ImageNameParser:
     def _parse_as_local_image(self, image: str) -> LocalImage:
         if self.is_in_neuro_registry(image):
             raise ValueError("scheme 'image://' is not allowed for local images")
-        name, tag = self._split_image_name(image, self.default_tag)
+        name, tag = self._split_image_name(image, "latest")
         return LocalImage(name=name, tag=tag)
 
     def _parse_as_neuro_image(

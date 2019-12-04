@@ -1,14 +1,15 @@
 import time
 from http.cookies import Morsel  # noqa
 from http.cookies import SimpleCookie
-from types import MappingProxyType, TracebackType
+from pathlib import Path
+from types import TracebackType
 from typing import Mapping, Optional, Type
 
 import aiohttp
 
 from neuromation.api.quota import _Quota
 
-from .config import _Config
+from .config import Config, _Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
@@ -24,30 +25,31 @@ SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 
 class Client(metaclass=NoPublicConstructor):
     def __init__(
-        self, session: aiohttp.ClientSession, config: _Config, trace_id: Optional[str]
+        self,
+        session: aiohttp.ClientSession,
+        config_data: _Config,
+        path: Path,
+        trace_id: Optional[str],
     ) -> None:
         self._closed = False
-        config.check_initialized()
-        self._config = config
         self._trace_id = trace_id
         self._session = session
-        if time.time() - config.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
+        if time.time() - config_data.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
             # expired
             cookie: Optional["Morsel[str]"] = None
         else:
             tmp = SimpleCookie()  # type: ignore
-            tmp["NEURO_SESSION"] = config.cookie_session.cookie
+            tmp["NEURO_SESSION"] = config_data.cookie_session.cookie
             cookie = tmp["NEURO_SESSION"]
-            assert config.url.raw_host is not None
-            cookie["domain"] = config.url.raw_host
+            assert config_data.url.raw_host is not None
+            cookie["domain"] = config_data.url.raw_host
             cookie["path"] = "/"
-        self._core = _Core(
-            session, self._config.url, self._config.auth_token.token, cookie, trace_id
-        )
-        self._parser = Parser._create(self._config, self.username)
+        self._core = _Core(session, cookie, trace_id)
+        self._config = Config._create(self._core, path, config_data)
+        self._parser = Parser._create(self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
-        self._users = Users._create(self._core)
+        self._users = Users._create(self._core, self._config)
         self._quota = _Quota._create(self._core, self._config)
         self._images: Optional[Images] = None
 
@@ -73,11 +75,17 @@ class Client(metaclass=NoPublicConstructor):
 
     @property
     def username(self) -> str:
-        return self._config.auth_token.username
+        return self._config.username
 
     @property
     def presets(self) -> Mapping[str, Preset]:
-        return MappingProxyType(self._config.cluster_config.resource_presets)
+        # TODO: add deprecation warning eventually.
+        # The preferred API is client.config now.
+        return self._config.presets
+
+    @property
+    def config(self) -> Config:
+        return self._config
 
     @property
     def jobs(self) -> Jobs:
@@ -94,7 +102,7 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images._create(self._core, self._config)
+            self._images = Images._create(self._core, self._config, self._parser)
         return self._images
 
     @property

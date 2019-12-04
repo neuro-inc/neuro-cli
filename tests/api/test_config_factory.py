@@ -14,7 +14,7 @@ from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
-from neuromation.api import TRUSTED_CONFIG_PATH, ConfigError, Factory
+from neuromation.api import TRUSTED_CONFIG_PATH, Cluster, ConfigError, Factory
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -23,7 +23,6 @@ from neuromation.api.config import (
     _PyPIVersion,
 )
 from neuromation.api.login import AuthException
-from neuromation.api.server_cfg import _ClusterConfig
 from tests import _TestServerFactory
 
 
@@ -37,7 +36,7 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 
 @pytest.fixture
 def config_dir(
-    tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+    tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> Path:
     config_path = tmp_home / ".nmrc"
     _create_config(config_path, token, auth_config, cluster_config)
@@ -115,19 +114,17 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
 
 
 def _create_config(
-    nmrc_path: Path,
-    token: str,
-    auth_config: _AuthConfig,
-    cluster_config: _ClusterConfig,
+    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster,
 ) -> str:
     config = _Config(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
-        cluster_config=cluster_config,
         pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
         cookie_session=_CookieSession.create_uninitialized(),
         version=neuromation.__version__,
+        cluster_name=cluster_config.name,
+        clusters={cluster_config.name: cluster_config},
     )
     Factory(nmrc_path)._save(config)
     assert nmrc_path.exists()
@@ -156,19 +153,19 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
         token = _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert await client.config.token() == token
 
     async def test_preset_serialization(
         self,
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
         _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
         client = await Factory().get()
@@ -182,27 +179,27 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
         token = _create_config(
             tmp_home / "test.nmrc", token, auth_config, cluster_config
         )
         client = await Factory(Path("~/test.nmrc")).get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert await client.config.token() == token
 
     async def test_full_path(
         self,
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
         config_path = tmp_home / "test.nmrc"
         token = _create_config(config_path, token, auth_config, cluster_config)
         client = await Factory(config_path).get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert await client.config.token() == token
 
     async def test_token_autorefreshing(
         self, config_dir: Path, monkeypatch: Any
@@ -222,7 +219,7 @@ class TestConfigFileInteraction:
         client = await Factory().get()
         await client.close()
         file_stat_after = config_file.stat()
-        assert client._config.auth_token.token == new_token
+        assert await client.config.token() == new_token
         assert (
             file_stat_before != file_stat_after
         ), "Config file not rewritten while token refreshed"
@@ -245,7 +242,7 @@ class TestConfigFileInteraction:
         tmpdir: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
         monkeypatch: Any,
     ) -> None:
         monkeypatch.setenv(TRUSTED_CONFIG_PATH, "1")
@@ -263,7 +260,7 @@ class TestConfigFileInteraction:
         with config_file.open("r") as f:
             original = yaml.safe_load(f)
 
-        for key in ["auth_config", "auth_token", "pypi", "cluster_config", "url"]:
+        for key in ["auth_config", "auth_token", "pypi", "clusters", "url"]:
             modified = original.copy()
             del modified[key]
             with config_file.open("w") as f:
@@ -329,9 +326,6 @@ class TestLogin:
         await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "
-        saved_config = Factory(nmrc_path)._read()
-        assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
 
 
 class TestLoginWithToken:
@@ -347,9 +341,6 @@ class TestLoginWithToken:
         )
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "
-        saved_config = Factory(nmrc_path)._read()
-        assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
 
     async def test_incorrect_token(
         self, tmp_home: Path, mock_for_login: _TestServer
@@ -392,9 +383,6 @@ class TestHeadlessLogin:
         )
         nmrc_path = tmp_home / ".nmrc"
         assert Path(nmrc_path).exists(), "Config file not written after login "
-        saved_config = Factory(nmrc_path)._read()
-        assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
 
 
 class TestLogout:

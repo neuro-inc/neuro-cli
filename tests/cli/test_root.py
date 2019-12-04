@@ -3,7 +3,7 @@ from pathlib import Path
 import aiohttp
 import pytest
 
-from neuromation.cli.root import ConfigError, Root
+from neuromation.cli.root import Root
 
 
 @pytest.fixture
@@ -20,32 +20,8 @@ def root_uninitialized() -> Root:
     )
 
 
-def test_auth_uninitialized(root_uninitialized: Root) -> None:
-    assert root_uninitialized.auth is None
-
-
 def test_timeout(root_uninitialized: Root) -> None:
     assert root_uninitialized.timeout == aiohttp.ClientTimeout(None, None, 60, 60)
-
-
-def test_username_uninitialized(root_uninitialized: Root) -> None:
-    with pytest.raises(ConfigError):
-        root_uninitialized.username
-
-
-def test_url_uninitialized(root_uninitialized: Root) -> None:
-    with pytest.raises(ConfigError):
-        root_uninitialized.url
-
-
-def test_registry_url_uninitialized(root_uninitialized: Root) -> None:
-    with pytest.raises(ConfigError):
-        root_uninitialized.registry_url
-
-
-def test_resource_presets_uninitialized(root_uninitialized: Root) -> None:
-    with pytest.raises(ConfigError):
-        root_uninitialized.resource_presets
 
 
 def test_get_session_cookie(root_uninitialized: Root) -> None:

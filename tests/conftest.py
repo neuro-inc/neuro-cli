@@ -1,4 +1,5 @@
-from typing import Callable
+from pathlib import Path
+from typing import Callable, Dict, Optional
 
 import aiohttp
 import pytest
@@ -6,7 +7,7 @@ from jose import jwt
 from yarl import URL
 
 import neuromation
-from neuromation.api import Client, Preset
+from neuromation.api import Client, Cluster, Preset
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -14,7 +15,6 @@ from neuromation.api.config import (
     _CookieSession,
     _PyPIVersion,
 )
-from neuromation.api.server_cfg import _ClusterConfig
 from neuromation.api.tracing import _make_trace_config
 
 
@@ -41,13 +41,13 @@ def auth_config() -> _AuthConfig:
 
 
 @pytest.fixture
-def cluster_config() -> _ClusterConfig:
-    return _ClusterConfig.create(
+def cluster_config() -> Cluster:
+    return Cluster(
         registry_url=URL("https://registry-dev.neu.ro"),
         storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
-        resource_presets={
+        presets={
             "gpu-small": Preset(
                 cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
             ),
@@ -58,44 +58,51 @@ def cluster_config() -> _ClusterConfig:
             "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
             "cpu-large-p": Preset(cpu=7, memory_mb=14 * 1024, is_preemptible=True),
         },
+        name="default",
     )
 
 
 @pytest.fixture
-def make_client(token: str, auth_config: _AuthConfig) -> Callable[..., Client]:
+def make_client(
+    token: str, auth_config: _AuthConfig, tmp_path: Path
+) -> Callable[..., Client]:
     def go(
         url_str: str,
         registry_url: str = "https://registry-dev.neu.ro",
         trace_id: str = "bd7a977555f6b982",
+        clusters: Optional[Dict[str, Cluster]] = None,
     ) -> Client:
         url = URL(url_str)
-        cluster_config = _ClusterConfig(
-            registry_url=URL(registry_url),
-            monitoring_url=(url / "jobs"),
-            storage_url=(url / "storage"),
-            users_url=url,
-            resource_presets={
-                "gpu-small": Preset(
-                    cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
-                ),
-                "gpu-large": Preset(
-                    cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
-                ),
-                "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
-                "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
-            },
-            name="default",
-        )
+        if clusters is None:
+            cluster_config = Cluster(
+                registry_url=URL(registry_url),
+                monitoring_url=(url / "jobs"),
+                storage_url=(url / "storage"),
+                users_url=url,
+                presets={
+                    "gpu-small": Preset(
+                        cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                    ),
+                    "gpu-large": Preset(
+                        cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                    ),
+                    "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
+                    "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
+                },
+                name="default",
+            )
+            clusters = {cluster_config.name: cluster_config}
         config = _Config(
             auth_config=auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             pypi=_PyPIVersion.create_uninitialized(),
             url=URL(url),
-            cluster_config=cluster_config,
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
+            cluster_name=next(iter(clusters)),
+            clusters=clusters,
         )
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
-        return Client._create(session, config, trace_id)
+        return Client._create(session, config, tmp_path / ".nmrc", trace_id)
 
     return go

@@ -3,7 +3,7 @@ import time
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from sys import platform
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 import click
 import pytest
@@ -12,6 +12,8 @@ from yarl import URL
 
 from neuromation.api import (
     Action,
+    Client,
+    Cluster,
     Container,
     FileStatus,
     FileStatusType,
@@ -1479,7 +1481,7 @@ class TestResourcesFormatter:
 
 class TestConfigFormatter:
     async def test_output(self, root: Root) -> None:
-        out = ConfigFormatter()(root)
+        out = ConfigFormatter()(root.client)
         if platform == "win32":
             no = "No"
         else:
@@ -1490,6 +1492,7 @@ class TestConfigFormatter:
             f"""\
             User Configuration:
               User Name: user
+              Current Cluster: default
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
@@ -1500,8 +1503,10 @@ class TestConfigFormatter:
                 cpu-large     7     14G       {no}"""
         )
 
-    async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
-        presets = dict(root.resource_presets)
+    async def test_output_for_tpu_presets(
+        self, make_client: Callable[..., Client], cluster_config: Cluster
+    ) -> None:
+        presets = dict(cluster_config.presets)
 
         presets["tpu-small"] = Preset(
             cpu=2,
@@ -1519,13 +1524,17 @@ class TestConfigFormatter:
             tpu_type="v3-64",
             tpu_software_version="1.14",
         )
+        new_config = replace(cluster_config, presets=presets)
 
-        monkeypatch.setattr("neuromation.cli.root.Root.resource_presets", presets)
-
-        out = ConfigFormatter()(root)
+        client = make_client(
+            "https://dev.neu.ro/api/v1", clusters={new_config.name: new_config}
+        )
+        out = ConfigFormatter()(client)
         if platform == "win32":
+            yes = "Yes"
             no = "No"
         else:
+            yes = " ✔︎"
             no = "✖︎"
 
         assert "\n".join(
@@ -1534,16 +1543,18 @@ class TestConfigFormatter:
             f"""\
             User Configuration:
               User Name: user
+              Current Cluster: default
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name       #CPU  Memory  Preemptible  GPU                    TPU
-                gpu-small     7     30G       {no}      1 x nvidia-tesla-k80
-                gpu-large     7     60G       {no}      1 x nvidia-tesla-v100
-                cpu-small     7      2G       {no}
-                cpu-large     7     14G       {no}
-                tpu-small     2      2G       {no}                             v3-8/1.14
-                hybrid        4     30G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+                Name         #CPU  Memory  Preemptible  GPU                    TPU
+                gpu-small       7     30G       {no}      1 x nvidia-tesla-k80
+                gpu-large       7     60G       {no}      1 x nvidia-tesla-v100
+                cpu-small       7      2G       {no}
+                cpu-large       7     14G       {no}
+                cpu-large-p     7     14G      {yes}
+                tpu-small       2      2G       {no}                             v3-8/1.14
+                hybrid          4     30G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 

@@ -25,7 +25,7 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 
-from .config import _Config
+from .config import Config
 from .core import IllegalArgumentError, _Core
 from .images import (
     _DummyProgress,
@@ -124,7 +124,7 @@ class JobTelemetry:
 
 
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config, parse: Parser) -> None:
+    def __init__(self, core: _Core, config: Config, parse: Parser) -> None:
         self._core = core
         self._config = config
         self._parse = parse
@@ -138,7 +138,7 @@ class Jobs(metaclass=NoPublicConstructor):
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
     ) -> JobDescription:
-        url = URL("jobs")
+        url = self._config.api_url / "jobs"
         payload: Dict[str, Any] = {
             "container": _container_to_api(container),
             "is_preemptible": is_preemptible,
@@ -149,7 +149,9 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
-        async with self._core.request("POST", url, json=payload) as resp:
+        payload["cluster_name"] = self._config.cluster_name
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             res = await resp.json()
             return _job_description_from_api(res, self._parse)
 
@@ -160,7 +162,7 @@ class Jobs(metaclass=NoPublicConstructor):
         name: str = "",
         owners: Iterable[str] = (),
     ) -> List[JobDescription]:
-        url = URL(f"jobs")
+        url = self._config.api_url / "jobs"
         params: MultiDict[str] = MultiDict()
         for status in statuses:
             params.add("status", status.value)
@@ -168,36 +170,46 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
-        async with self._core.request("GET", url, params=params) as resp:
+        params["cluster_name"] = self._config.cluster_name
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, params=params, auth=auth) as resp:
             ret = await resp.json()
             return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
-        url = URL(f"jobs/{id}")
-        async with self._core.request("DELETE", url):
+        url = self._config.api_url / "jobs" / id
+        auth = await self._config._api_auth()
+        async with self._core.request("DELETE", url, auth=auth):
             # an error is raised for status >= 400
             return None  # 201 status code
 
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/log"
+        url = self._config.monitoring_url / id / "log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
+        auth = await self._config._api_auth()
         async with self._core.request(
-            "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
+            "GET",
+            url,
+            headers={"Accept-Encoding": "identity"},
+            timeout=timeout,
+            auth=auth,
         ) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
     async def status(self, id: str) -> JobDescription:
-        url = URL(f"jobs/{id}")
-        async with self._core.request("GET", url) as resp:
+        url = self._config.api_url / "jobs" / id
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
             return _job_description_from_api(ret, self._parse)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/top"
+        url = self._config.monitoring_url / id / "top"
+        auth = await self._config._api_auth()
         try:
             received_any = False
-            async for resp in self._core.ws_connect(url):
+            async for resp in self._core.ws_connect(url, auth=auth):
                 yield _job_telemetry_from_api(resp.json())
                 received_any = True
             if not received_any:
@@ -220,13 +232,14 @@ class Jobs(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
 
         payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
+        url = self._config.monitoring_url / id / "save"
 
+        auth = await self._config._api_auth()
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         # `self._code.request` implicitly sets `total=3 * 60`
         # unless `sock_read is None`
         async with self._core.request(
-            "POST", url, json=payload, timeout=timeout
+            "POST", url, json=payload, timeout=timeout, auth=auth
         ) as resp:
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))
@@ -266,7 +279,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_exec",
-                "token": self._config.auth_token.token,
+                "token": await self._config.token(),
                 "params": {"job": id, "command": list(cmd)},
             }
         )
@@ -319,7 +332,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._config.auth_token.token,
+                "token": await self._config.token(),
                 "params": {"job": id, "port": job_port},
             }
         )
