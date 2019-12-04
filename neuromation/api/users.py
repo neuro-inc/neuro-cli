@@ -38,9 +38,8 @@ class Users(metaclass=NoPublicConstructor):
     ) -> Sequence[Permission]:
         url = self._config.api_url / "users" / user / "permissions"
         params = {"scheme": scheme} if scheme else {}
-        async with self._core.request(
-            "GET", url, params=params, auth=self._config._api_auth
-        ) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, params=params, auth=auth) as resp:
             payload = await resp.json()
         ret = []
         for item in payload:
@@ -54,9 +53,8 @@ class Users(metaclass=NoPublicConstructor):
     ) -> Sequence[Share]:
         url = self._config.api_url / "users" / user / "permissions" / "shared"
         params = {"scheme": scheme} if scheme else {}
-        async with self._core.request(
-            "GET", url, params=params, auth=self._config._api_auth
-        ) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, params=params, auth=auth) as resp:
             payload = await resp.json()
         ret = []
         for item in payload:
@@ -68,9 +66,8 @@ class Users(metaclass=NoPublicConstructor):
     async def share(self, user: str, permission: Permission) -> None:
         url = self._config.api_url / "users" / user / "permissions"
         payload = [_permission_to_api(permission)]
-        async with self._core.request(
-            "POST", url, json=payload, auth=self._config._api_auth
-        ) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPCreated, this part must me refactored then
             if resp.status != HTTPCreated.status_code:
@@ -79,8 +76,9 @@ class Users(metaclass=NoPublicConstructor):
 
     async def revoke(self, user: str, uri: URL) -> None:
         url = self._config.api_url / "users" / user / "permissions"
+        auth = await self._config._api_auth()
         async with self._core.request(
-            "DELETE", url, params={"uri": str(uri)}, auth=self._config._api_auth
+            "DELETE", url, params={"uri": str(uri)}, auth=auth
         ) as resp:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPNoContent, this part must me refactored then

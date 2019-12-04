@@ -46,7 +46,7 @@ async def show_token(root: Root) -> None:
     """
     Print current authorization token.
     """
-    click.echo(root.client.config.token)
+    click.echo(await root.client.config.token())
 
 
 @command()

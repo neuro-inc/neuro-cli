@@ -82,10 +82,9 @@ class Images(metaclass=NoPublicConstructor):
                 raise ValueError(
                     f"Image {local} was not found " "in your local docker images"
                 ) from error
+        auth = await self._config._docker_auth()
         try:
-            async for obj in self._docker.images.push(
-                repo, auth=self._config._docker_auth, stream=True
-            ):
+            async for obj in self._docker.images.push(repo, auth=auth, stream=True):
                 step = _try_parse_image_progress_step(obj, remote.tag)
                 if step:
                     progress.step(step)
@@ -111,10 +110,9 @@ class Images(metaclass=NoPublicConstructor):
         progress.pull(ImageProgressPull(remote, local))
 
         repo = _as_repo_str(remote)
+        auth = await self._config._docker_auth()
         try:
-            async for obj in self._docker.pull(
-                repo, auth=self._config._docker_auth, repo=repo, stream=True
-            ):
+            async for obj in self._docker.pull(repo, auth=auth, repo=repo, stream=True):
                 self._temporary_images.add(repo)
                 step = _try_parse_image_progress_step(obj, remote.tag)
                 if step:
@@ -134,8 +132,9 @@ class Images(metaclass=NoPublicConstructor):
         return local
 
     async def ls(self) -> List[RemoteImage]:
+        auth = await self._config._registry_auth()
         async with self._core.request(
-            "GET", self._registry_url / "_catalog", auth=self._config._registry_auth
+            "GET", self._registry_url / "_catalog", auth=auth
         ) as resp:
             ret = await resp.json()
             prefix = "image://"
@@ -158,10 +157,9 @@ class Images(metaclass=NoPublicConstructor):
     async def tags(self, image: RemoteImage) -> List[RemoteImage]:
         self._validate_image_for_tags(image)
         name = f"{image.owner}/{image.name}"
+        auth = await self._config._registry_auth()
         async with self._core.request(
-            "GET",
-            self._registry_url / name / "tags" / "list",
-            auth=self._config._registry_auth,
+            "GET", self._registry_url / name / "tags" / "list", auth=auth
         ) as resp:
             ret = await resp.json()
             return [replace(image, tag=tag) for tag in ret.get("tags", [])]

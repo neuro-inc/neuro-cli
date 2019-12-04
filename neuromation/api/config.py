@@ -161,6 +161,7 @@ class Config(metaclass=NoPublicConstructor):
                 f"Please logout and login again."
             )
         self._config_data = replace(self._config_data, clusters=server_config.clusters)
+        self._save(self._config_data, self._path)
 
     async def switch_cluster(self, name: str) -> None:
         if name not in self.clusters:
@@ -191,22 +192,22 @@ class Config(metaclass=NoPublicConstructor):
         cluster = self._config_data.clusters[self._config_data.cluster_name]
         return cluster.registry_url
 
-    @property
-    def token(self) -> str:
+    async def token(self) -> str:
+        # TODO: refresh token here if needed
         return self._config_data.auth_token.token
 
-    @property
-    def _api_auth(self) -> str:
-        return f"Bearer {self.token}"
+    async def _api_auth(self) -> str:
+        token = await self.token()
+        return f"Bearer {token}"
 
-    @property
-    def _docker_auth(self) -> Dict[str, str]:
-        return {"username": "token", "password": self.token}
+    async def _docker_auth(self) -> Dict[str, str]:
+        token = await self.token()
+        return {"username": "token", "password": token}
 
-    @property
-    def _registry_auth(self) -> str:
+    async def _registry_auth(self) -> str:
+        token = await self.token()
         return "Basic " + base64.b64encode(
-            f"{self.username}:{self.token}".encode("ascii")
+            f"{self.username}:{token}".encode("ascii")
         ).decode("ascii")
 
     @classmethod

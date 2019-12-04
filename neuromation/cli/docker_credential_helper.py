@@ -28,7 +28,8 @@ async def async_main(action: str) -> None:
                     "neuro configured with {neuro_registry}.",
                     EX_DATAERR,
                 )
-            payload = {"Username": "token", "Secret": config.token}
+            token = await config.token()
+            payload = {"Username": "token", "Secret": token}
             print(dumps(payload))
 
 

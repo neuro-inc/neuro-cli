@@ -150,9 +150,8 @@ class Jobs(metaclass=NoPublicConstructor):
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
         payload["cluster_name"] = self._config.cluster_name
-        async with self._core.request(
-            "POST", url, json=payload, auth=self._config._api_auth
-        ) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             res = await resp.json()
             return _job_description_from_api(res, self._parse)
 
@@ -172,42 +171,45 @@ class Jobs(metaclass=NoPublicConstructor):
         for owner in owners:
             params.add("owner", owner)
         params["cluster_name"] = self._config.cluster_name
-        async with self._core.request(
-            "GET", url, params=params, auth=self._config._api_auth
-        ) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, params=params, auth=auth) as resp:
             ret = await resp.json()
             return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = self._config.api_url / "jobs" / id
-        async with self._core.request("DELETE", url, auth=self._config._api_auth):
+        auth = await self._config._api_auth()
+        async with self._core.request("DELETE", url, auth=auth):
             # an error is raised for status >= 400
             return None  # 201 status code
 
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
         url = self._config.monitoring_url / id / "log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
+        auth = await self._config._api_auth()
         async with self._core.request(
             "GET",
             url,
             headers={"Accept-Encoding": "identity"},
             timeout=timeout,
-            auth=self._config._api_auth,
+            auth=auth,
         ) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
     async def status(self, id: str) -> JobDescription:
         url = self._config.api_url / "jobs" / id
-        async with self._core.request("GET", url, auth=self._config._api_auth) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
             return _job_description_from_api(ret, self._parse)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = self._config.monitoring_url / id / "top"
+        auth = await self._config._api_auth()
         try:
             received_any = False
-            async for resp in self._core.ws_connect(url, self._config._api_auth):
+            async for resp in self._core.ws_connect(url, auth=auth):
                 yield _job_telemetry_from_api(resp.json())
                 received_any = True
             if not received_any:
@@ -232,11 +234,12 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = {"container": {"image": _as_repo_str(image)}}
         url = self._config.monitoring_url / id / "save"
 
+        auth = await self._config._api_auth()
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         # `self._code.request` implicitly sets `total=3 * 60`
         # unless `sock_read is None`
         async with self._core.request(
-            "POST", url, json=payload, timeout=timeout, auth=self._config._api_auth
+            "POST", url, json=payload, timeout=timeout, auth=auth
         ) as resp:
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))
@@ -276,7 +279,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_exec",
-                "token": self._config.token,
+                "token": await self._config.token(),
                 "params": {"job": id, "command": list(cmd)},
             }
         )
@@ -329,7 +332,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._config.token,
+                "token": await self._config.token(),
                 "params": {"job": id, "port": job_port},
             }
         )
