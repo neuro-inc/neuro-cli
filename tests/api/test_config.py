@@ -120,6 +120,7 @@ async def test_fetch(
         "success_redirect_url": success_redirect_url,
         "clusters": [
             {
+                "name": "default",
                 "registry_url": registry_url,
                 "storage_url": storage_url,
                 "users_url": users_url,
