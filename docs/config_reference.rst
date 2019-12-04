@@ -19,7 +19,7 @@ Config
    Configuration subsystem, available as :attr:`Client.config`.
 
    Use it for analyzing fetching information about the system configuration, e.g. a list
-   of avaliable clusters or switching the active cluster.
+   of available clusters or switching the active cluster.
 
 
    .. attribute:: username
