@@ -47,7 +47,7 @@ from .users import Action
 from .utils import NoPublicConstructor, retries
 
 
-MAX_OPEN_FILES = 100
+MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB
 TIME_THRESHOLD = 1.0
 

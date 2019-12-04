@@ -632,7 +632,7 @@ class StreamProgress(BaseStorageProgress):
 
 
 class TTYProgress(BaseStorageProgress):
-    HEIGHT = 10
+    HEIGHT = 25
 
     def __init__(self, root: Root) -> None:
         self.painter = get_painter(root.color, quote=True)
