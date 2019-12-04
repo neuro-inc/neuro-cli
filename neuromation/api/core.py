@@ -112,7 +112,7 @@ class _Core:
             url = (self._base_url / "").join(url)
         log.debug("Fetch [%s] %s", method, url)
         if headers is not None:
-            real_headers = CIMultiDict(headers)
+            real_headers: CIMultiDict[str] = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
         real_headers.update(self._headers)
@@ -156,7 +156,7 @@ class _Core:
         log.debug("Fetch web socket: %s", abs_url)
 
         if headers is not None:
-            real_headers = CIMultiDict(headers)
+            real_headers: CIMultiDict[str] = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
         real_headers.update(self._headers)
