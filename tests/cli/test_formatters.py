@@ -1506,7 +1506,7 @@ class TestConfigFormatter:
     async def test_output_for_tpu_presets(
         self, make_client: Callable[..., Client], cluster_config: ClusterConfig
     ) -> None:
-        presets = dict(cluster_config.resource_presets)
+        presets = dict(cluster_config.presets)
 
         presets["tpu-small"] = Preset(
             cpu=2,
@@ -1524,7 +1524,7 @@ class TestConfigFormatter:
             tpu_type="v3-64",
             tpu_software_version="1.14",
         )
-        new_config = replace(cluster_config, resource_presets=presets)
+        new_config = replace(cluster_config, presets=presets)
 
         client = make_client("https://dev.neu.ro/api/v1", cluster_config=new_config)
         out = ConfigFormatter()(client)

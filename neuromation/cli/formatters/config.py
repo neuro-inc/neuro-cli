@@ -83,7 +83,7 @@ class ClustersFormatter:
             pre = "* " if cluster.name == default_name else "  "
             out.append(pre + style("Name: ", bold=True) + name)
             out.append(style("  Presets:", bold=True))
-            out.extend(_format_presets(cluster.resource_presets, "    "))
+            out.extend(_format_presets(cluster.presets, "    "))
         return out
 
 

@@ -396,7 +396,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
             name="",
         )
         assert _is_cluster_config_initialized(cluster_config)
@@ -407,7 +407,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
             name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
@@ -418,7 +418,7 @@ class TestClusterConfig:
             storage_url=URL(),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
             name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
@@ -429,7 +429,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL(),
             monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
             name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
@@ -440,7 +440,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL(),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
             name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)
@@ -451,7 +451,7 @@ class TestClusterConfig:
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={},
+            presets={},
             name="",
         )
         assert not _is_cluster_config_initialized(cluster_config)

@@ -93,7 +93,7 @@ async def test_clusters(
                 storage_url=srv.make_url("/storage"),
                 users_url=srv.make_url("/"),
                 monitoring_url=srv.make_url("/jobs"),
-                resource_presets=mock.ANY,
+                presets=mock.ANY,
             )
         }
 
@@ -148,7 +148,7 @@ async def test_fetch(
                 storage_url=URL("https://storage2-dev.neu.ro"),
                 users_url=URL("https://users2-dev.neu.ro"),
                 monitoring_url=URL("https://jobs2-dev.neu.ro"),
-                resource_presets={
+                presets={
                     "cpu-small": Preset(
                         cpu=2,
                         memory_mb=2048,

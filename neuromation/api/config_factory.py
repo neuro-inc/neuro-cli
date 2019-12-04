@@ -276,9 +276,9 @@ class Factory:
                 storage_url=URL(cluster_config["storage_url"]),
                 users_url=URL(cluster_config["users_url"]),
                 monitoring_url=URL(cluster_config["monitoring_url"]),
-                resource_presets=dict(
+                presets=dict(
                     self._deserialize_resource_preset(data)
-                    for data in cluster_config.get("resource_presets", [])
+                    for data in cluster_config.get("presets", [])
                 ),
             )
             ret[cluster.name] = cluster

@@ -134,7 +134,7 @@ class Config(metaclass=NoPublicConstructor):
     @property
     def presets(self) -> Mapping[str, Preset]:
         cluster = self._config_data.clusters[self._config_data.cluster_name]
-        return MappingProxyType(cluster.resource_presets)
+        return MappingProxyType(cluster.presets)
 
     @property
     def clusters(self) -> Mapping[str, ClusterConfig]:
@@ -275,9 +275,9 @@ class Config(metaclass=NoPublicConstructor):
                 "storage_url": str(cluster.storage_url),
                 "users_url": str(cluster.users_url),
                 "monitoring_url": str(cluster.monitoring_url),
-                "resource_presets": [
-                    cls._serialize_resource_preset(name, resource_preset)
-                    for name, resource_preset in cluster.resource_presets.items()
+                "presets": [
+                    cls._serialize_resource_preset(name, preset)
+                    for name, preset in cluster.presets.items()
                 ],
             }
             ret.append(cluster_config)
@@ -285,15 +285,15 @@ class Config(metaclass=NoPublicConstructor):
 
     @classmethod
     def _serialize_resource_preset(
-        cls, name: str, resource_preset: Preset
+        cls, name: str, preset: Preset
     ) -> Dict[str, Any]:
         return {
             "name": name,
-            "cpu": resource_preset.cpu,
-            "memory_mb": resource_preset.memory_mb,
-            "gpu": resource_preset.gpu,
-            "gpu_model": resource_preset.gpu_model,
-            "tpu_type": resource_preset.tpu_type,
-            "tpu_software_version": resource_preset.tpu_software_version,
-            "is_preemptible": resource_preset.is_preemptible,
+            "cpu": preset.cpu,
+            "memory_mb": preset.memory_mb,
+            "gpu": preset.gpu,
+            "gpu_model": preset.gpu_model,
+            "tpu_type": preset.tpu_type,
+            "tpu_software_version": preset.tpu_software_version,
+            "is_preemptible": preset.is_preemptible,
         }

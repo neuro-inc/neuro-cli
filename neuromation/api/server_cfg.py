@@ -25,7 +25,7 @@ class ClusterConfig:
     storage_url: URL
     users_url: URL
     monitoring_url: URL
-    resource_presets: Mapping[str, Preset]
+    presets: Mapping[str, Preset]
 
 
 def _is_cluster_config_initialized(cfg: ClusterConfig) -> bool:
@@ -34,7 +34,7 @@ def _is_cluster_config_initialized(cfg: ClusterConfig) -> bool:
         and cfg.storage_url
         and cfg.users_url
         and cfg.monitoring_url
-        and cfg.resource_presets
+        and cfg.presets
     )
 
 
@@ -49,14 +49,14 @@ class ConfigLoadException(Exception):
 
 
 def _parse_cluster_config(payload: Dict[str, Any]) -> ClusterConfig:
-    resource_presets: Dict[str, Preset] = {}
+    presets: Dict[str, Preset] = {}
     for data in payload.get("resource_presets", ()):
         tpu_type = tpu_software_version = None
         if "tpu" in data:
             tpu_payload = data.get("tpu")
             tpu_type = tpu_payload["type"]
             tpu_software_version = tpu_payload["software_version"]
-        resource_presets[data["name"]] = Preset(
+        presets[data["name"]] = Preset(
             cpu=data["cpu"],
             memory_mb=data["memory_mb"],
             gpu=data.get("gpu"),
@@ -70,7 +70,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> ClusterConfig:
         storage_url=URL(payload.get("storage_url", "")),
         users_url=URL(payload.get("users_url", "")),
         monitoring_url=URL(payload.get("monitoring_url", "")),
-        resource_presets=resource_presets,
+        presets=presets,
         name=payload.get("name", "default"),
     )
     return cluster_config
