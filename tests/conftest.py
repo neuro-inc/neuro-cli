@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 
 import aiohttp
 import pytest
@@ -70,10 +70,10 @@ def make_client(
         url_str: str,
         registry_url: str = "https://registry-dev.neu.ro",
         trace_id: str = "bd7a977555f6b982",
-        cluster_config: Optional[Cluster] = None,
+        clusters: Optional[Dict[str, Cluster]] = None,
     ) -> Client:
         url = URL(url_str)
-        if cluster_config is None:
+        if clusters is None:
             cluster_config = Cluster(
                 registry_url=URL(registry_url),
                 monitoring_url=(url / "jobs"),
@@ -91,6 +91,7 @@ def make_client(
                 },
                 name="default",
             )
+            clusters = {cluster_config.name: cluster_config}
         config = _Config(
             auth_config=auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
@@ -98,8 +99,8 @@ def make_client(
             url=URL(url),
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
-            cluster_name="default",
-            clusters={cluster_config.name: cluster_config},
+            cluster_name=next(iter(clusters)),
+            clusters=clusters,
         )
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
         return Client._create(session, config, tmp_path / ".nmrc", trace_id)

@@ -21,7 +21,6 @@ Config
    Use it for analyzing fetching information about the system configuration, e.g. a list
    of available clusters or switching the active cluster.
 
-
    .. attribute:: username
 
       User name used for working with Neuro Platform, read-only :class:`str`.

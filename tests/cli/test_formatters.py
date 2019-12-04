@@ -1526,7 +1526,9 @@ class TestConfigFormatter:
         )
         new_config = replace(cluster_config, presets=presets)
 
-        client = make_client("https://dev.neu.ro/api/v1", cluster_config=new_config)
+        client = make_client(
+            "https://dev.neu.ro/api/v1", clusters={new_config.name: new_config}
+        )
         out = ConfigFormatter()(client)
         if platform == "win32":
             yes = "Yes"

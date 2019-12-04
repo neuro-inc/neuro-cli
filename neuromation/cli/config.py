@@ -4,7 +4,7 @@ import os
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import click
 from yarl import URL
@@ -243,14 +243,14 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     )
 
 
-async def prompt_cluster(client: Client) -> str:
+async def prompt_cluster(client: Client, *, input: Callable[[str], str] = input) -> str:
     clusters = client.config.clusters
     while True:
         fmt = ClustersFormatter()
         click.echo("\n".join(fmt(clusters.values(), client.config.cluster_name)))
         answer = input(f"Select cluster to switch [{client.config.cluster_name}]: ")
         answer = answer.strip()
-        if answer:
+        if not answer:
             answer = client.config.cluster_name
         if answer not in clusters:
             click.echo(
