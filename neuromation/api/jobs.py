@@ -32,14 +32,8 @@ from .images import (
     _raise_on_error_chunk,
     _try_parse_image_progress_step,
 )
-from .parser import Volume
-from .parsing_utils import (
-    LocalImage,
-    RemoteImage,
-    _as_repo_str,
-    _ImageNameParser,
-    _is_in_neuro_registry,
-)
+from .parser import Parser, Volume
+from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
@@ -130,9 +124,10 @@ class JobTelemetry:
 
 
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: _Config, parse: Parser) -> None:
         self._core = core
         self._config = config
+        self._parse = parse
 
     async def run(
         self,
@@ -154,12 +149,9 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
         async with self._core.request("POST", url, json=payload) as resp:
             res = await resp.json()
-            return _job_description_from_api(res, parser)
+            return _job_description_from_api(res, self._parse)
 
     async def list(
         self,
@@ -176,12 +168,9 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
         async with self._core.request("GET", url, params=params) as resp:
             ret = await resp.json()
-            return [_job_description_from_api(j, parser) for j in ret["jobs"]]
+            return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
         url = URL(f"jobs/{id}")
@@ -200,12 +189,9 @@ class Jobs(metaclass=NoPublicConstructor):
 
     async def status(self, id: str) -> JobDescription:
         url = URL(f"jobs/{id}")
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
         async with self._core.request("GET", url) as resp:
             ret = await resp.json()
-            return _job_description_from_api(ret, parser)
+            return _job_description_from_api(ret, self._parse)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = self._config.cluster_config.monitoring_url / f"{id}/top"
@@ -233,10 +219,6 @@ class Jobs(metaclass=NoPublicConstructor):
         if progress is None:
             progress = _DummyProgress()
 
-        image_parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-
         payload = {"container": {"image": _as_repo_str(image)}}
         url = self._config.cluster_config.monitoring_url / f"{id}/save"
 
@@ -250,7 +232,7 @@ class Jobs(metaclass=NoPublicConstructor):
             progress.save(ImageProgressSave(id, image))
 
             chunk_1 = await resp.content.readline()
-            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), image_parser)
+            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), self._parse)
             progress.commit_started(data_1)
 
             chunk_2 = await resp.content.readline()
@@ -395,7 +377,7 @@ def _load_chunk(chunk: bytes) -> Dict[str, Any]:
 
 
 def _parse_commit_started_chunk(
-    job_id: str, obj: Dict[str, Any], image_parser: _ImageNameParser
+    job_id: str, obj: Dict[str, Any], parse: Parser
 ) -> ImageCommitStarted:
     _raise_for_invalid_commit_chunk(obj, expect_started=True)
     details_json = obj.get("details", {})
@@ -403,7 +385,7 @@ def _parse_commit_started_chunk(
     if not image:
         error_details = {"message": "Missing required details: 'image'"}
         raise DockerError(400, error_details)
-    return ImageCommitStarted(job_id, image_parser.parse_remote(image))
+    return ImageCommitStarted(job_id, parse.remote_image(image))
 
 
 def _parse_commit_finished_chunk(
@@ -472,9 +454,9 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
     )
 
 
-def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Container:
+def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
     try:
-        image = parser.parse_remote(data["image"])
+        image = parse.remote_image(data["image"])
     except ValueError:
         image = RemoteImage(name=INVALID_IMAGE_NAME)
 
@@ -507,10 +489,8 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
     return primitive
 
 
-def _job_description_from_api(
-    res: Dict[str, Any], parser: _ImageNameParser
-) -> JobDescription:
-    container = _container_from_api(res["container"], parser)
+def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescription:
+    container = _container_from_api(res["container"], parse)
     owner = res["owner"]
     cluster_name = res["cluster_name"]
     name = res.get("name")

@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+import itertools
 import logging
 import re
 import shlex
@@ -73,7 +74,7 @@ def warn_if_has_newer_version(
         if current < version.pypi_version:
             update_command = "pip install --upgrade neuromation"
             click.secho(
-                f"You are using Neuromation Platform Client {current}, "
+                f"You are using Neuro Platform Client {current}, "
                 f"however {version.pypi_version} is available.\n"
                 f"You should consider upgrading via "
                 f"the '{update_command}' command.",
@@ -179,7 +180,7 @@ async def _run_async_function(
 
 
 def async_cmd(
-    init_client: bool = True
+    init_client: bool = True,
 ) -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
     def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
         # N.B. the decorator implies @click.pass_obj
@@ -652,3 +653,22 @@ else:
 
 def format_size(value: float) -> str:
     return humanize.naturalsize(value, gnu=True, format="%.4g")
+
+
+def pager_maybe(
+    lines: Iterable[str], tty: bool, terminal_size: Tuple[int, int]
+) -> None:
+    if not tty:
+        for line in lines:
+            click.echo(line)
+        return
+    count = int(terminal_size[1] * 2 / 3)
+    handled = list(itertools.islice(lines, count))
+    if len(handled) < count:
+        # lines list is short, just print it
+        for line in handled:
+            click.echo(line)
+    else:
+        click.echo_via_pager(
+            itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines))
+        )

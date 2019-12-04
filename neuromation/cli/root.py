@@ -1,15 +1,16 @@
 import logging
+import re
 from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Optional, Tuple
+from typing import Iterator, List, Mapping, Optional, Tuple
 
 import aiohttp
 import click
 from yarl import URL
 
-from neuromation.api import Client, Factory, Preset
+from neuromation.api import Client, Factory, Preset, gen_trace_id
 from neuromation.api.config import _Config
 from neuromation.api.config_factory import ConfigError
 
@@ -18,6 +19,10 @@ log = logging.getLogger(__name__)
 
 
 TEXT_TYPE = ("application/json", "text")
+
+HEADER_TOKEN_PATTERN = re.compile(
+    r"(Bearer|Basic|Digest|Mutual)\s+(?P<token>[^ ]+\.[^ ]+\.[^ ]+)"
+)
 
 
 @dataclass
@@ -30,6 +35,7 @@ class Root:
     config_path: Path
     trace: bool
     verbosity: int
+    trace_hide_token: bool = True
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
@@ -74,7 +80,7 @@ class Root:
         return self._config.cluster_config.registry_url
 
     @property
-    def resource_presets(self) -> Dict[str, Preset]:
+    def resource_presets(self) -> Mapping[str, Preset]:
         if self._client is None or not self._config.cluster_config.is_initialized():
             raise ConfigError("User is not registered, run 'neuro login'.")
         return self._config.cluster_config.resource_presets
@@ -90,7 +96,9 @@ class Root:
             trace_configs = [self._create_trace_config()]
         else:
             trace_configs = None
-        self._factory = Factory(path=self.config_path, trace_configs=trace_configs)
+        self._factory = Factory(
+            path=self.config_path, trace_configs=trace_configs, trace_id=gen_trace_id()
+        )
         client = await self._factory.get(timeout=self.timeout)
 
         self._client = client
@@ -139,6 +147,8 @@ class Root:
             path += "?" + data.url.raw_query_string
         lines = [f"> {data.method} {path} HTTP/1.1"]
         for key, val in data.headers.items():
+            if self.trace_hide_token:
+                val = self._sanitize_header_value(val)
             lines.append(f"> {key}: {val}")
         lines.append("> ")
         self._print_debug(lines)
@@ -185,3 +195,21 @@ class Root:
             for line in self._process_chunk(chunk, context.response_printable)
         ]
         self._print_debug(lines)
+
+    def _sanitize_header_value(self, text: str) -> str:
+        for token in self._find_all_tokens(text):
+            token_safe = self._sanitize_token(token)
+            text = text.replace(token, token_safe)
+        return text
+
+    def _sanitize_token(self, token: str) -> str:
+        tail_len: int = 5
+        # at least a third part of the token should be hidden
+        if tail_len >= len(token) // 3:
+            return f"<hidden {len(token)} chars>"
+        hidden = f"<hidden {len(token) - tail_len * 2} chars>"
+        return token[:tail_len] + hidden + token[-tail_len:]
+
+    def _find_all_tokens(self, text: str) -> Iterator[str]:
+        for match in HEADER_TOKEN_PATTERN.finditer(text):
+            yield match.group("token")

@@ -29,33 +29,42 @@ class Images(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
         self._temporary_images: Set[str] = set()
-        try:
-            self._docker = aiodocker.Docker()
-        except ValueError as error:
-            if re.match(
-                r".*Either DOCKER_HOST or local sockets are not available.*", f"{error}"
-            ):
-                raise DockerError(
-                    900,
-                    {
-                        "message": "Docker engine is not available. "
-                        "Please specify DOCKER_HOST variable "
-                        "if you are using remote docker engine"
-                    },
-                )
-            raise
+        self.__docker: Optional[aiodocker.Docker] = None
         self._registry = _Registry(
             self._core.session,
             self._config.cluster_config.registry_url.with_path("/v2/"),
             self._config.auth_token.token,
+            self._core._trace_id,
             self._config.auth_token.username,
         )
+
+    @property
+    def _docker(self) -> aiodocker.Docker:
+        if not self.__docker:
+            try:
+                self.__docker = aiodocker.Docker()
+            except ValueError as error:
+                if re.match(
+                    r".*Either DOCKER_HOST or local sockets are not available.*",
+                    f"{error}",
+                ):
+                    raise DockerError(
+                        900,
+                        {
+                            "message": "Docker engine is not available. "
+                            "Please specify DOCKER_HOST variable "
+                            "if you are using remote docker engine"
+                        },
+                    )
+                raise
+        return self.__docker
 
     async def _close(self) -> None:
         for image in self._temporary_images:
             with contextlib.suppress(DockerError, aiohttp.ClientError):
                 await self._docker.images.delete(image)
-        await self._docker.close()
+        if self.__docker is not None:
+            await self.__docker.close()
         await self._registry.close()
 
     def _auth(self) -> Dict[str, str]:

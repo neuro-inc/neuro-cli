@@ -16,7 +16,7 @@ from neuromation.api.config import (
     _CookieSession,
     _PyPIVersion,
 )
-from neuromation.api.login import _ClusterConfig
+from neuromation.api.server_cfg import _ClusterConfig
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
 from neuromation.cli.root import Root

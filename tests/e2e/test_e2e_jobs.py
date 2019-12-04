@@ -814,9 +814,29 @@ def test_job_run_no_detach(helper: Helper) -> None:
     detach_notification = """\
 Terminal is attached to the remote job, so you receive the job's output.
 Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-with `--detach` option.
+with `--detach` option.\
 """
-    assert detach_notification in captured.out
+    assert detach_notification
+
+
+@pytest.mark.e2e
+def test_job_run_no_detach_quiet_mode(helper: Helper) -> None:
+    token = str(uuid4())
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            UBUNTU_IMAGE_NAME,
+            f"echo {token}",
+        ]
+    )
+    out = captured.out.strip()
+    assert "Use 'Ctrl-C' to detach (it will NOT terminate the job)" not in out
+    assert out.endswith(token)
 
 
 @pytest.mark.e2e

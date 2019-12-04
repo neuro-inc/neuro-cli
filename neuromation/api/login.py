@@ -11,7 +11,6 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
-    Dict,
     List,
     Optional,
     Sequence,
@@ -106,7 +105,7 @@ class AuthCode:
 
     async def wait(self, timeout_s: float = 60.0) -> str:
         try:
-            await asyncio.wait_for(self._future, timeout_s)
+            await asyncio.wait_for(self._future, timeout_s)  # type: ignore
         except (asyncio.TimeoutError, asyncio.CancelledError):
             raise AuthException("failed to get an authorization code")
         return self._future.result()
@@ -355,48 +354,6 @@ class AuthTokenClient:
 
 
 @dataclass(frozen=True)
-class Preset:
-    cpu: float
-    memory_mb: int
-    is_preemptible: bool = False
-    gpu: Optional[int] = None
-    gpu_model: Optional[str] = None
-    tpu_type: Optional[str] = None
-    tpu_software_version: Optional[str] = None
-
-
-@dataclass(frozen=True)
-class _ClusterConfig:
-    registry_url: URL
-    storage_url: URL
-    users_url: URL
-    monitoring_url: URL
-    resource_presets: Dict[str, Preset]
-
-    @classmethod
-    def create(
-        cls,
-        registry_url: URL,
-        storage_url: URL,
-        users_url: URL,
-        monitoring_url: URL,
-        resource_presets: Dict[str, Preset],
-    ) -> "_ClusterConfig":
-        return cls(
-            registry_url, storage_url, users_url, monitoring_url, resource_presets
-        )
-
-    def is_initialized(self) -> bool:
-        return bool(
-            self.registry_url
-            and self.storage_url
-            and self.users_url
-            and self.monitoring_url
-            and self.resource_presets
-        )
-
-
-@dataclass(frozen=True)
 class _AuthConfig:
     auth_url: URL
     token_url: URL
@@ -535,70 +492,3 @@ class HeadlessNegotiator(BaseNegotiator):
             get_auth_code_cb=self._get_auth_code_cb,
         )
         return await code_callback_client.request(code)
-
-
-@dataclass(frozen=True)
-class _ServerConfig:
-    auth_config: _AuthConfig
-    cluster_config: _ClusterConfig
-
-
-class ConfigLoadException(Exception):
-    pass
-
-
-async def get_server_config(
-    client: aiohttp.ClientSession, url: URL, token: Optional[str] = None
-) -> _ServerConfig:
-    headers: Dict[str, str] = {}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
-    async with client.get(url / "config", headers=headers) as resp:
-        if resp.status != 200:
-            raise RuntimeError(f"Unable to get server configuration: {resp.status}")
-        payload = await resp.json()
-        # TODO (ajuszkowski, 5-Feb-2019) validate received data
-        success_redirect_url = URL(payload.get("success_redirect_url", "")) or None
-        callback_urls = payload.get("callback_urls")
-        callback_urls = (
-            tuple(URL(u) for u in callback_urls)
-            if callback_urls is not None
-            else _AuthConfig.callback_urls
-        )
-        headless_callback_url = URL(payload["headless_callback_url"])
-        auth_config = _AuthConfig(
-            auth_url=URL(payload["auth_url"]),
-            token_url=URL(payload["token_url"]),
-            client_id=payload["client_id"],
-            audience=payload["audience"],
-            success_redirect_url=success_redirect_url,
-            callback_urls=callback_urls,
-            headless_callback_url=headless_callback_url,
-        )
-        resource_presets: Dict[str, Preset] = {}
-        for data in payload.get("resource_presets", ()):
-            tpu_type = tpu_software_version = None
-            if "tpu" in data:
-                tpu_payload = data.get("tpu")
-                tpu_type = tpu_payload["type"]
-                tpu_software_version = tpu_payload["software_version"]
-            resource_presets[data["name"]] = Preset(
-                cpu=data["cpu"],
-                memory_mb=data["memory_mb"],
-                gpu=data.get("gpu"),
-                gpu_model=data.get("gpu_model"),
-                is_preemptible=data.get("is_preemptible", False),
-                tpu_type=tpu_type,
-                tpu_software_version=tpu_software_version,
-            )
-        cluster_config = _ClusterConfig(
-            registry_url=URL(payload.get("registry_url", "")),
-            storage_url=URL(payload.get("storage_url", "")),
-            users_url=URL(payload.get("users_url", "")),
-            monitoring_url=URL(payload.get("monitoring_url", "")),
-            resource_presets=resource_presets,
-        )
-        if headers and not cluster_config.is_initialized():
-            raise AuthException("Cannot authorize user")
-        return _ServerConfig(cluster_config=cluster_config, auth_config=auth_config)

@@ -19,19 +19,19 @@ from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
     HeadlessNegotiator,
-    Preset,
     _AuthConfig,
     _AuthToken,
-    _ClusterConfig,
-    get_server_config,
     refresh_token,
 )
+from .server_cfg import Preset, _ClusterConfig, get_server_config
+from .tracing import _make_trace_config
 from .utils import _ContextManager
 
 
 WIN32 = sys.platform == "win32"
 DEFAULT_CONFIG_PATH = "~/.nmrc"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
+TRUSTED_CONFIG_PATH = "NEUROMATION_TRUSTED_CONFIG_PATH"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
@@ -63,11 +63,15 @@ class Factory:
         self,
         path: Optional[Path] = None,
         trace_configs: Optional[List[aiohttp.TraceConfig]] = None,
+        trace_id: Optional[str] = None,
     ) -> None:
         if path is None:
             path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
         self._path = path.expanduser()
-        self._trace_configs = trace_configs
+        self._trace_configs = [_make_trace_config()]
+        if trace_configs:
+            self._trace_configs += trace_configs
+        self._trace_id = trace_id
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         saved_config = config = self._read()
@@ -85,7 +89,7 @@ class Factory:
                     or config_authorized.auth_config != config.auth_config
                 ):
                     raise ConfigError(
-                        "Neuro CLI updated. Please logout and login again."
+                        "Neuro Platform CLI updated. Please logout and login again."
                     )
                 config = replace(config, version=neuromation.__version__)
             if new_token != config.auth_token:
@@ -98,7 +102,7 @@ class Factory:
             await session.close()
             raise
         else:
-            return Client._create(session, config)
+            return Client._create(session, config, self._trace_id)
 
     async def login(
         self,
@@ -107,8 +111,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             config_unauthorized = await get_server_config(session, url)
             negotiator = AuthNegotiator(
@@ -137,8 +142,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             config_unauthorized = await get_server_config(session, url)
             negotiator = HeadlessNegotiator(
@@ -167,8 +173,9 @@ class Factory:
         url: URL = DEFAULT_API_URL,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
-        if self._path.exists():
-            raise ConfigError(f"Config file {self._path} already exists. Please logout")
+        config_file = self._path / "db"
+        if config_file.exists():
+            raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             server_config = await get_server_config(session, url, token=token)
         config = _Config(
@@ -184,26 +191,47 @@ class Factory:
 
     async def logout(self) -> None:
         # TODO: logout from auth0
-        if self._path.exists():
+        config_file = self._path / "db"
+        if config_file.exists():
+            config_file.unlink()
+        if self._path.is_file():
             self._path.unlink()
+        else:
+            try:
+                self._path.rmdir()
+            except NotADirectoryError:
+                pass
 
     def _read(self) -> _Config:
+        config_file = self._path / "db"
         if not self._path.exists():
-            raise ConfigError(f"Config file {self._path} does not exists. Please login")
-        if not self._path.is_file():
-            raise ConfigError(f"Config {self._path} is not a regular file")
-
-        stat = self._path.stat()
-        if (
-            not WIN32
-            and stat.st_mode & 0o777 != 0o600
-            and Path.home() in self._path.parents
-        ):
+            raise ConfigError(f"Config at {self._path} does not exists. Please login.")
+        if not self._path.is_dir():
             raise ConfigError(
-                f"Config file {self._path} has compromised permission bits, "
-                f"run 'chmod 600 {self._path}' first"
+                f"Config at {self._path} is not a directory. "
+                "Please logout and login again."
             )
-        with self._path.open("r", encoding="utf-8") as f:
+        if not config_file.is_file():
+            raise ConfigError(
+                f"Config {config_file} is not a regular file. "
+                "Please logout and login again."
+            )
+
+        trusted_env = WIN32 or bool(os.environ.get(TRUSTED_CONFIG_PATH))
+        if not trusted_env:
+            stat_dir = self._path.stat()
+            if stat_dir.st_mode & 0o777 != 0o700:
+                raise ConfigError(
+                    f"Config {self._path} has compromised permission bits, "
+                    f"run 'chmod 700 {self._path}' first"
+                )
+            stat_file = config_file.stat()
+            if stat_file.st_mode & 0o777 != 0o600:
+                raise ConfigError(
+                    f"Config at {config_file} has compromised permission bits, "
+                    f"run 'chmod 600 {config_file}' first"
+                )
+        with config_file.open("r", encoding="utf-8") as f:
             payload = yaml.safe_load(f)
 
         try:
@@ -250,7 +278,7 @@ class Factory:
     ) -> Dict[str, Any]:
         if not cluster_config.is_initialized():
             raise ValueError("cluster config part is not initialized")
-        return {
+        ret = {
             "registry_url": str(cluster_config.registry_url),
             "storage_url": str(cluster_config.storage_url),
             "users_url": str(cluster_config.users_url),
@@ -260,6 +288,9 @@ class Factory:
                 for name, resource_preset in cluster_config.resource_presets.items()
             ],
         }
+        if cluster_config.name is not None:
+            ret["name"] = cluster_config.name
+        return ret
 
     def _serialize_resource_preset(
         self, name: str, resource_preset: Preset
@@ -301,6 +332,7 @@ class Factory:
                 self._deserialize_resource_preset(data)
                 for data in cluster_config.get("resource_presets", [])
             ),
+            name=cluster_config.get("name"),
         )
 
     def _deserialize_resource_preset(
@@ -353,9 +385,10 @@ class Factory:
             def opener(file: str, flags: int) -> int:
                 return os.open(file, flags, 0o600)
 
+            self._path.mkdir(0o700, parents=True, exist_ok=True)
             with open(tmppath, "x", encoding="utf-8", opener=opener) as f:
                 yaml.safe_dump(payload, f, default_flow_style=False)
-            os.replace(tmppath, self._path)
+            os.replace(tmppath, self._path / "db")
         except:  # noqa  # bare 'except' with 'raise' is legal
             try:
                 os.unlink(tmppath)

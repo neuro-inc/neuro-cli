@@ -18,7 +18,6 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
-from neuromation.api.parsing_utils import _ImageNameParser
 from tests import _TestServerFactory
 
 
@@ -242,6 +241,7 @@ async def test_save_ok(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -274,6 +274,7 @@ async def test_save_commit_started_invalid_status_fails(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -309,6 +310,7 @@ async def test_save_commit_started_missing_image_details_fails(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -488,10 +490,7 @@ async def test_status_failed(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_status_with_ssh_and_http(
@@ -551,10 +550,7 @@ async def test_status_with_ssh_and_http(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_status_with_tpu(
@@ -615,12 +611,9 @@ async def test_status_with_tpu(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
-    assert ret.container.resources.tpu_type == "v3-8"
-    assert ret.container.resources.tpu_software_version == "1.14"
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.container.resources.tpu_type == "v3-8"
+        assert ret.container.resources.tpu_software_version == "1.14"
 
 
 async def test_job_run(
@@ -714,10 +707,7 @@ async def test_job_run(
         )
         ret = await client.jobs.run(container=container, is_preemptible=False)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_with_name_and_description(
@@ -820,10 +810,7 @@ async def test_job_run_with_name_and_description(
             description="job description",
         )
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_no_volumes(
@@ -902,10 +889,7 @@ async def test_job_run_no_volumes(
             description="job description",
         )
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_preemptible(
@@ -1007,10 +991,7 @@ async def test_job_run_preemptible(
             description="job description",
         )
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_schedule_timeout(
@@ -1081,10 +1062,7 @@ async def test_job_run_schedule_timeout(
         )
         ret = await client.jobs.run(container=container, schedule_timeout=5)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_tpu(
@@ -1156,12 +1134,9 @@ async def test_job_run_tpu(
         )
         ret = await client.jobs.run(container=container, schedule_timeout=5)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
-    assert ret.container.resources.tpu_type == "v3-8"
-    assert ret.container.resources.tpu_software_version == "1.14"
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.container.resources.tpu_type == "v3-8"
+        assert ret.container.resources.tpu_software_version == "1.14"
 
 
 def create_job_response(
@@ -1223,11 +1198,10 @@ async def test_list_no_filter(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list()
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions
 
 
 async def test_list_filter_by_name(
@@ -1262,11 +1236,10 @@ async def test_list_filter_by_name(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(name=name_1)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions[:3]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:3]
 
 
 async def test_list_filter_by_statuses(
@@ -1302,11 +1275,10 @@ async def test_list_filter_by_statuses(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == [job for job in job_descriptions if job.status in statuses]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == [job for job in job_descriptions if job.status in statuses]
 
 
 async def test_list_incorrect_image(
@@ -1460,11 +1432,10 @@ async def test_list_filter_by_name_and_statuses(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses, name=name)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions[:2]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:2]
 
 
 async def test_list_filter_by_name_and_statuses_and_owners(
@@ -1508,8 +1479,7 @@ async def test_list_filter_by_name_and_statuses_and_owners(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.list(statuses=statuses, name=name, owners=owners)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions[:2]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:2]

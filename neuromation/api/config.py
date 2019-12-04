@@ -6,7 +6,8 @@ import dateutil.parser
 import pkg_resources
 from yarl import URL
 
-from .login import _AuthConfig, _AuthToken, _ClusterConfig
+from .login import _AuthConfig, _AuthToken
+from .server_cfg import _ClusterConfig
 
 
 @dataclass

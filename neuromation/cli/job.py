@@ -15,6 +15,8 @@ from yarl import URL
 
 from neuromation.api import (
     CONFIG_ENV_NAME,
+    TRUSTED_CONFIG_PATH,
+    AuthorizationError,
     Container,
     HTTPPort,
     JobDescription,
@@ -54,6 +56,7 @@ from .utils import (
     command,
     deprecated_quiet_option,
     group,
+    pager_maybe,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -509,8 +512,7 @@ async def ls(
             width = root.terminal_size[0]
         formatter = TabularJobsFormatter(width, root.username)
 
-    for line in formatter(jobs):
-        click.echo(line)
+    pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 
 
 @command()
@@ -599,6 +601,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
             click.echo(job_resolved)
         except ValueError as e:
             errors.append((job, e))
+        except AuthorizationError:
+            errors.append((job, ValueError(f"Not enough permissions")))
 
     def format_fail(job: str, reason: Exception) -> str:
         return click.style(f"Cannot kill job {job}: {reason}", fg="red")
@@ -878,6 +882,7 @@ async def run_job(
             )
         env_var, secret_volume = await upload_and_map_config(root)
         env_dict[CONFIG_ENV_NAME] = env_var
+        env_dict[TRUSTED_CONFIG_PATH] = "1"
         volumes.add(secret_volume)
 
     if volumes:
@@ -911,14 +916,15 @@ async def run_job(
 
     exit_code = None
     if not detach:
-        msg = textwrap.dedent(
-            """\
-            Terminal is attached to the remote job, so you receive the job's output.
-            Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-            with `--detach` option.
-        """
-        )
-        click.echo(click.style(msg, dim=True))
+        if not root.quiet:
+            msg = textwrap.dedent(
+                """\
+                Terminal is attached to the remote job, so you receive the job's output.
+                Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the
+                job with `--detach` option.\
+                """
+            )
+            click.echo(click.style(msg, dim=True))
         await _print_logs(root, job.id)
         job = await root.client.jobs.status(job.id)
         exit_code = job.history.exit_code
@@ -977,7 +983,15 @@ async def _build_volumes(
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
-                # TODO (artem) print deprecation warning (issue #1009)
+                click.echo(
+                    click.style(
+                        "DeprecationWarning: Option `--volume=HOME` is deprecated. "
+                        "Use `--volume=ALL`.  Mountpoint will be available in "
+                        "container via variable NEUROMATION_HOME",
+                        fg="red",
+                    ),
+                    err=True,
+                )
             else:
                 volumes.add(root.client.parse.volume(vol))
     return volumes
@@ -996,7 +1010,7 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
         click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
     await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
-    await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
+    await root.client.storage.upload_dir(nmrc_path, storage_nmrc_path)
     # specify a container volume and mount the storage path
     # into specific container path
     return (

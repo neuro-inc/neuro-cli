@@ -4,7 +4,7 @@ import os
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import click
 from yarl import URL
@@ -17,10 +17,12 @@ from neuromation.api import (
     login_with_token as api_login_with_token,
     logout as api_logout,
 )
+from neuromation.api.server_cfg import get_server_config
+from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
 
 from .formatters import ConfigFormatter
 from .root import Root
-from .utils import async_cmd, command, group
+from .utils import async_cmd, command, group, pager_maybe
 
 
 @group()
@@ -48,11 +50,23 @@ async def show_token(root: Root) -> None:
 
 
 @command()
+@click.argument("user", required=False, default=None, type=str)
+@async_cmd()
+async def show_quota(root: Root, user: Optional[str]) -> None:
+    """
+    Print quota and remaining computation time.
+    """
+    quota = await root.client._quota.get(user)
+    fmt = QuotaInfoFormatter()
+    click.echo(fmt(quota))
+
+
+@command()
 @click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 @async_cmd(init_client=False)
 async def login(root: Root, url: URL) -> None:
     """
-    Log into Neuromation Platform.
+    Log into Neuro Platform.
 
     URL is a platform entrypoint URL.
     """
@@ -80,9 +94,9 @@ async def login(root: Root, url: URL) -> None:
 @async_cmd(init_client=False)
 async def login_with_token(root: Root, token: str, url: URL) -> None:
     """
-    Log into Neuromation Platform with token.
+    Log into Neuro Platform with token.
 
-    TOKEN is authentication token provided by Neuromation administration team.
+    TOKEN is authentication token provided by administration team.
     URL is a platform entrypoint URL.
     """
     try:
@@ -103,7 +117,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
 @async_cmd(init_client=False)
 async def login_headless(root: Root, url: URL) -> None:
     """
-    Log into Neuromation Platform from non-GUI server environment.
+    Log into Neuro Platform from non-GUI server environment.
 
     URL is a platform entrypoint URL.
 
@@ -158,7 +172,7 @@ async def logout(root: Root) -> None:
 @async_cmd()
 async def docker(root: Root, docker_config: str) -> None:
     """
-    Configure docker client for working with platform registry
+    Configure docker client for working with platform registry.
     """
     config_path = Path(docker_config)
     if not config_path.exists():
@@ -185,11 +199,28 @@ async def docker(root: Root, docker_config: str) -> None:
     click.echo(f"You can use docker client with neuro registry: {registry_str}")
 
 
+@command()
+@async_cmd()
+async def get_clusters(root: Root) -> None:
+    """
+    Fetch and display the list of available clusters from the Neuro Platform.
+
+    """
+
+    config = await get_server_config(root.client._session, root.url, root.auth)
+    fmt = ClustersFormatter()
+    pager_maybe(
+        fmt(config.clusters, config.cluster_config.name), root.tty, root.terminal_size
+    )
+
+
 config.add_command(login)
 config.add_command(login_with_token)
 config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
+config.add_command(show_quota)
+config.add_command(get_clusters)
 
 config.add_command(docker)
 

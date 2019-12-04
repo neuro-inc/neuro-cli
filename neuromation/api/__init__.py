@@ -23,6 +23,7 @@ from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
+    TRUSTED_CONFIG_PATH,
     ConfigError,
     Factory,
 )
@@ -48,6 +49,7 @@ from .jobs import (
 )
 from .parsing_utils import LocalImage, RemoteImage
 from .storage import FileStatus, FileStatusType
+from .tracing import gen_trace_id
 from .users import Action, Permission, Share
 from .utils import _ContextManager
 
@@ -56,6 +58,7 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
+    "TRUSTED_CONFIG_PATH",
     "JobDescription",
     "JobStatus",
     "JobStatusHistory",
@@ -98,6 +101,7 @@ __all__ = (
     "login_with_token",
     "logout",
     "ConfigError",
+    "gen_trace_id",
 )
 
 

@@ -6,12 +6,14 @@ from typing import Mapping, Optional, Type
 
 import aiohttp
 
+from neuromation.api.quota import _Quota
+
 from .config import _Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
-from .login import Preset
 from .parser import Parser
+from .server_cfg import Preset
 from .storage import Storage
 from .users import Users
 from .utils import NoPublicConstructor
@@ -21,10 +23,13 @@ SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 
 
 class Client(metaclass=NoPublicConstructor):
-    def __init__(self, session: aiohttp.ClientSession, config: _Config) -> None:
+    def __init__(
+        self, session: aiohttp.ClientSession, config: _Config, trace_id: Optional[str]
+    ) -> None:
         self._closed = False
         config.check_initialized()
         self._config = config
+        self._trace_id = trace_id
         self._session = session
         if time.time() - config.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
             # expired
@@ -37,12 +42,13 @@ class Client(metaclass=NoPublicConstructor):
             cookie["domain"] = config.url.raw_host
             cookie["path"] = "/"
         self._core = _Core(
-            session, self._config.url, self._config.auth_token.token, cookie
+            session, self._config.url, self._config.auth_token.token, cookie, trace_id
         )
-        self._jobs = Jobs._create(self._core, self._config)
+        self._parser = Parser._create(self._config, self.username)
+        self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core)
-        self._parser = Parser._create(self._config, self.username)
+        self._quota = _Quota._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:

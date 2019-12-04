@@ -27,6 +27,7 @@ from neuromation.api import (
     Preset,
     RemoteImage,
     Resources,
+    Volume,
 )
 from neuromation.api.abc import (
     ImageCommitFinished,
@@ -34,6 +35,7 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
+from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
     ConfigFormatter,
@@ -45,6 +47,7 @@ from neuromation.cli.formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from neuromation.cli.formatters.config import QuotaInfoFormatter
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
@@ -126,23 +129,25 @@ class TestJobFormatter:
     def test_non_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_ID}     # check job status\n"
+            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_ID}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
     def test_non_quiet(self, job_descr: JobDescription) -> None:
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -152,12 +157,13 @@ class TestJobFormatter:
         job_descr_no_name = replace(job_descr_no_name, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Http URL: https://job.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_ID}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_ID}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_ID}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_ID}    # kill job"
+            f"Http URL: https://job.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_ID}     # check job status\n"
+            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_ID}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
 
@@ -165,13 +171,14 @@ class TestJobFormatter:
         job_descr = replace(job_descr, http_url=URL("https://job.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Http URL: https://job.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Http URL: https://job.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -179,13 +186,14 @@ class TestJobFormatter:
         job_descr = replace(job_descr, http_url=URL("https://job-named.dev"))
         expected = (
             f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            + f"Name: {TEST_JOB_NAME}\n"
-            + f"Http URL: https://job-named.dev\n"
-            + f"Shortcuts:\n"
-            + f"  neuro status {TEST_JOB_NAME}  # check job status\n"
-            + f"  neuro logs {TEST_JOB_NAME}    # monitor job stdout\n"
-            + f"  neuro top {TEST_JOB_NAME}     # display real-time job telemetry\n"
-            + f"  neuro kill {TEST_JOB_NAME}    # kill job"
+            f"Name: {TEST_JOB_NAME}\n"
+            f"Http URL: https://job-named.dev\n"
+            f"Shortcuts:\n"
+            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
+            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
+            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
+            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
+            f"  neuro kill {TEST_JOB_NAME}       # kill job"
         )
         assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
 
@@ -518,6 +526,118 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:24.759433+00:00"
         )
 
+    def test_job_with_entrypoint(self) -> None:
+        description = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+            ),
+            http_url=URL("http://local.host.test/"),
+            container=Container(
+                entrypoint="/usr/bin/make",
+                command="test",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+            internal_hostname="host.local",
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: running\n"
+            "Image: test-image\n"
+            "Entrypoint: /usr/bin/make\n"
+            "Command: test\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Internal Hostname: host.local\n"
+            "Http URL: http://local.host.test/\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:24.759433+00:00"
+        )
+
+    def test_job_with_volumes(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+                volumes=[
+                    Volume(
+                        storage_uri=URL("storage://test-user/ro"),
+                        container_path="/mnt/ro",
+                        read_only=True,
+                    ),
+                    Volume(
+                        storage_uri=URL("storage://test-user/rw"),
+                        container_path="/mnt/rw",
+                        read_only=False,
+                    ),
+                ],
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Volumes:\n"
+            "  /mnt/ro  storage://test-user/ro  READONLY\n"
+            "  /mnt/rw  storage://test-user/rw          \n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
 
 class TestJobTelemetryFormatter:
     def _format(
@@ -754,7 +874,7 @@ class TestTabularJobsFormatter:
             is_preemptible=True,
         )
         formatter = TabularJobsFormatter(0, "owner")
-        result = [item for item in formatter([job])]
+        result = [item.rstrip() for item in formatter([job])]
         assert result in [
             [
                 "ID  NAME  STATUS  WHEN  IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",
@@ -828,11 +948,12 @@ class TestTabularJobsFormatter:
             ),
         ]
         formatter = TabularJobsFormatter(0, "owner")
-        result = [item for item in formatter(jobs)]
+        result = [item.rstrip() for item in formatter(jobs)]
         assert result == [
-            "ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
+            f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
             f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-tag  {owner_printed}  default  some description                     ls -la /some/path",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-    {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
+            f"                                                                       tag",  # noqa: E501
         ]
 
 
@@ -1362,19 +1483,21 @@ class TestConfigFormatter:
         if platform == "win32":
             no = "No"
         else:
-            no = " " + "✖︎"
-        assert click.unstyle(out) == textwrap.dedent(
+            no = "✖︎"
+        assert "\n".join(
+            line.rstrip() for line in click.unstyle(out).splitlines()
+        ) == textwrap.dedent(
             f"""\
             User Configuration:
               User Name: user
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-            Name         #CPU    Memory   Preemptible   GPU
-            gpu-small       7       30G       {no}        1 x nvidia-tesla-k80
-            gpu-large       7       60G       {no}        1 x nvidia-tesla-v100
-            cpu-small       7        2G       {no}
-            cpu-large       7       14G       {no}"""
+                Name       #CPU  Memory  Preemptible  GPU
+                gpu-small     7     30G       {no}      1 x nvidia-tesla-k80
+                gpu-large     7     60G       {no}      1 x nvidia-tesla-v100
+                cpu-small     7      2G       {no}
+                cpu-large     7     14G       {no}"""
         )
 
     async def test_output_for_tpu_presets(self, root: Root, monkeypatch: Any) -> None:
@@ -1398,27 +1521,138 @@ class TestConfigFormatter:
         )
 
         monkeypatch.setattr("neuromation.cli.root.Root.resource_presets", presets)
+
         out = ConfigFormatter()(root)
         if platform == "win32":
             no = "No"
         else:
-            no = " " + "✖︎"
+            no = "✖︎"
 
-        assert click.unstyle(out) == textwrap.dedent(
+        assert "\n".join(
+            line.rstrip() for line in click.unstyle(out).splitlines()
+        ) == textwrap.dedent(
             f"""\
             User Configuration:
               User Name: user
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-            Name         #CPU    Memory   Preemptible   GPU                    TPU
-            gpu-small       7       30G       {no}        1 x nvidia-tesla-k80
-            gpu-large       7       60G       {no}        1 x nvidia-tesla-v100
-            cpu-small       7        2G       {no}
-            cpu-large       7       14G       {no}
-            tpu-small       2        2G       {no}                               v3-8/1.14
-            hybrid          4       30G       {no}        2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+                Name       #CPU  Memory  Preemptible  GPU                    TPU
+                gpu-small     7     30G       {no}      1 x nvidia-tesla-k80
+                gpu-large     7     60G       {no}      1 x nvidia-tesla-v100
+                cpu-small     7      2G       {no}
+                cpu-large     7     14G       {no}
+                tpu-small     2      2G       {no}                             v3-8/1.14
+                hybrid        4     30G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
+
+
+bold_start = "\x1b[1m"
+bold_end = "\x1b[0m"
+
+
+class TestQuotaInfoFormatter:
+    def test_output(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=0.0,
+            gpu_time_limit=0.0,
+            cpu_time_spent=float((9 * 60 + 19) * 60),
+            cpu_time_limit=float((9 * 60 + 39) * 60),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 00h 00m "
+                "(quota: 00h 00m, left: 00h 00m)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 19m "
+                "(quota: 09h 39m, left: 00h 20m)",
+            ]
+        )
+
+    def test_output_no_quota(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=0.0,
+            gpu_time_limit=float("inf"),
+            cpu_time_spent=float((9 * 60 + 19) * 60),
+            cpu_time_limit=float("inf"),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 00h 00m (quota: infinity)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 19m (quota: infinity)",
+            ]
+        )
+
+    def test_output_too_many_hours(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=float((1 * 60 + 29) * 60),
+            gpu_time_limit=float((9 * 60 + 59) * 60),
+            cpu_time_spent=float((9999 * 60 + 29) * 60),
+            cpu_time_limit=float((99999 * 60 + 59) * 60),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 01h 29m "
+                "(quota: 09h 59m, left: 08h 30m)",
+                f"{bold_start}CPU:{bold_end} spent: 9999h 29m "
+                "(quota: 99999h 59m, left: 90000h 30m)",
+            ]
+        )
+
+    def test_output_spent_more_than_quota_left_zero(self) -> None:
+        quota = _QuotaInfo(
+            name="user",
+            gpu_time_spent=float(9 * 60 * 60),
+            gpu_time_limit=float(1 * 60 * 60),
+            cpu_time_spent=float(9 * 60 * 60),
+            cpu_time_limit=float(2 * 60 * 60),
+        )
+        out = QuotaInfoFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} spent: 09h 00m "
+                "(quota: 01h 00m, left: 00h 00m)",
+                f"{bold_start}CPU:{bold_end} spent: 09h 00m "
+                "(quota: 02h 00m, left: 00h 00m)",
+            ]
+        )
+
+    def test_format_time_00h_00m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(0 * 60))
+        assert out == "00h 00m"
+
+    def test_format_time_00h_09m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(9 * 60))
+        assert out == "00h 09m"
+
+    def test_format_time_01h_00m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(60 * 60))
+        assert out == "01h 00m"
+
+    def test_format_time_01h_10m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(70 * 60))
+        assert out == "01h 10m"
+
+    def test_format_time_99h_00m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(total_seconds=float(99 * 60 * 60))
+        assert out == "99h 00m"
+
+    def test_format_time_99h_59m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(
+            total_seconds=float((99 * 60 + 59) * 60)
+        )
+        assert out == "99h 59m"
+
+    def test_format_time_9999h_59m(self) -> None:
+        out = QuotaInfoFormatter()._format_time(
+            total_seconds=float((9999 * 60 + 59) * 60)
+        )
+        assert out == "9999h 59m"
 
 
 class TestDockerImageProgress:
