@@ -103,7 +103,7 @@ class _Core:
         assert url.is_absolute()
         log.debug("Fetch [%s] %s", method, url)
         if headers is not None:
-            real_headers = CIMultiDict(headers)
+            real_headers: CIMultiDict[str] = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
         real_headers["Authorization"] = auth
@@ -147,7 +147,7 @@ class _Core:
         log.debug("Fetch web socket: %s", abs_url)
 
         if headers is not None:
-            real_headers = CIMultiDict(headers)
+            real_headers: CIMultiDict[str] = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
         real_headers["Authorization"] = auth
