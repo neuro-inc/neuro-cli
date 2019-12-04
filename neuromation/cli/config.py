@@ -79,7 +79,7 @@ async def login(root: Root, url: URL) -> None:
         await api_login(
             show_browser, url=url, path=root.config_path, timeout=root.timeout
         )
-    except ConfigError:
+    except (ConfigError, FileExistsError):
         await api_logout(path=root.config_path)
         click.echo("You were successfully logged out.")
         await api_login(
