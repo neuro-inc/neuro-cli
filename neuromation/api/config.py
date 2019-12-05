@@ -238,7 +238,9 @@ class Config(metaclass=NoPublicConstructor):
             return os.open(file, flags, 0o600)
 
         path.mkdir(0o700, parents=True, exist_ok=True)
-        with atomicwrites.atomic_write(path / "db", opener=opener, overwrite=True) as f:
+        with atomicwrites.atomic_write(
+            str(path / "db"), opener=opener, overwrite=True
+        ) as f:
             yaml.safe_dump(payload, f, default_flow_style=False)
 
     @classmethod
