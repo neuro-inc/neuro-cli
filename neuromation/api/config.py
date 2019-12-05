@@ -6,6 +6,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, List, Mapping
 
+import atomicwrites
 import dateutil.parser
 import pkg_resources
 import yaml
@@ -232,22 +233,13 @@ class Config(metaclass=NoPublicConstructor):
             raise ConfigError("Malformed config. Please logout and login again.")
 
         # atomically rewrite the config file
-        tmppath = f"{path}.new{os.getpid()}"
-        try:
-            # forbid access to other users
-            def opener(file: str, flags: int) -> int:
-                return os.open(file, flags, 0o600)
+        # forbid access to other users
+        def opener(file: str, flags: int) -> int:
+            return os.open(file, flags, 0o600)
 
-            path.mkdir(0o700, parents=True, exist_ok=True)
-            with open(tmppath, "x", encoding="utf-8", opener=opener) as f:
-                yaml.safe_dump(payload, f, default_flow_style=False)
-            os.replace(tmppath, path / "db")
-        except:  # noqa  # bare 'except' with 'raise' is legal
-            try:
-                os.unlink(tmppath)
-            except FileNotFoundError:
-                pass
-            raise
+        path.mkdir(0o700, parents=True, exist_ok=True)
+        with atomicwrites.atomic_write(path / "db", opener=opener, overwrite=True) as f:
+            yaml.safe_dump(payload, f, default_flow_style=False)
 
     @classmethod
     def _serialize_auth_config(cls, auth_config: _AuthConfig) -> Dict[str, Any]:

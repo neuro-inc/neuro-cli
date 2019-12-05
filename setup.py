@@ -41,6 +41,7 @@ setup(
         # CLI raises a warning for outdated package instead
         "certifi",
         "cookiecutter==1.6.0",
+        "atomicwrites>=1.0",
     ],
     include_package_data=True,
     description="Neuro Platform API client",
