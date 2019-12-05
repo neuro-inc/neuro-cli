@@ -29,7 +29,7 @@ from .utils import _ContextManager
 
 
 WIN32 = sys.platform == "win32"
-DEFAULT_CONFIG_PATH = "~/.nmrc"
+DEFAULT_CONFIG_PATH = "~/.neuro"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 TRUSTED_CONFIG_PATH = "NEUROMATION_TRUSTED_CONFIG_PATH"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")

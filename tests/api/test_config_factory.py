@@ -38,7 +38,7 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 def config_dir(
     tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> Path:
-    config_path = tmp_home / ".nmrc"
+    config_path = tmp_home / ".neuro"
     _create_config(config_path, token, auth_config, cluster_config)
     return config_path
 
@@ -137,12 +137,12 @@ class TestConfigFileInteraction:
             await Factory().get()
 
     async def test_config_dir_is_file(self, tmp_home: Path) -> None:
-        Path(tmp_home / ".nmrc").write_text("something")
+        Path(tmp_home / ".neuro").write_text("something")
         with pytest.raises(ConfigError, match=r"not a directory"):
             await Factory().get()
 
     async def test_config_file_is_dir(self, tmp_home: Path) -> None:
-        path = Path(tmp_home / ".nmrc")
+        path = Path(tmp_home / ".neuro")
         path.mkdir()
         (path / "db").mkdir()
         with pytest.raises(ConfigError, match=r"not a regular file"):
@@ -155,7 +155,7 @@ class TestConfigFileInteraction:
         auth_config: _AuthConfig,
         cluster_config: Cluster,
     ) -> None:
-        token = _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
+        token = _create_config(tmp_home / ".neuro", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
         assert await client.config.token() == token
@@ -167,7 +167,7 @@ class TestConfigFileInteraction:
         auth_config: _AuthConfig,
         cluster_config: Cluster,
     ) -> None:
-        _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
+        _create_config(tmp_home / ".neuro", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
         assert len(client.presets) > 0
@@ -255,7 +255,6 @@ class TestConfigFileInteraction:
 
     async def test_mailformed_config(self, config_dir: Path) -> None:
         # await Factory().login(url=mock_for_login)
-        # config_dir = tmp_home / ".nmrc"
         config_file = config_dir / "db"
         with config_file.open("r") as f:
             original = yaml.safe_load(f)
@@ -299,7 +298,6 @@ class TestConfigFileInteraction:
         self, config_dir: Path, mock_for_login: _TestServer
     ) -> None:
         # await Factory().login(url=mock_for_login)
-        # config_dir = tmp_home / ".nmrc"
         config_file = config_dir / "db"
         with config_file.open("r") as f:
             config = yaml.safe_load(f)
@@ -324,7 +322,7 @@ class TestLogin:
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
         await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
 
 
@@ -339,7 +337,7 @@ class TestLoginWithToken:
         await Factory().login_with_token(
             token="tokenstr", url=mock_for_login.make_url("/")
         )
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
 
     async def test_incorrect_token(
@@ -349,7 +347,7 @@ class TestLoginWithToken:
             await Factory().login_with_token(
                 token="incorrect", url=mock_for_login.make_url("/")
             )
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert not Path(nmrc_path).exists(), "Config file not written after login "
 
 
@@ -381,7 +379,7 @@ class TestHeadlessLogin:
         await Factory().login_headless(
             get_auth_code_cb, url=mock_for_login.make_url("/")
         )
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
 
 

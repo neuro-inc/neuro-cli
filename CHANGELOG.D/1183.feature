@@ -1,1 +1,1 @@
-Convert configuration file into configuration directory.
+Convert configuration file into configuration directory, now it is `~/.neuro` folder.

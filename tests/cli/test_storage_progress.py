@@ -51,7 +51,7 @@ def make_root(color: bool, tty: bool, verbose: bool) -> Root:
         (80, 25),
         True,
         60,
-        Path("~/.nmrc"),
+        Path("~/.neuro"),
         verbosity=int(verbose),
         trace=False,
     )
