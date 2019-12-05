@@ -103,6 +103,6 @@ def make_client(
             clusters=clusters,
         )
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
-        return Client._create(session, config, tmp_path / ".nmrc", trace_id)
+        return Client._create(session, config, tmp_path / ".neuro", trace_id)
 
     return go
