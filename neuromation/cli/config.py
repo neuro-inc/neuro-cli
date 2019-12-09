@@ -54,11 +54,18 @@ async def show_token(root: Root) -> None:
 @async_cmd()
 async def show_quota(root: Root, user: Optional[str]) -> None:
     """
-    Print quota and remaining computation time.
+    Print quota and remaining computation time for active cluster.
     """
-    quota = await root.client._quota.get(user)
+    quotas = await root.client._quota.get(user)
+    cluster_name = root.client.config.cluster_name
+    if cluster_name not in quotas:
+        raise ValueError(
+            f"No quota information available for cluster {cluster_name}\n"
+            "Please logout and login again."
+        )
+    cluster_quota = quotas[cluster_name]
     fmt = QuotaInfoFormatter()
-    click.echo(fmt(quota))
+    click.echo(fmt(cluster_quota))
 
 
 @command()

@@ -16,15 +16,30 @@ async def test_quota_get_self(
 ) -> None:
     async def handle_stats(request: web.Request) -> web.StreamResponse:
         data = {
-            "name": request.match_info["name"],
-            "jobs": {
-                "total_gpu_run_time_minutes": 101,
-                "total_non_gpu_run_time_minutes": 102,
-            },
-            "quota": {
-                "total_gpu_run_time_minutes": 201,
-                "total_non_gpu_run_time_minutes": 202,
-            },
+            "clusters": [
+                {
+                    "name": "default",
+                    "jobs": {
+                        "total_gpu_run_time_minutes": 101,
+                        "total_non_gpu_run_time_minutes": 102,
+                    },
+                    "quota": {
+                        "total_gpu_run_time_minutes": 201,
+                        "total_non_gpu_run_time_minutes": 202,
+                    },
+                },
+                {
+                    "name": "other-cluster",
+                    "jobs": {
+                        "total_gpu_run_time_minutes": 131,
+                        "total_non_gpu_run_time_minutes": 132,
+                    },
+                    "quota": {
+                        "total_gpu_run_time_minutes": 231,
+                        "total_non_gpu_run_time_minutes": 232,
+                    },
+                },
+            ]
         }
         return web.json_response(data)
 
@@ -35,46 +50,20 @@ async def test_quota_get_self(
 
     async with make_client(srv.make_url("/")) as client:
         quota = await client._quota.get()
-        assert quota == _QuotaInfo(
-            name=client.username,
-            gpu_time_spent=float(101 * 60),
-            gpu_time_limit=float(201 * 60),
-            cpu_time_spent=float(102 * 60),
-            cpu_time_limit=float(202 * 60),
-        )
-
-
-async def test_quota_get_another_user(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    async def handle_stats(request: web.Request) -> web.StreamResponse:
-        data = {
-            "name": request.match_info["name"],
-            "jobs": {
-                "total_gpu_run_time_minutes": 101,
-                "total_non_gpu_run_time_minutes": 102,
-            },
-            "quota": {
-                "total_gpu_run_time_minutes": 201,
-                "total_non_gpu_run_time_minutes": 202,
-            },
+        assert quota == {
+            "default": _QuotaInfo(
+                gpu_time_spent=float(101 * 60),
+                gpu_time_limit=float(201 * 60),
+                cpu_time_spent=float(102 * 60),
+                cpu_time_limit=float(202 * 60),
+            ),
+            "other-cluster": _QuotaInfo(
+                gpu_time_spent=float(131 * 60),
+                gpu_time_limit=float(231 * 60),
+                cpu_time_spent=float(132 * 60),
+                cpu_time_limit=float(232 * 60),
+            ),
         }
-        return web.json_response(data)
-
-    app = web.Application()
-    app.router.add_get("/stats/users/{name}", handle_stats)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        quota = await client._quota.get("another-user")
-        assert quota == _QuotaInfo(
-            name="another-user",
-            gpu_time_spent=float(101 * 60),
-            gpu_time_limit=float(201 * 60),
-            cpu_time_spent=float(102 * 60),
-            cpu_time_limit=float(202 * 60),
-        )
 
 
 async def test_quota_get_no_quota(
@@ -82,12 +71,15 @@ async def test_quota_get_no_quota(
 ) -> None:
     async def handle_stats(request: web.Request) -> web.StreamResponse:
         data = {
-            "name": request.match_info["name"],
-            "jobs": {
-                "total_gpu_run_time_minutes": 101,
-                "total_non_gpu_run_time_minutes": 102,
-            },
-            "quota": {},
+            "clusters": [
+                {
+                    "name": "default",
+                    "jobs": {
+                        "total_gpu_run_time_minutes": 101,
+                        "total_non_gpu_run_time_minutes": 102,
+                    },
+                },
+            ]
         }
         return web.json_response(data)
 
@@ -98,13 +90,14 @@ async def test_quota_get_no_quota(
 
     async with make_client(srv.make_url("/")) as client:
         quota = await client._quota.get()
-        assert quota == _QuotaInfo(
-            name=client.username,
-            gpu_time_spent=float(101 * 60),
-            gpu_time_limit=float("inf"),
-            cpu_time_spent=float(102 * 60),
-            cpu_time_limit=float("inf"),
-        )
+        assert quota == {
+            "default": _QuotaInfo(
+                gpu_time_spent=float(101 * 60),
+                gpu_time_limit=float("inf"),
+                cpu_time_spent=float(102 * 60),
+                cpu_time_limit=float("inf"),
+            )
+        }
 
 
 async def test_quota_get_another_user_not_enough_permissions(

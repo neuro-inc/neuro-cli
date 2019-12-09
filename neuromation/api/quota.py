@@ -8,7 +8,6 @@ from neuromation.api.utils import NoPublicConstructor
 
 @dataclass(frozen=True)
 class _QuotaInfo:
-    name: str
     cpu_time_spent: float
     cpu_time_limit: float
     gpu_time_spent: float
@@ -33,7 +32,7 @@ class _Quota(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
 
-    async def get(self, user: Optional[str] = None) -> _QuotaInfo:
+    async def get(self, user: Optional[str] = None) -> Dict[str, _QuotaInfo]:
         user = user or self._config.username
         url = self._config.api_url / "stats" / "users" / user
         auth = await self._config._api_auth()
@@ -42,17 +41,23 @@ class _Quota(metaclass=NoPublicConstructor):
             return _quota_info_from_api(res)
 
 
-def _quota_info_from_api(payload: Dict[str, Any]) -> _QuotaInfo:
-    jobs = payload["jobs"]
-    spent_gpu = float(int(jobs["total_gpu_run_time_minutes"]) * 60)
-    spent_cpu = float(int(jobs["total_non_gpu_run_time_minutes"]) * 60)
-    quota = payload["quota"]
-    limit_gpu = float(quota.get("total_gpu_run_time_minutes", "inf")) * 60
-    limit_cpu = float(quota.get("total_non_gpu_run_time_minutes", "inf")) * 60
-    return _QuotaInfo(
-        name=payload["name"],
-        gpu_time_spent=spent_gpu,
-        gpu_time_limit=limit_gpu,
-        cpu_time_spent=spent_cpu,
-        cpu_time_limit=limit_cpu,
-    )
+def _quota_info_from_api(payload: Dict[str, Any]) -> Dict[str, _QuotaInfo]:
+    clusters = payload["clusters"]
+    ret: Dict[str, _QuotaInfo] = {}
+    for cluster_payload in clusters:
+        cluster_name = cluster_payload["name"]
+        jobs_payload = cluster_payload["jobs"]
+        quota_payload = cluster_payload.get("quota", {})
+        ret[cluster_name] = _QuotaInfo(
+            cpu_time_spent=float(
+                int(jobs_payload["total_non_gpu_run_time_minutes"]) * 60
+            ),
+            cpu_time_limit=float(
+                quota_payload.get("total_non_gpu_run_time_minutes", "inf")
+            )
+            * 60,
+            gpu_time_spent=float(int(jobs_payload["total_gpu_run_time_minutes"]) * 60),
+            gpu_time_limit=float(quota_payload.get("total_gpu_run_time_minutes", "inf"))
+            * 60,
+        )
+    return ret

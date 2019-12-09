@@ -1565,7 +1565,6 @@ bold_end = "\x1b[0m"
 class TestQuotaInfoFormatter:
     def test_output(self) -> None:
         quota = _QuotaInfo(
-            name="user",
             gpu_time_spent=0.0,
             gpu_time_limit=0.0,
             cpu_time_spent=float((9 * 60 + 19) * 60),
@@ -1583,7 +1582,6 @@ class TestQuotaInfoFormatter:
 
     def test_output_no_quota(self) -> None:
         quota = _QuotaInfo(
-            name="user",
             gpu_time_spent=0.0,
             gpu_time_limit=float("inf"),
             cpu_time_spent=float((9 * 60 + 19) * 60),
@@ -1599,7 +1597,6 @@ class TestQuotaInfoFormatter:
 
     def test_output_too_many_hours(self) -> None:
         quota = _QuotaInfo(
-            name="user",
             gpu_time_spent=float((1 * 60 + 29) * 60),
             gpu_time_limit=float((9 * 60 + 59) * 60),
             cpu_time_spent=float((9999 * 60 + 29) * 60),
@@ -1617,7 +1614,6 @@ class TestQuotaInfoFormatter:
 
     def test_output_spent_more_than_quota_left_zero(self) -> None:
         quota = _QuotaInfo(
-            name="user",
             gpu_time_spent=float(9 * 60 * 60),
             gpu_time_limit=float(1 * 60 * 60),
             cpu_time_spent=float(9 * 60 * 60),
