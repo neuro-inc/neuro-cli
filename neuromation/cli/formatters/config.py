@@ -47,22 +47,22 @@ class QuotaInfoFormatter:
         )
 
     def _format_quota_details(
-        self, time_spent: float, time_limit: float, time_left: float
+        self, time_spent: int, time_limit: Optional[int], time_left: Optional[int]
     ) -> str:
         spent_str = f"spent: {self._format_time(time_spent)}"
         quota_str = "quota: "
-        if time_limit < float("inf"):
-            assert time_left < float("inf")
+        if time_limit is not None:
+            assert time_left is not None
             quota_str += self._format_time(time_limit)
             quota_str += f", left: {self._format_time(time_left)}"
         else:
             quota_str += self.QUOTA_NOT_SET
         return f"{spent_str} ({quota_str})"
 
-    def _format_time(self, total_seconds: float) -> str:
+    def _format_time(self, total_seconds: int) -> str:
         # Since API for `GET /stats/users/{name}` returns time in minutes,
         #  we need to display it in minutes as well.
-        total_minutes = int(total_seconds // 60)
+        total_minutes = total_seconds // 60
         hours = total_minutes // 60
         minutes = total_minutes % 60
         minutes_zero_padded = "{0:02d}m".format(minutes)

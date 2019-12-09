@@ -1566,10 +1566,10 @@ class TestQuotaInfoFormatter:
     def test_output(self) -> None:
         quota = _QuotaInfo(
             cluster_name="default",
-            gpu_time_spent=0.0,
-            gpu_time_limit=0.0,
-            cpu_time_spent=float((9 * 60 + 19) * 60),
-            cpu_time_limit=float((9 * 60 + 39) * 60),
+            gpu_time_spent=0,
+            gpu_time_limit=0,
+            cpu_time_spent=(9 * 60 + 19) * 60,
+            cpu_time_limit=(9 * 60 + 39) * 60,
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
@@ -1584,10 +1584,10 @@ class TestQuotaInfoFormatter:
     def test_output_no_quota(self) -> None:
         quota = _QuotaInfo(
             cluster_name="default",
-            gpu_time_spent=0.0,
-            gpu_time_limit=float("inf"),
-            cpu_time_spent=float((9 * 60 + 19) * 60),
-            cpu_time_limit=float("inf"),
+            gpu_time_spent=0,
+            gpu_time_limit=None,
+            cpu_time_spent=(9 * 60 + 19) * 60,
+            cpu_time_limit=None,
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
@@ -1600,10 +1600,10 @@ class TestQuotaInfoFormatter:
     def test_output_too_many_hours(self) -> None:
         quota = _QuotaInfo(
             cluster_name="default",
-            gpu_time_spent=float((1 * 60 + 29) * 60),
-            gpu_time_limit=float((9 * 60 + 59) * 60),
-            cpu_time_spent=float((9999 * 60 + 29) * 60),
-            cpu_time_limit=float((99999 * 60 + 59) * 60),
+            gpu_time_spent=(1 * 60 + 29) * 60,
+            gpu_time_limit=(9 * 60 + 59) * 60,
+            cpu_time_spent=(9999 * 60 + 29) * 60,
+            cpu_time_limit=(99999 * 60 + 59) * 60,
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
@@ -1618,10 +1618,10 @@ class TestQuotaInfoFormatter:
     def test_output_spent_more_than_quota_left_zero(self) -> None:
         quota = _QuotaInfo(
             cluster_name="default",
-            gpu_time_spent=float(9 * 60 * 60),
-            gpu_time_limit=float(1 * 60 * 60),
-            cpu_time_spent=float(9 * 60 * 60),
-            cpu_time_limit=float(2 * 60 * 60),
+            gpu_time_spent=9 * 60 * 60,
+            gpu_time_limit=1 * 60 * 60,
+            cpu_time_spent=9 * 60 * 60,
+            cpu_time_limit=2 * 60 * 60,
         )
         out = QuotaInfoFormatter()(quota)
         assert out == "\n".join(
@@ -1634,35 +1634,31 @@ class TestQuotaInfoFormatter:
         )
 
     def test_format_time_00h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(total_seconds=float(0 * 60))
+        out = QuotaInfoFormatter()._format_time(total_seconds=0)
         assert out == "00h 00m"
 
     def test_format_time_00h_09m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(total_seconds=float(9 * 60))
+        out = QuotaInfoFormatter()._format_time(total_seconds=9 * 60)
         assert out == "00h 09m"
 
     def test_format_time_01h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(total_seconds=float(60 * 60))
+        out = QuotaInfoFormatter()._format_time(total_seconds=60 * 60)
         assert out == "01h 00m"
 
     def test_format_time_01h_10m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(total_seconds=float(70 * 60))
+        out = QuotaInfoFormatter()._format_time(total_seconds=70 * 60)
         assert out == "01h 10m"
 
     def test_format_time_99h_00m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(total_seconds=float(99 * 60 * 60))
+        out = QuotaInfoFormatter()._format_time(total_seconds=99 * 60 * 60)
         assert out == "99h 00m"
 
     def test_format_time_99h_59m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(
-            total_seconds=float((99 * 60 + 59) * 60)
-        )
+        out = QuotaInfoFormatter()._format_time(total_seconds=(99 * 60 + 59) * 60)
         assert out == "99h 59m"
 
     def test_format_time_9999h_59m(self) -> None:
-        out = QuotaInfoFormatter()._format_time(
-            total_seconds=float((9999 * 60 + 59) * 60)
-        )
+        out = QuotaInfoFormatter()._format_time(total_seconds=(9999 * 60 + 59) * 60)
         assert out == "9999h 59m"
 
 
