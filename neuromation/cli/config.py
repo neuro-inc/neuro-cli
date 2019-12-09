@@ -60,7 +60,7 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
     cluster_name = root.client.config.cluster_name
     if cluster_name not in quotas:
         raise ValueError(
-            f"No quota information available for cluster {cluster_name}\n"
+            f"No quota information available for cluster {cluster_name}.\n"
             "Please logout and login again."
         )
     cluster_quota = quotas[cluster_name]
