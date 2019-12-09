@@ -9,6 +9,7 @@ import aiohttp
 
 from neuromation.api.quota import _Quota
 
+from .admin import _Admin
 from .config import Config, _Config
 from .core import _Core
 from .images import Images
@@ -47,6 +48,7 @@ class Client(metaclass=NoPublicConstructor):
         self._core = _Core(session, cookie, trace_id)
         self._config = Config._create(self._core, path, config_data)
         self._parser = Parser._create(self._config)
+        self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core, self._config)

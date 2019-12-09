@@ -179,6 +179,13 @@ class Config(metaclass=NoPublicConstructor):
         return self._config_data.url
 
     @property
+    def admin_url(self) -> URL:
+        # XXX: Replace the path to match all APIs or do discovery
+
+        # API URL prefix: api/v1, admin prefix: apis/admin/v1
+        return self._config_data.url.parent.parent / "apis" / "admin" / "v1"
+
+    @property
     def monitoring_url(self) -> URL:
         cluster = self._config_data.clusters[self._config_data.cluster_name]
         return cluster.monitoring_url

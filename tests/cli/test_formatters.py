@@ -36,10 +36,12 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
+from neuromation.api.admin import _ClusterUser, _ClusterUserRoleType
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
+    ClusterUserFormatter,
     ConfigFormatter,
     DockerImageProgress,
     JobFormatter,
@@ -1860,3 +1862,22 @@ class TestDockerImageProgress:
         assert err == ""
         assert out.startswith("Image created")
         assert CSI not in out  # no styled strings
+
+
+class TestClusterUserFormatter:
+    def test_cluster_list(self) -> None:
+        formatter = ClusterUserFormatter()
+        users = [
+            _ClusterUser(user_name="denis", role=_ClusterUserRoleType("admin")),
+            _ClusterUser(user_name="andrew", role=_ClusterUserRoleType("manager")),
+            _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
+            _ClusterUser(user_name="alex", role=_ClusterUserRoleType("user")),
+        ]
+        expected_out = [
+            "Name    Role   ",
+            "denis   admin  ",
+            "andrew  manager",
+            "ivan    user   ",
+            "alex    user   ",
+        ]
+        assert formatter(users) == expected_out
