@@ -52,12 +52,14 @@ async def test_quota_get_self(
         quota = await client._quota.get()
         assert quota == {
             "default": _QuotaInfo(
+                cluster_name="default",
                 gpu_time_spent=float(101 * 60),
                 gpu_time_limit=float(201 * 60),
                 cpu_time_spent=float(102 * 60),
                 cpu_time_limit=float(202 * 60),
             ),
             "other-cluster": _QuotaInfo(
+                cluster_name="other-cluster",
                 gpu_time_spent=float(131 * 60),
                 gpu_time_limit=float(231 * 60),
                 cpu_time_spent=float(132 * 60),
@@ -92,6 +94,7 @@ async def test_quota_get_no_quota(
         quota = await client._quota.get()
         assert quota == {
             "default": _QuotaInfo(
+                cluster_name="default",
                 gpu_time_spent=float(101 * 60),
                 gpu_time_limit=float("inf"),
                 cpu_time_spent=float(102 * 60),

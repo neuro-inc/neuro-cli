@@ -8,6 +8,7 @@ from neuromation.api.utils import NoPublicConstructor
 
 @dataclass(frozen=True)
 class _QuotaInfo:
+    cluster_name: str
     cpu_time_spent: float
     cpu_time_limit: float
     gpu_time_spent: float
@@ -49,6 +50,7 @@ def _quota_info_from_api(payload: Dict[str, Any]) -> Dict[str, _QuotaInfo]:
         jobs_payload = cluster_payload["jobs"]
         quota_payload = cluster_payload.get("quota", {})
         ret[cluster_name] = _QuotaInfo(
+            cluster_name=cluster_name,
             cpu_time_spent=float(
                 int(jobs_payload["total_non_gpu_run_time_minutes"]) * 60
             ),
