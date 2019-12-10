@@ -3,6 +3,8 @@
 # Table of Contents
 * [Preface](#Preface)
 * [neuro](#neuro)
+	* [neuro admin](#neuro-admin)
+		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
@@ -111,6 +113,7 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
+| _[neuro admin](#neuro-admin)_| Cluster administration commands |
 | _[neuro job](#neuro-job)_| Job operations |
 | _[neuro project](#neuro-project)_| Project operations |
 | _[neuro storage](#neuro-storage)_| Storage operations |
@@ -146,6 +149,51 @@ Name | Description|
 | _[neuro push](#neuro-push)_| Push an image to platform registry |
 | _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
 | _[neuro share](#neuro-share)_| Shares resource with another user |
+
+
+
+
+## neuro admin
+
+Cluster administration commands.
+
+**Usage:**
+
+```bash
+neuro admin [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
+
+
+
+
+### neuro admin get-cluster-users
+
+Print the list of all users in the cluster with their assigned role
+
+**Usage:**
+
+```bash
+neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
@@ -2051,6 +2099,12 @@ Name | Description|
 ```shell
 git clone https://github.com/neuromation/platform-api-clients.git
 cd platform-api-clients/python
+```
+
+For OSX users install coreutils to properly interpret shell commands:
+
+```
+brew install coreutils
 ```
 
 Before you begin, it is recommended to have clean virtual environment installed:

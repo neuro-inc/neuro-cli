@@ -21,6 +21,12 @@ git clone https://github.com/neuromation/platform-api-clients.git
 cd platform-api-clients/python
 ```
 
+For OSX users install coreutils to properly interpret shell commands:
+
+```
+brew install coreutils
+```
+
 Before you begin, it is recommended to have clean virtual environment installed:
 
 ```shell

@@ -15,7 +15,7 @@ import neuromation
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
 from neuromation.cli.root import Root
 
-from . import completion, config, image, job, project, share, storage
+from . import admin, completion, config, image, job, project, share, storage
 from .const import (
     EX_DATAERR,
     EX_IOERR,
@@ -276,6 +276,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
 
 
 # groups
+cli.add_command(admin.admin)
 cli.add_command(job.job)
 cli.add_command(project.project)
 cli.add_command(storage.storage)
