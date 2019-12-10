@@ -26,4 +26,19 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     )
 
 
+@command()
+@click.argument("cluster_name", required=True, type=str)
+@click.argument("user_name", required=True, type=str)
+@click.argument("role", required=False, default="user", type=str)
+@async_cmd()
+async def add_cluster_user(
+    root: Root, cluster_name: str, user_name: str, role: str
+) -> None:
+    """
+    Add the user to specified cluster with one of 3 roles: admin, manager or user
+    """
+    await root.client._admin.add_cluster_user(cluster_name, user_name, role)
+
+
 admin.add_command(get_cluster_users)
+admin.add_command(add_cluster_user)
