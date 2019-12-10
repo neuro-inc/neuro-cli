@@ -35,6 +35,7 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     "role",
     required=False,
     default="user",
+    metavar="ROLE",
     type=click.Choice(list(_ClusterUserRoleType)),
 )
 @async_cmd()
