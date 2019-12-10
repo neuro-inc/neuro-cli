@@ -53,7 +53,7 @@ class _Admin(metaclass=NoPublicConstructor):
         url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
         auth = await self._config._api_auth()
 
-        async with self._core.request("DELETE", url, auth=auth) as resp:
+        async with self._core.request("DELETE", url, auth=auth):
             # No content response
             pass
 
