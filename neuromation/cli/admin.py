@@ -35,7 +35,7 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     "role",
     required=False,
     default=_ClusterUserRoleType.USER.value,
-    metavar="ROLE",
+    metavar="[ROLE]",
     type=click.Choice(list(_ClusterUserRoleType)),
 )
 @async_cmd()
@@ -45,11 +45,12 @@ async def add_cluster_user(
     """
     Add user access to specified cluster with one of 3 roles: admin, manager or user
     """
-    await root.client._admin.add_cluster_user(cluster_name, user_name, role)
+    user = await root.client._admin.add_cluster_user(cluster_name, user_name, role)
     if not root.quiet:
         click.echo(
-            f"Added {click.style(user_name, bold=True)} to cluster "
-            f"{click.style(cluster_name, bold=True)} as {click.style(role, bold=True)}"
+            f"Added {click.style(user.user_name, bold=True)} to cluster "
+            f"{click.style(cluster_name, bold=True)} as "
+            f"{click.style(user.role, bold=True)}"
         )
 
 
