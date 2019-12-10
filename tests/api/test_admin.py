@@ -108,7 +108,7 @@ async def test_remove_cluster_user(
         requested_cluster_users.append(
             (request.match_info["cluster_name"], request.match_info["user_name"],)
         )
-        return web.json_response(status=HTTPNoContent.status_code)
+        return web.Response(status=HTTPNoContent.status_code)
 
     app = web.Application()
     app.router.add_delete(
