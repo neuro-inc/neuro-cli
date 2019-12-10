@@ -51,6 +51,13 @@ class _Admin(metaclass=NoPublicConstructor):
             await resp.json()
         return user
 
+    async def remove_cluster_user(self, cluster_name: str, user_name: str) -> None:
+        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
+        auth = await self._config._api_auth()
+
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            await resp.json()
+
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
     return _ClusterUser(
