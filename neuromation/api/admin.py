@@ -55,7 +55,7 @@ class _Admin(metaclass=NoPublicConstructor):
 
         async with self._core.request("DELETE", url, auth=auth) as resp:
             # No content response
-            await resp.release()
+            pass
 
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
