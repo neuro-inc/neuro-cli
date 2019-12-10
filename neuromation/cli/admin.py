@@ -38,6 +38,11 @@ async def add_cluster_user(
     Add user access to specified cluster with one of 3 roles: admin, manager or user
     """
     await root.client._admin.add_cluster_user(cluster_name, user_name, role)
+    if root.verbosity >= 0:
+        click.echo(
+            f"Added {click.style(user_name, bold=True)} to cluster "
+            f"{click.style(cluster_name, bold=True)} as {click.style(role, bold=True)}"
+        )
 
 
 @command()
@@ -49,6 +54,11 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
     Remove user access from the cluster
     """
     await root.client._admin.remove_cluster_user(cluster_name, user_name)
+    if root.verbosity >= 0:
+        click.echo(
+            f"Removed {click.style(user_name, bold=True)} from cluster "
+            f"{click.style(cluster_name, bold=True)}"
+        )
 
 
 admin.add_command(get_cluster_users)
