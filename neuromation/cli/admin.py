@@ -2,6 +2,8 @@ from typing import Optional
 
 import click
 
+from neuromation.api.admin import _ClusterUserRoleType
+
 from .formatters import ClusterUserFormatter
 from .root import Root
 from .utils import async_cmd, command, group, pager_maybe
@@ -29,7 +31,12 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
-@click.argument("role", required=False, default="user", type=str)
+@click.argument(
+    "role",
+    required=False,
+    default="user",
+    type=click.Choice(list(_ClusterUserRoleType)),
+)
 @async_cmd()
 async def add_cluster_user(
     root: Root, cluster_name: str, user_name: str, role: str
