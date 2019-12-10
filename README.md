@@ -209,7 +209,7 @@ Add user access to specified cluster with one of 3 roles: admin, manager or<br/>
 **Usage:**
 
 ```bash
-neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME ROLE
 ```
 
 **Options:**

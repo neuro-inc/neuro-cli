@@ -65,7 +65,6 @@ e2e: .update-deps
 		--cov-report xml:coverage.xml \
 		--verbose \
 		--durations 10 \
-		-k test_add_cluster_user_invalid_role \
 		tests
 
 
