@@ -28,7 +28,7 @@ async def init(root: Root) -> None:
     # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
     neuro project init
     """
-    cookiecutter(f"gh:neuromation/cookiecutter-neuro-project")
+    cookiecutter(f"gh:neuromation/cookiecutter-neuro-project --checkout release")
 
 
 project.add_command(init)
