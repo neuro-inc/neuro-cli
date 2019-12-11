@@ -955,21 +955,21 @@ async def _build_volumes(
         available = await root.client.users.get_acl(
             root.client.username, scheme="storage"
         )
-        to_skip = set()
+        permissions = []
         for perm in available:
             try:
                 idna.encode(perm.uri.host)
             except ValueError:
                 log.warning(f"Skipping invalid URI {perm.uri}")
-                to_skip.add(perm.uri)
+            else:
+                permissions.append(perm)
         volumes.update(
             Volume(
                 storage_uri=perm.uri,
                 container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
                 read_only=perm.action not in ("write", "manage"),
             )
-            for perm in available
-            if perm.uri not in to_skip
+            for perm in permissions
         )
         neuro_mountpoint = _get_neuro_mountpoint(root.client.username)
         env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
