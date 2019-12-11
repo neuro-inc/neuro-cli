@@ -63,12 +63,8 @@ class QuotaInfoFormatter:
         # Since API for `GET /stats/users/{name}` returns time in minutes,
         #  we need to display it in minutes as well.
         total_minutes = int(total_seconds // 60)
-        hours = total_minutes // 60
-        minutes = total_minutes % 60
-        minutes_zero_padded = "{0:02d}m".format(minutes)
-        hours_zero_padded = "{0:02d}".format(hours)
-        hours_space_padded = f"{hours_zero_padded:>2}h"
-        return f"{hours_space_padded} {minutes_zero_padded}"
+        hours, minutes = divmod(total_minutes, 60)
+        return f"{hours:02d}h {minutes:02d}m"
 
 
 class ClustersFormatter:
