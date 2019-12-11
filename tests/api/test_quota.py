@@ -35,8 +35,8 @@ async def test_quota_get_self(
                         "total_non_gpu_run_time_minutes": 132,
                     },
                     "quota": {
-                        "total_gpu_run_time_minutes": None,
-                        "total_non_gpu_run_time_minutes": None,
+                        "total_gpu_run_time_minutes": 231,
+                        "total_non_gpu_run_time_minutes": 232,
                     },
                 },
             ]
@@ -53,17 +53,17 @@ async def test_quota_get_self(
         assert quota == {
             "default": _QuotaInfo(
                 cluster_name="default",
-                gpu_time_spent=(101 * 60),
-                gpu_time_limit=(201 * 60),
-                cpu_time_spent=(102 * 60),
-                cpu_time_limit=(202 * 60),
+                gpu_time_spent=float(101 * 60),
+                gpu_time_limit=float(201 * 60),
+                cpu_time_spent=float(102 * 60),
+                cpu_time_limit=float(202 * 60),
             ),
             "other-cluster": _QuotaInfo(
                 cluster_name="other-cluster",
-                gpu_time_spent=(131 * 60),
-                gpu_time_limit=None,
-                cpu_time_spent=(132 * 60),
-                cpu_time_limit=None,
+                gpu_time_spent=float(131 * 60),
+                gpu_time_limit=float(231 * 60),
+                cpu_time_spent=float(132 * 60),
+                cpu_time_limit=float(232 * 60),
             ),
         }
 
@@ -95,10 +95,10 @@ async def test_quota_get_no_quota(
         assert quota == {
             "default": _QuotaInfo(
                 cluster_name="default",
-                gpu_time_spent=(101 * 60),
-                gpu_time_limit=None,
-                cpu_time_spent=(102 * 60),
-                cpu_time_limit=None,
+                gpu_time_spent=float(101 * 60),
+                gpu_time_limit=float("inf"),
+                cpu_time_spent=float(102 * 60),
+                cpu_time_limit=float("inf"),
             )
         }
 
