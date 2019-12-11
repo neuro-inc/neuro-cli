@@ -1,5 +1,4 @@
 import asyncio
-import idna
 import contextlib
 import logging
 import os
@@ -12,6 +11,7 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
+import idna
 from yarl import URL
 
 from neuromation.api import (
