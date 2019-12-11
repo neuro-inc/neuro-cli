@@ -347,6 +347,8 @@ async def cp(
             log.error(f"cannot copy {src} to {dst}: {error}")
             errors = True
 
+        progress_obj.end()
+
     if errors:
         sys.exit(EX_OSFILE)
 

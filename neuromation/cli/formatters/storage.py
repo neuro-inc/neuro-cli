@@ -5,7 +5,8 @@ import os
 import time
 from fnmatch import fnmatch
 from math import ceil
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+from time import monotonic
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
 from click import style, unstyle
@@ -568,6 +569,9 @@ class BaseStorageProgress(AbstractRecursiveFileProgress):
     def begin(self, src: URL, dst: URL) -> None:  # pragma: no cover
         pass
 
+    def end(self) -> None:  # pragma: no cover
+        pass
+
 
 def create_storage_progress(root: Root, show_progress: bool) -> BaseStorageProgress:
     if show_progress:
@@ -632,16 +636,26 @@ class StreamProgress(BaseStorageProgress):
 
 
 class TTYProgress(BaseStorageProgress):
-    HEIGHT = 25
-
-    def __init__(self, root: Root) -> None:
+    def __init__(
+        self,
+        root: Root,
+        *,
+        height: int = 25,
+        flush_interval: float = 0.2,
+        time_factory: Callable[[], float] = monotonic,
+    ) -> None:
         self.painter = get_painter(root.color, quote=True)
         self.printer = TTYPrinter()
+        self.height = height
         self.half_width = (root.terminal_size[0] - 10) // 2
         self.full_width = root.terminal_size[0] - 20
         self.lines: List[Tuple[URL, bool, str]] = []
         self.cur_dir: Optional[URL] = None
         self.verbose = root.verbosity > 0
+        self.flush_interval = flush_interval
+        self.first_line = self.last_line = 0
+        self.time_factory = time_factory
+        self.last_update_time = time_factory()
 
     def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
         label = str(url)
@@ -701,6 +715,9 @@ class TTYProgress(BaseStorageProgress):
             dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
             click.echo(f"Copy {src_label} => {dst_label}")
 
+    def end(self) -> None:
+        self.flush()
+
     def enter(self, data: StorageProgressEnterDir) -> None:
         self._enter_dir(data.src)
 
@@ -714,6 +731,7 @@ class TTYProgress(BaseStorageProgress):
         if self.lines and self.lines[-1][0] == data.src:
             self.lines.pop()
         self.append(data.src, f"{src} DONE", is_dir=True)
+        self.flush()
         self.cur_dir = None
 
     def start(self, data: StorageProgressStart) -> None:
@@ -736,6 +754,7 @@ class TTYProgress(BaseStorageProgress):
         self.replace(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
 
     def fail(self, data: StorageProgressFail) -> None:
+        self.flush()
         src = self.fmt_str(str(data.src), FileStatusType.FILE)
         dst = self.fmt_str(str(data.dst), FileStatusType.FILE)
         click.echo(
@@ -753,7 +772,8 @@ class TTYProgress(BaseStorageProgress):
 
     def append(self, key: URL, msg: str, is_dir: bool = False) -> None:
         self.lines.append((key, is_dir, msg))
-        if len(self.lines) > self.HEIGHT:
+        self.last_line = len(self.lines)
+        if len(self.lines) > self.height:
             if not self.lines[0][1]:
                 # top line is not a dir, drop it.
                 del self.lines[0]
@@ -763,15 +783,31 @@ class TTYProgress(BaseStorageProgress):
             else:
                 # there is a file line under a dir line, drop the file line.
                 del self.lines[1]
-        for lineno, line in enumerate(self.lines):
-            self.printer.print(line[2], lineno)
+            if self.first_line > 0:
+                self.first_line -= 1
+            self.last_line -= 1
+        self.maybe_flush()
 
     def replace(self, key: URL, msg: str) -> None:
         for i in range(len(self.lines))[::-1]:
             line = self.lines[i]
             if line[0] == key:
                 self.lines[i] = (key, False, msg)
-                self.printer.print(self.lines[i][2], i)
+                self.first_line = min(self.first_line, i)
+                self.last_line = min(self.last_line, i + 1)
+                self.maybe_flush()
                 break
         else:
             self._append_file(key, msg)
+
+    def maybe_flush(self) -> None:
+        time = self.time_factory()
+        if time >= self.last_update_time + self.flush_interval:
+            self.flush()
+
+    def flush(self) -> None:
+        for lineno in range(self.first_line, self.last_line):
+            self.printer.print(self.lines[lineno][2], lineno + self.first_line)
+        self.first_line = len(self.lines)
+        self.last_line = 0
+        self.last_update_time = self.time_factory()
