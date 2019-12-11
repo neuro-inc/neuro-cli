@@ -21,9 +21,7 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     """
     fmt = ClusterUserFormatter()
     clusters = await root.client._admin.list_cluster_users(cluster_name)
-    pager_maybe(
-        fmt(clusters), root.tty, root.terminal_size,
-    )
+    pager_maybe(fmt(clusters), root.tty, root.terminal_size)
 
 
 admin.add_command(get_cluster_users)

@@ -29,9 +29,7 @@ def test_get_session_cookie(root_uninitialized: Root) -> None:
 
 
 class TestTokenSanitization:
-    @pytest.mark.parametrize(
-        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
-    )
+    @pytest.mark.parametrize("auth", ["Bearer", "Basic", "Digest", "Mutual"])
     def test_sanitize_header_value_single_token(
         self, root_uninitialized: Root, auth: str
     ) -> None:
@@ -40,9 +38,7 @@ class TestTokenSanitization:
         line_safe = root_uninitialized._sanitize_header_value(line)
         assert line_safe == expected
 
-    @pytest.mark.parametrize(
-        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
-    )
+    @pytest.mark.parametrize("auth", ["Bearer", "Basic", "Digest", "Mutual"])
     def test_sanitize_header_value_many_tokens(
         self, root_uninitialized: Root, auth: str
     ) -> None:
@@ -52,9 +48,7 @@ class TestTokenSanitization:
         line_safe = root_uninitialized._sanitize_header_value(line)
         assert line_safe == expected
 
-    @pytest.mark.parametrize(
-        "auth", ["Bearer", "Basic", "Digest", "Mutual"],
-    )
+    @pytest.mark.parametrize("auth", ["Bearer", "Basic", "Digest", "Mutual"])
     def test_sanitize_header_value_not_a_token(
         self, root_uninitialized: Root, auth: str
     ) -> None:

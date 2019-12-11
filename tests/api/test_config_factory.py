@@ -114,7 +114,7 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
 
 
 def _create_config(
-    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster,
+    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> str:
     config = _Config(
         auth_config=auth_config,
