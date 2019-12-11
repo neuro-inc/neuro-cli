@@ -772,7 +772,6 @@ class TTYProgress(BaseStorageProgress):
 
     def append(self, key: URL, msg: str, is_dir: bool = False) -> None:
         self.lines.append((key, is_dir, msg))
-        self.last_line = len(self.lines)
         if len(self.lines) > self.height:
             if not self.lines[0][1]:
                 # top line is not a dir, drop it.
@@ -783,9 +782,8 @@ class TTYProgress(BaseStorageProgress):
             else:
                 # there is a file line under a dir line, drop the file line.
                 del self.lines[1]
-            if self.first_line > 0:
-                self.first_line -= 1
-            self.last_line -= 1
+            self.first_line = 0
+        self.last_line = len(self.lines)
         self.maybe_flush()
 
     def replace(self, key: URL, msg: str) -> None:
@@ -794,20 +792,22 @@ class TTYProgress(BaseStorageProgress):
             if line[0] == key:
                 self.lines[i] = (key, False, msg)
                 self.first_line = min(self.first_line, i)
-                self.last_line = min(self.last_line, i + 1)
+                self.last_line = max(self.last_line, i + 1)
                 self.maybe_flush()
                 break
         else:
             self._append_file(key, msg)
 
     def maybe_flush(self) -> None:
-        time = self.time_factory()
-        if time >= self.last_update_time + self.flush_interval:
+        if (
+            len(self.lines) < self.height
+            or self.time_factory() >= self.last_update_time + self.flush_interval
+        ):
             self.flush()
 
     def flush(self) -> None:
         for lineno in range(self.first_line, self.last_line):
-            self.printer.print(self.lines[lineno][2], lineno + self.first_line)
+            self.printer.print(self.lines[lineno][2], lineno)
         self.first_line = len(self.lines)
         self.last_line = 0
         self.last_update_time = self.time_factory()
