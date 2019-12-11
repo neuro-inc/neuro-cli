@@ -23,6 +23,11 @@ class _ClusterUser:
     role: _ClusterUserRoleType
 
 
+@dataclass(frozen=True)
+class _Cluster:
+    pass
+
+
 class _Admin(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
@@ -31,6 +36,17 @@ class _Admin(metaclass=NoPublicConstructor):
     async def list_cluster_users(
         self, cluster_name: Optional[str] = None
     ) -> List[_ClusterUser]:
+        cluster_name = cluster_name or self._config.cluster_name
+        url = self._config.admin_url / "clusters" / cluster_name / "users"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            res = await resp.json()
+            return [_cluster_user_from_api(payload) for payload in res]
+
+
+    async def list_clusters(
+        self,
+    ) -> List[_Cluster]:
         cluster_name = cluster_name or self._config.cluster_name
         url = self._config.admin_url / "clusters" / cluster_name / "users"
         auth = await self._config._api_auth()
