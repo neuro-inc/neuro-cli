@@ -39,8 +39,10 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     config_dict = yaml.safe_load(config)
     await root.client._admin.add_cluster(cluster_name, config_dict)
     if not root.quiet:
-        click.echo(f"Cluster {cluster_name} successfully added "
-                   "and will be set up within 24 hours")
+        click.echo(
+            f"Cluster {cluster_name} successfully added "
+            "and will be set up within 24 hours"
+        )
 
 
 @command()
