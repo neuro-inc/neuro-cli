@@ -1,6 +1,8 @@
+import io
 from typing import Optional
 
 import click
+import yaml
 
 from .formatters import ClustersFormatter, ClusterUserFormatter
 from .root import Root
@@ -39,5 +41,22 @@ async def get_clusters(root: Root) -> None:
     )
 
 
+@command()
+@click.argument("cluster_name", required=True, type=str)
+@click.argument("config", required=True, type=click.File(encoding="utf8", lazy=False))
+@async_cmd()
+async def add_cluster(root: Root, cluster_name: str, config: io.TextIOBase) -> None:
+    """
+    Print the list of available clusters.
+    """
+    if not root.quiet:
+        click.echo(f"Creating cluster {cluster_name}")
+    config_dict = yaml.safe_load(config)
+    await root.client._admin.add_cluster(cluster_name, config_dict)
+    if not root.quiet:
+        click.echo(f"Done")
+
+
 admin.add_command(get_cluster_users)
 admin.add_command(get_clusters)
+admin.add_command(add_cluster)

@@ -43,7 +43,7 @@ class _Admin(metaclass=NoPublicConstructor):
             res = await resp.json()
             return [_cluster_user_from_api(payload) for payload in res]
 
-    async def list_clusters(self,) -> Dict[str, _Cluster]:
+    async def list_clusters(self) -> Dict[str, _Cluster]:
         url = self._config.admin_url / "clusters"
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
@@ -53,6 +53,17 @@ class _Admin(metaclass=NoPublicConstructor):
                 cluster = _cluster_from_api(item)
                 ret[cluster.name] = cluster
             return ret
+
+    async def add_cluster(self, name: str, config: Dict[str, Any]) -> None:
+        url = self._config.admin_url / "clusters"
+        auth = await self._config._api_auth()
+        payload = {"name": name}
+        async with self._core.request("POST", url, auth=auth, json=payload) as resp:
+            resp
+        url = self._config.admin_url / "clusters" / name / "cloud_provider"
+        url = url.with_query(start_deployment="true")
+        async with self._core.request("PUT", url, auth=auth, json=config) as resp:
+            resp
 
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
