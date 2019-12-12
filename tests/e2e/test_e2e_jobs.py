@@ -966,7 +966,6 @@ def test_job_run_volume_all(helper: Helper) -> None:
     captured = helper.run_cli(
         ["run", "--detach", "-s", "cpu-micro", "--volume=ALL", img, command]
     )
-    assert not captured.err
     msg = (
         "Storage mountpoints will be available as the environment variables:\n"
         f"  NEUROMATION_ROOT={root_mountpoint}\n"
