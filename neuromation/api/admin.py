@@ -33,16 +33,6 @@ class _Admin(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
 
-    async def list_cluster_users(
-        self, cluster_name: Optional[str] = None
-    ) -> List[_ClusterUser]:
-        cluster_name = cluster_name or self._config.cluster_name
-        url = self._config.admin_url / "clusters" / cluster_name / "users"
-        auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
-            res = await resp.json()
-            return [_cluster_user_from_api(payload) for payload in res]
-
     async def list_clusters(self) -> Dict[str, _Cluster]:
         url = self._config.admin_url / "clusters"
         auth = await self._config._api_auth()
@@ -64,6 +54,16 @@ class _Admin(metaclass=NoPublicConstructor):
         url = url.with_query(start_deployment="true")
         async with self._core.request("PUT", url, auth=auth, json=config) as resp:
             resp
+
+    async def list_cluster_users(
+        self, cluster_name: Optional[str] = None
+    ) -> List[_ClusterUser]:
+        cluster_name = cluster_name or self._config.cluster_name
+        url = self._config.admin_url / "clusters" / cluster_name / "users"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            res = await resp.json()
+            return [_cluster_user_from_api(payload) for payload in res]
 
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:

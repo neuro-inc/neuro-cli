@@ -10,34 +10,6 @@ from tests import _TestServerFactory
 _MakeClient = Callable[..., Client]
 
 
-async def test_list_cluster_users(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    async def handle_list_cluster_user(request: web.Request) -> web.StreamResponse:
-        data = [
-            {"user_name": "denis", "role": "admin"},
-            {"user_name": "andrew", "role": "manager"},
-            {"user_name": "ivan", "role": "user"},
-        ]
-        return web.json_response(data)
-
-    app = web.Application()
-    app.router.add_get(
-        "/apis/admin/v1/clusters/{cluster_name}/users", handle_list_cluster_user
-    )
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/api/v1")) as client:
-        quota = await client._admin.list_cluster_users()
-        assert quota == [
-            _ClusterUser(user_name="denis", role=_ClusterUserRoleType("admin")),
-            _ClusterUser(user_name="andrew", role=_ClusterUserRoleType("manager")),
-            _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
-        ]
-
-##################################################################################################
-
 async def test_list_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -91,15 +63,11 @@ async def test_add_cluster(
                 "id": "n1_highmem_8",  # id of the GCP node pool template
                 "min_size": 0,
                 "max_size": 5,
-                "is_tpu_enabled": True,  # optional field, only CPU node pools can have TPU
+                "is_tpu_enabled": True,
             },
+            {"id": "n1_highmem_32_4x_nvidia_tesla_k80", "min_size": 0, "max_size": 5,},
             {
-                "id": "n1_highmem_32_4x_nvidia_tesla_k80",  # id of the GCP node pool template
-                "min_size": 0,
-                "max_size": 5,
-            },
-            {
-                "id": "n1_highmem_32_4x_nvidia_tesla_k80",  # id of the GCP node pool template
+                "id": "n1_highmem_32_4x_nvidia_tesla_k80",
                 "min_size": 0,
                 "max_size": 5,
                 "is_preemptible": True,
@@ -137,4 +105,28 @@ async def test_add_cluster(
     assert put_cloud_json == JSON
 
 
-##################################################################################################
+async def test_list_cluster_users(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handle_list_cluster_user(request: web.Request) -> web.StreamResponse:
+        data = [
+            {"user_name": "denis", "role": "admin"},
+            {"user_name": "andrew", "role": "manager"},
+            {"user_name": "ivan", "role": "user"},
+        ]
+        return web.json_response(data)
+
+    app = web.Application()
+    app.router.add_get(
+        "/apis/admin/v1/clusters/{cluster_name}/users", handle_list_cluster_user
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        quota = await client._admin.list_cluster_users()
+        assert quota == [
+            _ClusterUser(user_name="denis", role=_ClusterUserRoleType("admin")),
+            _ClusterUser(user_name="andrew", role=_ClusterUserRoleType("manager")),
+            _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
+        ]

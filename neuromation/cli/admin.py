@@ -15,21 +15,6 @@ def admin() -> None:
 
 
 @command()
-@click.argument("cluster_name", required=False, default=None, type=str)
-@async_cmd()
-async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
-    """
-    Print the list of all users in the cluster with their assigned role
-    """
-    fmt = ClusterUserFormatter()
-    clusters = await root.client._admin.list_cluster_users(cluster_name)
-    pager_maybe(
-        fmt(clusters), root.tty, root.terminal_size,
-    )
-
-##################################################################################################
-
-@command()
 @async_cmd()
 async def get_clusters(root: Root) -> None:
     """
@@ -58,8 +43,20 @@ async def add_cluster(root: Root, cluster_name: str, config: io.TextIOBase) -> N
         click.echo(f"Done")
 
 
+@command()
+@click.argument("cluster_name", required=False, default=None, type=str)
+@async_cmd()
+async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
+    """
+    Print the list of all users in the cluster with their assigned role
+    """
+    fmt = ClusterUserFormatter()
+    clusters = await root.client._admin.list_cluster_users(cluster_name)
+    pager_maybe(
+        fmt(clusters), root.tty, root.terminal_size,
+    )
+
+
 admin.add_command(get_cluster_users)
 admin.add_command(get_clusters)
 admin.add_command(add_cluster)
-
-##################################################################################################

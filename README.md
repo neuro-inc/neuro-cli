@@ -178,7 +178,7 @@ Name | Description|
 |---|---|
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
-| _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Print the list of available clusters |
+| _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
 
 
 
@@ -223,7 +223,7 @@ Name | Description|
 
 ### neuro admin add-cluster
 
-Print the list of available clusters.
+Create a new cluster and start its provisioning
 
 **Usage:**
 
