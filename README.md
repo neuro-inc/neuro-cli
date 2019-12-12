@@ -5,6 +5,7 @@
 * [neuro](#neuro)
 	* [neuro admin](#neuro-admin)
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
+		* [neuro admin get-clusters](#neuro-admin-get-clusters)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
@@ -175,6 +176,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
+| _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 
 
 
@@ -187,6 +189,25 @@ Print the list of all users in the cluster with their assigned role
 
 ```bash
 neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin get-clusters
+
+Print the list of available clusters.
+
+**Usage:**
+
+```bash
+neuro admin get-clusters [OPTIONS]
 ```
 
 **Options:**

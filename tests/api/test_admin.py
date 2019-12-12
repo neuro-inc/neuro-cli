@@ -3,7 +3,7 @@ from typing import Callable
 from aiohttp import web
 
 from neuromation.api import Client
-from neuromation.api.admin import _ClusterUser, _ClusterUserRoleType
+from neuromation.api.admin import _Cluster, _ClusterUser, _ClusterUserRoleType
 from tests import _TestServerFactory
 
 
@@ -35,3 +35,26 @@ async def test_list_cluster_users(
             _ClusterUser(user_name="andrew", role=_ClusterUserRoleType("manager")),
             _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
         ]
+
+
+async def test_list_clusters(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handle_list_clusters(request: web.Request) -> web.StreamResponse:
+        data = [
+            {"name": "default"},
+            {"name": "other"},
+        ]
+        return web.json_response(data)
+
+    app = web.Application()
+    app.router.add_get("/apis/admin/v1/clusters", handle_list_clusters)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        clusters = await client._admin.list_clusters()
+        assert clusters == {
+            "default": _Cluster(name="default"),
+            "other": _Cluster(name="other"),
+        }

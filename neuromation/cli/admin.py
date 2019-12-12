@@ -2,7 +2,7 @@ from typing import Optional
 
 import click
 
-from .formatters import ClusterUserFormatter
+from .formatters import ClustersFormatter, ClusterUserFormatter
 from .root import Root
 from .utils import async_cmd, command, group, pager_maybe
 
@@ -26,4 +26,18 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     )
 
 
+@command()
+@async_cmd()
+async def get_clusters(root: Root) -> None:
+    """
+    Print the list of available clusters.
+    """
+    fmt = ClustersFormatter()
+    clusters = await root.client._admin.list_clusters()
+    pager_maybe(
+        fmt(clusters.values()), root.tty, root.terminal_size,
+    )
+
+
 admin.add_command(get_cluster_users)
+admin.add_command(get_clusters)
