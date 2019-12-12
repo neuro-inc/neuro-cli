@@ -1,10 +1,11 @@
-from typing import Optional
+from typing import IO, Optional
 
 import click
+import yaml
 
 from neuromation.api.admin import _ClusterUserRoleType
 
-from .formatters import ClusterUserFormatter
+from .formatters import ClustersFormatter, ClusterUserFormatter
 from .root import Root
 from .utils import async_cmd, command, group, pager_maybe
 
@@ -12,6 +13,36 @@ from .utils import async_cmd, command, group, pager_maybe
 @group()
 def admin() -> None:
     """Cluster administration commands."""
+
+
+@command()
+@async_cmd()
+async def get_clusters(root: Root) -> None:
+    """
+    Print the list of available clusters.
+    """
+    fmt = ClustersFormatter()
+    clusters = await root.client._admin.list_clusters()
+    pager_maybe(
+        fmt(clusters.values()), root.tty, root.terminal_size,
+    )
+
+
+@command()
+@click.argument("cluster_name", required=True, type=str)
+@click.argument("config", required=True, type=click.File(encoding="utf8", lazy=False))
+@async_cmd()
+async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
+    """
+    Create a new cluster and start its provisioning
+    """
+    config_dict = yaml.safe_load(config)
+    await root.client._admin.add_cluster(cluster_name, config_dict)
+    if not root.quiet:
+        click.echo(
+            f"Cluster {cluster_name} successfully added "
+            "and will be set up within 24 hours"
+        )
 
 
 @command()
@@ -69,6 +100,9 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
             f"{click.style(cluster_name, bold=True)}"
         )
 
+
+admin.add_command(get_clusters)
+admin.add_command(add_cluster)
 
 admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)
