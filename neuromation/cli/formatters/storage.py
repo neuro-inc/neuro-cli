@@ -6,7 +6,7 @@ import time
 from fnmatch import fnmatch
 from math import ceil
 from time import monotonic
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
 from click import style, unstyle
@@ -636,26 +636,20 @@ class StreamProgress(BaseStorageProgress):
 
 
 class TTYProgress(BaseStorageProgress):
-    def __init__(
-        self,
-        root: Root,
-        *,
-        height: int = 25,
-        flush_interval: float = 0.2,
-        time_factory: Callable[[], float] = monotonic,
-    ) -> None:
+    HEIGHT = 25
+    FLUSH_INTERVAL = 0.2
+    time_factory = staticmethod(monotonic)
+
+    def __init__(self, root: Root) -> None:
         self.painter = get_painter(root.color, quote=True)
         self.printer = TTYPrinter()
-        self.height = height
         self.half_width = (root.terminal_size[0] - 10) // 2
         self.full_width = root.terminal_size[0] - 20
         self.lines: List[Tuple[URL, bool, str]] = []
         self.cur_dir: Optional[URL] = None
         self.verbose = root.verbosity > 0
-        self.flush_interval = flush_interval
         self.first_line = self.last_line = 0
-        self.time_factory = time_factory
-        self.last_update_time = time_factory()
+        self.last_update_time = self.time_factory()
 
     def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
         label = str(url)
@@ -772,7 +766,7 @@ class TTYProgress(BaseStorageProgress):
 
     def append(self, key: URL, msg: str, is_dir: bool = False) -> None:
         self.lines.append((key, is_dir, msg))
-        if len(self.lines) > self.height:
+        if len(self.lines) > self.HEIGHT:
             if not self.lines[0][1]:
                 # top line is not a dir, drop it.
                 del self.lines[0]
@@ -800,8 +794,8 @@ class TTYProgress(BaseStorageProgress):
 
     def maybe_flush(self) -> None:
         if (
-            len(self.lines) < self.height
-            or self.time_factory() >= self.last_update_time + self.flush_interval
+            len(self.lines) < self.HEIGHT
+            or self.time_factory() >= self.last_update_time + self.FLUSH_INTERVAL
         ):
             self.flush()
 
