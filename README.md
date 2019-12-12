@@ -4,9 +4,11 @@
 * [Preface](#Preface)
 * [neuro](#neuro)
 	* [neuro admin](#neuro-admin)
-		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin get-clusters](#neuro-admin-get-clusters)
 		* [neuro admin add-cluster](#neuro-admin-add-cluster)
+		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
+		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
+		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
@@ -176,28 +178,11 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 | _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
-
-
-
-
-### neuro admin get-cluster-users
-
-Print the list of all users in the cluster with their assigned role
-
-**Usage:**
-
-```bash
-neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
+| _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
+| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster with one of 3 roles: admin, manager or user |
+| _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 
 
 
@@ -229,6 +214,63 @@ Create a new cluster and start its provisioning
 
 ```bash
 neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin get-cluster-users
+
+Print the list of all users in the cluster with their assigned role
+
+**Usage:**
+
+```bash
+neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-cluster-user
+
+Add user access to specified cluster with one of 3 roles: admin, manager or<br/>user
+
+**Usage:**
+
+```bash
+neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-cluster-user
+
+Remove user access from the cluster
+
+**Usage:**
+
+```bash
+neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**

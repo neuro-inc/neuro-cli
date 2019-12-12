@@ -65,6 +65,25 @@ class _Admin(metaclass=NoPublicConstructor):
             res = await resp.json()
             return [_cluster_user_from_api(payload) for payload in res]
 
+    async def add_cluster_user(
+        self, cluster_name: str, user_name: str, role: str
+    ) -> _ClusterUser:
+        url = self._config.admin_url / "clusters" / cluster_name / "users"
+        payload = {"user_name": user_name, "role": role}
+        auth = await self._config._api_auth()
+
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
+            payload = await resp.json()
+            return _cluster_user_from_api(payload)
+
+    async def remove_cluster_user(self, cluster_name: str, user_name: str) -> None:
+        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
+        auth = await self._config._api_auth()
+
+        async with self._core.request("DELETE", url, auth=auth):
+            # No content response
+            pass
+
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
     return _ClusterUser(
