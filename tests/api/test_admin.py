@@ -124,7 +124,7 @@ async def test_add_cluster(
     app = web.Application()
     app.router.add_post("/apis/admin/v1/clusters", handle_create_cluster)
     app.router.add_put(
-        "/apis/admin/v1/clusters/default/cloud_provider", handle_put_cloud_provider
+        "/api/v1/clusters/default/cloud_provider", handle_put_cloud_provider
     )
 
     srv = await aiohttp_server(app)
