@@ -60,7 +60,7 @@ class _Admin(metaclass=NoPublicConstructor):
         payload = {"name": name}
         async with self._core.request("POST", url, auth=auth, json=payload) as resp:
             resp
-        url = self._config.admin_url / "clusters" / name / "cloud_provider"
+        url = self._config.api_url / "clusters" / name / "cloud_provider"
         url = url.with_query(start_deployment="true")
         async with self._core.request("PUT", url, auth=auth, json=config) as resp:
             resp
