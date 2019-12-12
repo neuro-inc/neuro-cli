@@ -126,7 +126,7 @@ async def test_fetch(
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
             }
         ],
@@ -157,7 +157,7 @@ async def test_fetch(
                         gpu_model=None,
                         tpu_type=None,
                         tpu_software_version=None,
-                    ),
+                    )
                 },
             )
         }
@@ -192,7 +192,7 @@ async def test_fetch_dropped_selected_cluster(
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
             }
         ],
@@ -229,7 +229,7 @@ async def test_switch_clusters(
                 "users_url": "https://users-dev.neu.ro",
                 "monitoring_url": "https://jobs-dev.neu.ro",
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
             },
             {
@@ -239,7 +239,7 @@ async def test_switch_clusters(
                 "users_url": "https://users2-dev.neu.ro",
                 "monitoring_url": "https://jobs2-dev.neu.ro",
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
             },
         ],
@@ -278,9 +278,9 @@ async def test_switch_clusters_unknown(
                 "users_url": "https://users-dev.neu.ro",
                 "monitoring_url": "https://jobs-dev.neu.ro",
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
-            },
+            }
         ],
     }
 

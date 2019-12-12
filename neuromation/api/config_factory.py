@@ -159,7 +159,7 @@ class Factory:
         async with _make_session(timeout, self._trace_configs) as session:
             server_config = await get_server_config(session, url, token=token)
         config = self._gen_config(
-            server_config, _AuthToken.create_non_expiring(token), url,
+            server_config, _AuthToken.create_non_expiring(token), url
         )
         self._save(config)
 
