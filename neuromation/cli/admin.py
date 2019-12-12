@@ -47,7 +47,7 @@ async def get_clusters(root: Root) -> None:
 @async_cmd()
 async def add_cluster(root: Root, cluster_name: str, config: io.TextIOBase) -> None:
     """
-    Print the list of available clusters.
+    Create a new cluster and start its provisioning
     """
     if not root.quiet:
         click.echo(f"Creating cluster {cluster_name}")
