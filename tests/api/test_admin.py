@@ -36,6 +36,7 @@ async def test_list_cluster_users(
             _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
         ]
 
+##################################################################################################
 
 async def test_list_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
@@ -134,3 +135,6 @@ async def test_add_cluster(
 
     assert create_cluster_json == {"name": "default"}
     assert put_cloud_json == JSON
+
+
+##################################################################################################
