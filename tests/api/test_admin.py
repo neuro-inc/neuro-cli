@@ -66,7 +66,7 @@ async def test_add_cluster(
                 "max_size": 5,
                 "is_tpu_enabled": True,
             },
-            {"id": "n1_highmem_32_4x_nvidia_tesla_k80", "min_size": 0, "max_size": 5,},
+            {"id": "n1_highmem_32_4x_nvidia_tesla_k80", "min_size": 0, "max_size": 5},
             {
                 "id": "n1_highmem_32_4x_nvidia_tesla_k80",
                 "min_size": 0,
