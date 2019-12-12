@@ -120,6 +120,11 @@ class Helper:
         return config.auth_token.username
 
     @property
+    def cluster_name(self) -> str:
+        config = Factory(path=self._nmrc_path)._read()
+        return config.cluster_name
+
+    @property
     def token(self) -> str:
         config = Factory(path=self._nmrc_path)._read()
         return config.auth_token.token
