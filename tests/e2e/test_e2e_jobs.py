@@ -51,7 +51,6 @@ def test_job_submit(helper: Helper) -> None:
     store_out_list = captured.out.split("\n")[1:]
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
-    command = 'bash -c "sleep 10m; false"'
     captured = helper.run_cli(
         [
             "job",
@@ -64,7 +63,10 @@ def test_job_submit(helper: Helper) -> None:
             "--name",
             job_name,
             UBUNTU_IMAGE_NAME,
-            command,
+            # use unrolled notation to check shlex.join()
+            "bash",
+            "-c",
+            "sleep 10m; false",
         ]
     )
     match = re.match("Job ID: (.+) Status:", captured.out)
@@ -91,7 +93,7 @@ def test_job_submit(helper: Helper) -> None:
     store_out = captured.out
     assert job_id in store_out
     # Check that the command is in the list
-    assert command in store_out
+    assert "bash -c 'sleep 10m; false'" in store_out
 
 
 @pytest.mark.e2e
@@ -104,7 +106,7 @@ def test_job_description(helper: Helper) -> None:
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
     description = "Test description for a job"
     # Run a new job
-    command = 'bash -c "sleep 10m; false"'
+    command = "bash -c 'sleep 10m; false'"
     captured = helper.run_cli(
         [
             "job",

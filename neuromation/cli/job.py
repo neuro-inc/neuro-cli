@@ -854,7 +854,13 @@ async def run_job(
 
     env_dict = build_env(env, env_file)
 
-    cmd = " ".join(cmd) if cmd is not None else None
+    if cmd is None:
+        real_cmd: Optional[str] = None
+    elif len(cmd) == 1:
+        real_cmd = cmd[0]
+    else:
+        real_cmd = " ".join(shlex.quote(arg) for arg in cmd)
+
     log.debug(f'entrypoint="{entrypoint}"')
     log.debug(f'cmd="{cmd}"')
 
@@ -895,7 +901,7 @@ async def run_job(
     container = Container(
         image=image,
         entrypoint=entrypoint,
-        command=cmd,
+        command=real_cmd,
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,
         env=env_dict,
