@@ -1128,7 +1128,7 @@ Name | Description|
 | _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
-| _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time |
+| _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time for active cluster |
 | _[neuro config get-clusters](#neuro-config-get-clusters)_| Fetch and display the list of available clusters |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client to fit the Neuro Platform |
@@ -1234,7 +1234,7 @@ Name | Description|
 
 ### neuro config show-quota
 
-Print quota and remaining computation time.
+Print quota and remaining computation time for active cluster.
 
 **Usage:**
 
