@@ -1,4 +1,3 @@
-from os import linesep
 from typing import Any
 
 import pytest
