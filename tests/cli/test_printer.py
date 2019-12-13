@@ -115,3 +115,22 @@ class TestTTYPrinter:
         assert CSI in out
         assert f"{CSI}0A" not in out
         assert f"{CSI}0B" not in out
+
+    def test_multiline(self, printer: TTYPrinter, capfd: Any) -> None:
+        CSI = "\033["
+        assert printer.total_lines == 0
+        res = printer.print("message1\nmessage2")
+        assert printer.total_lines == 2
+        assert res == "message1\nmessage2\n"
+
+        res = printer.print("message3\nmessage4", 1)
+        assert printer.total_lines == 3
+        assert res == f"{CSI}1Amessage3{CSI}0K\nmessage4\n"
+
+        res = printer.print("message5\nmessage6", 10)
+        assert printer.total_lines == 12
+        assert res == f"\n\n\n\n\n\n\n{CSI}1Amessage5\nmessage6\n"
+
+        res = printer.print("message7\nmessage8", 5)
+        assert printer.total_lines == 12
+        assert res == f"{CSI}7Amessage7{CSI}0K\nmessage8{CSI}0K\n{CSI}5B"
