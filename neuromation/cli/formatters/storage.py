@@ -801,8 +801,10 @@ class TTYProgress(BaseStorageProgress):
             self.flush()
 
     def flush(self) -> None:
-        for lineno in range(self.first_line, self.last_line):
-            self.printer.print(self.lines[lineno][2], lineno)
+        text = "\n".join(
+            msg for _, _, msg in self.lines[self.first_line : self.last_line]
+        )
+        self.printer.print(text, self.first_line)
         self.first_line = len(self.lines)
         self.last_line = 0
         self.last_update_time = self.time_factory()
