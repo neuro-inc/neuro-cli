@@ -1,4 +1,3 @@
-from os import linesep
 from typing import Any
 
 import pytest
@@ -22,7 +21,7 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message{linesep}"
+        assert out == "message\n"
 
     def test_two_messages(self, printer: StreamPrinter, capfd: Any) -> None:
         printer.print("message1")
@@ -30,14 +29,14 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message1{linesep}message2{linesep}"
+        assert out == "message1\nmessage2\n"
 
     def test_ticks_without_messages(self, printer: StreamPrinter, capfd: Any) -> None:
         printer.tick()
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f".{linesep}"
+        assert out == ".\n"
 
     def test_ticks_with_messages(
         self, printer: StreamPrinter, capfd: Any, monkeypatch: Any
@@ -50,7 +49,7 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f".{linesep}message..{linesep}"
+        assert out == ".\nmessage..\n"
 
     def test_ticks_spam_control(
         self, printer: StreamPrinter, capfd: Any, monkeypatch: Any
@@ -61,7 +60,7 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f".{linesep}"
+        assert out == ".\n"
 
 
 class TestTTYPrinter:
@@ -80,7 +79,7 @@ class TestTTYPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message{linesep}"
+        assert out == "message\n"
 
     def test_two_messages(self, capfd: Any, printer: TTYPrinter) -> None:
         printer.print("message1")
@@ -88,7 +87,7 @@ class TestTTYPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message1{linesep}message2{linesep}"
+        assert out == "message1\nmessage2\n"
 
     # very simple test
     def test_message_lineno(self, printer: TTYPrinter, capfd: Any) -> None:
@@ -115,3 +114,22 @@ class TestTTYPrinter:
         assert CSI in out
         assert f"{CSI}0A" not in out
         assert f"{CSI}0B" not in out
+
+    def test_multiline(self, printer: TTYPrinter, capfd: Any) -> None:
+        CSI = "\033["
+        assert printer.total_lines == 0
+        res = printer.print("message1\nmessage2")
+        assert printer.total_lines == 2
+        assert res == "message1\nmessage2\n"
+
+        res = printer.print("message3\nmessage4", 1)
+        assert printer.total_lines == 3
+        assert res == f"{CSI}1Amessage3{CSI}0K\nmessage4\n"
+
+        res = printer.print("message5\nmessage6", 10)
+        assert printer.total_lines == 12
+        assert res == f"\n\n\n\n\n\n\n{CSI}1Amessage5\nmessage6\n"
+
+        res = printer.print("message7\nmessage8", 5)
+        assert printer.total_lines == 12
+        assert res == f"{CSI}7Amessage7{CSI}0K\nmessage8{CSI}0K\n{CSI}5B"

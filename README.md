@@ -4,7 +4,11 @@
 * [Preface](#Preface)
 * [neuro](#neuro)
 	* [neuro admin](#neuro-admin)
+		* [neuro admin get-clusters](#neuro-admin-get-clusters)
+		* [neuro admin add-cluster](#neuro-admin-add-cluster)
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
+		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
+		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
@@ -174,7 +178,49 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
+| _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
+| _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
+| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster with one of 3 roles: admin, manager or user |
+| _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
+
+
+
+
+### neuro admin get-clusters
+
+Print the list of available clusters.
+
+**Usage:**
+
+```bash
+neuro admin get-clusters [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-cluster
+
+Create a new cluster and start its provisioning
+
+**Usage:**
+
+```bash
+neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
@@ -187,6 +233,44 @@ Print the list of all users in the cluster with their assigned role
 
 ```bash
 neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-cluster-user
+
+Add user access to specified cluster with one of 3 roles: admin, manager or<br/>user
+
+**Usage:**
+
+```bash
+neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-cluster-user
+
+Remove user access from the cluster
+
+**Usage:**
+
+```bash
+neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**
@@ -1044,7 +1128,7 @@ Name | Description|
 | _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
-| _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time |
+| _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time for active cluster |
 | _[neuro config get-clusters](#neuro-config-get-clusters)_| Fetch and display the list of available clusters |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
 | _[neuro config docker](#neuro-config-docker)_| Configure docker client to fit the Neuro Platform |
@@ -1150,7 +1234,7 @@ Name | Description|
 
 ### neuro config show-quota
 
-Print quota and remaining computation time.
+Print quota and remaining computation time for active cluster.
 
 **Usage:**
 

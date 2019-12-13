@@ -1,7 +1,7 @@
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 from unittest import mock
 
 import aiohttp
@@ -44,7 +44,18 @@ def config_dir(
 
 
 @pytest.fixture
-async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _TestServer:
+async def mock_for_login(
+    aiohttp_server: _TestServerFactory,
+    token: str,
+    aiohttp_unused_port: Callable[[], int],
+) -> _TestServer:
+
+    callback_urls = [
+        f"http://127.0.0.1:{aiohttp_unused_port()}",
+        f"http://127.0.0.1:{aiohttp_unused_port()}",
+        f"http://127.0.0.1:{aiohttp_unused_port()}",
+    ]
+
     async def config_handler(request: web.Request) -> web.Response:
         config_json: Dict[str, Any] = {
             "auth_url": str(srv.make_url("/authorize")),
@@ -52,11 +63,7 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
             "headless_callback_url": str(srv.make_url("/oauth/show-code")),
-            "callback_urls": [
-                "http://127.0.0.2:54540",
-                "http://127.0.0.2:54541",
-                "http://127.0.0.2:54542",
-            ],
+            "callback_urls": callback_urls,
             "success_redirect_url": "https://neu.ro/#test",
         }
 
@@ -114,7 +121,7 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
 
 
 def _create_config(
-    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster,
+    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> str:
     config = _Config(
         auth_config=auth_config,

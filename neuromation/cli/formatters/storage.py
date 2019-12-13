@@ -5,6 +5,7 @@ import os
 import time
 from fnmatch import fnmatch
 from math import ceil
+from time import monotonic
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
@@ -568,6 +569,9 @@ class BaseStorageProgress(AbstractRecursiveFileProgress):
     def begin(self, src: URL, dst: URL) -> None:  # pragma: no cover
         pass
 
+    def end(self) -> None:  # pragma: no cover
+        pass
+
 
 def create_storage_progress(root: Root, show_progress: bool) -> BaseStorageProgress:
     if show_progress:
@@ -633,6 +637,8 @@ class StreamProgress(BaseStorageProgress):
 
 class TTYProgress(BaseStorageProgress):
     HEIGHT = 25
+    FLUSH_INTERVAL = 0.2
+    time_factory = staticmethod(monotonic)
 
     def __init__(self, root: Root) -> None:
         self.painter = get_painter(root.color, quote=True)
@@ -642,6 +648,8 @@ class TTYProgress(BaseStorageProgress):
         self.lines: List[Tuple[URL, bool, str]] = []
         self.cur_dir: Optional[URL] = None
         self.verbose = root.verbosity > 0
+        self.first_line = self.last_line = 0
+        self.last_update_time = self.time_factory()
 
     def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
         label = str(url)
@@ -701,6 +709,9 @@ class TTYProgress(BaseStorageProgress):
             dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
             click.echo(f"Copy {src_label} => {dst_label}")
 
+    def end(self) -> None:
+        self.flush()
+
     def enter(self, data: StorageProgressEnterDir) -> None:
         self._enter_dir(data.src)
 
@@ -714,6 +725,7 @@ class TTYProgress(BaseStorageProgress):
         if self.lines and self.lines[-1][0] == data.src:
             self.lines.pop()
         self.append(data.src, f"{src} DONE", is_dir=True)
+        self.flush()
         self.cur_dir = None
 
     def start(self, data: StorageProgressStart) -> None:
@@ -736,6 +748,7 @@ class TTYProgress(BaseStorageProgress):
         self.replace(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
 
     def fail(self, data: StorageProgressFail) -> None:
+        self.flush()
         src = self.fmt_str(str(data.src), FileStatusType.FILE)
         dst = self.fmt_str(str(data.dst), FileStatusType.FILE)
         click.echo(
@@ -744,6 +757,7 @@ class TTYProgress(BaseStorageProgress):
         )
         # clear lines to sync with writing to stderr
         self.lines = []
+        self.last_line = 0
 
     def _append_file(self, key: URL, msg: str) -> None:
         parent = key.parent
@@ -763,15 +777,34 @@ class TTYProgress(BaseStorageProgress):
             else:
                 # there is a file line under a dir line, drop the file line.
                 del self.lines[1]
-        for lineno, line in enumerate(self.lines):
-            self.printer.print(line[2], lineno)
+            self.first_line = 0
+        self.last_line = len(self.lines)
+        self.maybe_flush()
 
     def replace(self, key: URL, msg: str) -> None:
         for i in range(len(self.lines))[::-1]:
             line = self.lines[i]
             if line[0] == key:
                 self.lines[i] = (key, False, msg)
-                self.printer.print(self.lines[i][2], i)
+                self.first_line = min(self.first_line, i)
+                self.last_line = max(self.last_line, i + 1)
+                self.maybe_flush()
                 break
         else:
             self._append_file(key, msg)
+
+    def maybe_flush(self) -> None:
+        if (
+            len(self.lines) < self.HEIGHT
+            or self.time_factory() >= self.last_update_time + self.FLUSH_INTERVAL
+        ):
+            self.flush()
+
+    def flush(self) -> None:
+        text = "\n".join(
+            msg for _, _, msg in self.lines[self.first_line : self.last_line]
+        )
+        self.printer.print(text, self.first_line)
+        self.first_line = len(self.lines)
+        self.last_line = 0
+        self.last_update_time = self.time_factory()
