@@ -22,7 +22,7 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message{linesep}"
+        assert out == "message\n"
 
     def test_two_messages(self, printer: StreamPrinter, capfd: Any) -> None:
         printer.print("message1")
@@ -30,14 +30,14 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message1{linesep}message2{linesep}"
+        assert out == "message1\nmessage2\n"
 
     def test_ticks_without_messages(self, printer: StreamPrinter, capfd: Any) -> None:
         printer.tick()
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f".{linesep}"
+        assert out == ".\n"
 
     def test_ticks_with_messages(
         self, printer: StreamPrinter, capfd: Any, monkeypatch: Any
@@ -50,7 +50,7 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f".{linesep}message..{linesep}"
+        assert out == ".\nmessage..\n"
 
     def test_ticks_spam_control(
         self, printer: StreamPrinter, capfd: Any, monkeypatch: Any
@@ -61,7 +61,7 @@ class TestStreamPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f".{linesep}"
+        assert out == ".\n"
 
 
 class TestTTYPrinter:
@@ -80,7 +80,7 @@ class TestTTYPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message{linesep}"
+        assert out == "message\n"
 
     def test_two_messages(self, capfd: Any, printer: TTYPrinter) -> None:
         printer.print("message1")
@@ -88,7 +88,7 @@ class TestTTYPrinter:
         printer.close()
         out, err = capfd.readouterr()
         assert err == ""
-        assert out == f"message1{linesep}message2{linesep}"
+        assert out == "message1\nmessage2\n"
 
     # very simple test
     def test_message_lineno(self, printer: TTYPrinter, capfd: Any) -> None:
