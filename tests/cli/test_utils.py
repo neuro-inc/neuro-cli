@@ -11,11 +11,11 @@ from neuromation.api import Action, Client
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
     LocalRemotePortParamType,
+    pager_maybe,
     parse_file_resource,
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
-    pager_maybe,
 )
 from tests import _TestServerFactory
 
