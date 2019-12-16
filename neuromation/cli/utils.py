@@ -14,6 +14,7 @@ from typing import (
     Awaitable,
     Callable,
     Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -667,13 +668,15 @@ def pager_maybe(
         for line in lines:
             click.echo(line)
         return
+
+    lines_it: Iterator[str] = iter(lines)
     count = int(terminal_size[1] * 2 / 3)
-    handled = list(itertools.islice(lines, count))
+    handled = list(itertools.islice(lines_it, count))
     if len(handled) < count:
         # lines list is short, just print it
         for line in handled:
             click.echo(line)
     else:
         click.echo_via_pager(
-            itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines))
+            itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines_it))
         )

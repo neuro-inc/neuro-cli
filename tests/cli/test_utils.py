@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, NoReturn, Tuple
+from unittest import mock
 
 import click
 import pytest
@@ -14,6 +15,7 @@ from neuromation.cli.utils import (
     parse_permission_action,
     parse_resource_for_sharing,
     resolve_job,
+    pager_maybe,
 )
 from tests import _TestServerFactory
 
@@ -556,3 +558,64 @@ def test_local_remote_port_param_type_invalid(arg: str) -> None:
     param = LocalRemotePortParamType()
     with pytest.raises(click.BadParameter, match=".* is not a valid port combination"):
         param.convert(arg, None, None)
+
+
+def test_pager_maybe_no_tty() -> None:
+    with mock.patch.multiple(
+        "click", echo=mock.DEFAULT, echo_via_pager=mock.DEFAULT
+    ) as mocked:
+        mock_echo = mocked["echo"]
+        mock_echo_via_pager = mocked["echo_via_pager"]
+
+        terminal_size = (100, 10)
+        tty = False
+        large_input = [f"line {x}" for x in range(20)]
+
+        pager_maybe(large_input, tty, terminal_size)
+        assert mock_echo.call_args_list == [mock.call(x) for x in large_input]
+        mock_echo_via_pager.assert_not_called()
+
+
+def test_pager_maybe_terminal_larger() -> None:
+    with mock.patch.multiple(
+        "click", echo=mock.DEFAULT, echo_via_pager=mock.DEFAULT
+    ) as mocked:
+        mock_echo = mocked["echo"]
+        mock_echo_via_pager = mocked["echo_via_pager"]
+
+        terminal_size = (100, 10)
+        tty = True
+        small_input = ["line 1", "line 2"]
+
+        pager_maybe(small_input, tty, terminal_size)
+        assert mock_echo.call_args_list == [mock.call(x) for x in small_input]
+        mock_echo_via_pager.assert_not_called()
+
+
+def test_pager_maybe_terminal_smaller() -> None:
+    with mock.patch.multiple(
+        "click", echo=mock.DEFAULT, echo_via_pager=mock.DEFAULT
+    ) as mocked:
+        mock_echo = mocked["echo"]
+        mock_echo_via_pager = mocked["echo_via_pager"]
+
+        terminal_size = (100, 10)
+        tty = True
+        large_input = [f"line {x}" for x in range(20)]
+
+        pager_maybe(large_input, tty, terminal_size)
+        mock_echo.assert_not_called()
+        mock_echo_via_pager.assert_called_once()
+        lines_it = mock_echo_via_pager.call_args[0][0]
+        assert "".join(lines_it) == "\n".join(large_input)
+
+        # Do the same, but call with a generator function for input instead
+        mock_echo_via_pager.reset_mock()
+        iter_input = iter(large_input)
+        next(iter_input)  # Skip first line
+
+        pager_maybe(iter_input, tty, terminal_size)
+        mock_echo.assert_not_called()
+        mock_echo_via_pager.assert_called_once()
+        lines_it = mock_echo_via_pager.call_args[0][0]
+        assert "".join(lines_it) == "\n".join(large_input[1:])
