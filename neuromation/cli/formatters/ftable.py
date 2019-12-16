@@ -1,8 +1,11 @@
+import re
 from dataclasses import dataclass
 from enum import Enum
 from itertools import zip_longest
 from textwrap import wrap
 from typing import Any, Iterator, List, Optional, Sequence
+
+import click
 
 
 __all__ = ["table"]
@@ -50,7 +53,7 @@ def table(
         widths = tuple(widths) + tuple([ColumnWidth()]) * (len(rows[0]) - len(widths))
     calc_widths: List[int] = []
     for i, width in enumerate(widths):
-        max_cell_width: int = max(len(row[i]) for row in rows)
+        max_cell_width: int = max(len(click.unstyle(row[i])) for row in rows)
         width_min = width.min or width.width
         width_max = width.max or width.width
 
@@ -107,6 +110,10 @@ def _row(
             yield line
 
 
+styled_cell_re = re.compile(r"((?:\033\[(?:\d|;)*m)+).*\033\[0m")
+ansi_reset_all = "\033[0m"
+
+
 def _cell(val: str, width: int, align: Optional[Align]) -> Iterator[str]:
     if width <= 0:
         raise TypeError(f"Width must be positive integer")
@@ -114,5 +121,16 @@ def _cell(val: str, width: int, align: Optional[Align]) -> Iterator[str]:
         format_func = _align_to_format[align]
     except KeyError:
         raise ValueError(f"Unsupported align type: {align!r}")
-    for sub in wrap(val, width):
-        yield format_func(sub, width)
+
+    # NOTE: We drop all styling information except the outer one
+    outer_style = None
+    if "\033" in val:
+        matched = styled_cell_re.fullmatch(val)
+        if matched:
+            outer_style = matched.group(1)
+
+    for sub in wrap(click.unstyle(val), width):
+        if outer_style is not None:
+            yield outer_style + format_func(sub, width) + ansi_reset_all
+        else:
+            yield format_func(sub, width)
