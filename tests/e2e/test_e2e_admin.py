@@ -23,7 +23,7 @@ def test_get_cluster_users(request: Any, helper: Helper) -> None:
 def test_add_cluster_user_already_exists(request: Any, helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["admin", "add-cluster-user", helper.cluster_name, helper.username, "admin"]
+            ["admin", "add-cluster-user", helper.cluster_name, helper.username, "user"]
         )
     assert cm.value.returncode == 65
     assert (
@@ -37,7 +37,7 @@ def test_add_cluster_user_does_not_exist(request: Any, helper: Helper) -> None:
     username = "some-clearly-invalid-username"
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["admin", "add-cluster-user", helper.cluster_name, username, "admin"]
+            ["admin", "add-cluster-user", helper.cluster_name, username, "user"]
         )
     assert cm.value.returncode == 72
     assert f"User 'some-clearly-invalid-username' not found" in cm.value.stderr
