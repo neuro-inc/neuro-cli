@@ -5,11 +5,57 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Client, Cluster, Preset
+from neuromation.api import Client, Cluster, ConfigError, Preset
+from neuromation.api.config import (
+    _check_sections,
+    _merge_user_configs,
+    _validate_user_config,
+)
 from tests import _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
+
+
+class TestMergeUserConfigs:
+    def test_empty_dicts(self) -> None:
+        assert _merge_user_configs({}, {}) == {}
+
+    def test_empty_newer(self) -> None:
+        assert _merge_user_configs({"a": "b"}, {}) == {"a": "b"}
+
+    def test_empty_older(self) -> None:
+        assert _merge_user_configs({}, {"a": "b"}) == {"a": "b"}
+
+    def test_not_overlapped(self) -> None:
+        assert _merge_user_configs({"a": "b"}, {"c": "d"}) == {"a": "b", "c": "d"}
+
+    def test_merge_subdicts(self) -> None:
+        assert _merge_user_configs(
+            {"a": {"b": "1", "c": "2"}}, {"a": {"b": "3", "d": "4"}}
+        ) == {"a": {"b": "3", "c": "2", "d": "4"}}
+
+
+class TestUserConfigValidators:
+    def test_unsupported_section(self) -> None:
+        with pytest.raises(
+            ConfigError, match="file.cfg: unsupported config sections: {'other'}"
+        ):
+            _check_sections({"other": {"key": "val"}}, {"section"}, "file.cfg")
+
+    def test_section_is_not_dict(self) -> None:
+        with pytest.raises(
+            ConfigError, match="file.cfg: 'a' should be a section, got 1"
+        ):
+            _check_sections({"a": 1}, {"a"}, "file.cfg")
+
+    def test_invalid_alias_name(self) -> None:
+        with pytest.raises(ConfigError, match="file.cfg: invalid alias name 0123"):
+            _validate_user_config({"alias": {"0123": "ls"}}, "file.cfg")
+
+    def test_invalid_alias_type(self) -> None:
+        with pytest.raises(ConfigError, match="file.cfg: invalid alias name 0123"):
+            _validate_user_config({"alias": {"0123": True}}, "file.cfg")
 
 
 async def test_username(

@@ -42,6 +42,7 @@ setup(
         "certifi",
         "cookiecutter==1.6.0",
         "atomicwrites>=1.0",
+        "toml>=0.10.0",
     ],
     include_package_data=True,
     description="Neuro Platform API client",
