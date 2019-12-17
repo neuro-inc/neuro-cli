@@ -105,7 +105,10 @@ def _row(
             cell or "".ljust(width or 0) for cell, width in zip_longest(cells, widths)
         )
         if max_width:
-            yield line[:max_width]
+            line = line[:max_width]
+            if "\033" in line:
+                line += ansi_reset_all
+            yield line
         else:
             yield line
 
