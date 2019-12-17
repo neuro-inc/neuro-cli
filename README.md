@@ -713,6 +713,7 @@ neuro project init example
 
 Name | Description|
 |----|------------|
+|_\-q, --quiet_|Don't ask any questions, use default values for project setup|
 |_--help_|Show this message and exit.|
 
 
