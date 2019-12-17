@@ -692,7 +692,7 @@ Initialize an empty project.<br/>
 **Usage:**
 
 ```bash
-neuro project init [OPTIONS]
+neuro project init [OPTIONS] [SLUG]
 ```
 
 **Examples:**
@@ -702,6 +702,10 @@ neuro project init [OPTIONS]
 # Initializes a scaffolding for the new project with the recommended project
 # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
 neuro project init
+
+# Initializes a scaffolding for the new project with the recommended project
+# structure and sets default project folder name to "example"
+neuro project init example
 
 ```
 
