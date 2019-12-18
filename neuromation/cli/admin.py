@@ -105,17 +105,28 @@ storage:
 
 
 async def generate_aws() -> str:
-    aws_config_file = pathlib.Path(
-        os.environ.get("AWS_SHARED_CREDENTIALS_FILE", "~/.aws/credentials")
-    )
-    aws_config_file = aws_config_file.expanduser().absolute()
-    parser = configparser.ConfigParser()
-    parser.read(aws_config_file)
-    args = {}
     args["vpc_id"] = click.prompt("AWS VPC ID")
-    profile = click.prompt("AWS profile name", default="default")
-    args["access_key_id"] = parser[profile]["aws_access_key_id"]
-    args["secret_access_key"] = parser[profile]["aws_secret_access_key"]
+    access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
+    secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    if access_key_id is None or secret_access_key is None:
+        aws_config_file = pathlib.Path(
+            os.environ.get("AWS_SHARED_CREDENTIALS_FILE", "~/.aws/credentials")
+        )
+        aws_config_file = aws_config_file.expanduser().absolute()
+        parser = configparser.ConfigParser()
+        parser.read(aws_config_file)
+        profile = click.prompt(
+            "AWS profile name", default=os.environ.get("AWS_PROFILE", "default")
+        )
+        if access_key_id is None:
+            access_key_id = parser[profile]["aws_access_key_id"]
+        if secret_access_key is None:
+            secret_access_key = parser[profile]["aws_secret_access_key"]
+    access_key_id = click.prompt("AWS Access Key", default=access_key_id)
+    secret_access_key = click.prompt("AWS Secret Key", default=secret_access_key)
+    args = {}
+    args["access_key_id"] = aws_access_key_id
+    args["secret_access_key"] = aws_secret_access_key
     return AWS_TEMPLATE.format_map(args)
 
 
