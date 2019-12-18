@@ -183,7 +183,7 @@ Name | Description|
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
 | _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
-| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster with one of 3 roles: admin, manager or... |
+| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 
 
@@ -268,7 +268,7 @@ Name | Description|
 
 ### neuro admin add-cluster-user
 
-Add user access to specified cluster with one of 3 roles: admin, manager or<br/>user.
+Add user access to specified cluster.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
 
 **Usage:**
 
