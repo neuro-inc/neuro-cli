@@ -6,11 +6,12 @@ import pytest
 
 from neuromation.cli.project import _project_init
 
+
 @pytest.mark.parametrize("slug", [None, "my-custom-slug"])
 def test_project_init(tmp_path: Path, slug: Optional[str]) -> None:
     old_workdir = os.getcwd()
     path = tmp_path / (slug or "name-of-the-project")
-    assert not path.exists()
+    assert not path.is_dir()
     try:
         os.chdir(str(tmp_path))
 

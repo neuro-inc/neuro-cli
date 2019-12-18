@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 import click
 from cookiecutter.main import cookiecutter
@@ -33,17 +33,17 @@ async def init(root: Root, slug: Optional[str]) -> None:
 
     # Initializes a scaffolding for the new project with the recommended project
     # structure and sets default project folder name to "example"
-    neuro project init example
+    neuro project init my-project-id
     """
     _project_init(slug)
 
 
-def _project_init(slug: Optional[str], *, no_input: bool = False):
+def _project_init(slug: Optional[str], *, no_input: bool = False) -> None:
     extra_context = None
     if slug:
         extra_context = {"project_slug": slug}
     cookiecutter(
-        f"gh:neuromation/cookiecutter-neuro-project",
+        "gh:neuromation/cookiecutter-neuro-project",
         extra_context=extra_context,
         no_input=no_input,
     )
