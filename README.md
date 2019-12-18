@@ -705,7 +705,7 @@ neuro project init
 
 # Initializes a scaffolding for the new project with the recommended project
 # structure and sets default project folder name to "example"
-neuro project init example
+neuro project init my-project-id
 
 ```
 
@@ -713,7 +713,6 @@ neuro project init example
 
 Name | Description|
 |----|------------|
-|_\-q, --quiet_|Don't ask any questions, use default values for project setup|
 |_--help_|Show this message and exit.|
 
 
