@@ -106,7 +106,7 @@ storage:
 
 async def generate_aws() -> str:
     aws_config_file = pathlib.Path(
-        os.environ.get("AWS_CONFIG_FILE", "~/.aws/credentials")
+        os.environ.get("AWS_SHARED_CREDENTIALS_FILE", "~/.aws/credentials")
     )
     aws_config_file = aws_config_file.expanduser().absolute()
     parser = configparser.ConfigParser()
