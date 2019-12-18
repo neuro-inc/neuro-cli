@@ -159,7 +159,7 @@ async def generate_gcp() -> str:
     args = {}
     args["project_name"] = click.prompt("GCP project name")
     credentials_file = click.prompt(
-        "Google Credentials JSON",
+        "Service Account Key File (.json)",
         default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
     )
     with open(credentials_file) as fp:
