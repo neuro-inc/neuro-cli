@@ -105,6 +105,7 @@ storage:
 
 
 async def generate_aws() -> str:
+    args = {}
     args["vpc_id"] = click.prompt("AWS VPC ID")
     access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
     secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -124,9 +125,8 @@ async def generate_aws() -> str:
             secret_access_key = parser[profile]["aws_secret_access_key"]
     access_key_id = click.prompt("AWS Access Key", default=access_key_id)
     secret_access_key = click.prompt("AWS Secret Key", default=secret_access_key)
-    args = {}
-    args["access_key_id"] = aws_access_key_id
-    args["secret_access_key"] = aws_secret_access_key
+    args["access_key_id"] = access_key_id
+    args["secret_access_key"] = secret_access_key
     return AWS_TEMPLATE.format_map(args)
 
 
