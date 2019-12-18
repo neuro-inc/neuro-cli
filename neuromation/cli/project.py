@@ -44,6 +44,7 @@ def _project_init(slug: Optional[str], *, no_input: bool = False) -> None:
         extra_context = {"project_slug": slug}
     cookiecutter(
         "gh:neuromation/cookiecutter-neuro-project",
+        checkout="release",
         extra_context=extra_context,
         no_input=no_input,
     )
