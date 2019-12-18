@@ -396,11 +396,6 @@ def _validate_user_config(
 
 
 def _load_file(filename: Path) -> Mapping[str, Any]:
-    if not filename.exists():
-        return {}
-    if not filename.is_file():
-        # TODO: log a warning maybe
-        return {}
     config = toml.load(filename)
     _validate_user_config(config, filename)
     return config
