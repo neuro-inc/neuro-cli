@@ -21,14 +21,14 @@ def project() -> None:
 @async_cmd()
 @click.argument("slug", required=False)
 @click.option(
-    "--quiet",
-    "-q",
+    "--no-input",
     is_flag=True,
     required=False,
     default=False,
     help="Don't ask any questions, use default values for project setup",
+    hidden=True,
 )
-async def init(root: Root, slug: str, quiet: bool) -> None:
+async def init(root: Root, slug: str, no_input: bool) -> None:
     """
     Initialize an empty project.
 
@@ -48,7 +48,7 @@ async def init(root: Root, slug: str, quiet: bool) -> None:
     cookiecutter(
         f"gh:neuromation/cookiecutter-neuro-project",
         extra_context=extra_context,
-        no_input=quiet,
+        no_input=no_input,
     )
 
 
