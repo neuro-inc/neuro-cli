@@ -196,7 +196,9 @@ async def add_cluster_user(
     root: Root, cluster_name: str, user_name: str, role: str
 ) -> None:
     """
-    Add user access to specified cluster with one of 3 roles: admin, manager or user.
+    Add user access to specified cluster.
+
+    The command supports one of 3 user roles: admin, manager or user.
     """
     user = await root.client._admin.add_cluster_user(cluster_name, user_name, role)
     if not root.quiet:
