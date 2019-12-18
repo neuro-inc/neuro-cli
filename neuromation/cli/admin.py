@@ -104,7 +104,7 @@ storage:
 """
 
 
-async def generate_aws():
+async def generate_aws() -> str:
     aws_config_file = pathlib.Path(
         os.environ.get("AWS_CONFIG_FILE", "~/.aws/credentials")
     )
@@ -144,7 +144,7 @@ storage:
 """
 
 
-async def generate_gcp():
+async def generate_gcp() -> str:
     args = {}
     args["project_name"] = click.prompt("GCP project name")
     credentials_file = click.prompt(
