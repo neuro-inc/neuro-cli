@@ -4,18 +4,25 @@ import click
 
 from neuromation.api.admin import _Cluster, _ClusterUser
 
-from .ftable import table
+from .ftable import ColumnWidth, table
 
 
 class ClusterUserFormatter:
     def __call__(self, clusters_users: Iterable[_ClusterUser]) -> List[str]:
-        headers = (click.style("Name", bold=True), click.style("Role", bold=True))
+        headers = (
+            click.style(
+                "Name is super long oh my god what to do ", bold=True, reset=False
+            )
+            + click.style("underlined", underline=True)
+            + " partialy styled",
+            click.style("Role", bold=True),
+        )
         rows = [headers]
 
         for user in clusters_users:
             rows.append((user.user_name, user.role.value))
 
-        return list(table(rows=rows))
+        return list(table(rows=rows, widths=[ColumnWidth(max=20)] * 2))
 
 
 class ClustersFormatter:

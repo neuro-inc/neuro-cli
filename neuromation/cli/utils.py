@@ -9,6 +9,7 @@ import time
 from contextlib import suppress
 from datetime import date, timedelta
 from functools import wraps
+from textwrap import wrap
 from typing import (
     Any,
     Awaitable,
@@ -30,6 +31,7 @@ import click
 import humanize
 import pkg_resources
 from click import BadParameter
+from wcwidth import wcswidth
 from yarl import URL
 
 import neuromation
@@ -680,3 +682,145 @@ def pager_maybe(
         click.echo_via_pager(
             itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines_it))
         )
+
+
+class StyledTextHelper:
+    """ Utilities to perform string operations on terminal styled text with better
+    unicode support.
+
+    NOTE: The helper does not recognise controll sequences other than SGR
+        (Select Graphic Rendition) ones.
+    """
+
+    style_re = re.compile(r"(\033\[(?:\d|;)*m)")
+    ansi_reset_all = "\033[0m"
+    whitespace = "\t\n\x0b\x0c\r "
+
+    @classmethod
+    def is_styled(cls, text: str) -> bool:
+        return "\033" in text
+
+    unstyle = click.unstyle
+
+    @classmethod
+    def width(cls, text: str) -> int:
+        if cls.is_styled(text):
+            return wcswidth(cls.unstyle(text))
+        else:
+            return wcswidth(text)
+
+    @classmethod
+    def ljust(cls, text: str, width: int) -> str:
+        if cls.is_styled(text):
+            return text.ljust(width + len(text) - len(cls.unstyle(text)))
+        else:
+            return text.ljust(width)
+
+    @classmethod
+    def rjust(cls, text: str, width: int) -> str:
+        if cls.is_styled(text):
+            return text.rjust(width + len(text) - len(cls.unstyle(text)))
+        else:
+            return text.rjust(width)
+
+    @classmethod
+    def center(cls, text: str, width: int) -> str:
+        if cls.is_styled(text):
+            return text.center(width + len(text) - len(cls.unstyle(text)))
+        else:
+            return text.center(width)
+
+    @classmethod
+    def trim(cls, text: str, width: int) -> str:
+        if cls.is_styled(text):
+            trimmed = cls.unstyle(text)[:width]
+            return list(cls._remap_styles(text, [trimmed]))[0]
+        else:
+            return text[:width]
+
+    @classmethod
+    def wrap(cls, text: str, width: int) -> Sequence[str]:
+        if cls.is_styled(text):
+            wrapped = list(wrap(cls.unstyle(text), width))
+            return list(cls._remap_styles(text, wrapped))
+        else:
+            return wrap(text, width)
+
+    @classmethod
+    def _remap_styles(cls, text: str, processed: Sequence[str]) -> Iterator[str]:
+        """ Iterate over processed text and original one and reapply styles from
+        the original to processed one and return sequence of resulting entries
+        """
+        if not processed or not text:
+            return
+        p_iter = iter(processed)
+
+        ansi_stack: List[str] = []
+        p_next: str = next(p_iter)
+        cur_res = []
+        whitespace = cls.whitespace
+        ansi_reset_all = cls.ansi_reset_all
+
+        for token in cls.style_re.split(text):
+            # Start the same style sequence in processed as we have in original
+            if cls.style_re.match(token):
+                if token == ansi_reset_all:
+                    ansi_stack.clear()
+                    cur_res.append(token)
+                else:
+                    # XXX: Add excluding op-codes handling too. Like bold (1) and
+                    #      normal (22)
+                    ansi_stack.append(token)
+
+                    # Its already redundant on this line
+                    if p_next.rstrip(whitespace):
+                        cur_res.append(token)
+                continue
+
+            # In other cases we need to align original text with processed text
+
+            token = token.strip(whitespace)
+            while True:
+                # We can's just strip it as we need to return it in the same format
+                while p_next and p_next[0] in whitespace:
+                    cur_res.append(p_next[0])
+                    p_next = p_next[1:]
+
+                if not token:
+                    break
+
+                # If original text is fully contained in this chunk of processed data
+                # we go to next token
+                if len(token) < len(p_next):
+                    assert p_next.startswith(token), (p_next, token)
+                    cur_res.append(token)
+                    p_next = p_next[len(token) :]
+                    break
+
+                stripped = p_next.rstrip(whitespace)
+                assert token.startswith(stripped), (p_next, token)
+                cur_res.append(stripped)
+                p_next = p_next[len(stripped) :]
+                token = token[len(stripped) :].lstrip(whitespace)
+                # If we used up this token we need to look at the next token, maybe
+                # style opcode and will be added to the current line
+                if token:
+                    to_yield = "".join(cur_res) + p_next
+                    if cls.is_styled(to_yield) and ansi_stack:
+                        to_yield += ansi_reset_all
+                    yield to_yield
+                    # New line should have the same style as the one ending
+                    cur_res = ansi_stack.copy()
+
+                    try:
+                        p_next = next(p_iter)
+                    except StopIteration:
+                        return
+
+        # Return anything that was not processed yet
+        if cur_res or p_next:
+            to_yield = "".join(cur_res) + p_next
+            if cls.is_styled(to_yield) and ansi_stack:
+                to_yield += ansi_reset_all
+            yield to_yield
+            yield from p_iter

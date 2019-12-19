@@ -1,11 +1,9 @@
-import re
 from dataclasses import dataclass
 from enum import Enum
 from itertools import zip_longest
-from textwrap import wrap
 from typing import Any, Iterator, List, Optional, Sequence
 
-import click
+from ..utils import StyledTextHelper
 
 
 __all__ = ["table"]
@@ -34,10 +32,10 @@ class Align(str, Enum):
 
 
 _align_to_format = {
-    Align.LEFT: str.ljust,
-    Align.RIGHT: str.rjust,
-    Align.CENTER: str.center,
-    None: str.ljust,
+    Align.LEFT: StyledTextHelper.ljust,
+    Align.RIGHT: StyledTextHelper.rjust,
+    Align.CENTER: StyledTextHelper.center,
+    None: StyledTextHelper.ljust,
 }
 
 
@@ -53,7 +51,7 @@ def table(
         widths = tuple(widths) + tuple([ColumnWidth()]) * (len(rows[0]) - len(widths))
     calc_widths: List[int] = []
     for i, width in enumerate(widths):
-        max_cell_width: int = max(len(click.unstyle(row[i])) for row in rows)
+        max_cell_width: int = max(StyledTextHelper.width(row[i]) for row in rows)
         width_min = width.min or width.width
         width_max = width.max or width.width
 
@@ -105,16 +103,10 @@ def _row(
             cell or "".ljust(width or 0) for cell, width in zip_longest(cells, widths)
         )
         if max_width:
-            line = line[:max_width]
-            if "\033" in line:
-                line += ansi_reset_all
+            line = StyledTextHelper.trim(line, max_width)
             yield line
         else:
             yield line
-
-
-styled_cell_re = re.compile(r"((?:\033\[(?:\d|;)*m)+).*\033\[0m")
-ansi_reset_all = "\033[0m"
 
 
 def _cell(val: str, width: int, align: Optional[Align]) -> Iterator[str]:
@@ -125,15 +117,5 @@ def _cell(val: str, width: int, align: Optional[Align]) -> Iterator[str]:
     except KeyError:
         raise ValueError(f"Unsupported align type: {align!r}")
 
-    # NOTE: We drop all styling information except the outer one
-    outer_style = None
-    if "\033" in val:
-        matched = styled_cell_re.fullmatch(val)
-        if matched:
-            outer_style = matched.group(1)
-
-    for sub in wrap(click.unstyle(val), width):
-        if outer_style is not None:
-            yield outer_style + format_func(sub, width) + ansi_reset_all
-        else:
-            yield format_func(sub, width)
+    for sub in StyledTextHelper.wrap(val, width):
+        yield format_func(sub, width)
