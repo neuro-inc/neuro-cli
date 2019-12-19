@@ -1,1 +1,0 @@
-Implement `neuro admin get-clusters` command.

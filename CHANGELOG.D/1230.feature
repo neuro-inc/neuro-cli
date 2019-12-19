@@ -1,1 +1,0 @@
-`neuro project init` now supports argument to set default value for generated project directory

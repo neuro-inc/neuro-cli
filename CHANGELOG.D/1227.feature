@@ -1,1 +1,0 @@
-Add ``neuro admin generate-cluster-config`` command.

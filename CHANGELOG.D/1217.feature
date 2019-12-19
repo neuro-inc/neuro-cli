@@ -1,1 +1,0 @@
-Implement `neuro config switch-cluster` for switching between available clusters.
