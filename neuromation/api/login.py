@@ -105,7 +105,7 @@ class AuthCode:
 
     async def wait(self, timeout_s: float = 60.0) -> str:
         try:
-            await asyncio.wait_for(self._future, timeout_s)  # type: ignore
+            await asyncio.wait_for(self._future, timeout_s)
         except (asyncio.TimeoutError, asyncio.CancelledError):
             raise AuthException("failed to get an authorization code")
         return self._future.result()
