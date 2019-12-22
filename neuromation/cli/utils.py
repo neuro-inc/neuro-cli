@@ -8,8 +8,9 @@ import sys
 import time
 from contextlib import suppress
 from datetime import date, timedelta
-from functools import wraps
-from textwrap import wrap
+from difflib import SequenceMatcher
+from functools import lru_cache, wraps
+from textwrap import wrap, fill
 from typing import (
     Any,
     Awaitable,
@@ -700,9 +701,15 @@ class StyledTextHelper:
     def is_styled(cls, text: str) -> bool:
         return "\033" in text
 
-    unstyle = click.unstyle
+    # As we often do operations on headers or similar static text it makes sense to
+    # cache
+    @classmethod
+    @lru_cache(255)
+    def unstyle(cls, text: str) -> str:
+        return click.unstyle(text)
 
     @classmethod
+    @lru_cache(255)
     def width(cls, text: str) -> int:
         if cls.is_styled(text):
             return wcswidth(cls.unstyle(text))
@@ -732,95 +739,109 @@ class StyledTextHelper:
 
     @classmethod
     def trim(cls, text: str, width: int) -> str:
-        if cls.is_styled(text):
-            trimmed = cls.unstyle(text)[:width]
-            return list(cls._remap_styles(text, [trimmed]))[0]
-        else:
+        if not cls.is_styled(text):
             return text[:width]
+
+        result = []
+        has_unclosed = False
+        remaining = width
+        for token in cls.style_re.split(text):
+            if cls.style_re.match(token):
+                result.append(token)
+                # We will need to add a reset at the end if there are any non-closed
+                # sequences
+                has_unclosed = token != cls.ansi_reset_all
+            else:
+                if len(token) >= remaining:
+                    result.append(token[:remaining])
+                    remaining = 0
+                    break
+                remaining -= len(token)
+                result.append(token)
+
+        if has_unclosed:
+            result.append(cls.ansi_reset_all)
+
+        return "".join(result)
 
     @classmethod
     def wrap(cls, text: str, width: int) -> Sequence[str]:
         if cls.is_styled(text):
-            wrapped = list(wrap(cls.unstyle(text), width))
-            return list(cls._remap_styles(text, wrapped))
+            # Fast return if we don't need to wrap the text
+            if cls.width(text) <= width:
+                return [text]
+
+            wrapped = fill(cls.unstyle(text), width)
+            return list(cls._reapply_styles(text, wrapped))
         else:
             return wrap(text, width)
 
     @classmethod
-    def _remap_styles(cls, text: str, processed: Sequence[str]) -> Iterator[str]:
-        """ Iterate over processed text and original one and reapply styles from
-        the original to processed one and return sequence of resulting entries
+    def _reapply_styles(cls, text: str, wrapped: str) -> Iterator[str]:
+        """ Iterate over wrapped text and original one and reapply styles from
+        the original to wrapped
         """
-        if not processed or not text:
-            return
-        p_iter = iter(processed)
+        sm = SequenceMatcher(None, text, wrapped)
 
+        result: List[str] = []
+
+        print(repr(text), repr(wrapped), sm.get_opcodes())
+        for op, ti, tj, wi, wj in sm.get_opcodes():
+            if op == "equal" or op == "insert":
+                # For those 2 cases we just take the text wrap() generated for us
+                result.append(wrapped[wi:wj])
+            if op == "delete" or op == "replace":
+                # In those cases we either replaced some whitespace's or need to apply
+                # styles from original.
+
+                # The most complicated situation would be if for some reason we had
+                # several whitespaces in the styled case that were not replaced by wrap.
+                # In this case we have to assume that the positioning of those style
+                # codes matter (ex. we want to have 1 space before and after a word
+                # underlined). Ex:
+                #
+                #   Plase select exactly \033[4m one \033[0m word
+                #
+                ws_buf = wrapped[wi:wj]
+                for token in cls.style_re.split(text[ti:tj]):
+                    if cls.style_re.match(token):
+                        result.append(token)
+                    else:
+                        # We take the same amount of whitespace from result to preserve
+                        # style opcode position
+                        ws_len = len(token)
+                        # NOTE: ws_buf can be empty at any point
+                        result.append(ws_buf[:ws_len])
+                        ws_buf = ws_buf[ws_len:]
+
+        # Fix style sequencing on breaklines
         ansi_stack: List[str] = []
-        p_next: str = next(p_iter)
-        cur_res = []
-        whitespace = cls.whitespace
         ansi_reset_all = cls.ansi_reset_all
+        for line in "".join(result).split("\n"):
+            # Strip any reset styling at beginning. Ex: "\033[4m\033[0m word"
+            prefix, _, remainder = line.partition(ansi_reset_all)
+            if not cls.unstyle(prefix):
+                line = remainder
+                # We also assume we broke all sequnces from previous lines
+                ansi_stack = []
 
-        for token in cls.style_re.split(text):
-            # Start the same style sequence in processed as we have in original
-            if cls.style_re.match(token):
+            # Reopen any sequences that were opened before breakline
+            if ansi_stack:
+                line = "".join(ansi_stack) + line
+
+            # Find sequnces not closed at the end of this line
+            ansi_stack = []
+            for token in cls.style_re.findall(line):
                 if token == ansi_reset_all:
-                    ansi_stack.clear()
-                    cur_res.append(token)
+                    ansi_stack = []
                 else:
                     # XXX: Add excluding op-codes handling too. Like bold (1) and
                     #      normal (22)
                     ansi_stack.append(token)
 
-                    # Its already redundant on this line
-                    if p_next.rstrip(whitespace):
-                        cur_res.append(token)
-                continue
+            # Break sequnces if we have any opened
+            if ansi_stack:
+                line += ansi_reset_all
 
-            # In other cases we need to align original text with processed text
-
-            token = token.strip(whitespace)
-            while True:
-                # We can's just strip it as we need to return it in the same format
-                while p_next and p_next[0] in whitespace:
-                    cur_res.append(p_next[0])
-                    p_next = p_next[1:]
-
-                if not token:
-                    break
-
-                # If original text is fully contained in this chunk of processed data
-                # we go to next token
-                if len(token) < len(p_next):
-                    assert p_next.startswith(token), (p_next, token)
-                    cur_res.append(token)
-                    p_next = p_next[len(token) :]
-                    break
-
-                stripped = p_next.rstrip(whitespace)
-                assert token.startswith(stripped), (p_next, token)
-                cur_res.append(stripped)
-                p_next = p_next[len(stripped) :]
-                token = token[len(stripped) :].lstrip(whitespace)
-                # If we used up this token we need to look at the next token, maybe
-                # style opcode and will be added to the current line
-                if token:
-                    to_yield = "".join(cur_res) + p_next
-                    if cls.is_styled(to_yield) and ansi_stack:
-                        to_yield += ansi_reset_all
-                    yield to_yield
-                    # New line should have the same style as the one ending
-                    cur_res = ansi_stack.copy()
-
-                    try:
-                        p_next = next(p_iter)
-                    except StopIteration:
-                        return
-
-        # Return anything that was not processed yet
-        if cur_res or p_next:
-            to_yield = "".join(cur_res) + p_next
-            if cls.is_styled(to_yield) and ansi_stack:
-                to_yield += ansi_reset_all
-            yield to_yield
-            yield from p_iter
+            yield line
+        return

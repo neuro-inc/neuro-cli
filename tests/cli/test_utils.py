@@ -686,7 +686,7 @@ class TestStyledTextHelper:
             ("Simple text", 100, ["Simple text"]),
             ("Simple text", 6, ["Simple", "text"]),
             ("Simple text", 4, ["Simp", "le", "text"]),
-            # # Styled cases
+            # Styled cases
             (
                 click.style("Harder ", bold=True) + "text",
                 100,
@@ -705,7 +705,7 @@ class TestStyledTextHelper:
             (
                 click.style("Very ", underline=True, reset=False)
                 + click.style("Hard", bold=True)
-                + "text",
+                + " text",
                 4,
                 [
                     click.style("Very", underline=True),
