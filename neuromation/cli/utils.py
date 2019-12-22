@@ -785,7 +785,6 @@ class StyledTextHelper:
 
         result: List[str] = []
 
-        print(repr(text), repr(wrapped), sm.get_opcodes())
         for op, ti, tj, wi, wj in sm.get_opcodes():
             if op == "equal" or op == "insert":
                 # For those 2 cases we just take the text wrap() generated for us
