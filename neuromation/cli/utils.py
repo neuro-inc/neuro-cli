@@ -10,7 +10,7 @@ from contextlib import suppress
 from datetime import date, timedelta
 from difflib import SequenceMatcher
 from functools import lru_cache, wraps
-from textwrap import wrap, fill
+from textwrap import fill, wrap
 from typing import (
     Any,
     Awaitable,
