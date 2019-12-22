@@ -754,7 +754,6 @@ class StyledTextHelper:
             else:
                 if len(token) >= remaining:
                     result.append(token[:remaining])
-                    remaining = 0
                     break
                 remaining -= len(token)
                 result.append(token)
