@@ -5,6 +5,7 @@
 * [neuro](#neuro)
 	* [neuro admin](#neuro-admin)
 		* [neuro admin get-clusters](#neuro-admin-get-clusters)
+		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
 		* [neuro admin add-cluster](#neuro-admin-add-cluster)
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
@@ -179,9 +180,10 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
+| _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
 | _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
-| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster with one of 3 roles: admin, manager or user |
+| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 
 
@@ -206,9 +208,29 @@ Name | Description|
 
 
 
+### neuro admin generate-cluster-config
+
+Create a cluster configuration file.
+
+**Usage:**
+
+```bash
+neuro admin generate-cluster-config [OPTIONS] [CONFIG]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--type \[aws &#124; gcp]_||
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro admin add-cluster
 
-Create a new cluster and start its provisioning
+Create a new cluster and start its provisioning.
 
 **Usage:**
 
@@ -227,7 +249,7 @@ Name | Description|
 
 ### neuro admin get-cluster-users
 
-Print the list of all users in the cluster with their assigned role
+Print the list of all users in the cluster with their assigned role.
 
 **Usage:**
 
@@ -246,7 +268,7 @@ Name | Description|
 
 ### neuro admin add-cluster-user
 
-Add user access to specified cluster with one of 3 roles: admin, manager or<br/>user
+Add user access to specified cluster.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
 
 **Usage:**
 
@@ -265,7 +287,7 @@ Name | Description|
 
 ### neuro admin remove-cluster-user
 
-Remove user access from the cluster
+Remove user access from the cluster.
 
 **Usage:**
 
@@ -692,7 +714,7 @@ Initialize an empty project.<br/>
 **Usage:**
 
 ```bash
-neuro project init [OPTIONS]
+neuro project init [OPTIONS] [SLUG]
 ```
 
 **Examples:**
@@ -702,6 +724,10 @@ neuro project init [OPTIONS]
 # Initializes a scaffolding for the new project with the recommended project
 # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
 neuro project init
+
+# Initializes a scaffolding for the new project with the recommended project
+# structure and sets default project folder name to "example"
+neuro project init my-project-id
 
 ```
 

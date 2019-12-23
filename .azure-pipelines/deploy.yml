@@ -41,7 +41,15 @@ stages:
       displayName: 'Install dependencies'
 
     - script: |
-        make publish
+        python setup.py sdist bdist_wheel
+      displayName: 'Make dists'
+
+    - script: |
+        python -m pip install twine
+      displayName: 'Install twine'
+
+    - script: |
+        twine upload dist/*
       displayName: 'PyPI upload'
       env:
         TWINE_USERNAME: __token__

@@ -1,7 +1,7 @@
 -r base.txt
 
-mypy==0.750
-pytest==5.3.1
+mypy==0.760
+pytest==5.3.2
 pytest-cov==2.8.1
 pytest-aiohttp==0.3.0
 pytest-xdist==1.30.0
@@ -17,4 +17,4 @@ markdown-toc==1.2.6
 towncrier==19.2.0
 asynctest==0.13.0
 cryptography==2.8  # temporary pin the version until trusme fixes deprecation warning
-trustme==0.5.3
+trustme==0.6.0

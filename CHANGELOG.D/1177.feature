@@ -1,1 +1,0 @@
-Implement `neuro config get-clusters` command.
