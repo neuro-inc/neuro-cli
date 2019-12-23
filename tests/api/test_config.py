@@ -56,16 +56,16 @@ class TestUserConfigValidators:
             _validate_user_config({"alias": {"0123": "ls"}}, "file.cfg")
 
     def test_invalid_alias_type(self) -> None:
-        with pytest.raises(ConfigError, match="file.cfg: invalid alias name 0123"):
-            _validate_user_config({"alias": {"0123": True}}, "file.cfg")
+        with pytest.raises(ConfigError, match="file.cfg: invalid alias command type"):
+            _validate_user_config({"alias": {"new-name": True}}, "file.cfg")
 
 
-async def test_get_user_config_empty(make_client: _MakeClient):
+async def test_get_user_config_empty(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
         assert client.config.get_user_config() == {}
 
 
-async def test_get_user_config_from_global(make_client: _MakeClient):
+async def test_get_user_config_from_global(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
         client.config._path.mkdir(parents=True, exist_ok=True)
         global_conf = client.config._path / "user.toml"
@@ -76,7 +76,7 @@ async def test_get_user_config_from_global(make_client: _MakeClient):
 
 async def test_get_user_config_from_local(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
-):
+) -> None:
     async with make_client("https://example.com") as client:
         proj_dir = tmp_path / "project"
         local_dir = proj_dir / "folder"
