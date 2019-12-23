@@ -9,7 +9,7 @@ import time
 from contextlib import suppress
 from datetime import date, timedelta
 from difflib import SequenceMatcher
-from functools import lru_cache, wraps
+from functools import wraps
 from textwrap import fill, wrap
 from typing import (
     Any,
@@ -704,12 +704,10 @@ class StyledTextHelper:
     # As we often do operations on headers or similar static text it makes sense to
     # cache
     @classmethod
-    @lru_cache(255)
     def unstyle(cls, text: str) -> str:
         return click.unstyle(text)
 
     @classmethod
-    @lru_cache(255)
     def width(cls, text: str) -> int:
         if cls.is_styled(text):
             return wcswidth(cls.unstyle(text))
