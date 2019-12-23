@@ -223,7 +223,7 @@ class Config(metaclass=NoPublicConstructor):
     def get_user_config(self) -> Mapping[str, Any]:
         # TODO: search in several locations (HOME+curdir),
         # merge found configs
-        filename = self._path / "user.cfg"
+        filename = self._path / "user.toml"
         if not filename.exists():
             # Empty global configuration
             config: Mapping[str, Any] = {}
@@ -233,7 +233,7 @@ class Config(metaclass=NoPublicConstructor):
             config = _load_file(filename)
         folder = Path.cwd()
         while True:
-            filename = folder / ".neuro.cfg"
+            filename = folder / ".neuro.toml"
             if filename.exists() and filename.is_file():
                 local_config = _load_file(filename)
                 return _merge_user_configs(config, local_config)

@@ -1,7 +1,9 @@
-from typing import Callable
+from pathlib import Path
+from typing import Any, Callable
 from unittest import mock
 
 import pytest
+import toml
 from aiohttp import web
 from yarl import URL
 
@@ -56,6 +58,34 @@ class TestUserConfigValidators:
     def test_invalid_alias_type(self) -> None:
         with pytest.raises(ConfigError, match="file.cfg: invalid alias name 0123"):
             _validate_user_config({"alias": {"0123": True}}, "file.cfg")
+
+
+async def test_get_user_config_empty(make_client: _MakeClient):
+    async with make_client("https://example.com") as client:
+        assert client.config.get_user_config() == {}
+
+
+async def test_get_user_config_from_global(make_client: _MakeClient):
+    async with make_client("https://example.com") as client:
+        client.config._path.mkdir(parents=True, exist_ok=True)
+        global_conf = client.config._path / "user.toml"
+        # FIXME: the example may be broken in future versions
+        global_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
+        assert client.config.get_user_config() == {"alias": {"pss": "job ps --short"}}
+
+
+async def test_get_user_config_from_local(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+):
+    async with make_client("https://example.com") as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        local_conf = proj_dir / ".neuro.toml"
+        # FIXME: the example may be broken in future versions
+        local_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
+        assert client.config.get_user_config() == {"alias": {"pss": "job ps --short"}}
 
 
 async def test_username(

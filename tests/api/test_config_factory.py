@@ -43,6 +43,24 @@ def config_dir(
     return config_path
 
 
+def _create_config(
+    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
+) -> str:
+    config = _Config(
+        auth_config=auth_config,
+        auth_token=_AuthToken.create_non_expiring(token),
+        pypi=_PyPIVersion.create_uninitialized(),
+        url=URL("https://dev.neu.ro/api/v1"),
+        cookie_session=_CookieSession.create_uninitialized(),
+        version=neuromation.__version__,
+        cluster_name=cluster_config.name,
+        clusters={cluster_config.name: cluster_config},
+    )
+    Factory(nmrc_path)._save(config)
+    assert nmrc_path.exists()
+    return token
+
+
 @pytest.fixture
 async def mock_for_login(
     aiohttp_server: _TestServerFactory,
@@ -118,24 +136,6 @@ async def mock_for_login(
     app.router.add_post("/oauth/token", new_token)
     srv = await aiohttp_server(app)
     return srv
-
-
-def _create_config(
-    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
-) -> str:
-    config = _Config(
-        auth_config=auth_config,
-        auth_token=_AuthToken.create_non_expiring(token),
-        pypi=_PyPIVersion.create_uninitialized(),
-        url=URL("https://dev.neu.ro/api/v1"),
-        cookie_session=_CookieSession.create_uninitialized(),
-        version=neuromation.__version__,
-        cluster_name=cluster_config.name,
-        clusters={cluster_config.name: cluster_config},
-    )
-    Factory(nmrc_path)._save(config)
-    assert nmrc_path.exists()
-    return token
 
 
 class TestConfigFileInteraction:
