@@ -225,6 +225,125 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
         )
 
 
+@command()
+@click.argument("cluster_name", required=True, type=str)
+@click.argument("user_name", required=True, type=str)
+@click.option(
+    "-g",
+    "--gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="GPU quota value in hours (h) or minutes (m)",
+)
+@click.option(
+    "-n",
+    "--non-gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="Non-GPU quota value in hours (h) or minutes (m)",
+)
+@async_cmd()
+async def set_user_quota(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    gpu: Optional[str],
+    non_gpu: Optional[str],
+) -> None:
+    """
+    Set user quota to given values
+    """
+    gpu_value_minutes: Optional[float] = None
+    non_gpu_value_minutes: Optional[float] = None
+    if gpu is not None:
+        try:
+            gpu_value_minutes = float(gpu[:-1]) * {"h": 60, "m": 1}[gpu[-1]]
+            if gpu_value_minutes < 0.0 or gpu_value_minutes == float("inf"):
+                raise ValueError("Negative or infinity")
+        except (ValueError, LookupError):
+            click.echo("Failed to parse gpu")
+            raise
+    if non_gpu is not None:
+        try:
+            non_gpu_value_minutes = float(non_gpu[:-1]) * {"h": 60, "m": 1}[non_gpu[-1]]
+            if non_gpu_value_minutes < 0.0 or non_gpu_value_minutes == float("inf"):
+                raise ValueError("Negative or infinity")
+        except (ValueError, LookupError):
+            click.echo("Failed to parse non-gpu")
+            raise
+
+    click.echo(f"gpu={gpu_value_minutes} non-gpu={non_gpu_value_minutes}")
+    root.client._admin.set_user_quota(
+        cluster_name, user_name, gpu_value_minutes, non_gpu_value_minutes
+    )
+
+
+@command()
+@click.argument("cluster_name", required=True, type=str)
+@click.argument("user_name", required=True, type=str)
+@click.option(
+    "-g",
+    "--gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="Additional GPU quota value in hours (h) or minutes (m)",
+)
+@click.option(
+    "-n",
+    "--non-gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="Additional non-GPU quota value in hours (h) or minutes (m)",
+)
+@async_cmd()
+async def add_user_quota(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    gpu: Optional[str],
+    non_gpu: Optional[str],
+) -> None:
+    """
+    Add given values to user quota
+    """
+    additional_gpu_value_minutes: Optional[float] = None
+    additional_non_gpu_value_minutes: Optional[float] = None
+    if gpu is not None:
+        try:
+            additional_gpu_value_minutes = float(gpu[:-1]) * {"h": 60, "m": 1}[gpu[-1]]
+            if (
+                additional_gpu_value_minutes < 0
+                or additional_gpu_value_minutes == float("inf")
+            ):
+                raise ValueError("Negative or infinity")
+        except (ValueError, LookupError):
+            click.echo("Failed to parse gpu")
+            raise
+    if non_gpu is not None:
+        try:
+            additional_non_gpu_value_minutes = (
+                float(non_gpu[:-1]) * {"h": 60, "m": 1}[non_gpu[-1]]
+            )
+            if (
+                additional_non_gpu_value_minutes < 0
+                or additional_non_gpu_value_minutes == float("inf")
+            ):
+                raise ValueError("Negative or infinity")
+        except (ValueError, LookupError):
+            click.echo("Failed to parse non-gpu")
+            raise
+    root.client._admin.add_user_quota(
+        cluster_name,
+        user_name,
+        additional_gpu_value_minutes,
+        additional_non_gpu_value_minutes,
+    )
+
+    click.echo(
+        f"gpu={additional_gpu_value_minutes} non-gpu={additional_non_gpu_value_minutes}"
+    )
+
+
 admin.add_command(get_clusters)
 admin.add_command(generate_cluster_config)
 admin.add_command(add_cluster)
@@ -232,3 +351,6 @@ admin.add_command(add_cluster)
 admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)
 admin.add_command(remove_cluster_user)
+
+admin.add_command(set_user_quota)
+admin.add_command(add_user_quota)
