@@ -9,8 +9,9 @@ from .ftable import table
 
 class ClusterUserFormatter:
     def __call__(self, clusters_users: Iterable[_ClusterUser]) -> List[str]:
-        headers = ("Name", "Role")
+        headers = (click.style("Name", bold=True), click.style("Role", bold=True))
         rows = [headers]
+
         for user in clusters_users:
             rows.append((user.user_name, user.role.value))
 

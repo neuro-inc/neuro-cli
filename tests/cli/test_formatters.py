@@ -1874,7 +1874,7 @@ class TestClusterUserFormatter:
             _ClusterUser(user_name="alex", role=_ClusterUserRoleType("user")),
         ]
         expected_out = [
-            "Name    Role   ",
+            "\x1b[1mName\x1b[0m    \x1b[1mRole\x1b[0m   ",
             "denis   admin  ",
             "andrew  manager",
             "ivan    user   ",

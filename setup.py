@@ -43,6 +43,7 @@ setup(
         "certifi",
         "cookiecutter==1.7.0",
         "atomicwrites>=1.0",
+        "wcwidth>=0.1.7",
         "toml>=0.10.0",
     ],
     include_package_data=True,
