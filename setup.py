@@ -31,7 +31,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "yarl>=1.3.0",
-        "multidict>=4.0,<4.7",
+        "multidict>=4.0",
         "aiodocker>=0.16.0",
         "click>=7.0",
         'colorama>=0.4; platform_system=="Windows"',
