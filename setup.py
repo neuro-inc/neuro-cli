@@ -41,7 +41,7 @@ setup(
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
-        "cookiecutter==1.6.0",
+        "cookiecutter==1.7.0",
         "atomicwrites>=1.0",
         "toml>=0.10.0",
     ],
