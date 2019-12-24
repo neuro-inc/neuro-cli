@@ -1,14 +1,16 @@
 import base64
 import os
+import re
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List, Mapping, Set, Union
 
 import atomicwrites
 import dateutil.parser
 import pkg_resources
+import toml
 import yaml
 from yarl import URL
 
@@ -218,6 +220,29 @@ class Config(metaclass=NoPublicConstructor):
             f"{self.username}:{token}".encode("ascii")
         ).decode("ascii")
 
+    def get_user_config(self) -> Mapping[str, Any]:
+        # TODO: search in several locations (HOME+curdir),
+        # merge found configs
+        filename = self._path / "user.toml"
+        if not filename.exists():
+            # Empty global configuration
+            config: Mapping[str, Any] = {}
+        elif not filename.is_file():
+            raise ConfigError(f"User config {filename} should be a regular file")
+        else:
+            config = _load_file(filename)
+        folder = Path.cwd()
+        while True:
+            filename = folder / ".neuro.toml"
+            if filename.exists() and filename.is_file():
+                local_config = _load_file(filename)
+                return _merge_user_configs(config, local_config)
+            if folder == folder.parent:
+                # No local config is found
+                return config
+            else:
+                folder = folder.parent
+
     @classmethod
     def _save(cls, config: _Config, path: Path) -> None:
         # The wierd method signature is required for communicating with existing
@@ -297,3 +322,80 @@ class Config(metaclass=NoPublicConstructor):
             "tpu_software_version": preset.tpu_software_version,
             "is_preemptible": preset.is_preemptible,
         }
+
+
+def _merge_user_configs(
+    older: Mapping[str, Any], newer: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    ret: Dict[str, Any] = {}
+    for key, val in older.items():
+        if key not in newer:
+            # keep older key/values
+            ret[key] = val
+        else:
+            # key is present in both newer and older
+            new_val = newer[key]
+            if isinstance(new_val, Mapping) and isinstance(val, Mapping):
+                # merge nested dictionaries
+                ret[key] = _merge_user_configs(val, new_val)
+            else:
+                # for non-dicts newer overrides older
+                ret[key] = new_val
+    for key in newer.keys() - older.keys():
+        # Add keys/values from newer that absent in older
+        ret[key] = newer[key]
+    return ret
+
+
+def _check_sections(
+    config: Mapping[str, Any],
+    valid_names: Set[str],
+    filename: Union[str, "os.PathLike[str]"],
+) -> None:
+    extra_sections = config.keys() - valid_names
+    if extra_sections:
+        raise ConfigError(
+            f"{filename}: unsupported config sections: {extra_sections!r}"
+        )
+    for name in valid_names:
+        section = config.get(name, {})
+        if not isinstance(section, dict):
+            raise ConfigError(
+                f"{filename}: {name!r} should be a section, got {section!r}"
+            )
+
+
+def _validate_user_config(
+    config: Mapping[str, Any], filename: Union[str, "os.PathLike[str]"]
+) -> None:
+    # This was a hard decision.
+    # Config structure should be validated to generate meaningful error messages.
+    #
+    # API should do it but API don't use user config itself, the config is entirely
+    # for CLI needs.
+    #
+    # Since currently CLI is the only API client that reads user config data, API
+    # validates it.
+    #
+    # Later, after possible introduction of plugin subsystem the validation should
+    # be extended by plugin-provided rules.  That will be done by providing
+    # additional API for describing new supported config sections, keys and values.
+    # Right now this functionality is skipped for the sake of simplicity.
+    _check_sections(config, {"alias", "job"}, filename)
+    aliases = config.get("alias", {})
+    CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
+    for key, value in aliases.items():
+        # check keys and values
+        if not CMD_RE.match(key):
+            raise ConfigError(f"{filename}: invalid alias name {key}")
+        if not isinstance(value, str):
+            raise ConfigError(
+                f"{filename}: invalid alias command type {type(value)}, "
+                "a string is expected"
+            )
+
+
+def _load_file(filename: Path) -> Mapping[str, Any]:
+    config = toml.load(filename)
+    _validate_user_config(config, filename)
+    return config

@@ -1,15 +1,91 @@
-from typing import Callable
+from pathlib import Path
+from typing import Any, Callable
 from unittest import mock
 
 import pytest
+import toml
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Client, Cluster, Preset
+from neuromation.api import Client, Cluster, ConfigError, Preset
+from neuromation.api.config import (
+    _check_sections,
+    _merge_user_configs,
+    _validate_user_config,
+)
 from tests import _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
+
+
+class TestMergeUserConfigs:
+    def test_empty_dicts(self) -> None:
+        assert _merge_user_configs({}, {}) == {}
+
+    def test_empty_newer(self) -> None:
+        assert _merge_user_configs({"a": "b"}, {}) == {"a": "b"}
+
+    def test_empty_older(self) -> None:
+        assert _merge_user_configs({}, {"a": "b"}) == {"a": "b"}
+
+    def test_not_overlapped(self) -> None:
+        assert _merge_user_configs({"a": "b"}, {"c": "d"}) == {"a": "b", "c": "d"}
+
+    def test_merge_subdicts(self) -> None:
+        assert _merge_user_configs(
+            {"a": {"b": "1", "c": "2"}}, {"a": {"b": "3", "d": "4"}}
+        ) == {"a": {"b": "3", "c": "2", "d": "4"}}
+
+
+class TestUserConfigValidators:
+    def test_unsupported_section(self) -> None:
+        with pytest.raises(
+            ConfigError, match="file.cfg: unsupported config sections: {'other'}"
+        ):
+            _check_sections({"other": {"key": "val"}}, {"section"}, "file.cfg")
+
+    def test_section_is_not_dict(self) -> None:
+        with pytest.raises(
+            ConfigError, match="file.cfg: 'a' should be a section, got 1"
+        ):
+            _check_sections({"a": 1}, {"a"}, "file.cfg")
+
+    def test_invalid_alias_name(self) -> None:
+        with pytest.raises(ConfigError, match="file.cfg: invalid alias name 0123"):
+            _validate_user_config({"alias": {"0123": "ls"}}, "file.cfg")
+
+    def test_invalid_alias_type(self) -> None:
+        with pytest.raises(ConfigError, match="file.cfg: invalid alias command type"):
+            _validate_user_config({"alias": {"new-name": True}}, "file.cfg")
+
+
+async def test_get_user_config_empty(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        assert client.config.get_user_config() == {}
+
+
+async def test_get_user_config_from_global(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        client.config._path.mkdir(parents=True, exist_ok=True)
+        global_conf = client.config._path / "user.toml"
+        # FIXME: the example may be broken in future versions
+        global_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
+        assert client.config.get_user_config() == {"alias": {"pss": "job ps --short"}}
+
+
+async def test_get_user_config_from_local(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+    async with make_client("https://example.com") as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        local_conf = proj_dir / ".neuro.toml"
+        # FIXME: the example may be broken in future versions
+        local_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
+        assert client.config.get_user_config() == {"alias": {"pss": "job ps --short"}}
 
 
 async def test_username(
