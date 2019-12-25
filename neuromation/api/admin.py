@@ -91,13 +91,13 @@ class _Admin(metaclass=NoPublicConstructor):
         gpu_value_minutes: Optional[float],
         non_gpu_value_minutes: Optional[float],
     ) -> _ClusterUser:
-        if gpu_value_minutes is None and non_gpu_value_minutes is None:
-            raise ValueError("Both GPU and non-GPU values can't be None")
-        url = self._config.admin_url / "clusters" / cluster_name / "users"
+        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
         payload = {
             "user_name": user_name,
-            "gpu_minutes": gpu_value_minutes,
-            "non_gpu_minutes": non_gpu_value_minutes,
+            "quota": {
+                "total_gpu_run_time_minutes": gpu_value_minutes,
+                "total_non_gpu_run_time_minutes": non_gpu_value_minutes,
+            },
         }
         auth = await self._config._api_auth()
 
@@ -112,16 +112,13 @@ class _Admin(metaclass=NoPublicConstructor):
         additional_gpu_value_minutes: Optional[float],
         additional_non_gpu_value_minutes: Optional[float],
     ) -> _ClusterUser:
-        if (
-            additional_gpu_value_minutes is None
-            and additional_non_gpu_value_minutes is None
-        ):
-            raise ValueError("Both GPU and non-GPU values can't be None")
-        url = self._config.admin_url / "clusters" / cluster_name / "users"
+        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
         payload = {
             "user_name": user_name,
-            "additional_gpu_minutes": additional_gpu_value_minutes,
-            "additional_non_gpu_minutes": additional_non_gpu_value_minutes,
+            "additional_quota": {
+                "total_gpu_run_time_minutes": additional_gpu_value_minutes,
+                "total_non_gpu_run_time_minutes": additional_non_gpu_value_minutes,
+            },
         }
         auth = await self._config._api_auth()
 

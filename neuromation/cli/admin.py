@@ -209,6 +209,25 @@ async def add_cluster_user(
         )
 
 
+def _parse_quota_value(
+    value: Optional[str], allow_infinity: bool = False
+) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        result = float(value[:-1]) * {"h": 60, "m": 1}[value[-1]]
+        if result < 0:
+            raise ValueError("Negative quota values are not allowed")
+        if result == float("inf"):
+            if allow_infinity:
+                return None
+            else:
+                raise ValueError("Infinite quota values are not allowed")
+    except (ValueError, LookupError):
+        raise
+    return int(result)
+
+
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
@@ -253,29 +272,12 @@ async def set_user_quota(
     """
     Set user quota to given values
     """
-    gpu_value_minutes: Optional[float] = None
-    non_gpu_value_minutes: Optional[float] = None
-    if gpu is not None:
-        try:
-            gpu_value_minutes = float(gpu[:-1]) * {"h": 60, "m": 1}[gpu[-1]]
-            if gpu_value_minutes < 0.0 or gpu_value_minutes == float("inf"):
-                raise ValueError("Negative or infinity")
-        except (ValueError, LookupError):
-            click.echo("Failed to parse gpu")
-            raise
-    if non_gpu is not None:
-        try:
-            non_gpu_value_minutes = float(non_gpu[:-1]) * {"h": 60, "m": 1}[non_gpu[-1]]
-            if non_gpu_value_minutes < 0.0 or non_gpu_value_minutes == float("inf"):
-                raise ValueError("Negative or infinity")
-        except (ValueError, LookupError):
-            click.echo("Failed to parse non-gpu")
-            raise
-
-    click.echo(f"gpu={gpu_value_minutes} non-gpu={non_gpu_value_minutes}")
+    gpu_value_minutes = _parse_quota_value(gpu, allow_infinity=True)
+    non_gpu_value_minutes = _parse_quota_value(non_gpu, allow_infinity=True)
     root.client._admin.set_user_quota(
         cluster_name, user_name, gpu_value_minutes, non_gpu_value_minutes
     )
+    click.echo(f"gpu={gpu_value_minutes} non-gpu={non_gpu_value_minutes}")
 
 
 @command()
@@ -306,39 +308,14 @@ async def add_user_quota(
     """
     Add given values to user quota
     """
-    additional_gpu_value_minutes: Optional[float] = None
-    additional_non_gpu_value_minutes: Optional[float] = None
-    if gpu is not None:
-        try:
-            additional_gpu_value_minutes = float(gpu[:-1]) * {"h": 60, "m": 1}[gpu[-1]]
-            if (
-                additional_gpu_value_minutes < 0
-                or additional_gpu_value_minutes == float("inf")
-            ):
-                raise ValueError("Negative or infinity")
-        except (ValueError, LookupError):
-            click.echo("Failed to parse gpu")
-            raise
-    if non_gpu is not None:
-        try:
-            additional_non_gpu_value_minutes = (
-                float(non_gpu[:-1]) * {"h": 60, "m": 1}[non_gpu[-1]]
-            )
-            if (
-                additional_non_gpu_value_minutes < 0
-                or additional_non_gpu_value_minutes == float("inf")
-            ):
-                raise ValueError("Negative or infinity")
-        except (ValueError, LookupError):
-            click.echo("Failed to parse non-gpu")
-            raise
+    additional_gpu_value_minutes = _parse_quota_value(gpu, False)
+    additional_non_gpu_value_minutes = _parse_quota_value(non_gpu, False)
     root.client._admin.add_user_quota(
         cluster_name,
         user_name,
         additional_gpu_value_minutes,
         additional_non_gpu_value_minutes,
     )
-
     click.echo(
         f"gpu={additional_gpu_value_minutes} non-gpu={additional_non_gpu_value_minutes}"
     )
