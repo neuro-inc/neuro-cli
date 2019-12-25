@@ -274,10 +274,14 @@ async def set_user_quota(
     """
     gpu_value_minutes = _parse_quota_value(gpu, allow_infinity=True)
     non_gpu_value_minutes = _parse_quota_value(non_gpu, allow_infinity=True)
-    root.client._admin.set_user_quota(
+    user_with_quota = root.client._admin.set_user_quota(
         cluster_name, user_name, gpu_value_minutes, non_gpu_value_minutes
     )
-    click.echo(f"gpu={gpu_value_minutes} non-gpu={non_gpu_value_minutes}")
+    click.echo(
+        f"User {user_with_quota.user_name} now has the following quota:\n"
+        f"GPU: {user_with_quota.quota.total_gpu_run_time_minutes}m "
+        f"non-GPU: {user_with_quota.quota.total_non_gpu_run_time_minutes}m"
+    )
 
 
 @command()
@@ -310,14 +314,16 @@ async def add_user_quota(
     """
     additional_gpu_value_minutes = _parse_quota_value(gpu, False)
     additional_non_gpu_value_minutes = _parse_quota_value(non_gpu, False)
-    root.client._admin.add_user_quota(
+    user_with_quota = root.client._admin.add_user_quota(
         cluster_name,
         user_name,
         additional_gpu_value_minutes,
         additional_non_gpu_value_minutes,
     )
     click.echo(
-        f"gpu={additional_gpu_value_minutes} non-gpu={additional_non_gpu_value_minutes}"
+        f"User {user_with_quota.user_name} now has the following quota:\n"
+        f"GPU: {user_with_quota.quota.total_gpu_run_time_minutes}m "
+        f"non-GPU: {user_with_quota.quota.total_non_gpu_run_time_minutes}m"
     )
 
 

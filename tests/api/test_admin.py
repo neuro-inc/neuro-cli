@@ -2,6 +2,7 @@ from typing import Callable
 
 from aiohttp import web
 from aiohttp.web import HTTPCreated, HTTPNoContent
+from aiohttp.web_exceptions import HTTPOk
 
 from neuromation.api import Client
 from neuromation.api.admin import _Cluster, _ClusterUser, _ClusterUserRoleType
@@ -215,4 +216,34 @@ async def test_remove_cluster_user(
 
     async with make_client(srv.make_url("/api/v1")) as client:
         await client._admin.remove_cluster_user("default", "ivan")
+        assert requested_cluster_users == [("default", "ivan")]
+
+
+async def test_set_user_quota(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    requested_cluster_users = []
+    requested_clusters = []
+    requested_payloads = []
+
+    async def handle_cluster_user_patch(request: web.Request) -> web.StreamResponse:
+        requested_cluster_users.append(
+            (request.match_info["cluster_name"], request.match_info["user_name"],)
+        )
+        payload = await request.json()
+        payload["role"] = "user"
+        requested_clusters.append(request.match_info["cluster_name"])
+        requested_payloads.append(payload)
+        return web.json_response(payload, status=HTTPOk.status_code)
+
+    app = web.Application()
+    app.router.add_patch(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}",
+        handle_cluster_user_patch,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        await client._admin.set_user_quota("default", "ivan", 100, 200)
         assert requested_cluster_users == [("default", "ivan")]

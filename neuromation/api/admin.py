@@ -24,6 +24,17 @@ class _ClusterUser:
 
 
 @dataclass(frozen=True)
+class _Quota:
+    total_gpu_run_time_minutes: Optional[int]
+    total_non_gpu_run_time_minutes: Optional[int]
+
+
+@dataclass(frozen=True)
+class _ClusterUserWithQuota(_ClusterUser):
+    quota: _Quota
+
+
+@dataclass(frozen=True)
 class _Cluster:
     name: str
 
@@ -90,7 +101,7 @@ class _Admin(metaclass=NoPublicConstructor):
         user_name: str,
         gpu_value_minutes: Optional[float],
         non_gpu_value_minutes: Optional[float],
-    ) -> _ClusterUser:
+    ) -> _ClusterUserWithQuota:
         url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
         payload = {
             "user_name": user_name,
@@ -103,7 +114,7 @@ class _Admin(metaclass=NoPublicConstructor):
 
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
             payload = await resp.json()
-            return _cluster_user_from_api(payload)
+            return _cluster_user_with_quota_from_api(payload)
 
     async def add_user_quota(
         self,
@@ -111,7 +122,7 @@ class _Admin(metaclass=NoPublicConstructor):
         user_name: str,
         additional_gpu_value_minutes: Optional[float],
         additional_non_gpu_value_minutes: Optional[float],
-    ) -> _ClusterUser:
+    ) -> _ClusterUserWithQuota:
         url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
         payload = {
             "user_name": user_name,
@@ -124,12 +135,23 @@ class _Admin(metaclass=NoPublicConstructor):
 
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
             payload = await resp.json()
-            return _cluster_user_from_api(payload)
+            return _cluster_user_with_quota_from_api(payload)
 
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
     return _ClusterUser(
         user_name=payload["user_name"], role=_ClusterUserRoleType(payload["role"])
+    )
+
+
+def _cluster_user_with_quota_from_api(payload: Dict[str, Any]) -> _ClusterUserWithQuota:
+    return _ClusterUserWithQuota(
+        user_name=payload["user_name"],
+        role=_ClusterUserRoleType(payload["role"]),
+        quota=_Quota(
+            payload.get("total_gpu_run_time_minutes"),
+            payload.get("total_non_gpu_run_time_minutes"),
+        ),
     )
 
 
