@@ -282,7 +282,7 @@ async def cp(
     target_directory: Optional[str],
     no_target_directory: bool,
     update: bool,
-    filters: Tuple[Tuple[bool, str], ...],
+    filters: Optional[Tuple[Tuple[bool, str], ...]],
     progress: bool,
 ) -> None:
     """
@@ -355,7 +355,7 @@ async def cp(
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
     file_filter = FileFilter()
-    for exclude, pattern in filters:
+    for exclude, pattern in filters or ():
         file_filter.append(exclude, pattern)
 
     show_progress = root.tty and progress
