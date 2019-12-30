@@ -295,7 +295,6 @@ config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
 config.add_command(show_quota)
-config.add_command(add_quota)
 config.add_command(get_clusters)
 config.add_command(switch_cluster)
 

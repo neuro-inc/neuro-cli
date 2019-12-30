@@ -1,1 +1,1 @@
-Add `neuro config add-quota` command that describes how user can increase their quota
+Add `neuro admin add-user-quota` and `neuro admin set-user-quota` commands to control user quotas
