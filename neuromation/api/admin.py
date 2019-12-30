@@ -102,7 +102,14 @@ class _Admin(metaclass=NoPublicConstructor):
         gpu_value_minutes: Optional[float],
         non_gpu_value_minutes: Optional[float],
     ) -> _ClusterUserWithQuota:
-        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
+        url = (
+            self._config.admin_url
+            / "clusters"
+            / cluster_name
+            / "users"
+            / user_name
+            / "quota"
+        )
         payload = {
             "user_name": user_name,
             "quota": {
@@ -123,7 +130,14 @@ class _Admin(metaclass=NoPublicConstructor):
         additional_gpu_value_minutes: Optional[float],
         additional_non_gpu_value_minutes: Optional[float],
     ) -> _ClusterUserWithQuota:
-        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
+        url = (
+            self._config.admin_url
+            / "clusters"
+            / cluster_name
+            / "users"
+            / user_name
+            / "quota"
+        )
         payload = {
             "user_name": user_name,
             "additional_quota": {
