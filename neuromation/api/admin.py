@@ -111,7 +111,6 @@ class _Admin(metaclass=NoPublicConstructor):
             / "quota"
         )
         payload = {
-            "user_name": user_name,
             "quota": {
                 "total_gpu_run_time_minutes": gpu_value_minutes,
                 "total_non_gpu_run_time_minutes": non_gpu_value_minutes,
@@ -121,7 +120,7 @@ class _Admin(metaclass=NoPublicConstructor):
 
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
             payload = await resp.json()
-            return _cluster_user_with_quota_from_api(payload)
+            return _cluster_user_with_quota_from_api(user_name, payload)
 
     async def add_user_quota(
         self,
@@ -139,7 +138,6 @@ class _Admin(metaclass=NoPublicConstructor):
             / "quota"
         )
         payload = {
-            "user_name": user_name,
             "additional_quota": {
                 "total_gpu_run_time_minutes": additional_gpu_value_minutes,
                 "total_non_gpu_run_time_minutes": additional_non_gpu_value_minutes,
@@ -149,7 +147,7 @@ class _Admin(metaclass=NoPublicConstructor):
 
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
             payload = await resp.json()
-            return _cluster_user_with_quota_from_api(payload)
+            return _cluster_user_with_quota_from_api(user_name, payload)
 
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
@@ -158,9 +156,11 @@ def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
     )
 
 
-def _cluster_user_with_quota_from_api(payload: Dict[str, Any]) -> _ClusterUserWithQuota:
+def _cluster_user_with_quota_from_api(
+    user_name: str, payload: Dict[str, Any]
+) -> _ClusterUserWithQuota:
     return _ClusterUserWithQuota(
-        user_name=payload["user_name"],
+        user_name=user_name,
         role=_ClusterUserRoleType(payload["role"]),
         quota=_Quota(
             payload.get("total_gpu_run_time_minutes"),

@@ -232,8 +232,8 @@ async def test_set_user_quota(
             (request.match_info["cluster_name"], request.match_info["user_name"],)
         )
         payload = await request.json()
+        requested_payloads.append(dict(payload))
         payload["role"] = "user"
-        requested_payloads.append(payload)
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()
@@ -259,24 +259,18 @@ async def test_set_user_quota(
                 "total_gpu_run_time_minutes": 100,
                 "total_non_gpu_run_time_minutes": 200,
             },
-            "role": "user",
-            "user_name": "ivan",
         } in requested_payloads
         assert {
             "quota": {
                 "total_gpu_run_time_minutes": None,
                 "total_non_gpu_run_time_minutes": None,
             },
-            "role": "user",
-            "user_name": "user2",
         } in requested_payloads
         assert {
             "quota": {
                 "total_gpu_run_time_minutes": 150,
                 "total_non_gpu_run_time_minutes": None,
             },
-            "role": "user",
-            "user_name": "user3",
         } in requested_payloads
 
 
@@ -293,8 +287,8 @@ async def test_add_user_quota(
             (request.match_info["cluster_name"], request.match_info["user_name"],)
         )
         payload = await request.json()
+        requested_payloads.append(dict(payload))
         payload["role"] = "user"
-        requested_payloads.append(payload)
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()
@@ -320,22 +314,16 @@ async def test_add_user_quota(
                 "total_gpu_run_time_minutes": 100,
                 "total_non_gpu_run_time_minutes": 200,
             },
-            "role": "user",
-            "user_name": "ivan",
         } in requested_payloads
         assert {
             "additional_quota": {
                 "total_gpu_run_time_minutes": None,
                 "total_non_gpu_run_time_minutes": None,
             },
-            "role": "user",
-            "user_name": "user2",
         } in requested_payloads
         assert {
             "additional_quota": {
                 "total_gpu_run_time_minutes": 150,
                 "total_non_gpu_run_time_minutes": None,
             },
-            "role": "user",
-            "user_name": "user3",
         } in requested_payloads
