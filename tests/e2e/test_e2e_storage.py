@@ -564,3 +564,62 @@ def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
     helper.run_cli(["storage", "rm", "--no-glob", helper.tmpstorage + "/[df]"])
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert sorted(captured.out.splitlines()) == ["d"]
+
+
+@pytest.mark.e2e
+def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "subfolder").mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    (folder / "baz").write_bytes(b"baz")
+
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--exclude",
+            "subfolder/*",
+            "--include",
+            "*/b??",
+            "--exclude",
+            "*z",
+            tmp_path.as_uri() + "/folder",
+            helper.tmpstorage + "/folder",
+        ]
+    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == ["bar"]
+
+    # Copy all files to storage
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            tmp_path.as_uri() + "/folder",
+            helper.tmpstorage + "/folder2",
+        ]
+    )
+
+    # Copy filtered files from storage
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--exclude",
+            "subfolder/*",
+            "--include",
+            "*/b??",
+            "--exclude",
+            "*z",
+            helper.tmpstorage + "/folder2",
+            tmp_path.as_uri() + "/folder2",
+        ]
+    )
+    assert os.listdir(tmp_path / "folder2") == ["bar"]
