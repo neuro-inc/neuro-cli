@@ -223,27 +223,119 @@ async def test_set_user_quota(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     requested_cluster_users = []
-    requested_clusters = []
     requested_payloads = []
 
-    async def handle_cluster_user_patch(request: web.Request) -> web.StreamResponse:
+    async def handle_cluster_user_quota_patch(
+        request: web.Request,
+    ) -> web.StreamResponse:
         requested_cluster_users.append(
             (request.match_info["cluster_name"], request.match_info["user_name"],)
         )
         payload = await request.json()
         payload["role"] = "user"
-        requested_clusters.append(request.match_info["cluster_name"])
         requested_payloads.append(payload)
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()
     app.router.add_patch(
-        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}",
-        handle_cluster_user_patch,
+        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}/quota",
+        handle_cluster_user_quota_patch,
     )
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
         await client._admin.set_user_quota("default", "ivan", 100, 200)
-        assert requested_cluster_users == [("default", "ivan")]
+        await client._admin.set_user_quota("neuro", "user2", None, None)
+        await client._admin.set_user_quota("neuro-ai", "user3", 150, None)
+        assert requested_cluster_users == [
+            ("default", "ivan"),
+            ("neuro", "user2"),
+            ("neuro-ai", "user3"),
+        ]
+        assert len(requested_payloads) == 3
+        assert {
+            "quota": {
+                "total_gpu_run_time_minutes": 100,
+                "total_non_gpu_run_time_minutes": 200,
+            },
+            "role": "user",
+            "user_name": "ivan",
+        } in requested_payloads
+        assert {
+            "quota": {
+                "total_gpu_run_time_minutes": None,
+                "total_non_gpu_run_time_minutes": None,
+            },
+            "role": "user",
+            "user_name": "user2",
+        } in requested_payloads
+        assert {
+            "quota": {
+                "total_gpu_run_time_minutes": 150,
+                "total_non_gpu_run_time_minutes": None,
+            },
+            "role": "user",
+            "user_name": "user3",
+        } in requested_payloads
+
+
+async def test_add_user_quota(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    requested_cluster_users = []
+    requested_payloads = []
+
+    async def handle_cluster_user_quota_patch(
+        request: web.Request,
+    ) -> web.StreamResponse:
+        requested_cluster_users.append(
+            (request.match_info["cluster_name"], request.match_info["user_name"],)
+        )
+        payload = await request.json()
+        payload["role"] = "user"
+        requested_payloads.append(payload)
+        return web.json_response(payload, status=HTTPOk.status_code)
+
+    app = web.Application()
+    app.router.add_patch(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}/quota",
+        handle_cluster_user_quota_patch,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        await client._admin.add_user_quota("default", "ivan", 100, 200)
+        await client._admin.add_user_quota("neuro", "user2", None, None)
+        await client._admin.add_user_quota("neuro-ai", "user3", 150, None)
+        assert requested_cluster_users == [
+            ("default", "ivan"),
+            ("neuro", "user2"),
+            ("neuro-ai", "user3"),
+        ]
+        assert len(requested_payloads) == 3
+        assert {
+            "additional_quota": {
+                "total_gpu_run_time_minutes": 100,
+                "total_non_gpu_run_time_minutes": 200,
+            },
+            "role": "user",
+            "user_name": "ivan",
+        } in requested_payloads
+        assert {
+            "additional_quota": {
+                "total_gpu_run_time_minutes": None,
+                "total_non_gpu_run_time_minutes": None,
+            },
+            "role": "user",
+            "user_name": "user2",
+        } in requested_payloads
+        assert {
+            "additional_quota": {
+                "total_gpu_run_time_minutes": 150,
+                "total_non_gpu_run_time_minutes": None,
+            },
+            "role": "user",
+            "user_name": "user3",
+        } in requested_payloads
