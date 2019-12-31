@@ -165,7 +165,7 @@ def test_job_kill_non_existing(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["job", "kill", phantom_id])
     assert cm.value.returncode == 1
-    assert cm.value.stdout == ''
+    assert cm.value.stdout == ""
     killed_jobs = cm.value.stderr.splitlines()
     assert len(killed_jobs) == 1, killed_jobs
     assert killed_jobs[0].startswith(expected_out)
