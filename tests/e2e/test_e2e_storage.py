@@ -583,16 +583,16 @@ def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
             "cp",
             "-r",
             "--exclude",
-            "subfolder/*",
+            "*",
             "--include",
-            "*/b??",
+            "b??",
             "--exclude",
             "*z",
             tmp_path.as_uri() + "/folder",
-            helper.tmpstorage + "/folder",
+            helper.tmpstorage + "/filtered",
         ]
     )
-    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/filtered"])
     assert captured.out.splitlines() == ["bar"]
 
     # Copy all files to storage
@@ -602,7 +602,7 @@ def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
             "cp",
             "-r",
             tmp_path.as_uri() + "/folder",
-            helper.tmpstorage + "/folder2",
+            helper.tmpstorage + "/folder",
         ]
     )
 
@@ -613,13 +613,13 @@ def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
             "cp",
             "-r",
             "--exclude",
-            "subfolder/*",
+            "*",
             "--include",
-            "*/b??",
+            "b??",
             "--exclude",
             "*z",
-            helper.tmpstorage + "/folder2",
-            tmp_path.as_uri() + "/folder2",
+            helper.tmpstorage + "/folder",
+            tmp_path.as_uri() + "/filtered",
         ]
     )
-    assert os.listdir(tmp_path / "folder2") == ["bar"]
+    assert os.listdir(tmp_path / "filtered") == ["bar"]
