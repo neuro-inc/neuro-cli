@@ -609,7 +609,9 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         return click.style(f"Cannot kill job {job}: {reason}", fg="red")
 
     for job, error in errors:
-        click.echo(format_fail(job, error))
+        click.echo(format_fail(job, error), err=True)
+    if errors:
+        sys.exit(1)
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
