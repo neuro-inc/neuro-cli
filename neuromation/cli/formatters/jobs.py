@@ -4,7 +4,7 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator, List, Optional
 
 import humanize
 from click import style, unstyle
@@ -13,7 +13,7 @@ from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
-from .ftable import ColumnWidth, table
+from .ftable import Align, ColumnWidth, table
 
 
 COLORS = {
@@ -203,6 +203,29 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 
 
 @dataclass(frozen=True)
+class JobColumnInfo:
+    id: str
+    title: str
+    align: Align
+    width: ColumnWidth
+
+
+COLUMNS = [
+    JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
+    JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=20)),
+    JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
+    JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),
+    JobColumnInfo("owner", "OWNER", Align.LEFT, ColumnWidth(max=25)),
+    JobColumnInfo("cluster_name", "CLUSTER", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
+    JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
+]
+
+COLUMNS_MAP = {column.id: column for column in COLUMNS}
+
+
+@dataclass(frozen=True)
 class TabularJobRow:
     id: str
     name: str
@@ -241,55 +264,34 @@ class TabularJobRow:
             command=job.container.command if job.container.command else "",
         )
 
-    def to_list(self) -> List[str]:
-        return [
-            self.id,
-            self.name,
-            self.status,
-            self.when,
-            self.image,
-            self.owner,
-            self.cluster_name,
-            self.description,
-            self.command,
-        ]
+    def to_list(self, columns: List[JobColumnInfo]) -> List[str]:
+        return [getattr(self, column.id) for column in columns]
+
+
+def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
+    return COLUMNS
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, username: str):
+    def __init__(self, width: int, username: str, columns: List[JobColumnInfo]):
         self.width = width
         self._username = username
+        self._columns = columns
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[List[str]] = []
         rows.append(
             TabularJobRow(
-                id="ID",
-                name="NAME",
-                status="STATUS",
-                when="WHEN",
-                image="IMAGE",
-                owner="OWNER",
-                cluster_name="CLUSTER",
-                description="DESCRIPTION",
-                command="COMMAND",
-            ).to_list()
+                **{column.id: column.title for column in self._columns}
+            ).to_list(self._columns)
         )
         for job in jobs:
-            rows.append(TabularJobRow.from_job(job, self._username).to_list())
+            rows.append(
+                TabularJobRow.from_job(job, self._username).to_list(self._columns)
+            )
         for line in table(
             rows,
-            widths=[
-                ColumnWidth(),
-                ColumnWidth(max=20),
-                ColumnWidth(max=10),
-                ColumnWidth(max=15),
-                ColumnWidth(max=40),
-                ColumnWidth(max=25),
-                ColumnWidth(max=15),
-                ColumnWidth(max=50),
-                ColumnWidth(max=100),
-            ],
+            widths=[column.width for column in self._columns],
             max_width=self.width if self.width else None,
         ):
             yield line

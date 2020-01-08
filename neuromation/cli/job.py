@@ -36,7 +36,7 @@ from .defaults import (
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
 )
-from .formatters import (
+from .formatters.jobs import (
     BaseJobsFormatter,
     JobFormatter,
     JobStartProgress,
@@ -44,6 +44,7 @@ from .formatters import (
     JobTelemetryFormatter,
     SimpleJobsFormatter,
     TabularJobsFormatter,
+    parse_columns,
 )
 from .root import Root
 from .utils import (
@@ -511,7 +512,9 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width, root.client.username)
+        formatter = TabularJobsFormatter(
+            width, root.client.username, parse_columns(None)
+        )
 
     pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 
