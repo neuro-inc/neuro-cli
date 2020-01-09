@@ -103,7 +103,7 @@ COLUMN_RE = re.compile(
 
 
 def _get(
-    dct: Dict[str, str],
+    dct: Dict[str, Optional[str]],
     name: str,
     fmt: str,
     converter: Callable[[str], _T],
