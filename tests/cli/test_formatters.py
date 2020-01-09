@@ -36,11 +36,20 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.api.admin import _ClusterUser, _ClusterUserRoleType
+from neuromation.api.admin import (
+    _CloudProvider,
+    _CloudProviderType,
+    _Cluster,
+    _ClusterUser,
+    _ClusterUserRoleType,
+    _NodePool,
+    _Storage,
+)
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
+    ClustersFormatter,
     ClusterUserFormatter,
     ConfigFormatter,
     DockerImageProgress,
@@ -1882,3 +1891,142 @@ class TestClusterUserFormatter:
             "alex    user   ",
         ]
         assert formatter(users) == expected_out
+
+
+class TestClustersFormatter:
+    def _create_node_pool(
+        self,
+        is_gpu: bool = False,
+        is_tpu_enabled: bool = False,
+        is_preemptible: bool = False,
+        has_idle: bool = False,
+    ) -> _NodePool:
+        return _NodePool(
+            min_size=1,
+            max_size=2,
+            idle_size=1 if has_idle else 0,
+            machine_type="n1-highmem-8",
+            available_cpu=7.0,
+            available_memory_mb=46080,
+            gpu=1 if is_gpu else 0,
+            gpu_model="nvidia-tesla-k80" if is_gpu else None,
+            is_preemptible=is_preemptible,
+            is_tpu_enabled=is_tpu_enabled,
+        )
+
+    def test_cluster_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [_Cluster(name="default", status="deployed")]
+        expected_out = ["\x1b[1mName: \x1b[0mdefault", "\x1b[1mStatus: \x1b[0mDeployed"]
+        assert formatter(clusters) == expected_out
+
+    def test_cluster_with_cloud_provider_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [
+            _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type=_CloudProviderType.GCP,
+                    region="us-central1",
+                    zones=["us-central1-a", "us-central1-c"],
+                    node_pools=[],
+                    storage=_Storage(description="Filestore"),
+                ),
+            )
+        ]
+        expected_out = [
+            "\x1b[1mName: \x1b[0mdefault",
+            "\x1b[1mStatus: \x1b[0mDeployed",
+            "\x1b[1mCloud: \x1b[0mgcp",
+            "\x1b[1mRegion: \x1b[0mus-central1",
+            "\x1b[1mZones: \x1b[0mus-central1-a, us-central1-c",
+            "\x1b[1mStorage: \x1b[0mFilestore",
+        ]
+        assert formatter(clusters) == expected_out
+
+    def test_cluster_with_cloud_provider_without_zones_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [
+            _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type=_CloudProviderType.GCP,
+                    region="us-central1",
+                    zones=[],
+                    node_pools=[],
+                    storage=_Storage(description="Filestore"),
+                ),
+            )
+        ]
+        expected_out = [
+            "\x1b[1mName: \x1b[0mdefault",
+            "\x1b[1mStatus: \x1b[0mDeployed",
+            "\x1b[1mCloud: \x1b[0mgcp",
+            "\x1b[1mRegion: \x1b[0mus-central1",
+            "\x1b[1mStorage: \x1b[0mFilestore",
+        ]
+        assert formatter(clusters) == expected_out
+
+    def test_cluster_with_cloud_provider_node_pool_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [
+            _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type=_CloudProviderType.GCP,
+                    region="us-central1",
+                    zones=[],
+                    node_pools=[
+                        self._create_node_pool(is_preemptible=True),
+                        self._create_node_pool(is_gpu=True),
+                    ],
+                    storage=_Storage(description="Filestore"),
+                ),
+            )
+        ]
+        expected_out = [
+            "\x1b[1mName: \x1b[0mdefault",
+            "\x1b[1mStatus: \x1b[0mDeployed",
+            "\x1b[1mCloud: \x1b[0mgcp",
+            "\x1b[1mRegion: \x1b[0mus-central1",
+            "\x1b[1mNode pools:\x1b[0m",
+            "  Machine       CPU  Memory  Preemptible                   GPU  Min  Max",
+            "  n1-highmem-8  7.0     45G       ✔︎                              1    2",
+            "  n1-highmem-8  7.0     45G       ✖︎      1 x nvidia-tesla-k80    1    2",
+            "\x1b[1mStorage: \x1b[0mFilestore",
+        ]
+        assert formatter(clusters) == expected_out
+
+    def test_cluster_with_cloud_provider_node_pool_tpu_idle_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [
+            _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type=_CloudProviderType.GCP,
+                    region="us-central1",
+                    zones=[],
+                    node_pools=[
+                        self._create_node_pool(is_tpu_enabled=True, has_idle=True),
+                        self._create_node_pool(),
+                    ],
+                    storage=_Storage(description="Filestore"),
+                ),
+            )
+        ]
+        expected_out = [
+            "\x1b[1mName: \x1b[0mdefault",
+            "\x1b[1mStatus: \x1b[0mDeployed",
+            "\x1b[1mCloud: \x1b[0mgcp",
+            "\x1b[1mRegion: \x1b[0mus-central1",
+            "\x1b[1mNode pools:\x1b[0m",
+            "  Machine       CPU  Memory  Preemptible  GPU  TPU  Min  Max  Idle",
+            "  n1-highmem-8  7.0     45G       ✖︎            ✔︎    1    2     1",
+            "  n1-highmem-8  7.0     45G       ✖︎            ✖︎    1    2     0",
+            "\x1b[1mStorage: \x1b[0mFilestore",
+        ]
+        assert formatter(clusters) == expected_out

@@ -26,7 +26,7 @@ class ClustersFormatter:
         out = []
         for cluster in clusters:
             out.append(style("Name: ", bold=True) + cluster.name)
-            out.append(style("Status: ", bold=True) + cluster.status)
+            out.append(style("Status: ", bold=True) + cluster.status.capitalize())
             if cluster.cloud_provider:
                 cloud_provider = cluster.cloud_provider
                 out.append(style("Cloud: ", bold=True) + cloud_provider.type)
@@ -35,8 +35,9 @@ class ClustersFormatter:
                     out.append(
                         style("Zones: ", bold=True) + ", ".join(cloud_provider.zones)
                     )
-                out.append(style("Node pools:", bold=True))
-                out.extend(_format_node_pools(cloud_provider.node_pools, "  "))
+                if cloud_provider.node_pools:
+                    out.append(style("Node pools:", bold=True))
+                    out.extend(_format_node_pools(cloud_provider.node_pools, "  "))
                 out.append(
                     style("Storage: ", bold=True) + cloud_provider.storage.description
                 )
