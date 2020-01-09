@@ -107,7 +107,7 @@ def _get(
     name: str,
     fmt: str,
     converter: Callable[[str], _T],
-    default: _T,
+    default: Optional[_T],
 ) -> Optional[_T]:
     val = dct[name]
     if val is None:
