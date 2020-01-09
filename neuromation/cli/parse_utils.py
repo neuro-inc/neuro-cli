@@ -1,8 +1,11 @@
 import dataclasses
 import re
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional, TypeVar
 
 from .formatters.ftable import Align, ColumnWidth
+
+
+_T = TypeVar("_T")
 
 
 def parse_memory(memory: str) -> int:
@@ -81,20 +84,38 @@ COLUMN_RE = re.compile(
     (?P<id>\w+)
     (?:
       (?:;align=(?P<align>\w+))|
-      (?:;min=(?P<min>\d+))|
-      (?:;max=(?P<max>\d+))|
-      (?:;width=(?P<width>\d+))
+      (?:;min=(?P<min>\w+))|
+      (?:;max=(?P<max>\w+))|
+      (?:;width=(?P<width>\w+))
     )*
-    (?:;(?P<title>[^}]+))?
+    (?:;(?P<title>\w+))?
     \}\Z
     """,
     re.VERBOSE,
 )
 
 
+def _get(
+    dct: Dict[str, str],
+    name: str,
+    fmt: str,
+    converter: Callable[[str], _T],
+    default: _T,
+) -> Optional[_T]:
+    val = dct[name]
+    if val is None:
+        return default
+    else:
+        try:
+            return converter(val)
+        except ValueError:
+            raise ValueError(f"Invalid property {name}: {val!r}")
+
+
 def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     # Column format is "{id[;field=val][;title]}",
     # columns are separated by commas or spaces
+    # spaces in title are forbidden
     if not fmt:
         return COLUMNS
     columns = COLUMNS_SPLIT_RE.split(fmt)
@@ -102,25 +123,20 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     for column in columns:
         m = COLUMN_RE.match(column)
         if m is None:
-            raise ValueError(f"Invalid format string {fmt!r}")
+            raise ValueError(f"Invalid format {fmt!r}")
         groups = m.groupdict()
         id = groups["id"]
         if id not in COLUMNS_MAP:
-            raise ValueError(f"Unknown column {id}")
+            raise ValueError(f"Unknown column {id!r} of format {fmt!r}")
         default = COLUMNS_MAP[id]
-        title = groups.get("title", default.title)
-        align = Align(groups.get("align", default.align))
-        mins = groups.get("min", default.width.min)
-        maxs = groups.get("min", default.width.max)
-        widths = groups.get("min", default.width.width)
         info = JobColumnInfo(
             id=id,
-            title=title,
-            align=align,
+            title=_get(groups, "title", fmt, str, default.title),
+            align=_get(groups, "align", fmt, Align, default.align),
             width=ColumnWidth(
-                int(mins) if mins is not None else None,
-                int(maxs) if maxs is not None else None,
-                int(widths) if widths is not None else None,
+                _get(groups, "min", fmt, int, default.width.min),
+                _get(groups, "max", fmt, int, default.width.max),
+                _get(groups, "width", fmt, int, default.width.width),
             ),
         )
         ret.append(info)
