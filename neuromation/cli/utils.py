@@ -48,7 +48,7 @@ from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
 from .asyncio_utils import run
-from .parse_utils import to_megabytes
+from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
@@ -615,6 +615,20 @@ class JobNameType(click.ParamType):
 
 
 JOB_NAME = JobNameType()
+
+
+class JobColumnsType(click.ParamType):
+    name = "columns"
+
+    def convert(
+        self, value: Union[str, List[JobColumnInfo]], param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> List[JobColumnInfo]:
+        if isinstance(value, list):
+            return value
+        return parse_columns(value)
+
+
+JOB_COLUMNS = JobColumnsType()
 
 
 def do_deprecated_quiet(

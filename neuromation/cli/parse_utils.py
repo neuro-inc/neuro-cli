@@ -77,10 +77,15 @@ COLUMNS = [
 
 COLUMNS_MAP = {column.id: column for column in COLUMNS}
 
-COLUMNS_SPLIT_RE = re.compile(r"(?:\s*,+\s*)|(?:\s+)")
+COLUMNS_RE = re.compile(
+    r"""
+    (?P<col>(\{[^}]+)\})|
+    (?P<sep>\s*,?\s*)|
+    (?P<miss>.)
+    """, re.VERBOSE)
 COLUMN_RE = re.compile(
     r"""
-    \A\{
+    \A
     (?P<id>\w+)
     (?:
       (?:;align=(?P<align>\w+))|
@@ -88,8 +93,8 @@ COLUMN_RE = re.compile(
       (?:;max=(?P<max>\w+))|
       (?:;width=(?P<width>\w+))
     )*
-    (?:;(?P<title>\w+))?
-    \}\Z
+    (?:;(?P<title>.+))?
+    \Z
     """,
     re.VERBOSE,
 )
@@ -118,13 +123,17 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     # spaces in title are forbidden
     if not fmt:
         return COLUMNS
-    columns = COLUMNS_SPLIT_RE.split(fmt)
     ret = []
-    for column in columns:
-        m = COLUMN_RE.match(column)
-        if m is None:
+    for m1 in COLUMNS_RE.finditer(fmt):
+        if m1.lastgroup == 'sep':
+            continue
+        elif m1.lastgroup == 'miss':
             raise ValueError(f"Invalid format {fmt!r}")
-        groups = m.groupdict()
+        column = m1.group()[1:-1]
+        m2 = COLUMN_RE.match(column)
+        if m2 is None:
+            raise ValueError(f"Invalid format {fmt!r}")
+        groups = m2.groupdict()
         id = groups["id"]
         if id not in COLUMNS_MAP:
             raise ValueError(f"Unknown column {id!r} of format {fmt!r}")

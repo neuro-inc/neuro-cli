@@ -45,9 +45,10 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .parse_utils import parse_columns
+from .parse_utils import COLUMNS, JobColumnInfo
 from .root import Root
 from .utils import (
+    JOB_COLUMNS,
     JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
@@ -473,6 +474,9 @@ async def _print_logs(root: Root, job: str) -> None:
 @click.option(
     "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
 )
+@click.option(
+    "--format", type=JOB_COLUMNS, help="Output table format", default=COLUMNS,
+)
 @async_cmd()
 async def ls(
     root: Root,
@@ -482,6 +486,7 @@ async def ls(
     owner: Sequence[str],
     description: str,
     wide: bool,
+    format: List[JobColumnInfo],
 ) -> None:
     """
     List all jobs.
@@ -512,9 +517,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(
-            width, root.client.username, parse_columns(None)
-        )
+        formatter = TabularJobsFormatter(width, root.client.username, format)
 
     pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 

@@ -59,6 +59,7 @@ def test_parse_columns_sep():
         JobColumnInfo("id", ci1.title, ci1.align, ci1.width),
         JobColumnInfo("name", ci2.title, ci2.align, ci2.width),
     ]
+    assert parse_columns("{id}{name}") == expected
     assert parse_columns("{id} {name}") == expected
     assert parse_columns("{id},{name}") == expected
     assert parse_columns("{id} ,{name}") == expected
