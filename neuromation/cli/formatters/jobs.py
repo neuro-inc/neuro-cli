@@ -4,16 +4,16 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterable, Iterator, List
 
 import humanize
 from click import style, unstyle
 
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
-from neuromation.cli.utils import format_size
+from neuromation.cli.utils import JobColumnInfo, format_size
 
-from .ftable import Align, ColumnWidth, table
+from .ftable import table
 
 
 COLORS = {
@@ -203,29 +203,6 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 
 
 @dataclass(frozen=True)
-class JobColumnInfo:
-    id: str
-    title: str
-    align: Align
-    width: ColumnWidth
-
-
-COLUMNS = [
-    JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
-    JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=20)),
-    JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
-    JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),
-    JobColumnInfo("owner", "OWNER", Align.LEFT, ColumnWidth(max=25)),
-    JobColumnInfo("cluster_name", "CLUSTER", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
-    JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
-]
-
-COLUMNS_MAP = {column.id: column for column in COLUMNS}
-
-
-@dataclass(frozen=True)
 class TabularJobRow:
     id: str
     name: str
@@ -266,10 +243,6 @@ class TabularJobRow:
 
     def to_list(self, columns: List[JobColumnInfo]) -> List[str]:
         return [getattr(self, column.id) for column in columns]
-
-
-def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
-    return COLUMNS
 
 
 class TabularJobsFormatter(BaseJobsFormatter):

@@ -52,11 +52,7 @@ from neuromation.cli.formatters import (
     TabularJobsFormatter,
 )
 from neuromation.cli.formatters.config import QuotaInfoFormatter
-from neuromation.cli.formatters.jobs import (
-    ResourcesFormatter,
-    TabularJobRow,
-    parse_columns,
-)
+from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
     BSDPainter,
@@ -72,6 +68,7 @@ from neuromation.cli.formatters.storage import (
 )
 from neuromation.cli.printer import CSI
 from neuromation.cli.root import Root
+from neuromation.cli.utils import parse_columns
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
