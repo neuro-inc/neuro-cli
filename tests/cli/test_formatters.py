@@ -1915,7 +1915,7 @@ class TestClustersFormatter:
 
     @property
     def _yes(self) -> str:
-        return "Yes" if platform == "win32" else "✔︎"
+        return "Yes" if platform == "win32" else " ✔︎"
 
     @property
     def _no(self) -> str:
@@ -1924,8 +1924,12 @@ class TestClustersFormatter:
     def test_cluster_list(self) -> None:
         formatter = ClustersFormatter()
         clusters = [_Cluster(name="default", status="deployed")]
-        expected_out = ["\x1b[1mName: \x1b[0mdefault", "\x1b[1mStatus: \x1b[0mDeployed"]
-        assert formatter(clusters) == expected_out
+        expected_out = textwrap.dedent(
+            """\
+            \x1b[1mName: \x1b[0mdefault
+            \x1b[1mStatus: \x1b[0mDeployed"""
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
 
     def test_cluster_with_cloud_provider_list(self) -> None:
         formatter = ClustersFormatter()
@@ -1942,15 +1946,16 @@ class TestClustersFormatter:
                 ),
             )
         ]
-        expected_out = [
-            "\x1b[1mName: \x1b[0mdefault",
-            "\x1b[1mStatus: \x1b[0mDeployed",
-            "\x1b[1mCloud: \x1b[0mgcp",
-            "\x1b[1mRegion: \x1b[0mus-central1",
-            "\x1b[1mZones: \x1b[0mus-central1-a, us-central1-c",
-            "\x1b[1mStorage: \x1b[0mFilestore",
-        ]
-        assert formatter(clusters) == expected_out
+        expected_out = textwrap.dedent(
+            """\
+            \x1b[1mName: \x1b[0mdefault
+            \x1b[1mStatus: \x1b[0mDeployed
+            \x1b[1mCloud: \x1b[0mgcp
+            \x1b[1mRegion: \x1b[0mus-central1
+            \x1b[1mZones: \x1b[0mus-central1-a, us-central1-c
+            \x1b[1mStorage: \x1b[0mFilestore"""
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
 
     def test_cluster_with_cloud_provider_without_zones_list(self) -> None:
         formatter = ClustersFormatter()
@@ -1967,14 +1972,15 @@ class TestClustersFormatter:
                 ),
             )
         ]
-        expected_out = [
-            "\x1b[1mName: \x1b[0mdefault",
-            "\x1b[1mStatus: \x1b[0mDeployed",
-            "\x1b[1mCloud: \x1b[0mgcp",
-            "\x1b[1mRegion: \x1b[0mus-central1",
-            "\x1b[1mStorage: \x1b[0mFilestore",
-        ]
-        assert formatter(clusters) == expected_out
+        expected_out = textwrap.dedent(
+            """\
+            \x1b[1mName: \x1b[0mdefault
+            \x1b[1mStatus: \x1b[0mDeployed
+            \x1b[1mCloud: \x1b[0mgcp
+            \x1b[1mRegion: \x1b[0mus-central1
+            \x1b[1mStorage: \x1b[0mFilestore"""
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
 
     def test_cluster_with_cloud_provider_node_pool_list(self) -> None:
         formatter = ClustersFormatter()
@@ -1994,18 +2000,19 @@ class TestClustersFormatter:
                 ),
             )
         ]
-        expected_out = [
-            "\x1b[1mName: \x1b[0mdefault",
-            "\x1b[1mStatus: \x1b[0mDeployed",
-            "\x1b[1mCloud: \x1b[0mgcp",
-            "\x1b[1mRegion: \x1b[0mus-central1",
-            "\x1b[1mNode pools:\x1b[0m",
-            "  Machine       CPU  Memory  Preemptible                   GPU  Min  Max",
-            f"  n1-highmem-8  7.0     45G       {self._yes}                              1    2",  # noqa: E501, ignore line length
-            f"  n1-highmem-8  7.0     45G       {self._no}      1 x nvidia-tesla-k80    1    2",  # noqa: E501, ignore line length
-            "\x1b[1mStorage: \x1b[0mFilestore",
-        ]
-        assert formatter(clusters) == expected_out
+        expected_out = textwrap.dedent(
+            f"""\
+            \x1b[1mName: \x1b[0mdefault
+            \x1b[1mStatus: \x1b[0mDeployed
+            \x1b[1mCloud: \x1b[0mgcp
+            \x1b[1mRegion: \x1b[0mus-central1
+            \x1b[1mNode pools:\x1b[0m
+              Machine       CPU  Memory  Preemptible                   GPU  Min  Max
+              n1-highmem-8  7.0     45G      {self._yes}                              1    2
+              n1-highmem-8  7.0     45G       {self._no}      1 x nvidia-tesla-k80    1    2
+            \x1b[1mStorage: \x1b[0mFilestore"""  # noqa: E501, ignore line length
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
 
     def test_cluster_with_cloud_provider_node_pool_tpu_idle_list(self) -> None:
         formatter = ClustersFormatter()
@@ -2025,15 +2032,16 @@ class TestClustersFormatter:
                 ),
             )
         ]
-        expected_out = [
-            "\x1b[1mName: \x1b[0mdefault",
-            "\x1b[1mStatus: \x1b[0mDeployed",
-            "\x1b[1mCloud: \x1b[0mgcp",
-            "\x1b[1mRegion: \x1b[0mus-central1",
-            "\x1b[1mNode pools:\x1b[0m",
-            "  Machine       CPU  Memory  Preemptible  GPU  TPU  Min  Max  Idle",
-            f"  n1-highmem-8  7.0     45G       {self._no}            {self._yes}    1    2     1",  # noqa: E501, ignore line length
-            f"  n1-highmem-8  7.0     45G       {self._no}            {self._no}    1    2     0",  # noqa: E501, ignore line length
-            "\x1b[1mStorage: \x1b[0mFilestore",
-        ]
-        assert formatter(clusters) == expected_out
+        expected_out = textwrap.dedent(
+            f"""\
+            \x1b[1mName: \x1b[0mdefault
+            \x1b[1mStatus: \x1b[0mDeployed
+            \x1b[1mCloud: \x1b[0mgcp
+            \x1b[1mRegion: \x1b[0mus-central1
+            \x1b[1mNode pools:\x1b[0m
+              Machine       CPU  Memory  Preemptible  GPU  TPU  Min  Max  Idle
+              n1-highmem-8  7.0     45G       {self._no}           {self._yes}    1    2     1
+              n1-highmem-8  7.0     45G       {self._no}            {self._no}    1    2     0
+            \x1b[1mStorage: \x1b[0mFilestore"""  # noqa: E501, ignore line length
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
