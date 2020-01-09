@@ -80,7 +80,7 @@ COLUMNS_MAP = {column.id: column for column in COLUMNS}
 COLUMNS_RE = re.compile(
     r"""
     (?P<col>(\{[^}]+)\})|
-    (?P<sep>\s*,?\s*)|
+    (?P<sep>\s*(?:,\s*)?)|
     (?P<miss>.)
     """,
     re.VERBOSE,
