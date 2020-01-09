@@ -87,7 +87,6 @@ COLUMNS_RE = re.compile(
 )
 COLUMN_RE = re.compile(
     r"""
-    \A
     (?P<id>\w+)
     (?:
       (?:;align=(?P<align>\w+))|
@@ -96,7 +95,6 @@ COLUMN_RE = re.compile(
       (?:;width=(?P<width>\w+))
     )*
     (?:;(?P<title>.+))?
-    \Z
     """,
     re.VERBOSE,
 )
@@ -132,7 +130,7 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
         elif m1.lastgroup == "miss":
             raise ValueError(f"Invalid format {fmt!r}")
         column = m1.group()[1:-1]
-        m2 = COLUMN_RE.match(column)
+        m2 = COLUMN_RE.fullmatch(column)
         if m2 is None:
             raise ValueError(f"Invalid format {fmt!r}")
         groups = m2.groupdict()
