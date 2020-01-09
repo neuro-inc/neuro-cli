@@ -45,6 +45,7 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from .parse_utils import parse_columns
 from .root import Root
 from .utils import (
     JOB_NAME,
@@ -58,7 +59,6 @@ from .utils import (
     deprecated_quiet_option,
     group,
     pager_maybe,
-    parse_columns,
     resolve_job,
     volume_to_verbose_str,
 )

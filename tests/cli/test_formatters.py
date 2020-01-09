@@ -66,9 +66,9 @@ from neuromation.cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
     get_painter,
 )
+from neuromation.cli.parse_utils import parse_columns
 from neuromation.cli.printer import CSI
 from neuromation.cli.root import Root
-from neuromation.cli.utils import parse_columns
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
