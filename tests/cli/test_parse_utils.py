@@ -67,10 +67,10 @@ def test_parse_columns_sep():
     assert parse_columns("{id} , {name}") == expected
 
 
-def test_parse_columns_title():
+def test_parse_columns_title_with_spaces():
     ci = COLUMNS_MAP["id"]
-    assert parse_columns("{id;NEW_TITLE}") == [
-        JobColumnInfo("id", "NEW_TITLE", ci.align, ci.width)
+    assert parse_columns("{id;NEW TITLE}") == [
+        JobColumnInfo("id", "NEW TITLE", ci.align, ci.width)
     ]
 
 
