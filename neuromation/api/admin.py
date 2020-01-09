@@ -23,9 +23,48 @@ class _ClusterUser:
     role: _ClusterUserRoleType
 
 
+class _CloudProviderType(str, Enum):
+    GCP = "gcp"
+    AWS = "aws"
+    AZURE = "azure"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass(frozen=True)
+class _NodePool:
+    min_size: int
+    max_size: int
+    machine_type: str
+    available_cpu: float
+    available_memory_mb: int
+    gpu: int = 0
+    gpu_model: Optional[str] = None
+    is_tpu_enabled: bool = False
+    is_preemptible: bool = False
+    idle_size: int = 0
+
+
+@dataclass(frozen=True)
+class _Storage:
+    description: str
+
+
+@dataclass(frozen=True)
+class _CloudProvider:
+    type: _CloudProviderType
+    region: str
+    zones: List[str]
+    node_pools: List[_NodePool]
+    storage: _Storage
+
+
 @dataclass(frozen=True)
 class _Cluster:
     name: str
+    status: str
+    cloud_provider: Optional[_CloudProvider] = None
 
 
 class _Admin(metaclass=NoPublicConstructor):
@@ -34,7 +73,9 @@ class _Admin(metaclass=NoPublicConstructor):
         self._config = config
 
     async def list_clusters(self) -> Dict[str, _Cluster]:
-        url = self._config.admin_url / "clusters"
+        url = (self._config.api_url / "clusters").with_query(
+            include="cloud_provider_infra"
+        )
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             payload = await resp.json()
@@ -92,4 +133,43 @@ def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
 
 
 def _cluster_from_api(payload: Dict[str, Any]) -> _Cluster:
-    return _Cluster(name=payload["name"])
+    if "cloud_provider" in payload:
+        cloud_provider = payload["cloud_provider"]
+        return _Cluster(
+            name=payload["name"],
+            status=payload["status"],
+            cloud_provider=_CloudProvider(
+                type=_CloudProviderType(cloud_provider["type"]),
+                region=cloud_provider["region"],
+                zones=(
+                    [cloud_provider["zone"]]
+                    if "zone" in cloud_provider
+                    else cloud_provider.get("zones", [])
+                ),
+                node_pools=[
+                    _node_pool_from_api(np) for np in cloud_provider["node_pools"]
+                ],
+                storage=_storage_from_api(cloud_provider["storage"]),
+            ),
+        )
+    return _Cluster(name=payload["name"], status=payload["status"])
+
+
+def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:
+    return _NodePool(
+        min_size=payload["min_size"],
+        max_size=payload["max_size"],
+        idle_size=payload.get("idle_size", 0),
+        machine_type=payload["machine_type"],
+        available_cpu=payload["available_cpu"],
+        available_memory_mb=payload["available_memory_mb"],
+        gpu=payload.get("gpu", 0),
+        gpu_model=payload.get("gpu_model"),
+        is_tpu_enabled=payload.get("is_tpu_enabled", False),
+        is_preemptible=payload.get("is_preemptible", False),
+    )
+
+
+def _storage_from_api(payload: Dict[str, Any]) -> _Storage:
+    # TODO: replace payload["id"] with payload["description"]
+    return _Storage(description=payload["id"])

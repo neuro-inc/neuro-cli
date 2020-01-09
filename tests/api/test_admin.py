@@ -4,7 +4,15 @@ from aiohttp import web
 from aiohttp.web import HTTPCreated, HTTPNoContent
 
 from neuromation.api import Client
-from neuromation.api.admin import _Cluster, _ClusterUser, _ClusterUserRoleType
+from neuromation.api.admin import (
+    _CloudProvider,
+    _CloudProviderType,
+    _Cluster,
+    _ClusterUser,
+    _ClusterUserRoleType,
+    _NodePool,
+    _Storage,
+)
 from tests import _TestServerFactory
 
 
@@ -16,21 +24,144 @@ async def test_list_clusters(
 ) -> None:
     async def handle_list_clusters(request: web.Request) -> web.StreamResponse:
         data = [
-            {"name": "default"},
-            {"name": "other"},
+            {"name": "default", "status": "deployed"},
+            {"name": "other", "status": "deployed"},
         ]
         return web.json_response(data)
 
     app = web.Application()
-    app.router.add_get("/apis/admin/v1/clusters", handle_list_clusters)
+    app.router.add_get("/api/v1/clusters", handle_list_clusters)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
         clusters = await client._admin.list_clusters()
         assert clusters == {
-            "default": _Cluster(name="default"),
-            "other": _Cluster(name="other"),
+            "default": _Cluster(name="default", status="deployed"),
+            "other": _Cluster(name="other", status="deployed"),
+        }
+
+
+async def test_list_clusters_with_cloud_provider(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handle_list_clusters(request: web.Request) -> web.StreamResponse:
+        data = [
+            {
+                "name": "default",
+                "status": "deployed",
+                "cloud_provider": {
+                    "type": "gcp",
+                    "region": "us-central1",
+                    "zone": "us-central1-a",
+                    "node_pools": [
+                        {
+                            "machine_type": "n1-highmem-8",
+                            "min_size": 1,
+                            "max_size": 2,
+                            "available_cpu": 7,
+                            "available_memory_mb": 46080,
+                            "is_preemptible": True,
+                            "is_tpu_enabled": True,
+                        },
+                        {
+                            "machine_type": "n1-highmem-8",
+                            "min_size": 0,
+                            "max_size": 2,
+                            "idle_size": 1,
+                            "available_cpu": 7,
+                            "available_memory_mb": 46080,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-k80",
+                        },
+                    ],
+                    "storage": {"id": "Premium tier Filestore with 5 TB capacity"},
+                },
+            },
+            {
+                "name": "other",
+                "status": "deployed",
+                "cloud_provider": {
+                    "type": "gcp",
+                    "region": "us-central1",
+                    "zones": ["us-central1-a", "us-central1-c"],
+                    "node_pools": [
+                        {
+                            "machine_type": "n1-highmem-8",
+                            "min_size": 1,
+                            "max_size": 2,
+                            "available_cpu": 7,
+                            "available_memory_mb": 46080,
+                        },
+                    ],
+                    "storage": {"id": "Premium tier Filestore with 5 TB capacity"},
+                },
+            },
+        ]
+        return web.json_response(data)
+
+    app = web.Application()
+    app.router.add_get("/api/v1/clusters", handle_list_clusters)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        clusters = await client._admin.list_clusters()
+        assert clusters == {
+            "default": _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type=_CloudProviderType.GCP,
+                    region="us-central1",
+                    zones=["us-central1-a"],
+                    node_pools=[
+                        _NodePool(
+                            min_size=1,
+                            max_size=2,
+                            machine_type="n1-highmem-8",
+                            available_cpu=7.0,
+                            available_memory_mb=46080,
+                            is_preemptible=True,
+                            is_tpu_enabled=True,
+                        ),
+                        _NodePool(
+                            min_size=0,
+                            max_size=2,
+                            idle_size=1,
+                            machine_type="n1-highmem-8",
+                            available_cpu=7.0,
+                            available_memory_mb=46080,
+                            gpu=1,
+                            gpu_model="nvidia-tesla-k80",
+                        ),
+                    ],
+                    storage=_Storage(
+                        description="Premium tier Filestore with 5 TB capacity"
+                    ),
+                ),
+            ),
+            "other": _Cluster(
+                name="other",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type=_CloudProviderType.GCP,
+                    region="us-central1",
+                    zones=["us-central1-a", "us-central1-c"],
+                    node_pools=[
+                        _NodePool(
+                            min_size=1,
+                            max_size=2,
+                            machine_type="n1-highmem-8",
+                            available_cpu=7.0,
+                            available_memory_mb=46080,
+                        ),
+                    ],
+                    storage=_Storage(
+                        description="Premium tier Filestore with 5 TB capacity"
+                    ),
+                ),
+            ),
         }
 
 
