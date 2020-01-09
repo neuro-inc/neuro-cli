@@ -6,7 +6,6 @@ from aiohttp.web import HTTPCreated, HTTPNoContent
 from neuromation.api import Client
 from neuromation.api.admin import (
     _CloudProvider,
-    _CloudProviderType,
     _Cluster,
     _ClusterUser,
     _ClusterUserRoleType,
@@ -112,7 +111,7 @@ async def test_list_clusters_with_cloud_provider(
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
-                    type=_CloudProviderType.GCP,
+                    type="gcp",
                     region="us-central1",
                     zones=["us-central1-a"],
                     node_pools=[
@@ -145,7 +144,7 @@ async def test_list_clusters_with_cloud_provider(
                 name="other",
                 status="deployed",
                 cloud_provider=_CloudProvider(
-                    type=_CloudProviderType.GCP,
+                    type="gcp",
                     region="us-central1",
                     zones=["us-central1-a", "us-central1-c"],
                     node_pools=[

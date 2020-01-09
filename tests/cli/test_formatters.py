@@ -38,7 +38,6 @@ from neuromation.api.abc import (
 )
 from neuromation.api.admin import (
     _CloudProvider,
-    _CloudProviderType,
     _Cluster,
     _ClusterUser,
     _ClusterUserRoleType,
@@ -1927,7 +1926,7 @@ class TestClustersFormatter:
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
-                    type=_CloudProviderType.GCP,
+                    type="gcp",
                     region="us-central1",
                     zones=["us-central1-a", "us-central1-c"],
                     node_pools=[],
@@ -1952,7 +1951,7 @@ class TestClustersFormatter:
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
-                    type=_CloudProviderType.GCP,
+                    type="gcp",
                     region="us-central1",
                     zones=[],
                     node_pools=[],
@@ -1976,7 +1975,7 @@ class TestClustersFormatter:
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
-                    type=_CloudProviderType.GCP,
+                    type="gcp",
                     region="us-central1",
                     zones=[],
                     node_pools=[
@@ -2007,7 +2006,7 @@ class TestClustersFormatter:
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
-                    type=_CloudProviderType.GCP,
+                    type="gcp",
                     region="us-central1",
                     zones=[],
                     node_pools=[

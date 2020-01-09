@@ -23,15 +23,6 @@ class _ClusterUser:
     role: _ClusterUserRoleType
 
 
-class _CloudProviderType(str, Enum):
-    GCP = "gcp"
-    AWS = "aws"
-    AZURE = "azure"
-
-    def __str__(self) -> str:
-        return self.value
-
-
 @dataclass(frozen=True)
 class _NodePool:
     min_size: int
@@ -53,7 +44,7 @@ class _Storage:
 
 @dataclass(frozen=True)
 class _CloudProvider:
-    type: _CloudProviderType
+    type: str
     region: str
     zones: List[str]
     node_pools: List[_NodePool]
@@ -139,7 +130,7 @@ def _cluster_from_api(payload: Dict[str, Any]) -> _Cluster:
             name=payload["name"],
             status=payload["status"],
             cloud_provider=_CloudProvider(
-                type=_CloudProviderType(cloud_provider["type"]),
+                type=cloud_provider["type"],
                 region=cloud_provider["region"],
                 zones=(
                     [cloud_provider["zone"]]
