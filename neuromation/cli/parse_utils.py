@@ -82,7 +82,9 @@ COLUMNS_RE = re.compile(
     (?P<col>(\{[^}]+)\})|
     (?P<sep>\s*,?\s*)|
     (?P<miss>.)
-    """, re.VERBOSE)
+    """,
+    re.VERBOSE,
+)
 COLUMN_RE = re.compile(
     r"""
     \A
@@ -114,7 +116,7 @@ def _get(
         try:
             return converter(val)
         except ValueError:
-            raise ValueError(f"Invalid property {name}: {val!r}")
+            raise ValueError(f"Invalid property {name}: {val!r} of format {fmt!r}")
 
 
 def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
@@ -125,9 +127,9 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
         return COLUMNS
     ret = []
     for m1 in COLUMNS_RE.finditer(fmt):
-        if m1.lastgroup == 'sep':
+        if m1.lastgroup == "sep":
             continue
-        elif m1.lastgroup == 'miss':
+        elif m1.lastgroup == "miss":
             raise ValueError(f"Invalid format {fmt!r}")
         column = m1.group()[1:-1]
         m2 = COLUMN_RE.match(column)

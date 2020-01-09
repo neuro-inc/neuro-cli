@@ -10,7 +10,7 @@ import humanize
 from click import style, unstyle
 
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
-from neuromation.cli.parse_utils import JobColumnInfo, COLUMNS
+from neuromation.cli.parse_utils import COLUMNS, JobColumnInfo
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
@@ -255,9 +255,9 @@ class TabularJobsFormatter(BaseJobsFormatter):
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[List[str]] = []
         rows.append(
-            TabularJobRow(
-                **{column.id: column.title for column in COLUMNS}
-            ).to_list(self._columns)
+            TabularJobRow(**{column.id: column.title for column in COLUMNS}).to_list(
+                self._columns
+            )
         )
         for job in jobs:
             rows.append(

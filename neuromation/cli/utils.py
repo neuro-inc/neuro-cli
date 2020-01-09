@@ -621,7 +621,10 @@ class JobColumnsType(click.ParamType):
     name = "columns"
 
     def convert(
-        self, value: Union[str, List[JobColumnInfo]], param: Optional[click.Parameter], ctx: Optional[click.Context]
+        self,
+        value: Union[str, List[JobColumnInfo]],
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
     ) -> List[JobColumnInfo]:
         if isinstance(value, list):
             return value
