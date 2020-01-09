@@ -1913,6 +1913,14 @@ class TestClustersFormatter:
             is_tpu_enabled=is_tpu_enabled,
         )
 
+    @property
+    def _yes(self) -> str:
+        return "Yes" if platform == "win32" else "✔︎"
+
+    @property
+    def _no(self) -> str:
+        return "No" if platform == "win32" else "✖︎"
+
     def test_cluster_list(self) -> None:
         formatter = ClustersFormatter()
         clusters = [_Cluster(name="default", status="deployed")]
@@ -1993,8 +2001,8 @@ class TestClustersFormatter:
             "\x1b[1mRegion: \x1b[0mus-central1",
             "\x1b[1mNode pools:\x1b[0m",
             "  Machine       CPU  Memory  Preemptible                   GPU  Min  Max",
-            "  n1-highmem-8  7.0     45G       ✔︎                              1    2",
-            "  n1-highmem-8  7.0     45G       ✖︎      1 x nvidia-tesla-k80    1    2",
+            f"  n1-highmem-8  7.0     45G       {self._yes}                              1    2",  # noqa: E501, ignore line length
+            f"  n1-highmem-8  7.0     45G       {self._no}      1 x nvidia-tesla-k80    1    2",  # noqa: E501, ignore line length
             "\x1b[1mStorage: \x1b[0mFilestore",
         ]
         assert formatter(clusters) == expected_out
@@ -2024,8 +2032,8 @@ class TestClustersFormatter:
             "\x1b[1mRegion: \x1b[0mus-central1",
             "\x1b[1mNode pools:\x1b[0m",
             "  Machine       CPU  Memory  Preemptible  GPU  TPU  Min  Max  Idle",
-            "  n1-highmem-8  7.0     45G       ✖︎            ✔︎    1    2     1",
-            "  n1-highmem-8  7.0     45G       ✖︎            ✖︎    1    2     0",
+            f"  n1-highmem-8  7.0     45G       {self._no}            {self._yes}    1    2     1",  # noqa: E501, ignore line length
+            f"  n1-highmem-8  7.0     45G       {self._no}            {self._no}    1    2     0",  # noqa: E501, ignore line length
             "\x1b[1mStorage: \x1b[0mFilestore",
         ]
         assert formatter(clusters) == expected_out
