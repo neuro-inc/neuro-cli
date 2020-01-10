@@ -52,6 +52,13 @@ def test_parse_columns_short():
     assert parse_columns("{id}") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
 
 
+def test_parse_columns_partial():
+    ci = COLUMNS_MAP["description"]
+    assert parse_columns("{DESC}") == [
+        JobColumnInfo("description", ci.title, ci.align, ci.width)
+    ]
+
+
 def test_parse_columns_sep():
     ci1 = COLUMNS_MAP["id"]
     ci2 = COLUMNS_MAP["name"]
@@ -102,3 +109,8 @@ def test_parse_columns_unknown():
 def test_parse_columns_invalid_property():
     with pytest.raises(ValueError, match="Invalid property"):
         parse_columns("{id;min=abc}")
+
+
+def test_parse_columns_ambigous():
+    with pytest.raises(ValueError, match="Ambiguous column"):
+        parse_columns("{c}")

@@ -134,12 +134,24 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
         if m2 is None:
             raise ValueError(f"Invalid format {fmt!r}")
         groups = m2.groupdict()
-        id = groups["id"]
-        if id not in COLUMNS_MAP:
-            raise ValueError(f"Unknown column {id!r} of format {fmt!r}")
-        default = COLUMNS_MAP[id]
+        id = groups["id"].lower()
+        default = COLUMNS_MAP.get(id)
+        if default is None:
+            for name in COLUMNS_MAP:
+                if name.startswith(id):
+                    if default is not None:
+                        variants = ", ".join(
+                            name for name in COLUMNS_MAP if name.startswith(id)
+                        )
+                        raise ValueError(
+                            f"Ambiguous column {id!r} in format {fmt!r};"
+                            f" available variants: {variants}"
+                        )
+                    default = COLUMNS_MAP[name]
+        if default is None:
+            raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
         info = JobColumnInfo(
-            id=id,
+            id=default.id,  # canonical name
             title=_get(groups, "title", fmt, str, default.title),
             align=_get(groups, "align", fmt, Align, default.align),
             width=ColumnWidth(
