@@ -22,6 +22,7 @@ async def test_list_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handle_list_clusters(request: web.Request) -> web.StreamResponse:
+        assert request.query["include"] == "cloud_provider_infra"
         data = [
             {"name": "default", "status": "deployed"},
             {"name": "other", "status": "deployed"},
@@ -45,6 +46,7 @@ async def test_list_clusters_with_cloud_provider(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handle_list_clusters(request: web.Request) -> web.StreamResponse:
+        assert request.query["include"] == "cloud_provider_infra"
         data = [
             {
                 "name": "default",
@@ -58,33 +60,14 @@ async def test_list_clusters_with_cloud_provider(
                             "machine_type": "n1-highmem-8",
                             "min_size": 1,
                             "max_size": 2,
-                            "available_cpu": 7,
-                            "available_memory_mb": 46080,
-                            "is_preemptible": True,
-                            "is_tpu_enabled": True,
-                        },
-                        {
-                            "machine_type": "n1-highmem-8",
-                            "min_size": 0,
-                            "max_size": 2,
                             "idle_size": 1,
                             "available_cpu": 7,
                             "available_memory_mb": 46080,
                             "gpu": 1,
                             "gpu_model": "nvidia-tesla-k80",
+                            "is_tpu_enabled": True,
+                            "is_preemptible": True,
                         },
-                    ],
-                    "storage": {"id": "Premium tier Filestore with 5 TB capacity"},
-                },
-            },
-            {
-                "name": "other",
-                "status": "deployed",
-                "cloud_provider": {
-                    "type": "gcp",
-                    "region": "us-central1",
-                    "zones": ["us-central1-a", "us-central1-c"],
-                    "node_pools": [
                         {
                             "machine_type": "n1-highmem-8",
                             "min_size": 1,
@@ -93,7 +76,28 @@ async def test_list_clusters_with_cloud_provider(
                             "available_memory_mb": 46080,
                         },
                     ],
-                    "storage": {"id": "Premium tier Filestore with 5 TB capacity"},
+                    "storage": {"id": "Filestore"},
+                },
+            },
+            {
+                "name": "other1",
+                "status": "deployed",
+                "cloud_provider": {
+                    "type": "gcp",
+                    "region": "us-central1",
+                    "zones": ["us-central1-a", "us-central1-c"],
+                    "node_pools": [],
+                    "storage": {"id": "Filestore"},
+                },
+            },
+            {
+                "name": "other2",
+                "status": "deployed",
+                "cloud_provider": {
+                    "type": "aws",
+                    "region": "us-central1",
+                    "node_pools": [],
+                    "storage": {"id": "EFS"},
                 },
             },
         ]
@@ -118,36 +122,15 @@ async def test_list_clusters_with_cloud_provider(
                         _NodePool(
                             min_size=1,
                             max_size=2,
-                            machine_type="n1-highmem-8",
-                            available_cpu=7.0,
-                            available_memory_mb=46080,
-                            is_preemptible=True,
-                            is_tpu_enabled=True,
-                        ),
-                        _NodePool(
-                            min_size=0,
-                            max_size=2,
                             idle_size=1,
                             machine_type="n1-highmem-8",
                             available_cpu=7.0,
                             available_memory_mb=46080,
                             gpu=1,
                             gpu_model="nvidia-tesla-k80",
+                            is_tpu_enabled=True,
+                            is_preemptible=True,
                         ),
-                    ],
-                    storage=_Storage(
-                        description="Premium tier Filestore with 5 TB capacity"
-                    ),
-                ),
-            ),
-            "other": _Cluster(
-                name="other",
-                status="deployed",
-                cloud_provider=_CloudProvider(
-                    type="gcp",
-                    region="us-central1",
-                    zones=["us-central1-a", "us-central1-c"],
-                    node_pools=[
                         _NodePool(
                             min_size=1,
                             max_size=2,
@@ -156,9 +139,29 @@ async def test_list_clusters_with_cloud_provider(
                             available_memory_mb=46080,
                         ),
                     ],
-                    storage=_Storage(
-                        description="Premium tier Filestore with 5 TB capacity"
-                    ),
+                    storage=_Storage(description="Filestore"),
+                ),
+            ),
+            "other1": _Cluster(
+                name="other1",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="gcp",
+                    region="us-central1",
+                    zones=["us-central1-a", "us-central1-c"],
+                    node_pools=[],
+                    storage=_Storage(description="Filestore"),
+                ),
+            ),
+            "other2": _Cluster(
+                name="other2",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="aws",
+                    region="us-central1",
+                    zones=[],
+                    node_pools=[],
+                    storage=_Storage(description="EFS"),
                 ),
             ),
         }

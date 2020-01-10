@@ -1957,31 +1957,6 @@ class TestClustersFormatter:
         )
         assert "\n".join(formatter(clusters)) == expected_out
 
-    def test_cluster_with_cloud_provider_without_zones_list(self) -> None:
-        formatter = ClustersFormatter()
-        clusters = [
-            _Cluster(
-                name="default",
-                status="deployed",
-                cloud_provider=_CloudProvider(
-                    type="gcp",
-                    region="us-central1",
-                    zones=[],
-                    node_pools=[],
-                    storage=_Storage(description="Filestore"),
-                ),
-            )
-        ]
-        expected_out = textwrap.dedent(
-            """\
-            \x1b[1mName: \x1b[0mdefault
-            \x1b[1mStatus: \x1b[0mDeployed
-            \x1b[1mCloud: \x1b[0mgcp
-            \x1b[1mRegion: \x1b[0mus-central1
-            \x1b[1mStorage: \x1b[0mFilestore"""
-        )
-        assert "\n".join(formatter(clusters)) == expected_out
-
     def test_cluster_with_cloud_provider_node_pool_list(self) -> None:
         formatter = ClustersFormatter()
         clusters = [
