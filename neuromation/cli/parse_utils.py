@@ -1,6 +1,6 @@
 import dataclasses
 import re
-from typing import Callable, Dict, List, Optional, TypeVar
+from typing import Callable, List, Mapping, Optional, TypeVar
 
 from .formatters.ftable import Align, ColumnWidth
 
@@ -101,7 +101,7 @@ COLUMN_RE = re.compile(
 
 
 def _get(
-    dct: Dict[str, Optional[str]],
+    dct: Mapping[str, Optional[str]],
     name: str,
     fmt: str,
     converter: Callable[[str], _T],
@@ -150,10 +150,14 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
                     default = COLUMNS_MAP[name]
         if default is None:
             raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
+        title = _get(groups, "title", fmt, str, default.title)
+        assert title is not None
+        align = _get(groups, "align", fmt, Align, default.align)
+        assert align is not None
         info = JobColumnInfo(
             id=default.id,  # canonical name
-            title=_get(groups, "title", fmt, str, default.title),
-            align=_get(groups, "align", fmt, Align, default.align),
+            title=title,
+            align=align,
             width=ColumnWidth(
                 _get(groups, "min", fmt, int, default.width.min),
                 _get(groups, "max", fmt, int, default.width.max),
