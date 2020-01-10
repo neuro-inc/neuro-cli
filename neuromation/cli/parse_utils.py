@@ -132,6 +132,7 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
             continue
         elif m1.lastgroup == "miss":
             raise ValueError(f"Invalid format {fmt!r}")
+        assert m1.lastgroup == "col", m1.lastgroup
         column = m1.group("col")
         m2 = COLUMN_RE.fullmatch(column)
         if m2 is None:
