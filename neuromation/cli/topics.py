@@ -11,7 +11,7 @@ def format() -> None:
     """Format for columns specification.
 
     The format is a sequence of column specifications separated by commas or spaces:
-    {id}, {status}, {when}
+    "{id}, {status}, {when}".
 
     A column spec has a mandatory column id plus optional properties for indication of
     alignment, minimum and maximum column width, and optional column title:
@@ -21,6 +21,10 @@ def format() -> None:
 
     Here id is the column id, aling, min, max, width are properties and ID TITLE is the
     column title.
+
+    An alternative form is specifying the column id only without additional properties,
+    in this case curly brackets can be omitted: "id, status, when" or ""id status when"
+    are valid formats.
 
 
     Available properties:

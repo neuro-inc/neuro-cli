@@ -52,6 +52,11 @@ def test_parse_columns_short() -> None:
     assert parse_columns("{id}") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
 
 
+def test_parse_columns_id() -> None:
+    ci = COLUMNS_MAP["id"]
+    assert parse_columns("id") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
+
+
 def test_parse_columns_partial() -> None:
     ci = COLUMNS_MAP["description"]
     assert parse_columns("{DESC}") == [
@@ -72,6 +77,12 @@ def test_parse_columns_sep() -> None:
     assert parse_columns("{id} ,{name}") == expected
     assert parse_columns("{id}, {name}") == expected
     assert parse_columns("{id} , {name}") == expected
+
+    assert parse_columns("id name") == expected
+    assert parse_columns("id,name") == expected
+    assert parse_columns("id ,name") == expected
+    assert parse_columns("id, name") == expected
+    assert parse_columns("id , name") == expected
 
 
 def test_parse_columns_title_with_spaces() -> None:

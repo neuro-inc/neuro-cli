@@ -82,6 +82,7 @@ COLUMNS_MAP = {column.id: column for column in COLUMNS}
 
 COLUMNS_RE = re.compile(
     r"""
+    (?P<id>\w+)|
     (?:\{(?P<col>[^}]+)\})|
     (?P<sep>\s*(?:,\s*)?)|
     (?P<miss>.)
@@ -132,9 +133,12 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
             continue
         elif m1.lastgroup == "miss":
             raise ValueError(f"Invalid format {fmt!r}")
-        elif m1.lastgroup != "col":
+        elif m1.lastgroup == "col":
+            column = m1.group("col")
+        elif m1.lastgroup == "id":
+            column = m1.group("id")
+        else:
             continue
-        column = m1.group("col")
         m2 = COLUMN_RE.fullmatch(column)
         if m2 is None:
             raise ValueError(f"Invalid format {fmt!r}")
