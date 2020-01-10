@@ -344,6 +344,8 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
 
 
 class MainGroup(Group):
+    topics = None
+
     def _format_group(
         self,
         title: str,
@@ -366,8 +368,6 @@ class MainGroup(Group):
         if rows:
             with formatter.section(title):
                 formatter.write_dl(rows)
-
-        self.topics = None
 
     def format_commands(
         self, ctx: click.Context, formatter: click.HelpFormatter
