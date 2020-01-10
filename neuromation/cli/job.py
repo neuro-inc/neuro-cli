@@ -459,23 +459,29 @@ async def _print_logs(root: Root, job: str) -> None:
     default=False,
     help=(
         "Show all jobs regardless the status (equivalent to "
-        "`-s pending -s running -s succeeded -s failed`)"
+        "`-s pending -s running -s succeeded -s failed`)."
     ),
 )
-@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
+@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name.")
 @click.option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
     default="",
-    help="Filter out jobs by description (exact match)",
+    help="Filter out jobs by description (exact match).",
 )
 @deprecated_quiet_option
 @click.option(
-    "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
+    "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width."
 )
 @click.option(
-    "--format", type=JOB_COLUMNS, help="Output table format", default=COLUMNS,
+    "--format",
+    type=JOB_COLUMNS,
+    help=(
+        'Output table format, use "neuro help format" '
+        "for more info about the format specification."
+    ),
+    default=COLUMNS,
 )
 @async_cmd()
 async def ls(

@@ -473,12 +473,12 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)|
-|_\-n, --name NAME_|Filter out jobs by name|
-|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
+|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
+|_\-n, --name NAME_|Filter out jobs by name.|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-w, --wide_|Do not cut long lines for terminal width|
-|_--format COLUMNS_|Output table format|
+|_\-w, --wide_|Do not cut long lines for terminal width.|
+|_--format COLUMNS_|Output table format, use "neuro help format" for more info about the format specification.|
 |_--help_|Show this message and exit.|
 
 
@@ -1690,12 +1690,12 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)|
-|_\-n, --name NAME_|Filter out jobs by name|
-|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
+|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
+|_\-n, --name NAME_|Filter out jobs by name.|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-w, --wide_|Do not cut long lines for terminal width|
-|_--format COLUMNS_|Output table format|
+|_\-w, --wide_|Do not cut long lines for terminal width.|
+|_--format COLUMNS_|Output table format, use "neuro help format" for more info about the format specification.|
 |_--help_|Show this message and exit.|
 
 
