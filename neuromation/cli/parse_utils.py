@@ -65,7 +65,7 @@ class JobColumnInfo:
 
 COLUMNS = [
     JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
-    JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=20)),
+    JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=40)),
     JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
     JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
     JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),

@@ -14,5 +14,6 @@ humanize==0.5.1
 certifi==2019.11.28
 psutil==5.6.7
 typing_extensions==3.7.4.1
+wcwidth==0.1.8
 toml==0.10.0
 -e .
