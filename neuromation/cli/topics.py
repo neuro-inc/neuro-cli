@@ -2,12 +2,12 @@ from .utils import command, group
 
 
 @group()
-def topics():
+def topics() -> None:
     """Help topics."""
 
 
 @command()
-def format():
+def format() -> None:
     """Format for columns specification.
 
     The format is a sequence of column specifications separated by commas or spaces:
