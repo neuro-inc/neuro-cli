@@ -8,9 +8,7 @@ import sys
 import time
 from contextlib import suppress
 from datetime import date, timedelta
-from difflib import SequenceMatcher
 from functools import wraps
-from textwrap import fill, wrap
 from typing import (
     Any,
     Awaitable,
@@ -32,7 +30,6 @@ import click
 import humanize
 import pkg_resources
 from click import BadParameter
-from wcwidth import wcswidth
 from yarl import URL
 
 import neuromation
@@ -51,7 +48,7 @@ from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
 from .asyncio_utils import run
-from .parse_utils import to_megabytes
+from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
@@ -347,6 +344,8 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
 
 
 class MainGroup(Group):
+    topics = None
+
     def _format_group(
         self,
         title: str,
@@ -378,6 +377,9 @@ class MainGroup(Group):
         """
         commands: List[Tuple[str, click.Command]] = []
         groups: List[Tuple[str, click.MultiCommand]] = []
+        topics: List[Tuple[str, click.Command]] = []
+        if self.topics is not None:
+            topics = list(self.topics.commands.items())
 
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
@@ -394,6 +396,7 @@ class MainGroup(Group):
 
         self._format_group("Commands", groups, formatter)
         self._format_group("Command Shortcuts", commands, formatter)
+        self._format_group("Help topics", topics, formatter)
 
     def format_options(
         self, ctx: click.Context, formatter: click.HelpFormatter
@@ -401,7 +404,8 @@ class MainGroup(Group):
         self.format_commands(ctx, formatter)
         formatter.write_paragraph()
         formatter.write_text(
-            'Use "neuro <command> --help" for more information about a given command.'
+            'Use "neuro help <command>" for more information '
+            "about a given command or topic."
         )
         formatter.write_text(
             'Use "neuro --options" for a list of global command-line options '
@@ -620,6 +624,23 @@ class JobNameType(click.ParamType):
 JOB_NAME = JobNameType()
 
 
+class JobColumnsType(click.ParamType):
+    name = "columns"
+
+    def convert(
+        self,
+        value: Union[str, List[JobColumnInfo]],
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> List[JobColumnInfo]:
+        if isinstance(value, list):
+            return value
+        return parse_columns(value)
+
+
+JOB_COLUMNS = JobColumnsType()
+
+
 def do_deprecated_quiet(
     ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
 ) -> Any:
@@ -683,161 +704,3 @@ def pager_maybe(
         click.echo_via_pager(
             itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines_it))
         )
-
-
-class StyledTextHelper:
-    """ Utilities to perform string operations on terminal styled text with better
-    unicode support.
-
-    NOTE: The helper does not recognise controll sequences other than SGR
-        (Select Graphic Rendition) ones.
-    """
-
-    style_re = re.compile(r"(\033\[(?:\d|;)*m)")
-    ansi_reset_all = "\033[0m"
-    whitespace = "\t\n\x0b\x0c\r "
-
-    @classmethod
-    def is_styled(cls, text: str) -> bool:
-        return "\033" in text
-
-    # As we often do operations on headers or similar static text it makes sense to
-    # cache
-    @classmethod
-    def unstyle(cls, text: str) -> str:
-        return click.unstyle(text)
-
-    @classmethod
-    def width(cls, text: str) -> int:
-        if cls.is_styled(text):
-            return wcswidth(cls.unstyle(text))
-        else:
-            return wcswidth(text)
-
-    @classmethod
-    def ljust(cls, text: str, width: int) -> str:
-        if cls.is_styled(text):
-            return text.ljust(width + len(text) - len(cls.unstyle(text)))
-        else:
-            return text.ljust(width)
-
-    @classmethod
-    def rjust(cls, text: str, width: int) -> str:
-        if cls.is_styled(text):
-            return text.rjust(width + len(text) - len(cls.unstyle(text)))
-        else:
-            return text.rjust(width)
-
-    @classmethod
-    def center(cls, text: str, width: int) -> str:
-        if cls.is_styled(text):
-            return text.center(width + len(text) - len(cls.unstyle(text)))
-        else:
-            return text.center(width)
-
-    @classmethod
-    def trim(cls, text: str, width: int) -> str:
-        if not cls.is_styled(text):
-            return text[:width]
-
-        result = []
-        has_unclosed = False
-        remaining = width
-        for token in cls.style_re.split(text):
-            if cls.style_re.match(token):
-                result.append(token)
-                # We will need to add a reset at the end if there are any non-closed
-                # sequences
-                has_unclosed = token != cls.ansi_reset_all
-            else:
-                if len(token) >= remaining:
-                    result.append(token[:remaining])
-                    break
-                remaining -= len(token)
-                result.append(token)
-
-        if has_unclosed:
-            result.append(cls.ansi_reset_all)
-
-        return "".join(result)
-
-    @classmethod
-    def wrap(cls, text: str, width: int) -> Sequence[str]:
-        if cls.is_styled(text):
-            # Fast return if we don't need to wrap the text
-            if cls.width(text) <= width:
-                return [text]
-
-            wrapped = fill(cls.unstyle(text), width)
-            return list(cls._reapply_styles(text, wrapped))
-        else:
-            return wrap(text, width)
-
-    @classmethod
-    def _reapply_styles(cls, text: str, wrapped: str) -> Iterator[str]:
-        """ Iterate over wrapped text and original one and reapply styles from
-        the original to wrapped
-        """
-        sm = SequenceMatcher(None, text, wrapped)
-
-        result: List[str] = []
-
-        for op, ti, tj, wi, wj in sm.get_opcodes():
-            if op == "equal" or op == "insert":
-                # For those 2 cases we just take the text wrap() generated for us
-                result.append(wrapped[wi:wj])
-            if op == "delete" or op == "replace":
-                # In those cases we either replaced some whitespace's or need to apply
-                # styles from original.
-
-                # The most complicated situation would be if for some reason we had
-                # several whitespaces in the styled case that were not replaced by wrap.
-                # In this case we have to assume that the positioning of those style
-                # codes matter (ex. we want to have 1 space before and after a word
-                # underlined). Ex:
-                #
-                #   Plase select exactly \033[4m one \033[0m word
-                #
-                ws_buf = wrapped[wi:wj]
-                for token in cls.style_re.split(text[ti:tj]):
-                    if cls.style_re.match(token):
-                        result.append(token)
-                    else:
-                        # We take the same amount of whitespace from result to preserve
-                        # style opcode position
-                        ws_len = len(token)
-                        # NOTE: ws_buf can be empty at any point
-                        result.append(ws_buf[:ws_len])
-                        ws_buf = ws_buf[ws_len:]
-
-        # Fix style sequencing on breaklines
-        ansi_stack: List[str] = []
-        ansi_reset_all = cls.ansi_reset_all
-        for line in "".join(result).split("\n"):
-            # Strip any reset styling at beginning. Ex: "\033[4m\033[0m word"
-            prefix, _, remainder = line.partition(ansi_reset_all)
-            if not cls.unstyle(prefix):
-                line = remainder
-                # We also assume we broke all sequnces from previous lines
-                ansi_stack = []
-
-            # Reopen any sequences that were opened before breakline
-            if ansi_stack:
-                line = "".join(ansi_stack) + line
-
-            # Find sequnces not closed at the end of this line
-            ansi_stack = []
-            for token in cls.style_re.findall(line):
-                if token == ansi_reset_all:
-                    ansi_stack = []
-                else:
-                    # XXX: Add excluding op-codes handling too. Like bold (1) and
-                    #      normal (22)
-                    ansi_stack.append(token)
-
-            # Break sequnces if we have any opened
-            if ansi_stack:
-                line += ansi_reset_all
-
-            yield line
-        return

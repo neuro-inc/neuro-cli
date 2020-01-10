@@ -3,7 +3,7 @@ from enum import Enum
 from itertools import zip_longest
 from typing import Any, Iterator, List, Optional, Sequence
 
-from ..utils import StyledTextHelper
+from ..text_helper import StyledTextHelper
 
 
 __all__ = ["table"]
