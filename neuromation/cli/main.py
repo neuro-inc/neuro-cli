@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, List, Optional, Sequence, Type, Union
+from typing import Any, List, Optional, Sequence, Type, Union, cast
 
 import aiohttp
 import click
@@ -27,7 +27,15 @@ from .const import (
     EX_TIMEOUT,
 )
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
-from .utils import Context, DeprecatedGroup, MainGroup, alias, format_example
+from .topics import topics
+from .utils import (
+    Context,
+    DeprecatedGroup,
+    MainGroup,
+    alias,
+    format_example,
+    pager_maybe,
+)
 
 
 if sys.platform == "win32":
@@ -251,6 +259,19 @@ def cli(
 def help(ctx: click.Context, command: Sequence[str]) -> None:
     """Get help on a command."""
     top_ctx = ctx.find_root()
+    root = cast(Root, ctx.obj)
+
+    if len(command) == 1:
+        # try to find a topic
+        for name, topic in topics.commands.items():
+            if name == command[0]:
+                # Found a topic
+                formatter = ctx.make_formatter()
+                topic.format_help_text(top_ctx, formatter)
+                pager_maybe(
+                    formatter.getvalue().rstrip("\n").splitlines(), root.tty, root.terminal_size
+                )
+                return
 
     not_found = 'No such command "neuro {}"'.format(" ".join(command))
 
@@ -269,7 +290,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
             break
     else:
         help = ctx_stack[-1].get_help()
-        click.echo(help)
+        pager_maybe(help.splitlines(), root.tty, root.terminal_size)
 
     for ctx in reversed(ctx_stack[1:]):
         ctx.close()
@@ -309,6 +330,8 @@ cli.add_command(alias(image.ls, "images", help=image.ls.help, deprecated=False))
 cli.add_command(image.push)
 cli.add_command(image.pull)
 cli.add_command(alias(share.grant, "share", help=share.grant.help, deprecated=False))
+
+cli.topics = topics
 
 
 def main(args: Optional[List[str]] = None) -> None:

@@ -63,6 +63,9 @@ class JobColumnInfo:
     width: ColumnWidth
 
 
+# Note: please keep the help for format specs in sync with the following data
+# structures.
+
 COLUMNS = [
     JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
     JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=40)),

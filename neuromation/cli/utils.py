@@ -367,6 +367,8 @@ class MainGroup(Group):
             with formatter.section(title):
                 formatter.write_dl(rows)
 
+        self.topics = None
+
     def format_commands(
         self, ctx: click.Context, formatter: click.HelpFormatter
     ) -> None:
@@ -375,6 +377,9 @@ class MainGroup(Group):
         """
         commands: List[Tuple[str, click.Command]] = []
         groups: List[Tuple[str, click.MultiCommand]] = []
+        topics: List[Tuple[str, click.Command]] = []
+        if self.topics is not None:
+            topics = list(self.topics.commands.items())
 
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
@@ -391,6 +396,7 @@ class MainGroup(Group):
 
         self._format_group("Commands", groups, formatter)
         self._format_group("Command Shortcuts", commands, formatter)
+        self._format_group("Help topics", topics, formatter)
 
     def format_options(
         self, ctx: click.Context, formatter: click.HelpFormatter
@@ -398,7 +404,8 @@ class MainGroup(Group):
         self.format_commands(ctx, formatter)
         formatter.write_paragraph()
         formatter.write_text(
-            'Use "neuro <command> --help" for more information about a given command.'
+            'Use "neuro help <command>" for more information '
+            "about a given command or topic."
         )
         formatter.write_text(
             'Use "neuro --options" for a list of global command-line options '
