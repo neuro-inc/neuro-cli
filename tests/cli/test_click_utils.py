@@ -35,7 +35,7 @@ def test_print() -> None:
         Command Shortcuts:
           plain-cmd
 
-        Use "neuro <command> --help" for more information about a given command.
+        Use "neuro help <command>" for more information about a given command or topic.
         Use "neuro --options" for a list of global command-line options (applies to all
         commands).
     """
@@ -68,7 +68,7 @@ def test_print_use_group_helpers() -> None:
         Command Shortcuts:
           plain-cmd
 
-        Use "neuro <command> --help" for more information about a given command.
+        Use "neuro help <command>" for more information about a given command or topic.
         Use "neuro --options" for a list of global command-line options (applies to all
         commands).
     """

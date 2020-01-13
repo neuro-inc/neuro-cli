@@ -36,7 +36,7 @@ from .defaults import (
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
 )
-from .formatters import (
+from .formatters.jobs import (
     BaseJobsFormatter,
     JobFormatter,
     JobStartProgress,
@@ -45,8 +45,10 @@ from .formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from .parse_utils import COLUMNS, JobColumnInfo
 from .root import Root
 from .utils import (
+    JOB_COLUMNS,
     JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
@@ -457,20 +459,29 @@ async def _print_logs(root: Root, job: str) -> None:
     default=False,
     help=(
         "Show all jobs regardless the status (equivalent to "
-        "`-s pending -s running -s succeeded -s failed`)"
+        "`-s pending -s running -s succeeded -s failed`)."
     ),
 )
-@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
+@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name.")
 @click.option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
     default="",
-    help="Filter out jobs by description (exact match)",
+    help="Filter out jobs by description (exact match).",
 )
 @deprecated_quiet_option
 @click.option(
-    "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
+    "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width."
+)
+@click.option(
+    "--format",
+    type=JOB_COLUMNS,
+    help=(
+        'Output table format, use "neuro help format" '
+        "for more info about the format specification."
+    ),
+    default=COLUMNS,
 )
 @async_cmd()
 async def ls(
@@ -481,6 +492,7 @@ async def ls(
     owner: Sequence[str],
     description: str,
     wide: bool,
+    format: List[JobColumnInfo],
 ) -> None:
     """
     List all jobs.
@@ -511,7 +523,7 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width, root.client.username)
+        formatter = TabularJobsFormatter(width, root.client.username, format)
 
     pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 

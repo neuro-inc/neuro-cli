@@ -66,6 +66,7 @@ from neuromation.cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
     get_painter,
 )
+from neuromation.cli.parse_utils import parse_columns
 from neuromation.cli.printer import CSI
 from neuromation.cli.root import Root
 
@@ -841,12 +842,12 @@ class TestTabularJobsFormatter:
     image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
 
     def test_empty(self) -> None:
-        formatter = TabularJobsFormatter(0, "owner")
+        formatter = TabularJobsFormatter(0, "owner", parse_columns(None))
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)]
 
     def test_width_cutting(self) -> None:
-        formatter = TabularJobsFormatter(10, "owner")
+        formatter = TabularJobsFormatter(10, "owner", parse_columns(None))
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)[:10]]
 
@@ -877,7 +878,7 @@ class TestTabularJobsFormatter:
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
-        formatter = TabularJobsFormatter(0, "owner")
+        formatter = TabularJobsFormatter(0, "owner", parse_columns(None))
         result = [item.rstrip() for item in formatter([job])]
         assert result in [
             [
@@ -951,7 +952,7 @@ class TestTabularJobsFormatter:
                 is_preemptible=True,
             ),
         ]
-        formatter = TabularJobsFormatter(0, "owner")
+        formatter = TabularJobsFormatter(0, "owner", parse_columns(None))
         result = [item.rstrip() for item in formatter(jobs)]
         assert result == [
             f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501

@@ -1,6 +1,13 @@
 import pytest
 
-from neuromation.cli.parse_utils import parse_memory
+from neuromation.cli.formatters.ftable import Align, ColumnWidth
+from neuromation.cli.parse_utils import (
+    COLUMNS,
+    COLUMNS_MAP,
+    JobColumnInfo,
+    parse_columns,
+    parse_memory,
+)
 
 
 def test_parse_memory() -> None:
@@ -33,3 +40,77 @@ def test_parse_memory() -> None:
 
     assert parse_memory("42Y") == 42 * 1024 ** 8
     assert parse_memory("42YB") == 42 * 1000 ** 8
+
+
+def test_parse_columns_default() -> None:
+    assert parse_columns("") == COLUMNS
+    assert parse_columns(None) == COLUMNS
+
+
+def test_parse_columns_short() -> None:
+    ci = COLUMNS_MAP["id"]
+    assert parse_columns("{id}") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
+
+
+def test_parse_columns_partial() -> None:
+    ci = COLUMNS_MAP["description"]
+    assert parse_columns("{DESC}") == [
+        JobColumnInfo("description", ci.title, ci.align, ci.width)
+    ]
+
+
+def test_parse_columns_sep() -> None:
+    ci1 = COLUMNS_MAP["id"]
+    ci2 = COLUMNS_MAP["name"]
+    expected = [
+        JobColumnInfo("id", ci1.title, ci1.align, ci1.width),
+        JobColumnInfo("name", ci2.title, ci2.align, ci2.width),
+    ]
+    assert parse_columns("{id}{name}") == expected
+    assert parse_columns("{id} {name}") == expected
+    assert parse_columns("{id},{name}") == expected
+    assert parse_columns("{id} ,{name}") == expected
+    assert parse_columns("{id}, {name}") == expected
+    assert parse_columns("{id} , {name}") == expected
+
+
+def test_parse_columns_title_with_spaces() -> None:
+    ci = COLUMNS_MAP["id"]
+    assert parse_columns("{id;NEW TITLE}") == [
+        JobColumnInfo("id", "NEW TITLE", ci.align, ci.width)
+    ]
+
+
+def test_parse_columns_props_full() -> None:
+    assert parse_columns("{id;max=30;min=5;width=10;align=center;NEW_TITLE}") == [
+        JobColumnInfo("id", "NEW_TITLE", Align.CENTER, ColumnWidth(5, 30, 10))
+    ]
+
+
+def test_parse_columns_props_subset() -> None:
+    ci = COLUMNS_MAP["name"]
+    assert parse_columns("{name;align=center;min=5}") == [
+        JobColumnInfo(
+            "name", ci.title, Align.CENTER, ColumnWidth(5, ci.width.max, ci.width.width)
+        )
+    ]
+
+
+def test_parse_columns_invalid_format() -> None:
+    with pytest.raises(ValueError, match="Invalid format"):
+        parse_columns("{id")
+
+
+def test_parse_columns_unknown() -> None:
+    with pytest.raises(ValueError, match="Unknown column"):
+        parse_columns("{unknown}")
+
+
+def test_parse_columns_invalid_property() -> None:
+    with pytest.raises(ValueError, match="Invalid property"):
+        parse_columns("{id;min=abc}")
+
+
+def test_parse_columns_ambigous() -> None:
+    with pytest.raises(ValueError, match="Ambiguous column"):
+        parse_columns("{c}")
