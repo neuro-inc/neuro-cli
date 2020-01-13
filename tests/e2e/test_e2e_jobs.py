@@ -1066,7 +1066,7 @@ def test_e2e_job_top(helper: Helper) -> None:
             ("month", "[A-Z][a-z][a-z]"),
             ("day", r"\d+"),
             ("day", r"\d\d:\d\d:\d\d"),
-            ("year", "2019"),
+            ("year", r"\d{4}"),
         ]
         timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
         expected_parts = [
