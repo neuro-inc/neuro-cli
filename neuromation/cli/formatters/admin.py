@@ -107,21 +107,17 @@ def _no() -> str:
 
 
 def _has_tpu(node_pools: Iterable[_NodePool]) -> bool:
-    has_tpu = False
     for node_pool in node_pools:
         if node_pool.is_tpu_enabled:
-            has_tpu = True
-            break
-    return has_tpu
+            return True
+    return False
 
 
 def _has_idle(node_pools: Iterable[_NodePool]) -> bool:
-    has_idle = False
     for node_pool in node_pools:
         if node_pool.idle_size:
-            has_idle = True
-            break
-    return has_idle
+            return True
+    return False
 
 
 def _gpu(node_pool: _NodePool) -> str:
