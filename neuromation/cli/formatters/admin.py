@@ -25,22 +25,34 @@ class ClustersFormatter:
     def __call__(self, clusters: Iterable[_Cluster]) -> List[str]:
         out = []
         for cluster in clusters:
-            out.append(style("Name: ", bold=True) + cluster.name)
-            out.append(style("Status: ", bold=True) + cluster.status.capitalize())
+            prefix = "  "
+            out.append(style(f"{cluster.name}:", bold=True))
+            out.append(
+                prefix + style("Status: ", bold=True) + cluster.status.capitalize()
+            )
             if cluster.cloud_provider:
                 cloud_provider = cluster.cloud_provider
-                out.append(style("Cloud: ", bold=True) + cloud_provider.type)
-                out.append(style("Region: ", bold=True) + cloud_provider.region)
+                out.append(prefix + style("Cloud: ", bold=True) + cloud_provider.type)
+                out.append(
+                    prefix + style("Region: ", bold=True) + cloud_provider.region
+                )
                 if cloud_provider.zones:
                     out.append(
-                        style("Zones: ", bold=True) + ", ".join(cloud_provider.zones)
+                        prefix
+                        + style("Zones: ", bold=True)
+                        + ", ".join(cloud_provider.zones)
                     )
                 if cloud_provider.node_pools:
-                    out.append(style("Node pools:", bold=True))
-                    out.extend(_format_node_pools(cloud_provider.node_pools, "  "))
-                out.append(
-                    style("Storage: ", bold=True) + cloud_provider.storage.description
-                )
+                    out.append(prefix + style("Node pools:", bold=True))
+                    out.extend(
+                        _format_node_pools(cloud_provider.node_pools, prefix + "  ")
+                    )
+                if cloud_provider.storage:
+                    out.append(
+                        prefix
+                        + style("Storage: ", bold=True)
+                        + cloud_provider.storage.description
+                    )
         return out
 
 

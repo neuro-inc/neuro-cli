@@ -48,7 +48,7 @@ class _CloudProvider:
     region: str
     zones: List[str]
     node_pools: List[_NodePool]
-    storage: _Storage
+    storage: Optional[_Storage]
 
 
 @dataclass(frozen=True)
@@ -138,9 +138,14 @@ def _cluster_from_api(payload: Dict[str, Any]) -> _Cluster:
                     else cloud_provider.get("zones", [])
                 ),
                 node_pools=[
-                    _node_pool_from_api(np) for np in cloud_provider["node_pools"]
+                    _node_pool_from_api(np)
+                    for np in cloud_provider.get("node_pools", [])
                 ],
-                storage=_storage_from_api(cloud_provider["storage"]),
+                storage=(
+                    _storage_from_api(cloud_provider["storage"])
+                    if "storage" in cloud_provider
+                    else None
+                ),
             ),
         )
     return _Cluster(name=payload["name"], status=payload["status"])

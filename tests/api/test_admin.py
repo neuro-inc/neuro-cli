@@ -86,19 +86,12 @@ async def test_list_clusters_with_cloud_provider(
                     "type": "gcp",
                     "region": "us-central1",
                     "zones": ["us-central1-a", "us-central1-c"],
-                    "node_pools": [],
-                    "storage": {"id": "Filestore"},
                 },
             },
             {
                 "name": "other2",
                 "status": "deployed",
-                "cloud_provider": {
-                    "type": "aws",
-                    "region": "us-central1",
-                    "node_pools": [],
-                    "storage": {"id": "EFS"},
-                },
+                "cloud_provider": {"type": "aws", "region": "us-central1"},
             },
         ]
         return web.json_response(data)
@@ -150,7 +143,7 @@ async def test_list_clusters_with_cloud_provider(
                     region="us-central1",
                     zones=["us-central1-a", "us-central1-c"],
                     node_pools=[],
-                    storage=_Storage(description="Filestore"),
+                    storage=None,
                 ),
             ),
             "other2": _Cluster(
@@ -161,7 +154,7 @@ async def test_list_clusters_with_cloud_provider(
                     region="us-central1",
                     zones=[],
                     node_pools=[],
-                    storage=_Storage(description="EFS"),
+                    storage=None,
                 ),
             ),
         }
