@@ -167,5 +167,4 @@ def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:
 
 
 def _storage_from_api(payload: Dict[str, Any]) -> _Storage:
-    # TODO: replace payload["id"] with payload["description"]
-    return _Storage(description=payload["id"])
+    return _Storage(description=payload["description"])

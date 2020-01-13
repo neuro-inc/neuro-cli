@@ -76,7 +76,7 @@ async def test_list_clusters_with_cloud_provider(
                             "available_memory_mb": 46080,
                         },
                     ],
-                    "storage": {"id": "Filestore"},
+                    "storage": {"description": "Filestore"},
                 },
             },
             {
