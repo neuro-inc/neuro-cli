@@ -301,7 +301,7 @@ async def set_user_quota(
     "--non-gpu",
     metavar="AMOUNT",
     type=str,
-    help="Additional non-GPU quota value in hours (h) or minutes (m)",
+    help="Additional non-GPU quota value in hours (h) or minutes (m).",
 )
 @async_cmd()
 async def add_user_quota(
