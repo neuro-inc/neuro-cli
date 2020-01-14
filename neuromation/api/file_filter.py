@@ -18,7 +18,7 @@ class FileFilter:
     def include(self, pattern: str) -> None:
         self.append(False, pattern)
 
-    def match(self, path: str) -> bool:
+    async def match(self, path: str) -> bool:
         result = True
         for exclude, matcher in self.filters:
             if result == exclude and matcher(path):

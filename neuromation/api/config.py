@@ -381,7 +381,7 @@ def _validate_user_config(
     # be extended by plugin-provided rules.  That will be done by providing
     # additional API for describing new supported config sections, keys and values.
     # Right now this functionality is skipped for the sake of simplicity.
-    _check_sections(config, {"alias", "job"}, filename)
+    _check_sections(config, {"alias", "job", "storage"}, filename)
     aliases = config.get("alias", {})
     CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
     for key, value in aliases.items():

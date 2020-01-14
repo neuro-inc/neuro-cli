@@ -3,33 +3,33 @@ import os.path
 from neuromation.api.file_filter import FileFilter
 
 
-def test_empty_filter() -> None:
+async def test_empty_filter() -> None:
     ff = FileFilter()
-    assert ff.match("spam")
-    assert ff.match(".spam")
-    assert ff.match("spam/ham")
-    assert ff.match(os.path.join("spam", "ham"))
+    assert await ff.match("spam")
+    assert await ff.match(".spam")
+    assert await ff.match("spam/ham")
+    assert await ff.match(os.path.join("spam", "ham"))
 
 
-def test_exclude_all() -> None:
+async def test_exclude_all() -> None:
     ff = FileFilter()
     ff.exclude("*")
-    assert not ff.match("spam")
-    assert not ff.match(".spam")
+    assert not await ff.match("spam")
+    assert not await ff.match(".spam")
 
 
-def test_exclude() -> None:
+async def test_exclude() -> None:
     ff = FileFilter()
     ff.exclude("*.txt")
-    assert ff.match("spam")
-    assert not ff.match("spam.txt")
+    assert await ff.match("spam")
+    assert not await ff.match("spam.txt")
 
 
-def test_exclude_include() -> None:
+async def test_exclude_include() -> None:
     ff = FileFilter()
     ff.exclude("*.txt")
     ff.include("s*")
-    assert ff.match("spam")
-    assert ff.match("spam.txt")
-    assert ff.match("ham")
-    assert not ff.match("ham.txt")
+    assert await ff.match("spam")
+    assert await ff.match("spam.txt")
+    assert await ff.match("ham")
+    assert not await ff.match("ham.txt")
