@@ -116,6 +116,8 @@ class _Admin(metaclass=NoPublicConstructor):
                 "total_non_gpu_run_time_minutes": non_gpu_value_minutes,
             },
         }
+        payload["quota"] = {k: v for k, v in payload["quota"].items() if v is not None}
+
         auth = await self._config._api_auth()
 
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
@@ -159,12 +161,13 @@ def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
 def _cluster_user_with_quota_from_api(
     user_name: str, payload: Dict[str, Any]
 ) -> _ClusterUserWithQuota:
+    quota_dict = payload.get("quota", {})
     return _ClusterUserWithQuota(
         user_name=user_name,
         role=_ClusterUserRoleType(payload["role"]),
         quota=_Quota(
-            payload.get("total_gpu_run_time_minutes"),
-            payload.get("total_non_gpu_run_time_minutes"),
+            quota_dict.get("total_gpu_run_time_minutes"),
+            quota_dict.get("total_non_gpu_run_time_minutes"),
         ),
     )
 
