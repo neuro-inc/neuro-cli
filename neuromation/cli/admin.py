@@ -253,7 +253,7 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
     "--gpu",
     metavar="AMOUNT",
     type=str,
-    help="GPU quota value in hours (h) or minutes (m)",
+    help="GPU quota value in hours (h) or minutes (m).",
 )
 @click.option(
     "-n",
