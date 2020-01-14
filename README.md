@@ -10,6 +10,8 @@
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
+		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
+		* [neuro admin add-user-quota](#neuro-admin-add-user-quota)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
@@ -185,6 +187,8 @@ Name | Description|
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
+| _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
+| _[neuro admin add\-user-quota](#neuro-admin-add-user-quota)_| Add given values to user quota |
 
 
 
@@ -299,6 +303,48 @@ neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin set-user-quota
+
+Set user quota to given values
+
+**Usage:**
+
+```bash
+neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-user-quota
+
+Add given values to user quota
+
+**Usage:**
+
+```bash
+neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m).|
 |_--help_|Show this message and exit.|
 
 

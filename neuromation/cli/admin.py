@@ -10,6 +10,7 @@ import yaml
 from neuromation.api.admin import _ClusterUserRoleType
 
 from .formatters import ClustersFormatter, ClusterUserFormatter
+from .formatters.config import QuotaFormatter
 from .root import Root
 from .utils import async_cmd, command, group, pager_maybe
 
@@ -209,6 +210,27 @@ async def add_cluster_user(
         )
 
 
+def _parse_quota_value(
+    value: Optional[str], allow_infinity: bool = False
+) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        if value[-1] not in ("h", "m"):
+            raise ValueError(f"Unable to parse: '{value}'")
+        result = float(value[:-1]) * {"h": 60, "m": 1}[value[-1]]
+        if result < 0:
+            raise ValueError(f"Negative quota values ({value}) are not allowed")
+        if result == float("inf"):
+            if allow_infinity:
+                return None
+            else:
+                raise ValueError("Infinite quota values are not allowed")
+    except (ValueError, LookupError):
+        raise
+    return int(result)
+
+
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
@@ -225,6 +247,91 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
         )
 
 
+@command()
+@click.argument("cluster_name", required=True, type=str)
+@click.argument("user_name", required=True, type=str)
+@click.option(
+    "-g",
+    "--gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="GPU quota value in hours (h) or minutes (m).",
+)
+@click.option(
+    "-n",
+    "--non-gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="Non-GPU quota value in hours (h) or minutes (m).",
+)
+@async_cmd()
+async def set_user_quota(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    gpu: Optional[str],
+    non_gpu: Optional[str],
+) -> None:
+    """
+    Set user quota to given values
+    """
+    gpu_value_minutes = _parse_quota_value(gpu, allow_infinity=True)
+    non_gpu_value_minutes = _parse_quota_value(non_gpu, allow_infinity=True)
+    user_with_quota = await root.client._admin.set_user_quota(
+        cluster_name, user_name, gpu_value_minutes, non_gpu_value_minutes
+    )
+    fmt = QuotaFormatter()
+    click.echo(
+        f"New quotas for {click.style(user_with_quota.user_name, underline=True)} "
+        f"on cluster {click.style(cluster_name, underline=True)}:"
+    )
+    click.echo(fmt(user_with_quota.quota))
+
+
+@command()
+@click.argument("cluster_name", required=True, type=str)
+@click.argument("user_name", required=True, type=str)
+@click.option(
+    "-g",
+    "--gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="Additional GPU quota value in hours (h) or minutes (m).",
+)
+@click.option(
+    "-n",
+    "--non-gpu",
+    metavar="AMOUNT",
+    type=str,
+    help="Additional non-GPU quota value in hours (h) or minutes (m).",
+)
+@async_cmd()
+async def add_user_quota(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    gpu: Optional[str],
+    non_gpu: Optional[str],
+) -> None:
+    """
+    Add given values to user quota
+    """
+    additional_gpu_value_minutes = _parse_quota_value(gpu, False)
+    additional_non_gpu_value_minutes = _parse_quota_value(non_gpu, False)
+    user_with_quota = await root.client._admin.add_user_quota(
+        cluster_name,
+        user_name,
+        additional_gpu_value_minutes,
+        additional_non_gpu_value_minutes,
+    )
+    fmt = QuotaFormatter()
+    click.echo(
+        f"New quotas for {click.style(user_with_quota.user_name, underline=True)} "
+        f"on cluster {click.style(cluster_name, underline=True)}:"
+    )
+    click.echo(fmt(user_with_quota.quota))
+
+
 admin.add_command(get_clusters)
 admin.add_command(generate_cluster_config)
 admin.add_command(add_cluster)
@@ -232,3 +339,6 @@ admin.add_command(add_cluster)
 admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)
 admin.add_command(remove_cluster_user)
+
+admin.add_command(set_user_quota)
+admin.add_command(add_user_quota)

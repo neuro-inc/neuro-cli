@@ -69,6 +69,20 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
 
 
 @command()
+@async_cmd()
+async def add_quota(root: Root) -> None:
+    """
+    Print instructions for increasing quota for current user
+    """
+    user_name = root.client.config.username
+    cluster_name = root.client.config.cluster_name
+    click.echo(
+        f"In order to increase your quota, please navigate to "
+        f"https://neuro.payments.com/{user_name}/{cluster_name}?pay=usd100"
+    )
+
+
+@command()
 @click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 @async_cmd(init_client=False)
 async def login(root: Root, url: URL) -> None:

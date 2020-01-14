@@ -24,6 +24,17 @@ class _ClusterUser:
 
 
 @dataclass(frozen=True)
+class _Quota:
+    total_gpu_run_time_minutes: Optional[int]
+    total_non_gpu_run_time_minutes: Optional[int]
+
+
+@dataclass(frozen=True)
+class _ClusterUserWithQuota(_ClusterUser):
+    quota: _Quota
+
+
+@dataclass(frozen=True)
 class _NodePool:
     min_size: int
     max_size: int
@@ -116,10 +127,83 @@ class _Admin(metaclass=NoPublicConstructor):
             # No content response
             pass
 
+    async def set_user_quota(
+        self,
+        cluster_name: str,
+        user_name: str,
+        gpu_value_minutes: Optional[float],
+        non_gpu_value_minutes: Optional[float],
+    ) -> _ClusterUserWithQuota:
+        url = (
+            self._config.admin_url
+            / "clusters"
+            / cluster_name
+            / "users"
+            / user_name
+            / "quota"
+        )
+        payload = {
+            "quota": {
+                "total_gpu_run_time_minutes": gpu_value_minutes,
+                "total_non_gpu_run_time_minutes": non_gpu_value_minutes,
+            },
+        }
+        payload["quota"] = {k: v for k, v in payload["quota"].items() if v is not None}
+
+        auth = await self._config._api_auth()
+
+        async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
+            payload = await resp.json()
+            return _cluster_user_with_quota_from_api(user_name, payload)
+
+    async def add_user_quota(
+        self,
+        cluster_name: str,
+        user_name: str,
+        additional_gpu_value_minutes: Optional[float],
+        additional_non_gpu_value_minutes: Optional[float],
+    ) -> _ClusterUserWithQuota:
+        url = (
+            self._config.admin_url
+            / "clusters"
+            / cluster_name
+            / "users"
+            / user_name
+            / "quota"
+        )
+        payload = {
+            "additional_quota": {
+                "total_gpu_run_time_minutes": additional_gpu_value_minutes,
+                "total_non_gpu_run_time_minutes": additional_non_gpu_value_minutes,
+            },
+        }
+        payload["additional_quota"] = {
+            k: v for k, v in payload["additional_quota"].items() if v is not None
+        }
+        auth = await self._config._api_auth()
+
+        async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
+            payload = await resp.json()
+            return _cluster_user_with_quota_from_api(user_name, payload)
+
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
     return _ClusterUser(
         user_name=payload["user_name"], role=_ClusterUserRoleType(payload["role"])
+    )
+
+
+def _cluster_user_with_quota_from_api(
+    user_name: str, payload: Dict[str, Any]
+) -> _ClusterUserWithQuota:
+    quota_dict = payload.get("quota", {})
+    return _ClusterUserWithQuota(
+        user_name=user_name,
+        role=_ClusterUserRoleType(payload["role"]),
+        quota=_Quota(
+            quota_dict.get("total_gpu_run_time_minutes"),
+            quota_dict.get("total_non_gpu_run_time_minutes"),
+        ),
     )
 
 
