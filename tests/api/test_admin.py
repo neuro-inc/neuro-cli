@@ -386,18 +386,8 @@ async def test_set_user_quota(
                 "total_non_gpu_run_time_minutes": 200,
             },
         } in requested_payloads
-        assert {
-            "quota": {
-                "total_gpu_run_time_minutes": None,
-                "total_non_gpu_run_time_minutes": None,
-            },
-        } in requested_payloads
-        assert {
-            "quota": {
-                "total_gpu_run_time_minutes": 150,
-                "total_non_gpu_run_time_minutes": None,
-            },
-        } in requested_payloads
+        assert {"quota": {}} in requested_payloads
+        assert {"quota": {"total_gpu_run_time_minutes": 150}} in requested_payloads
 
 
 async def test_add_user_quota(
@@ -441,15 +431,7 @@ async def test_add_user_quota(
                 "total_non_gpu_run_time_minutes": 200,
             },
         } in requested_payloads
+        assert {"additional_quota": {}} in requested_payloads
         assert {
-            "additional_quota": {
-                "total_gpu_run_time_minutes": None,
-                "total_non_gpu_run_time_minutes": None,
-            },
-        } in requested_payloads
-        assert {
-            "additional_quota": {
-                "total_gpu_run_time_minutes": 150,
-                "total_non_gpu_run_time_minutes": None,
-            },
+            "additional_quota": {"total_gpu_run_time_minutes": 150},
         } in requested_payloads
