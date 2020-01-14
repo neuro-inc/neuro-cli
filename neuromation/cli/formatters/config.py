@@ -7,6 +7,7 @@ from neuromation.api import Client, Cluster, Preset
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.utils import format_size
 
+from ...api.admin import _Quota
 from .ftable import Align, table
 
 
@@ -65,6 +66,29 @@ class QuotaInfoFormatter:
         total_minutes = int(total_seconds // 60)
         hours, minutes = divmod(total_minutes, 60)
         return f"{hours:02d}h {minutes:02d}m"
+
+
+class QuotaFormatter:
+    QUOTA_NOT_SET = "infinity"
+
+    def __call__(self, quota: _Quota) -> str:
+        gpu_details = self._format_quota_details(quota.total_gpu_run_time_minutes)
+        non_gpu_details = self._format_quota_details(
+            quota.total_non_gpu_run_time_minutes
+        )
+        return (
+            f"{style('GPU:', bold=True)}"
+            f" {gpu_details}"
+            "\n"
+            f"{style('CPU:', bold=True)}"
+            f" {non_gpu_details}"
+        )
+
+    def _format_quota_details(self, run_time_minutes: Optional[int]) -> str:
+        if run_time_minutes is None:
+            return self.QUOTA_NOT_SET
+        else:
+            return f"{run_time_minutes}m"
 
 
 class ClustersFormatter:

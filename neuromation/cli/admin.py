@@ -10,6 +10,7 @@ import yaml
 from neuromation.api.admin import _ClusterUserRoleType
 
 from .formatters import ClustersFormatter, ClusterUserFormatter
+from .formatters.config import QuotaFormatter
 from .root import Root
 from .utils import async_cmd, command, group, pager_maybe
 
@@ -277,11 +278,12 @@ async def set_user_quota(
     user_with_quota = await root.client._admin.set_user_quota(
         cluster_name, user_name, gpu_value_minutes, non_gpu_value_minutes
     )
+    fmt = QuotaFormatter()
     click.echo(
-        f"User {user_with_quota.user_name} now has the following quota:\n"
-        f"GPU: {user_with_quota.quota.total_gpu_run_time_minutes}m "
-        f"non-GPU: {user_with_quota.quota.total_non_gpu_run_time_minutes}m"
+        f"New quotas for {click.style(user_with_quota.user_name, underline=True)} "
+        f"on cluster {click.style(cluster_name, underline=True)}:"
     )
+    click.echo(fmt(user_with_quota.quota))
 
 
 @command()
@@ -320,11 +322,12 @@ async def add_user_quota(
         additional_gpu_value_minutes,
         additional_non_gpu_value_minutes,
     )
+    fmt = QuotaFormatter()
     click.echo(
-        f"User {user_with_quota.user_name} now has the following quota:\n"
-        f"GPU: {user_with_quota.quota.total_gpu_run_time_minutes}m "
-        f"non-GPU: {user_with_quota.quota.total_non_gpu_run_time_minutes}m"
+        f"New quotas for {click.style(user_with_quota.user_name, underline=True)} "
+        f"on cluster {click.style(cluster_name, underline=True)}:"
     )
+    click.echo(fmt(user_with_quota.quota))
 
 
 admin.add_command(get_clusters)

@@ -36,7 +36,7 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.api.admin import _ClusterUser, _ClusterUserRoleType
+from neuromation.api.admin import _ClusterUser, _ClusterUserRoleType, _Quota
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.formatters import (
@@ -51,7 +51,7 @@ from neuromation.cli.formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from neuromation.cli.formatters.config import QuotaInfoFormatter
+from neuromation.cli.formatters.config import QuotaFormatter, QuotaInfoFormatter
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
@@ -1666,6 +1666,54 @@ class TestQuotaInfoFormatter:
             total_seconds=float((9999 * 60 + 59) * 60)
         )
         assert out == "9999h 59m"
+
+
+class TestQuotaFormatter:
+    def test_output(self) -> None:
+        quota = _Quota(
+            total_gpu_run_time_minutes=321, total_non_gpu_run_time_minutes=123,
+        )
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [f"{bold_start}GPU:{bold_end} 321m", f"{bold_start}CPU:{bold_end} 123m"]
+        )
+
+    def test_output_no_quota(self) -> None:
+        quota = _Quota()
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} infinity",
+                f"{bold_start}CPU:{bold_end} infinity",
+            ]
+        )
+
+    def test_output_only_gpu(self) -> None:
+        quota = _Quota(total_gpu_run_time_minutes=9923)
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} 9923m",
+                f"{bold_start}CPU:{bold_end} infinity",
+            ]
+        )
+
+    def test_output_only_cpu(self) -> None:
+        quota = _Quota(total_non_gpu_run_time_minutes=3256)
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} infinity",
+                f"{bold_start}CPU:{bold_end} 3256m",
+            ]
+        )
+
+    def test_output_zeroes(self) -> None:
+        quota = _Quota(total_gpu_run_time_minutes=0, total_non_gpu_run_time_minutes=0)
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [f"{bold_start}GPU:{bold_end} 0m", f"{bold_start}CPU:{bold_end} 0m"]
+        )
 
 
 class TestDockerImageProgress:

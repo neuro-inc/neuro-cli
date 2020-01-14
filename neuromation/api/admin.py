@@ -25,8 +25,8 @@ class _ClusterUser:
 
 @dataclass(frozen=True)
 class _Quota:
-    total_gpu_run_time_minutes: Optional[int]
-    total_non_gpu_run_time_minutes: Optional[int]
+    total_gpu_run_time_minutes: Optional[int] = None
+    total_non_gpu_run_time_minutes: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -144,6 +144,9 @@ class _Admin(metaclass=NoPublicConstructor):
                 "total_gpu_run_time_minutes": additional_gpu_value_minutes,
                 "total_non_gpu_run_time_minutes": additional_non_gpu_value_minutes,
             },
+        }
+        payload["additional_quota"] = {
+            k: v for k, v in payload["additional_quota"].items() if v is not None
         }
         auth = await self._config._api_auth()
 
