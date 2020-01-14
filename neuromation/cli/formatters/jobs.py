@@ -4,7 +4,7 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator, List, Optional
 
 import humanize
 from click import style, unstyle
@@ -247,7 +247,11 @@ class TabularJobRow:
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, username: str, columns: List[JobColumnInfo]):
+    def __init__(
+        self, width: int, username: str, columns: Optional[List[JobColumnInfo]] = None
+    ):
+        if columns is None:
+            columns = COLUMNS
         self.width = width
         self._username = username
         self._columns = columns

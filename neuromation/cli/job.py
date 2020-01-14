@@ -45,7 +45,7 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .parse_utils import COLUMNS, JobColumnInfo
+from .parse_utils import JobColumnInfo, parse_columns
 from .root import Root
 from .utils import (
     JOB_COLUMNS,
@@ -481,7 +481,7 @@ async def _print_logs(root: Root, job: str) -> None:
         'Output table format, use "neuro help format" '
         "for more info about the format specification."
     ),
-    default=COLUMNS,
+    default=None,
 )
 @async_cmd()
 async def ls(
@@ -492,7 +492,7 @@ async def ls(
     owner: Sequence[str],
     description: str,
     wide: bool,
-    format: List[JobColumnInfo],
+    format: Optional[List[JobColumnInfo]],
 ) -> None:
     """
     List all jobs.
@@ -505,6 +505,14 @@ async def ls(
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
     """
+
+    if format is None:
+        config = root.client.config.get_user_config()
+        section = config.get("jobs")
+        if section is not None:
+            format_str = section.get("ps-colunms")
+            if format_str is not None:
+                format = parse_columns(format_str)
 
     statuses = calc_statuses(status, all)
     owners = set(owner)
