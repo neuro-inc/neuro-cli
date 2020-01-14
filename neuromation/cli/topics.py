@@ -1,4 +1,4 @@
-from .utils import command, group
+from .utils import group
 
 
 @group()
@@ -6,8 +6,8 @@ def topics() -> None:
     """Help topics."""
 
 
-@command()
-def format() -> None:
+@topics.command()
+def ps_format() -> None:
     """Format for columns specification.
 
     The format is a sequence of column specifications separated by commas or spaces:
@@ -59,4 +59,47 @@ def format() -> None:
     """
 
 
-topics.add_command(format)
+@topics.command()
+def user_config() -> None:
+    """\
+    User configuration files.
+
+    The Neuro platform supports user configuration files to provide default values for
+    particular command options, user defined command aliases etc.
+
+    There are two configuration files: global and local, both are optional and can be
+    absent.
+
+    The global file is located in the standard neuro config path.  "neuro" CLI uses
+    ~/.neuro folder by default, the path for global config file is ~/.neuro/user.toml.
+
+    The local config file is named .neuro.toml, the CLI search for this file starting
+    from the current folder up to the root directory.
+
+    Found local and global configurations are merged. If a parameter is present is both
+    global and local versions the local parameter takes a precedence.
+
+    Configuration files have a TOML format (a stricter version of well-known INI
+    format). See https://en.wikipedia.org/wiki/TOML and
+    https://github.com/toml-lang/toml#toml for the format specification details.
+
+    Supported configuration sections and parameters:
+
+    [job]
+
+      A section for "neuro job" command group settings.
+
+
+    ps-columns
+
+      Default value for "neuro ps --format=XXX" option.
+
+      See "neuro help ps-columns" for information about the value specification.
+
+
+    Examples:
+    # job section
+    [job]
+    ps-columns = "{id;max=30}, {status:max=10}"
+
+    """

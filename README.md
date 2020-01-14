@@ -524,7 +524,7 @@ Name | Description|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
-|_--format COLUMNS_|Output table format, use "neuro help format" for more info about the format specification.|
+|_--format COLUMNS_|Output table format, use "neuro help ps-format" for more info about the format specification.|
 |_--help_|Show this message and exit.|
 
 
@@ -1743,7 +1743,7 @@ Name | Description|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
-|_--format COLUMNS_|Output table format, use "neuro help format" for more info about the format specification.|
+|_--format COLUMNS_|Output table format, use "neuro help ps-format" for more info about the format specification.|
 |_--help_|Show this message and exit.|
 
 
