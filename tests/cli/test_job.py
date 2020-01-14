@@ -159,4 +159,4 @@ async def test_calc_columns_user_spec(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text(toml.dumps({"job": {"ps-format": "{id}, {status}"}}))
-        assert calc_columns(client, None) == [COLUMNS_MAP['id'], COLUMNS_MAP['status']]
+        assert calc_columns(client, None) == [COLUMNS_MAP["id"], COLUMNS_MAP["status"]]

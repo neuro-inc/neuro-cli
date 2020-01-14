@@ -441,20 +441,6 @@ def alias(
     )
 
 
-class Option(click.Option):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def get_default(self, ctx: click.Context) -> Any:
-        breakpoint()
-        return super().get_default(ctx)
-
-
-def option(*param_decls, **attrs):
-    attrs.setdefault("cls", Option)
-    return click.option(*param_decls, **attrs)
-
-
 def volume_to_verbose_str(volume: Volume) -> str:
     return (
         f"'{volume.storage_uri}' mounted to '{volume.container_path}' "

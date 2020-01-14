@@ -60,7 +60,7 @@ def ps_format() -> None:
 
 
 @topics.command()
-def user_config():
+def user_config() -> None:
     """\
     User configuration files.
 
