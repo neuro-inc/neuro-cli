@@ -294,7 +294,7 @@ async def set_user_quota(
     "--gpu",
     metavar="AMOUNT",
     type=str,
-    help="Additional GPU quota value in hours (h) or minutes (m)",
+    help="Additional GPU quota value in hours (h) or minutes (m).",
 )
 @click.option(
     "-n",
