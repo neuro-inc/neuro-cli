@@ -61,7 +61,8 @@ def ps_format() -> None:
 
 @topics.command()
 def user_config():
-    """User configuration files.
+    """\
+    User configuration files.
 
     The Neuro platform supports user configuration files to provide default values for
     particular command options, user defined command aliases etc.
