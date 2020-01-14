@@ -160,11 +160,14 @@ def test_job_description(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_kill_non_existing(helper: Helper) -> None:
     # try to kill non existing job
-    phantom_id = "NOT_A_JOB_ID"
+    phantom_id = "not-a-job-id"
     expected_out = f"Cannot kill job {phantom_id}"
-    captured = helper.run_cli(["job", "kill", phantom_id])
-    killed_jobs = [x.strip() for x in captured.out.split("\n")]
-    assert len(killed_jobs) == 1
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["job", "kill", phantom_id])
+    assert cm.value.returncode == 1
+    assert cm.value.stdout == ""
+    killed_jobs = cm.value.stderr.splitlines()
+    assert len(killed_jobs) == 1, killed_jobs
     assert killed_jobs[0].startswith(expected_out)
 
 
