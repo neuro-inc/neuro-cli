@@ -322,8 +322,8 @@ neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 
 Name | Description|
 |----|------------|
-|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m)|
-|_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m)|
+|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
 |_--help_|Show this message and exit.|
 
 
@@ -343,8 +343,8 @@ neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 
 Name | Description|
 |----|------------|
-|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m)|
-|_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m)|
+|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m).|
 |_--help_|Show this message and exit.|
 
 

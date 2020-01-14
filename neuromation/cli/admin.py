@@ -216,9 +216,11 @@ def _parse_quota_value(
     if value is None:
         return None
     try:
+        if value[-1] not in ("h", "m"):
+            raise ValueError(f"Unable to parse: '{value}'")
         result = float(value[:-1]) * {"h": 60, "m": 1}[value[-1]]
         if result < 0:
-            raise ValueError("Negative quota values are not allowed")
+            raise ValueError(f"Negative quota values ({value}) are not allowed")
         if result == float("inf"):
             if allow_infinity:
                 return None
