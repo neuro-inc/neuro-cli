@@ -260,7 +260,7 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
     "--non-gpu",
     metavar="AMOUNT",
     type=str,
-    help="Non-GPU quota value in hours (h) or minutes (m)",
+    help="Non-GPU quota value in hours (h) or minutes (m).",
 )
 @async_cmd()
 async def set_user_quota(
