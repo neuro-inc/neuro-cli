@@ -41,8 +41,8 @@ from neuromation.api.admin import (
     _Cluster,
     _ClusterUser,
     _ClusterUserRoleType,
-    _Quota,
     _NodePool,
+    _Quota,
     _Storage,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
@@ -1689,7 +1689,9 @@ class TestQuotaFormatter:
         )
 
     def test_output_no_quota(self) -> None:
-        quota = _Quota()
+        quota = _Quota(
+            total_non_gpu_run_time_minutes=None, total_gpu_run_time_minutes=None
+        )
         out = QuotaFormatter()(quota)
         assert out == "\n".join(
             [
@@ -1699,7 +1701,9 @@ class TestQuotaFormatter:
         )
 
     def test_output_only_gpu(self) -> None:
-        quota = _Quota(total_gpu_run_time_minutes=9923)
+        quota = _Quota(
+            total_gpu_run_time_minutes=9923, total_non_gpu_run_time_minutes=None
+        )
         out = QuotaFormatter()(quota)
         assert out == "\n".join(
             [
@@ -1709,7 +1713,9 @@ class TestQuotaFormatter:
         )
 
     def test_output_only_cpu(self) -> None:
-        quota = _Quota(total_non_gpu_run_time_minutes=3256)
+        quota = _Quota(
+            total_non_gpu_run_time_minutes=3256, total_gpu_run_time_minutes=None
+        )
         out = QuotaFormatter()(quota)
         assert out == "\n".join(
             [

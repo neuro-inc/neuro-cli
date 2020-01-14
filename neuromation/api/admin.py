@@ -25,8 +25,8 @@ class _ClusterUser:
 
 @dataclass(frozen=True)
 class _Quota:
-    total_gpu_run_time_minutes: Optional[int] = None
-    total_non_gpu_run_time_minutes: Optional[int] = None
+    total_gpu_run_time_minutes: Optional[int]
+    total_non_gpu_run_time_minutes: Optional[int]
 
 
 @dataclass(frozen=True)

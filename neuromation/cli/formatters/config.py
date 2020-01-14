@@ -4,10 +4,10 @@ from typing import Iterable, Iterator, List, Mapping, Optional
 from click import style
 
 from neuromation.api import Client, Cluster, Preset
+from neuromation.api.admin import _Quota
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.utils import format_size
 
-from ...api.admin import _Quota
 from .ftable import Align, table
 
 
