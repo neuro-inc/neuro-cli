@@ -7,7 +7,7 @@ def topics() -> None:
 
 
 @command()
-def format() -> None:
+def ps_format() -> None:
     """Format for columns specification.
 
     The format is a sequence of column specifications separated by commas or spaces:
@@ -59,4 +59,4 @@ def format() -> None:
     """
 
 
-topics.add_command(format)
+topics.add_command(ps_format)
