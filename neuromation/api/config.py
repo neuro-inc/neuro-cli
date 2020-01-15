@@ -373,13 +373,12 @@ def _check_item(
     val: Any, validator: Any, full_name: str, filename: Union[str, "os.PathLike[str]"],
 ) -> None:
     if isinstance(validator, tuple):
-        # (container_type, item_type) pair
-        if not isinstance(val, validator[0]):
+        container_type, item_type = validator
+        if not isinstance(val, container_type):
             raise ConfigError(
                 f"{filename}: invalid type for {full_name}, "
-                f"{validator[0].__name__} is expected"
+                f"{container_type.__name__} is expected"
             )
-        item_type = validator[1]
         for num, i in enumerate(val):
             _check_item(i, item_type, f"{full_name}[{num}]", filename)
     else:
