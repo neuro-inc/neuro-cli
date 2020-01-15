@@ -398,7 +398,7 @@ def _check_item(
 def _check_section(
     config: Mapping[str, Any],
     section: str,
-    params: Dict[str, type],
+    params: Dict[str, Any],
     filename: Union[str, "os.PathLike[str]"],
 ) -> None:
     sec = config.get(section)

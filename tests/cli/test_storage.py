@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Tuple
+from typing import Any, Callable
 
 import toml
 

@@ -882,4 +882,4 @@ def calc_filters(
                 ret.append((False, flt[1:]))
             else:
                 ret.append((True, flt[1:]))
-    return ret
+    return tuple(ret)
