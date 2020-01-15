@@ -433,7 +433,7 @@ def _validate_user_config(
     # Right now this functionality is skipped for the sake of simplicity.
     _check_sections(config, {"alias", "job", "storage"}, filename)
     _check_section(config, "job", {"ps-format": str}, filename)
-    _check_section(config, "storage", {"cp-filters": (list, str)}, filename)
+    _check_section(config, "storage", {"cp-exclude": (list, str)}, filename)
     aliases = config.get("alias", {})
     for key, value in aliases.items():
         # check keys and values

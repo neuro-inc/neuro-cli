@@ -75,19 +75,19 @@ class TestUserConfigValidators:
     def test_invalid_complex_type(self) -> None:
         with pytest.raises(
             ConfigError,
-            match="file.cfg: invalid type for storage.cp-filters, list is expected",
+            match="file.cfg: invalid type for storage.cp-exclude, list is expected",
         ):
-            _validate_user_config({"storage": {"cp-filters": "abc"}}, "file.cfg")
+            _validate_user_config({"storage": {"cp-exclude": "abc"}}, "file.cfg")
 
     def test_invalid_complex_item_type(self) -> None:
         with pytest.raises(
             ConfigError,
             match=(
-                r"file.cfg: invalid type for storage.cp-filters\[0\], "
+                r"file.cfg: invalid type for storage.cp-exclude\[0\], "
                 "str is expected"
             ),
         ):
-            _validate_user_config({"storage": {"cp-filters": [1, 2]}}, "file.cfg")
+            _validate_user_config({"storage": {"cp-exclude": [1, 2]}}, "file.cfg")
 
 
 async def test_get_user_config_empty(make_client: _MakeClient) -> None:
