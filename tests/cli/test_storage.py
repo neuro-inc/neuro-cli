@@ -33,4 +33,4 @@ async def test_calc_filters_user_spec(
         local_conf.write_text(
             toml.dumps({"storage": {"cp-exclude": ["*.jpg", "!main.jpg"]}})
         )
-        assert calc_filters(client, None) == ((True, ".jpg"), (False, "main.jpg"))
+        assert calc_filters(client, None) == ((True, "*.jpg"), (False, "main.jpg"))
