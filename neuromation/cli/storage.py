@@ -877,7 +877,7 @@ def calc_filters(
     config = client.config.get_user_config()
     section = config.get("storage")
     if section is not None:
-        for flt in section.get("cp-exclude"):
+        for flt in section.get("cp-exclude", ()):
             if flt.startswith("!"):
                 ret.append((False, flt[1:]))
             else:
