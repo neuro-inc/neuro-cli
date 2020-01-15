@@ -480,8 +480,8 @@ async def _print_logs(root: Root, job: str) -> None:
     type=JOB_COLUMNS,
     help=(
         'Output table format, see "neuro help ps-format" '
-        "for more info about the format specification."
-        "The default can be changed using the job.ps-format"
+        "for more info about the format specification. "
+        "The default can be changed using the job.ps-format "
         'configuration variable documented in "neuro help user-config"'
     ),
     default=None,

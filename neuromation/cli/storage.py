@@ -259,8 +259,8 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     "filters",
     flag_value=True,
     help=(
-        "Exclude files and directories that match the specified pattern."
-        "The default can be changed using the storage.cp-exclude"
+        "Exclude files and directories that match the specified pattern. "
+        "The default can be changed using the storage.cp-exclude "
         'configuration variable documented in "neuro help user-config"'
     ),
 )
@@ -269,8 +269,8 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     "filters",
     flag_value=False,
     help=(
-        "Don't exclude files and directories that match the specified pattern."
-        "The default can be changed using the storage.cp-exclude"
+        "Don't exclude files and directories that match the specified pattern. "
+        "The default can be changed using the storage.cp-exclude "
         'configuration variable documented in "neuro help user-config"'
     ),
 )
