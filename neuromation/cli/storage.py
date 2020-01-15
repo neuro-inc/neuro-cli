@@ -12,6 +12,7 @@ import click
 from yarl import URL
 
 from neuromation.api import (
+    Client,
     Container,
     FileStatusType,
     HTTPPort,
@@ -231,46 +232,54 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     is_flag=True,
     default=True,
     show_default=True,
-    help="Expand glob patterns in SOURCES with explicit scheme",
+    help="Expand glob patterns in SOURCES with explicit scheme.",
 )
 @click.option(
     "-t",
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
-    help="Copy all SOURCES into DIRECTORY",
+    help="Copy all SOURCES into DIRECTORY.",
 )
 @click.option(
     "-T",
     "--no-target-directory",
     is_flag=True,
-    help="Treat DESTINATION as a normal file",
+    help="Treat DESTINATION as a normal file.",
 )
 @click.option(
     "-u",
     "--update",
     is_flag=True,
     help="Copy only when the SOURCE file is newer than the destination file "
-    "or when the destination file is missing",
+    "or when the destination file is missing.",
 )
 @filter_option(
     "--exclude",
     "filters",
     flag_value=True,
-    help="Exclude files and directories that match the specified pattern",
+    help=(
+        "Exclude files and directories that match the specified pattern. "
+        "The default can be changed using the storage.cp-exclude "
+        'configuration variable documented in "neuro help user-config"'
+    ),
 )
 @filter_option(
     "--include",
     "filters",
     flag_value=False,
-    help="Don't exclude files and directories that match the specified pattern",
+    help=(
+        "Don't exclude files and directories that match the specified pattern. "
+        "The default can be changed using the storage.cp-exclude "
+        'configuration variable documented in "neuro help user-config"'
+    ),
 )
 @click.option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
     default=True,
-    help="Show progress, on by default",
+    help="Show progress, on by default.",
 )
 @async_cmd()
 async def cp(
@@ -350,12 +359,13 @@ async def cp(
             target_dir = dst
             dst = None
 
+    filters = calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
     file_filter = FileFilter()
-    for exclude, pattern in filters or ():
+    for exclude, pattern in filters:
         file_filter.append(exclude, pattern)
 
     show_progress = root.tty and progress
@@ -856,3 +866,20 @@ storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
 storage.add_command(load)
+
+
+def calc_filters(
+    client: Client, filters: Optional[Tuple[Tuple[bool, str], ...]]
+) -> Tuple[Tuple[bool, str], ...]:
+    if filters is not None:
+        return filters
+    ret = []
+    config = client.config.get_user_config()
+    section = config.get("storage")
+    if section is not None:
+        for flt in section.get("cp-exclude", ()):
+            if flt.startswith("!"):
+                ret.append((False, flt[1:]))
+            else:
+                ret.append((True, flt))
+    return tuple(ret)

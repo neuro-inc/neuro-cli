@@ -59,6 +59,36 @@ class TestUserConfigValidators:
         with pytest.raises(ConfigError, match="file.cfg: invalid alias command type"):
             _validate_user_config({"alias": {"new-name": True}}, "file.cfg")
 
+    def test_extra_session_param(self) -> None:
+        with pytest.raises(
+            ConfigError, match="file.cfg: unknown parameters job.unknown-name"
+        ):
+            _validate_user_config({"job": {"unknown-name": True}}, "file.cfg")
+
+    def test_invalid_param_type(self) -> None:
+        with pytest.raises(
+            ConfigError,
+            match="file.cfg: invalid type for job.ps-format, str is expected",
+        ):
+            _validate_user_config({"job": {"ps-format": True}}, "file.cfg")
+
+    def test_invalid_complex_type(self) -> None:
+        with pytest.raises(
+            ConfigError,
+            match="file.cfg: invalid type for storage.cp-exclude, list is expected",
+        ):
+            _validate_user_config({"storage": {"cp-exclude": "abc"}}, "file.cfg")
+
+    def test_invalid_complex_item_type(self) -> None:
+        with pytest.raises(
+            ConfigError,
+            match=(
+                r"file.cfg: invalid type for storage.cp-exclude\[0\], "
+                "str is expected"
+            ),
+        ):
+            _validate_user_config({"storage": {"cp-exclude": [1, 2]}}, "file.cfg")
+
 
 async def test_get_user_config_empty(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:

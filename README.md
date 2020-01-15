@@ -524,7 +524,7 @@ Name | Description|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
-|_--format COLUMNS_|Output table format, use "neuro help ps-format" for more info about the format specification.|
+|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_--help_|Show this message and exit.|
 
 
@@ -864,13 +864,13 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_--exclude_|Exclude files and directories that match the specified pattern|
-|_--include_|Don't exclude files and directories that match the specified pattern|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
 |_--help_|Show this message and exit.|
 
 
@@ -1743,7 +1743,7 @@ Name | Description|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
-|_--format COLUMNS_|Output table format, use "neuro help ps-format" for more info about the format specification.|
+|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_--help_|Show this message and exit.|
 
 
@@ -2011,13 +2011,13 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_--exclude_|Exclude files and directories that match the specified pattern|
-|_--include_|Don't exclude files and directories that match the specified pattern|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
 |_--help_|Show this message and exit.|
 
 
