@@ -12,6 +12,7 @@ import click
 from yarl import URL
 
 from neuromation.api import (
+    Client,
     Container,
     FileStatusType,
     HTTPPort,
@@ -350,12 +351,13 @@ async def cp(
             target_dir = dst
             dst = None
 
+    filters = calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
 
     file_filter = FileFilter()
-    for exclude, pattern in filters or ():
+    for exclude, pattern in filters:
         file_filter.append(exclude, pattern)
 
     show_progress = root.tty and progress
@@ -856,3 +858,20 @@ storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
 storage.add_command(load)
+
+
+def calc_filters(
+    client: Client, filters: Optional[Tuple[Tuple[bool, str], ...]]
+) -> Tuple[Tuple[bool, str], ...]:
+    if filters is not None:
+        return filters
+    ret = []
+    config = client.config.get_user_config()
+    section = config.get("storage")
+    if section is not None:
+        for flt in section.get("cp-filters"):
+            if flt.startswith("!"):
+                ret.append((False, flt[1:]))
+            else:
+                ret.append((True, flt[1:]))
+    return ret
