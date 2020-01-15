@@ -5,6 +5,24 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.01.15 (2020-01-15)
+=================================
+
+Features
+--------
+
+
+- Add `neuro admin add-user-quota` and `neuro admin set-user-quota` commands to control user quotas ([#1142](https://github.com/neuromation/platform-api-clients/issues/1142))
+
+- Added options `--exclude` and `--include` in `neuro storage cp`. ([#1182](https://github.com/neuromation/platform-api-clients/issues/1182))
+
+- Adjust NAME column of `neuro ps` so that grep by name works. ([#1189](https://github.com/neuromation/platform-api-clients/issues/1189))
+
+- Read ``neuro ps --format`` spec from config files if present. ([#1294](https://github.com/neuromation/platform-api-clients/issues/1294))
+
+- Read ``neuro cp`` filters from user configuration file. ([#1295](https://github.com/neuromation/platform-api-clients/issues/1295))
+
+
 Neuromation 19.12.19 (2019-12-19)
 =================================
 

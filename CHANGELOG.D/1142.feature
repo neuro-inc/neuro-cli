@@ -1,1 +1,0 @@
-Add `neuro admin add-user-quota` and `neuro admin set-user-quota` commands to control user quotas
