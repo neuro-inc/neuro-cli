@@ -405,7 +405,7 @@ def _check_section(
         return
     diff = sec.keys() - params.keys()
     if diff:
-        diff_str = ", ".join(f"{section}.{name}" for name in diff)
+        diff_str = ", ".join(f"{section}.{name}" for name in sorted(diff))
         raise ConfigError(f"{filename}: unknown parameters {diff_str}")
     for name, validator in params.items():
         val = sec.get(name)
