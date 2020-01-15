@@ -881,5 +881,5 @@ def calc_filters(
             if flt.startswith("!"):
                 ret.append((False, flt[1:]))
             else:
-                ret.append((True, flt[1:]))
+                ret.append((True, flt))
     return tuple(ret)
