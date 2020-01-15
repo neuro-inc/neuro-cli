@@ -232,46 +232,54 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     is_flag=True,
     default=True,
     show_default=True,
-    help="Expand glob patterns in SOURCES with explicit scheme",
+    help="Expand glob patterns in SOURCES with explicit scheme.",
 )
 @click.option(
     "-t",
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
-    help="Copy all SOURCES into DIRECTORY",
+    help="Copy all SOURCES into DIRECTORY.",
 )
 @click.option(
     "-T",
     "--no-target-directory",
     is_flag=True,
-    help="Treat DESTINATION as a normal file",
+    help="Treat DESTINATION as a normal file.",
 )
 @click.option(
     "-u",
     "--update",
     is_flag=True,
     help="Copy only when the SOURCE file is newer than the destination file "
-    "or when the destination file is missing",
+    "or when the destination file is missing.",
 )
 @filter_option(
     "--exclude",
     "filters",
     flag_value=True,
-    help="Exclude files and directories that match the specified pattern",
+    help=(
+        "Exclude files and directories that match the specified pattern."
+        "The default can be changed using the storage.cp-exclude"
+        'configuration variable documented in "neuro help user-config"'
+    ),
 )
 @filter_option(
     "--include",
     "filters",
     flag_value=False,
-    help="Don't exclude files and directories that match the specified pattern",
+    help=(
+        "Don't exclude files and directories that match the specified pattern."
+        "The default can be changed using the storage.cp-exclude"
+        'configuration variable documented in "neuro help user-config"'
+    ),
 )
 @click.option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
     default=True,
-    help="Show progress, on by default",
+    help="Show progress, on by default.",
 )
 @async_cmd()
 async def cp(

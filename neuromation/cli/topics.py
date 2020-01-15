@@ -96,10 +96,32 @@ def user_config() -> None:
 
       See "neuro help ps-columns" for information about the value specification.
 
+    [storage]
+
+      A section for "neuro storage" command group settings.
+
+
+    cp-exclude
+
+      Default value for "neuro cp" --exclude=XXX" and "--include=YYY" options.
+
+      The value is a list of shell wildcard patterns, a file or folder that matches a
+      pattern is excluded from processing.
+
+      The pattern can contain * and ?, e.g. ["*.jpg"] is for exclusion of all files with
+      .jpg extension.
+
+      Exclamation mark ! is used to negate the pattern, e.g. ["*.jpg", "!main.jpg"]
+      excludes all .jpg files except "main.jpg".
+
 
     Examples:
+
     # job section
     [job]
     ps-columns = "{id;max=30}, {status:max=10}"
 
+    # storage section
+    [storage]
+    cp-exclude = ["*.jpg", "!main.jpg"]
     """
