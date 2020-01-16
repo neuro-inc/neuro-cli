@@ -1,5 +1,4 @@
 import base64
-import itertools
 import numbers
 import os
 import re

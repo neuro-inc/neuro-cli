@@ -1,3 +1,4 @@
+import dataclasses
 import shutil
 import sys
 from pathlib import Path
@@ -221,15 +222,13 @@ class TestConfigFileInteraction:
         monkeypatch.setattr(
             neuromation.api.config_factory, "refresh_token", _refresh_token_mock
         )
-        config_file = config_dir / "db"
-        file_stat_before = config_file.stat()
-        client = await Factory().get()
+        factory = Factory(config_dir)
+        old_config = factory._read()
+        client = await factory.get()
         await client.close()
-        file_stat_after = config_file.stat()
+        new_config = factory._read()
         assert await client.config.token() == new_token
-        assert (
-            file_stat_before != file_stat_after
-        ), "Config file not rewritten while token refreshed"
+        assert old_config.auth_token != new_config.auth_token
 
     @pytest.mark.skipif(
         sys.platform == "win32",
@@ -260,20 +259,6 @@ class TestConfigFileInteraction:
         await client.close()
         assert client
 
-    async def test_mailformed_config(self, config_dir: Path) -> None:
-        # await Factory().login(url=mock_for_login)
-        config_file = config_dir / "db"
-        with config_file.open("r") as f:
-            original = yaml.safe_load(f)
-
-        for key in ["auth_config", "auth_token", "pypi", "clusters", "url"]:
-            modified = original.copy()
-            del modified[key]
-            with config_file.open("w") as f:
-                yaml.safe_dump(modified, f, default_flow_style=False)
-            with pytest.raises(ConfigError, match=r"Malformed"):
-                await Factory().get()
-
     async def test_silent_update(
         self, config_dir: Path, mock_for_login: _TestServer
     ) -> None:
@@ -287,31 +272,32 @@ class TestConfigFileInteraction:
         await Factory(config_dir).login(
             show_dummy_browser, url=mock_for_login.make_url("/")
         )
-        config_file = config_dir / "db"
-        with config_file.open("r") as f:
-            config = yaml.safe_load(f)
-        config["version"] = "10.1.1"  # config belongs old version
-        config["url"] = str(mock_for_login.make_url("/"))
-        with config_file.open("w") as f:
-            yaml.safe_dump(config, f)
+        factory = Factory(config_dir)
+        config = factory._read()
+        config = dataclasses.replace(
+            config,
+            version="10.1.1",  # config belongs old version
+            url=str(mock_for_login.make_url("/")),
+        )
+        factory._save(config)
         client = await Factory(config_dir).get()
         await client.close()
 
-        with config_file.open("r") as f:
-            config = yaml.safe_load(f)
-        assert config["version"] == neuromation.__version__
+        config = factory._read()
+        assert config.version == neuromation.__version__
 
     async def test_explicit_update(
         self, config_dir: Path, mock_for_login: _TestServer
     ) -> None:
         # await Factory().login(url=mock_for_login)
-        config_file = config_dir / "db"
-        with config_file.open("r") as f:
-            config = yaml.safe_load(f)
-        config["version"] = "10.1.1"  # config belongs old version
-        config["url"] = str(mock_for_login.make_url("/"))
-        with config_file.open("w") as f:
-            yaml.safe_dump(config, f)
+        factory = Factory(config_dir)
+        config = factory._read()
+        config = dataclasses.replace(
+            config,
+            version="10.1.1",  # config belongs old version
+            url=str(mock_for_login.make_url("/")),
+        )
+        factory._save(config)
         with pytest.raises(ConfigError, match="Neuro Platform CLI updated"):
             await Factory(config_dir).get()
 
