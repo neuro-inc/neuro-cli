@@ -7,7 +7,7 @@ import sys
 import textwrap
 import uuid
 import webbrowser
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
@@ -80,10 +80,18 @@ def _get_neuro_mountpoint(username: str) -> str:
     return f"{ROOT_MOUNTPOINT}/{username}"
 
 
+def _read_lines(env_file: str) -> Iterator[str]:
+    with open(env_file, "r") as ef:
+        lines = ef.read().splitlines()
+    for line in lines:
+        line = line.lstrip()
+        if line and not line.startswith("#"):
+            yield line
+
+
 def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     if env_file:
-        with open(env_file, "r") as ef:
-            env = ef.read().splitlines() + list(env)
+        env = [*_read_lines(env_file), *env]
 
     env_dict = {}
     for line in env:
