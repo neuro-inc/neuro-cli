@@ -36,11 +36,20 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.api.admin import _ClusterUser, _ClusterUserRoleType
+from neuromation.api.admin import (
+    _CloudProvider,
+    _Cluster,
+    _ClusterUser,
+    _ClusterUserRoleType,
+    _NodePool,
+    _Quota,
+    _Storage,
+)
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.formatters import (
     BaseFilesFormatter,
+    ClustersFormatter,
     ClusterUserFormatter,
     ConfigFormatter,
     DockerImageProgress,
@@ -51,7 +60,7 @@ from neuromation.cli.formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from neuromation.cli.formatters.config import QuotaInfoFormatter
+from neuromation.cli.formatters.config import QuotaFormatter, QuotaInfoFormatter
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
 from neuromation.cli.formatters.storage import (
     BSDAttributes,
@@ -1669,6 +1678,60 @@ class TestQuotaInfoFormatter:
         assert out == "9999h 59m"
 
 
+class TestQuotaFormatter:
+    def test_output(self) -> None:
+        quota = _Quota(
+            total_gpu_run_time_minutes=321, total_non_gpu_run_time_minutes=123,
+        )
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [f"{bold_start}GPU:{bold_end} 321m", f"{bold_start}CPU:{bold_end} 123m"]
+        )
+
+    def test_output_no_quota(self) -> None:
+        quota = _Quota(
+            total_non_gpu_run_time_minutes=None, total_gpu_run_time_minutes=None
+        )
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} infinity",
+                f"{bold_start}CPU:{bold_end} infinity",
+            ]
+        )
+
+    def test_output_only_gpu(self) -> None:
+        quota = _Quota(
+            total_gpu_run_time_minutes=9923, total_non_gpu_run_time_minutes=None
+        )
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} 9923m",
+                f"{bold_start}CPU:{bold_end} infinity",
+            ]
+        )
+
+    def test_output_only_cpu(self) -> None:
+        quota = _Quota(
+            total_non_gpu_run_time_minutes=3256, total_gpu_run_time_minutes=None
+        )
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [
+                f"{bold_start}GPU:{bold_end} infinity",
+                f"{bold_start}CPU:{bold_end} 3256m",
+            ]
+        )
+
+    def test_output_zeroes(self) -> None:
+        quota = _Quota(total_gpu_run_time_minutes=0, total_non_gpu_run_time_minutes=0)
+        out = QuotaFormatter()(quota)
+        assert out == "\n".join(
+            [f"{bold_start}GPU:{bold_end} 0m", f"{bold_start}CPU:{bold_end} 0m"]
+        )
+
+
 class TestDockerImageProgress:
     def test_quiet_pull(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
@@ -1882,3 +1945,131 @@ class TestClusterUserFormatter:
             "alex    user   ",
         ]
         assert formatter(users) == expected_out
+
+
+class TestClustersFormatter:
+    def _create_node_pool(
+        self,
+        is_gpu: bool = False,
+        is_tpu_enabled: bool = False,
+        is_preemptible: bool = False,
+        has_idle: bool = False,
+    ) -> _NodePool:
+        return _NodePool(
+            min_size=1,
+            max_size=2,
+            idle_size=1 if has_idle else 0,
+            machine_type="n1-highmem-8",
+            available_cpu=7.0,
+            available_memory_mb=46080,
+            gpu=1 if is_gpu else 0,
+            gpu_model="nvidia-tesla-k80" if is_gpu else None,
+            is_preemptible=is_preemptible,
+            is_tpu_enabled=is_tpu_enabled,
+        )
+
+    @property
+    def _yes(self) -> str:
+        return "Yes" if platform == "win32" else " ✔︎"
+
+    @property
+    def _no(self) -> str:
+        return "No" if platform == "win32" else "✖︎"
+
+    def test_cluster_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [_Cluster(name="default", status="deployed")]
+        expected_out = textwrap.dedent(
+            """\
+            \x1b[1mdefault:\x1b[0m
+              \x1b[1mStatus: \x1b[0mDeployed"""
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
+
+    def test_cluster_with_cloud_provider_storage_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [
+            _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="gcp",
+                    region="us-central1",
+                    zones=["us-central1-a", "us-central1-c"],
+                    node_pools=[],
+                    storage=_Storage(description="Filestore"),
+                ),
+            )
+        ]
+        expected_out = textwrap.dedent(
+            """\
+            \x1b[1mdefault:\x1b[0m
+              \x1b[1mStatus: \x1b[0mDeployed
+              \x1b[1mCloud: \x1b[0mgcp
+              \x1b[1mRegion: \x1b[0mus-central1
+              \x1b[1mZones: \x1b[0mus-central1-a, us-central1-c
+              \x1b[1mStorage: \x1b[0mFilestore"""
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
+
+    def test_cluster_with_cloud_provider_node_pool_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [
+            _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="gcp",
+                    region="us-central1",
+                    zones=[],
+                    node_pools=[
+                        self._create_node_pool(is_preemptible=True),
+                        self._create_node_pool(is_gpu=True),
+                    ],
+                    storage=None,
+                ),
+            )
+        ]
+        expected_out = textwrap.dedent(
+            f"""\
+            \x1b[1mdefault:\x1b[0m
+              \x1b[1mStatus: \x1b[0mDeployed
+              \x1b[1mCloud: \x1b[0mgcp
+              \x1b[1mRegion: \x1b[0mus-central1
+              \x1b[1mNode pools:\x1b[0m
+                Machine       CPU  Memory  Preemptible                   GPU  Min  Max
+                n1-highmem-8  7.0     45G      {self._yes}                              1    2
+                n1-highmem-8  7.0     45G       {self._no}      1 x nvidia-tesla-k80    1    2"""  # noqa: E501, ignore line length
+        )
+        assert "\n".join(formatter(clusters)) == expected_out
+
+    def test_cluster_with_cloud_provider_node_pool_tpu_idle_list(self) -> None:
+        formatter = ClustersFormatter()
+        clusters = [
+            _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="gcp",
+                    region="us-central1",
+                    zones=[],
+                    node_pools=[
+                        self._create_node_pool(is_tpu_enabled=True, has_idle=True),
+                        self._create_node_pool(),
+                    ],
+                    storage=None,
+                ),
+            )
+        ]
+        expected_out = textwrap.dedent(
+            f"""\
+            \x1b[1mdefault:\x1b[0m
+              \x1b[1mStatus: \x1b[0mDeployed
+              \x1b[1mCloud: \x1b[0mgcp
+              \x1b[1mRegion: \x1b[0mus-central1
+              \x1b[1mNode pools:\x1b[0m
+                Machine       CPU  Memory  Preemptible  GPU  TPU  Min  Max  Idle
+                n1-highmem-8  7.0     45G       {self._no}           {self._yes}    1    2     1
+                n1-highmem-8  7.0     45G       {self._no}            {self._no}    1    2     0"""  # noqa: E501, ignore line length
+        )
+        assert "\n".join(formatter(clusters)) == expected_out

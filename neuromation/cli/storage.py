@@ -5,13 +5,14 @@ import os
 import secrets
 import shlex
 import sys
-from typing import List, Optional, Sequence
+from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import aiodocker
 import click
 from yarl import URL
 
 from neuromation.api import (
+    Client,
     Container,
     FileStatusType,
     HTTPPort,
@@ -22,6 +23,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
+from neuromation.api.file_filter import FileFilter
 from neuromation.api.url_utils import _extract_path
 
 from .const import EX_OSFILE
@@ -188,6 +190,39 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             click.echo(file)
 
 
+class FileFilterParserOption(click.parser.Option):
+    def process(self, value: str, state: click.parser.ParsingState) -> None:
+        super().process((self.const, value), state)
+
+
+class FileFilterOption(click.Option):
+    def add_to_parser(self, parser: click.parser.OptionParser, ctx: Any) -> None:
+        option = FileFilterParserOption(
+            self.opts,
+            self.name,
+            action="append",
+            nargs=self.nargs,
+            const=self.flag_value,
+            obj=self,
+        )
+        parser._opt_prefixes.update(option.prefixes)
+        for opt in option._short_opts:
+            parser._short_opt[opt] = option
+        for opt in option._long_opts:
+            parser._long_opt[opt] = option
+
+
+def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], Any]:
+    return click.option(
+        *args,
+        multiple=True,
+        cls=FileFilterOption,
+        flag_value=flag_value,
+        type=click.UNPROCESSED,
+        help=help,
+    )
+
+
 @command()
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
@@ -197,34 +232,54 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     is_flag=True,
     default=True,
     show_default=True,
-    help="Expand glob patterns in SOURCES with explicit scheme",
+    help="Expand glob patterns in SOURCES with explicit scheme.",
 )
 @click.option(
     "-t",
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
-    help="Copy all SOURCES into DIRECTORY",
+    help="Copy all SOURCES into DIRECTORY.",
 )
 @click.option(
     "-T",
     "--no-target-directory",
     is_flag=True,
-    help="Treat DESTINATION as a normal file",
+    help="Treat DESTINATION as a normal file.",
 )
 @click.option(
     "-u",
     "--update",
     is_flag=True,
     help="Copy only when the SOURCE file is newer than the destination file "
-    "or when the destination file is missing",
+    "or when the destination file is missing.",
+)
+@filter_option(
+    "--exclude",
+    "filters",
+    flag_value=True,
+    help=(
+        "Exclude files and directories that match the specified pattern. "
+        "The default can be changed using the storage.cp-exclude "
+        'configuration variable documented in "neuro help user-config"'
+    ),
+)
+@filter_option(
+    "--include",
+    "filters",
+    flag_value=False,
+    help=(
+        "Don't exclude files and directories that match the specified pattern. "
+        "The default can be changed using the storage.cp-exclude "
+        'configuration variable documented in "neuro help user-config"'
+    ),
 )
 @click.option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
     default=True,
-    help="Show progress, on by default",
+    help="Show progress, on by default.",
 )
 @async_cmd()
 async def cp(
@@ -236,6 +291,7 @@ async def cp(
     target_directory: Optional[str],
     no_target_directory: bool,
     update: bool,
+    filters: Optional[Tuple[Tuple[bool, str], ...]],
     progress: bool,
 ) -> None:
     """
@@ -303,9 +359,14 @@ async def cp(
             target_dir = dst
             dst = None
 
+    filters = calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
+
+    file_filter = FileFilter()
+    for exclude, pattern in filters:
+        file_filter.append(exclude, pattern)
 
     show_progress = root.tty and progress
 
@@ -322,7 +383,11 @@ async def cp(
             if src.scheme == "file" and dst.scheme == "storage":
                 if recursive and await _is_dir(root, src):
                     await root.client.storage.upload_dir(
-                        src, dst, update=update, progress=progress_obj
+                        src,
+                        dst,
+                        update=update,
+                        filter=file_filter.match,
+                        progress=progress_obj,
                     )
                 else:
                     await root.client.storage.upload_file(
@@ -331,7 +396,11 @@ async def cp(
             elif src.scheme == "storage" and dst.scheme == "file":
                 if recursive and await _is_dir(root, src):
                     await root.client.storage.download_dir(
-                        src, dst, update=update, progress=progress_obj
+                        src,
+                        dst,
+                        update=update,
+                        filter=file_filter.match,
+                        progress=progress_obj,
                     )
                 else:
                     await root.client.storage.download_file(
@@ -797,3 +866,20 @@ storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
 storage.add_command(load)
+
+
+def calc_filters(
+    client: Client, filters: Optional[Tuple[Tuple[bool, str], ...]]
+) -> Tuple[Tuple[bool, str], ...]:
+    if filters is not None:
+        return filters
+    ret = []
+    config = client.config.get_user_config()
+    section = config.get("storage")
+    if section is not None:
+        for flt in section.get("cp-exclude", ()):
+            if flt.startswith("!"):
+                ret.append((False, flt[1:]))
+            else:
+                ret.append((True, flt))
+    return tuple(ret)

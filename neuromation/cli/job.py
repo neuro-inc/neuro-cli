@@ -18,6 +18,7 @@ from neuromation.api import (
     CONFIG_ENV_NAME,
     TRUSTED_CONFIG_PATH,
     AuthorizationError,
+    Client,
     Container,
     HTTPPort,
     JobDescription,
@@ -45,7 +46,7 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .parse_utils import COLUMNS, JobColumnInfo
+from .parse_utils import COLUMNS, JobColumnInfo, parse_columns
 from .root import Root
 from .utils import (
     JOB_COLUMNS,
@@ -478,10 +479,12 @@ async def _print_logs(root: Root, job: str) -> None:
     "--format",
     type=JOB_COLUMNS,
     help=(
-        'Output table format, use "neuro help format" '
-        "for more info about the format specification."
+        'Output table format, see "neuro help ps-format" '
+        "for more info about the format specification. "
+        "The default can be changed using the job.ps-format "
+        'configuration variable documented in "neuro help user-config"'
     ),
-    default=COLUMNS,
+    default=None,
 )
 @async_cmd()
 async def ls(
@@ -492,7 +495,7 @@ async def ls(
     owner: Sequence[str],
     description: str,
     wide: bool,
-    format: List[JobColumnInfo],
+    format: Optional[List[JobColumnInfo]],
 ) -> None:
     """
     List all jobs.
@@ -506,6 +509,7 @@ async def ls(
     neuro ps -s failed -s succeeded -q
     """
 
+    format = calc_columns(root.client, format)
     statuses = calc_statuses(status, all)
     owners = set(owner)
     jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
@@ -621,7 +625,9 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         return click.style(f"Cannot kill job {job}: {reason}", fg="red")
 
     for job, error in errors:
-        click.echo(format_fail(job, error))
+        click.echo(format_fail(job, error), err=True)
+    if errors:
+        sys.exit(1)
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
@@ -1090,3 +1096,16 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
             statuses = defaults
 
     return set(JobStatus(s) for s in statuses)
+
+
+def calc_columns(
+    client: Client, format: Optional[List[JobColumnInfo]]
+) -> List[JobColumnInfo]:
+    if format is None:
+        config = client.config.get_user_config()
+        section = config.get("job")
+        if section is not None:
+            format_str = section.get("ps-format")
+            if format_str is not None:
+                return parse_columns(format_str)
+    return COLUMNS

@@ -1,0 +1,1 @@
+`neuro kill` exits now non-zero code if it failed to kill any job in the list.

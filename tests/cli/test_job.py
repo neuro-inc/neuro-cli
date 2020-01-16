@@ -1,16 +1,25 @@
 import logging
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Callable, Tuple
 
 import click
 import pytest
+import toml
 
-from neuromation.api import JobStatus
-from neuromation.cli.job import NEUROMATION_ROOT_ENV_VAR, build_env, calc_statuses
+from neuromation.api import Client, JobStatus
+from neuromation.cli.job import (
+    NEUROMATION_ROOT_ENV_VAR,
+    build_env,
+    calc_columns,
+    calc_statuses,
+)
+from neuromation.cli.parse_utils import COLUMNS, COLUMNS_MAP
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+_MakeClient = Callable[..., Client]
 
 
 @pytest.mark.parametrize("statuses", [("all",), ("all", "failed", "succeeded")])
@@ -127,3 +136,27 @@ def test_build_env_reserved_env_var_conflict_passed_in_file(
         match="Unable to re-define system-reserved environment variable",
     ):
         build_env(env_1, env_file=str(env_file))
+
+
+async def test_calc_columns_section_doesnt_exist(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text("")
+        assert calc_columns(client, None) == COLUMNS
+
+
+async def test_calc_columns_user_spec(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({"job": {"ps-format": "{id}, {status}"}}))
+        assert calc_columns(client, None) == [COLUMNS_MAP["id"], COLUMNS_MAP["status"]]

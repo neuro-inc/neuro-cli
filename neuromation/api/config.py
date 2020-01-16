@@ -1,4 +1,5 @@
 import base64
+import numbers
 import os
 import re
 from dataclasses import dataclass, replace
@@ -22,6 +23,9 @@ from .utils import NoPublicConstructor
 
 class ConfigError(RuntimeError):
     pass
+
+
+CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
 
 
 @dataclass
@@ -365,6 +369,51 @@ def _check_sections(
             )
 
 
+def _check_item(
+    val: Any, validator: Any, full_name: str, filename: Union[str, "os.PathLike[str]"],
+) -> None:
+    if isinstance(validator, tuple):
+        container_type, item_type = validator
+        if not isinstance(val, container_type):
+            raise ConfigError(
+                f"{filename}: invalid type for {full_name}, "
+                f"{container_type.__name__} is expected"
+            )
+        for num, i in enumerate(val):
+            _check_item(i, item_type, f"{full_name}[{num}]", filename)
+    else:
+        assert isinstance(validator, type) and issubclass(
+            validator, (bool, numbers.Real, numbers.Integral, str)
+        )
+        # validator for integer types should be numbers.Real or numbers.Integral,
+        # not int or float
+        if not isinstance(val, validator):
+            raise ConfigError(
+                f"{filename}: invalid type for {full_name}, "
+                f"{validator.__name__} is expected"
+            )
+
+
+def _check_section(
+    config: Mapping[str, Any],
+    section: str,
+    params: Dict[str, Any],
+    filename: Union[str, "os.PathLike[str]"],
+) -> None:
+    sec = config.get(section)
+    if sec is None:
+        return
+    diff = sec.keys() - params.keys()
+    if diff:
+        diff_str = ", ".join(f"{section}.{name}" for name in sorted(diff))
+        raise ConfigError(f"{filename}: unknown parameters {diff_str}")
+    for name, validator in params.items():
+        val = sec.get(name)
+        if val is None:
+            continue
+        _check_item(val, validator, f"{section}.{name}", filename)
+
+
 def _validate_user_config(
     config: Mapping[str, Any], filename: Union[str, "os.PathLike[str]"]
 ) -> None:
@@ -381,12 +430,13 @@ def _validate_user_config(
     # be extended by plugin-provided rules.  That will be done by providing
     # additional API for describing new supported config sections, keys and values.
     # Right now this functionality is skipped for the sake of simplicity.
-    _check_sections(config, {"alias", "job"}, filename)
+    _check_sections(config, {"alias", "job", "storage"}, filename)
+    _check_section(config, "job", {"ps-format": str}, filename)
+    _check_section(config, "storage", {"cp-exclude": (list, str)}, filename)
     aliases = config.get("alias", {})
-    CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
     for key, value in aliases.items():
         # check keys and values
-        if not CMD_RE.match(key):
+        if not CMD_RE.fullmatch(key):
             raise ConfigError(f"{filename}: invalid alias name {key}")
         if not isinstance(value, str):
             raise ConfigError(

@@ -404,10 +404,13 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         update: bool = False,
+        filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
+        if filter is None:
+            filter = _always
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.username)
         path = _extract_path(src).resolve()
@@ -419,7 +422,14 @@ class Storage(metaclass=NoPublicConstructor):
         await _run_progress(
             queue,
             self._upload_dir(
-                src, path, dst, update=update, progress=progress, queue=queue
+                src,
+                path,
+                dst,
+                "",
+                update=update,
+                filter=filter,
+                progress=progress,
+                queue=queue,
             ),
         )
 
@@ -428,8 +438,10 @@ class Storage(metaclass=NoPublicConstructor):
         src: URL,
         src_path: Path,
         dst: URL,
+        rel_path: str,
         *,
         update: bool,
+        filter: Callable[[str], Awaitable[bool]],
         progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
@@ -460,6 +472,9 @@ class Storage(metaclass=NoPublicConstructor):
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
         for child in folder:
             name = child.name
+            child_rel_path = f"{rel_path}/{name}" if rel_path else name
+            if not await filter(child_rel_path):
+                continue
             if child.is_file():
                 if (
                     update
@@ -478,7 +493,9 @@ class Storage(metaclass=NoPublicConstructor):
                         src / name,
                         src_path / name,
                         dst / name,
+                        child_rel_path,
                         update=update,
+                        filter=filter,
                         progress=progress,
                         queue=queue,
                     )
@@ -570,10 +587,13 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         update: bool = False,
+        filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
+        if filter is None:
+            filter = _always
         src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
@@ -581,7 +601,14 @@ class Storage(metaclass=NoPublicConstructor):
         await _run_progress(
             queue,
             self._download_dir(
-                src, dst, path, update=update, progress=progress, queue=queue
+                src,
+                dst,
+                path,
+                "",
+                update=update,
+                filter=filter,
+                progress=progress,
+                queue=queue,
             ),
         )
 
@@ -590,8 +617,10 @@ class Storage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         dst_path: Path,
+        rel_path: str,
         *,
         update: bool,
+        filter: Callable[[str], Awaitable[bool]],
         progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
@@ -614,6 +643,9 @@ class Storage(metaclass=NoPublicConstructor):
 
         for child in folder:
             name = child.name
+            child_rel_path = f"{rel_path}/{name}" if rel_path else name
+            if not await filter(child_rel_path):
+                continue
             if child.is_file():
                 if (
                     update
@@ -637,7 +669,9 @@ class Storage(metaclass=NoPublicConstructor):
                         src / name,
                         dst / name,
                         dst_path / name,
+                        child_rel_path,
                         update=update,
+                        filter=filter,
                         progress=progress,
                         queue=queue,
                     )
@@ -738,3 +772,7 @@ class _DummyProgress(AbstractRecursiveFileProgress):
 
     def fail(self, data: StorageProgressFail) -> None:
         pass
+
+
+async def _always(path: str) -> bool:
+    return True

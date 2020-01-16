@@ -10,6 +10,8 @@
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
+		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
+		* [neuro admin add-user-quota](#neuro-admin-add-user-quota)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
@@ -185,6 +187,8 @@ Name | Description|
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
+| _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
+| _[neuro admin add\-user-quota](#neuro-admin-add-user-quota)_| Add given values to user quota |
 
 
 
@@ -299,6 +303,48 @@ neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin set-user-quota
+
+Set user quota to given values
+
+**Usage:**
+
+```bash
+neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-user-quota
+
+Add given values to user quota
+
+**Usage:**
+
+```bash
+neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m).|
 |_--help_|Show this message and exit.|
 
 
@@ -478,7 +524,7 @@ Name | Description|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
-|_--format COLUMNS_|Output table format, use "neuro help format" for more info about the format specification.|
+|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_--help_|Show this message and exit.|
 
 
@@ -818,11 +864,13 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
 |_--help_|Show this message and exit.|
 
 
@@ -1695,7 +1743,7 @@ Name | Description|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
-|_--format COLUMNS_|Output table format, use "neuro help format" for more info about the format specification.|
+|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_--help_|Show this message and exit.|
 
 
@@ -1963,11 +2011,13 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
 |_--help_|Show this message and exit.|
 
 

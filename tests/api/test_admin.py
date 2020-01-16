@@ -2,9 +2,17 @@ from typing import Callable
 
 from aiohttp import web
 from aiohttp.web import HTTPCreated, HTTPNoContent
+from aiohttp.web_exceptions import HTTPOk
 
 from neuromation.api import Client
-from neuromation.api.admin import _Cluster, _ClusterUser, _ClusterUserRoleType
+from neuromation.api.admin import (
+    _CloudProvider,
+    _Cluster,
+    _ClusterUser,
+    _ClusterUserRoleType,
+    _NodePool,
+    _Storage,
+)
 from tests import _TestServerFactory
 
 
@@ -15,22 +23,141 @@ async def test_list_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handle_list_clusters(request: web.Request) -> web.StreamResponse:
+        assert request.query["include"] == "cloud_provider_infra"
         data = [
-            {"name": "default"},
-            {"name": "other"},
+            {"name": "default", "status": "deployed"},
+            {"name": "other", "status": "deployed"},
         ]
         return web.json_response(data)
 
     app = web.Application()
-    app.router.add_get("/apis/admin/v1/clusters", handle_list_clusters)
+    app.router.add_get("/api/v1/clusters", handle_list_clusters)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
         clusters = await client._admin.list_clusters()
         assert clusters == {
-            "default": _Cluster(name="default"),
-            "other": _Cluster(name="other"),
+            "default": _Cluster(name="default", status="deployed"),
+            "other": _Cluster(name="other", status="deployed"),
+        }
+
+
+async def test_list_clusters_with_cloud_provider(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handle_list_clusters(request: web.Request) -> web.StreamResponse:
+        assert request.query["include"] == "cloud_provider_infra"
+        data = [
+            {
+                "name": "default",
+                "status": "deployed",
+                "cloud_provider": {
+                    "type": "gcp",
+                    "region": "us-central1",
+                    "zone": "us-central1-a",
+                    "node_pools": [
+                        {
+                            "machine_type": "n1-highmem-8",
+                            "min_size": 1,
+                            "max_size": 2,
+                            "idle_size": 1,
+                            "available_cpu": 7,
+                            "available_memory_mb": 46080,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-k80",
+                            "is_tpu_enabled": True,
+                            "is_preemptible": True,
+                        },
+                        {
+                            "machine_type": "n1-highmem-8",
+                            "min_size": 1,
+                            "max_size": 2,
+                            "available_cpu": 7,
+                            "available_memory_mb": 46080,
+                        },
+                    ],
+                    "storage": {"description": "Filestore"},
+                },
+            },
+            {
+                "name": "other1",
+                "status": "deployed",
+                "cloud_provider": {
+                    "type": "gcp",
+                    "region": "us-central1",
+                    "zones": ["us-central1-a", "us-central1-c"],
+                },
+            },
+            {
+                "name": "other2",
+                "status": "deployed",
+                "cloud_provider": {"type": "aws", "region": "us-central1"},
+            },
+        ]
+        return web.json_response(data)
+
+    app = web.Application()
+    app.router.add_get("/api/v1/clusters", handle_list_clusters)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        clusters = await client._admin.list_clusters()
+        assert clusters == {
+            "default": _Cluster(
+                name="default",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="gcp",
+                    region="us-central1",
+                    zones=["us-central1-a"],
+                    node_pools=[
+                        _NodePool(
+                            min_size=1,
+                            max_size=2,
+                            idle_size=1,
+                            machine_type="n1-highmem-8",
+                            available_cpu=7.0,
+                            available_memory_mb=46080,
+                            gpu=1,
+                            gpu_model="nvidia-tesla-k80",
+                            is_tpu_enabled=True,
+                            is_preemptible=True,
+                        ),
+                        _NodePool(
+                            min_size=1,
+                            max_size=2,
+                            machine_type="n1-highmem-8",
+                            available_cpu=7.0,
+                            available_memory_mb=46080,
+                        ),
+                    ],
+                    storage=_Storage(description="Filestore"),
+                ),
+            ),
+            "other1": _Cluster(
+                name="other1",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="gcp",
+                    region="us-central1",
+                    zones=["us-central1-a", "us-central1-c"],
+                    node_pools=[],
+                    storage=None,
+                ),
+            ),
+            "other2": _Cluster(
+                name="other2",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="aws",
+                    region="us-central1",
+                    zones=[],
+                    node_pools=[],
+                    storage=None,
+                ),
+            ),
         }
 
 
@@ -216,3 +343,95 @@ async def test_remove_cluster_user(
     async with make_client(srv.make_url("/api/v1")) as client:
         await client._admin.remove_cluster_user("default", "ivan")
         assert requested_cluster_users == [("default", "ivan")]
+
+
+async def test_set_user_quota(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    requested_cluster_users = []
+    requested_payloads = []
+
+    async def handle_cluster_user_quota_patch(
+        request: web.Request,
+    ) -> web.StreamResponse:
+        requested_cluster_users.append(
+            (request.match_info["cluster_name"], request.match_info["user_name"],)
+        )
+        payload = await request.json()
+        requested_payloads.append(dict(payload))
+        payload["role"] = "user"
+        return web.json_response(payload, status=HTTPOk.status_code)
+
+    app = web.Application()
+    app.router.add_patch(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}/quota",
+        handle_cluster_user_quota_patch,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        await client._admin.set_user_quota("default", "ivan", 100, 200)
+        await client._admin.set_user_quota("neuro", "user2", None, None)
+        await client._admin.set_user_quota("neuro-ai", "user3", 150, None)
+        assert requested_cluster_users == [
+            ("default", "ivan"),
+            ("neuro", "user2"),
+            ("neuro-ai", "user3"),
+        ]
+        assert len(requested_payloads) == 3
+        assert {
+            "quota": {
+                "total_gpu_run_time_minutes": 100,
+                "total_non_gpu_run_time_minutes": 200,
+            },
+        } in requested_payloads
+        assert {"quota": {}} in requested_payloads
+        assert {"quota": {"total_gpu_run_time_minutes": 150}} in requested_payloads
+
+
+async def test_add_user_quota(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    requested_cluster_users = []
+    requested_payloads = []
+
+    async def handle_cluster_user_quota_patch(
+        request: web.Request,
+    ) -> web.StreamResponse:
+        requested_cluster_users.append(
+            (request.match_info["cluster_name"], request.match_info["user_name"],)
+        )
+        payload = await request.json()
+        requested_payloads.append(dict(payload))
+        payload["role"] = "user"
+        return web.json_response(payload, status=HTTPOk.status_code)
+
+    app = web.Application()
+    app.router.add_patch(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}/quota",
+        handle_cluster_user_quota_patch,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        await client._admin.add_user_quota("default", "ivan", 100, 200)
+        await client._admin.add_user_quota("neuro", "user2", None, None)
+        await client._admin.add_user_quota("neuro-ai", "user3", 150, None)
+        assert requested_cluster_users == [
+            ("default", "ivan"),
+            ("neuro", "user2"),
+            ("neuro-ai", "user3"),
+        ]
+        assert len(requested_payloads) == 3
+        assert {
+            "additional_quota": {
+                "total_gpu_run_time_minutes": 100,
+                "total_non_gpu_run_time_minutes": 200,
+            },
+        } in requested_payloads
+        assert {"additional_quota": {}} in requested_payloads
+        assert {
+            "additional_quota": {"total_gpu_run_time_minutes": 150},
+        } in requested_payloads
