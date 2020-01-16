@@ -1,14 +1,16 @@
 import base64
+import itertools
 import numbers
 import os
 import re
+import sqlite3
+import time
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, List, Mapping, Set, Union
 
-import atomicwrites
 import dateutil.parser
 import pkg_resources
 import toml
@@ -26,6 +28,11 @@ class ConfigError(RuntimeError):
 
 
 CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
+
+MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
+
+
+SCHEMA = {"main": "CREATE TABLE main (content TEXT, timestamp INTEGER)"}
 
 
 @dataclass
@@ -266,18 +273,28 @@ class Config(metaclass=NoPublicConstructor):
             payload["version"] = config.version
             payload["cluster_name"] = config.cluster_name
         except (AttributeError, KeyError, TypeError, ValueError):
-            raise ConfigError("Malformed config. Please logout and login again.")
-
-        # atomically rewrite the config file
-        # forbid access to other users
-        def opener(file: str, flags: int) -> int:
-            return os.open(file, flags, 0o600)
+            raise ConfigError(MALFORMED_CONFIG_MSG)
 
         path.mkdir(0o700, parents=True, exist_ok=True)
-        with atomicwrites.atomic_write(
-            str(path / "db"), opener=opener, overwrite=True
-        ) as f:
-            yaml.safe_dump(payload, f, default_flow_style=False)
+
+        config_file = path / "db"
+        with sqlite3.connect(str(config_file)) as db:
+            # forbid access to other users
+            os.chmod(config_file, 0o600)
+
+            db.row_factory = sqlite3.Row
+            _init_db_maybe(db)
+
+            cur = db.cursor()
+            content = yaml.safe_dump(payload, default_flow_style=False)
+            cur.execute("DELETE FROM main")
+            cur.execute(
+                """
+                INSERT INTO main (content, timestamp)
+                VALUES (?, ?)""",
+                (content, time.time()),
+            )
+            db.commit()
 
     @classmethod
     def _serialize_auth_config(cls, auth_config: _AuthConfig) -> Dict[str, Any]:
@@ -449,3 +466,35 @@ def _load_file(filename: Path) -> Mapping[str, Any]:
     config = toml.load(filename)
     _validate_user_config(config, filename)
     return config
+
+
+def _load_schema(db: sqlite3.Connection) -> Dict[str, str]:
+    cur = db.cursor()
+    schema = {}
+    cur.execute("SELECT type, name, sql from sqlite_master")
+    for row in cur:
+        if row["type"] not in ("table", "index"):
+            continue
+        if row["name"].startswith("sqlite"):
+            # internal object
+            continue
+        schema[row["name"]] = row["sql"]
+    return schema
+
+
+def _check_db(db: sqlite3.Connection) -> None:
+    schema = _load_schema(db)
+    for name, sql in SCHEMA.items():
+        if name not in schema:
+            raise ConfigError(MALFORMED_CONFIG_MSG)
+        if sql != schema[name]:
+            raise ConfigError(MALFORMED_CONFIG_MSG)
+
+
+def _init_db_maybe(db: sqlite3.Connection) -> None:
+    # create schema for empty database if needed
+    schema = _load_schema(db)
+    cur = db.cursor()
+    for name, sql in SCHEMA.items():
+        if name not in schema:
+            cur.execute(sql)
