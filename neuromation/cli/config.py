@@ -204,15 +204,15 @@ async def docker(root: Root, docker_config: str) -> None:
     json_path = config_path / "config.json"
     payload: Dict[str, Any] = {}
     if json_path.exists():
-        with json_path.open("r") as file:
+        with json_path.open("rb") as file:
             payload = json.load(file)
     if "credHelpers" not in payload:
         payload["credHelpers"] = {}
 
     registry = URL(root.client.config.registry_url).host
     payload["credHelpers"][registry] = "neuro"
-    with json_path.open("w") as file:
-        json.dump(payload, file, indent=2)
+    with json_path.open("w", encoding="utf-8") as file2:
+        json.dump(payload, file2, indent=2)
 
     json_path_str = f"{json_path}"
     registry_str = click.style(f"{registry}", bold=True)

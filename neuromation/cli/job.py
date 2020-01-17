@@ -82,7 +82,7 @@ def _get_neuro_mountpoint(username: str) -> str:
 
 def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     if env_file:
-        with open(env_file, "r") as ef:
+        with open(env_file, encoding="utf-8-sig") as ef:
             env = ef.read().splitlines() + list(env)
 
     env_dict = {}

@@ -263,14 +263,14 @@ class TestConfigFileInteraction:
     async def test_mailformed_config(self, config_dir: Path) -> None:
         # await Factory().login(url=mock_for_login)
         config_file = config_dir / "db"
-        with config_file.open("r") as f:
+        with config_file.open("rb") as f:
             original = yaml.safe_load(f)
 
         for key in ["auth_config", "auth_token", "pypi", "clusters", "url"]:
             modified = original.copy()
             del modified[key]
-            with config_file.open("w") as f:
-                yaml.safe_dump(modified, f, default_flow_style=False)
+            with config_file.open("w", encoding="utf-8") as f2:
+                yaml.safe_dump(modified, f2, default_flow_style=False)
             with pytest.raises(ConfigError, match=r"Malformed"):
                 await Factory().get()
 
@@ -288,16 +288,16 @@ class TestConfigFileInteraction:
             show_dummy_browser, url=mock_for_login.make_url("/")
         )
         config_file = config_dir / "db"
-        with config_file.open("r") as f:
+        with config_file.open("rb") as f:
             config = yaml.safe_load(f)
         config["version"] = "10.1.1"  # config belongs old version
         config["url"] = str(mock_for_login.make_url("/"))
-        with config_file.open("w") as f:
-            yaml.safe_dump(config, f)
+        with config_file.open("w", encoding="utf-8") as f2:
+            yaml.safe_dump(config, f2)
         client = await Factory(config_dir).get()
         await client.close()
 
-        with config_file.open("r") as f:
+        with config_file.open("rb") as f:
             config = yaml.safe_load(f)
         assert config["version"] == neuromation.__version__
 
@@ -306,12 +306,12 @@ class TestConfigFileInteraction:
     ) -> None:
         # await Factory().login(url=mock_for_login)
         config_file = config_dir / "db"
-        with config_file.open("r") as f:
+        with config_file.open("rb") as f:
             config = yaml.safe_load(f)
         config["version"] = "10.1.1"  # config belongs old version
         config["url"] = str(mock_for_login.make_url("/"))
-        with config_file.open("w") as f:
-            yaml.safe_dump(config, f)
+        with config_file.open("w", encoding="utf-8") as f2:
+            yaml.safe_dump(config, f2)
         with pytest.raises(ConfigError, match="Neuro Platform CLI updated"):
             await Factory(config_dir).get()
 
