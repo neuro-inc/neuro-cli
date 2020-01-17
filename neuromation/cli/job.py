@@ -81,7 +81,7 @@ def _get_neuro_mountpoint(username: str) -> str:
 
 
 def _read_lines(env_file: str) -> Iterator[str]:
-    with open(env_file, "r") as ef:
+    with open(env_file, encoding="utf-8-sig") as ef:
         lines = ef.read().splitlines()
     for line in lines:
         line = line.lstrip()

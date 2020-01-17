@@ -75,7 +75,7 @@ class TestCli:
         capture = run_cli(["config", "docker"])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
+        with json_path.open("rb") as fp:
             payload = json.load(fp)
         registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
@@ -86,7 +86,7 @@ class TestCli:
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
+        with json_path.open("rb") as fp:
             payload = json.load(fp)
         registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
@@ -97,16 +97,16 @@ class TestCli:
         path = tmp_path / ".docker"
         path.mkdir()
         json_path = path / "config.json"
-        with json_path.open("w") as fp:
-            json.dump({"test": "value"}, fp)
+        with json_path.open("w", encoding="utf-8") as fp:
+            json.dump({"test": "value\u20ac"}, fp)
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
-            payload = json.load(fp)
+        with json_path.open("rb") as fp2:
+            payload = json.load(fp2)
         registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
-        assert payload["test"] == "value"
+        assert payload["test"] == "value\u20ac"
 
     def test_merge_file_with_existing_helpers(
         self, run_cli: _RunCli, tmp_path: Path, config: _Config
@@ -114,16 +114,18 @@ class TestCli:
         path = tmp_path / ".docker"
         path.mkdir()
         json_path = path / "config.json"
-        with json_path.open("w") as fp:
-            json.dump({"test": "value", "credHelpers": {"some.com": "handler"}}, fp)
+        with json_path.open("w", encoding="utf-8") as fp:
+            json.dump(
+                {"test": "value\u20ac", "credHelpers": {"some.com": "handler"}}, fp
+            )
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
-            payload = json.load(fp)
+        with json_path.open("rb") as fp2:
+            payload = json.load(fp2)
         registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro", "some.com": "handler"}
-        assert payload["test"] == "value"
+        assert payload["test"] == "value\u20ac"
 
     def test_success_output_message(
         self, run_cli: _RunCli, tmp_path: Path, config: _Config
