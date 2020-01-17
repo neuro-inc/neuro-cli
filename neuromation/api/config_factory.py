@@ -233,12 +233,11 @@ class Factory:
 
         try:
             with sqlite3.connect(str(config_file)) as db:
-                db.row_factory = sqlite3.Row
                 _check_db(db)
 
                 cur = db.cursor()
-                cur.execute("SELECT content FROM main")
-                content = cur.fetchone()["content"]
+                cur.execute("SELECT content FROM main ORDER BY ROWID ASC LIMIT 1")
+                content = cur.fetchone()[0]
 
             payload = yaml.safe_load(content)
 

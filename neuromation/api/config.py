@@ -31,7 +31,7 @@ CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
 MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
 
 
-SCHEMA = {"main": "CREATE TABLE main (content TEXT, timestamp INTEGER)"}
+SCHEMA = {"main": "CREATE TABLE main (content TEXT, timestamp REAL)"}
 
 
 @dataclass
@@ -281,7 +281,6 @@ class Config(metaclass=NoPublicConstructor):
             # forbid access to other users
             os.chmod(config_file, 0o600)
 
-            db.row_factory = sqlite3.Row
             _init_db_maybe(db)
 
             cur = db.cursor()
@@ -471,13 +470,13 @@ def _load_schema(db: sqlite3.Connection) -> Dict[str, str]:
     cur = db.cursor()
     schema = {}
     cur.execute("SELECT type, name, sql from sqlite_master")
-    for row in cur:
-        if row["type"] not in ("table", "index"):
+    for type, name, sql in cur:
+        if type not in ("table", "index"):
             continue
-        if row["name"].startswith("sqlite"):
+        if name.startswith("sqlite"):
             # internal object
             continue
-        schema[row["name"]] = row["sql"]
+        schema[name] = sql
     return schema
 
 
