@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sqlite3
 import ssl
 import sys
 from dataclasses import replace
@@ -14,7 +15,15 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import Config, ConfigError, _Config, _CookieSession, _PyPIVersion
+from .config import (
+    MALFORMED_CONFIG_MSG,
+    Config,
+    ConfigError,
+    _check_db,
+    _Config,
+    _CookieSession,
+    _PyPIVersion,
+)
 from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
@@ -221,10 +230,17 @@ class Factory:
                     f"Config at {config_file} has compromised permission bits, "
                     f"run 'chmod 600 {config_file}' first"
                 )
-        with config_file.open("r", encoding="utf-8") as f:
-            payload = yaml.safe_load(f)
 
         try:
+            with sqlite3.connect(str(config_file)) as db:
+                _check_db(db)
+
+                cur = db.cursor()
+                cur.execute("SELECT content FROM main ORDER BY ROWID ASC LIMIT 1")
+                content = cur.fetchone()[0]
+
+            payload = yaml.safe_load(content)
+
             api_url = URL(payload["url"])
             pypi_payload = payload["pypi"]
             auth_config = self._deserialize_auth_config(payload)
@@ -246,8 +262,8 @@ class Factory:
                 cluster_name=cluster_name,
                 clusters=clusters,
             )
-        except (AttributeError, KeyError, TypeError, ValueError):
-            raise ConfigError("Malformed config. Please logout and login again.")
+        except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
+            raise ConfigError(MALFORMED_CONFIG_MSG)
 
     def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
         auth_config = payload["auth_config"]
@@ -307,6 +323,6 @@ class Factory:
         )
 
     def _save(self, config: _Config) -> None:
-        # Trampoline to Config._save() mathod
+        # Trampoline to Config._save() method
         # Looks ugly a little, fix me later.
         Config._save(config, self._path)
