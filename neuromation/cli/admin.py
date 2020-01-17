@@ -75,7 +75,7 @@ async def generate_cluster_config(root: Root, config: str, type: str) -> None:
         content = await generate_gcp()
     else:
         assert False, "Prompt should prevent this case"
-    config_path.write_text(content)
+    config_path.write_text(content, encoding="utf-8")
     if not root.quiet:
         click.echo(f"Cluster config {config_path} is generated.")
 
@@ -163,7 +163,7 @@ async def generate_gcp() -> str:
         "Service Account Key File (.json)",
         default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
     )
-    with open(credentials_file) as fp:
+    with open(credentials_file, "rb") as fp:
         data = json.load(fp)
     out = yaml.dump(data)
     args["credentials"] = "\n" + "\n".join("  " + line for line in out.splitlines())
