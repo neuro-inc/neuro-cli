@@ -138,6 +138,24 @@ def test_build_env_reserved_env_var_conflict_passed_in_file(
         build_env(env_1, env_file=str(env_file))
 
 
+def test_build_env_blank_lines(tmp_path: Path) -> None:
+    env_file = tmp_path / "env_var.txt"
+    env_file.write_text("ENV_VAR_1=value1\n\n  \n\t\nENV_VAR_2=value2")
+    assert build_env([], env_file=str(env_file)) == {
+        "ENV_VAR_1": "value1",
+        "ENV_VAR_2": "value2",
+    }
+
+
+def test_build_env_comments(tmp_path: Path) -> None:
+    env_file = tmp_path / "env_var.txt"
+    env_file.write_text("ENV_VAR_1=value1\n#ENV_VAR_2=value2\nENV_VAR_3=#value3#")
+    assert build_env([], env_file=str(env_file)) == {
+        "ENV_VAR_1": "value1",
+        "ENV_VAR_3": "#value3#",
+    }
+
+
 async def test_calc_columns_section_doesnt_exist(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
