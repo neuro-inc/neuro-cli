@@ -248,6 +248,8 @@ def cli(
         config_path=Path(neuromation_config),
         trace=trace,
         trace_hide_token=hide_token_bool,
+        command_path="",
+        command_params=[],
     )
     ctx.obj = root
     if not ctx.invoked_subcommand:

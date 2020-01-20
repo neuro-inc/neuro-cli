@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import aiohttp
 import click
@@ -33,7 +33,9 @@ class Root:
     config_path: Path
     trace: bool
     verbosity: int
-    trace_hide_token: bool = True
+    trace_hide_token: bool
+    command_path: str
+    command_params: List[Dict[str, Optional[str]]]
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None

@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+import functools
 import inspect
 import itertools
 import logging
@@ -9,7 +10,6 @@ import sys
 import time
 from contextlib import suppress
 from datetime import date, timedelta
-from functools import wraps
 from typing import (
     Any,
     Awaitable,
@@ -189,7 +189,7 @@ def _wrap_async_callback(
     assert inspect.iscoroutinefunction(callback)
     # N.B. the decorator implies @click.pass_obj
     @click.pass_obj
-    @wraps(callback)
+    @functools.wraps(callback)
     def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
         return run(
             _run_async_function(init_client, callback, root, *args, **kwargs),
@@ -287,6 +287,26 @@ class NeuroGroupMixin(NeuroClickMixin):
         self.format_commands(ctx, formatter)  # type: ignore
 
 
+def _collect_params(cmd, ctx):
+    params = ctx.params.copy()
+    for param in cmd.get_params(ctx):
+        if param.name not in params:
+            continue
+        if params[param.name] == param.get_default(ctx):
+            # drop default param
+            del params[param.name]
+            continue
+        if param.param_type_name != "option":
+            # save name only
+            params[param.name] = None
+        else:
+            if getattr(param, "secure", True):
+                params[param.name] = None
+            else:
+                params[param.name] = str(params[param.name])
+    return params
+
+
 class Command(NeuroClickMixin, click.Command):
     def __init__(
         self,
@@ -315,6 +335,15 @@ class Command(NeuroClickMixin, click.Command):
             # init_client=init_client,
             # ctx.parent.params
             # breakpoint()
+            ctx2 = ctx
+            params = [_collect_params(ctx2.command, ctx2)]
+            while ctx2.parent:
+                ctx2 = ctx2.parent
+                params.append(_collect_params(ctx2.command, ctx2))
+            params.reverse()
+            root = cast(Root, ctx.obj)
+            root.command_path = ctx.command_path
+            root.command_params = params
             return ctx.invoke(self.callback, **ctx.params)
 
 

@@ -54,6 +54,9 @@ def make_root(color: bool, tty: bool, verbose: bool) -> Root:
         Path("~/.neuro"),
         verbosity=int(verbose),
         trace=False,
+        trace_hide_token=True,
+        command_path="",
+        command_params=[],
     )
 
 

@@ -4,6 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from neuromation.cli.utils import JOB_NAME, DeprecatedGroup, MainGroup, command, group
+from neuromation.cli.root import Root
 
 
 def test_print() -> None:
@@ -12,7 +13,7 @@ def test_print() -> None:
         pass
 
     @command()
-    def plain_cmd() -> None:
+    async def plain_cmd(root: Root) -> None:
         pass
 
     @group(cls=MainGroup)
@@ -52,7 +53,7 @@ def test_print_use_group_helpers() -> None:
         pass
 
     @main.command()
-    def plain_cmd() -> None:
+    async def plain_cmd(root: Root) -> None:
         pass
 
     runner = CliRunner()
@@ -81,7 +82,7 @@ def test_print_hidden() -> None:
         pass
 
     @command(hidden=True)
-    def plain_cmd() -> None:
+    async def plain_cmd(root: Root) -> None:
         pass
 
     @group()
@@ -140,7 +141,7 @@ def test_print_deprecated_group_content() -> None:
         """
 
     @sub_command.command()
-    def cmd() -> None:
+    async def cmd(root: Root) -> None:
         """Command.
 
         Detailed description is here.
@@ -170,7 +171,7 @@ def test_print_deprecated_group_content() -> None:
 
 def test_print_deprecated_no_help() -> None:
     @command(deprecated=True)
-    def main() -> None:
+    async def main(root: Root) -> None:
         pass
 
     runner = CliRunner()
@@ -190,7 +191,7 @@ def test_print_deprecated_no_help() -> None:
 
 def test_print_deprecated_with_help() -> None:
     @command(deprecated=True)
-    def main() -> None:
+    async def main(root: Root) -> None:
         """Main help."""
 
     runner = CliRunner()
@@ -210,7 +211,7 @@ def test_print_deprecated_with_help() -> None:
 
 def test_print_help_with_examples() -> None:
     @command()
-    def main() -> None:
+    async def main(root: Root) -> None:
         """
         Main help.
 
