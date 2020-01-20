@@ -441,6 +441,18 @@ def alias(
     )
 
 
+class Option(click.Option):
+    def __init__(self, *args, secure=False, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.secure = secure
+
+
+def option(*param_decls, **attrs):
+    option_attrs = attrs.copy()
+    option_attrs.setdefault('cls', Option)
+    return click.option(*param_decls, **option_attrs)
+
+
 def volume_to_verbose_str(volume: Volume) -> str:
     return (
         f"'{volume.storage_uri}' mounted to '{volume.container_path}' "
@@ -664,7 +676,7 @@ def do_deprecated_quiet(
         handler.setLevel(logging.ERROR)
 
 
-deprecated_quiet_option: Any = click.option(
+deprecated_quiet_option: Any = option(
     "-q",
     "--quiet",
     is_flag=True,

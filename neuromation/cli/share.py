@@ -10,6 +10,7 @@ from .utils import (
     async_cmd,
     command,
     group,
+    option,
     pager_maybe,
     parse_permission_action,
     parse_resource_for_sharing,
@@ -86,13 +87,13 @@ async def revoke(root: Root, uri: str, user: str) -> None:
 
 
 @command()
-@click.option(
+@option(
     "-s",
     "--scheme",
     default=None,
     help="Filter resources by scheme, e.g. job, storage, image or user.",
 )
-@click.option(
+@option(
     "--shared",
     is_flag=True,
     default=False,

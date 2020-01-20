@@ -60,6 +60,7 @@ from .utils import (
     command,
     deprecated_quiet_option,
     group,
+    option,
     pager_maybe,
     resolve_job,
     volume_to_verbose_str,
@@ -119,7 +120,7 @@ def job() -> None:
 @command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option(
+@option(
     "-g",
     "--gpu",
     metavar="NUMBER",
@@ -128,7 +129,7 @@ def job() -> None:
     default=JOB_GPU_NUMBER,
     show_default=True,
 )
-@click.option(
+@option(
     "--gpu-model",
     metavar="MODEL",
     type=click.Choice(GPU_MODELS),
@@ -136,15 +137,15 @@ def job() -> None:
     default=JOB_GPU_MODEL,
     show_default=True,
 )
-@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
-@click.option(
+@option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
+@option(
     "tpu_software_version",
     "--tpu-sw-version",
     metavar="VERSION",
     type=str,
     help="Requested TPU software version",
 )
-@click.option(
+@option(
     "-c",
     "--cpu",
     metavar="NUMBER",
@@ -153,7 +154,7 @@ def job() -> None:
     default=JOB_CPU_NUMBER,
     show_default=True,
 )
-@click.option(
+@option(
     "-m",
     "--memory",
     metavar="AMOUNT",
@@ -162,7 +163,7 @@ def job() -> None:
     default=JOB_MEMORY_AMOUNT,
     show_default=True,
 )
-@click.option(
+@option(
     "-x/-X",
     "--extshm/--no-extshm",
     is_flag=True,
@@ -170,23 +171,23 @@ def job() -> None:
     show_default=True,
     help="Request extended '/dev/shm' space",
 )
-@click.option(
+@option(
     "--http", type=int, metavar="PORT", help="Enable HTTP port forwarding to container"
 )
-@click.option(
+@option(
     "--http-auth/--no-http-auth",
     is_flag=True,
     help="Enable HTTP authentication for forwarded HTTP port  [default: True]",
     default=None,
 )
-@click.option(
+@option(
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
     default=False,
     show_default=True,
 )
-@click.option(
+@option(
     "-n",
     "--name",
     metavar="NAME",
@@ -194,14 +195,14 @@ def job() -> None:
     help="Optional job name",
     default=None,
 )
-@click.option(
+@option(
     "-d",
     "--description",
     metavar="DESC",
     help="Optional job description in free format",
 )
 @deprecated_quiet_option
-@click.option(
+@option(
     "-v",
     "--volume",
     metavar="MOUNT",
@@ -211,7 +212,7 @@ def job() -> None:
     "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
     "storage://neuromation/public:/var/storage/neuromation:ro",
 )
-@click.option(
+@option(
     "--entrypoint",
     type=str,
     help=(
@@ -220,7 +221,7 @@ def job() -> None:
         "instructions of the docker image)"
     ),
 )
-@click.option(
+@option(
     "-e",
     "--env",
     metavar="VAR=VAL",
@@ -228,25 +229,25 @@ def job() -> None:
     help="Set environment variable in container "
     "Use multiple options to define more than one variable",
 )
-@click.option(
+@option(
     "--env-file",
     type=click.Path(exists=True),
     help="File with environment variables to pass",
 )
-@click.option(
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
     help="Wait for a job start or failure",
 )
-@click.option(
+@option(
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
     help="Upload neuro config to the job",
 )
-@click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
-@click.option(
+@option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@option(
     "--detach",
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
@@ -326,19 +327,19 @@ async def submit(
 @command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("job")
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
-@click.option(
+@option(
     "-t/-T",
     "--tty/--no-tty",
     default=True,
     is_flag=True,
     help="Allocate virtual tty. Useful for interactive jobs.",
 )
-@click.option(
+@option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@click.option(
+@option(
     "--timeout",
     default=0,
     type=float,
@@ -380,7 +381,7 @@ async def exec(
 @command()
 @click.argument("job")
 @click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
-@click.option(
+@option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
@@ -448,7 +449,7 @@ async def _print_logs(root: Root, job: str) -> None:
 
 
 @command()
-@click.option(
+@option(
     "-s",
     "--status",
     multiple=True,
@@ -458,10 +459,10 @@ async def _print_logs(root: Root, job: str) -> None:
         " Note: option `all` is deprecated, use `neuro ps -a` instead."
     ),
 )
-@click.option(
+@option(
     "-o", "--owner", multiple=True, help="Filter out jobs by owner (multiple option)."
 )
-@click.option(
+@option(
     "-a",
     "--all",
     is_flag=True,
@@ -471,8 +472,8 @@ async def _print_logs(root: Root, job: str) -> None:
         "`-s pending -s running -s succeeded -s failed`)."
     ),
 )
-@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name.")
-@click.option(
+@option("-n", "--name", metavar="NAME", help="Filter out jobs by name.")
+@option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
@@ -480,10 +481,10 @@ async def _print_logs(root: Root, job: str) -> None:
     help="Filter out jobs by description (exact match).",
 )
 @deprecated_quiet_option
-@click.option(
+@option(
     "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width."
 )
-@click.option(
+@option(
     "--format",
     type=JOB_COLUMNS,
     help=(
@@ -566,7 +567,7 @@ async def browse(root: Root, job: str) -> None:
 
 @command()
 @click.argument("job")
-@click.option(
+@option(
     "--timeout",
     default=0,
     type=float,
@@ -641,7 +642,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @command(context_settings=dict(allow_interspersed_args=False))
 @click.argument("image", type=ImageType())
 @click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option(
+@option(
     "-s",
     "--preset",
     metavar="PRESET",
@@ -650,7 +651,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         "run `neuro config show`)"
     ),
 )
-@click.option(
+@option(
     "-x/-X",
     "--extshm/--no-extshm",
     is_flag=True,
@@ -658,7 +659,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Request extended '/dev/shm' space",
 )
-@click.option(
+@option(
     "--http",
     type=int,
     metavar="PORT",
@@ -666,20 +667,20 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Enable HTTP port forwarding to container",
 )
-@click.option(
+@option(
     "--http-auth/--no-http-auth",
     is_flag=True,
     help="Enable HTTP authentication for forwarded HTTP port  [default: True]",
     default=None,
 )
-@click.option(
+@option(
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance (DEPRECATED AND IGNORED)",
     default=None,
     hidden=True,
 )
-@click.option(
+@option(
     "-n",
     "--name",
     metavar="NAME",
@@ -688,14 +689,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     default=None,
     show_default=True,
 )
-@click.option(
+@option(
     "-d",
     "--description",
     metavar="DESC",
     help="Optional job description in free format",
 )
 @deprecated_quiet_option
-@click.option(
+@option(
     "-v",
     "--volume",
     metavar="MOUNT",
@@ -705,7 +706,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
     "storage://neuromation/public:/var/storage/neuromation:ro",
 )
-@click.option(
+@option(
     "--entrypoint",
     type=str,
     help=(
@@ -714,7 +715,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         "instructions of the docker image)"
     ),
 )
-@click.option(
+@option(
     "-e",
     "--env",
     metavar="VAR=VAL",
@@ -722,25 +723,25 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Set environment variable in container "
     "Use multiple options to define more than one variable",
 )
-@click.option(
+@option(
     "--env-file",
     type=click.Path(exists=True),
     help="File with environment variables to pass",
 )
-@click.option(
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
     help="Wait for a job start or failure",
 )
-@click.option(
+@option(
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
     help="Upload neuro config to the job",
 )
-@click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
-@click.option(
+@option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@option(
     "--detach",
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",

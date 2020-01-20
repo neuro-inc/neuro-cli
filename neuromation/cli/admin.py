@@ -12,7 +12,7 @@ from neuromation.api.admin import _ClusterUserRoleType
 from .formatters import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
-from .utils import async_cmd, command, group, pager_maybe
+from .utils import async_cmd, command, group, pager_maybe, option
 
 
 @group()
@@ -57,7 +57,7 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     type=click.Path(exists=False, path_type=str),
     default="cluster.yml",
 )
-@click.option("--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp"]))
+@option("--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp"]))
 @async_cmd()
 async def generate_cluster_config(root: Root, config: str, type: str) -> None:
     """
@@ -250,14 +250,14 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
-@click.option(
+@option(
     "-g",
     "--gpu",
     metavar="AMOUNT",
     type=str,
     help="GPU quota value in hours (h) or minutes (m).",
 )
-@click.option(
+@option(
     "-n",
     "--non-gpu",
     metavar="AMOUNT",
@@ -291,14 +291,14 @@ async def set_user_quota(
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
-@click.option(
+@option(
     "-g",
     "--gpu",
     metavar="AMOUNT",
     type=str,
     help="Additional GPU quota value in hours (h) or minutes (m).",
 )
-@click.option(
+@option(
     "-n",
     "--non-gpu",
     metavar="AMOUNT",

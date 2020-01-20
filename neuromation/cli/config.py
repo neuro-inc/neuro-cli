@@ -22,7 +22,7 @@ from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormat
 
 from .formatters import ConfigFormatter
 from .root import Root
-from .utils import async_cmd, command, group, pager_maybe
+from .utils import async_cmd, command, group, pager_maybe, option
 
 
 @group()
@@ -182,7 +182,7 @@ async def logout(root: Root) -> None:
 
 
 @command(name="docker")
-@click.option(
+@option(
     "--docker-config",
     metavar="PATH",
     type=click.Path(file_okay=False),

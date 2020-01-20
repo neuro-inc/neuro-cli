@@ -4,11 +4,12 @@ import os
 import re
 import sqlite3
 import time
+import contextlib
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, List, Mapping, Set, Union
+from typing import Any, Dict, List, Mapping, Set, Union, Iterator
 
 import dateutil.parser
 import pkg_resources
@@ -252,6 +253,13 @@ class Config(metaclass=NoPublicConstructor):
                 return config
             else:
                 folder = folder.parent
+
+    @contextlib.contextmanager
+    def _open_db(self) -> Iterator[sqlite3.Connection]:
+        config_file = self._path / "db"
+        with sqlite3.connect(str(config_file)) as db:
+            yield db
+            db.commit()
 
     @classmethod
     def _save(cls, config: _Config, path: Path) -> None:
