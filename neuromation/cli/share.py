@@ -7,7 +7,6 @@ from neuromation.api import Permission, Share
 
 from .root import Root
 from .utils import (
-    async_cmd,
     command,
     group,
     option,
@@ -31,7 +30,6 @@ def acl() -> None:
 @click.argument("uri")
 @click.argument("user")
 @click.argument("permission", type=click.Choice(["read", "write", "manage"]))
-@async_cmd()
 async def grant(root: Root, uri: str, user: str, permission: str) -> None:
     """
         Shares resource with another user.
@@ -62,7 +60,6 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
 @command()
 @click.argument("uri")
 @click.argument("user")
-@async_cmd()
 async def revoke(root: Root, uri: str, user: str) -> None:
     """
         Revoke user access from another user.
@@ -99,7 +96,6 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     default=False,
     help="Output the resources shared by the user.",
 )
-@async_cmd()
 async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
     """
         List shared resources.

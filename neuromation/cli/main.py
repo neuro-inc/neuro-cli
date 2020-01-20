@@ -254,7 +254,7 @@ def cli(
         click.echo(ctx.get_help())
 
 
-@cli.command()
+@cli.command(wrap_async=False)
 @click.argument("command", nargs=-1)
 @click.pass_context
 def help(ctx: click.Context, command: Sequence[str]) -> None:

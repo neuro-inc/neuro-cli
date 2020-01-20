@@ -22,7 +22,7 @@ from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormat
 
 from .formatters import ConfigFormatter
 from .root import Root
-from .utils import async_cmd, command, group, option, pager_maybe
+from .utils import command, group, option, pager_maybe
 
 
 @group()
@@ -31,7 +31,6 @@ def config() -> None:
 
 
 @command()
-@async_cmd()
 async def show(root: Root) -> None:
     """
     Print current settings.
@@ -41,7 +40,6 @@ async def show(root: Root) -> None:
 
 
 @command()
-@async_cmd()
 async def show_token(root: Root) -> None:
     """
     Print current authorization token.
@@ -51,7 +49,6 @@ async def show_token(root: Root) -> None:
 
 @command()
 @click.argument("user", required=False, default=None, type=str)
-@async_cmd()
 async def show_quota(root: Root, user: Optional[str]) -> None:
     """
     Print quota and remaining computation time for active cluster.
@@ -69,7 +66,6 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
 
 
 @command()
-@async_cmd()
 async def add_quota(root: Root) -> None:
     """
     Print instructions for increasing quota for current user
@@ -82,9 +78,8 @@ async def add_quota(root: Root) -> None:
     )
 
 
-@command()
+@command(init_client=False)
 @click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
-@async_cmd(init_client=False)
 async def login(root: Root, url: URL) -> None:
     """
     Log into Neuro Platform.
@@ -109,10 +104,9 @@ async def login(root: Root, url: URL) -> None:
     click.echo(f"Logged into {url}")
 
 
-@command()
+@command(init_client=False)
 @click.argument("token", required=True, type=str)
 @click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
-@async_cmd(init_client=False)
 async def login_with_token(root: Root, token: str, url: URL) -> None:
     """
     Log into Neuro Platform with token.
@@ -133,9 +127,8 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
     click.echo(f"Logged into {url}")
 
 
-@command()
+@command(init_client=False)
 @click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
-@async_cmd(init_client=False)
 async def login_headless(root: Root, url: URL) -> None:
     """
     Log into Neuro Platform from non-GUI server environment.
@@ -171,8 +164,7 @@ async def login_headless(root: Root, url: URL) -> None:
     click.echo(f"Logged into {url}")
 
 
-@command()
-@async_cmd(init_client=False)
+@command(init_client=False)
 async def logout(root: Root) -> None:
     """
     Log out.
@@ -190,7 +182,6 @@ async def logout(root: Root) -> None:
     default=lambda: os.environ.get("DOCKER_CONFIG", Path.home() / ".docker"),
     show_default=False,
 )
-@async_cmd()
 async def docker(root: Root, docker_config: str) -> None:
     """
     Configure docker client to fit the Neuro Platform.
@@ -221,7 +212,6 @@ async def docker(root: Root, docker_config: str) -> None:
 
 
 @command()
-@async_cmd()
 async def get_clusters(root: Root) -> None:
     """
     Fetch and display the list of available clusters.
@@ -239,7 +229,6 @@ async def get_clusters(root: Root) -> None:
 
 @command()
 @click.argument("cluster_name", required=False, default=None, type=str)
-@async_cmd()
 async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     """Switch the active cluster.
 

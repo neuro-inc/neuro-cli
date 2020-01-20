@@ -38,15 +38,7 @@ from .formatters import (
     get_painter,
 )
 from .root import Root
-from .utils import (
-    Option,
-    async_cmd,
-    command,
-    group,
-    option,
-    pager_maybe,
-    parse_file_resource,
-)
+from .utils import Option, command, group, option, pager_maybe, parse_file_resource
 
 
 MINIO_IMAGE_NAME = "minio/minio"
@@ -79,7 +71,6 @@ def storage() -> None:
     show_default=True,
     help="Expand glob patterns in PATHS",
 )
-@async_cmd()
 async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> None:
     """
     Remove files or directories.
@@ -128,7 +119,6 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     is_flag=True,
     help="list directories themselves, not their contents",
 )
-@async_cmd()
 async def ls(
     root: Root,
     paths: Sequence[str],
@@ -183,7 +173,6 @@ async def ls(
 
 @command()
 @click.argument("patterns", nargs=-1, required=False)
-@async_cmd()
 async def glob(root: Root, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
@@ -290,7 +279,6 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     default=True,
     help="Show progress, on by default.",
 )
-@async_cmd()
 async def cp(
     root: Root,
     sources: Sequence[str],
@@ -465,7 +453,6 @@ async def cp(
     ),
 )
 @option("-p", "--progress", is_flag=True, help="Show progress, off by default")
-@async_cmd()
 async def load(
     root: Root,
     sources: Sequence[str],
@@ -692,7 +679,6 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
     is_flag=True,
     help="No error if existing, make parent directories as needed",
 )
-@async_cmd()
 async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     """
     Make directories.
@@ -739,7 +725,6 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     is_flag=True,
     help="Treat DESTINATION as a normal file",
 )
-@async_cmd()
 async def mv(
     root: Root,
     sources: Sequence[str],

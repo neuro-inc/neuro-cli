@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+from .root import Root
 from .utils import group
 
 
@@ -22,7 +23,7 @@ def completion() -> None:
 
 @completion.command()
 @click.argument("shell", type=click.Choice(["bash", "zsh"]))
-def generate(shell: str) -> None:
+async def generate(root: Root, shell: str) -> None:
     """
     Provide an instruction for shell completion generation.
     """
@@ -32,7 +33,7 @@ def generate(shell: str) -> None:
 
 @completion.command()
 @click.argument("shell", type=click.Choice(["bash", "zsh"]))
-def patch(shell: str) -> None:
+async def patch(root: Root, shell: str) -> None:
     """
     Automatically patch shell configuration profile to enable completion
     """

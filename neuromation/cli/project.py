@@ -5,7 +5,7 @@ import click
 from cookiecutter.main import cookiecutter
 
 from .root import Root
-from .utils import async_cmd, command, group
+from .utils import command, group
 
 
 log = logging.getLogger(__name__)
@@ -19,7 +19,6 @@ def project() -> None:
 
 
 @command()
-@async_cmd()
 @click.argument("slug", type=str, required=False)
 async def init(root: Root, slug: Optional[str]) -> None:
     """

@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+import inspect
 import itertools
 import logging
 import re
@@ -58,6 +59,7 @@ log = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
+DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3
@@ -181,22 +183,20 @@ async def _run_async_function(
             await asyncio.sleep(0.1)
 
 
-def async_cmd(
-    init_client: bool = True,
-) -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
-    def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
-        # N.B. the decorator implies @click.pass_obj
-        @click.pass_obj
-        @wraps(callback)
-        def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
-            return run(
-                _run_async_function(init_client, callback, root, *args, **kwargs),
-                debug=root.verbosity >= 2,  # see main:setup_logging for constants
-            )
+def _wrap_async_callback(
+    callback: Callable[..., Awaitable[_T]], init_client: bool = True,
+) -> Callable[..., _T]:
+    assert inspect.iscoroutinefunction(callback)
+    # N.B. the decorator implies @click.pass_obj
+    @click.pass_obj
+    @wraps(callback)
+    def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
+        return run(
+            _run_async_function(init_client, callback, root, *args, **kwargs),
+            debug=root.verbosity >= 2,  # see main:setup_logging for constants
+        )
 
-        return wrapper
-
-    return deco
+    return wrapper
 
 
 class HelpFormatter(click.HelpFormatter):
@@ -288,11 +288,41 @@ class NeuroGroupMixin(NeuroClickMixin):
 
 
 class Command(NeuroClickMixin, click.Command):
-    pass
+    def __init__(
+        self,
+        *args: Any,
+        callback: Any,
+        init_client: bool = True,
+        wrap_async: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        if wrap_async:
+            callback = _wrap_async_callback(callback, init_client=init_client)
+        super().__init__(
+            *args, callback=callback, **kwargs,
+        )
+
+    def invoke(self, ctx):
+        """Given a context, this invokes the attached callback (if it exists)
+        in the right way.
+        """
+        if self.deprecated:
+            click.echo(
+                click.style(DEPRECATED_INVOKE_NOTICE.format(name=self.name), fg="red"),
+                err=True,
+            )
+        if self.callback is not None:
+            # init_client=init_client,
+            # ctx.parent.params
+            # breakpoint()
+            return ctx.invoke(self.callback, **ctx.params)
 
 
 def command(
-    name: Optional[str] = None, cls: Type[Command] = Command, **kwargs: Any
+    name: Optional[str] = None,
+    init_client: bool = True,
+    cls: Type[Command] = Command,
+    **kwargs: Any,
 ) -> Command:
     return click.command(name=name, cls=cls, **kwargs)  # type: ignore
 
@@ -438,16 +468,17 @@ def alias(
         add_help_option=origin.add_help_option,
         hidden=hidden,
         deprecated=deprecated,
+        wrap_async=False,
     )
 
 
 class Option(click.Option):
-    def __init__(self, *args, secure=False, **kwargs) -> None:
+    def __init__(self, *args: Any, secure: bool = False, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.secure = secure
 
 
-def option(*param_decls, **attrs):
+def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
     option_attrs = attrs.copy()
     option_attrs.setdefault("cls", Option)
     return click.option(*param_decls, **option_attrs)

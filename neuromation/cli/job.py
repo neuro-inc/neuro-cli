@@ -56,7 +56,6 @@ from .utils import (
     AsyncExitStack,
     ImageType,
     alias,
-    async_cmd,
     command,
     deprecated_quiet_option,
     group,
@@ -262,7 +261,6 @@ def job() -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@async_cmd()
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -356,7 +354,6 @@ async def submit(
     show_default=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
-@async_cmd()
 async def exec(
     root: Root,
     job: str,
@@ -396,7 +393,6 @@ async def exec(
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@async_cmd()
 async def port_forward(
     root: Root, job: str, no_key_check: bool, local_remote_port: List[Tuple[int, int]]
 ) -> None:
@@ -442,7 +438,6 @@ async def port_forward(
 
 @command()
 @click.argument("job")
-@async_cmd()
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -508,7 +503,6 @@ async def _print_logs(root: Root, job: str) -> None:
     ),
     default=None,
 )
-@async_cmd()
 async def ls(
     root: Root,
     status: Sequence[str],
@@ -556,7 +550,6 @@ async def ls(
 
 @command()
 @click.argument("job")
-@async_cmd()
 async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
@@ -568,7 +561,6 @@ async def status(root: Root, job: str) -> None:
 
 @command()
 @click.argument("job")
-@async_cmd()
 async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
@@ -587,7 +579,6 @@ async def browse(root: Root, job: str) -> None:
     show_default=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
-@async_cmd()
 async def top(root: Root, job: str, timeout: float) -> None:
     """
     Display GPU/CPU/Memory usage.
@@ -607,7 +598,6 @@ async def top(root: Root, job: str, timeout: float) -> None:
 @command()
 @click.argument("job")
 @click.argument("image", type=ImageType())
-@async_cmd()
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image.
@@ -626,7 +616,6 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 @command()
 @click.argument("jobs", nargs=-1, required=True)
-@async_cmd()
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
@@ -768,7 +757,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@async_cmd()
 async def run(
     root: Root,
     image: RemoteImage,

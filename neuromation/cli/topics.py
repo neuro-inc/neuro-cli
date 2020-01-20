@@ -7,7 +7,7 @@ def topics() -> None:
 
 
 @topics.command()
-def ps_format() -> None:
+async def ps_format() -> None:
     """Format for columns specification.
 
     The format is a sequence of column specifications separated by commas or spaces:
@@ -60,7 +60,7 @@ def ps_format() -> None:
 
 
 @topics.command()
-def user_config() -> None:
+async def user_config() -> None:
     """\
     User configuration files.
 
