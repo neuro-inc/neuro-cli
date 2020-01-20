@@ -12,7 +12,7 @@ from neuromation.api.admin import _ClusterUserRoleType
 from .formatters import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
-from .utils import async_cmd, command, group, pager_maybe, option
+from .utils import async_cmd, command, group, option, pager_maybe
 
 
 @group()

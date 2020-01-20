@@ -1,15 +1,15 @@
 import base64
+import contextlib
 import numbers
 import os
 import re
 import sqlite3
 import time
-import contextlib
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, List, Mapping, Set, Union, Iterator
+from typing import Any, Dict, Iterator, List, Mapping, Set, Union
 
 import dateutil.parser
 import pkg_resources

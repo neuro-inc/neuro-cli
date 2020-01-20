@@ -449,7 +449,7 @@ class Option(click.Option):
 
 def option(*param_decls, **attrs):
     option_attrs = attrs.copy()
-    option_attrs.setdefault('cls', Option)
+    option_attrs.setdefault("cls", Option)
     return click.option(*param_decls, **option_attrs)
 
 

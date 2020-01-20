@@ -194,12 +194,14 @@ def job() -> None:
     type=JOB_NAME,
     help="Optional job name",
     default=None,
+    secure=True,
 )
 @option(
     "-d",
     "--description",
     metavar="DESC",
     help="Optional job description in free format",
+    secure=True,
 )
 @deprecated_quiet_option
 @option(
@@ -207,10 +209,13 @@ def job() -> None:
     "--volume",
     metavar="MOUNT",
     multiple=True,
-    help="Mounts directory from vault into container. "
-    "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation/public:/var/storage/neuromation:ro",
+    help=(
+        "Mounts directory from vault into container. "
+        "Use multiple options to mount more than one volume. "
+        "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+        "storage://neuromation/public:/var/storage/neuromation:ro"
+    ),
+    secure=True,
 )
 @option(
     "--entrypoint",
@@ -220,19 +225,24 @@ def job() -> None:
         "(note that it overwrites `ENTRYPOINT` and `CMD` "
         "instructions of the docker image)"
     ),
+    secure=True,
 )
 @option(
     "-e",
     "--env",
     metavar="VAR=VAL",
     multiple=True,
-    help="Set environment variable in container "
-    "Use multiple options to define more than one variable",
+    help=(
+        "Set environment variable in container "
+        "Use multiple options to define more than one variable"
+    ),
+    secure=True,
 )
 @option(
     "--env-file",
     type=click.Path(exists=True),
     help="File with environment variables to pass",
+    secure=True,
 )
 @option(
     "--wait-start/--no-wait-start",
@@ -460,7 +470,11 @@ async def _print_logs(root: Root, job: str) -> None:
     ),
 )
 @option(
-    "-o", "--owner", multiple=True, help="Filter out jobs by owner (multiple option)."
+    "-o",
+    "--owner",
+    multiple=True,
+    help="Filter out jobs by owner (multiple option).",
+    secure=True,
 )
 @option(
     "-a",
@@ -472,18 +486,17 @@ async def _print_logs(root: Root, job: str) -> None:
         "`-s pending -s running -s succeeded -s failed`)."
     ),
 )
-@option("-n", "--name", metavar="NAME", help="Filter out jobs by name.")
+@option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
 @option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
     default="",
     help="Filter out jobs by description (exact match).",
+    secure=True,
 )
 @deprecated_quiet_option
-@option(
-    "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width."
-)
+@option("-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width.")
 @option(
     "--format",
     type=JOB_COLUMNS,
@@ -687,13 +700,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     type=JOB_NAME,
     help="Optional job name",
     default=None,
-    show_default=True,
+    secure=True,
 )
 @option(
     "-d",
     "--description",
     metavar="DESC",
     help="Optional job description in free format",
+    secure=True,
 )
 @deprecated_quiet_option
 @option(
@@ -701,10 +715,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--volume",
     metavar="MOUNT",
     multiple=True,
-    help="Mounts directory from vault into container. "
-    "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation/public:/var/storage/neuromation:ro",
+    help=(
+        "Mounts directory from vault into container. "
+        "Use multiple options to mount more than one volume. "
+        "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+        "storage://neuromation/public:/var/storage/neuromation:ro"
+    ),
+    secure=True,
 )
 @option(
     "--entrypoint",
@@ -714,19 +731,24 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         "(note that it overwrites `ENTRYPOINT` and `CMD` "
         "instructions of the docker image)"
     ),
+    secure=True,
 )
 @option(
     "-e",
     "--env",
     metavar="VAR=VAL",
     multiple=True,
-    help="Set environment variable in container "
-    "Use multiple options to define more than one variable",
+    help=(
+        "Set environment variable in container "
+        "Use multiple options to define more than one variable"
+    ),
+    secure=True,
 )
 @option(
     "--env-file",
     type=click.Path(exists=True),
     help="File with environment variables to pass",
+    secure=True,
 )
 @option(
     "--wait-start/--no-wait-start",

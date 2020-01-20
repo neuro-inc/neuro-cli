@@ -22,7 +22,7 @@ from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormat
 
 from .formatters import ConfigFormatter
 from .root import Root
-from .utils import async_cmd, command, group, pager_maybe, option
+from .utils import async_cmd, command, group, option, pager_maybe
 
 
 @group()

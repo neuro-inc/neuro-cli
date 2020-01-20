@@ -38,7 +38,15 @@ from .formatters import (
     get_painter,
 )
 from .root import Root
-from .utils import async_cmd, command, group, pager_maybe, parse_file_resource, option, Option
+from .utils import (
+    Option,
+    async_cmd,
+    command,
+    group,
+    option,
+    pager_maybe,
+    parse_file_resource,
+)
 
 
 MINIO_IMAGE_NAME = "minio/minio"
@@ -451,8 +459,10 @@ async def cp(
     "-u",
     "--update",
     is_flag=True,
-    help="Copy only when the SOURCE file is newer than the destination file "
-    "or when the destination file is missing",
+    help=(
+        "Copy only when the SOURCE file is newer than the destination file "
+        "or when the destination file is missing"
+    ),
 )
 @option("-p", "--progress", is_flag=True, help="Show progress, off by default")
 @async_cmd()
