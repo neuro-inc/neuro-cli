@@ -81,6 +81,13 @@ Config
 
       :attr:`Cluster.monitoring_url` for the current cluster.
 
+   .. comethod:: get_user_config() -> Mapping[str, Any]
+
+      Return user-provided config dictionary, run ``neuro help user-config`` for details
+      about the user configuration files format and location.
+
+      .. versionadded:: 20.01.15
+
    .. comethod:: token() -> str
 
       *Bearer* token to log into the Neuro Platform.

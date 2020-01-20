@@ -517,7 +517,7 @@ async def ls(
     neuro ps -s failed -s succeeded -q
     """
 
-    format = calc_columns(root.client, format)
+    format = await calc_columns(root.client, format)
     statuses = calc_statuses(status, all)
     owners = set(owner)
     jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
@@ -1106,11 +1106,11 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
     return set(JobStatus(s) for s in statuses)
 
 
-def calc_columns(
+async def calc_columns(
     client: Client, format: Optional[List[JobColumnInfo]]
 ) -> List[JobColumnInfo]:
     if format is None:
-        config = client.config.get_user_config()
+        config = await client.config.get_user_config()
         section = config.get("job")
         if section is not None:
             format_str = section.get("ps-format")

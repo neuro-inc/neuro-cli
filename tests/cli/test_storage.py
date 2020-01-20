@@ -19,7 +19,7 @@ async def test_calc_filters_section_doesnt_exist(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text("")
-        assert calc_filters(client, None) == ()
+        assert await calc_filters(client, None) == ()
 
 
 async def test_calc_filters_user_spec(
@@ -33,4 +33,7 @@ async def test_calc_filters_user_spec(
         local_conf.write_text(
             toml.dumps({"storage": {"cp-exclude": ["*.jpg", "!main.jpg"]}})
         )
-        assert calc_filters(client, None) == ((True, "*.jpg"), (False, "main.jpg"))
+        assert await calc_filters(client, None) == (
+            (True, "*.jpg"),
+            (False, "main.jpg"),
+        )

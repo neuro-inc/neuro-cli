@@ -359,7 +359,7 @@ async def cp(
             target_dir = dst
             dst = None
 
-    filters = calc_filters(root.client, filters)
+    filters = await calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
         raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
@@ -868,13 +868,13 @@ storage.add_command(mv)
 storage.add_command(load)
 
 
-def calc_filters(
+async def calc_filters(
     client: Client, filters: Optional[Tuple[Tuple[bool, str], ...]]
 ) -> Tuple[Tuple[bool, str], ...]:
     if filters is not None:
         return filters
     ret = []
-    config = client.config.get_user_config()
+    config = await client.config.get_user_config()
     section = config.get("storage")
     if section is not None:
         for flt in section.get("cp-exclude", ()):

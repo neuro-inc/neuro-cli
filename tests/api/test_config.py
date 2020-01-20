@@ -92,7 +92,7 @@ class TestUserConfigValidators:
 
 async def test_get_user_config_empty(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
-        assert client.config.get_user_config() == {}
+        assert await client.config.get_user_config() == {}
 
 
 async def test_get_user_config_from_global(make_client: _MakeClient) -> None:
@@ -101,7 +101,9 @@ async def test_get_user_config_from_global(make_client: _MakeClient) -> None:
         global_conf = client.config._path / "user.toml"
         # FIXME: the example may be broken in future versions
         global_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
-        assert client.config.get_user_config() == {"alias": {"pss": "job ps --short"}}
+        assert await client.config.get_user_config() == {
+            "alias": {"pss": "job ps --short"}
+        }
 
 
 async def test_get_user_config_from_local(
@@ -115,7 +117,9 @@ async def test_get_user_config_from_local(
         local_conf = proj_dir / ".neuro.toml"
         # FIXME: the example may be broken in future versions
         local_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
-        assert client.config.get_user_config() == {"alias": {"pss": "job ps --short"}}
+        assert await client.config.get_user_config() == {
+            "alias": {"pss": "job ps --short"}
+        }
 
 
 async def test_username(

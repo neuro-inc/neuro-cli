@@ -230,7 +230,7 @@ class Config(metaclass=NoPublicConstructor):
             f"{self.username}:{token}".encode("ascii")
         ).decode("ascii")
 
-    def get_user_config(self) -> Mapping[str, Any]:
+    async def get_user_config(self) -> Mapping[str, Any]:
         # TODO: search in several locations (HOME+curdir),
         # merge found configs
         filename = self._path / "user.toml"
