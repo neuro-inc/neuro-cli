@@ -1,5 +1,7 @@
 import asyncio
 import dataclasses
+import functools
+import inspect
 import itertools
 import logging
 import re
@@ -8,11 +10,11 @@ import sys
 import time
 from contextlib import suppress
 from datetime import date, timedelta
-from functools import wraps
 from typing import (
     Any,
     Awaitable,
     Callable,
+    Dict,
     Iterable,
     Iterator,
     List,
@@ -50,6 +52,7 @@ from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 from .asyncio_utils import run
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
+from .stats import upload_gmp_stats
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
@@ -58,6 +61,7 @@ log = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
+DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3
@@ -134,18 +138,28 @@ async def _run_async_function(
             # Later the checker initialization code will be refactored
             # as a part of config reimplementation
             version_checker = VersionChecker(version)  # pragma: no cover
-        task: Optional["asyncio.Task[None]"] = loop.create_task(version_checker.run())
+        pypi_task: Optional["asyncio.Task[None]"] = loop.create_task(
+            version_checker.run()
+        )
+        stats_task: "asyncio.Task[None]" = loop.create_task(
+            upload_gmp_stats(
+                root.client, root.command_path, root.command_params, root.skip_gmp_stats
+            )
+        )
     else:
-        task = None
+        pypi_task = None
+        stats_task = loop.create_task(asyncio.sleep(0))  # do nothing
 
     try:
         return await func(root, *args, **kwargs)
     finally:
+        with suppress(asyncio.CancelledError):
+            await stats_task
         new_config = None
-        if task is not None:
-            task.cancel()
+        if pypi_task is not None:
+            pypi_task.cancel()
             with suppress(asyncio.CancelledError):
-                await task
+                await pypi_task
             with suppress(asyncio.CancelledError):
                 await version_checker.close()
 
@@ -181,22 +195,20 @@ async def _run_async_function(
             await asyncio.sleep(0.1)
 
 
-def async_cmd(
-    init_client: bool = True,
-) -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
-    def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
-        # N.B. the decorator implies @click.pass_obj
-        @click.pass_obj
-        @wraps(callback)
-        def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
-            return run(
-                _run_async_function(init_client, callback, root, *args, **kwargs),
-                debug=root.verbosity >= 2,  # see main:setup_logging for constants
-            )
+def _wrap_async_callback(
+    callback: Callable[..., Awaitable[_T]], init_client: bool = True,
+) -> Callable[..., _T]:
+    assert inspect.iscoroutinefunction(callback)
+    # N.B. the decorator implies @click.pass_obj
+    @click.pass_obj
+    @functools.wraps(callback)
+    def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
+        return run(
+            _run_async_function(init_client, callback, root, *args, **kwargs),
+            debug=root.verbosity >= 2,  # see main:setup_logging for constants
+        )
 
-        return wrapper
-
-    return deco
+    return wrapper
 
 
 class HelpFormatter(click.HelpFormatter):
@@ -287,12 +299,70 @@ class NeuroGroupMixin(NeuroClickMixin):
         self.format_commands(ctx, formatter)  # type: ignore
 
 
+def _collect_params(cmd: click.Command, ctx: click.Context) -> Dict[str, Optional[str]]:
+    params = ctx.params.copy()
+    for param in cmd.get_params(ctx):
+        if param.name not in params:
+            continue
+        if params[param.name] == param.get_default(ctx):
+            # drop default param
+            del params[param.name]
+            continue
+        if param.param_type_name != "option":
+            # save name only
+            params[param.name] = None
+        else:
+            if getattr(param, "secure", True):
+                params[param.name] = None
+            else:
+                params[param.name] = str(params[param.name])
+    return params
+
+
 class Command(NeuroClickMixin, click.Command):
-    pass
+    def __init__(
+        self,
+        callback: Any,
+        init_client: bool = True,
+        wrap_async: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        if wrap_async:
+            callback = _wrap_async_callback(callback, init_client=init_client)
+        super().__init__(
+            callback=callback, **kwargs,
+        )
+
+    def invoke(self, ctx: click.Context) -> Any:
+        """Given a context, this invokes the attached callback (if it exists)
+        in the right way.
+        """
+        if self.deprecated:
+            click.echo(
+                click.style(DEPRECATED_INVOKE_NOTICE.format(name=self.name), fg="red"),
+                err=True,
+            )
+        if self.callback is not None:
+            # init_client=init_client,
+            # ctx.parent.params
+            # breakpoint()
+            ctx2 = ctx
+            params = [_collect_params(ctx2.command, ctx2)]
+            while ctx2.parent:
+                ctx2 = ctx2.parent
+                params.append(_collect_params(ctx2.command, ctx2))
+            params.reverse()
+            root = cast(Root, ctx.obj)
+            root.command_path = ctx.command_path
+            root.command_params = params
+            return ctx.invoke(self.callback, **ctx.params)
 
 
 def command(
-    name: Optional[str] = None, cls: Type[Command] = Command, **kwargs: Any
+    name: Optional[str] = None,
+    init_client: bool = True,
+    cls: Type[Command] = Command,
+    **kwargs: Any,
 ) -> Command:
     return click.command(name=name, cls=cls, **kwargs)  # type: ignore
 
@@ -438,7 +508,20 @@ def alias(
         add_help_option=origin.add_help_option,
         hidden=hidden,
         deprecated=deprecated,
+        wrap_async=False,
     )
+
+
+class Option(click.Option):
+    def __init__(self, *args: Any, secure: bool = False, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.secure = secure
+
+
+def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
+    option_attrs = attrs.copy()
+    option_attrs.setdefault("cls", Option)
+    return click.option(*param_decls, **option_attrs)
 
 
 def volume_to_verbose_str(volume: Volume) -> str:
@@ -664,7 +747,7 @@ def do_deprecated_quiet(
         handler.setLevel(logging.ERROR)
 
 
-deprecated_quiet_option: Any = click.option(
+deprecated_quiet_option: Any = option(
     "-q",
     "--quiet",
     is_flag=True,

@@ -10,7 +10,6 @@ from neuromation.cli.formatters import DockerImageProgress
 from .root import Root
 from .utils import (
     RemoteTaglessImageType,
-    async_cmd,
     command,
     deprecated_quiet_option,
     group,
@@ -32,7 +31,6 @@ def image() -> None:
 @click.argument("local_image")
 @click.argument("remote_image", required=False)
 @deprecated_quiet_option
-@async_cmd()
 async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
     """
     Push an image to platform registry.
@@ -66,7 +64,6 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 @click.argument("remote_image")
 @click.argument("local_image", required=False)
 @deprecated_quiet_option
-@async_cmd()
 async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
     """
     Pull an image from platform registry.
@@ -96,7 +93,6 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 
 @command()
-@async_cmd()
 async def ls(root: Root) -> None:
     """
     List images.
@@ -108,7 +104,6 @@ async def ls(root: Root) -> None:
 
 @command()
 @click.argument("image", type=RemoteTaglessImageType())
-@async_cmd()
 async def tags(root: Root, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.

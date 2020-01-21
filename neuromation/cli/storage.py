@@ -38,7 +38,7 @@ from .formatters import (
     get_painter,
 )
 from .root import Root
-from .utils import async_cmd, command, group, pager_maybe, parse_file_resource
+from .utils import Option, command, group, option, pager_maybe, parse_file_resource
 
 
 MINIO_IMAGE_NAME = "minio/minio"
@@ -58,20 +58,19 @@ def storage() -> None:
 
 @command()
 @click.argument("paths", nargs=-1, required=True)
-@click.option(
+@option(
     "--recursive",
     "-r",
     is_flag=True,
     help="remove directories and their contents recursively",
 )
-@click.option(
+@option(
     "--glob/--no-glob",
     is_flag=True,
     default=True,
     show_default=True,
     help="Expand glob patterns in PATHS",
 )
-@async_cmd()
 async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> None:
     """
     Remove files or directories.
@@ -101,26 +100,25 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
 
 @command()
 @click.argument("paths", nargs=-1)
-@click.option(
+@option(
     "--human-readable",
     "-h",
     is_flag=True,
     help="with -l print human readable sizes (e.g., 2K, 540M)",
 )
-@click.option("-l", "format_long", is_flag=True, help="use a long listing format")
-@click.option(
+@option("-l", "format_long", is_flag=True, help="use a long listing format")
+@option(
     "--sort",
     type=click.Choice(["name", "size", "time"]),
     default="name",
     help="sort by given field, default is name",
 )
-@click.option(
+@option(
     "-d",
     "--directory",
     is_flag=True,
     help="list directories themselves, not their contents",
 )
-@async_cmd()
 async def ls(
     root: Root,
     paths: Sequence[str],
@@ -175,7 +173,6 @@ async def ls(
 
 @command()
 @click.argument("patterns", nargs=-1, required=False)
-@async_cmd()
 async def glob(root: Root, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
@@ -195,7 +192,7 @@ class FileFilterParserOption(click.parser.Option):
         super().process((self.const, value), state)
 
 
-class FileFilterOption(click.Option):
+class FileFilterOption(Option):
     def add_to_parser(self, parser: click.parser.OptionParser, ctx: Any) -> None:
         option = FileFilterParserOption(
             self.opts,
@@ -213,41 +210,42 @@ class FileFilterOption(click.Option):
 
 
 def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], Any]:
-    return click.option(
+    return option(
         *args,
         multiple=True,
         cls=FileFilterOption,
         flag_value=flag_value,
         type=click.UNPROCESSED,
         help=help,
+        secure=True,
     )
 
 
 @command()
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
-@click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
-@click.option(
+@option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
+@option(
     "--glob/--no-glob",
     is_flag=True,
     default=True,
     show_default=True,
     help="Expand glob patterns in SOURCES with explicit scheme.",
 )
-@click.option(
+@option(
     "-t",
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
     help="Copy all SOURCES into DIRECTORY.",
 )
-@click.option(
+@option(
     "-T",
     "--no-target-directory",
     is_flag=True,
     help="Treat DESTINATION as a normal file.",
 )
-@click.option(
+@option(
     "-u",
     "--update",
     is_flag=True,
@@ -274,14 +272,13 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
         'configuration variable documented in "neuro help user-config"'
     ),
 )
-@click.option(
+@option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
     default=True,
     help="Show progress, on by default.",
 )
-@async_cmd()
 async def cp(
     root: Root,
     sources: Sequence[str],
@@ -425,36 +422,37 @@ async def cp(
 @command(deprecated=True)  # Deprecated since 19.9.4
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
-@click.option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
-@click.option(
+@option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
+@option(
     "--glob/--no-glob",
     is_flag=True,
     default=True,
     show_default=True,
     help="Expand glob patterns in SOURCES with explicit scheme",
 )
-@click.option(
+@option(
     "-t",
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
     help="Copy all SOURCES into DIRECTORY",
 )
-@click.option(
+@option(
     "-T",
     "--no-target-directory",
     is_flag=True,
     help="Treat DESTINATION as a normal file",
 )
-@click.option(
+@option(
     "-u",
     "--update",
     is_flag=True,
-    help="Copy only when the SOURCE file is newer than the destination file "
-    "or when the destination file is missing",
+    help=(
+        "Copy only when the SOURCE file is newer than the destination file "
+        "or when the destination file is missing"
+    ),
 )
-@click.option("-p", "--progress", is_flag=True, help="Show progress, off by default")
-@async_cmd()
+@option("-p", "--progress", is_flag=True, help="Show progress, off by default")
 async def load(
     root: Root,
     sources: Sequence[str],
@@ -675,13 +673,12 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
 
 @command()
 @click.argument("paths", nargs=-1, required=True)
-@click.option(
+@option(
     "-p",
     "--parents",
     is_flag=True,
     help="No error if existing, make parent directories as needed",
 )
-@async_cmd()
 async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     """
     Make directories.
@@ -708,27 +705,26 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 @command()
 @click.argument("sources", nargs=-1, required=False)
 @click.argument("destination", required=False)
-@click.option(
+@option(
     "--glob/--no-glob",
     is_flag=True,
     default=True,
     show_default=True,
     help="Expand glob patterns in SOURCES",
 )
-@click.option(
+@option(
     "-t",
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
     help="Copy all SOURCES into DIRECTORY",
 )
-@click.option(
+@option(
     "-T",
     "--no-target-directory",
     is_flag=True,
     help="Treat DESTINATION as a normal file",
 )
-@async_cmd()
 async def mv(
     root: Root,
     sources: Sequence[str],

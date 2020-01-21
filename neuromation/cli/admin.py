@@ -12,7 +12,7 @@ from neuromation.api.admin import _ClusterUserRoleType
 from .formatters import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
-from .utils import async_cmd, command, group, pager_maybe
+from .utils import command, group, option, pager_maybe
 
 
 @group()
@@ -21,7 +21,6 @@ def admin() -> None:
 
 
 @command()
-@async_cmd()
 async def get_clusters(root: Root) -> None:
     """
     Print the list of available clusters.
@@ -36,7 +35,6 @@ async def get_clusters(root: Root) -> None:
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("config", required=True, type=click.File(encoding="utf8", lazy=False))
-@async_cmd()
 async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     """
     Create a new cluster and start its provisioning.
@@ -57,8 +55,7 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     type=click.Path(exists=False, path_type=str),
     default="cluster.yml",
 )
-@click.option("--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp"]))
-@async_cmd()
+@option("--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp"]))
 async def generate_cluster_config(root: Root, config: str, type: str) -> None:
     """
     Create a cluster configuration file.
@@ -172,7 +169,6 @@ async def generate_gcp() -> str:
 
 @command()
 @click.argument("cluster_name", required=False, default=None, type=str)
-@async_cmd()
 async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     """
     Print the list of all users in the cluster with their assigned role.
@@ -192,7 +188,6 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     metavar="[ROLE]",
     type=click.Choice(list(_ClusterUserRoleType)),
 )
-@async_cmd()
 async def add_cluster_user(
     root: Root, cluster_name: str, user_name: str, role: str
 ) -> None:
@@ -234,7 +229,6 @@ def _parse_quota_value(
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
-@async_cmd()
 async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> None:
     """
     Remove user access from the cluster.
@@ -250,21 +244,20 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
-@click.option(
+@option(
     "-g",
     "--gpu",
     metavar="AMOUNT",
     type=str,
     help="GPU quota value in hours (h) or minutes (m).",
 )
-@click.option(
+@option(
     "-n",
     "--non-gpu",
     metavar="AMOUNT",
     type=str,
     help="Non-GPU quota value in hours (h) or minutes (m).",
 )
-@async_cmd()
 async def set_user_quota(
     root: Root,
     cluster_name: str,
@@ -291,21 +284,20 @@ async def set_user_quota(
 @command()
 @click.argument("cluster_name", required=True, type=str)
 @click.argument("user_name", required=True, type=str)
-@click.option(
+@option(
     "-g",
     "--gpu",
     metavar="AMOUNT",
     type=str,
     help="Additional GPU quota value in hours (h) or minutes (m).",
 )
-@click.option(
+@option(
     "-n",
     "--non-gpu",
     metavar="AMOUNT",
     type=str,
     help="Additional non-GPU quota value in hours (h) or minutes (m).",
 )
-@async_cmd()
 async def add_user_quota(
     root: Root,
     cluster_name: str,

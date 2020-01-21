@@ -17,6 +17,10 @@ def root_uninitialized() -> Root:
         config_path=Path("~/.neuro"),
         verbosity=0,
         trace=False,
+        trace_hide_token=True,
+        command_path="",
+        command_params=[],
+        skip_gmp_stats=True,
     )
 
 

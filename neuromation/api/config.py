@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import numbers
 import os
 import re
@@ -8,7 +9,7 @@ from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, List, Mapping, Set, Union
+from typing import Any, Dict, Iterator, List, Mapping, Set, Union
 
 import dateutil.parser
 import pkg_resources
@@ -252,6 +253,14 @@ class Config(metaclass=NoPublicConstructor):
                 return config
             else:
                 folder = folder.parent
+
+    @contextlib.contextmanager
+    def _open_db(self) -> Iterator[sqlite3.Connection]:
+        config_file = self._path / "db"
+        with sqlite3.connect(str(config_file)) as db:
+            db.row_factory = sqlite3.Row
+            yield db
+            db.commit()
 
     @classmethod
     def _save(cls, config: _Config, path: Path) -> None:

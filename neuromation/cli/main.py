@@ -34,6 +34,7 @@ from .utils import (
     MainGroup,
     alias,
     format_example,
+    option,
     pager_maybe,
 )
 
@@ -124,7 +125,7 @@ def print_options(
 
 
 @click.group(cls=MainGroup, invoke_without_command=True)
-@click.option(
+@option(
     "-v",
     "--verbose",
     count=True,
@@ -132,7 +133,7 @@ def print_options(
     default=0,
     help="Give more output. Option is additive, and can be used up to 2 times.",
 )
-@click.option(
+@option(
     "-q",
     "--quiet",
     count=True,
@@ -140,7 +141,7 @@ def print_options(
     default=0,
     help="Give less output. Option is additive, and can be used up to 2 times.",
 )
-@click.option(
+@option(
     "--neuromation-config",
     type=click.Path(dir_okay=True, file_okay=False),
     required=False,
@@ -149,30 +150,30 @@ def print_options(
     metavar="PATH",
     envvar=CONFIG_ENV_NAME,
 )
-@click.option(
+@option(
     "--show-traceback",
     is_flag=True,
     help="Show python traceback on error, useful for debugging the tool.",
 )
-@click.option(
+@option(
     "--color",
     type=click.Choice(["yes", "no", "auto"]),
     default="auto",
     help="Color mode.",
 )
-@click.option(
+@option(
     "--disable-pypi-version-check",
     is_flag=True,
     help="Don't periodically check PyPI to determine whether a new version of "
     "Neuro Platform CLI is available for download.",
 )
-@click.option(
+@option(
     "--network-timeout", type=float, help="Network read timeout, seconds.", default=60.0
 )
 @click.version_option(
     version=neuromation.__version__, message="Neuro Platform Client %(version)s"
 )
-@click.option(
+@option(
     "--options",
     is_flag=True,
     callback=print_options,
@@ -181,12 +182,12 @@ def print_options(
     hidden=True,
     help="Show common options.",
 )
-@click.option(
+@option(
     "--trace",
     is_flag=True,
     help="Trace sent HTTP requests and received replies to stderr.",
 )
-@click.option(
+@option(
     "--hide-token/--no-hide-token",
     is_flag=True,
     default=None,
@@ -194,6 +195,17 @@ def print_options(
         "Prevent user's token sent in HTTP headers from being "
         "printed out to stderr during HTTP tracing. Can be used only "
         "together with option '--trace'. On by default."
+    ),
+)
+@option(
+    "--skip-stats/--no-skip-stats",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip sending usage statistics to Neuro servers. "
+        "Note: the statistics has no sensitive data, e.g. "
+        "file, job, image, or user names, executed command lines, "
+        "environment variables, etc."
     ),
 )
 @click.pass_context
@@ -208,6 +220,7 @@ def cli(
     network_timeout: float,
     trace: bool,
     hide_token: Optional[bool],
+    skip_stats: bool,
 ) -> None:
     #   ▇ ◣
     #   ▇ ◥ ◣
@@ -247,13 +260,16 @@ def cli(
         config_path=Path(neuromation_config),
         trace=trace,
         trace_hide_token=hide_token_bool,
+        command_path="",
+        command_params=[],
+        skip_gmp_stats=skip_stats,
     )
     ctx.obj = root
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help())
 
 
-@cli.command()
+@cli.command(wrap_async=False)
 @click.argument("command", nargs=-1)
 @click.pass_context
 def help(ctx: click.Context, command: Sequence[str]) -> None:
