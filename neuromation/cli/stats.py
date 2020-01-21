@@ -69,6 +69,30 @@ def add_usage(
     )
 
 
+def select_oldest(
+    db: sqlite3.Connection, limit: int = GA_CACHE_LIMIT, delay: float = 3600
+) -> List[sqlite3.Row]:
+    # oldest 20 records
+    old = list(
+        db.execute(
+            """
+            SELECT ROWID, cmd, args, timestamp, version
+            FROM stats ORDER BY ROWID ASC LIMIT ?
+            """,
+            (GA_CACHE_LIMIT,),
+        )
+    )
+    if old and len(old) < limit and old[-1]["timestamp"] > time.time() - delay:
+        # A few data, the last recored is younger then one hour old;
+        # don't send these data to google server
+        old = []
+    return old
+
+
+def delete_oldest(db: sqlite3.Connection, old: List[sqlite3.Row]) -> None:
+    db.executemany("DELETE FROM stats WHERE ROWID = ?", [[row["ROWID"]] for row in old])
+
+
 def _make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
     ret = {
         "v": "1",
@@ -108,31 +132,12 @@ async def upload_gmp_stats(
     try:
         with client.config._open_db() as db:
             uid = ensure_schema(db)
-            # oldest 20 records
-            old = list(
-                db.execute(
-                    """
-                    SELECT ROWID, cmd, args, timestamp, version
-                    FROM stats ORDER BY ROWID ASC LIMIT ?
-                    """,
-                    (GA_CACHE_LIMIT,),
-                )
-            )
-            if (
-                old
-                and len(old) < GA_CACHE_LIMIT
-                and old[-1]["timestamp"] > time.time() - 3600
-            ):
-                # A few data, the last recored is younger then one hour old;
-                # don't send these data to google server
-                old = []
+            old = select_oldest(db)
             add_usage(db, cmd, args)
             db.commit()
         await send(client, uid, old)
         with client.config._open_db() as db:
-            db.executemany(
-                "DELETE FROM stats WHERE ROWID = ?", [[row["ROWID"]] for row in old]
-            )
+            delete_oldest(db, old)
             db.commit()
     except sqlite3.DatabaseError as exc:
         if str(exc) != "database is locked":
