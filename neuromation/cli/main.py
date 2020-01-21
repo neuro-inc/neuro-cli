@@ -198,7 +198,7 @@ def print_options(
     ),
 )
 @option(
-    "--skip-stats/--no-skip-token",
+    "--skip-stats/--no-skip-stats",
     is_flag=True,
     default=False,
     help=(
