@@ -123,7 +123,7 @@ async def upload_gmp_stats(
                 and len(old) < GA_CACHE_LIMIT
                 and old[-1]["timestamp"] > time.time() - 3600
             ):
-                # A few data, the last recored is younger that one hour old;
+                # A few data, the last recored is younger then one hour old;
                 # don't send these data to google server
                 old = []
             add_usage(db, cmd, args)
