@@ -17,7 +17,7 @@ def ps_format() -> None:
     alignment, minimum and maximum column width, and optional column title:
 
     \b
-    {id:align=center;min=10;max=30;width=20;ID TITLE}
+    {id;align=center;min=10;max=30;width=20;ID TITLE}
 
     Here id is the column id, aling, min, max, width are properties and ID TITLE is the
     column title.
@@ -90,11 +90,11 @@ def user_config() -> None:
       A section for "neuro job" command group settings.
 
 
-    ps-columns
+    ps-format
 
       Default value for "neuro ps --format=XXX" option.
 
-      See "neuro help ps-columns" for information about the value specification.
+      See "neuro help ps-format" for information about the value specification.
 
     [storage]
 
@@ -115,12 +115,13 @@ def user_config() -> None:
       excludes all .jpg files except "main.jpg".
 
 
-    Examples:
+    Sample of configuration file:
 
+    \b
     # job section
     [job]
-    ps-columns = "{id;max=30}, {status:max=10}"
-
+    ps-format = "{id;max=30}, {status;max=10}"
+    \b
     # storage section
     [storage]
     cp-exclude = ["*.jpg", "!main.jpg"]
