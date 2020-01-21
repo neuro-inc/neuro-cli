@@ -10,7 +10,7 @@ import humanize
 from click import style, unstyle
 
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
-from neuromation.cli.parse_utils import COLUMNS, JobColumnInfo
+from neuromation.cli.parse_utils import JobColumnInfo
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 

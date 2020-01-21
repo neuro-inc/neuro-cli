@@ -970,7 +970,7 @@ class TestTabularJobsFormatter:
             f"                                                                       tag",  # noqa: E501
         ]
 
-    def test_custol_columns(self):
+    def test_custol_columns(self) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
