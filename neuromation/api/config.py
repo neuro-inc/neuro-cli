@@ -258,6 +258,7 @@ class Config(metaclass=NoPublicConstructor):
     def _open_db(self) -> Iterator[sqlite3.Connection]:
         config_file = self._path / "db"
         with sqlite3.connect(str(config_file)) as db:
+            db.row_factory = sqlite3.Row
             yield db
             db.commit()
 

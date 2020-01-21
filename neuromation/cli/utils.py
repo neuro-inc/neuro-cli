@@ -51,6 +51,7 @@ from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 from .asyncio_utils import run
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
+from .stats import add_usage, upload_gmp_stats
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
@@ -136,18 +137,27 @@ async def _run_async_function(
             # Later the checker initialization code will be refactored
             # as a part of config reimplementation
             version_checker = VersionChecker(version)  # pragma: no cover
-        task: Optional["asyncio.Task[None]"] = loop.create_task(version_checker.run())
+        pypi_task: Optional["asyncio.Task[None]"] = loop.create_task(
+            version_checker.run()
+        )
+        stats_task: Optional["asyncio.Task[None]"] = loop.create_task(
+            upload_gmp_stats(
+                root.client, root.command_path, root.command_params, root.skip_gmp_stats
+            )
+        )
     else:
-        task = None
+        pypi_task = None
 
     try:
         return await func(root, *args, **kwargs)
     finally:
+        with suppress(asyncio.CancelledError):
+            await stats_task
         new_config = None
-        if task is not None:
-            task.cancel()
+        if pypi_task is not None:
+            pypi_task.cancel()
             with suppress(asyncio.CancelledError):
-                await task
+                await pypi_task
             with suppress(asyncio.CancelledError):
                 await version_checker.close()
 

@@ -197,6 +197,17 @@ def print_options(
         "together with option '--trace'. On by default."
     ),
 )
+@option(
+    "--skip-stats/--no-skip-token",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip sending usage statistics to Neuro servers. "
+        "Note: the statistics has no sensitive data, e.g. "
+        "file, job, image, or user names, executed command lines, "
+        "environment variables, etc."
+    ),
+)
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -209,6 +220,7 @@ def cli(
     network_timeout: float,
     trace: bool,
     hide_token: Optional[bool],
+    skip_stats: bool,
 ) -> None:
     #   ▇ ◣
     #   ▇ ◥ ◣
@@ -250,6 +262,7 @@ def cli(
         trace_hide_token=hide_token_bool,
         command_path="",
         command_params=[],
+        skip_gmp_stats=skip_stats,
     )
     ctx.obj = root
     if not ctx.invoked_subcommand:

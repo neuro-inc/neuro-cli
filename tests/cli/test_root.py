@@ -20,6 +20,7 @@ def root_uninitialized() -> Root:
         trace_hide_token=True,
         command_path="",
         command_params=[],
+        skip_gmp_stats=True,
     )
 
 

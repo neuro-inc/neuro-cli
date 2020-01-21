@@ -36,6 +36,7 @@ class Root:
     trace_hide_token: bool
     command_path: str
     command_params: List[Dict[str, Optional[str]]]
+    skip_gmp_stats: bool
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None

@@ -57,6 +57,7 @@ def make_root(color: bool, tty: bool, verbose: bool) -> Root:
         trace_hide_token=True,
         command_path="",
         command_params=[],
+        skip_gmp_stats=True,
     )
 
 
