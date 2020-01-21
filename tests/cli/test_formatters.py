@@ -999,7 +999,7 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(0, "owner", columns)
         result = [item.rstrip() for item in formatter([job])]
 
-        assert result == ["Status Code", "     failed"]
+        assert result == ["    Status", "      Code", "    failed"]
 
 
 class TestNonePainter:
