@@ -1116,4 +1116,5 @@ async def calc_columns(
             format_str = section.get("ps-format")
             if format_str is not None:
                 return parse_columns(format_str)
-    return COLUMNS
+        return COLUMNS
+    return format
