@@ -65,12 +65,12 @@ def add_usage(
     cur = db.cursor()
     cur.execute(
         "INSERT INTO stats (cmd, args, timestamp, version) VALUES (?, ?, ?, ?)",
-        (cmd, urlquote(json.dumps(args)), time.time(), neuromation.__version__),
+        (cmd, json.dumps(args), time.time(), neuromation.__version__),
     )
 
 
 def select_oldest(
-    db: sqlite3.Connection, limit: int = GA_CACHE_LIMIT, delay: float = 3600
+    db: sqlite3.Connection, *, limit: int = GA_CACHE_LIMIT, delay: float = 3600
 ) -> List[sqlite3.Row]:
     # oldest 20 records
     old = list(
@@ -79,7 +79,7 @@ def select_oldest(
             SELECT ROWID, cmd, args, timestamp, version
             FROM stats ORDER BY ROWID ASC LIMIT ?
             """,
-            (GA_CACHE_LIMIT,),
+            (limit,),
         )
     )
     if old and len(old) < limit and old[-1]["timestamp"] > time.time() - delay:
@@ -93,7 +93,7 @@ def delete_oldest(db: sqlite3.Connection, old: List[sqlite3.Row]) -> None:
     db.executemany("DELETE FROM stats WHERE ROWID = ?", [[row["ROWID"]] for row in old])
 
 
-def _make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
+def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
     ret = {
         "v": "1",
         "t": "event",
@@ -112,9 +112,7 @@ async def send(client: Client, uid: str, data: List[sqlite3.Row]) -> None:
     if not data:
         return
     payload = "\n".join(
-        _make_record(
-            uid, client.config.api_url, row["cmd"], row["args"], row["version"]
-        )
+        make_record(uid, client.config.api_url, row["cmd"], row["args"], row["version"])
         for row in data
     )
     async with client._session.post(GA_URL, data=payload) as resp:
