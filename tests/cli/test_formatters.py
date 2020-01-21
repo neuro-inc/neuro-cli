@@ -970,6 +970,37 @@ class TestTabularJobsFormatter:
             f"                                                                       tag",  # noqa: E501
         ]
 
+    def test_custol_columns(self):
+        job = JobDescription(
+            status=JobStatus.FAILED,
+            id="j",
+            owner="owner",
+            cluster_name="dc",
+            name="name",
+            description="d",
+            history=JobStatusHistory(
+                status=JobStatus.FAILED,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+            ),
+            container=Container(
+                image=RemoteImage("i", "l"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                command="c",
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=True,
+        )
+
+        columns = parse_columns("{status;align=right;min=20;Status Code}")
+        formatter = TabularJobsFormatter(0, "owner", columns)
+        result = [item.rstrip() for item in formatter([job])]
+
+        assert result == ["Status Code", "     failed"]
+
 
 class TestNonePainter:
     def test_simple(self) -> None:
