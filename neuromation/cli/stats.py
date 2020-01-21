@@ -16,7 +16,7 @@ from neuromation.api import Client
 
 logger = logging.getLogger(__name__)
 
-GA_URL = URL("https://www.google-analytics.com/batch")
+GA_URL = URL("http://www.google-analytics.com/batch")
 
 # Google Analytics supports up to 20 records in a batch
 GA_CACHE_LIMIT = 20
@@ -99,9 +99,11 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
         "t": "event",
         "tid": "UA-106571369-3",
         "cid": uid,
+        "ds": "app",
         "ec": "CLI",
         "ea": cmd,
         "el": args,
+        "an": "neuro",
         "av": version,
         "aid": str(url),
     }
