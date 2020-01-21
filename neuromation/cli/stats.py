@@ -94,6 +94,7 @@ def delete_oldest(db: sqlite3.Connection, old: List[sqlite3.Row]) -> None:
 
 
 def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
+    # fmt: off
     ret = {
         "v": "1",                      # version
         "t": "event",                  # type
@@ -107,6 +108,7 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
         "av": version,                 # application version, 20.01.15
         "aid": str(url),               # application id, https://dev.neu.ro/api/v1
     }
+    # fmt: on
     return urlencode(ret, quote_via=urlquote)
 
 
