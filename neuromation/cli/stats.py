@@ -95,17 +95,17 @@ def delete_oldest(db: sqlite3.Connection, old: List[sqlite3.Row]) -> None:
 
 def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
     ret = {
-        "v": "1",
-        "t": "event",
-        "tid": "UA-106571369-3",
-        "cid": uid,
-        "ds": "app",
-        "ec": "CLI",
-        "ea": cmd,
-        "el": args,
-        "an": "neuro",
-        "av": version,
-        "aid": str(url),
+        "v": "1",                      # version
+        "t": "event",                  # type
+        "tid": "UA-106571369-3",       # tid
+        "cid": uid,                    # client id, uuid4
+        "ds": "cli",                   # data source, cli
+        "ec": "CLI",                   # event category, CLI
+        "ea": cmd,                     # event action, "neuro ps"
+        "el": args,                    # event label, "[{}, {"all", true}]
+        "an": "neuro",                 # application name, neuro
+        "av": version,                 # application version, 20.01.15
+        "aid": str(url),               # application id, https://dev.neu.ro/api/v1
     }
     return urlencode(ret, quote_via=urlquote)
 
