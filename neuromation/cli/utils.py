@@ -14,6 +14,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    Dict,
     Iterable,
     Iterator,
     List,
@@ -51,7 +52,7 @@ from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 from .asyncio_utils import run
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
-from .stats import add_usage, upload_gmp_stats
+from .stats import upload_gmp_stats
 from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
 
 
@@ -140,13 +141,14 @@ async def _run_async_function(
         pypi_task: Optional["asyncio.Task[None]"] = loop.create_task(
             version_checker.run()
         )
-        stats_task: Optional["asyncio.Task[None]"] = loop.create_task(
+        stats_task: "asyncio.Task[None]" = loop.create_task(
             upload_gmp_stats(
                 root.client, root.command_path, root.command_params, root.skip_gmp_stats
             )
         )
     else:
         pypi_task = None
+        stats_task = loop.create_task(asyncio.sleep(0))  # do nothing
 
     try:
         return await func(root, *args, **kwargs)
@@ -297,7 +299,7 @@ class NeuroGroupMixin(NeuroClickMixin):
         self.format_commands(ctx, formatter)  # type: ignore
 
 
-def _collect_params(cmd, ctx):
+def _collect_params(cmd: click.Command, ctx: click.Context) -> Dict[str, Optional[str]]:
     params = ctx.params.copy()
     for param in cmd.get_params(ctx):
         if param.name not in params:
@@ -320,7 +322,6 @@ def _collect_params(cmd, ctx):
 class Command(NeuroClickMixin, click.Command):
     def __init__(
         self,
-        *args: Any,
         callback: Any,
         init_client: bool = True,
         wrap_async: bool = True,
@@ -329,10 +330,10 @@ class Command(NeuroClickMixin, click.Command):
         if wrap_async:
             callback = _wrap_async_callback(callback, init_client=init_client)
         super().__init__(
-            *args, callback=callback, **kwargs,
+            callback=callback, **kwargs,
         )
 
-    def invoke(self, ctx):
+    def invoke(self, ctx: click.Context) -> Any:
         """Given a context, this invokes the attached callback (if it exists)
         in the right way.
         """
