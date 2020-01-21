@@ -113,7 +113,7 @@ Name | Description|
 |_--version_|Show the version and exit.|
 |_--trace_|Trace sent HTTP requests and received replies to stderr.|
 |_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'. On by default.|
-|_\--skip-stats / --no-skip-token_|Skip sending usage statistics to Neuro servers. Note: the statistics has no sensitive data, e.g. file, job, image, or user names, executed command lines, environment variables, etc.|
+|_\--skip-stats / --no-skip-stats_|Skip sending usage statistics to Neuro servers. Note: the statistics has no sensitive data, e.g. file, job, image, or user names, executed command lines, environment variables, etc.|
 |_--help_|Show this message and exit.|
 
 
