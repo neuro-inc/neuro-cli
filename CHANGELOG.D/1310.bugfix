@@ -1,1 +1,0 @@
-Parameters specified in ps-format now always override default values. `width` takes priority over `min` and `max`, `max` takes priority over `min`.

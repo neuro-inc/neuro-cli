@@ -1,1 +1,0 @@
-Use Sqlite for saving the ``~/.neuro/db`` configuration file.

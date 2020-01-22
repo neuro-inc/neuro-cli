@@ -5,6 +5,31 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.01.22 (2020-01-22)
+=================================
+
+Features
+--------
+
+
+- `--env-file` now allows blank lines and comments (lines starting with "#") in the file. ([#1208](https://github.com/neuromation/platform-api-clients/issues/1208))
+
+- Send the usage statistics to Google Analytics ([#1286](https://github.com/neuromation/platform-api-clients/issues/1286))
+
+- Use Sqlite for saving the ``~/.neuro/db`` configuration file. ([#1298](https://github.com/neuromation/platform-api-clients/issues/1298))
+
+
+Bugfixes
+--------
+
+
+- Fix columns width and aligning for ``neurp ps --format=<>`` command. ([#1302](https://github.com/neuromation/platform-api-clients/issues/1302))
+
+- Fix ps-format documentation issues. ([#1303](https://github.com/neuromation/platform-api-clients/issues/1303))
+
+- Parameters specified in ps-format now always override default values. `width` takes priority over `min` and `max`, `max` takes priority over `min`. ([#1310](https://github.com/neuromation/platform-api-clients/issues/1310))
+
+
 Neuromation 20.01.15 (2020-01-15)
 =================================
 

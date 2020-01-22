@@ -1,1 +1,0 @@
-Send the usage statistics to Google Analytics
