@@ -198,7 +198,8 @@ class Factory:
         else:
             try:
                 self._path.rmdir()
-            except NotADirectoryError:
+            except OSError:
+                # Directory Not Empty or Not A Directory
                 pass
 
     def _read(self) -> _Config:
