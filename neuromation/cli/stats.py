@@ -56,7 +56,7 @@ def ensure_schema(db: sqlite3.Connection) -> str:
         uid = str(uuid.uuid4())
         cur.execute("INSERT INTO uid (uid) VALUES (?)", (uid,))
         db.commit()
-    return uid
+        return uid
 
 
 def add_usage(
