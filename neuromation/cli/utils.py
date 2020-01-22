@@ -360,7 +360,6 @@ class Command(NeuroClickMixin, click.Command):
 
 def command(
     name: Optional[str] = None,
-    init_client: bool = True,
     cls: Type[Command] = Command,
     **kwargs: Any,
 ) -> Command:
