@@ -88,9 +88,14 @@ class Storage(metaclass=NoPublicConstructor):
         self._max_time_diff = 0.0
 
     def _uri_to_path(self, uri: URL) -> str:
-        uri = normalize_storage_path_uri(uri, self._config.username)
-        prefix = uri.host + "/" if uri.host else ""
-        return prefix + uri.path.lstrip("/")
+        uri = normalize_storage_path_uri(
+            uri, self._config.username, self._config.cluster_name
+        )
+        if not uri.host:
+            return ""
+        if uri.host != self._config.cluster_name:
+            raise ValueError(f"cluster_name != {self._config.cluster_name!r}")
+        return uri.path.lstrip("/")
 
     def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
         response_time = time.time()
@@ -336,7 +341,9 @@ class Storage(metaclass=NoPublicConstructor):
         if progress is None:
             progress = _DummyProgress()
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, self._config.username)
+        dst = normalize_storage_path_uri(
+            dst, self._config.username, self._config.cluster_name
+        )
         path = _extract_path(src)
         try:
             if not path.exists():
@@ -412,7 +419,9 @@ class Storage(metaclass=NoPublicConstructor):
         if filter is None:
             filter = _always
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, self._config.username)
+        dst = normalize_storage_path_uri(
+            dst, self._config.username, self._config.cluster_name
+        )
         path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
@@ -527,7 +536,9 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> None:
         if progress is None:
             progress = _DummyProgress()
-        src = normalize_storage_path_uri(src, self._config.username)
+        src = normalize_storage_path_uri(
+            src, self._config.username, self._config.cluster_name
+        )
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         src_stat = await self.stat(src)
@@ -594,7 +605,9 @@ class Storage(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
         if filter is None:
             filter = _always
-        src = normalize_storage_path_uri(src, self._config.username)
+        src = normalize_storage_path_uri(
+            src, self._config.username, self._config.cluster_name
+        )
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()

@@ -27,9 +27,13 @@ async def test_parse_local(make_client: _MakeClient) -> None:
 
 async def test_parse_remote(make_client: _MakeClient) -> None:
     async with make_client("https://api.localhost.localdomain") as client:
-        result = client.parse.remote_image("image://bob/bananas:latest")
+        result = client.parse.remote_image("image://test-cluster/bob/bananas:latest")
     assert result == RemoteImage(
-        "bananas", "latest", owner="bob", registry="registry-dev.neu.ro"
+        "bananas",
+        "latest",
+        owner="bob",
+        registry="registry-dev.neu.ro",
+        cluster_name="test-cluster",
     )
 
 
@@ -39,7 +43,11 @@ async def test_parse_remote_registry_image(make_client: _MakeClient) -> None:
     ) as client:
         result = client.parse.remote_image("localhost:5000/bob/library/bananas:latest")
     assert result == RemoteImage(
-        "library/bananas", "latest", owner="bob", registry="localhost:5000"
+        "library/bananas",
+        "latest",
+        owner="bob",
+        registry="localhost:5000",
+        cluster_name="default",
     )
 
 

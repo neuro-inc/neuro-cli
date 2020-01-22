@@ -137,11 +137,10 @@ class Images(metaclass=NoPublicConstructor):
             "GET", self._registry_url / "_catalog", auth=auth
         ) as resp:
             ret = await resp.json()
-            prefix = "image://"
+            prefix = f"image://{self._config.cluster_name}/"
             result: List[RemoteImage] = []
             for repo in ret["repositories"]:
-                if not repo.startswith(prefix):
-                    repo = prefix + repo
+                repo = prefix + repo
                 result.append(self._parse.remote_image(repo, tag_option=TagOption.DENY))
             return result
 

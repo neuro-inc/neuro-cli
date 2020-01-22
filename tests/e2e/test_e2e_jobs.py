@@ -450,12 +450,12 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     job_name = f"job-save-test-{uuid4().hex[:6]}"
     image = f"test-image:{job_name}"
-    image_neuro_name = f"image://{helper.username}/{image}"
+    image_neuro_name = f"image://{helper.cluster_name}/{helper.username}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME, command=command, wait_state=JobStatus.RUNNING
     )
-    img_uri = f"image://{helper.username}/{image}"
+    img_uri = f"image://{helper.cluster_name}/{helper.username}/{image}"
     captured = helper.run_cli(["job", "save", job_id_1, image_neuro_name])
     out = captured.out
     assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
@@ -677,7 +677,7 @@ def test_pass_config(image: str, helper: Helper) -> None:
     # Let`s push image
     captured = helper.run_cli(["image", "push", image])
 
-    image_full_str = f"image://{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
     assert captured.out.endswith(image_full_str)
 
     command = 'bash -c "neuro config show"'

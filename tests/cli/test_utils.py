@@ -81,7 +81,7 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
     JSON: Dict[str, Any] = {"jobs": []}
 
     async def handler(request: web.Request) -> web.Response:
@@ -163,7 +163,7 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
     job_id = "job-id-1"
     JSON = {"jobs": [_job_entry(job_id)]}
 
@@ -248,7 +248,7 @@ async def test_resolve_job_id__from_uri_with_owner__multiple_jobs_found(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
     job_id_1 = "job-id-1"
     job_id_2 = "job-id-2"
     JSON = {"jobs": [_job_entry(job_id_1), _job_entry(job_id_2)]}
@@ -333,7 +333,7 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
 
     async def handler(request: web.Request) -> NoReturn:
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
@@ -385,7 +385,7 @@ async def test_resolve_job_id__from_uri__missing_job_id(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
 
-    uri = "job://job-name"
+    uri = "job://default/job-name"
 
     app = web.Application()
     srv = await aiohttp_server(app)
@@ -394,6 +394,22 @@ async def test_resolve_job_id__from_uri__missing_job_id(
         with pytest.raises(
             ValueError,
             match="Invalid job URI: owner='job-name', missing job-id or job-name",
+        ):
+            await resolve_job(uri, client=client)
+
+
+async def test_resolve_job_id__from_uri__missing_job_id_2(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+
+    uri = "job://job-name"
+
+    app = web.Application()
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        with pytest.raises(
+            ValueError, match="Invalid job URI: cluster_name != 'default'",
         ):
             await resolve_job(uri, client=client)
 
@@ -414,16 +430,20 @@ def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
 
 def test_parse_file_resource_user_less(root: Root) -> None:
     user_less_permission = parse_file_resource("storage:resource", root)
-    assert user_less_permission == URL(f"storage://{root.client.username}/resource")
+    assert user_less_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
 
 
 def test_parse_file_resource_with_user(root: Root) -> None:
     full_permission = parse_file_resource(
-        f"storage://{root.client.username}/resource", root
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource", root
     )
-    assert full_permission == URL(f"storage://{root.client.username}/resource")
-    full_permission = parse_file_resource(f"storage://alice/resource", root)
-    assert full_permission == URL(f"storage://alice/resource")
+    assert full_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
+    full_permission = parse_file_resource(f"storage://default/alice/resource", root)
+    assert full_permission == URL(f"storage://default/alice/resource")
 
 
 def test_parse_file_resource_with_tilde(root: Root) -> None:
@@ -434,7 +454,9 @@ def test_parse_file_resource_with_tilde(root: Root) -> None:
 def test_parse_resource_for_sharing_image_no_tag(root: Root) -> None:
     uri = "image:ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL(f"image://{root.client.username}/ubuntu")
+    assert parsed == URL(
+        f"image://{root.client.cluster_name}/{root.client.username}/ubuntu"
+    )
 
 
 def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
@@ -459,16 +481,22 @@ def test_parse_resource_for_sharing_unsupported_scheme(root: Root) -> None:
 
 def test_parse_resource_for_sharing_user_less(root: Root) -> None:
     user_less_permission = parse_resource_for_sharing("storage:resource", root)
-    assert user_less_permission == URL(f"storage://{root.client.username}/resource")
+    assert user_less_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
 
 
 def test_parse_resource_for_sharing_with_user(root: Root) -> None:
     full_permission = parse_resource_for_sharing(
-        f"storage://{root.client.username}/resource", root
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource", root
     )
-    assert full_permission == URL(f"storage://{root.client.username}/resource")
-    full_permission = parse_resource_for_sharing(f"storage://alice/resource", root)
-    assert full_permission == URL(f"storage://alice/resource")
+    assert full_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
+    full_permission = parse_resource_for_sharing(
+        f"storage://default/alice/resource", root
+    )
+    assert full_permission == URL(f"storage://default/alice/resource")
 
 
 def test_parse_resource_for_sharing_with_tilde(root: Root) -> None:

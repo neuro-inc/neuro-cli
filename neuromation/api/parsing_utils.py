@@ -17,15 +17,32 @@ class RemoteImage:
     tag: Optional[str] = None
     owner: Optional[str] = None
     registry: Optional[str] = None
+    cluster_name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.registry:
+            if self.owner:
+                if not self.cluster_name:
+                    raise ValueError("required cluster name")
+            else:
+                if self.cluster_name:
+                    raise ValueError("required owner")
+        else:
+            if self.owner or self.cluster_name:
+                raise ValueError("required registry")
 
     def __str__(self) -> str:
-        pre = f"image://{self.owner}/" if _is_in_neuro_registry(self) else ""
+        pre = (
+            f"image://{self.cluster_name}/{self.owner}/"
+            if _is_in_neuro_registry(self)
+            else ""
+        )
         post = f":{self.tag}" if self.tag else ""
         return pre + self.name + post
 
 
 def _is_in_neuro_registry(image: RemoteImage) -> bool:
-    return bool(image.registry and image.owner)
+    return bool(image.registry and image.owner and image.cluster_name)
 
 
 def _as_repo_str(image: RemoteImage) -> str:
@@ -45,8 +62,9 @@ class LocalImage:
 
 
 class _ImageNameParser:
-    def __init__(self, default_user: str, registry_url: URL):
+    def __init__(self, default_user: str, default_cluster: str, registry_url: URL):
         self._default_user = default_user
+        self._default_cluster = default_cluster
         if not registry_url.host:
             raise ValueError(
                 f"Empty hostname in registry URL '{registry_url}': "
@@ -102,6 +120,7 @@ class _ImageNameParser:
             name=image.name,
             tag=image.tag,
             owner=self._default_user,
+            cluster_name=self._default_cluster,
             registry=self._registry,
         )
 
@@ -149,6 +168,10 @@ class _ImageNameParser:
         if not self.is_in_neuro_registry(image):
             raise ValueError("scheme 'image://' is required for remote images")
 
+        if image.startswith(f"{self._registry}/"):
+            path = image[len(f"{self._registry}/") :]
+            image = f"image://{self._default_cluster}/{path}"
+
         url = URL(image)
 
         if url.scheme and url.scheme != "image":
@@ -167,9 +190,22 @@ class _ImageNameParser:
         self._check_allowed_uri_elements(url)
 
         registry = self._registry
-        owner = self._default_user if not url.host else url.host
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
-        return RemoteImage(name=name, tag=tag, registry=registry, owner=owner)
+        if url.host:
+            cluster_name = url.host
+            owner, _, name = name.partition("/")
+            if not name:
+                raise ValueError("no image name specified")
+        else:
+            owner = self._default_user
+            cluster_name = self._default_cluster
+        return RemoteImage(
+            name=name,
+            tag=tag,
+            registry=registry,
+            owner=owner,
+            cluster_name=cluster_name,
+        )
 
     def _split_image_name(
         self, image: str, default_tag: Optional[str] = None

@@ -259,7 +259,9 @@ async def test_save_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         await client.jobs.save("job-id", image)
 
 
@@ -292,7 +294,9 @@ async def test_save_commit_started_invalid_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(
             DockerError,
             match=f"Invalid commit status: '{invalid}', expecting: 'CommitStarted'",
@@ -328,7 +332,9 @@ async def test_save_commit_started_missing_image_details_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(DockerError, match="Missing required details: 'image'"):
             await client.jobs.save("job-id", image)
 
@@ -361,7 +367,9 @@ async def test_save_commit_finished_invalid_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(
             DockerError,
             match=(f"Invalid commit status: '{invalid}', expecting: 'CommitFinished'"),
@@ -396,7 +404,9 @@ async def test_save_commit_started_missing_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(DockerError, match='Missing required field: "status"'):
             await client.jobs.save("job-id", image)
 
@@ -428,7 +438,9 @@ async def test_save_commit_finished_missing_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(DockerError, match='Missing required field: "status"'):
             await client.jobs.save("job-id", image)
 
@@ -1344,25 +1356,25 @@ class TestVolumeParsing:
         "volume_param,volume",
         [
             (
-                "storage://user/dir:/var/www",
+                "storage://default/user/dir:/var/www",
                 Volume(
-                    storage_uri=URL("storage://user/dir"),
+                    storage_uri=URL("storage://default/user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://user/dir:/var/www:rw",
+                "storage://default/user/dir:/var/www:rw",
                 Volume(
-                    storage_uri=URL("storage://user/dir"),
+                    storage_uri=URL("storage://default/user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://user:/var/www:ro",
+                "storage://default/user:/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://user"),
+                    storage_uri=URL("storage://default/user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1370,7 +1382,7 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://user"),
+                    storage_uri=URL("storage://default/user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1378,7 +1390,7 @@ class TestVolumeParsing:
             (
                 "storage:dir:/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://user/dir"),
+                    storage_uri=URL("storage://default/user/dir"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1386,7 +1398,7 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://user"),
+                    storage_uri=URL("storage://default/user"),
                     container_path="/var/www",
                     read_only=True,
                 ),

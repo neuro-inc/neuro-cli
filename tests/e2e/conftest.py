@@ -140,7 +140,7 @@ class Helper:
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
-            return URL(f"storage://{self.username}/{path}")
+            return URL(f"storage://{self.cluster_name}/{self.username}/{path}")
         else:
             return URL(self.tmpstorage + path)
 

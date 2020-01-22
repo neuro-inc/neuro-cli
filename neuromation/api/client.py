@@ -80,6 +80,10 @@ class Client(metaclass=NoPublicConstructor):
         return self._config.username
 
     @property
+    def cluster_name(self) -> str:
+        return self._config.cluster_name
+
+    @property
     def presets(self) -> Mapping[str, Preset]:
         # TODO: add deprecation warning eventually.
         # The preferred API is client.config now.

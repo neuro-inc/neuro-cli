@@ -448,10 +448,16 @@ def volume_to_verbose_str(volume: Volume) -> str:
 
 async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
     default_user = client.username
+    default_cluster = client.cluster_name
     if id_or_name_or_uri.startswith("job:"):
-        uri = _normalize_uri(id_or_name_or_uri, username=default_user)
-        id_or_name = uri.path.lstrip("/")
-        owner = uri.host or default_user
+        uri = _normalize_uri(
+            id_or_name_or_uri, username=default_user, cluster_name=default_cluster,
+        )
+        if uri.host != default_cluster:
+            raise ValueError(f"Invalid job URI: cluster_name != '{default_cluster}'")
+        owner, _, id_or_name = uri.path.lstrip("/").partition("/")
+        if not owner:
+            raise ValueError(f"Invalid job URI: missing owner")
         if not id_or_name:
             raise ValueError(
                 f"Invalid job URI: owner='{owner}', missing job-id or job-name"
@@ -490,7 +496,10 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         uri = str(image)
 
     return uri_from_cli(
-        uri, root.client.username, allowed_schemes=("storage", "image", "job")
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("storage", "image", "job"),
     )
 
 
@@ -498,7 +507,12 @@ def parse_file_resource(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: file, storage.
     """
-    return uri_from_cli(uri, root.client.username, allowed_schemes=("file", "storage"))
+    return uri_from_cli(
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("file", "storage"),
+    )
 
 
 def parse_permission_action(action: str) -> Action:
@@ -522,6 +536,7 @@ class LocalImageType(click.ParamType):
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
             config.auth_token.username,
+            config.cluster_name,
             config.clusters[config.cluster_name].registry_url,
         )
         if image_parser.is_in_neuro_registry(value):
@@ -544,6 +559,7 @@ class ImageType(click.ParamType):
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
             config.auth_token.username,
+            config.cluster_name,
             config.clusters[config.cluster_name].registry_url,
         )
         return image_parser.parse_remote(value)
@@ -560,6 +576,7 @@ class RemoteTaglessImageType(click.ParamType):
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
             config.auth_token.username,
+            config.cluster_name,
             config.clusters[config.cluster_name].registry_url,
         )
         return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)

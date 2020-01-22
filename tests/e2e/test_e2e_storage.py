@@ -517,7 +517,10 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
 
     # Test subcommand "glob"
     captured = helper.run_cli(["storage", "glob", helper.tmpstorage + "/**"])
-    prefix = f"storage://{helper.username}/{URL(helper.tmpstorage).path}"
+    prefix = (
+        f"storage://{helper.cluster_name}/{helper.username}/"
+        f"{URL(helper.tmpstorage).path}"
+    )
     assert sorted(captured.out.splitlines()) == [
         prefix,
         prefix + "folder",
