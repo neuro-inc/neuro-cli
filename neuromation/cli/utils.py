@@ -359,9 +359,7 @@ class Command(NeuroClickMixin, click.Command):
 
 
 def command(
-    name: Optional[str] = None,
-    cls: Type[Command] = Command,
-    **kwargs: Any,
+    name: Optional[str] = None, cls: Type[Command] = Command, **kwargs: Any
 ) -> Command:
     return click.command(name=name, cls=cls, **kwargs)  # type: ignore
 
