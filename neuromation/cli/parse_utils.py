@@ -153,21 +153,37 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
                             f" available variants: {variants}"
                         )
                     default = COLUMNS_MAP[name]
-        if default is None:
-            raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
+            if default is None:
+                raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
         title = _get(groups, "title", fmt, str, default.title)
         assert title is not None
         align = _get(groups, "align", fmt, Align, default.align)
         assert align is not None
+
+        width_min = _get(groups, "min", fmt, int, None)
+        width_max = _get(groups, "max", fmt, int, None)
+        if width_max is not None:
+            if width_min is not None and width_min > width_max:
+                width_min = width_max
+        else:
+            if (
+                width_min is not None
+                and default.width.max is not None
+                and default.width.max < width_min
+            ):
+                width_max = width_min
+            else:
+                width_max = default.width.max
+
+        width = _get(groups, "width", fmt, int, None)
+        if width is not None:
+            width_min = width_max = width
+
         info = JobColumnInfo(
             id=default.id,  # canonical name
             title=title,
             align=align,
-            width=ColumnWidth(
-                _get(groups, "min", fmt, int, default.width.min),
-                _get(groups, "max", fmt, int, default.width.max),
-                _get(groups, "width", fmt, int, default.width.width),
-            ),
+            width=ColumnWidth(width_min, width_max, width),
         )
         ret.append(info)
     if not ret:
