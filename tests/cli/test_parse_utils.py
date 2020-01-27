@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 from neuromation.cli.formatters.ftable import Align, ColumnWidth
@@ -52,6 +54,11 @@ def test_parse_columns_short() -> None:
     assert parse_columns("{id}") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
 
 
+def test_parse_columns_id() -> None:
+    ci = COLUMNS_MAP["id"]
+    assert parse_columns("id") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
+
+
 def test_parse_columns_partial() -> None:
     ci = COLUMNS_MAP["description"]
     assert parse_columns("{DESC}") == [
@@ -72,6 +79,12 @@ def test_parse_columns_sep() -> None:
     assert parse_columns("{id} ,{name}") == expected
     assert parse_columns("{id}, {name}") == expected
     assert parse_columns("{id} , {name}") == expected
+
+    assert parse_columns("id name") == expected
+    assert parse_columns("id,name") == expected
+    assert parse_columns("id ,name") == expected
+    assert parse_columns("id, name") == expected
+    assert parse_columns("id , name") == expected
 
 
 def test_parse_columns_title_with_spaces() -> None:
@@ -101,6 +114,13 @@ def test_parse_columns_props_width() -> None:
     ]
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 7),
+    reason=(
+        "Due a bug in Python 3.6 're' module"
+        "the test didn't fail but works like '{id}' expression"
+    ),
+)
 def test_parse_columns_invalid_format() -> None:
     with pytest.raises(ValueError, match="Invalid format"):
         parse_columns("{id")
