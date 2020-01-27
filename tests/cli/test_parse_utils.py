@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 from neuromation.cli.formatters.ftable import Align, ColumnWidth
@@ -107,6 +109,13 @@ def test_parse_columns_props_subset() -> None:
     ]
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 7),
+    reason=(
+        "Due a bug in Python 3.6 're' module"
+        "the test didn't fail but works like '{id}' expression"
+    ),
+)
 def test_parse_columns_invalid_format() -> None:
     with pytest.raises(ValueError, match="Invalid format"):
         parse_columns("{id")
