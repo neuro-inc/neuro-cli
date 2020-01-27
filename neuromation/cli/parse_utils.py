@@ -84,7 +84,7 @@ COLUMNS_RE = re.compile(
     r"""
     (?P<id>\w+)|
     (?:\{(?P<col>[^}]+)\})|
-    (?P<sep>\s*(?:,\s*)?)|
+    (?P<sep>\s*(?:,\s*|\s))|
     (?P<miss>.)
     """,
     re.VERBOSE,
