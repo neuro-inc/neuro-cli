@@ -10,7 +10,7 @@ flake8==3.7.9
 isort==4.3.21
 black==19.10b0
 setuptools==45.1.0
-wheel==0.33.6
+wheel==0.34.1
 cmarkgfm==0.4.2
 twine==3.1.1
 markdown-toc==1.2.6
