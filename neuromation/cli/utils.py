@@ -414,12 +414,12 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
 class MainGroup(Group):
     topics = None
 
-    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command:
+    def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[click.Command]:
         ret = super().get_command(ctx, cmd_name)
         if ret is not None:
             return ret
         print("Sink", cmd_name)
-        return Sink(cmd_name)
+        return Sink(cmd_name)  # type: ignore
 
     def _format_group(
         self,
@@ -492,10 +492,7 @@ class Sink(click.BaseCommand):
     def __init__(self, name: str, **attrs: Any) -> None:
         super().__init__(name=name, **attrs)
 
-    def f():
-        pass
-
-    def parse_args(self, ctx: click.Context, args: List[str])->None:
+    def parse_args(self, ctx: click.Context, args: List[str]) -> None:
         root = cast(Root, ctx.obj)
         print("Parse args", args)
         config = root.get_factory().read_config()

@@ -10,6 +10,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
+
 from typing_extensions import final
 
 
@@ -19,12 +20,14 @@ logger = logging.getLogger(__name__)
 
 @final
 class Runner:
-    def __init__(self, *, debug: bool=False) -> None:
+    def __init__(self, *, debug: bool = False) -> None:
         self._debug = debug
         self._started = False
         self._stopped = False
-        self._loop = None
-        self._executor = None
+        self._executor = ThreadPoolExecutor()
+        self._loop = asyncio.new_event_loop()
+        self._loop.set_default_executor(self._executor)
+        _setup_exception_handler(self._loop, self._debug)
 
     def run(self, main: Awaitable[_T]) -> _T:
         assert self._started
@@ -34,7 +37,7 @@ class Runner:
         main_task = self._loop.create_task(main)
         return self._loop.run_until_complete(main_task)
 
-    def __enter__(self):
+    def __enter__(self) -> "Runner":
         assert not self._started
         assert not self._stopped
         self._started = True
@@ -49,18 +52,13 @@ class Runner:
             # there is no current loop
             pass
 
-        self._loop = asyncio.new_event_loop()
-        self._executor = ThreadPoolExecutor()
-        self._loop.set_default_executor(self._executor)
-        _setup_exception_handler(self._loop, self._debug)
         asyncio.set_event_loop(self._loop)
         self._loop.set_debug(self._debug)
         return self
 
-    def __exit__(self,
-                 exc_type: Type[BaseException],
-                 exc_val: Exception,
-                 exc_tb: TracebackType) -> None:
+    def __exit__(
+        self, exc_type: Type[BaseException], exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
         assert self._started
         assert not self._stopped
         try:
@@ -74,7 +72,7 @@ class Runner:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", ResourceWarning)
                 self._loop.close()
-                self._loop = None
+                del self._loop
                 gc.collect()
 
 
@@ -129,9 +127,7 @@ def _setup_exception_handler(loop: asyncio.AbstractEventLoop, debug: bool) -> No
     loop.set_exception_handler(_exception_handler)
 
 
-def _cancel_all_tasks(
-    loop: asyncio.AbstractEventLoop
-) -> None:
+def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
     if sys.version_info >= (3, 7):
         to_cancel = asyncio.all_tasks(loop)
     else:
