@@ -35,6 +35,14 @@ class Runner:
         if not asyncio.iscoroutine(main):
             raise ValueError("a coroutine was expected, got {!r}".format(main))
         main_task = self._loop.create_task(main)
+
+        if sys.version_info <= (3, 7):
+            def retrieve_exc(fut: 'asyncio.Future[None]') -> None:
+                # suppress exception printing
+                if not fut.cancelled():
+                    fut.exception()
+            main_task.add_done_callback(retrieve_exc)
+
         return self._loop.run_until_complete(main_task)
 
     def __enter__(self) -> "Runner":
