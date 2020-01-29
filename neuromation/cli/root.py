@@ -62,6 +62,8 @@ class Root:
         return self._client
 
     async def init_client(self) -> None:
+        if self._client is not None:
+            return self._client
         trace_configs: Optional[List[aiohttp.TraceConfig]]
         if self.trace:
             trace_configs = [self._create_trace_config()]

@@ -332,6 +332,7 @@ class Command(NeuroClickMixin, click.Command):
         super().__init__(
             callback=callback, **kwargs,
         )
+        self.init_client = init_client
 
     def invoke(self, ctx: click.Context) -> Any:
         """Given a context, this invokes the attached callback (if it exists)
@@ -413,6 +414,13 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
 class MainGroup(Group):
     topics = None
 
+    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command:
+        ret = super().get_command(ctx, cmd_name)
+        if ret is not None:
+            return ret
+        print("Sink", cmd_name)
+        return Sink(cmd_name)
+
     def _format_group(
         self,
         title: str,
@@ -478,6 +486,28 @@ class MainGroup(Group):
             'Use "neuro --options" for a list of global command-line options '
             "(applies to all commands)."
         )
+
+
+class Sink(click.BaseCommand):
+    def __init__(self, name: str, **attrs: Any) -> None:
+        super().__init__(name=name, **attrs)
+
+    def f():
+        pass
+
+    def parse_args(self, ctx: click.Context, args: List[str])->None:
+        root = cast(Root, ctx.obj)
+        print("Parse args", args)
+        config = root.get_factory().read_config()
+        ctx.args = args.copy()
+        return ctx.args
+
+    def invoke(self, ctx: click.Context) -> Any:
+        print("Invoke", ctx.command.name)
+        print(ctx.args)
+        print(ctx.params)
+        print(ctx.protected_args)
+        print(ctx.obj)
 
 
 def alias(
