@@ -432,6 +432,8 @@ class MainGroup(Group):
         cmd = self.get_command(ctx, sub_cmd)
         if cmd is None:
             ctx.fail(f"Alias {cmd_name} uses unknown command {sub_cmd}")
+        # TODO: provide help by returning either Command or MultiCommand
+        # derived alias classes
         return cmd, sub_args + args
 
     def resolve_command(self, ctx: click.Context, args: List[str]):
