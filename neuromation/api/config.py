@@ -470,7 +470,10 @@ def _validate_user_config(
 
 
 def _load_file(filename: Path) -> Mapping[str, Any]:
-    config = toml.load(filename)
+    try:
+        config = toml.load(filename)
+    except ValueError as exc:
+        raise ConfigError(f"{filename}: {exc}")
     _validate_user_config(config, filename)
     return config
 

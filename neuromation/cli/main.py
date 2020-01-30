@@ -124,7 +124,7 @@ def print_options(
     ctx.exit()
 
 
-@click.group(cls=MainGroup, invoke_without_command=True)
+@click.group(cls=MainGroup)
 @option(
     "-v",
     "--verbose",
@@ -265,8 +265,7 @@ def cli(
         skip_gmp_stats=skip_stats,
     )
     ctx.obj = root
-    if not ctx.invoked_subcommand:
-        click.echo(ctx.get_help())
+    ctx.call_on_close(root.close)
 
 
 @cli.command(wrap_async=False)

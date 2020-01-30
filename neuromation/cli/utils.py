@@ -49,7 +49,6 @@ from neuromation.api.config import _CookieSession, _PyPIVersion
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
-from .asyncio_utils import run
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
 from .stats import upload_gmp_stats
@@ -185,15 +184,6 @@ async def _run_async_function(
             assert factory is not None
             factory._save(new_config)
 
-        await root.close()
-
-        # looks ugly but proper fix requires aiohttp changes
-        if sys.platform == "win32":
-            # Windows need a longer sleep
-            await asyncio.sleep(0.2)
-        else:
-            await asyncio.sleep(0.1)
-
 
 def _wrap_async_callback(
     callback: Callable[..., Awaitable[_T]], init_client: bool = True,
@@ -203,9 +193,8 @@ def _wrap_async_callback(
     @click.pass_obj
     @functools.wraps(callback)
     def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
-        return run(
+        return root.run(
             _run_async_function(init_client, callback, root, *args, **kwargs),
-            debug=root.verbosity >= 2,  # see main:setup_logging for constants
         )
 
     return wrapper
@@ -344,9 +333,7 @@ class Command(NeuroClickMixin, click.Command):
                 err=True,
             )
         if self.callback is not None:
-            # init_client=init_client,
-            # ctx.parent.params
-            # breakpoint()
+            # Collect arguments for sending to google analytics
             ctx2 = ctx
             params = [_collect_params(ctx2.command, ctx2)]
             while ctx2.parent:
@@ -414,12 +401,62 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
 class MainGroup(Group):
     topics = None
 
-    def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[click.Command]:
-        ret = super().get_command(ctx, cmd_name)
-        if ret is not None:
-            return ret
-        print("Sink", cmd_name)
-        return Sink(cmd_name)  # type: ignore
+    def invoke(self, ctx: click.Context) -> None:
+        args = ctx.protected_args + ctx.args
+        ctx.args = []
+        ctx.protected_args = []
+
+        with ctx:
+            ctx.invoke(self.callback, **ctx.params)
+            if not args:
+                # For call with options only, e.g. "neuro -v"
+                click.echo(ctx.get_help())
+                return
+            cmd_name, cmd, args = self.resolve_command(ctx, args)
+            ctx.invoked_subcommand = cmd_name
+            sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
+            with sub_ctx:
+                sub_ctx.command.invoke(sub_ctx)
+                return
+
+    async def find_alias(
+        self, ctx: click.Context, cmd_name: str, args: List[str], root: Root
+    ) -> List[str]:
+        client = await root.init_client()
+        config = await client.config.get_user_config()
+        alias = config.get("alias", {}).get(cmd_name)
+        if alias is None:
+            # Command not found
+            return None, []
+        sub_cmd, *sub_args = shlex.split(alias)
+        cmd = self.get_command(ctx, sub_cmd)
+        if cmd is None:
+            ctx.fail(f"Alias {cmd_name} uses unknown command {sub_cmd}")
+        return cmd, sub_args + args
+
+    def resolve_command(self, ctx: click.Context, args: List[str]):
+        cmd_name, *args = args
+
+        # Get the command
+        cmd = self.get_command(ctx, cmd_name)
+
+        if cmd is None:
+            # find alias
+            root = cast(Root, ctx.obj)
+            cmd, args = root.run(self.find_alias(ctx, cmd_name, args, root))
+
+        # If we don't find the command we want to show an error message
+        # to the user that it was not provided.  However, there is
+        # something else we should do: if the first argument looks like
+        # an option we want to kick off parsing again for arguments to
+        # resolve things like --help which now should go to the main
+        # place.
+        if cmd is None and not ctx.resilient_parsing:
+            if cmd_name and not cmd_name[0].isalnum():
+                self.parse_args(ctx, ctx.args)
+            ctx.fail(f'No such command or alias "{cmd_name}".')
+
+        return cmd_name, cmd, args
 
     def _format_group(
         self,
@@ -486,25 +523,6 @@ class MainGroup(Group):
             'Use "neuro --options" for a list of global command-line options '
             "(applies to all commands)."
         )
-
-
-class Sink(click.BaseCommand):
-    def __init__(self, name: str, **attrs: Any) -> None:
-        super().__init__(name=name, **attrs)
-
-    def parse_args(self, ctx: click.Context, args: List[str]) -> None:
-        root = cast(Root, ctx.obj)
-        print("Parse args", args)
-        config = root.get_factory().read_config()
-        ctx.args = args.copy()
-        return ctx.args
-
-    def invoke(self, ctx: click.Context) -> Any:
-        print("Invoke", ctx.command.name)
-        print(ctx.args)
-        print(ctx.params)
-        print(ctx.protected_args)
-        print(ctx.obj)
 
 
 def alias(
