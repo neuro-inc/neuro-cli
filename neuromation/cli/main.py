@@ -16,6 +16,7 @@ from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
 from neuromation.cli.root import Root
 
 from . import admin, completion, config, image, job, project, share, storage
+from .alias import find_alias
 from .const import (
     EX_DATAERR,
     EX_IOERR,
@@ -37,7 +38,6 @@ from .utils import (
     option,
     pager_maybe,
 )
-from .alias import find_alias
 
 
 if sys.platform == "win32":
