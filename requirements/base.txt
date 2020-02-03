@@ -16,4 +16,5 @@ psutil==5.6.7
 typing_extensions==3.7.4.1
 wcwidth==0.1.8
 toml==0.10.0
+docopt==0.6.0
 -e .

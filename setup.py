@@ -45,6 +45,7 @@ setup(
         "atomicwrites>=1.0",
         "wcwidth>=0.1.7",
         "toml>=0.10.0",
+        "docopt>=0.6.0"
     ],
     include_package_data=True,
     description="Neuro Platform API client",
