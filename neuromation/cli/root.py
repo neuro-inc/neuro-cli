@@ -48,11 +48,11 @@ class Root:
     _factory: Optional[Factory] = None
     _runner: Runner = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._runner = Runner(debug=self.verbosity >= 2)
         self._runner.__enter__()
 
-    def close(self):
+    def close(self) -> None:
         if self._client is not None:
             self.run(self._client.close())
 

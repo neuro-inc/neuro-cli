@@ -78,7 +78,7 @@ async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterato
 
     await root.init_client()
     yield root
-    await root.close()
+    await root.client.close()
 
 
 @pytest.fixture()

@@ -406,8 +406,8 @@ class MainGroup(Group):
         ctx.args = []
         ctx.protected_args = []
 
-        with ctx:
-            ctx.invoke(self.callback, **ctx.params)
+        with ctx:  # type: ignore
+            ctx.invoke(self.callback, **ctx.params)  # type: ignore
             if not args:
                 # For call with options only, e.g. "neuro -v"
                 click.echo(ctx.get_help())
@@ -415,28 +415,28 @@ class MainGroup(Group):
             cmd_name, cmd, args = self.resolve_command(ctx, args)
             ctx.invoked_subcommand = cmd_name
             sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
-            with sub_ctx:
+            with sub_ctx:  # type: ignore
                 sub_ctx.command.invoke(sub_ctx)
                 return
 
     async def find_alias(
         self, ctx: click.Context, cmd_name: str, args: List[str], root: Root
-    ) -> List[str]:
+    ) -> Tuple[Optional[click.Command], List[str]]:
         client = await root.init_client()
         config = await client.config.get_user_config()
-        alias = config.get("alias", {}).get(cmd_name)
-        if alias is None:
+        alias_str = config.get("alias", {}).get(cmd_name)
+        if alias_str is None:
             # Command not found
             return None, []
-        sub_cmd, *sub_args = shlex.split(alias)
+        sub_cmd, *sub_args = shlex.split(alias_str)
         cmd = self.get_command(ctx, sub_cmd)
         if cmd is None:
-            ctx.fail(f"Alias {cmd_name} uses unknown command {sub_cmd}")
-        # TODO: provide help by returning either Command or MultiCommand
-        # derived alias classes
-        return cmd, sub_args + args
+            ctx.fail(f"Alias {cmd_name} refers to unknown command {sub_cmd}")
+        return Alias(cmd_name, cmd, sub_args, alias_str), args
 
-    def resolve_command(self, ctx: click.Context, args: List[str]):
+    def resolve_command(
+        self, ctx: click.Context, args: List[str]
+    ) -> Tuple[str, click.Command, List[str]]:
         cmd_name, *args = args
 
         # Get the command
@@ -458,6 +458,7 @@ class MainGroup(Group):
                 self.parse_args(ctx, ctx.args)
             ctx.fail(f'No such command or alias "{cmd_name}".')
 
+        assert cmd is not None
         return cmd_name, cmd, args
 
     def _format_group(
@@ -525,6 +526,36 @@ class MainGroup(Group):
             'Use "neuro --options" for a list of global command-line options '
             "(applies to all commands)."
         )
+
+
+class Alias(NeuroClickMixin, click.Command):
+    def __init__(
+        self, name: str, cmd: click.Command, sub_args: List[str], alias: str
+    ) -> None:
+        super().__init__(name)
+        self.sub_cmd = cmd
+        self.sub_args = sub_args
+        self.alias = alias
+
+    def invoke(self, ctx: click.Context) -> None:
+        with ctx:  # type: ignore
+            ctx.invoked_subcommand = self.name
+            sub_ctx = self.sub_cmd.make_context(
+                self.name, self.sub_args + ctx.args, parent=ctx
+            )
+            with sub_ctx:  # type: ignore
+                sub_ctx.command.invoke(sub_ctx)
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        self.format_usage(ctx, formatter)
+        formatter.write_paragraph()
+        assert ctx.parent is not None
+        formatter.write(
+            "Alias for "
+            + click.style(f'"{ctx.parent.info_name} {self.alias}"', bold=True)
+        )
+        formatter.write_paragraph()
+        self.format_options(ctx, formatter)
 
 
 def alias(

@@ -38,7 +38,7 @@ class Runner:
 
         if sys.version_info <= (3, 7):
 
-            def retrieve_exc(fut: "asyncio.Future[None]") -> None:
+            def retrieve_exc(fut: "asyncio.Task[Any]") -> None:
                 # suppress exception printing
                 if not fut.cancelled():
                     fut.exception()
