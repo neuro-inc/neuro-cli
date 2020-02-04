@@ -59,32 +59,20 @@ class ExternalAlias(NeuroClickMixin, click.Command):
 
     def invoke(self, ctx: click.Context) -> None:
         args = ctx.args
-        # extracted from docopt.docopt() and adopted for neuro config format
-        options = _parse_defaults(self.alias.get("options"))
-        pattern = docopt.parse_pattern(
-            docopt.formal_usage(self.alias["usage"]), options
-        )
-        # [default] syntax for argument is disabled
-        # for a in pattern.flat(Argument):
-        #     same_name = [d for d in arguments if d.name == a.name]
-        #     if same_name:
-        #         a.value = same_name[0].value
-        argv = docopt.parse_argv(
-            docopt.Tokens(args), list(options), options_first=False
-        )
-        pattern_options = set(pattern.flat(docopt.Option))
-        for options_shortcut in pattern.flat(docopt.OptionsShortcut):
-            doc_options = _parse_defaults(self.alias.get("options"))
-            options_shortcut.children = list(set(doc_options) - pattern_options)
-            # if any_options:
-            #     options_shortcut.children += [Option(o.short, o.long, o.argcount)
-            #                     for o in argv if type(o) is Option]
-        matched, left, collected = pattern.fix().match(argv)
-
-        if not matched or left != []:  # better error message if left?
-            ctx.fail(f"Cannot parse arguments")
-            return Dict((a.name, a.value) for a in (pattern.flat() + collected))
-        raise DocoptExit()
+        # Construct docstring because the only stable docopt API
+        # is docopt.docopt(), internals are wildly changing between versions.
+        # I hate it because docopt updates DocoptExit.usage global variable
+        # during parsing.
+        # Phew!
+        usage = self.alias['usage']
+        options = self.alias.get("options", "")
+        doc = f"usage: {usage}\n\noptions: {options}"
+        try:
+            args = docopt.docopt(doc, ctx.args, help=False, version=None)
+            args
+        except docopt.DocoptExit as exc:
+            # FIXME: strip "usage" text from docopt
+            ctx.fail(exc.args[0])
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         self.format_usage(ctx, formatter)
@@ -117,15 +105,25 @@ async def find_alias(
         ctx.fail(f"Invalid alias description type for {cmd_name}")
 
 
-def _parse_defaults(options: List[str]) -> List[docopt.Option]:
+def _parse_defaults(section: str) -> List[docopt.Option]:
     defaults = []
-    if options is None:
+    if section is None:
         return defaults
-    for opt in options:
-        # FIXME corner case "bla: options: --foo"
-        _, _, s = s.partition(":")  # get rid of "options:"
-        split = re.split("\n[ \t]*(-\S+?)", "\n" + s)[1:]
-        split = [s1 + s2 for s1, s2 in zip(split[::2], split[1::2])]
-        options = [docopt.Option.parse(s) for s in split if s.startswith("-")]
-        defaults += options
+    # FIXME corner case "bla: options: --foo"
+    split = re.split("\n[ \t]*(-\\S+?)", "\n" + section)[1:]
+    split = [s1 + s2 for s1, s2 in zip(split[::2], split[1::2])]
+    options = [docopt.Option.parse(s) for s in split if s.startswith("-")]
+    defaults += options
     return defaults
+
+
+def _formal_usage(section: str) -> str:
+    pu = section.split()
+    return '( ' + ' '.join(') | (' if s == pu[0] else s for s in pu[1:]) + ' )'
+
+
+# Version compatibility shim
+try:
+    Tokens = docopt.Tokens
+except AttributeError:
+    Tokens = docopt.TokenStream
