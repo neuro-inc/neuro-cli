@@ -471,7 +471,9 @@ def _validate_user_config(
         _validate_alias(key, value, filename)
 
 
-def _validate_alias(key: str, value: Dict[str, str], filename: str) -> None:
+def _validate_alias(
+    key: str, value: Dict[str, str], filename: Union[str, "os.PathLike[str]"]
+) -> None:
     # TODO: add validation for both internal and external aliases
     pass
 

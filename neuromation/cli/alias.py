@@ -3,7 +3,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -56,7 +56,7 @@ class ExternalAlias(NeuroClickMixin, click.Command):
     allow_interspersed_args = False
     allow_extra_args = True
 
-    def __init__(self, name: str, alias: Dict[str, str]) -> None:
+    def __init__(self, name: str, alias: Dict[str, Any]) -> None:
         params = _parse_options(alias.get("options", "")) + _parse_args(
             alias.get("args", "")
         )
@@ -65,7 +65,7 @@ class ExternalAlias(NeuroClickMixin, click.Command):
         self.alias = alias
 
     def invoke(self, ctx: click.Context) -> None:
-        cmd = self.alias['exec']
+        cmd = self.alias["exec"]
         matches = re.findall(r"{\*?\w+\??}", cmd)
         replaces = {}
         for match in matches:
@@ -96,8 +96,10 @@ class ExternalAlias(NeuroClickMixin, click.Command):
                 replaces[match] = val
             elif isinstance(param, click.Option):
                 if multiple:
-                    raise ConfigError('"*arg" is allowed for positional arguments '
-                                      "substitution only")
+                    raise ConfigError(
+                        '"*arg" is allowed for positional arguments '
+                        "substitution only"
+                    )
                 val = ctx.params[name]
                 if param.is_flag:
                     # parser generates bool flags only
@@ -148,7 +150,7 @@ async def find_alias(
         ctx.fail(f"Invalid alias description type for {cmd_name}")
 
 
-def _parse_options(descr: List[str]) -> List[click.Option]:
+def _parse_options(descr: List[str]) -> List[click.Parameter]:
     ret = []
     for od in descr:
         opts = []
@@ -175,18 +177,18 @@ def _parse_options(descr: List[str]) -> List[click.Option]:
         ret.append(
             click.Option(opts, is_flag=is_flag, default=default, help=description)
         )
-    return ret
+    return ret  # type: ignore
 
 
-def _parse_args(source: str) -> List[click.Argument]:
+def _parse_args(source: str) -> List[click.Parameter]:
     ret = []
-    src = re.sub(r"([\[\]]|\.\.\.)", r" \1 ", source)
-    src = [s for s in re.split(r"\s+|(\S*<.*?>)", src) if s]
+    src1 = re.sub(r"([\[\]]|\.\.\.)", r" \1 ", source)
+    src2 = [s for s in re.split(r"\s+|(\S*<.*?>)", src1) if s]
     required = True
     multiple = False
     brackets = False
     arg = None
-    for item in src:
+    for item in src2:
         if item == "[":
             if brackets:
                 raise ConfigError(f'Cannot parse args "{source}", nested brackets')
@@ -242,4 +244,4 @@ def _parse_args(source: str) -> List[click.Argument]:
                 type=click.UNPROCESSED,
             )
         )
-    return ret
+    return ret  # type: ignore

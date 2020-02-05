@@ -3,8 +3,9 @@ from textwrap import dedent
 import pytest
 from click.testing import CliRunner
 
+from neuromation.cli.main import MainGroup
 from neuromation.cli.root import Root
-from neuromation.cli.utils import JOB_NAME, DeprecatedGroup, MainGroup, command, group
+from neuromation.cli.utils import JOB_NAME, DeprecatedGroup, command, group
 
 
 def test_print() -> None:
