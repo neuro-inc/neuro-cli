@@ -2,6 +2,7 @@ import asyncio
 import logging
 import shutil
 import sys
+import warnings
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, List, Optional, Sequence, Tuple, Type, Union, cast
@@ -469,7 +470,9 @@ cli.topics = topics  # type: ignore
 
 def main(args: Optional[List[str]] = None) -> None:
     try:
-        cli.main(args=args, standalone_mode=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            cli.main(args=args, standalone_mode=False)
     except ClickAbort:
         LOG_ERROR("Aborting.")
         sys.exit(130)
