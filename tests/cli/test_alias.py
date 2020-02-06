@@ -112,6 +112,31 @@ def test_external_alias_no_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
     assert expected == capture.out
 
 
+def test_external_alias_no_arg_help_custom_msg(
+    run_cli: _RunCli, nmrc_path: Path
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps({"alias": {"user-cmd": {"exec": "script", "help": "Custom help.",}}})
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS]
+
+        Alias for "script"
+
+        Custom help.
+
+        Options:
+          --help  Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
 def test_external_alias_arg(run_cli: _RunCli, nmrc_path: Path, script: str) -> None:
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
@@ -137,6 +162,55 @@ def test_external_alias_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
         Usage: {prog_name} user-cmd [OPTIONS] ARG
 
         Alias for "script {{arg}}"
+
+        Options:
+          --help  Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
+def test_external_alias_optional_arg_provided(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg?}}", "args": "[ARG]"}}}
+        )
+    )
+    capture = run_cli(["user-cmd", "argument"])
+    assert capture.code == 0
+    assert "['argument']" == capture.out
+
+
+def test_external_alias_optional_arg_missed(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg?}}", "args": "[ARG]"}}}
+        )
+    )
+    capture = run_cli(["user-cmd", "argument"])
+    assert capture.code == 0
+    assert "['argument']" == capture.out
+
+
+def test_external_alias_optional_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps({"alias": {"user-cmd": {"exec": "script {arg?}", "args": "[ARG]"}}})
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS] [ARG]
+
+        Alias for "script {{arg?}}"
 
         Options:
           --help  Show this message and exit.
