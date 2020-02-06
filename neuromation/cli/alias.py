@@ -145,7 +145,6 @@ async def find_alias(
         return InternalAlias(cmd_name, alias)
     elif "exec" in alias:
         return ExternalAlias(cmd_name, alias)
-        pass
     else:
         ctx.fail(f"Invalid alias description type for {cmd_name}")
 
