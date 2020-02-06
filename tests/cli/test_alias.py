@@ -3,10 +3,10 @@ import sys
 from pathlib import Path
 from typing import Callable, List
 
+import pytest
 import toml
 
 from .conftest import SysCapWithCode
-import pytest
 
 
 _RunCli = Callable[[List[str]], SysCapWithCode]
@@ -23,7 +23,7 @@ def test_internal_alias_simple(run_cli: _RunCli, nmrc_path: Path) -> None:
     user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"cmd": "help ls"}}}))
     capture = run_cli(["user-cmd"])
     assert capture.code == 0
-    assert 'List directory contents' in capture.out
+    assert "List directory contents" in capture.out
 
 
 def test_internal_alias_refers_to_unknown(run_cli: _RunCli, nmrc_path: Path) -> None:
@@ -87,17 +87,7 @@ def test_internal_alias_help_custom_msg(run_cli: _RunCli, nmrc_path: Path) -> No
 
 def test_external_alias_no_arg(run_cli: _RunCli, nmrc_path: Path, script: str) -> None:
     user_cfg = nmrc_path / "user.toml"
-    user_cfg.write_text(
-        toml.dumps(
-            {
-                "alias": {
-                    "user-cmd": {
-                        "exec": script,
-                    }
-                }
-            }
-        )
-    )
+    user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"exec": script}}}))
     capture = run_cli(["user-cmd"])
     assert capture.code == 0
     assert "[]" == capture.out
@@ -105,17 +95,7 @@ def test_external_alias_no_arg(run_cli: _RunCli, nmrc_path: Path, script: str) -
 
 def test_external_alias_no_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
     user_cfg = nmrc_path / "user.toml"
-    user_cfg.write_text(
-        toml.dumps(
-            {
-                "alias": {
-                    "user-cmd": {
-                        "exec": "script",
-                    }
-                }
-            }
-        )
-    )
+    user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"exec": "script"}}}))
     capture = run_cli(["user-cmd", "--help"])
     assert capture.code == 0
     prog_name = Path(sys.argv[0]).name
@@ -136,14 +116,7 @@ def test_external_alias_arg(run_cli: _RunCli, nmrc_path: Path, script: str) -> N
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
-            {
-                "alias": {
-                    "user-cmd": {
-                        "exec": f"{script} {{arg}}",
-                        "args": "ARG",
-                    }
-                }
-            }
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg}}", "args": "ARG"}}}
         )
     )
     capture = run_cli(["user-cmd", "argument"])
@@ -154,16 +127,7 @@ def test_external_alias_arg(run_cli: _RunCli, nmrc_path: Path, script: str) -> N
 def test_external_alias_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
-        toml.dumps(
-            {
-                "alias": {
-                    "user-cmd": {
-                        "exec": "script {arg}",
-                        "args": "ARG",
-                    }
-                }
-            }
-        )
+        toml.dumps({"alias": {"user-cmd": {"exec": "script {arg}", "args": "ARG"}}})
     )
     capture = run_cli(["user-cmd", "--help"])
     assert capture.code == 0
