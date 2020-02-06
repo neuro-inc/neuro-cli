@@ -193,9 +193,9 @@ def test_external_alias_optional_arg_missed(
             {"alias": {"user-cmd": {"exec": f"{script} {{arg?}}", "args": "[ARG]"}}}
         )
     )
-    capture = run_cli(["user-cmd", "argument"])
+    capture = run_cli(["user-cmd"])
     assert capture.code == 0
-    assert "['argument']" == capture.out
+    assert "[]" == capture.out
 
 
 def test_external_alias_optional_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
