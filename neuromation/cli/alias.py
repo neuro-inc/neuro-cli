@@ -31,7 +31,7 @@ class InternalAlias(NeuroClickMixin, click.Command):
         assert isinstance(parent_cmd, click.MultiCommand)
         cmd = parent_cmd.get_command(parent, sub_cmd)
         if cmd is None:
-            ctx.fail(f"Alias {self.name} refers to unknown command {sub_cmd}")
+            ctx.fail(f'Alias {self.name} refers to unknown command "{sub_cmd}"')
         with ctx:  # type: ignore
             ctx.invoked_subcommand = self.name
             sub_ctx = cmd.make_context(self.name, sub_args + ctx.args, parent=ctx)
@@ -48,6 +48,12 @@ class InternalAlias(NeuroClickMixin, click.Command):
             + click.style(f'"{ctx.parent.info_name} {alias_cmd}"', bold=True)
         )
         formatter.write_paragraph()
+
+        help = self.alias.get("help")
+        if help is not None:
+            formatter.write("\n")
+            formatter.write_text(help)
+
         self.format_options(ctx, formatter)
 
 
