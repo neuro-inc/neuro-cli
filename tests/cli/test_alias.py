@@ -170,6 +170,54 @@ def test_external_alias_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
     assert expected == capture.out
 
 
+def test_external_alias_two_arg2(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": f"{script} {{arg1}} {{arg2}}",
+                        "args": "ARG1 ARG2",
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "arg1", "arg2"])
+    assert capture.code == 0
+    assert "['arg1', 'arg2']" == capture.out
+
+
+def test_external_alias_two_arg2_help(run_cli: _RunCli, nmrc_path: Path) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {"exec": "script {arg1} {arg2}", "args": "ARG1 ARG2"}
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS] ARG1 ARG2
+
+        Alias for "script {{arg1}} {{arg2}}"
+
+        Options:
+          --help  Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
 def test_external_alias_optional_arg_provided(
     run_cli: _RunCli, nmrc_path: Path, script: str
 ) -> None:
@@ -299,6 +347,38 @@ def test_external_alias_optional_multiple_arg_help(
         Usage: {prog_name} user-cmd [OPTIONS] [ARG]...
 
         Alias for "script {{*arg}}"
+
+        Options:
+          --help  Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
+def test_external_alias_three_args_optional_multiple_regular_help(
+    run_cli: _RunCli, nmrc_path: Path
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": "script {arg1?} {*arg2} {arg3}",
+                        "args": "[ARG1] ARG2... ARG3",
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS] [ARG1] ARG2... ARG3
+
+        Alias for "script {{arg1?}} {{*arg2}} {{arg3}}"
 
         Options:
           --help  Show this message and exit.
