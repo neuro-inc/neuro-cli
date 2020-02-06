@@ -137,6 +137,11 @@ class ExternalAlias(NeuroClickMixin, click.Command):
         alias_cmd = self.alias["exec"]
         formatter.write_text("Alias for " + click.style(f'"{alias_cmd}"', bold=True))
 
+        help = self.alias.get("help")
+        if help is not None:
+            formatter.write("\n")
+            formatter.write_text(help)
+
 
 async def find_alias(
     ctx: click.Context, cmd_name: str, args: List[str], root: Root
@@ -151,7 +156,9 @@ async def find_alias(
         return InternalAlias(cmd_name, alias)
     elif "exec" in alias:
         return ExternalAlias(cmd_name, alias)
-    else:
+    else:  # pragma: no cover
+        # This branch is unreachable,
+        # Config file validator should prevent unknown alias type
         ctx.fail(f"Invalid alias description type for {cmd_name}")
 
 
