@@ -66,7 +66,11 @@ class ExternalAlias(NeuroClickMixin, click.Command):
         assert "exec" in alias
         options = _parse_options(alias.get("options", ""))
         args = _parse_args(alias.get("args", ""))
-        _validate_exec(alias['exec'], {param.name for param in options}, {param.name for param in args})
+        _validate_exec(
+            alias["exec"],
+            {param.name for param in options},
+            {param.name for param in args},
+        )
         super().__init__(name, params=options + args)
         self.alias = alias
 
@@ -99,22 +103,32 @@ class ExternalAlias(NeuroClickMixin, click.Command):
                 if param.is_flag:
                     # parser generates bool flags only
                     assert param.is_bool_flag
-                    if val is None:
+                    if not val:
+                        # empty tuple
                         replaces[match] = ""
-                    elif val:
-                        replaces[match] = param.opts[0]
-                    else:
-                        replaces[match] = param.secondary_opts[0]
+                        continue
+                    vals = []
+                    for item in val:
+                        if val:
+                            vals.append(_longest(param.opts))
+                        else:
+                            vals.append(_longest(param.secondary_opts))
+                    replaces[match] = " ".join(vals)
                 else:
-                    if val is None:
+                    if not val:
+                        # empty tuple
                         replaces[match] = ""
                     else:
-                        replaces[match] = f"{param.opts[0]} {val}"
+                        vals = []
+                        for item in val:
+                            vals.append(f"{_longest(param.opts)} {item}")
+                        replaces[match] = " ".join(vals)
             else:  # pragma: no cover
                 # Unreachable branch
                 raise RuntimeError(f"Unsupported parameter type {type(param)}")
         for name, val in replaces.items():
             cmd = cmd.replace(name, val)
+        print(cmd)
         ret = subprocess.run(shlex.split(cmd))
         if ret.returncode:
             sys.exit(ret.returncode)
@@ -176,7 +190,9 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         else:
             default = None
         ret.append(
-            click.Option(opts, is_flag=is_flag, default=default, multiple=True, help=description)
+            click.Option(
+                opts, is_flag=is_flag, default=default, multiple=True, help=description
+            )
         )
     return ret  # type: ignore
 
@@ -251,20 +267,28 @@ def _parse_args(source: str) -> List[click.Parameter]:
 def _validate_exec(cmd: str, options: Set[str], args: Set[str]) -> None:
     if args & options:
         overlapped = ",".join(args & options)
-        raise ConfigError('The following names are present in both '
-                          f'positional and optional arguments: {overlapped}')
+        raise ConfigError(
+            "The following names are present in both "
+            f"positional and optional arguments: {overlapped}"
+        )
     params = args | options
     matches = re.findall(r"{\w*}", cmd)
     for match in matches:
         name = match[1:-1]  # drop curly brackets
         if not name:
-            raise ConfigError(f'Empty substitution is not allowed')
+            raise ConfigError(f"Empty substitution is not allowed")
 
         if not name.islower():
-            raise ConfigError(f'Parameter {name} should be lowercased')
+            raise ConfigError(f"Parameter {name} should be lowercased")
 
         if not name.isidentifier():
-            raise ConfigError(f'Parameter {name} is not a walid identifier')
+            raise ConfigError(f"Parameter {name} is not a walid identifier")
 
         if name not in params:
             raise ConfigError(f'Unknown parameter {name} in "{cmd}"')
+
+
+def _longest(opts: List[str]) -> str:
+    # group long options first
+    possible_opts = sorted(opts, key=lambda x: -len(x))
+    return possible_opts[0]
