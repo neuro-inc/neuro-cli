@@ -128,7 +128,6 @@ class ExternalAlias(NeuroClickMixin, click.Command):
                 raise RuntimeError(f"Unsupported parameter type {type(param)}")
         for name, val in replaces.items():
             cmd = cmd.replace(name, val)
-        print(cmd)
         ret = subprocess.run(shlex.split(cmd))
         if ret.returncode:
             sys.exit(ret.returncode)
