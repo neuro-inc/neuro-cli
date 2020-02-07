@@ -92,7 +92,7 @@ class ExternalAlias(NeuroClickMixin, click.Command):
             if isinstance(param, click.Argument):
                 val = ctx.params[name]
                 if not param.required:
-                    if val is None:
+                    if not val:
                         replaces[match] = ""
                         continue
                 if param.nargs != 1:
