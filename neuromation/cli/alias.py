@@ -2,7 +2,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import click
 
@@ -65,18 +65,36 @@ class ExternalAlias(NeuroClickMixin, click.Command):
         assert "exec" in alias
         options = _parse_options(alias.get("options", ""))
         args = _parse_args(alias.get("args", ""))
-        _validate_exec(
+        simplified = _validate_exec(
             alias["exec"],
             {param.name for param in options},
             {param.name for param in args},
         )
         super().__init__(name, params=options + args)
         self.alias = alias
+        self.simplified = simplified
 
     def invoke(self, ctx: click.Context) -> None:
+        if self.simplified:
+            args = self._build_simplified(ctx)
+        else:
+            args = self._build_pattern(ctx)
+        ret = subprocess.run(args)
+        if ret.returncode:
+            sys.exit(ret.returncode)
+
+    def _build_simplified(self, ctx: click.Context) -> List[str]:
         cmd = self.alias["exec"]
-        matches = re.findall(r"{\w+}", cmd)
+        ret = shlex.split(cmd)
+        for param in self.params:
+            val = ctx.params[param.name]
+            ret.extend(_process_param(param, val))
+        return ret
+
+    def _build_pattern(self, ctx: click.Context) -> List[str]:
+        cmd = self.alias["exec"]
         replaces = {}
+        matches = re.findall(r"{\w+}", cmd)
         for match in matches:
             name = match[1:-1]  # drop curly brackets
 
@@ -87,49 +105,15 @@ class ExternalAlias(NeuroClickMixin, click.Command):
                 # Unreachable code, _validate_exec()
                 # makes sure that all param names are handled
                 raise ConfigError(f'Unknown parameter {name} in "{cmd}"')
+            val = ctx.params[name]
+            replaces[match] = " ".join(
+                shlex.quote(arg) for arg in _process_param(param, val)
+            )
 
-            if isinstance(param, click.Argument):
-                val = ctx.params[name]
-                if not param.required:
-                    if not val:
-                        replaces[match] = ""
-                        continue
-                if param.nargs != 1:
-                    val = " ".join(val)
-                replaces[match] = val
-            elif isinstance(param, click.Option):
-                val = ctx.params[name]
-                if param.is_flag:
-                    # parser generates bool flags only
-                    assert param.is_bool_flag
-                    if not val:
-                        # empty tuple
-                        replaces[match] = ""
-                        continue
-                    vals = []
-                    for item in val:
-                        if val:
-                            vals.append(_longest(param.opts))
-                        else:
-                            vals.append(_longest(param.secondary_opts))
-                    replaces[match] = " ".join(vals)
-                else:
-                    if not val:
-                        # empty tuple
-                        replaces[match] = ""
-                    else:
-                        vals = []
-                        for item in val:
-                            vals.append(f"{_longest(param.opts)} {item}")
-                        replaces[match] = " ".join(vals)
-            else:  # pragma: no cover
-                # Unreachable branch
-                raise RuntimeError(f"Unsupported parameter type {type(param)}")
         for name, val in replaces.items():
             cmd = cmd.replace(name, val)
-        ret = subprocess.run(shlex.split(cmd))
-        if ret.returncode:
-            sys.exit(ret.returncode)
+
+        return shlex.split(cmd)
 
     def format_help_text(
         self, ctx: click.Context, formatter: click.HelpFormatter
@@ -262,7 +246,8 @@ def _parse_args(source: str) -> List[click.Parameter]:
     return ret  # type: ignore
 
 
-def _validate_exec(cmd: str, options: Set[str], args: Set[str]) -> None:
+def _validate_exec(cmd: str, options: Set[str], args: Set[str]) -> bool:
+    # Return True for simplified form, False otherwise
     if args & options:
         overlapped = ",".join(args & options)
         raise ConfigError(
@@ -271,6 +256,8 @@ def _validate_exec(cmd: str, options: Set[str], args: Set[str]) -> None:
         )
     params = args | options
     matches = re.findall(r"{\w*}", cmd)
+    if not matches:
+        return True
     for match in matches:
         name = match[1:-1]  # drop curly brackets
         if not name:
@@ -285,8 +272,53 @@ def _validate_exec(cmd: str, options: Set[str], args: Set[str]) -> None:
         if name not in params:
             raise ConfigError(f'Unknown parameter {name} in "{cmd}"')
 
+    return False
+
 
 def _longest(opts: List[str]) -> str:
     # group long options first
     possible_opts = sorted(opts, key=lambda x: -len(x))
     return possible_opts[0]
+
+
+def _process_param(
+    param: click.Parameter, val: Union[None, str, Tuple[str]]
+) -> List[str]:
+    if isinstance(param, click.Argument):
+        if not param.required:
+            if not val:
+                return []
+        assert val is not None
+        if param.nargs != 1:
+            assert isinstance(val, tuple)
+            return list(val)
+        else:
+            assert isinstance(val, str)
+            return [val]
+    elif isinstance(param, click.Option):
+        if param.is_flag:
+            # parser generates bool flags only
+            assert param.is_bool_flag
+            if not val:
+                # empty tuple
+                return []
+            vals = []
+            for item in val:
+                if val:
+                    vals.append(_longest(param.opts))
+                else:
+                    vals.append(_longest(param.secondary_opts))
+            return vals
+        else:
+            if not val:
+                # empty tuple
+                return []
+            else:
+                vals = []
+                for item in val:
+                    vals.append(_longest(param.opts))
+                    vals.append(item)
+                return vals
+    else:  # pragma: no cover
+        # Unreachable branch
+        raise RuntimeError(f"Unsupported parameter type {type(param)}")
