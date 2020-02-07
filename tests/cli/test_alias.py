@@ -224,7 +224,7 @@ def test_external_alias_optional_arg_provided(
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
-            {"alias": {"user-cmd": {"exec": f"{script} {{arg?}}", "args": "[ARG]"}}}
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg}}", "args": "[ARG]"}}}
         )
     )
     capture = run_cli(["user-cmd", "argument"])
@@ -238,7 +238,7 @@ def test_external_alias_optional_arg_missed(
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
-            {"alias": {"user-cmd": {"exec": f"{script} {{arg?}}", "args": "[ARG]"}}}
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg}}", "args": "[ARG]"}}}
         )
     )
     capture = run_cli(["user-cmd"])
@@ -249,7 +249,7 @@ def test_external_alias_optional_arg_missed(
 def test_external_alias_optional_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
-        toml.dumps({"alias": {"user-cmd": {"exec": "script {arg?}", "args": "[ARG]"}}})
+        toml.dumps({"alias": {"user-cmd": {"exec": "script {arg}", "args": "[ARG]"}}})
     )
     capture = run_cli(["user-cmd", "--help"])
     assert capture.code == 0
@@ -258,7 +258,7 @@ def test_external_alias_optional_arg_help(run_cli: _RunCli, nmrc_path: Path) -> 
         f"""\
         Usage: {prog_name} user-cmd [OPTIONS] [ARG]
 
-        Alias for "script {{arg?}}"
+        Alias for "script {{arg}}"
 
         Options:
           --help  Show this message and exit.
@@ -273,7 +273,7 @@ def test_external_alias_multiple_arg_provided(
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
-            {"alias": {"user-cmd": {"exec": f"{script} {{*arg}}", "args": "ARG..."}}}
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg}}", "args": "ARG..."}}}
         )
     )
     capture = run_cli(["user-cmd", "arg1", "arg2"])
@@ -284,7 +284,7 @@ def test_external_alias_multiple_arg_provided(
 def test_external_alias_multiple_arg_help(run_cli: _RunCli, nmrc_path: Path) -> None:
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
-        toml.dumps({"alias": {"user-cmd": {"exec": "script {*arg}", "args": "ARG..."}}})
+        toml.dumps({"alias": {"user-cmd": {"exec": "script {arg}", "args": "ARG..."}}})
     )
     capture = run_cli(["user-cmd", "--help"])
     assert capture.code == 0
@@ -293,7 +293,7 @@ def test_external_alias_multiple_arg_help(run_cli: _RunCli, nmrc_path: Path) -> 
         f"""\
         Usage: {prog_name} user-cmd [OPTIONS] ARG...
 
-        Alias for "script {{*arg}}"
+        Alias for "script {{arg}}"
 
         Options:
           --help  Show this message and exit.
@@ -308,7 +308,7 @@ def test_external_alias_optional_multiple_arg_provided(
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
-            {"alias": {"user-cmd": {"exec": f"{script} {{*arg}}", "args": "[ARG]..."}}}
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg}}", "args": "[ARG]..."}}}
         )
     )
     capture = run_cli(["user-cmd", "arg1", "arg2"])
@@ -322,7 +322,7 @@ def test_external_alias_optional_multiple_arg_missed(
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
-            {"alias": {"user-cmd": {"exec": f"{script} {{*arg}}", "args": "[ARG]..."}}}
+            {"alias": {"user-cmd": {"exec": f"{script} {{arg}}", "args": "[ARG]..."}}}
         )
     )
     capture = run_cli(["user-cmd"])
@@ -336,7 +336,7 @@ def test_external_alias_optional_multiple_arg_help(
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
-            {"alias": {"user-cmd": {"exec": "script {*arg}", "args": "[ARG]..."}}}
+            {"alias": {"user-cmd": {"exec": "script {arg}", "args": "[ARG]..."}}}
         )
     )
     capture = run_cli(["user-cmd", "--help"])
@@ -346,7 +346,7 @@ def test_external_alias_optional_multiple_arg_help(
         f"""\
         Usage: {prog_name} user-cmd [OPTIONS] [ARG]...
 
-        Alias for "script {{*arg}}"
+        Alias for "script {{arg}}"
 
         Options:
           --help  Show this message and exit.
@@ -364,7 +364,7 @@ def test_external_alias_three_args_optional_multiple_regular_help(
             {
                 "alias": {
                     "user-cmd": {
-                        "exec": "script {arg1?} {*arg2} {arg3}",
+                        "exec": "script {arg1} {arg2} {arg3}",
                         "args": "[ARG1] ARG2... ARG3",
                     }
                 }
@@ -378,7 +378,7 @@ def test_external_alias_three_args_optional_multiple_regular_help(
         f"""\
         Usage: {prog_name} user-cmd [OPTIONS] [ARG1] ARG2... ARG3
 
-        Alias for "script {{arg1?}} {{*arg2}} {{arg3}}"
+        Alias for "script {{arg1}} {{arg2}} {{arg3}}"
 
         Options:
           --help  Show this message and exit.

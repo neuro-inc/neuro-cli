@@ -3,7 +3,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import click
 
@@ -63,66 +63,55 @@ class ExternalAlias(NeuroClickMixin, click.Command):
     allow_extra_args = True
 
     def __init__(self, name: str, alias: Dict[str, Any]) -> None:
-        params = _parse_options(alias.get("options", "")) + _parse_args(
-            alias.get("args", "")
-        )
-        super().__init__(name, params=params)
         assert "exec" in alias
+        options = _parse_options(alias.get("options", ""))
+        args = _parse_args(alias.get("args", ""))
+        _validate_exec(alias['exec'], {param.name for param in options}, {param.name for param in args})
+        super().__init__(name, params=options + args)
         self.alias = alias
 
     def invoke(self, ctx: click.Context) -> None:
         cmd = self.alias["exec"]
-        matches = re.findall(r"{\*?\w+\??}", cmd)
+        matches = re.findall(r"{\w+}", cmd)
         replaces = {}
         for match in matches:
-            optional = False
-            multiple = False
             name = match[1:-1]  # drop curly brackets
-            if name.endswith("?"):
-                optional = True
-                name = name[:-1]
-            if name.startswith("*"):
-                multiple = True
-                name = name[1:]
 
             for param in self.params:
                 if param.name == name:
                     break
-            else:
+            else:  # pragma: no cover
+                # Unreachable code, _validate_exec()
+                # makes sure that all param names are handled
                 raise ConfigError(f'Unknown parameter {name} in "{cmd}"')
 
             if isinstance(param, click.Argument):
                 val = ctx.params[name]
-                if optional:
+                if not param.required:
                     if val is None:
                         replaces[match] = ""
                         continue
-                if multiple:
+                if param.nargs != 1:
                     val = " ".join(val)
                 replaces[match] = val
             elif isinstance(param, click.Option):
-                if multiple:
-                    raise ConfigError(
-                        '"*arg" is allowed for positional arguments '
-                        "substitution only"
-                    )
                 val = ctx.params[name]
                 if param.is_flag:
                     # parser generates bool flags only
                     assert param.is_bool_flag
                     if val is None:
-                        # Implicit {option?} behavior for flags
                         replaces[match] = ""
                     elif val:
                         replaces[match] = param.opts[0]
                     else:
                         replaces[match] = param.secondary_opts[0]
                 else:
-                    if val is None and optional:
+                    if val is None:
                         replaces[match] = ""
                     else:
                         replaces[match] = f"{param.opts[0]} {val}"
-            else:
+            else:  # pragma: no cover
+                # Unreachable branch
                 raise RuntimeError(f"Unsupported parameter type {type(param)}")
         for name, val in replaces.items():
             cmd = cmd.replace(name, val)
@@ -187,7 +176,7 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         else:
             default = None
         ret.append(
-            click.Option(opts, is_flag=is_flag, default=default, help=description)
+            click.Option(opts, is_flag=is_flag, default=default, multiple=True, help=description)
         )
     return ret  # type: ignore
 
@@ -257,3 +246,25 @@ def _parse_args(source: str) -> List[click.Parameter]:
             )
         )
     return ret  # type: ignore
+
+
+def _validate_exec(cmd: str, options: Set[str], args: Set[str]) -> None:
+    if args & options:
+        overlapped = ",".join(args & options)
+        raise ConfigError('The following names are present in both '
+                          f'positional and optional arguments: {overlapped}')
+    params = args | options
+    matches = re.findall(r"{\w*}", cmd)
+    for match in matches:
+        name = match[1:-1]  # drop curly brackets
+        if not name:
+            raise ConfigError(f'Empty substitution is not allowed')
+
+        if not name.islower():
+            raise ConfigError(f'Parameter {name} should be lowercased')
+
+        if not name.isidentifier():
+            raise ConfigError(f'Parameter {name} is not a walid identifier')
+
+        if name not in params:
+            raise ConfigError(f'Unknown parameter {name} in "{cmd}"')
