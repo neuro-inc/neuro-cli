@@ -1,4 +1,3 @@
-import ast
 import re
 import shlex
 import subprocess
@@ -185,7 +184,7 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         description = description.strip()
         matched = re.findall(r"\[default: (.*)\]", description, flags=re.I)
         if matched:
-            default = ast.literal_eval(matched[0])
+            default = matched[0]
         else:
             default = None
         ret.append(
