@@ -18,6 +18,12 @@ def script() -> str:
     return sys.executable + " " + str(script)
 
 
+def test_unknown_command(run_cli: _RunCli) -> None:
+    capture = run_cli(["unknown-cmd"])
+    assert capture.code == 2
+    assert "Usage:" in capture.err
+
+
 def test_internal_alias_simple(run_cli: _RunCli, nmrc_path: Path) -> None:
     user_cfg = nmrc_path / "user.toml"
     user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"cmd": "help ls"}}}))
@@ -385,3 +391,236 @@ def test_external_alias_three_args_optional_multiple_regular_help(
     """
     )
     assert expected == capture.out
+
+
+def test_external_alias_option_flag_help_without_help_str(
+    run_cli: _RunCli, nmrc_path: Path
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {"alias": {"user-cmd": {"exec": "script {opt}", "options": ["--opt"],}}}
+        )
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS]
+
+        Alias for "script {{opt}}"
+
+        Options:
+          --opt
+          --help  Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
+def test_external_alias_option_flag_help_with_help_str(
+    run_cli: _RunCli, nmrc_path: Path
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": "script {opt}",
+                        "options": ["--opt  Option description."],
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS]
+
+        Alias for "script {{opt}}"
+
+        Options:
+          --opt   Option description.
+          --help  Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
+def test_external_alias_option_flag_short_long_help_with_help_str(
+    run_cli: _RunCli, nmrc_path: Path
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": "script {opt}",
+                        "options": ["-o, --opt  Option description."],
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS]
+
+        Alias for "script {{opt}}"
+
+        Options:
+          -o, --opt  Option description.
+          --help     Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
+def test_external_alias_option_short_long_help_with_help_str(
+    run_cli: _RunCli, nmrc_path: Path
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": "script {opt}",
+                        "options": ["-o, --opt VAL  Option description."],
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS]
+
+        Alias for "script {{opt}}"
+
+        Options:
+          -o, --opt VAL  Option description.
+          --help         Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
+def test_external_alias_option_short_long_help_with_help_str_inversed_order(
+    run_cli: _RunCli, nmrc_path: Path
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": "script {opt}",
+                        "options": ["--opt, -o VAL  Option description."],
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--help"])
+    assert capture.code == 0
+    prog_name = Path(sys.argv[0]).name
+    expected = inspect.cleandoc(
+        f"""\
+        Usage: {prog_name} user-cmd [OPTIONS]
+
+        Alias for "script {{opt}}"
+
+        Options:
+          -o, --opt VAL  Option description.
+          --help         Show this message and exit.
+    """
+    )
+    assert expected == capture.out
+
+
+def test_external_alias_option_call_flag_short(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {"exec": f"{script} {{opt}}", "options": ["-o, --opt"],}
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "-o"])
+    assert capture.code == 0, capture
+    assert capture.out == "['--opt']"
+
+
+def test_external_alias_option_call_flag_long(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {"exec": f"{script} {{opt}}", "options": ["-o, --opt"],}
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--opt"])
+    assert capture.code == 0, capture
+    assert capture.out == "['--opt']"
+
+
+def test_external_alias_option_call_flag_unset(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {"exec": f"{script} {{opt}}", "options": ["-o, --opt"],}
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd"])
+    assert capture.code == 0, capture
+    assert capture.out == "[]"
+
+
+def test_external_alias_option_call_value(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": f"{script} {{opt}}",
+                        "options": ["-o, --opt VAL"],
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--opt", "arg"])
+    assert capture.code == 0, capture
+    assert capture.out == "['--opt', 'arg']"

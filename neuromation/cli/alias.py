@@ -9,7 +9,7 @@ import click
 from neuromation.api import ConfigError
 
 from .root import Root
-from .utils import NeuroClickMixin
+from .utils import NeuroClickMixin, Option
 
 
 class InternalAlias(NeuroClickMixin, click.Command):
@@ -152,6 +152,7 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
     for od in descr:
         opts = []
         is_flag = True
+        metavar = None
         options, _, description = od.strip().partition("  ")
         options = options.replace(",", " ").replace("=", " ")
         for s in options.split():
@@ -165,15 +166,15 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
                 opts.append(s)
             else:
                 is_flag = False
+                metavar = s
+                if not s[1:].isidentifier():
+                    raise ConfigError(f"Cannot parse option {od}")
+                if not s[1:].isupper():
+                    raise ConfigError(f"Cannot parse option {od}")
         description = description.strip()
-        matched = re.findall(r"\[default: (.*)\]", description, flags=re.I)
-        if matched:
-            default = matched[0]
-        else:
-            default = None
         ret.append(
-            click.Option(
-                opts, is_flag=is_flag, default=default, multiple=True, help=description
+            Option(
+                opts, is_flag=is_flag, multiple=True, metavar=metavar, help=description,
             )
         )
     return ret  # type: ignore
@@ -299,26 +300,21 @@ def _process_param(
         if param.is_flag:
             # parser generates bool flags only
             assert param.is_bool_flag
+            # parser doesn't allow --true / --false flags
+            assert not param.secondary_opts
             if not val:
                 # empty tuple
                 return []
             vals = []
             for item in val:
-                if val:
-                    vals.append(_longest(param.opts))
-                else:
-                    vals.append(_longest(param.secondary_opts))
+                vals.append(_longest(param.opts))
             return vals
         else:
-            if not val:
-                # empty tuple
-                return []
-            else:
-                vals = []
-                for item in val:
-                    vals.append(_longest(param.opts))
-                    vals.append(item)
-                return vals
+            vals = []
+            for item in val:
+                vals.append(_longest(param.opts))
+                vals.append(item)
+            return vals
     else:  # pragma: no cover
         # Unreachable branch
         raise RuntimeError(f"Unsupported parameter type {type(param)}")
