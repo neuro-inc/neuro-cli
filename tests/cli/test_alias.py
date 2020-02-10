@@ -536,6 +536,38 @@ class TestExternalAliasOptions:
         )
         assert expected == capture.out
 
+    def test_external_alias_option_metaval_lowercased(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {
+                    "alias": {
+                        "user-cmd": {
+                            "exec": "script {opt}",
+                            "options": ["-o, --opt val  Description."],
+                        }
+                    }
+                }
+            )
+        )
+        capture = run_cli(["user-cmd", "--help"])
+        assert capture.code == 0
+        prog_name = Path(sys.argv[0]).name
+        expected = inspect.cleandoc(
+            f"""\
+            Usage: {prog_name} user-cmd [OPTIONS]
+
+            Alias for "script {{opt}}"
+
+            Options:
+              -o, --opt VAL  Description.
+              --help         Show this message and exit.
+        """
+        )
+        assert expected == capture.out
+
     def test_external_alias_option_short_long_help_with_help_str_inversed_order(
         self, run_cli: _RunCli, nmrc_path: Path
     ) -> None:
@@ -648,7 +680,6 @@ class TestExternalAliasOptions:
         assert capture.code == 0, capture
         assert capture.out == "['--opt', 'arg']"
 
-
     def test_external_alias_option_call_value_multiple(
         self, run_cli: _RunCli, nmrc_path: Path, script: str
     ) -> None:
@@ -745,3 +776,23 @@ class TestExternalAliasParseErrors:
         capture = run_cli(["user-cmd", "--opt", "arg"])
         assert capture.code == 70, capture
         assert capture.err.startswith("Cannot parse option -1")
+
+    def test_external_alias_option_meta_not_identifier(
+        self, run_cli: _RunCli, nmrc_path: Path, script: str
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {
+                    "alias": {
+                        "user-cmd": {
+                            "exec": f"{script} {{opt}}",
+                            "options": ["--opt 123"],
+                        }
+                    }
+                }
+            )
+        )
+        capture = run_cli(["user-cmd", "--opt", "arg"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith("Cannot parse option --opt 123")

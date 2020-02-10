@@ -167,9 +167,8 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
             else:
                 is_flag = False
                 metavar = s
-                if not s[1:].isidentifier():
-                    raise ConfigError(f"Cannot parse option {od}")
-                if not s[1:].isupper():
+                metavar = metavar.upper()
+                if not metavar.isidentifier():
                     raise ConfigError(f"Cannot parse option {od}")
         description = description.strip()
         ret.append(
