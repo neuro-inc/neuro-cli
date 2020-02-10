@@ -261,13 +261,13 @@ def _validate_exec(cmd: str, options: Set[str], args: Set[str]) -> bool:
     for match in matches:
         name = match[1:-1]  # drop curly brackets
         if not name:
-            raise ConfigError(f"Empty substitution is not allowed")
-
-        if not name.islower():
-            raise ConfigError(f"Parameter {name} should be lowercased")
+            raise ConfigError(f'Empty substitution is not allowed in "{cmd}"')
 
         if not name.isidentifier():
-            raise ConfigError(f"Parameter {name} is not a walid identifier")
+            raise ConfigError(f'Parameter {name} is not a valid identifier in "{cmd}"')
+
+        if not name.islower():
+            raise ConfigError(f'Parameter {name} should be lowercased in "{cmd}"')
 
         if name not in params:
             raise ConfigError(f'Unknown parameter {name} in "{cmd}"')

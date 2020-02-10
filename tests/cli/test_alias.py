@@ -744,16 +744,12 @@ def test_external_alias_exitcode(
 
 class TestExternalAliasParseErrors:
     def test_external_alias_long_option_not_identifier(
-        self, run_cli: _RunCli, nmrc_path: Path, script: str
+        self, run_cli: _RunCli, nmrc_path: Path
     ) -> None:
         user_cfg = nmrc_path / "user.toml"
         user_cfg.write_text(
             toml.dumps(
-                {
-                    "alias": {
-                        "user-cmd": {"exec": f"{script} {{opt}}", "options": ["--123"]}
-                    }
-                }
+                {"alias": {"user-cmd": {"exec": "script {opt}", "options": ["--123"]}}}
             )
         )
         capture = run_cli(["user-cmd", "--opt", "arg"])
@@ -761,16 +757,12 @@ class TestExternalAliasParseErrors:
         assert capture.err.startswith("Cannot parse option --123")
 
     def test_external_alias_short_option_not_identifier(
-        self, run_cli: _RunCli, nmrc_path: Path, script: str
+        self, run_cli: _RunCli, nmrc_path: Path
     ) -> None:
         user_cfg = nmrc_path / "user.toml"
         user_cfg.write_text(
             toml.dumps(
-                {
-                    "alias": {
-                        "user-cmd": {"exec": f"{script} {{opt}}", "options": ["-1"]}
-                    }
-                }
+                {"alias": {"user-cmd": {"exec": "script {opt}", "options": ["-1"]}}}
             )
         )
         capture = run_cli(["user-cmd", "--opt", "arg"])
@@ -778,17 +770,14 @@ class TestExternalAliasParseErrors:
         assert capture.err.startswith("Cannot parse option -1")
 
     def test_external_alias_option_meta_not_identifier(
-        self, run_cli: _RunCli, nmrc_path: Path, script: str
+        self, run_cli: _RunCli, nmrc_path: Path
     ) -> None:
         user_cfg = nmrc_path / "user.toml"
         user_cfg.write_text(
             toml.dumps(
                 {
                     "alias": {
-                        "user-cmd": {
-                            "exec": f"{script} {{opt}}",
-                            "options": ["--opt 123"],
-                        }
+                        "user-cmd": {"exec": "script {opt}", "options": ["--opt 123"]}
                     }
                 }
             )
@@ -796,3 +785,54 @@ class TestExternalAliasParseErrors:
         capture = run_cli(["user-cmd", "--opt", "arg"])
         assert capture.code == 70, capture
         assert capture.err.startswith("Cannot parse option --opt 123")
+
+    def test_external_alias_empty_substitution(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"exec": "script {}"}}}))
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith("Empty substitution is not allowed")
+
+    def test_external_alias_uppercased_parameter(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps({"alias": {"user-cmd": {"exec": "script {PARAM}"}}})
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith("Parameter PARAM should be lowercased")
+
+    def test_external_alias_invalid_parameter_name(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps({"alias": {"user-cmd": {"exec": "script {123}"}}})
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith("Parameter 123 is not a valid identifier")
+
+    def test_external_alias_unknown_parameter(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {
+                    "alias": {
+                        "user-cmd": {
+                            "exec": "script {param}",
+                            "options": ["-v, --verbose"],
+                        }
+                    }
+                }
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Unknown parameter param in "script {param}"')
