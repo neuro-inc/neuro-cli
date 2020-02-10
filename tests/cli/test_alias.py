@@ -836,3 +836,27 @@ class TestExternalAliasParseErrors:
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
         assert capture.err.startswith('Unknown parameter param in "script {param}"')
+
+    def test_external_alias_overlapped_args_and_options(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {
+                    "alias": {
+                        "user-cmd": {
+                            "exec": "script {param}",
+                            "options": ["--param"],
+                            "args": "PARAM",
+                        }
+                    }
+                }
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith(
+            "The following names are present in both positional "
+            "and optional arguments: param"
+        )

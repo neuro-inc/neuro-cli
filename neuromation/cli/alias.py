@@ -205,7 +205,7 @@ def _parse_args(source: str) -> List[click.Parameter]:
                 )
             if brackets:
                 raise ConfigError(
-                    f'Cannot parse args "{source}", put ellipsis outside or brackets'
+                    f'Cannot parse args "{source}", put ellipsis outside of brackets'
                 )
             multiple = True
         else:
