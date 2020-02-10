@@ -624,3 +624,24 @@ def test_external_alias_option_call_value(
     capture = run_cli(["user-cmd", "--opt", "arg"])
     assert capture.code == 0, capture
     assert capture.out == "['--opt', 'arg']"
+
+
+def test_external_alias_exitcode(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": f"{script} {{exit}}",
+                        "options": ["--exit CODE"],
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "--exit=10"])
+    assert capture.code == 10, capture
+    assert capture.out == "['--exit', '10']"
