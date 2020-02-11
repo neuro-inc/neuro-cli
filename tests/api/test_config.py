@@ -100,9 +100,11 @@ async def test_get_user_config_from_global(make_client: _MakeClient) -> None:
         client.config._path.mkdir(parents=True, exist_ok=True)
         global_conf = client.config._path / "user.toml"
         # FIXME: the example may be broken in future versions
-        global_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
+        global_conf.write_text(
+            toml.dumps({"alias": {"pss": {"cmd": "job ps --short"}}})
+        )
         assert await client.config.get_user_config() == {
-            "alias": {"pss": "job ps --short"}
+            "alias": {"pss": {"cmd": "job ps --short"}}
         }
 
 
@@ -116,9 +118,9 @@ async def test_get_user_config_from_local(
         monkeypatch.chdir(local_dir)
         local_conf = proj_dir / ".neuro.toml"
         # FIXME: the example may be broken in future versions
-        local_conf.write_text(toml.dumps({"alias": {"pss": "job ps --short"}}))
+        local_conf.write_text(toml.dumps({"alias": {"pss": {"cmd": "job ps --short"}}}))
         assert await client.config.get_user_config() == {
-            "alias": {"pss": "job ps --short"}
+            "alias": {"pss": {"cmd": "job ps --short"}}
         }
 
 

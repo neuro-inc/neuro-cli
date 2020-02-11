@@ -462,15 +462,27 @@ def _validate_user_config(
         # check keys and values
         if not CMD_RE.fullmatch(key):
             raise ConfigError(f"{filename}: invalid alias name {key}")
-        if not isinstance(value, str):
+        if not isinstance(value, dict):
             raise ConfigError(
                 f"{filename}: invalid alias command type {type(value)}, "
-                "a string is expected"
+                "run neuro help aliases for getting info about specifying "
+                "aliases in config files"
             )
+        _validate_alias(key, value, filename)
+
+
+def _validate_alias(
+    key: str, value: Dict[str, str], filename: Union[str, "os.PathLike[str]"]
+) -> None:
+    # TODO: add validation for both internal and external aliases
+    pass
 
 
 def _load_file(filename: Path) -> Mapping[str, Any]:
-    config = toml.load(filename)
+    try:
+        config = toml.load(filename)
+    except ValueError as exc:
+        raise ConfigError(f"{filename}: {exc}")
     _validate_user_config(config, filename)
     return config
 

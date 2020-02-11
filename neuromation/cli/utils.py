@@ -49,7 +49,6 @@ from neuromation.api.config import _CookieSession, _PyPIVersion
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
-from .asyncio_utils import run
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
 from .stats import upload_gmp_stats
@@ -185,15 +184,6 @@ async def _run_async_function(
             assert factory is not None
             factory._save(new_config)
 
-        await root.close()
-
-        # looks ugly but proper fix requires aiohttp changes
-        if sys.platform == "win32":
-            # Windows need a longer sleep
-            await asyncio.sleep(0.2)
-        else:
-            await asyncio.sleep(0.1)
-
 
 def _wrap_async_callback(
     callback: Callable[..., Awaitable[_T]], init_client: bool = True,
@@ -203,9 +193,8 @@ def _wrap_async_callback(
     @click.pass_obj
     @functools.wraps(callback)
     def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
-        return run(
+        return root.run(
             _run_async_function(init_client, callback, root, *args, **kwargs),
-            debug=root.verbosity >= 2,  # see main:setup_logging for constants
         )
 
     return wrapper
@@ -332,6 +321,7 @@ class Command(NeuroClickMixin, click.Command):
         super().__init__(
             callback=callback, **kwargs,
         )
+        self.init_client = init_client
 
     def invoke(self, ctx: click.Context) -> Any:
         """Given a context, this invokes the attached callback (if it exists)
@@ -343,9 +333,7 @@ class Command(NeuroClickMixin, click.Command):
                 err=True,
             )
         if self.callback is not None:
-            # init_client=init_client,
-            # ctx.parent.params
-            # breakpoint()
+            # Collect arguments for sending to google analytics
             ctx2 = ctx
             params = [_collect_params(ctx2.command, ctx2)]
             while ctx2.parent:
@@ -408,76 +396,6 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
 
     def list_commands(self, ctx: click.Context) -> Iterable[str]:
         return self.origin.list_commands(ctx)
-
-
-class MainGroup(Group):
-    topics = None
-
-    def _format_group(
-        self,
-        title: str,
-        grp: Sequence[Tuple[str, click.Command]],
-        formatter: click.HelpFormatter,
-    ) -> None:
-        # allow for 3 times the default spacing
-        if not grp:
-            return
-
-        width = formatter.width
-        assert width is not None
-        limit = width - 6 - max(len(cmd[0]) for cmd in grp)
-
-        rows = []
-        for subcommand, cmd in grp:
-            help = cmd.get_short_help_str(limit)
-            rows.append((subcommand, help))
-
-        if rows:
-            with formatter.section(title):
-                formatter.write_dl(rows)
-
-    def format_commands(
-        self, ctx: click.Context, formatter: click.HelpFormatter
-    ) -> None:
-        """Extra format methods for multi methods that adds all the commands
-        after the options.
-        """
-        commands: List[Tuple[str, click.Command]] = []
-        groups: List[Tuple[str, click.MultiCommand]] = []
-        topics: List[Tuple[str, click.Command]] = []
-        if self.topics is not None:
-            topics = list(self.topics.commands.items())
-
-        for subcommand in self.list_commands(ctx):
-            cmd = self.get_command(ctx, subcommand)
-            # What is this, the tool lied about a command.  Ignore it
-            if cmd is None:
-                continue
-            if cmd.hidden:
-                continue
-
-            if isinstance(cmd, click.MultiCommand):
-                groups.append((subcommand, cmd))
-            else:
-                commands.append((subcommand, cmd))
-
-        self._format_group("Commands", groups, formatter)
-        self._format_group("Command Shortcuts", commands, formatter)
-        self._format_group("Help topics", topics, formatter)
-
-    def format_options(
-        self, ctx: click.Context, formatter: click.HelpFormatter
-    ) -> None:
-        self.format_commands(ctx, formatter)
-        formatter.write_paragraph()
-        formatter.write_text(
-            'Use "neuro help <command>" for more information '
-            "about a given command or topic."
-        )
-        formatter.write_text(
-            'Use "neuro --options" for a list of global command-line options '
-            "(applies to all commands)."
-        )
 
 
 def alias(

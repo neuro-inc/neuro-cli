@@ -1,16 +1,19 @@
 import logging
 import re
-from dataclasses import dataclass
+import sys
+from dataclasses import dataclass, field
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Awaitable, Dict, Iterator, List, Optional, Tuple, TypeVar
 
 import aiohttp
 import click
 
 from neuromation.api import Client, Factory, gen_trace_id
 from neuromation.api.config import _Config
+
+from .asyncio_utils import Runner
 
 
 log = logging.getLogger(__name__)
@@ -21,6 +24,9 @@ TEXT_TYPE = ("application/json", "text")
 HEADER_TOKEN_PATTERN = re.compile(
     r"(Bearer|Basic|Digest|Mutual)\s+(?P<token>[^ ]+\.[^ ]+\.[^ ]+)"
 )
+
+
+_T = TypeVar("_T")
 
 
 @dataclass
@@ -40,6 +46,26 @@ class Root:
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
+    _runner: Runner = field(init=False)
+
+    def __post_init__(self) -> None:
+        self._runner = Runner(debug=self.verbosity >= 2)
+        self._runner.__enter__()
+
+    def close(self) -> None:
+        if self._client is not None:
+            self.run(self._client.close())
+
+        try:
+            # Suppress prints unhandled exceptions
+            # on event loop closing
+            sys.stderr = None  # type: ignore
+            self._runner.__exit__(*sys.exc_info())
+        finally:
+            sys.stderr = sys.__stderr__
+
+    def run(self, main: Awaitable[_T]) -> _T:
+        return self._runner.run(main)
 
     @property
     def _config(self) -> _Config:
@@ -61,7 +87,9 @@ class Root:
         assert self._client is not None
         return self._client
 
-    async def init_client(self) -> None:
+    async def init_client(self) -> Client:
+        if self._client is not None:
+            return self._client
         trace_configs: Optional[List[aiohttp.TraceConfig]]
         if self.trace:
             trace_configs = [self._create_trace_config()]
@@ -73,6 +101,7 @@ class Root:
         client = await self._factory.get(timeout=self.timeout)
 
         self._client = client
+        return self._client
 
     def _create_trace_config(self) -> aiohttp.TraceConfig:
         trace_config = aiohttp.TraceConfig()
@@ -85,10 +114,6 @@ class Root:
             self._on_response_chunk_received  # type: ignore
         )
         return trace_config
-
-    async def close(self) -> None:
-        if self._client is not None:
-            await self._client.close()
 
     def get_session_cookie(self) -> Optional["Morsel[str]"]:
         if self._client is None:

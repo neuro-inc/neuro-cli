@@ -2,9 +2,10 @@ import asyncio
 import logging
 import shutil
 import sys
+import warnings
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, List, Optional, Sequence, Type, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple, Type, Union, cast
 
 import aiohttp
 import click
@@ -16,6 +17,7 @@ from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
 from neuromation.cli.root import Root
 
 from . import admin, completion, config, image, job, project, share, storage
+from .alias import find_alias
 from .const import (
     EX_DATAERR,
     EX_IOERR,
@@ -31,7 +33,7 @@ from .topics import topics
 from .utils import (
     Context,
     DeprecatedGroup,
-    MainGroup,
+    Group,
     alias,
     format_example,
     option,
@@ -95,6 +97,121 @@ def setup_logging(verbosity: int, color: bool) -> None:
 LOG_ERROR = log.error
 
 
+class MainGroup(Group):
+    topics = None
+
+    def invoke(self, ctx: click.Context) -> None:
+        args = ctx.protected_args + ctx.args
+        ctx.args = []
+        ctx.protected_args = []
+
+        with ctx:  # type: ignore
+            ctx.invoke(self.callback, **ctx.params)  # type: ignore
+            if not args:
+                # For call with options only, e.g. "neuro -v"
+                click.echo(ctx.get_help())
+                return
+            cmd_name, cmd, args = self.resolve_command(ctx, args)
+            ctx.invoked_subcommand = cmd_name
+            sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
+            with sub_ctx:  # type: ignore
+                sub_ctx.command.invoke(sub_ctx)
+                return
+
+    def resolve_command(
+        self, ctx: click.Context, args: List[str]
+    ) -> Tuple[str, click.Command, List[str]]:
+        cmd_name, *args = args
+
+        # Get the command
+        cmd = self.get_command(ctx, cmd_name)
+
+        if cmd is None:
+            # find alias
+            root = cast(Root, ctx.obj)
+            cmd = root.run(find_alias(ctx, cmd_name, args, root))
+
+        # If we don't find the command we want to show an error message
+        # to the user that it was not provided.  However, there is
+        # something else we should do: if the first argument looks like
+        # an option we want to kick off parsing again for arguments to
+        # resolve things like --help which now should go to the main
+        # place.
+        if cmd is None and not ctx.resilient_parsing:
+            if cmd_name and not cmd_name[0].isalnum():
+                self.parse_args(ctx, ctx.args)
+            ctx.fail(f'No such command or alias "{cmd_name}".')
+
+        assert cmd is not None
+        return cmd_name, cmd, args
+
+    def _format_group(
+        self,
+        title: str,
+        grp: Sequence[Tuple[str, click.Command]],
+        formatter: click.HelpFormatter,
+    ) -> None:
+        # allow for 3 times the default spacing
+        if not grp:
+            return
+
+        width = formatter.width
+        assert width is not None
+        limit = width - 6 - max(len(cmd[0]) for cmd in grp)
+
+        rows = []
+        for subcommand, cmd in grp:
+            help = cmd.get_short_help_str(limit)
+            rows.append((subcommand, help))
+
+        if rows:
+            with formatter.section(title):
+                formatter.write_dl(rows)
+
+    def format_commands(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        """Extra format methods for multi methods that adds all the commands
+        after the options.
+        """
+        commands: List[Tuple[str, click.Command]] = []
+        groups: List[Tuple[str, click.MultiCommand]] = []
+        topics: List[Tuple[str, click.Command]] = []
+        if self.topics is not None:
+            topics = list(self.topics.commands.items())
+
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+            # What is this, the tool lied about a command.  Ignore it
+            if cmd is None:
+                continue
+            if cmd.hidden:
+                continue
+
+            if isinstance(cmd, click.MultiCommand):
+                groups.append((subcommand, cmd))
+            else:
+                commands.append((subcommand, cmd))
+
+        self._format_group("Commands", groups, formatter)
+        self._format_group("Command Shortcuts", commands, formatter)
+        self._format_group("Help topics", topics, formatter)
+
+    def format_options(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        self.format_commands(ctx, formatter)
+        formatter.write_paragraph()
+        formatter.write_text(
+            'Use "neuro help <command>" for more information '
+            "about a given command or topic."
+        )
+        formatter.write_text(
+            'Use "neuro --options" for a list of global command-line options '
+            "(applies to all commands)."
+        )
+
+
 def print_options(
     ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
 ) -> Any:
@@ -124,7 +241,7 @@ def print_options(
     ctx.exit()
 
 
-@click.group(cls=MainGroup, invoke_without_command=True)
+@click.group(cls=MainGroup)
 @option(
     "-v",
     "--verbose",
@@ -265,8 +382,7 @@ def cli(
         skip_gmp_stats=skip_stats,
     )
     ctx.obj = root
-    if not ctx.invoked_subcommand:
-        click.echo(ctx.get_help())
+    ctx.call_on_close(root.close)
 
 
 @cli.command(wrap_async=False)
@@ -354,7 +470,9 @@ cli.topics = topics  # type: ignore
 
 def main(args: Optional[List[str]] = None) -> None:
     try:
-        cli.main(args=args, standalone_mode=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            cli.main(args=args, standalone_mode=False)
     except ClickAbort:
         LOG_ERROR("Aborting.")
         sys.exit(130)
