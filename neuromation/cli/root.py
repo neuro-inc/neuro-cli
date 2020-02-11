@@ -59,7 +59,7 @@ class Root:
         try:
             # Suppress prints unhandled exceptions
             # on event loop closing
-            sys.stderr = None
+            sys.stderr = None  # type: ignore
             self._runner.__exit__(*sys.exc_info())
         finally:
             sys.stderr = sys.__stderr__
