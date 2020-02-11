@@ -184,13 +184,6 @@ async def _run_async_function(
             assert factory is not None
             factory._save(new_config)
 
-        # looks ugly but proper fix requires aiohttp changes
-        if sys.platform == "win32":
-            # Windows need a longer sleep
-            await asyncio.sleep(0.4)
-        else:
-            await asyncio.sleep(0.1)
-
 
 def _wrap_async_callback(
     callback: Callable[..., Awaitable[_T]], init_client: bool = True,
