@@ -15,7 +15,7 @@ _RunCli = Callable[[List[str]], SysCapWithCode]
 @pytest.fixture
 def script() -> str:
     script = Path(__file__).parent / "script.py"
-    return sys.executable + " " + str(script)
+    return (sys.executable + " " + str(script)).replace("\\", "/")
 
 
 def test_unknown_command(run_cli: _RunCli) -> None:
