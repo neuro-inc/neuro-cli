@@ -399,7 +399,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
             if name == command[0]:
                 # Found a topic
                 formatter = ctx.make_formatter()
-                topic.format_help_text(top_ctx, formatter)
+                topic.format_help(top_ctx, formatter)
                 pager_maybe(
                     formatter.getvalue().rstrip("\n").splitlines(),
                     root.tty,

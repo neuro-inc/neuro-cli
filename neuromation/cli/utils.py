@@ -246,8 +246,8 @@ class NeuroClickMixin:
         self, ctx: click.Context, formatter: click.HelpFormatter
     ) -> None:
         """Writes the help text to the formatter if it exists."""
-        help = self.help  # type: ignore
         deprecated = self.deprecated  # type: ignore
+        help = self.help
         if help:
             help_text, *examples = split_examples(help)
             if help_text:
