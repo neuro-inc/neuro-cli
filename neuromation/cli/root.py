@@ -56,7 +56,13 @@ class Root:
         if self._client is not None:
             self.run(self._client.close())
 
-        self._runner.__exit__(*sys.exc_info())
+        try:
+            # Suppress prints unhandled exceptions
+            # on event loop closing
+            sys.stderr = None
+            self._runner.__exit__(*sys.exc_info())
+        finally:
+            sys.stderr = sys.__stderr__
 
     def run(self, main: Awaitable[_T]) -> _T:
         return self._runner.run(main)
