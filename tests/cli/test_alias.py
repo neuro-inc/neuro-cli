@@ -186,6 +186,28 @@ class TestExternalAliasArgs:
         )
         assert expected == capture.out
 
+    def test_external_alias_arg_help_fix_casing(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps({"alias": {"user-cmd": {"exec": "script {arg}", "args": "Arg"}}})
+        )
+        capture = run_cli(["user-cmd", "--help"])
+        assert capture.code == 0
+        prog_name = Path(sys.argv[0]).name
+        expected = inspect.cleandoc(
+            f"""\
+            Usage: {prog_name} user-cmd [OPTIONS] ARG
+
+            Alias for "script {{arg}}"
+
+            Options:
+              --help  Show this message and exit.
+        """
+        )
+        assert expected == capture.out
+
     def test_external_alias_two_arg2(
         self, run_cli: _RunCli, nmrc_path: Path, script: str
     ) -> None:
@@ -860,3 +882,103 @@ class TestExternalAliasParseErrors:
             "The following names are present in both positional "
             "and optional arguments: param"
         )
+
+    def test_external_alias_nested_args_brackets(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {"alias": {"user-cmd": {"exec": "script {arg}", "args": "[[ARG]]"}}}
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Nested brackets in "[[ARG]]"')
+
+    def test_external_alias_missing_open_bracket(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {"alias": {"user-cmd": {"exec": "script {arg}", "args": "ARG]"}}}
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Missing open bracket in "ARG]"')
+
+    def test_external_alias_ellipsis_should_follow_arg(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps({"alias": {"user-cmd": {"exec": "script {arg}", "args": "..."}}})
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith(
+            'Ellipsis (...) should follow an argument in "..."'
+        )
+
+    def test_external_alias_ellipsis_inside_brackes(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {"alias": {"user-cmd": {"exec": "script {arg}", "args": "[ARG...]"}}}
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Ellipsis (...) inside of brackets in "[ARG...]"')
+
+    def test_external_alias_missing_close_bracket1(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {"alias": {"user-cmd": {"exec": "script {arg}", "args": "[ARG"}}}
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Missing close bracket in "[ARG"')
+
+    def test_external_alias_missing_close_bracket2(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {"alias": {"user-cmd": {"exec": "script {arg}", "args": "[ARG1 ARG2"}}}
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Missing close bracket in "[ARG1 ARG2"')
+
+
+def test_external_alias_simplified(
+    run_cli: _RunCli, nmrc_path: Path, script: str
+) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "user-cmd": {
+                        "exec": f"{script}",
+                        "args": "[ARG]...",
+                        "options": ["-o, --opt  Option"],
+                    }
+                }
+            }
+        )
+    )
+    capture = run_cli(["user-cmd", "-o", "arg"])
+    assert capture.code == 0
+    assert "['--opt', 'arg']" == capture.out

@@ -190,30 +190,25 @@ def _parse_args(source: str) -> List[click.Parameter]:
     for item in src2:
         if item == "[":
             if brackets:
-                raise ConfigError(f'Cannot parse args "{source}", nested brackets')
+                raise ConfigError(f'Nested brackets in "{source}"')
             brackets = True
         elif item == "]":
             if not brackets:
-                raise ConfigError(f'Cannot parse args "{source}", missing open bracket')
+                raise ConfigError(f'Missing open bracket in "{source}"')
             brackets = False
             required = False
         elif item == "...":
             if arg is None:
                 raise ConfigError(
-                    f'Cannot parse args "{source}", '
-                    "ellipsis should follow an argument"
+                    f'Ellipsis (...) should follow an argument in "{source}"'
                 )
             if brackets:
-                raise ConfigError(
-                    f'Cannot parse args "{source}", put ellipsis outside of brackets'
-                )
+                raise ConfigError(f'Ellipsis (...) inside of brackets in "{source}"')
             multiple = True
         else:
             if arg is not None:
                 if brackets:
-                    raise ConfigError(
-                        f'Cannot parse args "{source}", missing close bracket'
-                    )
+                    raise ConfigError(f'Missing close bracket in "{source}"')
                 ret.append(
                     click.Argument(
                         [arg],
@@ -226,15 +221,10 @@ def _parse_args(source: str) -> List[click.Parameter]:
                 multiple = False
                 brackets = False
                 arg = None
-            arg = item
-            if not arg.isupper():
-                raise ConfigError(
-                    f'Cannot parse args "{source}", '
-                    f"Argument name {arg} should be uppercased"
-                )
+            arg = item.upper()
     if arg is not None:
         if brackets:
-            raise ConfigError(f'Cannot parse args "{source}", ' "missing close bracket")
+            raise ConfigError(f'Missing close bracket in "{source}"')
         ret.append(
             click.Argument(
                 [arg],
@@ -296,14 +286,14 @@ def _process_param(
             assert isinstance(val, str)
             return [val]
     elif isinstance(param, click.Option):
+        if not val:
+            # empty tuple
+            return []
         if param.is_flag:
             # parser generates bool flags only
             assert param.is_bool_flag
             # parser doesn't allow --true / --false flags
             assert not param.secondary_opts
-            if not val:
-                # empty tuple
-                return []
             vals = []
             for item in val:
                 vals.append(_longest(param.opts))
