@@ -187,7 +187,7 @@ async def _run_async_function(
         # looks ugly but proper fix requires aiohttp changes
         if sys.platform == "win32":
             # Windows need a longer sleep
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.4)
         else:
             await asyncio.sleep(0.1)
 
