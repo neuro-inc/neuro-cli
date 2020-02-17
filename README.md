@@ -409,7 +409,7 @@ neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 
 ```
 
@@ -424,7 +424,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -458,7 +458,7 @@ neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:l
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
 
 ```
 
@@ -479,7 +479,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -696,7 +696,7 @@ neuro job save [OPTIONS] JOB IMAGE
 ```bash
 
 neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image://~/ubuntu-patched:v1
+neuro job save my-favourite-job image:ubuntu-patched:v1
 neuro job save my-favourite-job image://bob/ubuntu-patched
 
 ```
@@ -1628,7 +1628,7 @@ neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 
 ```
 
@@ -1643,7 +1643,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1677,7 +1677,7 @@ neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:l
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
 
 ```
 
@@ -1698,7 +1698,7 @@ Name | Description|
 |_\-n, --name NAME_|Optional job name|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -1915,7 +1915,7 @@ neuro save [OPTIONS] JOB IMAGE
 ```bash
 
 neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image://~/ubuntu-patched:v1
+neuro job save my-favourite-job image:ubuntu-patched:v1
 neuro job save my-favourite-job image://bob/ubuntu-patched
 
 ```

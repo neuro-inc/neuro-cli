@@ -1368,7 +1368,7 @@ class TestVolumeParsing:
                 ),
             ),
             (
-                "storage://~/:/var/www:ro",
+                "storage::/var/www:ro",
                 Volume(
                     storage_uri=URL("storage://user"),
                     container_path="/var/www",
