@@ -59,7 +59,10 @@ async def __make_session(
     ssl_context.load_verify_locations(capath=certifi.where())
     connector = aiohttp.TCPConnector(ssl=ssl_context)
     return aiohttp.ClientSession(
-        timeout=timeout, connector=connector, trace_configs=trace_configs
+        timeout=timeout,
+        connector=connector,
+        trace_configs=trace_configs,
+        headers={"User-Agent": f"NeuroCLI/{neuromation.__version__} ({sys.platform})"},
     )
 
 

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 GA_URL = URL("http://www.google-analytics.com/batch")
 
 # Google Analytics supports up to 20 records in a batch
-GA_CACHE_LIMIT = 20
+GA_CACHE_LIMIT = 1
 
 SCHEMA = {
     "stats": "CREATE TABLE stats (cmd TEXT, args TEXT, timestamp REAL, version TEXT)",
@@ -118,9 +118,13 @@ async def send(client: Client, uid: str, data: List[sqlite3.Row]) -> None:
     payload = "\n".join(
         make_record(uid, client.config.api_url, row["cmd"], row["args"], row["version"])
         for row in data
-    )
-    async with client._session.post(GA_URL, data=payload) as resp:
-        resp
+    ) + "\n"
+    async with client._session.post(
+        GA_URL,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+    ) as resp:
+        await resp.read()  # drain response body
 
 
 async def upload_gmp_stats(
