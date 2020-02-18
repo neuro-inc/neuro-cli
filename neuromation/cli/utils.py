@@ -247,7 +247,7 @@ class NeuroClickMixin:
     ) -> None:
         """Writes the help text to the formatter if it exists."""
         deprecated = self.deprecated  # type: ignore
-        help = self.help
+        help = self.help  # type: ignore
         if help:
             help_text, *examples = split_examples(help)
             if help_text:
