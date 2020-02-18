@@ -9,7 +9,7 @@ from .utils import group
 BOLD = re.compile(r"(?P<mark>\*\*|__)(?P<content>\S.*?\S)(?P=mark)")
 EMPHASIS = re.compile(r"(?P<mark>\*|_)(?P<content>\S.*?\S)(?P=mark)")
 INLINE_CODE = re.compile(r"`(?P<content>\S.*?\S)`")
-CODE_BLOCK = re.compile(r"```(?P<content>.*?)```", re.MULTILINE)
+CODE_BLOCK = re.compile(r"```(?P<content>.*?)```", re.DOTALL | re.MULTILINE)
 
 
 def apply_styling(txt: Optional[str]) -> Optional[str]:
@@ -17,8 +17,15 @@ def apply_styling(txt: Optional[str]) -> Optional[str]:
         return None
     txt = BOLD.sub(click.style(r"\g<content>", bold=True), txt)
     txt = EMPHASIS.sub(click.style(r"\g<content>", underline=True), txt)
-    txt = INLINE_CODE.sub(click.style(r"\g<content>", dim=True), txt)
-    txt = CODE_BLOCK.sub(click.style(r"\b\n\g<content>", dim=True), txt)
+    txt = INLINE_CODE.sub(click.style(r"\g<content>", bold=True, dim=True), txt)
+    match = CODE_BLOCK.search(txt)
+    while match is not None:
+        lines = txt[: match.start()].splitlines()
+        for line in match.group("content").strip().splitlines():
+            lines.append(click.style(line, dim=True))
+        lines.extend(txt[match.end() :].splitlines())
+        txt = "\n".join(lines)
+        match = CODE_BLOCK.search(txt)
     return txt
 
 
@@ -30,7 +37,9 @@ class Command(click.Command):
         formatter.write(click.style(head, bold=True))
         formatter.write_paragraph()
         formatter.write_paragraph()
-        formatter.write_text(apply_styling(rest))
+        formatter.write(apply_styling(rest))
+        with open("out.txt", "w") as f:
+            f.write(apply_styling(rest))
 
 
 def command(
@@ -84,7 +93,6 @@ async def ps_format() -> None:
     A column spec has a mandatory column id plus optional properties for indication of
     alignment, minimum and maximum column width, and optional column title:
 
-    \b
     `{id;align=center;min=10;max=30;width=20;ID TITLE}`
 
     Here **id** is the column id, **align**, **min**, **max**, **width** are properties
@@ -97,7 +105,6 @@ async def ps_format() -> None:
 
     Available properties:
 
-    \b
     **align**  Column aligning, accepted values: left, right, center.
     **min**    Minimal column width.
     **max**    Maximal column width.
@@ -109,7 +116,6 @@ async def ps_format() -> None:
 
     The system recognizes the following columns:
 
-    \b
     **ID**            **TITLE**       **ALIGN** **MIN** **MAX**  **WIDTH**
     ---------------------------------------------
     id            ID          left  -   -    -
@@ -163,7 +169,6 @@ async def user_config() -> None:
 
       A section for `neuro job` command group settings.
 
-
     **ps-format**
 
       Default value for `neuro ps --format=XXX` option.
@@ -173,7 +178,6 @@ async def user_config() -> None:
     **[storage]**
 
       A section for `neuro storage` command group settings.
-
 
     **cp-exclude**
 
@@ -188,11 +192,9 @@ async def user_config() -> None:
       Exclamation mark ! is used to negate the pattern, e.g. `["*.jpg", "!main.jpg"]`
       excludes all `.jpg` files except `main.jpg`.
 
-
-    Sample of configuration file:
-
+    Example:
     ```
-    # job section
+    # jobs section
     [job]
     ps-format = "{id;max=30}, {status;max=10}"
 
@@ -200,5 +202,4 @@ async def user_config() -> None:
     [storage]
     cp-exclude = ["*.jpg", "!main.jpg"]
     ```
-
     """
