@@ -115,10 +115,15 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
 async def send(client: Client, uid: str, data: List[sqlite3.Row]) -> None:
     if not data:
         return
-    payload = "\n".join(
-        make_record(uid, client.config.api_url, row["cmd"], row["args"], row["version"])
-        for row in data
-    ) + "\n"
+    payload = (
+        "\n".join(
+            make_record(
+                uid, client.config.api_url, row["cmd"], row["args"], row["version"]
+            )
+            for row in data
+        )
+        + "\n"
+    )
     async with client._session.post(
         GA_URL,
         data=payload,
