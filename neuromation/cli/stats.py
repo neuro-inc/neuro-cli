@@ -70,7 +70,7 @@ def add_usage(
 
 
 def select_oldest(
-    db: sqlite3.Connection, *, limit: int = GA_CACHE_LIMIT, delay: float = 3600
+    db: sqlite3.Connection, *, limit: int = GA_CACHE_LIMIT, delay: float = 60
 ) -> List[sqlite3.Row]:
     # oldest 20 records
     old = list(
@@ -83,7 +83,7 @@ def select_oldest(
         )
     )
     if old and len(old) < limit and old[-1]["timestamp"] > time.time() - delay:
-        # A few data, the last recored is younger then one hour old;
+        # A few data, the last recored is younger then one minute old;
         # don't send these data to google server
         old = []
     return old
@@ -115,12 +115,21 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
 async def send(client: Client, uid: str, data: List[sqlite3.Row]) -> None:
     if not data:
         return
-    payload = "\n".join(
-        make_record(uid, client.config.api_url, row["cmd"], row["args"], row["version"])
-        for row in data
+    payload = (
+        "\n".join(
+            make_record(
+                uid, client.config.api_url, row["cmd"], row["args"], row["version"]
+            )
+            for row in data
+        )
+        + "\n"
     )
-    async with client._session.post(GA_URL, data=payload) as resp:
-        resp
+    async with client._session.post(
+        GA_URL,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+    ) as resp:
+        await resp.read()  # drain response body
 
 
 async def upload_gmp_stats(

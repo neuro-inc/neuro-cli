@@ -19,7 +19,7 @@ from .asyncio_utils import Runner
 log = logging.getLogger(__name__)
 
 
-TEXT_TYPE = ("application/json", "text")
+TEXT_TYPE = ("application/json", "text", "application/x-www-form-urlencoded")
 
 HEADER_TOKEN_PATTERN = re.compile(
     r"(Bearer|Basic|Digest|Mutual)\s+(?P<token>[^ ]+\.[^ ]+\.[^ ]+)"
