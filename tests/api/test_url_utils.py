@@ -54,6 +54,10 @@ def test_uri_from_cli_path_with_tilde(fake_homedir: Path) -> None:
     assert str(uri) == (fake_homedir / "path/to/file.txt").as_uri()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="expanduser() does not fail for unknown user on Windows",
+)
 def test_uri_from_cli_path_with_tilde_unknown_user() -> None:
     with pytest.raises(ValueError, match=r"Cannot expand user for "):
         uri_from_cli("~unknownuser/path/to/file.txt", "testuser")
