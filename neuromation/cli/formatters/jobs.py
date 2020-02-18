@@ -15,6 +15,7 @@ from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
 from .ftable import table
+from .utils import ImageFormatter, URIFormatter, image_formatter
 
 
 COLORS = {
@@ -74,6 +75,10 @@ class JobFormatter:
 
 
 class JobStatusFormatter:
+    def __init__(self, uri_formatter: URIFormatter) -> None:
+        self._format_uri = uri_formatter
+        self._format_image = image_formatter(uri_formatter=uri_formatter)
+
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         if job_status.name:
@@ -91,7 +96,7 @@ class JobStatusFormatter:
             and job_status.status in [JobStatus.FAILED, JobStatus.PENDING]
         ):
             result += f" ({job_status.history.reason})"
-        result += f"\nImage: {job_status.container.image}\n"
+        result += f"\nImage: {self._format_image(job_status.container.image)}\n"
 
         if job_status.container.entrypoint:
             result += f"Entrypoint: {job_status.container.entrypoint}\n"
@@ -107,7 +112,7 @@ class JobStatusFormatter:
             rows = [
                 (
                     volume.container_path,
-                    f"{volume.storage_uri}",
+                    f"{self._format_uri(volume.storage_uri)}",
                     "READONLY" if volume.read_only else " ",
                 )
                 for volume in job_status.container.volumes
@@ -222,7 +227,9 @@ class TabularJobRow:
     command: str
 
     @classmethod
-    def from_job(cls, job: JobDescription, username: str) -> "TabularJobRow":
+    def from_job(
+        cls, job: JobDescription, username: str, image_formatter: ImageFormatter
+    ) -> "TabularJobRow":
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -242,7 +249,7 @@ class TabularJobRow:
             tags=",".join(job.tags),
             status=job.status,
             when=when_humanized,
-            image=str(job.container.image),
+            image=image_formatter(job.container.image),
             owner=("<you>" if job.owner == username else job.owner),
             description=job.description if job.description else "",
             cluster_name=job.cluster_name,
@@ -254,17 +261,26 @@ class TabularJobRow:
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, username: str, columns: List[JobColumnInfo]):
+    def __init__(
+        self,
+        width: int,
+        username: str,
+        columns: List[JobColumnInfo],
+        image_formatter: ImageFormatter,
+    ) -> None:
         self.width = width
         self._username = username
         self._columns = columns
+        self._image_formatter = image_formatter
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[List[str]] = []
         rows.append([column.title for column in self._columns])
         for job in jobs:
             rows.append(
-                TabularJobRow.from_job(job, self._username).to_list(self._columns)
+                TabularJobRow.from_job(
+                    job, self._username, image_formatter=self._image_formatter
+                ).to_list(self._columns)
             )
         for line in table(
             rows,
