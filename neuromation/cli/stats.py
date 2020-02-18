@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 GA_URL = URL("http://www.google-analytics.com/batch")
 
 # Google Analytics supports up to 20 records in a batch
-GA_CACHE_LIMIT = 1
+GA_CACHE_LIMIT = 20
 
 SCHEMA = {
     "stats": "CREATE TABLE stats (cmd TEXT, args TEXT, timestamp REAL, version TEXT)",
@@ -70,7 +70,7 @@ def add_usage(
 
 
 def select_oldest(
-    db: sqlite3.Connection, *, limit: int = GA_CACHE_LIMIT, delay: float = 3600
+    db: sqlite3.Connection, *, limit: int = GA_CACHE_LIMIT, delay: float = 60
 ) -> List[sqlite3.Row]:
     # oldest 20 records
     old = list(
@@ -83,7 +83,7 @@ def select_oldest(
         )
     )
     if old and len(old) < limit and old[-1]["timestamp"] > time.time() - delay:
-        # A few data, the last recored is younger then one hour old;
+        # A few data, the last recored is younger then one minute old;
         # don't send these data to google server
         old = []
     return old
