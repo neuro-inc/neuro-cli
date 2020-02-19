@@ -7,6 +7,7 @@ import sys
 import textwrap
 import uuid
 import webbrowser
+from datetime import timedelta
 from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
@@ -74,6 +75,8 @@ ROOT_MOUNTPOINT = "/var/neuro"
 NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
 NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
 RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
+
+DEFAULT_JOBS_RUN_TIME_LIMIT = timedelta(days=1)
 
 
 def _get_neuro_mountpoint(username: str) -> str:
@@ -244,6 +247,14 @@ def job() -> None:
     secure=True,
 )
 @option(
+    "-l",
+    "--limit",
+    metavar="MINUTES",
+    type=int,
+    help="Optional job's run-time limit in minutes (set '0' to disable)",
+    default=None,
+)
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
@@ -278,6 +289,7 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    limit: Optional[int],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -322,6 +334,7 @@ async def submit(
         volume=volume,
         env=env,
         env_file=env_file,
+        run_time_limit_minutes=limit,
         preemptible=preemptible,
         name=name,
         description=description,
@@ -740,6 +753,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     secure=True,
 )
 @option(
+    "-l",
+    "--limit",
+    metavar="MINUTES",
+    type=int,
+    help="Optional job's run-time limit in minutes (set '0' to disable)",
+    default=None,
+)
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
@@ -769,6 +790,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    limit: Optional[int],
     preemptible: Optional[bool],
     name: Optional[str],
     description: Optional[str],
@@ -822,6 +844,7 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
+        run_time_limit_minutes=limit,
         preemptible=job_preset.is_preemptible,
         name=name,
         description=description,
@@ -867,6 +890,7 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    run_time_limit_minutes: Optional[int],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -888,6 +912,8 @@ async def run_job(
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
         detach = True
+
+    limit = await calc_run_time_limit(root.client, run_time_limit_minutes)
 
     env_dict = build_env(env, env_file)
 
@@ -946,7 +972,11 @@ async def run_job(
     )
 
     job = await root.client.jobs.run(
-        container, is_preemptible=preemptible, name=name, description=description
+        container,
+        is_preemptible=preemptible,
+        name=name,
+        description=description,
+        run_time_limit=limit,
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -1127,3 +1157,42 @@ async def calc_columns(
                 return parse_columns(format_str)
         return COLUMNS
     return format
+
+
+async def calc_run_time_limit(
+    client: Client, run_time_limit_minutes: Optional[int]
+) -> Optional[timedelta]:
+    limit: Optional[timedelta]
+
+    if run_time_limit_minutes is not None:
+        if run_time_limit_minutes > 0:
+            limit = timedelta(minutes=run_time_limit_minutes)
+        elif run_time_limit_minutes == 0:
+            log.info("Job will have no run-time limit")
+            limit = None
+        else:
+            raise click.UsageError(
+                "Job's run-time limit must be non-negative "
+                f"(got {run_time_limit_minutes} minutes)"
+            )
+    else:
+        limit = await calc_default_job_timeout(client)
+
+    if limit is not None:
+        log.info(f"Job will run up to {limit}")
+
+    return limit
+
+
+async def calc_default_job_timeout(client: Client) -> timedelta:
+    config = await client.config.get_user_config()
+    section = config.get("job")
+    if section is not None:
+        timeout_dict = section.get("default-timeout")
+        if timeout_dict is not None:
+            return timedelta(
+                days=int(timeout_dict.get("days", 0)),
+                hours=int(timeout_dict.get("hours", 0)),
+                minutes=int(timeout_dict.get("minutes", 0)),
+            )
+    return DEFAULT_JOBS_RUN_TIME_LIMIT

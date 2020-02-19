@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+from datetime import timedelta
 from types import TracebackType
 from typing import (
     Any,
@@ -108,3 +109,7 @@ def retries(
         sleeptime += 0.1
         attempts -= 1
         yield retry()
+
+
+def _delta_total_minutes(delta: timedelta) -> int:
+    return int(delta.total_seconds() // 60)

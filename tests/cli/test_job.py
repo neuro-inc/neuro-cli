@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, Tuple
 
@@ -6,11 +7,13 @@ import click
 import pytest
 import toml
 
-from neuromation.api import Client, JobStatus
+from neuromation.api import Client, ConfigError, JobStatus
 from neuromation.cli.job import (
+    DEFAULT_JOBS_RUN_TIME_LIMIT,
     NEUROMATION_ROOT_ENV_VAR,
     build_env,
     calc_columns,
+    calc_default_job_timeout,
     calc_statuses,
 )
 from neuromation.cli.parse_utils import COLUMNS, COLUMNS_MAP
@@ -181,3 +184,73 @@ async def test_calc_columns_user_spec(
             COLUMNS_MAP["id"],
             COLUMNS_MAP["status"],
         ]
+
+
+async def test_calc_default_job_timeout_all_keys(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(
+            toml.dumps(
+                {"job": {"default-timeout": {"days": 1, "hours": 2, "minutes": 3}}}
+            )
+        )
+
+        assert await calc_default_job_timeout(client) == timedelta(
+            days=1, hours=2, minutes=3
+        )
+
+
+@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
+async def test_calc_default_job_timeout_some_keys(
+    timeout_key: str,
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(
+            toml.dumps({"job": {"default-timeout": {timeout_key: 10}}})
+        )
+        expected = timedelta(**{timeout_key: 10})
+        assert await calc_default_job_timeout(client) == expected
+
+
+@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
+async def test_calc_default_job_timeout_invalid_value(
+    timeout_key: str,
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(
+            toml.dumps({"job": {"default-timeout": {timeout_key: "invalid"}}})
+        )
+        with pytest.raises(
+            ConfigError,
+            match=f"invalid type for default-timeout.{timeout_key}, int is expected",
+        ):
+            await calc_default_job_timeout(client)
+
+
+async def test_calc_default_job_timeout_default_value(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({}))
+        assert await calc_default_job_timeout(client) == DEFAULT_JOBS_RUN_TIME_LIMIT

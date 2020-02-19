@@ -432,6 +432,9 @@ def _check_section(
         diff_str = ", ".join(f"{section}.{name}" for name in sorted(diff))
         raise ConfigError(f"{filename}: unknown parameters {diff_str}")
     for name, validator in params.items():
+        if isinstance(validator, dict):
+            _check_section(sec, name, validator, filename)
+            continue
         val = sec.get(name)
         if val is None:
             continue
@@ -455,7 +458,15 @@ def _validate_user_config(
     # additional API for describing new supported config sections, keys and values.
     # Right now this functionality is skipped for the sake of simplicity.
     _check_sections(config, {"alias", "job", "storage"}, filename)
-    _check_section(config, "job", {"ps-format": str}, filename)
+    _check_section(
+        config,
+        "job",
+        {
+            "ps-format": str,
+            "default-timeout": {"days": int, "hours": int, "minutes": int},
+        },
+        filename,
+    )
     _check_section(config, "storage", {"cp-exclude": (list, str)}, filename)
     aliases = config.get("alias", {})
     for key, value in aliases.items():
