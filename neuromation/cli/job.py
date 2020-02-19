@@ -13,6 +13,7 @@ from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 import idna
+import pytimeparse
 from yarl import URL
 
 from neuromation.api import (
@@ -247,11 +248,10 @@ def job() -> None:
     secure=True,
 )
 @option(
-    "-l",
-    "--limit",
-    metavar="MINUTES",
-    type=int,
-    help="Optional job's run-time limit in minutes (set '0' to disable)",
+    "-t",
+    "--timeout",
+    type=str,
+    help="Optional job's timeout in format '1d 2h 3s' ('0' to disable)",
     default=None,
 )
 @option(
@@ -289,7 +289,7 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    limit: Optional[int],
+    timeout: Optional[str],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -334,7 +334,7 @@ async def submit(
         volume=volume,
         env=env,
         env_file=env_file,
-        run_time_limit_minutes=limit,
+        timeout_str=timeout,
         preemptible=preemptible,
         name=name,
         description=description,
@@ -753,11 +753,10 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     secure=True,
 )
 @option(
-    "-l",
-    "--limit",
-    metavar="MINUTES",
-    type=int,
-    help="Optional job's run-time limit in minutes (set '0' to disable)",
+    "-t",
+    "--timeout",
+    type=str,
+    help="Optional job's timeout in format '1d 2h 3s' ('0' to disable)",
     default=None,
 )
 @option(
@@ -790,7 +789,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    limit: Optional[int],
+    timeout: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
     description: Optional[str],
@@ -844,7 +843,7 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
-        run_time_limit_minutes=limit,
+        timeout_str=timeout,
         preemptible=job_preset.is_preemptible,
         name=name,
         description=description,
@@ -890,7 +889,7 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    run_time_limit_minutes: Optional[int],
+    timeout_str: Optional[str],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -913,7 +912,12 @@ async def run_job(
     if not wait_start:
         detach = True
 
-    limit = await calc_run_time_limit(root.client, run_time_limit_minutes)
+    timeout = await calc_run_time_limit(root.client, timeout_str)
+    if not root.quiet:
+        if timeout is not timedelta.max:
+            click.echo(f"Job will run with timeout: {timeout}")
+        else:
+            click.echo(f"Job will have not timeout")
 
     env_dict = build_env(env, env_file)
 
@@ -976,7 +980,7 @@ async def run_job(
         is_preemptible=preemptible,
         name=name,
         description=description,
-        run_time_limit=limit,
+        job_timeout=timeout,
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -1160,28 +1164,30 @@ async def calc_columns(
 
 
 async def calc_run_time_limit(
-    client: Client, run_time_limit_minutes: Optional[int]
+    client: Client, value: Optional[str]
 ) -> Optional[timedelta]:
-    limit: Optional[timedelta]
-
-    if run_time_limit_minutes is not None:
-        if run_time_limit_minutes > 0:
-            limit = timedelta(minutes=run_time_limit_minutes)
-        elif run_time_limit_minutes == 0:
-            log.info("Job will have no run-time limit")
-            limit = None
-        else:
-            raise click.UsageError(
-                "Job's run-time limit must be non-negative "
-                f"(got {run_time_limit_minutes} minutes)"
-            )
+    if value is None:
+        result = await calc_default_job_timeout(client)
     else:
-        limit = await calc_default_job_timeout(client)
+        seconds = _parse_seconds_free_format(value)
+        if seconds == 0:
+            result = timedelta.max
+        elif seconds < 0:
+            raise click.UsageError("Job's run-time limit must be non-negative")
+        else:
+            result = timedelta(seconds=seconds)
+    return result
 
-    if limit is not None:
-        log.info(f"Job will run up to {limit}")
 
-    return limit
+def _parse_seconds_free_format(value: str) -> float:
+    value = value.strip()
+    if value == "0":
+        # corner case which normally cannot be parsed
+        value += "s"
+    parsed = pytimeparse.parse(value)
+    if parsed is None:
+        raise click.UsageError(f"Could not parse job timeout: '{value}'")
+    return float(parsed)
 
 
 async def calc_default_job_timeout(client: Client) -> timedelta:

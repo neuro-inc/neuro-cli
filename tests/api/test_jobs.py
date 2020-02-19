@@ -1532,4 +1532,4 @@ async def test_job_run_time_limit(
             command="submit-command",
             resources=resources,
         )
-        await client.jobs.run(container=container, run_time_limit=timedelta(minutes=10))
+        await client.jobs.run(container=container, job_timeout=timedelta(minutes=10))
