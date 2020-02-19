@@ -98,7 +98,7 @@ def test_images_complete_lifecycle(
     assert image not in local_images
 
     # Pull image as with another tag
-    captured = helper.run_cli(["image", "pull", f"image://~/{image}"])
+    captured = helper.run_cli(["image", "pull", f"image:{image}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
     assert captured.out.endswith(image)
@@ -170,9 +170,7 @@ def test_images_push_with_specified_name(
     pulled_no_tag = f"{image_no_tag}-pulled"
     pulled = f"{pulled_no_tag}:{tag}"
 
-    captured = helper.run_cli(
-        ["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"]
-    )
+    captured = helper.run_cli(["image", "push", image, f"image:{pushed_no_tag}:{tag}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
     image_pushed_full_str = f"image://{helper.username}/{pushed_no_tag}:{tag}"

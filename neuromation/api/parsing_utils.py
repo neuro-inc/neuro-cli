@@ -167,7 +167,7 @@ class _ImageNameParser:
         self._check_allowed_uri_elements(url)
 
         registry = self._registry
-        owner = self._default_user if not url.host or url.host == "~" else url.host
+        owner = self._default_user if not url.host else url.host
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
         return RemoteImage(name=name, tag=tag, registry=registry, owner=owner)
 

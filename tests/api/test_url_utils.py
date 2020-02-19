@@ -49,6 +49,25 @@ def test_uri_from_cli_absolute_path() -> None:
     assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
 
 
+def test_uri_from_cli_path_with_tilde(fake_homedir: Path) -> None:
+    uri = uri_from_cli("~/path/to/file.txt", "testuser")
+    assert str(uri) == (fake_homedir / "path/to/file.txt").as_uri()
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="expanduser() does not fail for unknown user on Windows",
+)
+def test_uri_from_cli_path_with_tilde_unknown_user() -> None:
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        uri_from_cli("~unknownuser/path/to/file.txt", "testuser")
+
+
+def test_uri_from_cli_tilde_only(fake_homedir: Path) -> None:
+    uri = uri_from_cli("~", "testuser")
+    assert str(uri) == fake_homedir.as_uri()
+
+
 def test_uri_from_cli_relative_file_uri() -> None:
     uri = uri_from_cli("file:path/to/file.txt", "testuser")
     assert str(uri) == Path("path/to/file.txt").absolute().as_uri()
@@ -221,11 +240,8 @@ async def test_normalize_local_path_uri__tilde_in_relative_path(
     fake_homedir: Path,
 ) -> None:
     url = URL("file:~/path/to/file.txt")
-    url = normalize_local_path_uri(url)
-    assert url.scheme == "file"
-    assert url.host is None
-    assert _extract_path(url) == fake_homedir / "path/to/file.txt"
-    assert str(url) == (fake_homedir / "path/to/file.txt").as_uri()
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        normalize_local_path_uri(url)
 
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path_2(
@@ -239,15 +255,13 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path_2(
     assert str(url) == "storage://user/~/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__tilde_in_relative_path_2(
-    fake_homedir: Path,
-) -> None:
+async def test_normalize_local_path_uri__tilde_in_relative_path_2(pwd: Path,) -> None:
     url = URL("file:./~/path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"
     assert url.host is None
-    assert _extract_path(url) == fake_homedir / "path/to/file.txt"
-    assert str(url) == (fake_homedir / "path/to/file.txt").as_uri()
+    assert _extract_path(url) == pwd / "~/path/to/file.txt"
+    assert str(url) == (pwd / "~/path/to/file.txt").as_uri().replace("%7E", "~")
 
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path_3(
@@ -276,11 +290,8 @@ async def test_normalize_storage_path_uri__tilde_in_absolute_path(
     client: Client,
 ) -> None:
     url = URL("storage:/~/path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username)
-    assert url.scheme == "storage"
-    assert url.host == "user"
-    assert url.path == "/path/to/file.txt"
-    assert str(url) == "storage://user/path/to/file.txt"
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        normalize_storage_path_uri(url, client.username)
 
 
 async def test_normalize_local_path_uri__tilde_in_absolute_path(
@@ -296,10 +307,8 @@ async def test_normalize_local_path_uri__tilde_in_absolute_path(
 
 async def test_normalize_storage_path_uri__tilde_in_host(client: Client) -> None:
     url = URL("storage://~/path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username)
-    assert url.scheme == "storage"
-    assert url.host == "user"
-    assert url.path == "/path/to/file.txt"
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        normalize_storage_path_uri(url, client.username)
 
 
 async def test_normalize_local_path_uri__tilde_in_host(
@@ -348,15 +357,10 @@ async def test_normalize_storage_path_uri__tilde_slash__double(client: Client) -
         normalize_storage_path_uri(url, client.username)
 
 
-async def test_normalize_local_path_uri__tilde_slash__double(
-    fake_homedir: Path,
-) -> None:
+async def test_normalize_local_path_uri__tilde_slash__double() -> None:
     url = URL("file:~/path/to/file.txt")
-    url = normalize_local_path_uri(url)
-    assert url.scheme == "file"
-    assert url.host is None
-    assert _extract_path(url) == fake_homedir / "path/to/file.txt"
-    assert str(url) == (fake_homedir / "path/to/file.txt").as_uri()
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        normalize_local_path_uri(url)
 
 
 async def test_normalize_storage_path_uri__3_slashes__double(client: Client) -> None:
