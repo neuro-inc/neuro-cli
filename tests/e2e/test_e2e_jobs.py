@@ -670,7 +670,10 @@ async def image(
 ) -> AsyncIterator[str]:
     image = await generate_image(docker)
     yield image
-    await docker.images.delete(image, force=True)
+    try:
+        await docker.images.delete(image, force=True)
+    except Exception:  # aiodocker doesn't expose aiodocker.DockerError
+        pass
 
 
 @pytest.mark.e2e
