@@ -312,7 +312,7 @@ class Helper:
         job_id: str,
         target_state: JobStatus,
         stop_state: Optional[JobStatus] = None,
-        timeout=JOB_TIMEOUT,
+        timeout: float = JOB_TIMEOUT,
     ) -> None:
         __tracebackhide__ = True
         start_time = time()
