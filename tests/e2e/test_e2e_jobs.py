@@ -647,6 +647,7 @@ async def generate_image(docker: aiodocker.Docker) -> str:
         tar.add(str(root / "setup.py"), arcname="setup.py")
         tar.add(str(root / "README.md"), arcname="README.md")
         tar.add(str(root / "neuromation/"), arcname="neuromation")
+        tar.add(str(root / "requirements/base.txt"), arcname="requirements.txt")
 
     with open(image_archive, "rb") as f:
         bytes = f.read()

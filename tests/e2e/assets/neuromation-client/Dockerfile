@@ -1,4 +1,4 @@
-FROM python:3.6-slim
+FROM python:3.7-slim
 
 RUN apt update && \
     apt install -y build-essential
@@ -7,6 +7,7 @@ RUN apt update && \
 COPY setup.py ./
 COPY README.md ./
 COPY neuromation neuromation
-RUN pip install -e .
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
 
 CMD ["neuro", "config", "show"]
