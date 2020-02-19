@@ -1,4 +1,4 @@
-FROM python:3.7-slim
+FROM ubuntu:latest
 
 RUN apt update && \
     apt install -y build-essential
