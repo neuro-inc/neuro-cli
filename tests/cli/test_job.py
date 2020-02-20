@@ -9,6 +9,7 @@ import toml
 
 from neuromation.api import Client, ConfigError, JobStatus
 from neuromation.cli.job import (
+    DEFAULT_JOB_LIFE_SPAN,
     NEUROMATION_ROOT_ENV_VAR,
     _parse_timedelta,
     build_env,
@@ -285,18 +286,15 @@ async def test_calc_default_life_span_all_keys(
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config
-        local_conf.write_text(
-            toml.dumps(
-                {"job": {"default-life-span": {"days": 1, "hours": 2, "minutes": 3}}}
-            )
-        )
+        life_span = {"days": 1, "hours": 2, "minutes": 3, "seconds": 4}
+        local_conf.write_text(toml.dumps({"job": {"default-life-span": life_span}}))
 
         assert await calc_default_life_span(client) == timedelta(
-            days=1, hours=2, minutes=3
+            days=1, hours=2, minutes=3, seconds=4
         )
 
 
-@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
+@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes", "seconds"])
 async def test_calc_default_life_span_some_keys(
     timeout_key: str,
     caplog: Any,
@@ -308,14 +306,13 @@ async def test_calc_default_life_span_some_keys(
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config
-        local_conf.write_text(
-            toml.dumps({"job": {"default-life-span": {timeout_key: 10}}})
-        )
-        expected = timedelta(**{timeout_key: 10})
+        life_time = {timeout_key: 10}
+        local_conf.write_text(toml.dumps({"job": {"default-life-span": life_time}}))
+        expected = timedelta(**life_time)
         assert await calc_default_life_span(client) == expected
 
 
-@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
+@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes", "seconds"])
 async def test_calc_default_life_span_invalid_value(
     timeout_key: str,
     caplog: Any,
@@ -345,4 +342,5 @@ async def test_calc_default_life_span_default_value(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text(toml.dumps({}))
-        assert await calc_default_life_span(client) == timedelta(days=1)
+        default = _parse_timedelta(DEFAULT_JOB_LIFE_SPAN)
+        assert await calc_default_life_span(client) == default

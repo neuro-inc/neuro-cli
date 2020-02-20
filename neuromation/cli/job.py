@@ -1224,5 +1224,6 @@ async def calc_default_life_span(client: Client) -> timedelta:
                 days=int(timeout_dict.get("days", 0)),
                 hours=int(timeout_dict.get("hours", 0)),
                 minutes=int(timeout_dict.get("minutes", 0)),
+                seconds=int(timeout_dict.get("seconds", 0)),
             )
     return _parse_timedelta(DEFAULT_JOB_LIFE_SPAN)

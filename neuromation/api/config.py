@@ -463,7 +463,12 @@ def _validate_user_config(
         "job",
         {
             "ps-format": str,
-            "default-life-span": {"days": int, "hours": int, "minutes": int},
+            "default-life-span": {
+                "days": int,
+                "hours": int,
+                "minutes": int,
+                "seconds": int,
+            },
         },
         filename,
     )
