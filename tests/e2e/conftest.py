@@ -146,12 +146,6 @@ class Helper:
             return URL(self.tmpstorage + path)
 
     @run_async
-    async def get_config(self) -> Config:
-        __tracebackhide__ = True
-        async with api_get(path=self._nmrc_path) as client:
-            return client.config
-
-    @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
         __tracebackhide__ = True
         url = URL(self.tmpstorage + path)

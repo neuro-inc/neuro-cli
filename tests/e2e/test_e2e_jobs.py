@@ -639,10 +639,6 @@ async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Doc
 
 @pytest.mark.e2e
 def test_pass_config(helper: Helper) -> None:
-    m = hashlib.sha1()
-    with open(helper.get_config().path / "db", "rb") as f:
-        m.update(f.read())
-    shasum = m.hexdigest()
     captured = helper.run_cli(
         [
             "-q",
@@ -653,18 +649,15 @@ def test_pass_config(helper: Helper) -> None:
             "--no-wait-start",
             "--pass-config",
             UBUNTU_IMAGE_NAME,
-            'bash -c "sleep 30 && sha1sum -b $(NEUROMATION_CONFIG)/db | '
-            f"cut -f1 -d ' ' | grep {shasum}\"",
+            'bash -c "sleep 15 && test -f $(NEUROMATION_CONFIG)/db"'
         ]
     )
     job_id = captured.out
 
+    # fails if "test -f ..." check is not succeeded
     helper.wait_job_change_state_to(
         job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
-
-    info = helper.job_info(job_id)
-    assert info.history.exit_code == 0
 
 
 @pytest.mark.parametrize("http_auth", ["--http-auth", "--no-http-auth"])
