@@ -1,5 +1,4 @@
 import json
-from datetime import timedelta
 from typing import Any, Callable, Dict, List, Optional
 
 import pytest
@@ -19,21 +18,10 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
-from neuromation.api.utils import _delta_total_minutes
 from tests import _TestServerFactory
 
 
 _MakeClient = Callable[..., Client]
-
-
-def test_delta_total_minutes() -> None:
-    value = timedelta(hours=1, minutes=2, seconds=3)
-    assert _delta_total_minutes(value) == 62
-
-
-def test_delta_total_minutes_zero() -> None:
-    value = timedelta(0)
-    assert _delta_total_minutes(value) == 0
 
 
 def test_resources_default() -> None:
@@ -1503,7 +1491,7 @@ async def test_list_filter_by_name_and_statuses_and_owners(
         assert ret == job_descriptions[:2]
 
 
-async def test_job_run_time_limit(
+async def test_job_run_life_span(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
@@ -1532,4 +1520,4 @@ async def test_job_run_time_limit(
             command="submit-command",
             resources=resources,
         )
-        await client.jobs.run(container=container, life_span=timedelta(minutes=10))
+        await client.jobs.run(container=container, life_span=10 * 60)

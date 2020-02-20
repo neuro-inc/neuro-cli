@@ -5,7 +5,7 @@ import shlex
 import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
 import async_timeout
@@ -34,7 +34,7 @@ from .images import (
 )
 from .parser import Parser, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
-from .utils import NoPublicConstructor, _delta_total_minutes, asynccontextmanager
+from .utils import NoPublicConstructor, asynccontextmanager
 
 
 INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
@@ -137,7 +137,7 @@ class Jobs(metaclass=NoPublicConstructor):
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
-        life_span: timedelta = timedelta.max,
+        life_span: Optional[float] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
         payload: Dict[str, Any] = {
@@ -150,8 +150,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
-        if life_span is not timedelta.max:
-            payload["max_run_time_minutes"] = _delta_total_minutes(life_span)
+        if life_span is not None:
+            payload["max_run_time_minutes"] = int(life_span // 60)
         payload["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:

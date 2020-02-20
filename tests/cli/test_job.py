@@ -7,7 +7,7 @@ import click
 import pytest
 import toml
 
-from neuromation.api import Client, ConfigError, JobStatus
+from neuromation.api import Client, JobStatus
 from neuromation.cli.job import (
     DEFAULT_JOB_LIFE_SPAN,
     NEUROMATION_ROOT_ENV_VAR,
@@ -194,30 +194,54 @@ async def test_calc_life_span_none_default(
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
-        local_conf.write_text(
-            toml.dumps(
-                {"job": {"default-life-span": {"days": 1, "hours": 2, "minutes": 3}}}
-            )
-        )
-        assert await calc_life_span(client, None) == timedelta(
-            days=1, hours=2, minutes=3
-        )
+        local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
+        expected = timedelta(days=1, hours=2, minutes=3, seconds=4).total_seconds()
+        assert await calc_life_span(client, None) == expected
 
 
 async def test_calc_life_span_zero(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
-        assert await calc_life_span(client, "0") == timedelta.max
+        assert await calc_life_span(client, "0") is None
 
 
-async def test_calc_life_span_negative(
-    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+async def test_calc_default_life_span_all_keys(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
-        local_conf.write_text(toml.dumps({"job": {"default-life-span": {"days": -1}}}))
-        with pytest.raises(click.UsageError, match="must be non-negative"):
-            await calc_life_span(client, None)
+        # empty config
+        local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
+
+        assert await calc_default_life_span(client) == timedelta(
+            days=1, hours=2, minutes=3, seconds=4
+        )
+
+
+async def test_calc_default_life_span_invalid(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({"job": {"life-span": "invalid"}}))
+        with pytest.raises(
+            click.UsageError, match="Could not parse job timeout",
+        ):
+            await calc_default_life_span(client)
+
+
+async def test_calc_default_life_span_default_value(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({}))
+        default = _parse_timedelta(DEFAULT_JOB_LIFE_SPAN)
+        assert await calc_default_life_span(client) == default
 
 
 def test_parse_timedelta_valid_zero() -> None:
@@ -274,73 +298,11 @@ def test_parse_timedelta_invalid_empty() -> None:
         _parse_timedelta("")
 
 
-def test_parse_timedelta_invalid_invalid() -> None:
+def test_parse_timedelta_invalid() -> None:
     with pytest.raises(click.UsageError, match="Should be like"):
         _parse_timedelta("invalid")
 
 
-async def test_calc_default_life_span_all_keys(
-    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
-) -> None:
-    async with make_client("https://example.com") as client:
-        monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
-        # empty config
-        life_span = {"days": 1, "hours": 2, "minutes": 3, "seconds": 4}
-        local_conf.write_text(toml.dumps({"job": {"default-life-span": life_span}}))
-
-        assert await calc_default_life_span(client) == timedelta(
-            days=1, hours=2, minutes=3, seconds=4
-        )
-
-
-@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes", "seconds"])
-async def test_calc_default_life_span_some_keys(
-    timeout_key: str,
-    caplog: Any,
-    monkeypatch: Any,
-    tmp_path: Path,
-    make_client: _MakeClient,
-) -> None:
-    async with make_client("https://example.com") as client:
-        monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
-        # empty config
-        life_time = {timeout_key: 10}
-        local_conf.write_text(toml.dumps({"job": {"default-life-span": life_time}}))
-        expected = timedelta(**life_time)
-        assert await calc_default_life_span(client) == expected
-
-
-@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes", "seconds"])
-async def test_calc_default_life_span_invalid_value(
-    timeout_key: str,
-    caplog: Any,
-    monkeypatch: Any,
-    tmp_path: Path,
-    make_client: _MakeClient,
-) -> None:
-    async with make_client("https://example.com") as client:
-        monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
-        # empty config
-        local_conf.write_text(
-            toml.dumps({"job": {"default-life-span": {timeout_key: "invalid"}}})
-        )
-        with pytest.raises(
-            ConfigError,
-            match=f"invalid type for default-life-span.{timeout_key}, int is expected",
-        ):
-            await calc_default_life_span(client)
-
-
-async def test_calc_default_life_span_default_value(
-    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
-) -> None:
-    async with make_client("https://example.com") as client:
-        monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
-        # empty config
-        local_conf.write_text(toml.dumps({}))
-        default = _parse_timedelta(DEFAULT_JOB_LIFE_SPAN)
-        assert await calc_default_life_span(client) == default
+def test_parse_timedelta_invalid_negative() -> None:
+    with pytest.raises(click.UsageError, match="Should be like"):
+        _parse_timedelta("-1d")

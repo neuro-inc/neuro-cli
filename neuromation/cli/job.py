@@ -258,10 +258,8 @@ def job() -> None:
         "Optional job run-time limit in the format '1d 2h 3m 4s' "
         "with or without spaces, some parts may be missing. "
         "Set '0' to disable. "
-        "(default value can be changed in the user config)"
+        "(default value '1d' can be changed in the user config)"
     ),
-    default=DEFAULT_JOB_LIFE_SPAN,
-    show_default=True,
 )
 @option(
     "--wait-start/--no-wait-start",
@@ -298,7 +296,7 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    life_span: str,
+    life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -769,9 +767,8 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         "Optional job run-time limit in the format '1d 2h 3m 4s' "
         "with or without spaces, some parts may be missing. "
         "Set '0' to disable. "
-        "(default value can be changed in the user config)"
+        "(default value '1d' can be changed in the user config)"
     ),
-    default=DEFAULT_JOB_LIFE_SPAN,
     show_default=True,
 )
 @option(
@@ -804,7 +801,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    life_span: str,
+    life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
     description: Optional[str],
@@ -904,7 +901,7 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    life_span: str,
+    life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -1178,19 +1175,28 @@ async def calc_columns(
     return format
 
 
-async def calc_life_span(client: Client, value: Optional[str]) -> timedelta:
-    result = (
+async def calc_life_span(client: Client, value: Optional[str]) -> Optional[float]:
+    delta = (
         _parse_timedelta(value)
         if value is not None
         else await calc_default_life_span(client)
     )
-    seconds = result.total_seconds()
+    seconds = delta.total_seconds()
     if seconds == 0:
-        return timedelta.max
-    elif seconds < 0:
-        raise click.UsageError(f"Job life span must be non-negative, got: '{result}'")
+        return None
+    assert seconds > 0, f"life-span cannot be negative, got: {seconds}"
+    return seconds
 
-    return result
+
+async def calc_default_life_span(client: Client) -> timedelta:
+    config = await client.config.get_user_config()
+    section = config.get("job")
+    life_span = DEFAULT_JOB_LIFE_SPAN
+    if section is not None:
+        value = section.get("life-span")
+        if value is not None:
+            life_span = value
+    return _parse_timedelta(life_span)
 
 
 def _parse_timedelta(value: str) -> timedelta:
@@ -1212,18 +1218,3 @@ def _parse_timedelta(value: str) -> timedelta:
         minutes=int(match.group("m") or 0),
         seconds=int(match.group("s") or 0),
     )
-
-
-async def calc_default_life_span(client: Client) -> timedelta:
-    config = await client.config.get_user_config()
-    section = config.get("job")
-    if section is not None:
-        timeout_dict = section.get("default-life-span")
-        if timeout_dict is not None:
-            return timedelta(
-                days=int(timeout_dict.get("days", 0)),
-                hours=int(timeout_dict.get("hours", 0)),
-                minutes=int(timeout_dict.get("minutes", 0)),
-                seconds=int(timeout_dict.get("seconds", 0)),
-            )
-    return _parse_timedelta(DEFAULT_JOB_LIFE_SPAN)
