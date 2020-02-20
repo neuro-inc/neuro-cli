@@ -3,6 +3,7 @@ from typing import Any, Callable, Iterable, Optional, Type
 from uuid import uuid4
 
 import click
+from click.utils import make_default_short_help
 
 
 BOLD = re.compile(r"(?P<mark>\*\*|__)(?P<content>\S.*?\S)(?P=mark)")
@@ -50,6 +51,12 @@ class Command(click.Command):
             return
         formatter.write_paragraph()
         formatter.write(apply_styling(self.help))
+
+    def get_short_help_str(self, limit=45) -> str:
+        if self.help is None:
+            return ""
+        head, *tail = self.help.split("\n", 1)
+        return make_default_short_help(head.strip(" *_."))
 
 
 def command(
