@@ -701,12 +701,10 @@ def test_pass_config(image: str, helper: Helper) -> None:
     )
     job_id = captured.out
 
-    # sleep(1)
-
     # Wait until the job is running
-    # Default test timeout is 5 min, this rest requires up to 15 mins.
+    # Default test timeout is 5 min, this rest requires up to 10 mins.
     helper.wait_job_change_state_to(
-        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
+        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED, timeout=10 * 60,
     )
 
     # Verify exit code is returned
