@@ -195,7 +195,7 @@ async def test_calc_life_span_none_default(
         local_conf = tmp_path / ".neuro.toml"
         local_conf.write_text(
             toml.dumps(
-                {"job": {"default-timeout": {"days": 1, "hours": 2, "minutes": 3}}}
+                {"job": {"default-life-span": {"days": 1, "hours": 2, "minutes": 3}}}
             )
         )
         assert await calc_life_span(client, None) == timedelta(
@@ -214,7 +214,7 @@ async def test_calc_life_span_negative(
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
-        local_conf.write_text(toml.dumps({"job": {"default-timeout": {"days": -1}}}))
+        local_conf.write_text(toml.dumps({"job": {"default-life-span": {"days": -1}}}))
         with pytest.raises(click.UsageError, match="must be non-negative"):
             await calc_life_span(client, None)
 
@@ -287,7 +287,7 @@ async def test_calc_default_life_span_all_keys(
         # empty config
         local_conf.write_text(
             toml.dumps(
-                {"job": {"default-timeout": {"days": 1, "hours": 2, "minutes": 3}}}
+                {"job": {"default-life-span": {"days": 1, "hours": 2, "minutes": 3}}}
             )
         )
 
@@ -309,7 +309,7 @@ async def test_calc_default_life_span_some_keys(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text(
-            toml.dumps({"job": {"default-timeout": {timeout_key: 10}}})
+            toml.dumps({"job": {"default-life-span": {timeout_key: 10}}})
         )
         expected = timedelta(**{timeout_key: 10})
         assert await calc_default_life_span(client) == expected
@@ -328,11 +328,11 @@ async def test_calc_default_life_span_invalid_value(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text(
-            toml.dumps({"job": {"default-timeout": {timeout_key: "invalid"}}})
+            toml.dumps({"job": {"default-life-span": {timeout_key: "invalid"}}})
         )
         with pytest.raises(
             ConfigError,
-            match=f"invalid type for default-timeout.{timeout_key}, int is expected",
+            match=f"invalid type for default-life-span.{timeout_key}, int is expected",
         ):
             await calc_default_life_span(client)
 

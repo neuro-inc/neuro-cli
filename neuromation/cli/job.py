@@ -1218,7 +1218,7 @@ async def calc_default_life_span(client: Client) -> timedelta:
     config = await client.config.get_user_config()
     section = config.get("job")
     if section is not None:
-        timeout_dict = section.get("default-timeout")
+        timeout_dict = section.get("default-life-span")
         if timeout_dict is not None:
             return timedelta(
                 days=int(timeout_dict.get("days", 0)),
