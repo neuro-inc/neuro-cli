@@ -11,6 +11,7 @@ from neuromation.api import Client, ConfigError, JobStatus
 from neuromation.cli.job import (
     DEFAULT_JOBS_RUN_TIME_LIMIT,
     NEUROMATION_ROOT_ENV_VAR,
+    _parse_timedelta,
     build_env,
     calc_columns,
     calc_default_job_timeout,
@@ -254,3 +255,62 @@ async def test_calc_default_job_timeout_default_value(
         # empty config
         local_conf.write_text(toml.dumps({}))
         assert await calc_default_job_timeout(client) == DEFAULT_JOBS_RUN_TIME_LIMIT
+
+
+def test_parse_timedelta_valid_zero() -> None:
+    assert _parse_timedelta("0") == timedelta(0)
+
+
+def test_parse_timedelta_valid_all_groups_no_spaces() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert _parse_timedelta("1d2h3m4s") == expected
+
+
+def test_parse_timedelta_valid_all_groups_all_spaces() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert _parse_timedelta("1d 2h 3m 4s") == expected
+
+
+def test_parse_timedelta_valid_all_groups_some_spaces_1() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert _parse_timedelta("1d 2h3m4s") == expected
+
+
+def test_parse_timedelta_valid_all_groups_some_spaces_2() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert _parse_timedelta("1d2h 3m4s") == expected
+
+
+def test_parse_timedelta_valid_all_groups_some_spaces_3() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert _parse_timedelta("1d2h3m 4s") == expected
+
+
+def test_parse_timedelta_valid_all_groups_some_spaces_4() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert _parse_timedelta("1d 2h3m 4s") == expected
+
+
+def test_parse_timedelta_valid_all_groups_spaces_around() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert _parse_timedelta("  1d2h3m4s ") == expected
+
+
+def test_parse_timedelta_valid_some_groups_1() -> None:
+    expected = timedelta(days=1, hours=2, seconds=4)
+    assert _parse_timedelta("1d 2h  4s") == expected
+
+
+def test_parse_timedelta_valid_some_groups_2() -> None:
+    expected = timedelta(days=1, hours=1)
+    assert _parse_timedelta("1d 1h") == expected
+
+
+def test_parse_timedelta_invalid_empty() -> None:
+    with pytest.raises(click.UsageError, match="Empty string not allowed"):
+        _parse_timedelta("")
+
+
+def test_parse_timedelta_invalid_invalid() -> None:
+    with pytest.raises(click.UsageError, match="Should be like"):
+        _parse_timedelta("invalid")

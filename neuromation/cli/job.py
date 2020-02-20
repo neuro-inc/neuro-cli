@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import re
 import shlex
 import sys
 import textwrap
@@ -13,7 +14,6 @@ from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 import idna
-import pytimeparse
 from yarl import URL
 
 from neuromation.api import (
@@ -78,6 +78,9 @@ NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
 RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 
 DEFAULT_JOBS_RUN_TIME_LIMIT = timedelta(days=1)
+REGEX_TIMEDELTA = re.compile(
+    r"^((?P<d>\d+)d)?\s*((?P<h>\d+)h)?\s*((?P<m>\d+)m)?\s*((?P<s>\d+)s)?$"
+)
 
 
 def _get_neuro_mountpoint(username: str) -> str:
@@ -1169,7 +1172,8 @@ async def calc_run_time_limit(
     if value is None:
         result = await calc_default_job_timeout(client)
     else:
-        seconds = _parse_seconds_free_format(value)
+        parsed = _parse_timedelta(value)
+        seconds = parsed.total_seconds()
         if seconds == 0:
             result = timedelta.max
         elif seconds < 0:
@@ -1179,15 +1183,25 @@ async def calc_run_time_limit(
     return result
 
 
-def _parse_seconds_free_format(value: str) -> float:
+def _parse_timedelta(value: str) -> timedelta:
     value = value.strip()
+    err = f"Could not parse job timeout '{value}'"
+    if value == "":
+        raise click.UsageError(f"{err}: Empty string not allowed")
     if value == "0":
-        # corner case which normally cannot be parsed
-        value += "s"
-    parsed = pytimeparse.parse(value)
-    if parsed is None:
-        raise click.UsageError(f"Could not parse job timeout: '{value}'")
-    return float(parsed)
+        return timedelta(0)
+    match = REGEX_TIMEDELTA.search(value)
+    if match is None:
+        raise click.UsageError(
+            f"{err}: Should be like '1d 2h 3m 4s' with or without spaces, "
+            "some parts may be missing"
+        )
+    return timedelta(
+        days=int(match.group("d") or 0),
+        hours=int(match.group("h") or 0),
+        minutes=int(match.group("m") or 0),
+        seconds=int(match.group("s") or 0),
+    )
 
 
 async def calc_default_job_timeout(client: Client) -> timedelta:

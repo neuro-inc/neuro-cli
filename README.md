@@ -428,7 +428,7 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
-|_\-t, --timeout TEXT_|Optional job's timeout in free format \(0 to disable)|
+|_\-t, --timeout TEXT_|Optional job's timeout in format '1d 2h 3s' \('0' to disable)|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
@@ -1649,7 +1649,7 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
-|_\-t, --timeout TEXT_|Optional job's timeout in free format \(0 to disable)|
+|_\-t, --timeout TEXT_|Optional job's timeout in format '1d 2h 3s' \('0' to disable)|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
