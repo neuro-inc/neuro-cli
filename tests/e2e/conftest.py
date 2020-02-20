@@ -312,6 +312,7 @@ class Helper:
         job_id: str,
         target_state: JobStatus,
         stop_state: Optional[JobStatus] = None,
+        timeout: float = JOB_TIMEOUT,
     ) -> None:
         __tracebackhide__ = True
         start_time = time()
@@ -322,7 +323,7 @@ class Helper:
                     raise JobWaitStateStopReached(
                         f"failed running job {job_id}: '{stop_state}'"
                     )
-                if int(time() - start_time) > JOB_TIMEOUT:
+                if int(time() - start_time) > timeout:
                     raise AssertionError(
                         f"timeout exceeded, last output: '{job.status}'"
                     )
@@ -400,6 +401,7 @@ class Helper:
             "--disable-pypi-version-check",
             "--color=no",
             f"--network-timeout={network_timeout}",
+            "--skip-stats",
         ]
 
         if verbosity < 0:
