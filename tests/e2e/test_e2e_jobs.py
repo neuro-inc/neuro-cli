@@ -1,10 +1,8 @@
 import asyncio
-import hashlib
 import os
 import re
 import subprocess
 import sys
-import tarfile
 from contextlib import suppress
 from pathlib import Path
 from time import time
@@ -638,74 +636,27 @@ async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Doc
     await client.close()
 
 
-async def generate_image(docker: aiodocker.Docker) -> str:
-    dockerfile = Path(__file__).parent / "assets/neuromation-client/Dockerfile"
-    root = Path(__file__).parent.parent.parent
-    image_archive = Path(__file__).parent / "assets/neuro-cli.tar"
-    with tarfile.open(image_archive, "w:gz") as tar:
-        tar.add(str(dockerfile), arcname="Dockerfile")
-        tar.add(str(root / "setup.py"), arcname="setup.py")
-        tar.add(str(root / "README.md"), arcname="README.md")
-        tar.add(str(root / "neuromation/"), arcname="neuromation")
-
-    with open(image_archive, "rb") as f:
-        bytes = f.read()
-        hash = hashlib.sha256(bytes).hexdigest()
-        tag = hash
-
-    image_name = f"{TEST_IMAGE_NAME}:{tag}"
-    with image_archive.open(mode="r+b") as fileobj:
-        result = await docker.images.build(
-            fileobj=fileobj, tag=image_name, buildargs={"TAG": tag}, encoding="identity"
-        )
-        print(result)
-
-    return image_name
-
-
-@pytest.fixture()
-async def image(
-    loop: asyncio.AbstractEventLoop, docker: aiodocker.Docker
-) -> AsyncIterator[str]:
-    image = await generate_image(docker)
-    yield image
-    await docker.images.delete(image, force=True)
-
-
 @pytest.mark.e2e
-def test_pass_config(image: str, helper: Helper) -> None:
-    # Let`s push image
-    captured = helper.run_cli(["image", "push", image])
-
-    image_full_str = f"image://{helper.username}/{image}"
-    assert captured.out.endswith(image_full_str)
-
-    command = 'bash -c "neuro config show"'
-    # Run a new job
+def test_pass_config(helper: Helper) -> None:
     captured = helper.run_cli(
         [
+            "-q",
             "job",
             "run",
-            "-q",
             "-s",
             JOB_TINY_CONTAINER_PRESET,
             "--no-wait-start",
             "--pass-config",
-            image_full_str,
-            command,
+            UBUNTU_IMAGE_NAME,
+            'bash -c "sleep 15 && test -f $(NEUROMATION_CONFIG)/db"',
         ]
     )
     job_id = captured.out
 
-    # sleep(1)
-
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
-
-    # Verify exit code is returned
-    captured = helper.run_cli(["job", "status", job_id])
-    store_out = captured.out
-    assert "Exit code: 0" in store_out
+    # fails if "test -f ..." check is not succeeded
+    helper.wait_job_change_state_to(
+        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
+    )
 
 
 @pytest.mark.parametrize("http_auth", ["--http-auth", "--no-http-auth"])
