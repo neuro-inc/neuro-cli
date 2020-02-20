@@ -10,4 +10,5 @@ COPY neuromation neuromation
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-CMD ["neuro", "config", "show"]
+
+CMD sleep 5 && neuro config show
