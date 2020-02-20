@@ -50,7 +50,7 @@ class InternalAlias(NeuroClickMixin, click.Command):
 
         help = self.alias.get("help")
         if help is not None:
-            formatter.write("\n")
+            formatter.write_paragraph()
             formatter.write_text(help)
 
         self.format_options(ctx, formatter)
@@ -97,6 +97,7 @@ class ExternalAlias(NeuroClickMixin, click.Command):
         matches = re.findall(r"{\w+}", cmd)
         for match in matches:
             name = match[1:-1]  # drop curly brackets
+            name = name.lower().replace("-", "_")
 
             for param in self.params:
                 if param.name == name:
