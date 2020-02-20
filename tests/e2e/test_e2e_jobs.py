@@ -653,7 +653,7 @@ def test_pass_config(helper: Helper) -> None:
             "--no-wait-start",
             "--pass-config",
             UBUNTU_IMAGE_NAME,
-            'bash -c "sleep 5 && sha1sum -b $(NEUROMATION_CONFIG)/db | '
+            'bash -c "sleep 30 && sha1sum -b $(NEUROMATION_CONFIG)/db | '
             f"cut -f1 -d ' ' | grep {shasum}\"",
         ]
     )
