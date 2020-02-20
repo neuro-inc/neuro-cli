@@ -427,17 +427,11 @@ def test_parse_file_resource_with_user(root: Root) -> None:
 
 
 def test_parse_file_resource_with_tilde(root: Root) -> None:
-    parsed = parse_file_resource(f"storage://~/resource", root)
-    assert parsed == URL(f"storage://{root.client.username}/resource")
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        parse_file_resource(f"storage://~/resource", root)
 
 
-def test_parse_resource_for_sharing_image_1_no_tag(root: Root) -> None:
-    uri = "image://~/ubuntu"
-    parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL(f"image://{root.client.username}/ubuntu")
-
-
-def test_parse_resource_for_sharing_image_2_no_tag(root: Root) -> None:
+def test_parse_resource_for_sharing_image_no_tag(root: Root) -> None:
     uri = "image:ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL(f"image://{root.client.username}/ubuntu")
@@ -478,8 +472,8 @@ def test_parse_resource_for_sharing_with_user(root: Root) -> None:
 
 
 def test_parse_resource_for_sharing_with_tilde(root: Root) -> None:
-    parsed = parse_resource_for_sharing(f"storage://~/resource", root)
-    assert parsed == URL(f"storage://{root.client.username}/resource")
+    with pytest.raises(ValueError, match=r"Cannot expand user for "):
+        parse_resource_for_sharing(f"storage://~/resource", root)
 
 
 def test_parse_resource_for_sharing_with_tilde_relative(root: Root) -> None:

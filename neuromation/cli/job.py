@@ -211,7 +211,7 @@ def job() -> None:
     help=(
         "Mounts directory from vault into container. "
         "Use multiple options to mount more than one volume. "
-        "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+        "--volume=HOME is an alias for storage::/var/storage/home:rw and "
         "storage://neuromation/public:/var/storage/neuromation:ro"
     ),
     secure=True,
@@ -303,7 +303,7 @@ async def submit(
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuromation
     # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-    neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+    neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
     """
     await run_job(
         root,
@@ -604,7 +604,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
     Examples:
     neuro job save job-id image:ubuntu-patched
-    neuro job save my-favourite-job image://~/ubuntu-patched:v1
+    neuro job save my-favourite-job image:ubuntu-patched:v1
     neuro job save my-favourite-job image://bob/ubuntu-patched
     """
     id = await resolve_job(job, client=root.client)
@@ -707,7 +707,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help=(
         "Mounts directory from vault into container. "
         "Use multiple options to mount more than one volume. "
-        "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
+        "--volume=HOME is an alias for storage::/var/storage/home:rw and "
         "storage://neuromation/public:/var/storage/neuromation:ro"
     ),
     secure=True,
@@ -794,7 +794,7 @@ async def run(
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuromation
     # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-    neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+    neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
     """
     if not preset:
         preset = next(iter(root.client.config.presets.keys()))
@@ -1027,9 +1027,7 @@ async def _build_volumes(
         for vol in input_volumes_set:
             if vol == "HOME":
                 volumes.add(
-                    root.client.parse.volume(
-                        f"storage://~:{STORAGE_MOUNTPOINT}/home:rw"
-                    )
+                    root.client.parse.volume(f"storage::{STORAGE_MOUNTPOINT}/home:rw")
                 )
                 volumes.add(
                     root.client.parse.volume(

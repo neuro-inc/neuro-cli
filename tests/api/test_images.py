@@ -43,7 +43,7 @@ class TestImageParser:
         "image",
         [
             "image://me/ubuntu:v10.04",
-            "image://~/ubuntu:v10.04",
+            "image:ubuntu:v10.04",
             "image:///ubuntu:v10.04",
             "image:ubuntu:v10.04",
             "ubuntu:v10.04",
@@ -415,28 +415,28 @@ class TestImageParser:
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag(self) -> None:
-        image = "image://~/ubuntu"
+        image = "image:ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag_2(self) -> None:
-        image = "image://~/library/ubuntu"
+        image = "image:library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag(self) -> None:
-        image = "image://~/ubuntu:v10.04"
+        image = "image:ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag_2(self) -> None:
-        image = "image://~/library/ubuntu:v10.04"
+        image = "image:library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
@@ -522,7 +522,7 @@ class TestImageParser:
         )
 
     def test_normalize_is_neuro_image(self) -> None:
-        image = "image://~/ubuntu"
+        image = "image:ubuntu"
         assert self.parser.normalize(image) == "image://alice/ubuntu:latest"
 
     def test_normalize_is_local_image(self) -> None:
