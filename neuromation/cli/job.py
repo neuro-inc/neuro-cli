@@ -78,7 +78,7 @@ NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
 RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 
 DEFAULT_JOB_LIFE_SPAN = "1d"
-REGEX_TIMEDELTA = re.compile(
+REGEX_JOB_LIFE_SPAN = re.compile(
     r"^((?P<d>\d+)d)?\s*((?P<h>\d+)h)?\s*((?P<m>\d+)m)?\s*((?P<s>\d+)s)?$"
 )
 
@@ -925,11 +925,7 @@ async def run_job(
         detach = True
 
     job_life_span = await calc_life_span(root.client, life_span)
-    if not root.quiet:
-        if job_life_span is not timedelta.max:
-            click.echo(f"Job's run-time limit: {job_life_span}")
-        else:
-            click.echo(f"Job has no run-time limit")
+    log.debug(f"Job run-time limit: {job_life_span}")
 
     env_dict = build_env(env, env_file)
 
@@ -1206,7 +1202,7 @@ def _parse_timedelta(value: str) -> timedelta:
         raise click.UsageError(f"{err}: Empty string not allowed")
     if value == "0":
         return timedelta(0)
-    match = REGEX_TIMEDELTA.search(value)
+    match = REGEX_JOB_LIFE_SPAN.search(value)
     if match is None:
         raise click.UsageError(
             f"{err}: Should be like '1d 2h 3m 4s' with or without spaces, "
