@@ -31,7 +31,6 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
-    Config,
     Container,
     Factory,
     FileStatusType,
