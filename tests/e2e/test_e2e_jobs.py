@@ -639,7 +639,6 @@ async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Doc
 
 @pytest.mark.e2e
 def test_pass_config(helper: Helper) -> None:
-    # Run a new job
     m = hashlib.sha1()
     with open(helper.get_config().path / "db", "rb") as f:
         m.update(f.read())
