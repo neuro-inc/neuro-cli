@@ -77,7 +77,7 @@ NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
 NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
 RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 
-DEFAULT_JOBS_RUN_TIME_LIMIT = timedelta(days=1)
+DEFAULT_JOB_LIFE_SPAN = "1d"
 REGEX_TIMEDELTA = re.compile(
     r"^((?P<d>\d+)d)?\s*((?P<h>\d+)h)?\s*((?P<m>\d+)m)?\s*((?P<s>\d+)s)?$"
 )
@@ -251,11 +251,17 @@ def job() -> None:
     secure=True,
 )
 @option(
-    "-t",
-    "--timeout",
+    "--life-span",
     type=str,
-    help="Optional job's timeout in format '1d 2h 3s' ('0' to disable)",
-    default=None,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional job run-time limit in the format '1d 2h 3m 4s' "
+        "with or without spaces, some parts may be missing. "
+        "Set '0' to disable. "
+        "(default value can be changed in the user config)"
+    ),
+    default=DEFAULT_JOB_LIFE_SPAN,
+    show_default=True,
 )
 @option(
     "--wait-start/--no-wait-start",
@@ -292,7 +298,7 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    timeout: Optional[str],
+    life_span: str,
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -337,7 +343,7 @@ async def submit(
         volume=volume,
         env=env,
         env_file=env_file,
-        timeout_str=timeout,
+        life_span=life_span,
         preemptible=preemptible,
         name=name,
         description=description,
@@ -756,11 +762,17 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     secure=True,
 )
 @option(
-    "-t",
-    "--timeout",
+    "--life-span",
     type=str,
-    help="Optional job's timeout in format '1d 2h 3s' ('0' to disable)",
-    default=None,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional job run-time limit in the format '1d 2h 3m 4s' "
+        "with or without spaces, some parts may be missing. "
+        "Set '0' to disable. "
+        "(default value can be changed in the user config)"
+    ),
+    default=DEFAULT_JOB_LIFE_SPAN,
+    show_default=True,
 )
 @option(
     "--wait-start/--no-wait-start",
@@ -792,7 +804,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    timeout: Optional[str],
+    life_span: str,
     preemptible: Optional[bool],
     name: Optional[str],
     description: Optional[str],
@@ -846,7 +858,7 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
-        timeout_str=timeout,
+        life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
         description=description,
@@ -892,7 +904,7 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
-    timeout_str: Optional[str],
+    life_span: str,
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -915,12 +927,12 @@ async def run_job(
     if not wait_start:
         detach = True
 
-    timeout = await calc_run_time_limit(root.client, timeout_str)
+    job_life_span = await calc_life_span(root.client, life_span)
     if not root.quiet:
-        if timeout is not timedelta.max:
-            click.echo(f"Job will run with timeout: {timeout}")
+        if job_life_span is not timedelta.max:
+            click.echo(f"Job's run-time limit: {job_life_span}")
         else:
-            click.echo(f"Job will have not timeout")
+            click.echo(f"Job has no run-time limit")
 
     env_dict = build_env(env, env_file)
 
@@ -983,7 +995,7 @@ async def run_job(
         is_preemptible=preemptible,
         name=name,
         description=description,
-        job_timeout=timeout,
+        life_span=job_life_span,
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -1166,20 +1178,18 @@ async def calc_columns(
     return format
 
 
-async def calc_run_time_limit(
-    client: Client, value: Optional[str]
-) -> Optional[timedelta]:
-    if value is None:
-        result = await calc_default_job_timeout(client)
-    else:
-        parsed = _parse_timedelta(value)
-        seconds = parsed.total_seconds()
-        if seconds == 0:
-            result = timedelta.max
-        elif seconds < 0:
-            raise click.UsageError("Job's run-time limit must be non-negative")
-        else:
-            result = timedelta(seconds=seconds)
+async def calc_life_span(client: Client, value: Optional[str]) -> timedelta:
+    result = (
+        _parse_timedelta(value)
+        if value is not None
+        else await calc_default_life_span(client)
+    )
+    seconds = result.total_seconds()
+    if seconds == 0:
+        return timedelta.max
+    elif seconds < 0:
+        raise click.UsageError(f"Job life span must be non-negative, got: '{result}'")
+
     return result
 
 
@@ -1204,7 +1214,7 @@ def _parse_timedelta(value: str) -> timedelta:
     )
 
 
-async def calc_default_job_timeout(client: Client) -> timedelta:
+async def calc_default_life_span(client: Client) -> timedelta:
     config = await client.config.get_user_config()
     section = config.get("job")
     if section is not None:
@@ -1215,4 +1225,4 @@ async def calc_default_job_timeout(client: Client) -> timedelta:
                 hours=int(timeout_dict.get("hours", 0)),
                 minutes=int(timeout_dict.get("minutes", 0)),
             )
-    return DEFAULT_JOBS_RUN_TIME_LIMIT
+    return _parse_timedelta(DEFAULT_JOB_LIFE_SPAN)

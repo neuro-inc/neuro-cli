@@ -9,12 +9,12 @@ import toml
 
 from neuromation.api import Client, ConfigError, JobStatus
 from neuromation.cli.job import (
-    DEFAULT_JOBS_RUN_TIME_LIMIT,
     NEUROMATION_ROOT_ENV_VAR,
     _parse_timedelta,
     build_env,
     calc_columns,
-    calc_default_job_timeout,
+    calc_default_life_span,
+    calc_life_span,
     calc_statuses,
 )
 from neuromation.cli.parse_utils import COLUMNS, COLUMNS_MAP
@@ -187,74 +187,36 @@ async def test_calc_columns_user_spec(
         ]
 
 
-async def test_calc_default_job_timeout_all_keys(
-    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+async def test_calc_life_span_none_default(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
-        # empty config
         local_conf.write_text(
             toml.dumps(
                 {"job": {"default-timeout": {"days": 1, "hours": 2, "minutes": 3}}}
             )
         )
-
-        assert await calc_default_job_timeout(client) == timedelta(
+        assert await calc_life_span(client, None) == timedelta(
             days=1, hours=2, minutes=3
         )
 
 
-@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
-async def test_calc_default_job_timeout_some_keys(
-    timeout_key: str,
-    caplog: Any,
-    monkeypatch: Any,
-    tmp_path: Path,
-    make_client: _MakeClient,
+async def test_calc_life_span_zero(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        assert await calc_life_span(client, "0") == timedelta.max
+
+
+async def test_calc_life_span_negative(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
-        # empty config
-        local_conf.write_text(
-            toml.dumps({"job": {"default-timeout": {timeout_key: 10}}})
-        )
-        expected = timedelta(**{timeout_key: 10})
-        assert await calc_default_job_timeout(client) == expected
-
-
-@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
-async def test_calc_default_job_timeout_invalid_value(
-    timeout_key: str,
-    caplog: Any,
-    monkeypatch: Any,
-    tmp_path: Path,
-    make_client: _MakeClient,
-) -> None:
-    async with make_client("https://example.com") as client:
-        monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
-        # empty config
-        local_conf.write_text(
-            toml.dumps({"job": {"default-timeout": {timeout_key: "invalid"}}})
-        )
-        with pytest.raises(
-            ConfigError,
-            match=f"invalid type for default-timeout.{timeout_key}, int is expected",
-        ):
-            await calc_default_job_timeout(client)
-
-
-async def test_calc_default_job_timeout_default_value(
-    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
-) -> None:
-    async with make_client("https://example.com") as client:
-        monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
-        # empty config
-        local_conf.write_text(toml.dumps({}))
-        assert await calc_default_job_timeout(client) == DEFAULT_JOBS_RUN_TIME_LIMIT
+        local_conf.write_text(toml.dumps({"job": {"default-timeout": {"days": -1}}}))
+        with pytest.raises(click.UsageError, match="must be non-negative"):
+            await calc_life_span(client, None)
 
 
 def test_parse_timedelta_valid_zero() -> None:
@@ -314,3 +276,73 @@ def test_parse_timedelta_invalid_empty() -> None:
 def test_parse_timedelta_invalid_invalid() -> None:
     with pytest.raises(click.UsageError, match="Should be like"):
         _parse_timedelta("invalid")
+
+
+async def test_calc_default_life_span_all_keys(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(
+            toml.dumps(
+                {"job": {"default-timeout": {"days": 1, "hours": 2, "minutes": 3}}}
+            )
+        )
+
+        assert await calc_default_life_span(client) == timedelta(
+            days=1, hours=2, minutes=3
+        )
+
+
+@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
+async def test_calc_default_life_span_some_keys(
+    timeout_key: str,
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(
+            toml.dumps({"job": {"default-timeout": {timeout_key: 10}}})
+        )
+        expected = timedelta(**{timeout_key: 10})
+        assert await calc_default_life_span(client) == expected
+
+
+@pytest.mark.parametrize("timeout_key", ["days", "hours", "minutes"])
+async def test_calc_default_life_span_invalid_value(
+    timeout_key: str,
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(
+            toml.dumps({"job": {"default-timeout": {timeout_key: "invalid"}}})
+        )
+        with pytest.raises(
+            ConfigError,
+            match=f"invalid type for default-timeout.{timeout_key}, int is expected",
+        ):
+            await calc_default_life_span(client)
+
+
+async def test_calc_default_life_span_default_value(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({}))
+        assert await calc_default_life_span(client) == timedelta(days=1)
