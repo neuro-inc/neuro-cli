@@ -31,6 +31,7 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    Config,
     Container,
     Factory,
     FileStatusType,
@@ -143,6 +144,12 @@ class Helper:
             return URL(f"storage://{self.username}/{path}")
         else:
             return URL(self.tmpstorage + path)
+
+    @run_async
+    async def get_config(self) -> Config:
+        __tracebackhide__ = True
+        async with api_get(path=self._nmrc_path) as client:
+            return client.config
 
     @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
@@ -401,6 +408,7 @@ class Helper:
             "--disable-pypi-version-check",
             "--color=no",
             f"--network-timeout={network_timeout}",
+            "--skip-stats",
         ]
 
         if verbosity < 0:

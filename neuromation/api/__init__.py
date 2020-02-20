@@ -19,12 +19,12 @@ from .abc import (
     StorageProgressStep,
 )
 from .client import Client, Preset
+from .config import Config, ConfigError
 from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
     TRUSTED_CONFIG_PATH,
-    ConfigError,
     Factory,
 )
 from .core import (
@@ -102,6 +102,7 @@ __all__ = (
     "login",
     "login_with_token",
     "logout",
+    "Config",
     "ConfigError",
     "gen_trace_id",
     "Cluster",
