@@ -253,31 +253,6 @@ def test_parse_timedelta_valid_all_groups_no_spaces() -> None:
     assert _parse_timedelta("1d2h3m4s") == expected
 
 
-def test_parse_timedelta_valid_all_groups_all_spaces() -> None:
-    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
-    assert _parse_timedelta("1d 2h 3m 4s") == expected
-
-
-def test_parse_timedelta_valid_all_groups_some_spaces_1() -> None:
-    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
-    assert _parse_timedelta("1d 2h3m4s") == expected
-
-
-def test_parse_timedelta_valid_all_groups_some_spaces_2() -> None:
-    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
-    assert _parse_timedelta("1d2h 3m4s") == expected
-
-
-def test_parse_timedelta_valid_all_groups_some_spaces_3() -> None:
-    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
-    assert _parse_timedelta("1d2h3m 4s") == expected
-
-
-def test_parse_timedelta_valid_all_groups_some_spaces_4() -> None:
-    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
-    assert _parse_timedelta("1d 2h3m 4s") == expected
-
-
 def test_parse_timedelta_valid_all_groups_spaces_around() -> None:
     expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
     assert _parse_timedelta("  1d2h3m4s ") == expected
@@ -285,12 +260,17 @@ def test_parse_timedelta_valid_all_groups_spaces_around() -> None:
 
 def test_parse_timedelta_valid_some_groups_1() -> None:
     expected = timedelta(days=1, hours=2, seconds=4)
-    assert _parse_timedelta("1d 2h  4s") == expected
+    assert _parse_timedelta("1d2h4s") == expected
 
 
 def test_parse_timedelta_valid_some_groups_2() -> None:
     expected = timedelta(days=1, hours=1)
-    assert _parse_timedelta("1d 1h") == expected
+    assert _parse_timedelta("1d1h") == expected
+
+
+def test_parse_timedelta_valid_some_groups_3() -> None:
+    expected = timedelta(days=1)
+    assert _parse_timedelta("1d") == expected
 
 
 def test_parse_timedelta_invalid_empty() -> None:

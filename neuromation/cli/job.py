@@ -79,7 +79,7 @@ RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 
 DEFAULT_JOB_LIFE_SPAN = "1d"
 REGEX_JOB_LIFE_SPAN = re.compile(
-    r"^((?P<d>\d+)d)?\s*((?P<h>\d+)h)?\s*((?P<m>\d+)m)?\s*((?P<s>\d+)s)?$"
+    r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
 )
 
 
@@ -255,10 +255,9 @@ def job() -> None:
     type=str,
     metavar="TIMEDELTA",
     help=(
-        "Optional job run-time limit in the format '1d 2h 3m 4s' "
-        "with or without spaces, some parts may be missing. "
-        "Set '0' to disable. "
-        "(default value '1d' can be changed in the user config)"
+        "Optional job run-time limit in the format '1d2h3m4s' "
+        "(some parts may be missing). Set '0' to disable. "
+        "Default value '1d' can be changed in the user config."
     ),
 )
 @option(
@@ -764,10 +763,9 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     type=str,
     metavar="TIMEDELTA",
     help=(
-        "Optional job run-time limit in the format '1d 2h 3m 4s' "
-        "with or without spaces, some parts may be missing. "
-        "Set '0' to disable. "
-        "(default value '1d' can be changed in the user config)"
+        "Optional job run-time limit in the format '1d2h3m4s' "
+        "(some parts may be missing). Set '0' to disable. "
+        "Default value '1d' can be changed in the user config."
     ),
     show_default=True,
 )
@@ -1205,8 +1203,7 @@ def _parse_timedelta(value: str) -> timedelta:
     match = REGEX_JOB_LIFE_SPAN.search(value)
     if match is None:
         raise click.UsageError(
-            f"{err}: Should be like '1d 2h 3m 4s' with or without spaces, "
-            "some parts may be missing"
+            f"{err}: Should be like '1d2h3m4s' (some parts may be missing)."
         )
     return timedelta(
         days=int(match.group("d") or 0),

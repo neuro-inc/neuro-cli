@@ -116,6 +116,7 @@ Jobs
                      description: Optional[str] = None, \
                      is_preemptible: bool = False, \
                      schedule_timeout: Optional[float] = None, \
+                     life_span: Optional[float] = None, \
                  ) -> JobDescription
 
       Start a new job.
@@ -133,6 +134,9 @@ Jobs
       :param float schedule_timeout: minimal timeout to wait before reporting that job
                                      cannot be scheduled because the lack of computation
                                      cluster resources (memory, CPU/GPU etc).
+
+      :param float life_span: job run-time limit in the format '1d2h3m4s'
+                              (some parts may be missing). Pass '0' to disable.
 
       :return: :class:`JobDescription` instance with information about started job.
 
