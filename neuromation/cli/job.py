@@ -1054,7 +1054,9 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-    storage_nmrc_folder = URL(f"storage://{root.client.username}/nmrc/")
+    storage_nmrc_folder = URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/nmrc/"
+    )
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/nmrc/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
