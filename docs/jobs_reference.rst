@@ -135,8 +135,7 @@ Jobs
                                      cannot be scheduled because the lack of computation
                                      cluster resources (memory, CPU/GPU etc).
 
-      :param float life_span: job run-time limit in the format '1d2h3m4s'
-                              (some parts may be missing). Pass '0' to disable.
+      :param float life_span: job run-time limit in seconds. Pass `None` to disable.
 
       :return: :class:`JobDescription` instance with information about started job.
 
