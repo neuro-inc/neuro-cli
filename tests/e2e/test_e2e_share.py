@@ -36,6 +36,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     captured = helper.run_cli(["-v", "acl", "list"])
     assert captured.err == ""
     result = captured.out.splitlines()
+    print("permissions:\n  " + "\n  ".join(result))
     assert f"storage://{helper.cluster_name}/{helper.username} manage" in result
     assert f"user://{helper.username} read" in result
 
@@ -49,6 +50,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     captured = helper.run_cli(["-v", "acl", "list", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
+    print("shared permissions:\n  " + "\n  ".join(result))
     assert f"{uri} read public" in result
     assert f"{uri2} write {another_test_user}" in result
     for line in result:
