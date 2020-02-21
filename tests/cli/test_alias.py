@@ -6,6 +6,9 @@ from typing import Callable, List
 import pytest
 import toml
 
+from neuromation.cli.alias import find_alias, list_aliases
+from neuromation.cli.root import Root
+
 from .conftest import SysCapWithCode
 
 
@@ -96,6 +99,31 @@ class TestInternalAlias:
         )
         assert expected == capture.out
 
+    async def test_internal_alias_short_help(self, root: Root, nmrc_path: Path) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(toml.dumps({"alias": {"lsl": {"cmd": "storage ls -l"}}}))
+        cmd = await find_alias(root, "lsl")
+        assert cmd.get_short_help_str() == "neuro storage ls -l"
+
+    async def test_internal_alias_short_help_custom_msg(
+        self, root: Root, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {
+                    "alias": {
+                        "lsl": {
+                            "cmd": "storage ls -l",
+                            "help": "Custom ls with long output.",
+                        }
+                    }
+                }
+            )
+        )
+        cmd = await find_alias(root, "lsl")
+        assert cmd.get_short_help_str() == "Custom ls with long output."
+
 
 class TestExternalAliasArgs:
     def test_external_alias_no_arg(
@@ -152,6 +180,24 @@ class TestExternalAliasArgs:
         """
         )
         assert expected == capture.out
+
+    async def test_external_alias_short_help(self, root: Root, nmrc_path: Path) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"exec": "script"}}}))
+        cmd = await find_alias(root, "user-cmd")
+        assert cmd.get_short_help_str() == "script"
+
+    async def test_external_alias_short_help_custom_msg(
+        self, root: Root, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {"alias": {"user-cmd": {"exec": "script", "help": "Custom help."}}}
+            )
+        )
+        cmd = await find_alias(root, "user-cmd")
+        assert cmd.get_short_help_str() == "Custom help."
 
     def test_external_alias_arg(
         self, run_cli: _RunCli, nmrc_path: Path, script: str
@@ -982,3 +1028,23 @@ def test_external_alias_simplified(
     capture = run_cli(["user-cmd", "-o", "arg"])
     assert capture.code == 0
     assert "['--opt', 'arg']" == capture.out
+
+
+async def test_list_aliases(root: Root, nmrc_path: Path) -> None:
+    user_cfg = nmrc_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "lsl": {
+                        "cmd": "storage ls -l",
+                        "help": "Custom ls with long output.",
+                    },
+                    "user-cmd": {"exec": "script"},
+                }
+            }
+        )
+    )
+    lst = await list_aliases(root)
+    names = [cmd.name for cmd in lst]
+    assert names == ["lsl", "user-cmd"]

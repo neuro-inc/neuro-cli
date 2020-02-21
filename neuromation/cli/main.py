@@ -129,7 +129,7 @@ class MainGroup(Group):
         if cmd is None:
             # find alias
             root = cast(Root, ctx.obj)
-            cmd = root.run(find_alias(ctx, cmd_name, args, root))
+            cmd = root.run(find_alias(root, cmd_name))
 
         # If we don't find the command we want to show an error message
         # to the user that it was not provided.  However, there is
