@@ -20,7 +20,8 @@ from neuromation.api import (
 )
 from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
 
-from .formatters import ConfigFormatter
+from .alias import list_aliases
+from .formatters.config import AliasesFormatter, ConfigFormatter
 from .root import Root
 from .utils import command, group, option, pager_maybe
 
@@ -173,6 +174,15 @@ async def logout(root: Root) -> None:
     click.echo("Logged out")
 
 
+@command()
+async def aliases(root: Root) -> None:
+    """
+    List available command aliases.
+    """
+    aliases = await list_aliases(root)
+    click.echo("\n".join(AliasesFormatter()(aliases)))
+
+
 @command(name="docker")
 @option(
     "--docker-config",
@@ -284,6 +294,7 @@ config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
 config.add_command(show_quota)
+config.add_command(aliases)
 config.add_command(get_clusters)
 config.add_command(switch_cluster)
 

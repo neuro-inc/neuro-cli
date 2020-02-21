@@ -5,6 +5,7 @@ import sys
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import click
+from click.utils import make_default_short_help
 
 from neuromation.api import ConfigError
 
@@ -18,7 +19,7 @@ class InternalAlias(NeuroClickMixin, click.Command):
     allow_extra_args = True
 
     def __init__(self, name: str, alias: Dict[str, str]) -> None:
-        super().__init__(name,)
+        super().__init__(name)
         assert "cmd" in alias
         self.alias = alias
 
@@ -36,6 +37,10 @@ class InternalAlias(NeuroClickMixin, click.Command):
             sub_ctx = cmd.make_context(self.name, sub_args + ctx.args, parent=ctx)
             with sub_ctx:  # type: ignore
                 sub_ctx.command.invoke(sub_ctx)
+
+    def get_short_help_str(self, limit: int = 45) -> str:
+        txt = self.alias.get("help") or "neuro " + self.alias["cmd"]
+        return make_default_short_help(txt)
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         self.format_usage(ctx, formatter)
@@ -116,6 +121,10 @@ class ExternalAlias(NeuroClickMixin, click.Command):
 
         return shlex.split(cmd)
 
+    def get_short_help_str(self, limit: int = 45) -> str:
+        txt = self.alias.get("help") or self.alias["exec"]
+        return make_default_short_help(txt)
+
     def format_help_text(
         self, ctx: click.Context, formatter: click.HelpFormatter
     ) -> None:
@@ -129,9 +138,7 @@ class ExternalAlias(NeuroClickMixin, click.Command):
             formatter.write_text(help)
 
 
-async def find_alias(
-    ctx: click.Context, cmd_name: str, args: List[str], root: Root
-) -> Optional[click.Command]:
+async def find_alias(root: Root, cmd_name: str) -> Optional[click.Command]:
     client = await root.init_client()
     config = await client.config.get_user_config()
     alias = config.get("alias", {}).get(cmd_name)
@@ -145,7 +152,22 @@ async def find_alias(
     else:  # pragma: no cover
         # This branch is unreachable,
         # Config file validator should prevent unknown alias type
-        ctx.fail(f"Invalid alias description type for {cmd_name}")
+        raise click.UsageError(f"Invalid alias description type for {cmd_name}")
+
+
+async def list_aliases(root: Root) -> List[click.Command]:
+    client = await root.init_client()
+    config = await client.config.get_user_config()
+    ret: List[click.Command] = []
+    for cmd_name, alias in config.get("alias", {}).items():
+        if "cmd" in alias:
+            ret.append(InternalAlias(cmd_name, alias))
+        elif "exec" in alias:
+            ret.append(ExternalAlias(cmd_name, alias))
+        else:  # pragma: no cover
+            # This branch is unreachable,
+            pass
+    return ret
 
 
 def _parse_options(descr: List[str]) -> List[click.Parameter]:

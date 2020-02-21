@@ -16,4 +16,5 @@ typing_extensions==3.7.4.1
 wcwidth==0.1.8
 toml==0.10.0
 idna==2.9
+requests==2.23.0
 -e .
