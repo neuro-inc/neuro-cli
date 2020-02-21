@@ -103,6 +103,7 @@ class TestInternalAlias:
         user_cfg = nmrc_path / "user.toml"
         user_cfg.write_text(toml.dumps({"alias": {"lsl": {"cmd": "storage ls -l"}}}))
         cmd = await find_alias(root, "lsl")
+        assert cmd is not None
         assert cmd.get_short_help_str() == "neuro storage ls -l"
 
     async def test_internal_alias_short_help_custom_msg(
@@ -122,6 +123,7 @@ class TestInternalAlias:
             )
         )
         cmd = await find_alias(root, "lsl")
+        assert cmd is not None
         assert cmd.get_short_help_str() == "Custom ls with long output."
 
 
@@ -185,6 +187,7 @@ class TestExternalAliasArgs:
         user_cfg = nmrc_path / "user.toml"
         user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"exec": "script"}}}))
         cmd = await find_alias(root, "user-cmd")
+        assert cmd is not None
         assert cmd.get_short_help_str() == "script"
 
     async def test_external_alias_short_help_custom_msg(
@@ -197,6 +200,7 @@ class TestExternalAliasArgs:
             )
         )
         cmd = await find_alias(root, "user-cmd")
+        assert cmd is not None
         assert cmd.get_short_help_str() == "Custom help."
 
     def test_external_alias_arg(

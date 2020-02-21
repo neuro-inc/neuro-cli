@@ -154,10 +154,10 @@ def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]
 
 
 class AliasesFormatter:
-    def __call__(self, aliases: Iterable[click.Command]) -> str:
+    def __call__(self, aliases: Iterable[click.Command]) -> Iterator[str]:
         rows = [["Alias", "Description"]]
         for alias in sorted(aliases, key=operator.attrgetter("name")):
             rows.append(
                 [click.style(alias.name, bold=True), alias.get_short_help_str()]
             )
-        return "\n".join(table(rows))
+        return table(rows)

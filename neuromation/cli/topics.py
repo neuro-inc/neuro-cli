@@ -52,7 +52,7 @@ class Command(click.Command):
         formatter.write_paragraph()
         formatter.write(apply_styling(self.help))
 
-    def get_short_help_str(self, limit=45) -> str:
+    def get_short_help_str(self, limit: int = 45) -> str:
         if self.help is None:
             return ""
         head, *tail = self.help.split("\n", 1)

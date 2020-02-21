@@ -38,7 +38,7 @@ class InternalAlias(NeuroClickMixin, click.Command):
             with sub_ctx:  # type: ignore
                 sub_ctx.command.invoke(sub_ctx)
 
-    def get_short_help_str(self, limit=45):
+    def get_short_help_str(self, limit: int = 45) -> str:
         txt = self.alias.get("help") or "neuro " + self.alias["cmd"]
         return make_default_short_help(txt)
 
@@ -121,7 +121,7 @@ class ExternalAlias(NeuroClickMixin, click.Command):
 
         return shlex.split(cmd)
 
-    def get_short_help_str(self, limit=45):
+    def get_short_help_str(self, limit: int = 45) -> str:
         txt = self.alias.get("help") or self.alias["exec"]
         return make_default_short_help(txt)
 
@@ -152,13 +152,13 @@ async def find_alias(root: Root, cmd_name: str) -> Optional[click.Command]:
     else:  # pragma: no cover
         # This branch is unreachable,
         # Config file validator should prevent unknown alias type
-        raise click.UssageError(f"Invalid alias description type for {cmd_name}")
+        raise click.UsageError(f"Invalid alias description type for {cmd_name}")
 
 
 async def list_aliases(root: Root) -> List[click.Command]:
     client = await root.init_client()
     config = await client.config.get_user_config()
-    ret = []
+    ret: List[click.Command] = []
     for cmd_name, alias in config.get("alias", {}).items():
         if "cmd" in alias:
             ret.append(InternalAlias(cmd_name, alias))

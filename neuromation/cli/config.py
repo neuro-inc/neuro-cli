@@ -180,7 +180,7 @@ async def aliases(root: Root) -> None:
     List available command aliases.
     """
     aliases = await list_aliases(root)
-    click.echo(AliasesFormatter()(aliases))
+    click.echo("\n".join(AliasesFormatter()(aliases)))
 
 
 @command(name="docker")
