@@ -237,12 +237,12 @@ def format_example(example: str, formatter: click.HelpFormatter) -> None:
 
 
 class NeuroClickMixin:
-    def get_help_option(self, ctx: click.Context) -> click.Option:
-        help_options = self.get_help_option_names(ctx)
-        if not help_options or not self.add_help_option:
-            return
+    def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
+        help_options = self.get_help_option_names(ctx)  # type: ignore
+        if not help_options or not self.add_help_option:  # type: ignore
+            return None
 
-        def show_help(ctx, param, value):
+        def show_help(ctx: click.Context, param: Any, value: Any) -> None:
             if value and not ctx.resilient_parsing:
                 print_help(ctx)
 
@@ -395,7 +395,7 @@ class Group(NeuroGroupMixin, click.Group):
     def list_commands(self, ctx: click.Context) -> Iterable[str]:
         return self.commands
 
-    def invoke(self, ctx):
+    def invoke(self, ctx: click.Context) -> None:
         if not ctx.args and not ctx.protected_args:
             print_help(ctx)
         else:
