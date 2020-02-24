@@ -465,7 +465,7 @@ cli.add_command(image.push)
 cli.add_command(image.pull)
 cli.add_command(alias(share.grant, "share", help=share.grant.help, deprecated=False))
 
-cli.topics = topics  # type: ignore
+cli.topics = topics
 
 
 def main(args: Optional[List[str]] = None) -> None:
