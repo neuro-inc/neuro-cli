@@ -6,6 +6,7 @@ import itertools
 import logging
 import re
 import shlex
+import shutil
 import sys
 import time
 from contextlib import suppress
@@ -236,6 +237,24 @@ def format_example(example: str, formatter: click.HelpFormatter) -> None:
 
 
 class NeuroClickMixin:
+    def get_help_option(self, ctx: click.Context) -> click.Option:
+        help_options = self.get_help_option_names(ctx)
+        if not help_options or not self.add_help_option:
+            return
+
+        def show_help(ctx, param, value):
+            if value and not ctx.resilient_parsing:
+                print_help(ctx)
+
+        return Option(
+            help_options,
+            is_flag=True,
+            is_eager=True,
+            expose_value=False,
+            callback=show_help,
+            help="Show this message and exit.",
+        )
+
     def get_short_help_str(self, limit: int = 45) -> str:
         text = super().get_short_help_str(limit=limit)  # type: ignore
         if text.endswith(".") and not text.endswith("..."):
@@ -376,10 +395,30 @@ class Group(NeuroGroupMixin, click.Group):
     def list_commands(self, ctx: click.Context) -> Iterable[str]:
         return self.commands
 
+    def invoke(self, ctx):
+        if not ctx.args and not ctx.protected_args:
+            print_help(ctx)
+        else:
+            super().invoke(ctx)
+
 
 def group(name: Optional[str] = None, **kwargs: Any) -> Group:
     kwargs.setdefault("cls", Group)
+    kwargs.setdefault("invoke_without_command", True)
     return click.group(name=name, **kwargs)  # type: ignore
+
+
+def print_help(ctx: click.Context) -> None:
+    root = cast(Root, ctx.obj)
+    if root is None:
+        tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
+        terminal_size = shutil.get_terminal_size()
+    else:
+        tty = root.tty
+        terminal_size = root.terminal_size
+
+    pager_maybe(ctx.get_help().splitlines(), tty, terminal_size)
+    ctx.exit()
 
 
 class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
