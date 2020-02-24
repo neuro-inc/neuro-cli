@@ -37,13 +37,19 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     assert captured.err == ""
     result = captured.out.splitlines()
     print("permissions:\n  " + "\n  ".join(result))
-    assert f"storage://{helper.cluster_name}/{helper.username} manage" in result
+    assert (
+        f"storage://{helper.cluster_name}/{helper.username} manage" in result
+        or f"storage://{helper.cluster_name} manage" in result
+    )
     assert f"user://{helper.username} read" in result
 
     captured = helper.run_cli(["-v", "acl", "list", "--scheme", "storage"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"storage://{helper.cluster_name}/{helper.username} manage" in result
+    assert (
+        f"storage://{helper.cluster_name}/{helper.username} manage" in result
+        or f"storage://{helper.cluster_name} manage" in result
+    )
     for line in result:
         assert line.startswith("storage://")
 
