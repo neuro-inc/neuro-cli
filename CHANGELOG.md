@@ -5,6 +5,20 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.2.24 (2020-02-24)
+=================================
+
+Features
+--------
+
+
+- Support custom columns format for ``neuro ps`` command. ([#1288](https://github.com/neuromation/platform-api-clients/issues/1288))
+
+- Support custom aliases. ([#1320](https://github.com/neuromation/platform-api-clients/issues/1320))
+
+- Removed support of `~` in URIs (like `storage://~/path/to`). Relative URIs can be used instead (like `storage:path/to`). Support of tilde in local file paths (like `~/path/to`) has been preserved. ([#1329](https://github.com/neuromation/platform-api-clients/issues/1329))
+
+
 Neuromation 20.01.22 (2020-01-22)
 =================================
 

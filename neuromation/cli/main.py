@@ -36,8 +36,10 @@ from .utils import (
     Group,
     alias,
     format_example,
+    group,
     option,
     pager_maybe,
+    print_help,
 )
 
 
@@ -108,9 +110,7 @@ class MainGroup(Group):
         with ctx:  # type: ignore
             ctx.invoke(self.callback, **ctx.params)  # type: ignore
             if not args:
-                # For call with options only, e.g. "neuro -v"
-                click.echo(ctx.get_help())
-                return
+                print_help(ctx)
             cmd_name, cmd, args = self.resolve_command(ctx, args)
             ctx.invoked_subcommand = cmd_name
             sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
@@ -129,7 +129,7 @@ class MainGroup(Group):
         if cmd is None:
             # find alias
             root = cast(Root, ctx.obj)
-            cmd = root.run(find_alias(ctx, cmd_name, args, root))
+            cmd = root.run(find_alias(root, cmd_name))
 
         # If we don't find the command we want to show an error message
         # to the user that it was not provided.  However, there is
@@ -241,7 +241,7 @@ def print_options(
     ctx.exit()
 
 
-@click.group(cls=MainGroup)
+@group(cls=MainGroup)
 @option(
     "-v",
     "--verbose",
@@ -410,24 +410,24 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
     not_found = 'No such command "neuro {}"'.format(" ".join(command))
 
     ctx_stack = [top_ctx]
-    for cmd_name in command:
-        current_cmd = ctx_stack[-1].command
-        if isinstance(current_cmd, click.MultiCommand):
-            sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
-            if sub_cmd is None or sub_cmd.hidden:
+    try:
+        for cmd_name in command:
+            current_cmd = ctx_stack[-1].command
+            if isinstance(current_cmd, click.MultiCommand):
+                sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
+                if sub_cmd is None or sub_cmd.hidden:
+                    click.echo(not_found)
+                    break
+                sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
+                ctx_stack.append(sub_ctx)
+            else:
                 click.echo(not_found)
                 break
-            sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
-            ctx_stack.append(sub_ctx)
         else:
-            click.echo(not_found)
-            break
-    else:
-        help = ctx_stack[-1].get_help()
-        pager_maybe(help.splitlines(), root.tty, root.terminal_size)
-
-    for ctx in reversed(ctx_stack[1:]):
-        ctx.close()
+            print_help(ctx_stack[-1])
+    finally:
+        for ctx in reversed(ctx_stack[1:]):
+            ctx.close()
 
 
 # groups

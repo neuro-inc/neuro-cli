@@ -1,14 +1,18 @@
 import textwrap
 from dataclasses import replace
+from pathlib import Path
 from sys import platform
 from typing import Callable
 
 import click
+import toml
 
 from neuromation.api import Client, Cluster, Preset
 from neuromation.api.admin import _Quota
 from neuromation.api.quota import _QuotaInfo
+from neuromation.cli.alias import list_aliases
 from neuromation.cli.formatters.config import (
+    AliasesFormatter,
     ConfigFormatter,
     QuotaFormatter,
     QuotaInfoFormatter,
@@ -254,4 +258,32 @@ class TestQuotaFormatter:
         out = QuotaFormatter()(quota)
         assert out == "\n".join(
             [f"{bold_start}GPU:{bold_end} 0m", f"{bold_start}CPU:{bold_end} 0m"]
+        )
+
+
+class TestAliasesFormatter:
+    async def test_output(self, root: Root, nmrc_path: Path) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {
+                    "alias": {
+                        "lsl": {
+                            "cmd": "storage ls -l",
+                            "help": "Custom ls with long output.",
+                        },
+                        "user-cmd": {"exec": "script"},
+                    }
+                }
+            )
+        )
+        lst = await list_aliases(root)
+        out = AliasesFormatter()(lst)
+        assert "\n".join(
+            click.unstyle(line).rstrip() for line in out
+        ) == textwrap.dedent(
+            """\
+            Alias     Description
+            lsl       Custom ls with long output.
+            user-cmd  script"""
         )

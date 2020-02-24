@@ -1,6 +1,8 @@
+import operator
 import sys
 from typing import Iterable, Iterator, List, Mapping, Optional
 
+import click
 from click import style
 
 from neuromation.api import Client, Cluster, Preset
@@ -149,3 +151,13 @@ def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]
         rows=rows, aligns=[Align.LEFT, Align.RIGHT, Align.RIGHT, Align.CENTER]
     ):
         yield prefix + line
+
+
+class AliasesFormatter:
+    def __call__(self, aliases: Iterable[click.Command]) -> Iterator[str]:
+        rows = [["Alias", "Description"]]
+        for alias in sorted(aliases, key=operator.attrgetter("name")):
+            rows.append(
+                [click.style(alias.name, bold=True), alias.get_short_help_str()]
+            )
+        return table(rows)
