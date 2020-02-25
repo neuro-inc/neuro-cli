@@ -1,11 +1,13 @@
+import abc
 import contextlib
 import logging
-from typing import Optional
+from typing import Optional, Iterable
 
 import click
 
 from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters import DockerImageProgress
+from .formatters.images import ShortImagesFormatter, LongImagesFormatter
 
 from .root import Root
 from .utils import (
@@ -14,8 +16,7 @@ from .utils import (
     deprecated_quiet_option,
     group,
     pager_maybe,
-)
-
+    option)
 
 log = logging.getLogger(__name__)
 
@@ -93,13 +94,22 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 
 @command()
-async def ls(root: Root) -> None:
+@option("-l", "format_long", is_flag=True, help="use a long listing format")
+async def ls(
+        root: Root,
+        format_long: bool
+) -> None:
     """
     List images.
     """
 
     images = await root.client.images.ls()
-    pager_maybe((str(image) for image in images), root.tty, root.terminal_size)
+
+    if format_long:
+        formatter = LongImagesFormatter()
+    else:
+        formatter = ShortImagesFormatter()
+    pager_maybe(formatter(images), root.tty, root.terminal_size)
 
 
 @command()

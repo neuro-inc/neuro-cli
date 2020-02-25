@@ -18,6 +18,15 @@ class RemoteImage:
     owner: Optional[str] = None
     registry: Optional[str] = None
 
+    @property
+    def https_url(self):
+        if _is_in_neuro_registry(self):
+            name = f"https://{self.registry}/{self.owner}/{self.name}"
+            tag = f":{self.tag}" if self.tag else ""
+            return name + tag
+        else:
+            return str(self)
+
     def __str__(self) -> str:
         pre = f"image://{self.owner}/" if _is_in_neuro_registry(self) else ""
         post = f":{self.tag}" if self.tag else ""
@@ -62,7 +71,7 @@ class _ImageNameParser:
             raise ValueError(f"Invalid local image '{image}': {e}") from e
 
     def parse_as_neuro_image(
-        self, image: str, *, tag_option: TagOption = TagOption.DEFAULT
+            self, image: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
         try:
             self._validate_image_name(image)
@@ -78,7 +87,7 @@ class _ImageNameParser:
             raise ValueError(f"Invalid remote image '{image}': {e}") from e
 
     def parse_remote(
-        self, value: str, *, tag_option: TagOption = TagOption.DEFAULT
+            self, value: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
         if self.is_in_neuro_registry(value):
             return self.parse_as_neuro_image(value, tag_option=tag_option)
@@ -144,7 +153,7 @@ class _ImageNameParser:
         return LocalImage(name=name, tag=tag)
 
     def _parse_as_neuro_image(
-        self, image: str, default_tag: Optional[str]
+            self, image: str, default_tag: Optional[str]
     ) -> RemoteImage:
         if not self.is_in_neuro_registry(image):
             raise ValueError("scheme 'image://' is required for remote images")
@@ -172,7 +181,7 @@ class _ImageNameParser:
         return RemoteImage(name=name, tag=tag, registry=registry, owner=owner)
 
     def _split_image_name(
-        self, image: str, default_tag: Optional[str] = None
+            self, image: str, default_tag: Optional[str] = None
     ) -> Tuple[str, Optional[str]]:
         if image.endswith(":") or image.startswith(":"):
             # case `ubuntu:`, `:latest`
