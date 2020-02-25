@@ -139,16 +139,38 @@ class StreamDockerImageProgress(DockerImageProgress):
 
 class BaseImagesFormatter:
     @abc.abstractmethod
-    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
+    def __call__(
+            self,
+            images: Iterable[RemoteImage]) -> Iterable[str]:
         raise NotImplementedError
 
 
 class ShortImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        return (str(image) for image in images)
+        return (str(image) for image in images).__iter__()
 
 
 class LongImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        rows = [[str(image), image.https_url] for image in images]
-        return table(rows)
+        if not images:
+            return ()
+
+        table = [[str(image), image.https_url] for image in images]
+        widths = [0 for _ in table[0]]
+
+        for row in table:
+            for i in range(len(row)):
+                widths[i] = max(widths[i], len(row[i]))
+
+        result = []
+        for row in table:
+            line = []
+            for i in range(len(row)):
+                cell = row[i]
+                if i == len(row) - 1:
+                    line.append(cell)
+                else:
+                    line.append(cell.ljust(widths[i]))
+            result.append(" ".join(line))
+
+        return result
