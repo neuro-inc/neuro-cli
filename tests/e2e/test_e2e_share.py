@@ -60,9 +60,6 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     assert f"{uri} read public" in result
     assert f"{uri2} write {another_test_user}" in result
     for line in result:
-        assert not line.startswith(
-            f"storage://{helper.cluster_name}/{helper.username} "
-        )
         assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "storage"])
@@ -70,10 +67,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     result = captured.out.splitlines()
     assert f"{uri} read public" in result
     for line in result:
-        assert line.startswith(f"storage://{helper.cluster_name}/")
-        assert not line.startswith(
-            f"storage://{helper.cluster_name}/{helper.username} "
-        )
+        assert line.startswith("storage://")
         assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "image"])
@@ -81,7 +75,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     result = captured.out.splitlines()
     assert f"{uri2} write {another_test_user}" in result
     for line in result:
-        assert line.startswith(f"image://{helper.cluster_name}/")
+        assert line.startswith(f"image://")
         assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["-v", "acl", "revoke", uri, "public"])
