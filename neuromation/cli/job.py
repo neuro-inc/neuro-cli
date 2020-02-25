@@ -1188,8 +1188,7 @@ async def calc_life_span(client: Client, value: Optional[str]) -> Optional[float
     seconds = delta.total_seconds()
     if seconds == 0:
         return None
-    elif seconds < 0:
-        raise ValueError(f"life-span cannot be negative, got: {seconds}")
+    assert seconds > 0
     return seconds
 
 
