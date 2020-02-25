@@ -1,7 +1,6 @@
-import abc
 import contextlib
 import logging
-from typing import Optional, Iterable
+from typing import Optional
 
 import click
 
