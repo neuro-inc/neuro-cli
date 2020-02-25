@@ -545,6 +545,7 @@ async def ls(
     """
 
     format = await calc_columns(root.client, format)
+
     statuses = calc_statuses(status, all)
     owners = set(owner)
     jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
