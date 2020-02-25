@@ -1,3 +1,4 @@
+import abc
 import contextlib
 import logging
 from typing import Optional
@@ -100,7 +101,10 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 @command()
 @option("-l", "format_long", is_flag=True, help="use a long listing format")
-async def ls(root: Root, format_long: bool) -> None:
+async def ls(
+        root: Root,
+        format_long: bool
+) -> None:
     """
     List images.
     """
