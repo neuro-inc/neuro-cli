@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
 from click import style, unstyle
+from neuromation.cli.formatters.ftable import table
 from yarl import URL
 
 from neuromation.api import (

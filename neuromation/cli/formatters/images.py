@@ -1,5 +1,5 @@
 import abc
-from typing import Dict
+from typing import Dict, Iterable
 
 import click
 
