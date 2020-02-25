@@ -1170,27 +1170,27 @@ async def calc_columns(
 
 
 async def calc_life_span(client: Client, value: Optional[str]) -> Optional[float]:
+    async def _calc_default_life_span(client: Client) -> timedelta:
+        config = await client.config.get_user_config()
+        section = config.get("job")
+        life_span = DEFAULT_JOB_LIFE_SPAN
+        if section is not None:
+            value = section.get("life-span")
+            if value is not None:
+                life_span = value
+        return _parse_timedelta(life_span)
+
     delta = (
         _parse_timedelta(value)
         if value is not None
-        else await calc_default_life_span(client)
+        else await _calc_default_life_span(client)
     )
     seconds = delta.total_seconds()
     if seconds == 0:
         return None
-    assert seconds > 0, f"life-span cannot be negative, got: {seconds}"
+    elif seconds < 0:
+        raise ValueError(f"life-span cannot be negative, got: {seconds}")
     return seconds
-
-
-async def calc_default_life_span(client: Client) -> timedelta:
-    config = await client.config.get_user_config()
-    section = config.get("job")
-    life_span = DEFAULT_JOB_LIFE_SPAN
-    if section is not None:
-        value = section.get("life-span")
-        if value is not None:
-            life_span = value
-    return _parse_timedelta(life_span)
 
 
 def _parse_timedelta(value: str) -> timedelta:

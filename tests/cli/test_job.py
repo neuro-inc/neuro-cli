@@ -14,7 +14,6 @@ from neuromation.cli.job import (
     _parse_timedelta,
     build_env,
     calc_columns,
-    calc_default_life_span,
     calc_life_span,
     calc_statuses,
 )
@@ -195,8 +194,8 @@ async def test_calc_life_span_none_default(
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
-        expected = timedelta(days=1, hours=2, minutes=3, seconds=4).total_seconds()
-        assert await calc_life_span(client, None) == expected
+        expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+        assert await calc_life_span(client, None) == expected.total_seconds()
 
 
 async def test_calc_life_span_zero(make_client: _MakeClient) -> None:
@@ -204,7 +203,7 @@ async def test_calc_life_span_zero(make_client: _MakeClient) -> None:
         assert await calc_life_span(client, "0") is None
 
 
-async def test_calc_default_life_span_all_keys(
+async def test_calc_life_span_default_life_span_all_keys(
     caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
     async with make_client("https://example.com") as client:
@@ -213,9 +212,8 @@ async def test_calc_default_life_span_all_keys(
         # empty config
         local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
 
-        assert await calc_default_life_span(client) == timedelta(
-            days=1, hours=2, minutes=3, seconds=4
-        )
+        expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+        assert await calc_life_span(client, None) == expected.total_seconds()
 
 
 async def test_calc_default_life_span_invalid(
@@ -229,7 +227,7 @@ async def test_calc_default_life_span_invalid(
         with pytest.raises(
             click.UsageError, match="Could not parse job timeout",
         ):
-            await calc_default_life_span(client)
+            await calc_life_span(client, None)
 
 
 async def test_calc_default_life_span_default_value(
@@ -241,7 +239,7 @@ async def test_calc_default_life_span_default_value(
         # empty config
         local_conf.write_text(toml.dumps({}))
         default = _parse_timedelta(DEFAULT_JOB_LIFE_SPAN)
-        assert await calc_default_life_span(client) == default
+        assert await calc_life_span(client, None) == default.total_seconds()
 
 
 def test_parse_timedelta_valid_zero() -> None:
