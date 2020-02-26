@@ -1085,6 +1085,7 @@ neuro image ls [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_-l_|List in long format.|
 |_--help_|Show this message and exit.|
 
 
@@ -2159,6 +2160,7 @@ neuro images [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_-l_|List in long format.|
 |_--help_|Show this message and exit.|
 
 
