@@ -3,8 +3,6 @@ from typing import Dict, Iterable
 
 import click
 
-from neuromation.cli.formatters.ftable import table
-
 from neuromation.api import (
     AbstractDockerImageProgress,
     ImageProgressPull,
@@ -141,9 +139,7 @@ class StreamDockerImageProgress(DockerImageProgress):
 
 class BaseImagesFormatter:
     @abc.abstractmethod
-    def __call__(
-            self,
-            images: Iterable[RemoteImage]) -> Iterable[str]:
+    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
         raise NotImplementedError
 
 
