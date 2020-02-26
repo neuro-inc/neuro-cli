@@ -1,4 +1,6 @@
 import asyncio
+import os
+import pathlib
 import dataclasses
 import functools
 import inspect
@@ -68,6 +70,8 @@ JOB_NAME_MIN_LENGTH = 3
 JOB_NAME_MAX_LENGTH = 40
 JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
+
+CLONE_CONFIG_SRC_ENV = "NEURO_CLONE_SRC"
 
 
 def warn_if_has_newer_version(
@@ -741,3 +745,14 @@ def pager_maybe(
         click.echo_via_pager(
             itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines_it))
         )
+
+
+def clone_config_maybe() -> None:
+    if CLONE_CONFIG_SRC_ENV in os.environ:
+        src = pathlib.Path(os.environ[CLONE_CONFIG_SRC_ENV])
+        dst = Factory().path
+        for f in src.iterdir():
+            target = dst / f.name
+            shutil.copy(f, target)
+            # forbid access to other users
+            os.chmod(target, 0o600)

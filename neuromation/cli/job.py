@@ -15,8 +15,6 @@ import idna
 from yarl import URL
 
 from neuromation.api import (
-    CONFIG_ENV_NAME,
-    TRUSTED_CONFIG_PATH,
     AuthorizationError,
     Client,
     Container,
@@ -26,6 +24,7 @@ from neuromation.api import (
     RemoteImage,
     Resources,
     Volume,
+    CONFIG_ENV_NAME,
 )
 from neuromation.cli.formatters import DockerImageProgress
 
@@ -63,6 +62,7 @@ from .utils import (
     pager_maybe,
     resolve_job,
     volume_to_verbose_str,
+    CLONE_CONFIG_SRC_ENV,
 )
 
 
@@ -920,13 +920,13 @@ async def run_job(
     volumes = await _build_volumes(root, volume, env_dict)
 
     if pass_config:
-        if CONFIG_ENV_NAME in env_dict:
-            raise ValueError(
-                f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
-            )
+        for env_name in (CONFIG_ENV_NAME, CLONE_CONFIG_SRC_ENV):
+            if env_name in env_dict:
+                raise ValueError(
+                    f"{env_name} is already set to {env_dict[env_name]}"
+                )
         env_var, secret_volume = await upload_and_map_config(root)
-        env_dict[CONFIG_ENV_NAME] = env_var
-        env_dict[TRUSTED_CONFIG_PATH] = "1"
+        env_dict[CLONE_CONFIG_SRC_ENV] = env_var
         volumes.add(secret_volume)
 
     if volumes:
@@ -1062,7 +1062,11 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
         click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
     await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
-    await root.client.storage.upload_dir(nmrc_path, storage_nmrc_path)
+
+    async def skip_tmp(fname: str) -> bool:
+        return not fname.endswith(("-shm", "-wal", "-journal"))
+
+    await root.client.storage.upload_dir(nmrc_path, storage_nmrc_path, filter=skip_tmp)
     # specify a container volume and mount the storage path
     # into specific container path
     return (

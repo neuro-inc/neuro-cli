@@ -40,6 +40,7 @@ from .utils import (
     option,
     pager_maybe,
     print_help,
+    clone_config_maybe,
 )
 
 
@@ -367,6 +368,7 @@ def cli(
             option = "--hide-token" if hide_token else "--no-hide-token"
             raise click.UsageError(f"{option} requires --trace")
         hide_token_bool = hide_token
+    clone_config_maybe()
     root = Root(
         verbosity=verbosity,
         color=real_color,
