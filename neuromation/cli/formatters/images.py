@@ -145,7 +145,7 @@ class BaseImagesFormatter:
 
 class ShortImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        return (str(image) for image in images).__iter__()
+        return (str(image) for image in images)
 
 
 class LongImagesFormatter(BaseImagesFormatter):
