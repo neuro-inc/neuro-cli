@@ -18,6 +18,12 @@ stages:
         Py37-Win64:
           python.version: '3.7'
           image: 'vs2017-win2016'
+        Py36-Win64:
+          python.version: '3.6'
+          image: 'macos-latest'
+        Py37-Win64:
+          python.version: '3.7'
+          image: 'macos-latest'
 
     pool:
       vmImage: $[ variables['image'] ]
