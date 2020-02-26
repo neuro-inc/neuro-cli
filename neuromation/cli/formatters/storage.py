@@ -29,6 +29,7 @@ from neuromation.cli.printer import TTYPrinter
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
+
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -36,7 +37,7 @@ TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 def chunks(list: Sequence[Any], size: int) -> Sequence[Any]:
     result = []
     for i in range(0, len(list), size):
-        result.append(list[i: i + size])
+        result.append(list[i : i + size])
     return result
 
 
@@ -347,21 +348,21 @@ class GnuPainter(BasePainter):
         if color:
             if self._underline:
                 underline = (
-                        self.color_indicator[GnuIndicators.LEFT]
-                        + "4"
-                        + self.color_indicator[GnuIndicators.RIGHT]
+                    self.color_indicator[GnuIndicators.LEFT]
+                    + "4"
+                    + self.color_indicator[GnuIndicators.RIGHT]
                 )
             else:
                 underline = ""
             return (
-                    self.color_indicator[GnuIndicators.LEFT]
-                    + color
-                    + self.color_indicator[GnuIndicators.RIGHT]
-                    + underline
-                    + label
-                    + self.color_indicator[GnuIndicators.LEFT]
-                    + self.color_indicator[GnuIndicators.RESET]
-                    + self.color_indicator[GnuIndicators.RIGHT]
+                self.color_indicator[GnuIndicators.LEFT]
+                + color
+                + self.color_indicator[GnuIndicators.RIGHT]
+                + underline
+                + label
+                + self.color_indicator[GnuIndicators.LEFT]
+                + self.color_indicator[GnuIndicators.RESET]
+                + self.color_indicator[GnuIndicators.RIGHT]
             )
         if self._underline:
             return style(label, underline=self._underline)
@@ -447,7 +448,7 @@ def get_painter(color: bool, *, quote: bool = False) -> BasePainter:
 class BaseFilesFormatter:
     @abc.abstractmethod
     def __call__(
-            self, files: Sequence[FileStatus]
+        self, files: Sequence[FileStatus]
     ) -> Iterator[str]:  # pragma: no cover
         pass
 
@@ -794,14 +795,14 @@ class TTYProgress(BaseStorageProgress):
 
     def maybe_flush(self) -> None:
         if (
-                len(self.lines) < self.HEIGHT
-                or self.time_factory() >= self.last_update_time + self.FLUSH_INTERVAL
+            len(self.lines) < self.HEIGHT
+            or self.time_factory() >= self.last_update_time + self.FLUSH_INTERVAL
         ):
             self.flush()
 
     def flush(self) -> None:
         text = "\n".join(
-            msg for _, _, msg in self.lines[self.first_line: self.last_line]
+            msg for _, _, msg in self.lines[self.first_line : self.last_line]
         )
         self.printer.print(text, self.first_line)
         self.first_line = len(self.lines)
