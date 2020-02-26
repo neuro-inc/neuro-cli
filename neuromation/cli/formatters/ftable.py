@@ -45,6 +45,8 @@ def table(
     aligns: Sequence[Align] = (),
     max_width: Optional[int] = None,
 ) -> Iterator[str]:
+    if not rows:
+        return
 
     # Columns widths calculation
     if len(widths) < len(rows[0]):
