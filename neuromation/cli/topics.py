@@ -217,11 +217,22 @@ async def user_config() -> None:
       Exclamation mark ! is used to negate the pattern, e.g. `["*.jpg", "!main.jpg"]`
       excludes all `.jpg` files except `main.jpg`.
 
+    **life-span**
+
+      Default job run-time limit for `neuro run --life-span=XXX` option.
+
+      The value is a string in format `1d2h3m4s` (this example will set the limit to
+      1 day, 2 hours, 3 minutes and 4 seconds). Some values can be missing, for example:
+      `1d6h`, `30m`. No spaces are allowed between values.
+
+      To completely disable run-time limit, use `0`.
+
     Example:
     ```
       # jobs section
       [job]
       ps-format = "{id;max=30}, {status;max=10}"
+      life-span = "1d6h"
 
       # storage section
       [storage]
