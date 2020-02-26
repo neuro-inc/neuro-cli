@@ -480,9 +480,22 @@ class LongFilesFormatter(BaseFilesFormatter):
 
     def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
         if not files:
-            return iter(())
-        rows = [self._columns_for_file(file) for file in files]
-        return table(rows)
+            return
+        table = [self._columns_for_file(file) for file in files]
+        widths = [0 for _ in table[0]]
+        for row in table:
+            for x in range(len(row)):
+                cell_width = len(unstyle(row[x]))
+                if widths[x] < cell_width:
+                    widths[x] = cell_width
+        for row in table:
+            line = []
+            for x in range(len(row)):
+                if x == len(row) - 1:
+                    line.append(row[x])
+                else:
+                    line.append(row[x].rjust(widths[x]))
+            yield " ".join(line)
 
 
 class SimpleFilesFormatter(BaseFilesFormatter):
