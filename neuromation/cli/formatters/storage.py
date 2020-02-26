@@ -25,7 +25,6 @@ from neuromation.api import (
     StorageProgressStep,
 )
 from neuromation.api.url_utils import _extract_path
-from neuromation.cli.formatters.ftable import table
 from neuromation.cli.printer import TTYPrinter
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
