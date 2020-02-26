@@ -6,15 +6,22 @@ import click
 
 from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters import DockerImageProgress
-from neuromation.cli.formatters.images import ShortImagesFormatter, LongImagesFormatter
+from neuromation.cli.formatters.images import (
+    BaseImagesFormatter,
+    LongImagesFormatter,
+    ShortImagesFormatter,
+)
+
 from .root import Root
 from .utils import (
     RemoteTaglessImageType,
     command,
     deprecated_quiet_option,
     group,
+    option,
     pager_maybe,
-    option)
+)
+
 
 log = logging.getLogger(__name__)
 
@@ -92,17 +99,15 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 
 @command()
-@option("-l", "format_long", is_flag=True, help="use a long listing format")
-async def ls(
-        root: Root,
-        format_long: bool
-) -> None:
+@option("-l", "format_long", is_flag=True, help="List in long format.")
+async def ls(root: Root, format_long: bool) -> None:
     """
     List images.
     """
 
     images = await root.client.images.ls()
 
+    formatter: BaseImagesFormatter
     if format_long:
         formatter = LongImagesFormatter()
     else:
