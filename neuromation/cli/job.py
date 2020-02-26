@@ -392,11 +392,11 @@ async def exec(
     # Executes a single command in the container and returns the control:
     neuro exec --no-tty my-job ls -l
     """
-    cmd = shlex.split(" ".join(cmd))
+    real_cmd = _parse_cmd(cmd)
     id = await resolve_job(job, client=root.client)
     retcode = await root.client.jobs.exec(
         id,
-        cmd,
+        shlex.split(real_cmd),
         tty=tty,
         no_key_check=no_key_check,
         timeout=timeout if timeout else None,
@@ -835,7 +835,6 @@ async def run(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
     log.info(f"Using preset '{preset}': {job_preset}")
-
     await run_job(
         root,
         image=image,
@@ -928,11 +927,10 @@ async def run_job(
     env_dict = build_env(env, env_file)
 
     if cmd is None:
+        # NOTE: `cmd` is never `None`
         real_cmd: Optional[str] = None
-    elif len(cmd) == 1:
-        real_cmd = cmd[0]
     else:
-        real_cmd = " ".join(shlex.quote(arg) for arg in cmd)
+        real_cmd = _parse_cmd(cmd)
 
     log.debug(f'entrypoint="{entrypoint}"')
     log.debug(f'cmd="{cmd}"')
@@ -1022,6 +1020,14 @@ async def run_job(
         sys.exit(exit_code)
 
     return job
+
+
+def _parse_cmd(cmd: Sequence[str]) -> str:
+    if len(cmd) == 1:
+        real_cmd = cmd[0]
+    else:
+        real_cmd = " ".join(shlex.quote(arg) for arg in cmd)
+    return real_cmd
 
 
 async def _build_volumes(

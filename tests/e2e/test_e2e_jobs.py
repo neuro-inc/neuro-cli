@@ -326,9 +326,20 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command, name=job_name)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "true"]
+        [
+            "job",
+            "exec",
+            "--no-tty",
+            "--no-key-check",
+            "--timeout=60",
+            job_id,
+            # use unrolled notation to check shlex.join()
+            "bash",
+            "-c",
+            "echo ok; true",
+        ]
     )
-    assert captured.out == ""
+    assert captured.out == "ok"
 
 
 @pytest.mark.e2e
