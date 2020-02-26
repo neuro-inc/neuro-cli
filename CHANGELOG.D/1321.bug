@@ -1,0 +1,1 @@
+Support un-quoted commands for neuro-exec: `neuro exec bash -c "ls && pwd"` is now a valid syntax. 
