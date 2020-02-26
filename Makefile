@@ -5,8 +5,6 @@ BLACK_DIRS := $(ISORT_DIRS)
 MYPY_DIRS :=  neuromation tests
 FLAKE8_DIRS := $(ISORT_DIRS)
 
-README_PATTERN := README.XXXXXXXX.md
-
 PYTEST_XDIST_NUM_THREADS ?= auto
 
 .PHONY: help
@@ -117,7 +115,7 @@ docs:
 
 
 .PHONY: lint-docs
-lint-docs: TMP:=$(shell if command -v gmktemp >/dev/null 2>&1 ; then gmktemp $${TMPDIR:-/tmp}/${README_PATTERN} ; else mktemp $${TMPDIR:-/tmp}/${README_PATTERN} ; fi)
+lint-docs: TMP:=$(shell mktemp -d)/README.md
 lint-docs:
 	build-tools/cli-help-generator.py README.in.md ${TMP}
 	markdown-toc -t github -h 6 ${TMP}
