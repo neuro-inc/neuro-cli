@@ -52,7 +52,6 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     assert f"{uri} read public" in result
     assert f"{uri2} write {another_test_user}" in result
     for line in result:
-        assert not line.startswith("storage://{helper.username} ")
         assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "storage"])
