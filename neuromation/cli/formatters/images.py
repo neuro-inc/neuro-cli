@@ -150,8 +150,5 @@ class ShortImagesFormatter(BaseImagesFormatter):
 
 class LongImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        if not images:
-            return ()
-
         rows = [[str(image), image.https_url] for image in images]
         return table(rows)
