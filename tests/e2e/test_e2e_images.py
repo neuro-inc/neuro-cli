@@ -30,7 +30,7 @@ def parse_docker_ls_output(docker_ls_output: Any) -> Set[str]:
 
 @pytest.fixture()
 async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform == "win32":
+    if sys.platform != "linux":
         pytest.skip("aiodocker not supported on windows at this moment")
     client = aiodocker.Docker()
     yield client
