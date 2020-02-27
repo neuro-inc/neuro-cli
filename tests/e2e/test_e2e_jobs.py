@@ -2,7 +2,6 @@ import asyncio
 import os
 import re
 import subprocess
-import sys
 from contextlib import suppress
 from pathlib import Path
 from time import time
@@ -625,15 +624,6 @@ def test_job_run(helper: Helper) -> None:
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
     assert "Exit code: 101" in store_out
-
-
-@pytest.fixture()
-async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform == "win32":
-        pytest.skip("aiodocker not supported on windows at this moment")
-    client = aiodocker.Docker()
-    yield client
-    await client.close()
 
 
 @pytest.mark.e2e
