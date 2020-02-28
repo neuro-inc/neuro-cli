@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, AsyncIterator, Set
 from uuid import uuid4 as uuid
-
+import urllib.parse
 import aiodocker
 import pytest
 from yarl import URL
@@ -13,8 +13,9 @@ from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus
 from tests.e2e import Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
-
 TEST_IMAGE_NAME = "e2e-banana-image"
+
+import pdb
 
 
 def parse_docker_ls_output(docker_ls_output: Any) -> Set[str]:
@@ -47,7 +48,7 @@ async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
 
 @pytest.fixture()
 async def image(
-    loop: asyncio.AbstractEventLoop, docker: aiodocker.Docker, tag: str
+        loop: asyncio.AbstractEventLoop, docker: aiodocker.Docker, tag: str
 ) -> AsyncIterator[str]:
     image = await generate_image(docker, tag)
     yield image
@@ -56,11 +57,11 @@ async def image(
 
 @pytest.mark.e2e
 def test_images_complete_lifecycle(
-    helper: Helper,
-    image: str,
-    tag: str,
-    loop: asyncio.AbstractEventLoop,
-    docker: aiodocker.Docker,
+        helper: Helper,
+        image: str,
+        tag: str,
+        loop: asyncio.AbstractEventLoop,
+        docker: aiodocker.Docker,
 ) -> None:
     # Let`s push image
     captured = helper.run_cli(["image", "push", image])
@@ -147,12 +148,36 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
 
 
 @pytest.mark.e2e
+def test_image_ls(helper: Helper, image: str, tag: str) -> None:
+    # push image
+    captured = helper.run_cli(["image", "push", image])
+
+    image_full_str = f"image://{helper.username}/{image}"
+    assert captured.out.endswith(image_full_str)
+
+    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
+
+    # check ls short mode
+    captured = helper.run_cli(["image", "ls"])
+    assert image_full_str_no_tag in captured.out.splitlines()
+
+    # check ls long mode
+    captured = helper.run_cli(["image", "ls", "-l"])
+    matching_lines = [line for line in captured.out.splitlines() if image_full_str_no_tag == line.split()[0]]
+    assert len(matching_lines) == 1
+
+    image_full_https_str_no_tag = f'/{helper.username}/{image}'.replace(f':{tag}', '')
+    actual_https_url = urllib.parse.urlparse(matching_lines[0].split()[1])
+    assert actual_https_url.scheme == 'https' and actual_https_url.path == image_full_https_str_no_tag
+
+
+@pytest.mark.e2e
 def test_images_push_with_specified_name(
-    helper: Helper,
-    image: str,
-    tag: str,
-    loop: asyncio.AbstractEventLoop,
-    docker: aiodocker.Docker,
+        helper: Helper,
+        image: str,
+        tag: str,
+        loop: asyncio.AbstractEventLoop,
+        docker: aiodocker.Docker,
 ) -> None:
     # Let`s push image
     image_no_tag = image.replace(f":{tag}", "")
@@ -194,7 +219,7 @@ def test_images_push_with_specified_name(
 
 @pytest.mark.e2e
 def test_docker_helper(
-    helper: Helper, image: str, tag: str, nmrc_path: Path, monkeypatch: Any
+        helper: Helper, image: str, tag: str, nmrc_path: Path, monkeypatch: Any
 ) -> None:
     monkeypatch.setenv(CONFIG_ENV_NAME, str(nmrc_path or DEFAULT_CONFIG_PATH))
     helper.run_cli(["config", "docker"])
