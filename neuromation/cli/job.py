@@ -925,15 +925,10 @@ async def run_job(
     log.debug(f"Job run-time limit: {job_life_span}")
 
     env_dict = build_env(env, env_file)
-
-    if cmd is None:
-        # NOTE: `cmd` is never `None`
-        real_cmd: Optional[str] = None
-    else:
-        real_cmd = _parse_cmd(cmd)
+    real_cmd = _parse_cmd(cmd)
 
     log.debug(f'entrypoint="{entrypoint}"')
-    log.debug(f'cmd="{cmd}"')
+    log.debug(f'cmd="{real_cmd}"')
 
     log.info(f"Using image '{image}'")
 
