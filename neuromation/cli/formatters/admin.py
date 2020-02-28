@@ -1,3 +1,4 @@
+import operator
 import sys
 from typing import Iterable, Iterator, List
 
@@ -13,11 +14,13 @@ from .ftable import Align, table
 class ClusterUserFormatter:
     def __call__(self, clusters_users: Iterable[_ClusterUser]) -> List[str]:
         headers = (click.style("Name", bold=True), click.style("Role", bold=True))
-        rows = [headers]
+        rows = []
 
         for user in clusters_users:
             rows.append((user.user_name, user.role.value))
+        rows.sort(key=operator.itemgetter(0))
 
+        rows.insert(0, headers)
         return list(table(rows=rows))
 
 
