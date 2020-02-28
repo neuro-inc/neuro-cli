@@ -1604,6 +1604,7 @@ neuro acl list --shared --scheme image
 
 Name | Description|
 |----|------------|
+|_-u TEXT_|Use specified user or role.|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
 |_--help_|Show this message and exit.|
