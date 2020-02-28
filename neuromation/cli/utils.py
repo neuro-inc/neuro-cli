@@ -756,3 +756,5 @@ def clone_config_maybe() -> None:
             shutil.copy(f, target)
             # forbid access to other users
             os.chmod(target, 0o600)
+            f.unlink()
+        src.rmdir()
