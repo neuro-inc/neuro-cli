@@ -650,7 +650,7 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
 
 @pytest.fixture()
 async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform != "linux":
+    if sys.platform not in ("linux"):
         pytest.skip("Doens't support docker in e2e tests for now")
     client = aiodocker.Docker()
     yield client
