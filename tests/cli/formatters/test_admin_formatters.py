@@ -23,10 +23,10 @@ class TestClusterUserFormatter:
         ]
         expected_out = [
             "\x1b[1mName\x1b[0m    \x1b[1mRole\x1b[0m   ",
-            "denis   admin  ",
-            "andrew  manager",
-            "ivan    user   ",
             "alex    user   ",
+            "andrew  manager",
+            "denis   admin  ",
+            "ivan    user   ",
         ]
         assert formatter(users) == expected_out
 
