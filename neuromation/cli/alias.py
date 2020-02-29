@@ -139,7 +139,10 @@ class ExternalAlias(NeuroClickMixin, click.Command):
 
 
 async def find_alias(root: Root, cmd_name: str) -> Optional[click.Command]:
-    client = await root.init_client()
+    try:
+        client = await root.init_client()
+    except ConfigError:
+        return None
     config = await client.config.get_user_config()
     alias = config.get("alias", {}).get(cmd_name)
     if alias is None:
