@@ -1,11 +1,11 @@
 import asyncio
-import os
-import pathlib
 import dataclasses
 import functools
 import inspect
 import itertools
 import logging
+import os
+import pathlib
 import re
 import shlex
 import shutil
@@ -71,7 +71,7 @@ JOB_NAME_MAX_LENGTH = 40
 JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
 
-CLONE_CONFIG_SRC_ENV = "NEURO_CLONE_SRC"
+NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
 
 
 def warn_if_has_newer_version(
@@ -747,10 +747,11 @@ def pager_maybe(
         )
 
 
-def clone_config_maybe() -> None:
-    if CLONE_CONFIG_SRC_ENV in os.environ:
-        src = pathlib.Path(os.environ[CLONE_CONFIG_SRC_ENV])
-        dst = Factory().path
+def steal_config_maybe(dst_path: pathlib.Path) -> None:
+    if NEURO_STEAL_CONFIG in os.environ:
+        src = pathlib.Path(os.environ[NEURO_STEAL_CONFIG])
+        dst = Factory(dst_path).path
+        dst.mkdir(mode=0o700)
         for f in src.iterdir():
             target = dst / f.name
             shutil.copy(f, target)

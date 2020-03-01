@@ -26,7 +26,6 @@ from neuromation.api import (
     RemoteImage,
     Resources,
     Volume,
-    CONFIG_ENV_NAME,
 )
 from neuromation.cli.formatters import DockerImageProgress
 
@@ -54,6 +53,7 @@ from .utils import (
     JOB_NAME,
     LOCAL_REMOTE_PORT,
     MEGABYTE,
+    NEURO_STEAL_CONFIG,
     AsyncExitStack,
     ImageType,
     alias,
@@ -64,7 +64,6 @@ from .utils import (
     pager_maybe,
     resolve_job,
     volume_to_verbose_str,
-    CLONE_CONFIG_SRC_ENV,
 )
 
 
@@ -956,13 +955,11 @@ async def run_job(
     volumes = await _build_volumes(root, volume, env_dict)
 
     if pass_config:
-        for env_name in (CONFIG_ENV_NAME, CLONE_CONFIG_SRC_ENV):
-            if env_name in env_dict:
-                raise ValueError(
-                    f"{env_name} is already set to {env_dict[env_name]}"
-                )
+        env_name = NEURO_STEAL_CONFIG
+        if env_name in env_dict:
+            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
         env_var, secret_volume = await upload_and_map_config(root)
-        env_dict[CLONE_CONFIG_SRC_ENV] = env_var
+        env_dict[NEURO_STEAL_CONFIG] = env_var
         volumes.add(secret_volume)
 
     if volumes:
@@ -1093,10 +1090,10 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
-    random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-    storage_nmrc_folder = URL(f"storage://{root.client.username}/nmrc/")
+    random_nmrc_filename = f"{uuid.uuid4()}-cfg"
+    storage_nmrc_folder = URL(f"storage://{root.client.username}/.neuro/")
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
-    local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/nmrc/"
+    local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
