@@ -173,7 +173,8 @@ async def ls(
                 else:
                     formatter = SimpleFilesFormatter(root.color)
 
-            files = [item for item in files if not item.name.startswith(".")]
+            if not show_all:
+                files = [item for item in files if not item.name.startswith(".")]
             pager_maybe(formatter(files), root.tty, root.terminal_size)
 
     if errors:

@@ -635,22 +635,10 @@ def test_e2e_ls_skip_hidden(tmp_path: Path, helper: Helper) -> None:
     (folder / ".bar").write_bytes(b"bar")
 
     helper.run_cli(
-        [
-            "storage",
-            "cp",
-            "-r",
-            tmp_path.as_uri() + "/folder",
-            helper.tmpstorage
-        ]
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
     )
 
-    captured = helper.run_cli(
-        [
-            "storage",
-            "ls",
-            helper.tmpstorage + "/folder"
-        ]
-    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
     assert captured.out.splitlines() == ["foo"]
 
 
@@ -664,21 +652,8 @@ def test_e2e_ls_show_hidden(tmp_path: Path, helper: Helper) -> None:
     (folder / ".bar").write_bytes(b"bar")
 
     helper.run_cli(
-        [
-            "storage",
-            "cp",
-            "-r",
-            tmp_path.as_uri() + "/folder",
-            helper.tmpstorage
-        ]
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
     )
 
-    captured = helper.run_cli(
-        [
-            "storage",
-            "ls",
-            "--all",
-            helper.tmpstorage + "/folder"
-        ]
-    )
-    assert captured.out.splitlines() == ["foo"]
+    captured = helper.run_cli(["storage", "ls", "--all", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == [".bar", "foo"]
