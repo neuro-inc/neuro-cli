@@ -398,11 +398,11 @@ class TestFilesFormatter:
 
         formatter = LongFilesFormatter(human_readable=True, color=False)
         assert list(formatter(self.files_and_folders)) == [
-            "-r    2K 2018-01-01 03:00:00 File1",
-            "-r    1K 2018-10-10 13:10:10 File2",
-            "-r 1000K 2019-02-02 05:02:02 File3 with space",
-            "dm     0 2017-03-03 06:03:03 Folder1",
-            "dm     0 2017-03-03 06:03:02 1Folder with space",
+            "-r    2.0K 2018-01-01 03:00:00 File1",
+            "-r    1.0K 2018-10-10 13:10:10 File2",
+            "-r 1000.0K 2019-02-02 05:02:02 File3 with space",
+            "dm       0 2017-03-03 06:03:03 Folder1",
+            "dm       0 2017-03-03 06:03:02 1Folder with space",
         ]
 
     def test_column_formatter(self) -> None:

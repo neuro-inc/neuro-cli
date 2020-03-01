@@ -38,10 +38,10 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
                 Name       #CPU  Memory  Preemptible  GPU
-                gpu-small     7     30G       {no}      1 x nvidia-tesla-k80
-                gpu-large     7     60G       {no}      1 x nvidia-tesla-v100
-                cpu-small     7      2G       {no}
-                cpu-large     7     14G       {no}"""
+                gpu-small     7   30.0G       {no}      1 x nvidia-tesla-k80
+                gpu-large     7   60.0G       {no}      1 x nvidia-tesla-v100
+                cpu-small     7    2.0G       {no}
+                cpu-large     7   14.0G       {no}"""
         )
 
     async def test_output_for_tpu_presets(
@@ -89,13 +89,13 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
                 Name         #CPU  Memory  Preemptible  GPU                    TPU
-                gpu-small       7     30G       {no}      1 x nvidia-tesla-k80
-                gpu-large       7     60G       {no}      1 x nvidia-tesla-v100
-                cpu-small       7      2G       {no}
-                cpu-large       7     14G       {no}
-                cpu-large-p     7     14G      {yes}
-                tpu-small       2      2G       {no}                             v3-8/1.14
-                hybrid          4     30G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+                gpu-small       7   30.0G       {no}      1 x nvidia-tesla-k80
+                gpu-large       7   60.0G       {no}      1 x nvidia-tesla-v100
+                cpu-small       7    2.0G       {no}
+                cpu-large       7   14.0G       {no}
+                cpu-large-p     7   14.0G      {yes}
+                tpu-small       2    2.0G       {no}                             v3-8/1.14
+                hybrid          4   30.0G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 

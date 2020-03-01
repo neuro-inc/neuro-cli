@@ -1,12 +1,25 @@
 import abc
+import contextlib
 import enum
 import operator
 import os
+import sys
 import time
+from dataclasses import dataclass
 from fnmatch import fnmatch
 from math import ceil
 from time import monotonic
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import click
 from click import style, unstyle
@@ -808,3 +821,82 @@ class TTYProgress(BaseStorageProgress):
         self.first_line = len(self.lines)
         self.last_line = 0
         self.last_update_time = self.time_factory()
+
+
+@dataclass
+class Tree:
+    name: str
+    size: int
+    folders: List["Tree"]
+    files: List[FileStatus]
+
+
+class TreeFormatter:
+    ANSI_DELIMS = ["├", "└", "─", "│"]
+    SIMPLE_DELIMS = ["+", "+", "-", "|"]
+
+    def __init__(self, *, color: bool, size: bool, human_readable: bool) -> None:
+        self._ident = []
+        self._painter = get_painter(color, quote=True)
+        if sys.platform != "win32":
+            self._delims = self.ANSI_DELIMS
+        else:
+            self._delims = self.SIMPLE_DELIMS
+        if human_readable:
+            self._size_func = self._human_readable
+        elif size:
+            self._size_func = self._size
+        else:
+            self._size_func = self._none
+
+    def __call__(self, tree) -> List[str]:
+        ret = []
+        items = sorted(tree.folders + tree.files, key=operator.attrgetter("name"))
+        ret.append(
+            self.pre()
+            + self._size_func(tree)
+            + self._painter.paint(tree.name, FileStatusType.DIRECTORY)
+        )
+        for num, item in enumerate(items):
+            if isinstance(item, Tree):
+                with self.ident(num == len(items) - 1):
+                    ret.extend(self(item))
+            else:
+                with self.ident(num == len(items) - 1):
+                    ret.append(
+                        self.pre()
+                        + self._size_func(item)
+                        + self._painter.paint(item.name, FileStatusType.FILE)
+                    )
+        return ret
+
+    def pre(self):
+        ret = []
+        for last in self._ident[:-1]:
+            if last:
+                ret.append(" " * 4)
+            else:
+                ret.append(self._delims[3] + " " * 3)
+        if self._ident:
+            last = self._ident[-1]
+            ret.append(self._delims[1] if last else self._delims[0])
+            ret.append(self._delims[2] * 2)
+            ret.append(" ")
+        return "".join(ret)
+
+    @contextlib.contextmanager
+    def ident(self, last: bool) -> AsyncIterator[None]:
+        self._ident.append(last)
+        try:
+            yield
+        finally:
+            self._ident.pop()
+
+    def _size(self, item: Union[Tree, FileStatus]) -> str:
+        return f"[{item.size:>11}]  "
+
+    def _human_readable(self, item: Union[Tree, FileStatus]) -> str:
+        return f"[{format_size(item.size):>7}]  "
+
+    def _none(self, item: Union[Tree, FileStatus]) -> str:
+        return ""

@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import os
@@ -27,12 +28,14 @@ from neuromation.api.file_filter import FileFilter
 from neuromation.api.url_utils import _extract_path
 
 from .const import EX_OSFILE
-from .formatters import (
+from .formatters.jobs import JobStartProgress
+from .formatters.storage import (
     BaseFilesFormatter,
     FilesSorter,
-    JobStartProgress,
     LongFilesFormatter,
     SimpleFilesFormatter,
+    Tree,
+    TreeFormatter,
     VerticalColumnsFilesFormatter,
     create_storage_progress,
     get_painter,
@@ -817,6 +820,44 @@ async def mv(
         sys.exit(EX_OSFILE)
 
 
+@command()
+@click.argument("path", required=False)
+@option(
+    "--human-readable",
+    "-h",
+    is_flag=True,
+    help="Print the size in a more human readable way.",
+)
+@option(
+    "--size", "-s", is_flag=True, help="Print the size in bytes of each file.",
+)
+async def tree(root: Root, path: str, size: bool, human_readable: bool,) -> None:
+    """
+    List directory contents.
+
+    By default PATH is equal user's home dir (storage:)
+    """
+    if not path:
+        path = "storage:"
+    uri = parse_file_resource(path, root)
+
+    errors = False
+    try:
+        tree = await fetch_tree(root.client, uri)
+        tree = dataclasses.replace(tree, name=str(path))
+    except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+        log.error(f"cannot fetch tree for {uri}: {error}")
+        errors = True
+    else:
+        formatter = TreeFormatter(
+            color=root.color, size=size, human_readable=human_readable
+        )
+        pager_maybe(formatter(tree), root.tty, root.terminal_size)
+
+    if errors:
+        sys.exit(EX_OSFILE)
+
+
 async def _expand(
     paths: Sequence[str], root: Root, glob: bool, allow_file: bool = False
 ) -> List[URL]:
@@ -861,6 +902,7 @@ storage.add_command(glob)
 storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
+storage.add_command(tree)
 storage.add_command(load)
 
 
@@ -879,3 +921,23 @@ async def calc_filters(
             else:
                 ret.append((True, flt))
     return tuple(ret)
+
+
+async def fetch_tree(client: Client, uri: URL) -> Tree:
+    loop = asyncio.get_event_loop()
+    folders = []
+    files = []
+    tasks = []
+    size = 0
+    items = await client.storage.ls(uri)
+    for item in items:
+        if item.is_dir():
+            tasks.append(loop.create_task(fetch_tree(client, uri / item.name)))
+        else:
+            files.append(item)
+            size += item.size
+    for task in tasks:
+        subtree = await task
+        folders.append(subtree)
+        size += subtree.size
+    return Tree(uri.name, size, folders, files)

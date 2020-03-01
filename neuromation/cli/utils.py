@@ -719,7 +719,7 @@ else:
 
 
 def format_size(value: float) -> str:
-    return humanize.naturalsize(value, gnu=True, format="%.4g")
+    return humanize.naturalsize(value, gnu=True)
 
 
 def pager_maybe(

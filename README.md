@@ -33,6 +33,7 @@
 		* [neuro storage rm](#neuro-storage-rm)
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
+		* [neuro storage tree](#neuro-storage-tree)
 		* [neuro storage load](#neuro-storage-load)
 	* [neuro image](#neuro-image)
 		* [neuro image ls](#neuro-image-ls)
@@ -818,6 +819,7 @@ Name | Description|
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
+| _[neuro storage tree](#neuro-storage-tree)_| List directory contents |
 | _[neuro storage load](#neuro-storage-load)_| Copy files and directories using MinIO \(EXPERIMENTAL) |
 
 
@@ -1015,6 +1017,27 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage tree
+
+List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
+
+**Usage:**
+
+```bash
+neuro storage tree [OPTIONS] [PATH]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-h, --human-readable_|Print the size in a more human readable way.|
+|_\-s, --size_|Print the size in bytes of each file.|
 |_--help_|Show this message and exit.|
 
 
