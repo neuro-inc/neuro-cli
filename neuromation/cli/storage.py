@@ -837,7 +837,9 @@ async def mv(
     default="name",
     help="sort by given field, default is name",
 )
-async def tree(root: Root, path: str, size: bool, human_readable: bool, sort: str) -> None:
+async def tree(
+    root: Root, path: str, size: bool, human_readable: bool, sort: str
+) -> None:
     """
     List directory contents.
 
@@ -856,8 +858,7 @@ async def tree(root: Root, path: str, size: bool, human_readable: bool, sort: st
         errors = True
     else:
         formatter = TreeFormatter(
-            color=root.color, size=size, human_readable=human_readable,
-            sort=sort
+            color=root.color, size=size, human_readable=human_readable, sort=sort
         )
         pager_maybe(formatter(tree), root.tty, root.terminal_size)
 

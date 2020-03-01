@@ -835,7 +835,9 @@ class TreeFormatter:
     ANSI_DELIMS = ["├", "└", "─", "│"]
     SIMPLE_DELIMS = ["+", "+", "-", "|"]
 
-    def __init__(self, *, color: bool, size: bool, human_readable: bool, sort: str) -> None:
+    def __init__(
+        self, *, color: bool, size: bool, human_readable: bool, sort: str
+    ) -> None:
         self._ident = []
         self._painter = get_painter(color, quote=True)
         if sys.platform != "win32":

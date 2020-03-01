@@ -1038,6 +1038,7 @@ Name | Description|
 |----|------------|
 |_\-h, --human-readable_|Print the size in a more human readable way.|
 |_\-s, --size_|Print the size in bytes of each file.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
 |_--help_|Show this message and exit.|
 
 
