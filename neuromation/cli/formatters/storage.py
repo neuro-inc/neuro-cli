@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from math import ceil
 from time import monotonic
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
 from click import style, unstyle
@@ -828,7 +828,7 @@ class TreeFormatter:
     def __init__(
         self, *, color: bool, size: bool, human_readable: bool, sort: str
     ) -> None:
-        self._ident = []
+        self._ident: List[bool] = []
         self._numdirs = 0
         self._numfiles = 0
         self._painter = get_painter(color, quote=True)
@@ -844,17 +844,15 @@ class TreeFormatter:
             self._size_func = self._none
         self._key = FilesSorter(sort).key()
 
-    def __call__(self, tree) -> List[str]:
+    def __call__(self, tree: Tree) -> List[str]:
         ret = self.listdir(tree)
         ret.append("")
-        ret.append(
-            f"{self._numdirs} directories, {self._numfiles} files "
-        )
+        ret.append(f"{self._numdirs} directories, {self._numfiles} files ")
         return ret
 
-    def listdir(self, tree) -> List[str]:
+    def listdir(self, tree: Tree) -> List[str]:
         ret = []
-        items = sorted(tree.folders + tree.files, key=self._key)
+        items = sorted(tree.folders + tree.files, key=self._key)  # type: ignore
         ret.append(
             self.pre()
             + self._size_func(tree.size)
@@ -875,7 +873,7 @@ class TreeFormatter:
                     )
         return ret
 
-    def pre(self):
+    def pre(self) -> str:
         ret = []
         for last in self._ident[:-1]:
             if last:
@@ -890,7 +888,7 @@ class TreeFormatter:
         return "".join(ret)
 
     @contextlib.contextmanager
-    def ident(self, last: bool) -> AsyncIterator[None]:
+    def ident(self, last: bool) -> Iterator[None]:
         self._ident.append(last)
         try:
             yield
@@ -903,5 +901,5 @@ class TreeFormatter:
     def _human_readable(self, size: int) -> str:
         return f"[{format_size(size):>7}]  "
 
-    def _none(self, item: int) -> str:
+    def _none(self, size: int) -> str:
         return ""
