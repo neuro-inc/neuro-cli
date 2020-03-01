@@ -104,20 +104,27 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     "--human-readable",
     "-h",
     is_flag=True,
-    help="with -l print human readable sizes (e.g., 2K, 540M)",
+    help="with -l print human readable sizes (e.g., 2K, 540M).",
 )
-@option("-l", "format_long", is_flag=True, help="use a long listing format")
+@option("-l", "format_long", is_flag=True, help="use a long listing format.")
 @option(
     "--sort",
     type=click.Choice(["name", "size", "time"]),
     default="name",
-    help="sort by given field, default is name",
+    help="sort by given field, default is name.",
 )
 @option(
     "-d",
     "--directory",
     is_flag=True,
-    help="list directories themselves, not their contents",
+    help="list directories themselves, not their contents.",
+)
+@option(
+    "-a",
+    "--all",
+    "show_all",
+    is_flag=True,
+    help="do not ignore entries starting with .",
 )
 async def ls(
     root: Root,
@@ -126,6 +133,7 @@ async def ls(
     format_long: bool,
     sort: str,
     directory: bool,
+    show_all: bool,
 ) -> None:
     """
     List directory contents.
@@ -165,6 +173,7 @@ async def ls(
                 else:
                     formatter = SimpleFilesFormatter(root.color)
 
+            files = [item for item in files if not item.name.startswith(".")]
             pager_maybe(formatter(files), root.tty, root.terminal_size)
 
     if errors:
