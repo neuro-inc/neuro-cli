@@ -819,7 +819,7 @@ Name | Description|
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
-| _[neuro storage tree](#neuro-storage-tree)_| List directory contents |
+| _[neuro storage tree](#neuro-storage-tree)_| List contents of directories in a tree-like format |
 | _[neuro storage load](#neuro-storage-load)_| Copy files and directories using MinIO \(EXPERIMENTAL) |
 
 
@@ -1024,7 +1024,7 @@ Name | Description|
 
 ### neuro storage tree
 
-List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
+List contents of directories in a tree-like format.<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal user's home dir \(storage:)
 
 **Usage:**
 

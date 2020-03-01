@@ -9,17 +9,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from math import ceil
 from time import monotonic
-from typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
 from click import style, unstyle
@@ -839,6 +829,8 @@ class TreeFormatter:
         self, *, color: bool, size: bool, human_readable: bool, sort: str
     ) -> None:
         self._ident = []
+        self._numdirs = 0
+        self._numfiles = 0
         self._painter = get_painter(color, quote=True)
         if sys.platform != "win32":
             self._delims = self.ANSI_DELIMS
@@ -853,22 +845,32 @@ class TreeFormatter:
         self._key = FilesSorter(sort).key()
 
     def __call__(self, tree) -> List[str]:
+        ret = self.listdir(tree)
+        ret.append("")
+        ret.append(
+            f"{self._numdirs} directories, {self._numfiles} files "
+        )
+        return ret
+
+    def listdir(self, tree) -> List[str]:
         ret = []
         items = sorted(tree.folders + tree.files, key=self._key)
         ret.append(
             self.pre()
-            + self._size_func(tree)
+            + self._size_func(tree.size)
             + self._painter.paint(tree.name, FileStatusType.DIRECTORY)
         )
         for num, item in enumerate(items):
             if isinstance(item, Tree):
+                self._numdirs += 1
                 with self.ident(num == len(items) - 1):
-                    ret.extend(self(item))
+                    ret.extend(self.listdir(item))
             else:
+                self._numfiles += 1
                 with self.ident(num == len(items) - 1):
                     ret.append(
                         self.pre()
-                        + self._size_func(item)
+                        + self._size_func(item.size)
                         + self._painter.paint(item.name, FileStatusType.FILE)
                     )
         return ret
@@ -895,11 +897,11 @@ class TreeFormatter:
         finally:
             self._ident.pop()
 
-    def _size(self, item: Union[Tree, FileStatus]) -> str:
-        return f"[{item.size:>11}]  "
+    def _size(self, size: int) -> str:
+        return f"[{size:>11}]  "
 
-    def _human_readable(self, item: Union[Tree, FileStatus]) -> str:
-        return f"[{format_size(item.size):>7}]  "
+    def _human_readable(self, size: int) -> str:
+        return f"[{format_size(size):>7}]  "
 
-    def _none(self, item: Union[Tree, FileStatus]) -> str:
+    def _none(self, item: int) -> str:
         return ""
