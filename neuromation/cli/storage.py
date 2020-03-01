@@ -831,7 +831,13 @@ async def mv(
 @option(
     "--size", "-s", is_flag=True, help="Print the size in bytes of each file.",
 )
-async def tree(root: Root, path: str, size: bool, human_readable: bool,) -> None:
+@option(
+    "--sort",
+    type=click.Choice(["name", "size", "time"]),
+    default="name",
+    help="sort by given field, default is name",
+)
+async def tree(root: Root, path: str, size: bool, human_readable: bool, sort: str) -> None:
     """
     List directory contents.
 
@@ -850,7 +856,8 @@ async def tree(root: Root, path: str, size: bool, human_readable: bool,) -> None
         errors = True
     else:
         formatter = TreeFormatter(
-            color=root.color, size=size, human_readable=human_readable
+            color=root.color, size=size, human_readable=human_readable,
+            sort=sort
         )
         pager_maybe(formatter(tree), root.tty, root.terminal_size)
 

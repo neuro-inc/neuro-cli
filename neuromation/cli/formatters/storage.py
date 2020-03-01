@@ -835,7 +835,7 @@ class TreeFormatter:
     ANSI_DELIMS = ["├", "└", "─", "│"]
     SIMPLE_DELIMS = ["+", "+", "-", "|"]
 
-    def __init__(self, *, color: bool, size: bool, human_readable: bool) -> None:
+    def __init__(self, *, color: bool, size: bool, human_readable: bool, sort: str) -> None:
         self._ident = []
         self._painter = get_painter(color, quote=True)
         if sys.platform != "win32":
@@ -848,10 +848,11 @@ class TreeFormatter:
             self._size_func = self._size
         else:
             self._size_func = self._none
+        self._key = FilesSorter(sort).key()
 
     def __call__(self, tree) -> List[str]:
         ret = []
-        items = sorted(tree.folders + tree.files, key=operator.attrgetter("name"))
+        items = sorted(tree.folders + tree.files, key=self._key)
         ret.append(
             self.pre()
             + self._size_func(tree)
