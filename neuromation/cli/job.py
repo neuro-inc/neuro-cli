@@ -2,11 +2,13 @@ import asyncio
 import contextlib
 import logging
 import os
+import re
 import shlex
 import sys
 import textwrap
 import uuid
 import webbrowser
+from datetime import timedelta
 from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
@@ -74,6 +76,11 @@ ROOT_MOUNTPOINT = "/var/neuro"
 NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
 NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
 RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
+
+DEFAULT_JOB_LIFE_SPAN = "1d"
+REGEX_JOB_LIFE_SPAN = re.compile(
+    r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
+)
 
 
 def _get_neuro_mountpoint(username: str) -> str:
@@ -244,6 +251,16 @@ def job() -> None:
     secure=True,
 )
 @option(
+    "--life-span",
+    type=str,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional job run-time limit in the format '1d2h3m4s' "
+        "(some parts may be missing). Set '0' to disable. "
+        "Default value '1d' can be changed in the user config."
+    ),
+)
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
@@ -278,6 +295,7 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -322,6 +340,7 @@ async def submit(
         volume=volume,
         env=env,
         env_file=env_file,
+        life_span=life_span,
         preemptible=preemptible,
         name=name,
         description=description,
@@ -740,6 +759,17 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     secure=True,
 )
 @option(
+    "--life-span",
+    type=str,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional job run-time limit in the format '1d2h3m4s' "
+        "(some parts may be missing). Set '0' to disable. "
+        "Default value '1d' can be changed in the user config."
+    ),
+    show_default=True,
+)
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
@@ -769,6 +799,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
     description: Optional[str],
@@ -822,6 +853,7 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
+        life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
         description=description,
@@ -867,6 +899,7 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
     description: Optional[str],
@@ -888,6 +921,9 @@ async def run_job(
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
         detach = True
+
+    job_life_span = await calc_life_span(root.client, life_span)
+    log.debug(f"Job run-time limit: {job_life_span}")
 
     env_dict = build_env(env, env_file)
 
@@ -946,7 +982,11 @@ async def run_job(
     )
 
     job = await root.client.jobs.run(
-        container, is_preemptible=preemptible, name=name, description=description
+        container,
+        is_preemptible=preemptible,
+        name=name,
+        description=description,
+        life_span=job_life_span,
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -1131,3 +1171,46 @@ async def calc_columns(
                 return parse_columns(format_str)
         return COLUMNS
     return format
+
+
+async def calc_life_span(client: Client, value: Optional[str]) -> Optional[float]:
+    async def _calc_default_life_span(client: Client) -> timedelta:
+        config = await client.config.get_user_config()
+        section = config.get("job")
+        life_span = DEFAULT_JOB_LIFE_SPAN
+        if section is not None:
+            value = section.get("life-span")
+            if value is not None:
+                life_span = value
+        return _parse_timedelta(life_span)
+
+    delta = (
+        _parse_timedelta(value)
+        if value is not None
+        else await _calc_default_life_span(client)
+    )
+    seconds = delta.total_seconds()
+    if seconds == 0:
+        return None
+    assert seconds > 0
+    return seconds
+
+
+def _parse_timedelta(value: str) -> timedelta:
+    value = value.strip()
+    err = f"Could not parse job timeout '{value}'"
+    if value == "":
+        raise click.UsageError(f"{err}: Empty string not allowed")
+    if value == "0":
+        return timedelta(0)
+    match = REGEX_JOB_LIFE_SPAN.search(value)
+    if match is None:
+        raise click.UsageError(
+            f"{err}: Should be like '1d2h3m4s' (some parts may be missing)."
+        )
+    return timedelta(
+        days=int(match.group("d") or 0),
+        hours=int(match.group("h") or 0),
+        minutes=int(match.group("m") or 0),
+        seconds=int(match.group("s") or 0),
+    )

@@ -129,3 +129,32 @@ def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
         helper.run_cli(["acl", "grant", uri, another_test_user, "read"])
     assert cm.value.returncode == 127
     assert "tag is not allowed" in cm.value.stderr
+
+
+@pytest.mark.e2e
+def test_list_role(request: Any, helper: Helper) -> None:
+    captured = helper.run_cli(["acl", "list", "-s", "role"])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    self_role_uri = f"role://{helper.username}"
+    role = helper.username
+    for line in result:
+        uri, *_ = line.split()
+        assert uri.startswith("role://")
+        if uri != self_role_uri:
+            role = uri[len("role://") :]
+    print(f"Test using role {role!r}")
+
+    captured = helper.run_cli(["acl", "list", "-u", role])
+    assert captured.err == ""
+
+    captured = helper.run_cli(["acl", "list", "-u", role, "--shared"])
+    assert captured.err == ""
+
+
+@pytest.mark.e2e
+def test_list_role_forbidden(request: Any, helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError):
+        helper.run_cli(["acl", "list", "-u", "admin"])
+    with pytest.raises(subprocess.CalledProcessError):
+        helper.run_cli(["acl", "list", "-u", "admin", "--shared"])

@@ -1052,3 +1052,21 @@ async def test_list_aliases(root: Root, nmrc_path: Path) -> None:
     lst = await list_aliases(root)
     names = [cmd.name for cmd in lst]
     assert names == ["lsl", "user-cmd"]
+
+
+async def test_find_alias_without_config(tmp_path: Path) -> None:
+    root = Root(
+        color=False,
+        tty=False,
+        terminal_size=(80, 24),
+        disable_pypi_version_check=True,
+        network_timeout=60,
+        config_path=tmp_path,
+        verbosity=0,
+        trace=False,
+        trace_hide_token=True,
+        command_path="",
+        command_params=[],
+        skip_gmp_stats=True,
+    )
+    assert await find_alias(root, "unknown-cmd") is None

@@ -137,6 +137,7 @@ class Jobs(metaclass=NoPublicConstructor):
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
+        life_span: Optional[float] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
         payload: Dict[str, Any] = {
@@ -149,6 +150,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
+        if life_span is not None:
+            payload["max_run_time_minutes"] = int(life_span // 60)
         payload["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:
