@@ -4,6 +4,8 @@ import functools
 import inspect
 import itertools
 import logging
+import os
+import pathlib
 import re
 import shlex
 import shutil
@@ -68,6 +70,8 @@ JOB_NAME_MIN_LENGTH = 3
 JOB_NAME_MAX_LENGTH = 40
 JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
+
+NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
 
 
 def warn_if_has_newer_version(
@@ -741,3 +745,17 @@ def pager_maybe(
         click.echo_via_pager(
             itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines_it))
         )
+
+
+def steal_config_maybe(dst_path: pathlib.Path) -> None:
+    if NEURO_STEAL_CONFIG in os.environ:
+        src = pathlib.Path(os.environ[NEURO_STEAL_CONFIG])
+        dst = Factory(dst_path).path
+        dst.mkdir(mode=0o700)
+        for f in src.iterdir():
+            target = dst / f.name
+            shutil.copy(f, target)
+            # forbid access to other users
+            os.chmod(target, 0o600)
+            f.unlink()
+        src.rmdir()
