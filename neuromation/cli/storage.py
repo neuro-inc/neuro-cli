@@ -104,6 +104,19 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
 @command()
 @click.argument("paths", nargs=-1)
 @option(
+    "-a",
+    "--all",
+    "show_all",
+    is_flag=True,
+    help="do not ignore entries starting with .",
+)
+@option(
+    "-d",
+    "--directory",
+    is_flag=True,
+    help="list directories themselves, not their contents.",
+)
+@option(
     "--human-readable",
     "-h",
     is_flag=True,
@@ -115,19 +128,6 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     type=click.Choice(["name", "size", "time"]),
     default="name",
     help="sort by given field, default is name.",
-)
-@option(
-    "-d",
-    "--directory",
-    is_flag=True,
-    help="list directories themselves, not their contents.",
-)
-@option(
-    "-a",
-    "--all",
-    "show_all",
-    is_flag=True,
-    help="do not ignore entries starting with .",
 )
 async def ls(
     root: Root,
@@ -833,6 +833,13 @@ async def mv(
 @command()
 @click.argument("path", required=False)
 @option(
+    "-a",
+    "--all",
+    "show_all",
+    is_flag=True,
+    help="do not ignore entries starting with .",
+)
+@option(
     "--human-readable",
     "-h",
     is_flag=True,
@@ -848,7 +855,7 @@ async def mv(
     help="sort by given field, default is name",
 )
 async def tree(
-    root: Root, path: str, size: bool, human_readable: bool, sort: str
+    root: Root, path: str, size: bool, human_readable: bool, sort: str, show_all: bool
 ) -> None:
     """List contents of directories in a tree-like format.
 
@@ -869,7 +876,7 @@ async def tree(
 
     errors = False
     try:
-        tree = await fetch_tree(root.client, uri)
+        tree = await fetch_tree(root.client, uri, show_all)
         tree = dataclasses.replace(tree, name=str(path))
     except (OSError, ResourceNotFound, IllegalArgumentError) as error:
         log.error(f"cannot fetch tree for {uri}: {error}")
@@ -949,7 +956,7 @@ async def calc_filters(
     return tuple(ret)
 
 
-async def fetch_tree(client: Client, uri: URL) -> Tree:
+async def fetch_tree(client: Client, uri: URL, show_all: bool) -> Tree:
     loop = asyncio.get_event_loop()
     folders = []
     files = []
@@ -957,8 +964,12 @@ async def fetch_tree(client: Client, uri: URL) -> Tree:
     size = 0
     items = await client.storage.ls(uri)
     for item in items:
+        if not show_all and item.name.startswith("."):
+            continue
         if item.is_dir():
-            tasks.append(loop.create_task(fetch_tree(client, uri / item.name)))
+            tasks.append(
+                loop.create_task(fetch_tree(client, uri / item.name, show_all))
+            )
         else:
             files.append(item)
             size += item.size

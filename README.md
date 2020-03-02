@@ -896,11 +896,11 @@ neuro storage ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-d, --directory_|list directories themselves, not their contents.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_-l_|use a long listing format.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
-|_\-d, --directory_|list directories themselves, not their contents.|
-|_\-a, --all_|do not ignore entries starting with .|
 |_--help_|Show this message and exit.|
 
 
@@ -1037,6 +1037,7 @@ neuro storage tree [OPTIONS] [PATH]
 
 Name | Description|
 |----|------------|
+|_\-a, --all_|do not ignore entries starting with .|
 |_\-h, --human-readable_|Print the size in a more human readable way.|
 |_\-s, --size_|Print the size in bytes of each file.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
@@ -2089,11 +2090,11 @@ neuro ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-d, --directory_|list directories themselves, not their contents.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_-l_|use a long listing format.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
-|_\-d, --directory_|list directories themselves, not their contents.|
-|_\-a, --all_|do not ignore entries starting with .|
 |_--help_|Show this message and exit.|
 
 
