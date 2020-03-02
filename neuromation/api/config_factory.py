@@ -40,7 +40,6 @@ from .utils import _ContextManager
 WIN32 = sys.platform == "win32"
 DEFAULT_CONFIG_PATH = "~/.neuro"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
-TRUSTED_CONFIG_PATH = "NEUROMATION_TRUSTED_CONFIG_PATH"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
@@ -80,6 +79,10 @@ class Factory:
         if trace_configs:
             self._trace_configs += trace_configs
         self._trace_id = trace_id
+
+    @property
+    def path(self) -> Path:
+        return self._path
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         saved_config = config = self._read()
@@ -220,8 +223,7 @@ class Factory:
                 "Please logout and login again."
             )
 
-        trusted_env = WIN32 or bool(os.environ.get(TRUSTED_CONFIG_PATH))
-        if not trusted_env:
+        if not WIN32:
             stat_dir = self._path.stat()
             if stat_dir.st_mode & 0o777 != 0o700:
                 raise ConfigError(
