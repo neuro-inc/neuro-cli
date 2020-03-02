@@ -25,7 +25,7 @@ async def async_main(action: str) -> None:
             if registry != neuro_registry:
                 error(
                     f"Unknown registry {registry}. "
-                    "neuro configured with {neuro_registry}.",
+                    f"neuro configured with {neuro_registry}.",
                     EX_DATAERR,
                 )
             token = await config.token()
