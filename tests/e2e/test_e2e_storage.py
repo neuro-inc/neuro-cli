@@ -623,3 +623,37 @@ def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
         ]
     )
     assert os.listdir(tmp_path / "filtered") == ["bar"]
+
+
+@pytest.mark.e2e
+def test_e2e_ls_skip_hidden(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / ".bar").write_bytes(b"bar")
+
+    helper.run_cli(
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
+    )
+
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == ["foo"]
+
+
+@pytest.mark.e2e
+def test_e2e_ls_show_hidden(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / ".bar").write_bytes(b"bar")
+
+    helper.run_cli(
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
+    )
+
+    captured = helper.run_cli(["storage", "ls", "--all", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == [".bar", "foo"]
