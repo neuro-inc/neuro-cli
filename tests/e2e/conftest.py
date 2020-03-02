@@ -48,6 +48,7 @@ from neuromation.cli.asyncio_utils import run
 from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
+
 JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 5 * 60
@@ -78,7 +79,7 @@ SysCap = namedtuple("SysCap", "out err")
 
 
 async def _run_async(
-        coro: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
+    coro: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
 ) -> Any:
     try:
         return await coro(*args, **kwargs)
@@ -166,7 +167,7 @@ class Helper:
 
     @run_async
     async def check_file_exists_on_storage(
-            self, name: str, path: str, size: int, *, fromhome: bool = False
+        self, name: str, path: str, size: int, *, fromhome: bool = False
     ) -> None:
         __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
@@ -174,9 +175,9 @@ class Helper:
             files = await client.storage.ls(url)
             for file in files:
                 if (
-                        file.type == FileStatusType.FILE
-                        and file.name == name
-                        and file.size == size
+                    file.type == FileStatusType.FILE
+                    and file.name == name
+                    and file.size == size
                 ):
                     return
         raise AssertionError(f"File {name} with size {size} not found in {url}")
@@ -214,7 +215,7 @@ class Helper:
 
     @run_async
     async def check_file_on_storage_checksum(
-            self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
+        self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
     ) -> None:
         __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
@@ -227,12 +228,12 @@ class Helper:
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.download_file(url / name, URL("file:" + target))
             assert (
-                    self.hash_hex(target_file) == checksum
+                self.hash_hex(target_file) == checksum
             ), "checksum test failed for {url}"
 
     @run_async
     async def check_rm_file_on_storage(
-            self, name: str, path: str, *, fromhome: bool = False
+        self, name: str, path: str, *, fromhome: bool = False
     ) -> None:
         __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
@@ -241,7 +242,7 @@ class Helper:
 
     @run_async
     async def check_upload_file_to_storage(
-            self, name: str, path: str, local_file: str
+        self, name: str, path: str, local_file: str
     ) -> None:
         __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
@@ -255,7 +256,7 @@ class Helper:
 
     @run_async
     async def check_rename_file_on_storage(
-            self, name_from: str, path_from: str, name_to: str, path_to: str
+        self, name_from: str, path_from: str, name_to: str, path_to: str
     ) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
@@ -273,7 +274,7 @@ class Helper:
 
     @run_async
     async def check_rename_directory_on_storage(
-            self, path_from: str, path_to: str
+        self, path_from: str, path_to: str
     ) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
@@ -292,7 +293,7 @@ class Helper:
 
     @run_async
     async def wait_job_change_state_from(
-            self, job_id: str, wait_state: JobStatus, stop_state: Optional[JobStatus] = None
+        self, job_id: str, wait_state: JobStatus, stop_state: Optional[JobStatus] = None
     ) -> None:
         __tracebackhide__ = True
         start_time = time()
@@ -308,11 +309,11 @@ class Helper:
 
     @run_async
     async def wait_job_change_state_to(
-            self,
-            job_id: str,
-            target_state: JobStatus,
-            stop_state: Optional[JobStatus] = None,
-            timeout: float = JOB_TIMEOUT,
+        self,
+        job_id: str,
+        target_state: JobStatus,
+        stop_state: Optional[JobStatus] = None,
+        timeout: float = JOB_TIMEOUT,
     ) -> None:
         __tracebackhide__ = True
         start_time = time()
@@ -344,9 +345,9 @@ class Helper:
             job = await client.jobs.status(job_id)
             start_time = time()
             while (
-                    wait_start
-                    and job.status == JobStatus.PENDING
-                    and time() - start_time < JOB_TIMEOUT
+                wait_start
+                and job.status == JobStatus.PENDING
+                and time() - start_time < JOB_TIMEOUT
             ):
                 job = await client.jobs.status(job_id)
             if int(time() - start_time) > JOB_TIMEOUT:
@@ -355,7 +356,7 @@ class Helper:
 
     @run_async
     async def check_job_output(
-            self, job_id: str, expected: str, flags: int = 0
+        self, job_id: str, expected: str, flags: int = 0
     ) -> None:
         """
             Wait until job output satisfies given regexp
@@ -385,11 +386,11 @@ class Helper:
         )
 
     def run_cli(
-            self,
-            arguments: List[str],
-            *,
-            verbosity: int = 0,
-            network_timeout: float = NETWORK_TIMEOUT,
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
     ) -> SysCap:
         __tracebackhide__ = True
 
@@ -429,8 +430,8 @@ class Helper:
         out = proc.stdout
         err = proc.stderr
         if any(
-                start in " ".join(arguments)
-                for start in ("submit", "job submit", "run", "job run")
+            start in " ".join(arguments)
+            for start in ("submit", "job submit", "run", "job run")
         ):
             match = job_id_pattern.search(out)
             if match:
@@ -444,14 +445,14 @@ class Helper:
 
     @run_async
     async def run_job_and_wait_state(
-            self,
-            image: str,
-            command: str = "",
-            *,
-            description: Optional[str] = None,
-            name: Optional[str] = None,
-            wait_state: JobStatus = JobStatus.RUNNING,
-            stop_state: JobStatus = JobStatus.FAILED,
+        self,
+        image: str,
+        command: str = "",
+        *,
+        description: Optional[str] = None,
+        name: Optional[str] = None,
+        wait_state: JobStatus = JobStatus.RUNNING,
+        stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
@@ -610,7 +611,7 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 @pytest.fixture
 def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str, Any]]:
     def go(
-            http_port: bool, http_auth: bool = False, description: Optional[str] = None
+        http_port: bool, http_auth: bool = False, description: Optional[str] = None
     ) -> Dict[str, Any]:
         secret = str(uuid())
         # Run http job
