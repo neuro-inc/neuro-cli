@@ -150,6 +150,6 @@ class ShortImagesFormatter(BaseImagesFormatter):
 
 class LongImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        header = ["IMAGE URL", "DOCKER URL"]
+        header = ["NEURO URL", "DOCKER URL"]
         rows = [[str(image), image.as_docker_url] for image in images]
         return table([header] + rows)
