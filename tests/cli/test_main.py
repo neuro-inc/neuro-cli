@@ -27,4 +27,4 @@ def test_steal_config_dont_override_existing(
     ret = run_cli(["--neuromation-config", str(nmrc_path), "config", "show"])
     # FileExistsError
     assert ret.code == 74, ret
-    assert 'FileExistsError' in ret.err
+    assert "FileExistsError" in ret.err
