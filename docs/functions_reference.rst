@@ -78,7 +78,7 @@ Config Factory
    configuration directory (``~/.nmrc`` by default). The default value can be overridden
    by ``NEUROMATION_CONFIG`` environment variable.
 
-   .. property:: path
+   .. attribute:: path
 
       Revealed path to the configuration directory, expanded as described above.
 
