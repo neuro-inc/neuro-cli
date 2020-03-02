@@ -1,7 +1,6 @@
 import asyncio
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any, AsyncIterator, Set
 from uuid import uuid4 as uuid
@@ -26,15 +25,6 @@ def parse_docker_ls_output(docker_ls_output: Any) -> Set[str]:
         for repo_tag in info["RepoTags"]
         if repo_tag
     )
-
-
-@pytest.fixture()
-async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform == "win32":
-        pytest.skip("aiodocker not supported on windows at this moment")
-    client = aiodocker.Docker()
-    yield client
-    await client.close()
 
 
 @pytest.fixture()

@@ -2,7 +2,6 @@ import asyncio
 import os
 import re
 import subprocess
-import sys
 from contextlib import suppress
 from pathlib import Path
 from time import time
@@ -326,9 +325,20 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command, name=job_name)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "true"]
+        [
+            "job",
+            "exec",
+            "--no-tty",
+            "--no-key-check",
+            "--timeout=60",
+            job_id,
+            # use unrolled notation to check shlex.join()
+            "bash",
+            "-c",
+            "echo ok; true",
+        ]
     )
-    assert captured.out == ""
+    assert captured.out == "ok"
 
 
 @pytest.mark.e2e
@@ -627,15 +637,6 @@ def test_job_run(helper: Helper) -> None:
     assert "Exit code: 101" in store_out
 
 
-@pytest.fixture()
-async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform == "win32":
-        pytest.skip("aiodocker not supported on windows at this moment")
-    client = aiodocker.Docker()
-    yield client
-    await client.close()
-
-
 @pytest.mark.e2e
 def test_pass_config(helper: Helper) -> None:
     captured = helper.run_cli(
@@ -648,7 +649,7 @@ def test_pass_config(helper: Helper) -> None:
             "--no-wait-start",
             "--pass-config",
             UBUNTU_IMAGE_NAME,
-            'bash -c "sleep 15 && test -f $(NEUROMATION_CONFIG)/db"',
+            'bash -c "sleep 15 && test -f $(NEURO_STEAL_CONFIG)/db"',
         ]
     )
     job_id = captured.out

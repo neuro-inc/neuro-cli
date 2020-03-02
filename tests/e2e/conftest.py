@@ -26,6 +26,7 @@ from typing import (
 )
 from uuid import uuid4 as uuid
 
+import aiodocker
 import aiohttp
 import pytest
 from yarl import URL
@@ -645,3 +646,12 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
         }
 
     return go
+
+
+@pytest.fixture()
+async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
+    if sys.platform != "linux":
+        pytest.skip("Doens't support docker in e2e tests for now")
+    client = aiodocker.Docker()
+    yield client
+    await client.close()

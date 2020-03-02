@@ -14,7 +14,7 @@ from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
-from neuromation.api import TRUSTED_CONFIG_PATH, Cluster, ConfigError, Factory
+from neuromation.api import Cluster, ConfigError, Factory
 from neuromation.api.config import (
     _AuthConfig,
     _AuthToken,
@@ -237,26 +237,6 @@ class TestConfigFileInteraction:
         Path(config_dir).chmod(0o777)
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
-
-    @pytest.mark.skipif(
-        sys.platform == "win32",
-        reason="Windows does not supports UNIX-like permissions",
-    )
-    async def test_file_permissions_suppress_security_check(
-        self,
-        tmpdir: Path,
-        token: str,
-        auth_config: _AuthConfig,
-        cluster_config: Cluster,
-        monkeypatch: Any,
-    ) -> None:
-        monkeypatch.setenv(TRUSTED_CONFIG_PATH, "1")
-        config_path = Path(tmpdir) / "test.nmrc"
-        _create_config(config_path, token, auth_config, cluster_config)
-        (config_path / "db").chmod(0o644)
-        client = await Factory(config_path).get()
-        await client.close()
-        assert client
 
     async def test_silent_update(
         self, config_dir: Path, mock_for_login: _TestServer

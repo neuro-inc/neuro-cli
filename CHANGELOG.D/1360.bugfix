@@ -1,0 +1,1 @@
+Fix the alias finding routine when user is not logged in.

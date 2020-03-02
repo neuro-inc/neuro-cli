@@ -1,4 +1,5 @@
 import contextlib
+import logging
 import re
 from dataclasses import replace
 from typing import Any, Dict, List, Optional, Set
@@ -21,6 +22,9 @@ from .core import AuthorizationError, _Core
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _as_repo_str
 from .utils import NoPublicConstructor
+
+
+log = logging.getLogger(__name__)
 
 
 class Images(metaclass=NoPublicConstructor):
@@ -140,8 +144,14 @@ class Images(metaclass=NoPublicConstructor):
             prefix = f"image://{self._config.cluster_name}/"
             result: List[RemoteImage] = []
             for repo in ret["repositories"]:
-                repo = prefix + repo
-                result.append(self._parse.remote_image(repo, tag_option=TagOption.DENY))
+                try:
+                    result.append(
+                        self._parse.remote_image(
+                            prefix + repo, tag_option=TagOption.DENY
+                        )
+                    )
+                except ValueError as err:
+                    log.warning(str(err))
             return result
 
     def _validate_image_for_tags(self, image: RemoteImage) -> None:
