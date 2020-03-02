@@ -24,7 +24,6 @@ from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
-    TRUSTED_CONFIG_PATH,
     Factory,
 )
 from .core import (

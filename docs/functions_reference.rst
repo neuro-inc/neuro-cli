@@ -78,6 +78,14 @@ Config Factory
    configuration directory (``~/.nmrc`` by default). The default value can be overridden
    by ``NEUROMATION_CONFIG`` environment variable.
 
+   .. attribute:: path
+
+      Revealed path to the configuration directory, expanded as described above.
+
+      Read-only :class:`pathlib.Path` property.
+
+      .. versionadded:: 20.2.25
+
    .. comethod:: get(*, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client
 
       Read configuration previously created by *login methods* and return a client

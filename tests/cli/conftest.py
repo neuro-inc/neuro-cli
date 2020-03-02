@@ -91,15 +91,19 @@ def run_cli(
 
         code = EX_OK
         try:
-            main(
-                [
-                    "--show-traceback",
-                    "--disable-pypi-version-check",
-                    "--color=no",
-                    f"--neuromation-config={nmrc_path}",
-                ]
-                + arguments
-            )
+            default_args = [
+                "--show-traceback",
+                "--disable-pypi-version-check",
+                "--color=no",
+            ]
+            if "--neuromation-config" not in arguments:
+                for arg in arguments:
+                    if arg.startswith("--neuromation-config="):
+                        break
+                else:
+                    default_args.append(f"--neuromation-config={nmrc_path}")
+
+            main(default_args + arguments)
         except SystemExit as e:
             code = e.code
             pass
