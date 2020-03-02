@@ -19,7 +19,7 @@ class RemoteImage:
     registry: Optional[str] = None
 
     @property
-    def https_url(self) -> str:
+    def as_docker_url(self) -> str:
         if _is_in_neuro_registry(self):
             name = f"https://{self.registry}/{self.owner}/{self.name}"
             tag = f":{self.tag}" if self.tag else ""

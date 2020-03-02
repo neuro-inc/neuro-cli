@@ -185,5 +185,9 @@ RemoteImage
       Host name for images hosted on Neuro Registry (:class:`str`), ``None`` for
       other registries like DockerHub_.
 
+    .. attribute:: as_docker_url
+
+      URL that can be used to reference this image with Docker.
+
 
 .. _DockerHub: https://hub.docker.com
