@@ -48,7 +48,6 @@ from neuromation.cli.asyncio_utils import run
 from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
-
 JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 5 * 60
@@ -650,8 +649,10 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
 
 @pytest.fixture()
 async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform != "linux":
-        pytest.skip("Doens't support docker in e2e tests for now")
-    client = aiodocker.Docker()
+    try:
+        client = aiodocker.Docker()
+    except Exception as e:
+        pytest.skip(f"Could not connect to Docker: {e}")
+        return
     yield client
     await client.close()
