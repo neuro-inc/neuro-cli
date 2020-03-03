@@ -1,7 +1,6 @@
 import asyncio
 import socket
 import ssl
-from datetime import date
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -11,6 +10,10 @@ import trustme
 from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
+
+from neuromation.api import Client
+from neuromation.cli import version_utils
+from neuromation.cli.root import Root
 
 
 PYPI_JSON = {
@@ -227,9 +230,14 @@ async def fake_pypi(
 
 
 @pytest.fixture()
-async def connector(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> aiohttp.TCPConnector:
+async def client(fake_pypi: Tuple[FakePyPI, Dict[str, int]], root: Root) -> Client:
     resolver = FakeResolver(fake_pypi[1])
-    return aiohttp.TCPConnector(resolver=resolver, ssl=False)
+    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)
+    session = aiohttp.ClientSession(connector=connector)
+    old_session = root.client._session
+    await old_session.close()
+    root.client._session = session
+    return root.client
 
 
 @pytest.fixture
@@ -237,49 +245,28 @@ def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
     return fake_pypi[0]
 
 
-async def xtest__fetch_pypi(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
-) -> None:
+async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        payload = await checker._fetch_pypi("neuromation")
-        version = checker._parse_max_version(payload)
-        assert version == pkg_resources.parse_version("0.2.1")
-        upload_time = checker._parse_version_upload_time(payload, version)
-        assert upload_time == date(2019, 1, 30)
+    record = await version_utils._fetch_package(client._session, "neuromation")
+    assert record["version"] == "0.2.1"
+    assert record["uploaded"] == 1548799343.0
 
 
-async def xtest__fetch_pypi_no_releases(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
-) -> None:
+async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, {})
 
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        payload = await checker._fetch_pypi("neuromation")
-        version = checker._parse_max_version(payload)
-        assert version == pkg_resources.parse_version("0.0.0")
-        upload_time = checker._parse_version_upload_time(payload, version)
-        assert upload_time == date.min
+    record = await version_utils._fetch_package(client._session, "neuromation")
+    assert record is None
 
 
-async def xtest__fetch_pypi_non_200(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
+async def test__fetch_pypi_non_200(
+    pypi_server: FakePyPI, client: Client
 ) -> None:
     pypi_server.response = (403, {"Status": "Forbidden"})
 
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        payload = await checker._fetch_pypi("neuromation")
-        version = checker._parse_max_version(payload)
-        assert version == pkg_resources.parse_version("0.0.0")
-        upload_time = checker._parse_version_upload_time(payload, version)
-        assert upload_time == date.min
+    record = await version_utils._fetch_package(client._session, "neuromation")
+    assert record is None
 
 
 async def xtest_update_latest_version(
