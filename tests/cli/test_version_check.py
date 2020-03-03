@@ -4,6 +4,7 @@ import ssl
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
+import dateutil.parser
 import pytest
 import trustme
 from aiohttp import web
@@ -250,7 +251,9 @@ async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
     record = await version_utils._fetch_package(client._session, "neuromation")
     assert record is not None
     assert record["version"] == "0.2.1"
-    assert record["uploaded"] == 1548799343.0
+    assert (
+        record["uploaded"] == dateutil.parser.parse("2019-01-30T00:02:23").timestamp()
+    )
 
 
 async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) -> None:
