@@ -11,6 +11,7 @@ from neuromation.api import Client, JobStatus
 from neuromation.cli.job import (
     DEFAULT_JOB_LIFE_SPAN,
     NEUROMATION_ROOT_ENV_VAR,
+    _parse_cmd,
     _parse_timedelta,
     build_env,
     calc_columns,
@@ -284,3 +285,13 @@ def test_parse_timedelta_invalid() -> None:
 def test_parse_timedelta_invalid_negative() -> None:
     with pytest.raises(click.UsageError, match="Should be like"):
         _parse_timedelta("-1d")
+
+
+def test_parse_cmd_single() -> None:
+    cmd = ["bash -c 'ls -l && pwd'"]
+    assert _parse_cmd(cmd) == "bash -c 'ls -l && pwd'"
+
+
+def test_parse_cmd_multiple() -> None:
+    cmd = ["bash", "-c", "ls -l && pwd"]
+    assert _parse_cmd(cmd) == "bash -c 'ls -l && pwd'"
