@@ -6,13 +6,10 @@ import re
 import sqlite3
 import time
 from dataclasses import dataclass, replace
-from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Set, Union
 
-import dateutil.parser
-import pkg_resources
 import toml
 import yaml
 from yarl import URL

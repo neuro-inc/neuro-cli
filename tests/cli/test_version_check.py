@@ -4,7 +4,6 @@ import ssl
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
-import pkg_resources
 import pytest
 import trustme
 from aiohttp import web
@@ -249,6 +248,7 @@ async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
     record = await version_utils._fetch_package(client._session, "neuromation")
+    assert record is not None
     assert record["version"] == "0.2.1"
     assert record["uploaded"] == 1548799343.0
 
@@ -260,25 +260,21 @@ async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) ->
     assert record is None
 
 
-async def test__fetch_pypi_non_200(
-    pypi_server: FakePyPI, client: Client
-) -> None:
+async def test__fetch_pypi_non_200(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (403, {"Status": "Forbidden"})
 
     record = await version_utils._fetch_package(client._session, "neuromation")
     assert record is None
 
 
-async def test_run_version_checker(
-    pypi_server: FakePyPI, client: Client
-) -> None:
+async def test_run_version_checker(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
     await version_utils.run_version_checker(client, False)
     with client.config._open_db() as db:
         ret = list(db.execute("SELECT package, version FROM pypi"))
         assert len(ret) == 1
-        assert list(ret[0]) == ['neuromation', '0.2.1']
+        assert list(ret[0]) == ["neuromation", "0.2.1"]
 
 
 async def test_run_version_checker_disabled(
