@@ -269,136 +269,27 @@ async def test__fetch_pypi_non_200(
     assert record is None
 
 
-async def xtest_update_latest_version(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
+async def test_run_version_checker(
+    pypi_server: FakePyPI, client: Client
 ) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        await checker._update_self_version()
-        assert checker.version.pypi_version == pkg_resources.parse_version("0.2.1")
+    await version_utils.run_version_checker(client, False)
+    with client.config._open_db() as db:
+        ret = list(db.execute("SELECT package, version FROM pypi"))
+        assert len(ret) == 1
+        assert list(ret[0]) == ['neuromation', '0.2.1']
 
 
-async def xtest_run(pypi_server: FakePyPI, connector: aiohttp.TCPConnector) -> None:
-    pypi_server.response = (200, PYPI_JSON)
-
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        await checker.run()
-        assert checker.version.pypi_version == pkg_resources.parse_version("0.2.1")
-
-
-async def xtest_run_cancelled(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
+async def test_run_version_checker_disabled(
+    pypi_server: FakePyPI, client: Client
 ) -> None:
-    loop = asyncio.get_event_loop()
     pypi_server.response = (200, PYPI_JSON)
 
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        task = loop.create_task(checker.run())
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-        assert checker.version.pypi_version == pkg_resources.parse_version("0.0.0")
+    with client.config._open_db() as db:
+        version_utils._ensure_schema(db)
 
-
-async def xtest_run_cancelled_with_delay(
-    pypi_server: FakePyPI, connector: aiohttp.TCPConnector
-) -> None:
-    loop = asyncio.get_event_loop()
-    pypi_server.response = (200, PYPI_JSON)
-
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        task = loop.create_task(checker.run())
-        await asyncio.sleep(0)
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-
-        assert checker.version.pypi_version == pkg_resources.parse_version("0.0.0")
-
-
-async def xtest_run_no_server() -> None:
-    port = unused_port()
-    resolver = FakeResolver({"pypi.org": port})
-    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)
-
-    async with VersionChecker(
-        _PyPIVersion.create_uninitialized(), connector=connector
-    ) as checker:
-        await checker.run()
-
-        assert checker.version.pypi_version == pkg_resources.parse_version("0.0.0")
-
-
-class XTestPyPIVersion:
-    def test_from_config(self) -> None:
-        data = {
-            "pypi_version": "19.2.3",
-            "check_timestamp": "12345",
-            "certifi_pypi_version": "19.4.5",
-            "certifi_check_timestamp": "67890",
-        }
-        expected = _PyPIVersion(
-            pypi_version=pkg_resources.parse_version("19.2.3"),
-            check_timestamp=12345,
-            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
-            certifi_check_timestamp=67890,
-        )
-        assert _PyPIVersion.from_config(data) == expected
-
-    def test_from_config_with_certifi_pypi_upload_date(self) -> None:
-        data = {
-            "pypi_version": "19.2.3",
-            "check_timestamp": "12345",
-            "certifi_pypi_version": "19.4.5",
-            "certifi_pypi_upload_date": "2019-04-06",
-            "certifi_check_timestamp": "67890",
-        }
-        expected = _PyPIVersion(
-            pypi_version=pkg_resources.parse_version("19.2.3"),
-            check_timestamp=12345,
-            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
-            certifi_pypi_upload_date=date(2019, 4, 6),
-            certifi_check_timestamp=67890,
-        )
-        assert _PyPIVersion.from_config(data) == expected
-
-    def test_to_config(self) -> None:
-        version = _PyPIVersion(
-            pypi_version=pkg_resources.parse_version("19.2.3"),
-            check_timestamp=12345,
-            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
-            certifi_check_timestamp=67890,
-        )
-        expected = {
-            "pypi_version": "19.2.3",
-            "check_timestamp": 12345,
-            "certifi_pypi_version": "19.4.5",
-            "certifi_check_timestamp": 67890,
-        }
-        assert version.to_config() == expected
-
-    def test_to_config_with_certifi_pypi_upload_date(self) -> None:
-        version = _PyPIVersion(
-            pypi_version=pkg_resources.parse_version("19.2.3"),
-            check_timestamp=12345,
-            certifi_pypi_version=pkg_resources.parse_version("19.4.5"),
-            certifi_check_timestamp=67890,
-            certifi_pypi_upload_date=date(2019, 4, 6),
-        )
-        expected = {
-            "pypi_version": "19.2.3",
-            "check_timestamp": 12345,
-            "certifi_pypi_version": "19.4.5",
-            "certifi_check_timestamp": 67890,
-            "certifi_pypi_upload_date": "2019-04-06",
-        }
-        assert version.to_config() == expected
+    await version_utils.run_version_checker(client, True)
+    with client.config._open_db() as db:
+        ret = list(db.execute("SELECT package, version FROM pypi"))
+        assert len(ret) == 0
