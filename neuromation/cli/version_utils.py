@@ -1,142 +1,200 @@
-import abc
-import asyncio
-import dataclasses
 import logging
-import ssl
+import sqlite3
 import time
-import types
-from datetime import date
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
 import certifi
+import click
 import dateutil.parser
 import pkg_resources
+from typing_extensions import TypedDict
 from yarl import URL
 
-from neuromation.api.config import _PyPIVersion
+import neuromation
+from neuromation.api import Client
+
+
+class Record(TypedDict):
+    package: str
+    version: str
+    uploaded: float
+    checked: float
 
 
 log = logging.getLogger(__name__)
 
 
-class AbstractVersionChecker(abc.ABC):
-    def __init__(self, pypi_version: _PyPIVersion) -> None:
-        self._version = pypi_version
-
-    @property
-    def version(self) -> _PyPIVersion:
-        return self._version
-
-    @abc.abstractmethod
-    async def close(self) -> None:  # pragma: no cover
-        pass
-
-    @abc.abstractmethod
-    async def run(self) -> None:  # pragma: no cover
-        pass
+SCHEMA = {
+    "pypi": "CREATE TABLE pypi "
+    "(package TEXT, version TEXT, uploaded REAL, checked REAL)",
+}
+DROP = {"pypi": "DROP TABLE IF EXISTS pypi"}
 
 
-class DummyVersionChecker(AbstractVersionChecker):
-    async def close(self) -> None:
-        pass
+async def run_version_checker(client: Client, disable_check: bool) -> None:
+    if disable_check:
+        return
+    with client.config._open_db() as db:
+        _ensure_schema(db)
+        neuromation_db = _read_package(db, "neuromation")
+        certifi_db = _read_package(db, "certifi")
 
-    async def run(self) -> None:
-        pass
+    _warn_maybe(neuromation_db, certifi_db)
+    inserts: List[Tuple[str, str, float, float]] = []
+    await _add_record(client, "neuromation", neuromation_db, inserts)
+    await _add_record(client, "certifi", certifi_db, inserts)
+    with client.config._open_db() as db:
+        db.executemany(
+            """
+            INSERT INTO pypi (package, version, uploaded, checked)
+            VALUES (?, ?, ?, ?)
+        """,
+            inserts,
+        )
+        db.execute("DELETE FROM pypi WHERE checked < ?", (time.time() - 7 * 24 * 3600,))
+        db.commit()
 
 
-class VersionChecker(AbstractVersionChecker):
-    def __init__(
-        self,
-        pypi_version: _PyPIVersion,
-        connector: Optional[aiohttp.TCPConnector] = None,
-        timer: Callable[[], float] = time.time,
-    ) -> None:
-        self._version = pypi_version
-        if connector is None:
-            ssl_context = ssl.SSLContext()
-            ssl_context.load_verify_locations(capath=certifi.where())
-            connector = aiohttp.TCPConnector(ssl=ssl_context)
-        self._session = aiohttp.ClientSession(connector=connector)
-        self._timer = timer
-
-    async def close(self) -> None:
-        await self._session.close()
-
-    async def __aenter__(self) -> "VersionChecker":
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        exc_tb: Optional[types.TracebackType],
-    ) -> None:
-        await self.close()
-
-    async def run(self) -> None:
-        try:
-            loop = asyncio.get_event_loop()
-            task1 = loop.create_task(self._update_self_version())
-            task2 = loop.create_task(self._update_certifi_version())
-            await asyncio.gather(task1, task2)
-        except asyncio.CancelledError:
-            raise
-        except aiohttp.ClientConnectionError:
-            log.debug("IO error on fetching data from PyPI", exc_info=True)
-        except Exception:  # pragma: no cover
-            log.exception("Error on fetching data from PyPI")
-
-    async def _update_self_version(self) -> None:
-        payload = await self._fetch_pypi("neuromation")
-        pypi_version = self._parse_max_version(payload)
-        self._version = dataclasses.replace(
-            self._version, pypi_version=pypi_version, check_timestamp=self._timer()
+async def _add_record(
+    client: Client,
+    package: str,
+    record: Optional[Record],
+    inserts: List[Tuple[str, str, float, float]],
+) -> None:
+    if record is None or time.time() - record["checked"] > 10 * 60:
+        pypi = await _fetch_package(client._session, package)
+        if pypi is None:
+            return
+        inserts.append(
+            (pypi["package"], pypi["version"], pypi["uploaded"], pypi["checked"],)
         )
 
-    async def _update_certifi_version(self) -> None:
-        payload = await self._fetch_pypi("certifi")
-        pypi_version = self._parse_max_version(payload)
-        pypi_upload_date = self._parse_version_upload_time(payload, pypi_version)
-        self._version = dataclasses.replace(
-            self._version,
-            certifi_pypi_version=pypi_version,
-            certifi_pypi_upload_date=pypi_upload_date,
-            certifi_check_timestamp=int(self._timer()),
+
+def _ensure_schema(db: sqlite3.Connection) -> None:
+    cur = db.cursor()
+    ok = True
+    found = set()
+    cur.execute("SELECT type, name, sql from sqlite_master")
+    for type, name, sql in cur:
+        if type not in ("table", "index"):
+            continue
+        if name in SCHEMA:
+            if SCHEMA[name] != sql:
+                ok = False
+                break
+            else:
+                found.add(name)
+
+    if not ok or found < SCHEMA.keys():
+        for sql in reversed(list(DROP.values())):
+            cur.execute(sql)
+        for sql in SCHEMA.values():
+            cur.execute(sql)
+
+
+READ_PACKAGE = """
+    SELECT package, version, uploaded, checked
+    FROM pypi
+    WHERE package = ?
+    ORDER BY checked
+    LIMIT 1
+"""
+
+
+def _read_package(db: sqlite3.Connection, package: str) -> Optional[Record]:
+    cur = db.execute(READ_PACKAGE, (package,))
+    return cur.fetchone()
+
+
+async def _fetch_package(
+    session: aiohttp.ClientSession, package: str
+) -> Optional[Record]:
+    url = URL(f"https://pypi.org/pypi/{package}/json")
+    async with session.get(url) as resp:
+        if resp.status != 200:
+            log.debug("%s status on fetching %s", resp.status, url)
+            return None
+        pypi_response = await resp.json()
+        version = _parse_max_version(pypi_response)
+        if version is None:
+            return None
+        uploaded = _parse_version_upload_time(pypi_response, version)
+        return {
+            "package": package,
+            "version": version,
+            "uploaded": uploaded,
+            "checked": time.time(),
+        }
+
+
+def _parse_date(value: str) -> float:
+    # from format: "2019-08-19"
+    return dateutil.parser.parse(value).timestamp()
+
+
+def _parse_max_version(pypi_response: Dict[str, Any]) -> Optional[str]:
+    try:
+        ret = [version for version in pypi_response["releases"].keys()]
+        return max(
+            ver for ver in ret if not pkg_resources.parse_version(ver).is_prerelease  # type: ignore  # noqa
         )
+    except (KeyError, ValueError):
+        return None
 
-    async def _fetch_pypi(self, package: str) -> Dict[str, Any]:
-        url = URL(f"https://pypi.org/pypi/{package}/json")
-        async with self._session.get(url) as resp:
-            if resp.status != 200:
-                log.debug("%s status on fetching %s", resp.status, url)
-                return {}
-            return await resp.json()
 
-    def _parse_max_version(self, pypi_response: Dict[str, Any]) -> Any:
-        try:
-            ret = [
-                pkg_resources.parse_version(version)
-                for version in pypi_response["releases"].keys()
-            ]
-            return max(ver for ver in ret if not ver.is_prerelease)  # type: ignore
-        except (KeyError, ValueError):
-            return _PyPIVersion.NO_VERSION
+def _parse_version_upload_time(
+    pypi_response: Dict[str, Any], target_version: str
+) -> float:
+    try:
+        dates = [
+            _parse_date(info["upload_time"])
+            for version, info_list in pypi_response["releases"].items()
+            for info in info_list
+            if version == target_version
+        ]
+        return max(dates)
+    except (KeyError, ValueError):
+        return 0
 
-    def _parse_version_upload_time(
-        self, pypi_response: Dict[str, Any], target_version: Any
-    ) -> date:
-        try:
-            dates = [
-                self._parse_date(info["upload_time"])
-                for version, info_list in pypi_response["releases"].items()
-                for info in info_list
-                if pkg_resources.parse_version(version) == target_version
-            ]
-            return max(dates)
-        except (KeyError, ValueError):
-            return date.min
 
-    def _parse_date(self, value: str) -> date:
-        # from format: "2019-08-19"
-        return dateutil.parser.parse(value).date()
+def _warn_maybe(
+    neuromation_db: Optional[Record],
+    certifi_db: Optional[Record],
+    *,
+    certifi_warning_delay: int = 14 * 3600 * 24,
+) -> None:
+    if neuromation_db is not None:
+        current = pkg_resources.parse_version(neuromation.__version__)
+        pypi = pkg_resources.parse_version(neuromation_db["version"])
+        if current < pypi:
+            update_command = "pip install --upgrade neuromation"
+            click.secho(
+                f"You are using Neuro Platform Client {current}, "
+                f"however {pypi} is available.\n"
+                f"You should consider upgrading via "
+                f"the '{update_command}' command.",
+                err=True,
+                fg="yellow",
+            )
+
+    if certifi_db is not None:
+        current = pkg_resources.parse_version(certifi.__version__)  # type: ignore
+        pypi = pkg_resources.parse_version(certifi_db["version"])
+        if (
+            current < pypi
+            and time.time() - certifi_db["uploaded"] > certifi_warning_delay
+        ):
+            pip_update_command = "pip install --upgrade certifi"
+            conda_update_command = "conda update certifi"
+            click.secho(
+                f"Your root certificates are out of date.\n"
+                f"You are using certifi {current}, "
+                f"however {pypi} is available.\n"
+                f"Please consider upgrading certifi package, e.g.\n"
+                f"    {pip_update_command}\n"
+                f"or\n"
+                f"    {conda_update_command}",
+                err=True,
+                fg="red",
+            )

@@ -22,7 +22,6 @@ from .config import (
     _check_db,
     _Config,
     _CookieSession,
-    _PyPIVersion,
 )
 from .core import DEFAULT_TIMEOUT
 from .login import (
@@ -185,7 +184,6 @@ class Factory:
         config = _Config(
             auth_config=server_config.auth_config,
             auth_token=token,
-            pypi=_PyPIVersion.create_uninitialized(),
             url=url,
             cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
@@ -248,7 +246,6 @@ class Factory:
             payload = yaml.safe_load(content)
 
             api_url = URL(payload["url"])
-            pypi_payload = payload["pypi"]
             auth_config = self._deserialize_auth_config(payload)
             clusters = self._deserialize_clusters(payload)
             auth_token = self._deserialize_auth_token(payload)
@@ -261,7 +258,6 @@ class Factory:
             return _Config(
                 auth_config=auth_config,
                 auth_token=auth_token,
-                pypi=_PyPIVersion.from_config(pypi_payload),
                 url=api_url,
                 cookie_session=cookie_session,
                 version=version,
