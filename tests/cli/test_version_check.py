@@ -1,6 +1,7 @@
 import asyncio
 import socket
 import ssl
+import time
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -248,12 +249,14 @@ def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
 async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
+    t0 = time.time()
     record = await version_utils._fetch_package(client._session, "neuromation")
     assert record is not None
     assert record["version"] == "0.2.1"
     assert (
         record["uploaded"] == dateutil.parser.parse("2019-01-30T00:02:23").timestamp()
     )
+    assert t0 <= record["checked"] <= time.time()
 
 
 async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) -> None:
