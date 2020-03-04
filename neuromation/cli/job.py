@@ -226,7 +226,7 @@ def job() -> None:
     "--entrypoint",
     type=str,
     help=(
-        "Executable entrypoint in the container "
+        "Executabley entrypoint in the container "
         "(note that it overwrites `ENTRYPOINT` and `CMD` "
         "instructions of the docker image)"
     ),

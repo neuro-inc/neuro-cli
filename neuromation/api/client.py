@@ -10,7 +10,7 @@ import aiohttp
 from neuromation.api.quota import _Quota
 
 from .admin import _Admin
-from .config import Config, _Config
+from .config import Config, _ConfigData
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
@@ -28,7 +28,7 @@ class Client(metaclass=NoPublicConstructor):
     def __init__(
         self,
         session: aiohttp.ClientSession,
-        config_data: _Config,
+        config_data: _ConfigData,
         path: Path,
         trace_id: Optional[str],
     ) -> None:
