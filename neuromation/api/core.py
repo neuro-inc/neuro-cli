@@ -112,11 +112,12 @@ class _Core:
         if trace_id is None:
             trace_id = gen_trace_id()
         trace_request_ctx.trace_id = trace_id
+        if params:
+            url = url.with_query(params)
         async with self._session.request(
             method,
             url,
             headers=real_headers,
-            params=params,
             json=json,
             data=data,
             timeout=timeout,
