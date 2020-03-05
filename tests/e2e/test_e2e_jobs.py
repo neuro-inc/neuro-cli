@@ -851,27 +851,6 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
-    # Run a new job
-    captured = helper.run_cli(
-        [
-            "-v",
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--http",
-            "80",
-            "--detach",
-            "--browse",
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
-    )
-    assert "Browsing https://job-" in captured.out
-    assert "Open job URL: https://job-" in captured.err
-
-
-@pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
 
