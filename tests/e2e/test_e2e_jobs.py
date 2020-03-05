@@ -746,32 +746,6 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
 
 
 @pytest.mark.e2e
-def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
-    job_name = f"namedjob-{os.urandom(5).hex()}"
-
-    # Run a new job
-    captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            "--detach",
-            "--name",
-            job_name,
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
-    )
-    job_id = captured.out
-
-    captured = helper.run_cli(["-v", "job", "browse", job_id])
-    assert f"Browsing https://{job_name}--{helper.username}" in captured.out
-    assert f"Open job URL: https://{job_name}--{helper.username}" in captured.err
-
-
-@pytest.mark.e2e
 def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
