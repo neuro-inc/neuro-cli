@@ -277,6 +277,7 @@ def job() -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
+@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -302,6 +303,7 @@ async def submit(
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -347,6 +349,7 @@ async def submit(
         pass_config=pass_config,
         browse=browse,
         detach=detach,
+        tty=tty,
     )
 
 
@@ -786,6 +789,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
+@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
 async def run(
     root: Root,
     image: RemoteImage,
@@ -806,6 +810,7 @@ async def run(
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -859,6 +864,7 @@ async def run(
         pass_config=pass_config,
         browse=browse,
         detach=detach,
+        tty=tty,
     )
 
 
@@ -905,6 +911,7 @@ async def run_job(
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -969,6 +976,7 @@ async def run_job(
         resources=resources,
         env=env_dict,
         volumes=list(volumes),
+        tty=tty,
     )
 
     job = await root.client.jobs.run(
