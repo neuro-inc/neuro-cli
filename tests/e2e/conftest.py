@@ -163,7 +163,16 @@ class Helper:
     async def resolve_job_name_to_id(self, job_name: str) -> str:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            return await resolve_job(job_name, client=client)
+            return await resolve_job(
+                job_name,
+                client=client,
+                status={
+                    JobStatus.PENDING,
+                    JobStatus.RUNNING,
+                    JobStatus.SUCCEEDED,
+                    JobStatus.FAILED,
+                },
+            )
 
     @run_async
     async def check_file_exists_on_storage(
@@ -509,7 +518,9 @@ class Helper:
     async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            id = await resolve_job(id_or_name, client=client)
+            id = await resolve_job(
+                id_or_name, client=client, status={JobStatus.PENDING, JobStatus.RUNNING}
+            )
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
                 if wait:

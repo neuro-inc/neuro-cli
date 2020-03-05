@@ -21,6 +21,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -38,6 +39,7 @@ from neuromation.api import (
     Client,
     Factory,
     JobDescription,
+    JobStatus,
     LocalImage,
     RemoteImage,
     TagOption,
@@ -428,7 +430,9 @@ def volume_to_verbose_str(volume: Volume) -> str:
     )
 
 
-async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
+async def resolve_job(
+    id_or_name_or_uri: str, *, client: Client, status: Set[JobStatus]
+) -> str:
     default_user = client.username
     if id_or_name_or_uri.startswith("job:"):
         uri = _normalize_uri(id_or_name_or_uri, username=default_user)

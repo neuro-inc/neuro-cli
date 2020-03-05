@@ -7,7 +7,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Action, Client
+from neuromation.api import Action, Client, JobStatus
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
     LocalRemotePortParamType,
@@ -60,10 +60,13 @@ async def test_resolve_job_id__from_string__no_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_id:
-            pytest.fail(f"received: {name}")
+            raise web.HTTPBadRequest(text=(f"received: {name}"))
         owner = request.query.get("owner")
         if owner != "user":
-            pytest.fail(f"received: {owner}")
+            raise web.HTTPBadRequest(text=(f"received: {owner}"))
+        status = request.query.getall("status")
+        if status != ["running"]:
+            raise web.HTTPBadRequest(text=(f"received: {status}"))
         return web.json_response(JSON)
 
     app = web.Application()
@@ -72,7 +75,7 @@ async def test_resolve_job_id__from_string__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_id, client=client)
+        resolved = await resolve_job(job_id, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
 
 
@@ -100,7 +103,7 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
@@ -127,7 +130,7 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
@@ -154,7 +157,9 @@ async def test_resolve_job_id__from_string__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_name, client=client)
+        resolved = await resolve_job(
+            job_name, client=client, status={JobStatus.RUNNING}
+        )
         assert resolved == job_id
 
 
@@ -183,7 +188,7 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
 
 
@@ -211,7 +216,7 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
 
 
@@ -239,7 +244,9 @@ async def test_resolve_job_id__from_string__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_name, client=client)
+        resolved = await resolve_job(
+            job_name, client=client, status={JobStatus.RUNNING}
+        )
         assert resolved == job_id_2
 
 
@@ -269,7 +276,7 @@ async def test_resolve_job_id__from_uri_with_owner__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id_2
 
 
@@ -298,7 +305,7 @@ async def test_resolve_job_id__from_uri_without_owner__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id_2
 
 
@@ -324,7 +331,9 @@ async def test_resolve_job_id__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_name, client=client)
+        resolved = await resolve_job(
+            job_name, client=client, status={JobStatus.RUNNING}
+        )
         assert resolved == job_id
 
 
@@ -351,7 +360,7 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
@@ -377,7 +386,7 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
@@ -395,7 +404,7 @@ async def test_resolve_job_id__from_uri__missing_job_id(
             ValueError,
             match="Invalid job URI: owner='job-name', missing job-id or job-name",
         ):
-            await resolve_job(uri, client=client)
+            await resolve_job(uri, client=client, status={JobStatus.RUNNING})
 
 
 def test_parse_file_resource_no_scheme(root: Root) -> None:
