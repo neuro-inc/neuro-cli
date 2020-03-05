@@ -92,6 +92,7 @@ def test_job_submit(helper: Helper) -> None:
     assert job_id in store_out
     # Check that the command is in the list
     assert "bash -c 'sleep 10m; false'" in store_out
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -153,6 +154,7 @@ def test_job_description(helper: Helper) -> None:
     assert job_id in store_out
     assert description not in store_out
     assert command not in store_out
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -341,6 +343,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
         ]
     )
     assert captured.out == "ok"
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -362,6 +365,7 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
             ]
         )
     assert cm.value.returncode == 1
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -382,6 +386,7 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
             ]
         )
     assert cm.value.returncode == 2
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -402,6 +407,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
         ]
     )
     assert captured.out == "1"
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -423,6 +429,7 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
             ]
         )
     assert cm.value.returncode == 1
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -442,6 +449,7 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
         ]
     )
     assert captured.out == ""
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -1028,6 +1036,8 @@ def test_e2e_job_top(helper: Helper) -> None:
         f"returncode={returncode}\n"
         f"stdout = {stdout}\nstdderr = {stderr}"
     )
+
+    helper.kill_job(job_id, wait=False)
 
     try:
         header, *lines = split_non_empty_parts(stdout, sep="\n")
