@@ -1,4 +1,4 @@
-paramerters:
+parameters:
   operation_systems:
   - '3.6'
   - '3.7'
@@ -17,7 +17,7 @@ stages:
     displayName: " "
     strategy:
       matrix:
-        ${{ each py in parameterss.python_versions }}:
+        ${{ each py in parameters.python_versions }}:
           ${{ each tgt in parameters.targets }}: 
             ${{ each os in parameters.operation_systems }}:
               ${{ format('Py-{0}-{1}-{2}', py, os, target) }}:
