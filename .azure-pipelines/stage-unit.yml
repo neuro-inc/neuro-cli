@@ -37,13 +37,16 @@ stages:
         versionSpec: '$(python.version)'
       displayName: "Use Python $(python.version)"
 
+    - task: Cache@2
+      inputs:
+        key: 'pip | "$(Agent.OS)" | "$(python.version)" | requirements/base.txt | requirements/ci.txt'
+        path: $(PIP_CACHE_DIR)
+
     - script: |
-        echo "Pip cache $PIP_CACHE_DIR"
         python -m pip install -U pip wheel
       displayName: 'Install prerequirements'
 
     - script: |
-        echo "Pip cache $PIP_CACHE_DIR"
         pip install -r requirements/ci.txt pytest-azurepipelines
         pip install .
         touch .update-deps

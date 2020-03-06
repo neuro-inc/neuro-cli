@@ -25,6 +25,7 @@ stages:
                 python.version: ${{ py }}
                 image: ${{ format('{0}-latest', os) }}
                 target: ${{ format('e2e-{0}', tgt) }}
+                PIP_CACHE_DIR: $(Pipeline.Workspace)/.pip
 
     pool:
       vmImage: $[ variables['image'] ]
@@ -40,6 +41,11 @@ stages:
         versionSpec: '$(python.version)'
       displayName: "Use Python $(python.version)"
 
+    - task: Cache@2
+      inputs:
+        key: 'pip | "$(Agent.OS)" | "$(python.version)" | requirements/base.txt | requirements/ci.txt'
+        path: $(PIP_CACHE_DIR)
+
     - script: |
         python -m pip install -U pip wheel
       displayName: 'Install prerequirements'
@@ -47,6 +53,7 @@ stages:
     - script: |
         pip install -r requirements/ci.txt pytest-azurepipelines
         pip install .
+        touch .update-deps
       displayName: 'Install dependencies'
 
     - script: |
