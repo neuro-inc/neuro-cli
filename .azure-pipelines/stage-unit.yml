@@ -21,6 +21,7 @@ stages:
             ${{ format('Py-{0}-{1}', py, os) }}:
               python.version: ${{ py }}
               image: ${{ format('{0}-latest', os) }}
+              PIP_CACHE_DIR: $(Pipeline.Workspace)/.pip
 
     pool:
       vmImage: $[ variables['image'] ]
@@ -37,6 +38,7 @@ stages:
       displayName: "Use Python $(python.version)"
 
     - script: |
+        echo "Pip cache $PIP_CACHE_DIR"
         python -m pip install -U pip wheel
       displayName: 'Install prerequirements'
 
