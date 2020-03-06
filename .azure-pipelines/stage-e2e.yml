@@ -1,7 +1,8 @@
 parameters:
   operation_systems:
-  - '3.6'
-  - '3.7'
+  - 'ubuntu'
+  - 'windows'
+  - 'macos'
   python_versions:
   - '3.6'
   - '3.7'
@@ -22,12 +23,7 @@ stages:
             ${{ each os in parameters.operation_systems }}:
               ${{ format('Py-{0}-{1}-{2}', py, os, tgt) }}:
                 python.version: ${{ py }}
-                ${{ if eq(os, 'Linux') }}:
-                  image: 'ubuntu-latest'
-                ${{ if eq(os, 'Windows') }}:
-                  image: 'windows-latest'
-                ${{ if eq(os, 'Mac') }}:
-                  image: 'macos-latest'
+                image: ${{ format('{0}-latest', os) }}
                 target: ${{ format('e2e-{0}', tgt) }}
         # Py36-Linux:
         #   python.version: '3.6'
