@@ -19,8 +19,8 @@ stages:
     strategy:
       matrix:
         ${{ each py in parameters.python_versions }}:
-          ${{ each tgt in parameters.targets }}: 
-            ${{ each os in parameters.operation_systems }}:
+          ${{ each os in parameters.operation_systems }}:
+            ${{ each tgt in parameters.targets }}:
               ${{ format('Py-{0}-{1}-{2}', py, os, tgt) }}:
                 python.version: ${{ py }}
                 image: ${{ format('{0}-latest', os) }}
