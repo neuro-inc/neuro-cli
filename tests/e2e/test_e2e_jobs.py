@@ -34,7 +34,10 @@ def test_job_submit(helper: Helper) -> None:
     job_name = f"job-{os.urandom(5).hex()}"
 
     # Kill another active jobs with same name, if any
-    captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
+    # Pass --owner because --name without --owner is too slow for admin users.
+    captured = helper.run_cli(
+        ["-q", "job", "ls", "--owner", helper.username, "--name", job_name]
+    )
     if captured.out:
         jobs_same_name = captured.out.split("\n")
         assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
