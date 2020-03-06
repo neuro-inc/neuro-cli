@@ -20,7 +20,7 @@ stages:
         ${{ each py in parameters.python_versions }}:
           ${{ each tgt in parameters.targets }}: 
             ${{ each os in parameters.operation_systems }}:
-              ${{ format('Py-{0}-{1}-{2}', py, os, target) }}:
+              ${{ format('Py-{0}-{1}-{2}', py, os, tgt) }}:
                 python.version: ${{ py }}
                 ${{ if eq(os, 'Linux') }}:
                   image: 'ubuntu-latest'
