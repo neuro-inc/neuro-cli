@@ -43,8 +43,10 @@ stages:
       displayName: 'Install prerequirements'
 
     - script: |
+        echo "Pip cache $PIP_CACHE_DIR"
         pip install -r requirements/ci.txt pytest-azurepipelines
         pip install .
+        touch .update-deps
       displayName: 'Install dependencies'
 
     - script: |
