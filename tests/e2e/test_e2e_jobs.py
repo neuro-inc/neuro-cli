@@ -20,6 +20,8 @@ from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
 
 
+pytestmark = pytest.mark.e2e_job
+
 ALPINE_IMAGE_NAME = "alpine:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
