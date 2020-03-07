@@ -20,12 +20,15 @@ from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
 
 
+pytestmark = pytest.mark.e2e_job
+
 ALPINE_IMAGE_NAME = "alpine:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
 TEST_IMAGE_NAME = "neuro-cli-test"
 MIN_PORT = 49152
 MAX_PORT = 65535
+EXEC_TIMEOUT = 180
 
 
 @pytest.mark.e2e
@@ -34,7 +37,10 @@ def test_job_submit(helper: Helper) -> None:
     job_name = f"job-{os.urandom(5).hex()}"
 
     # Kill another active jobs with same name, if any
-    captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
+    # Pass --owner because --name without --owner is too slow for admin users.
+    captured = helper.run_cli(
+        ["-q", "job", "ls", "--owner", helper.username, "--name", job_name]
+    )
     if captured.out:
         jobs_same_name = captured.out.split("\n")
         assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
@@ -330,7 +336,8 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
             "exec",
             "--no-tty",
             "--no-key-check",
-            "--timeout=60",
+            "--timeout",
+            str(EXEC_TIMEOUT),
             job_id,
             # use unrolled notation to check shlex.join()
             "bash",
@@ -353,7 +360,8 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 job_id,
                 "false",
             ]
@@ -368,7 +376,15 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id]
+            [
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                job_id,
+            ]
         )
     assert cm.value.returncode == 2
 
@@ -379,7 +395,16 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "echo 1"]
+        [
+            "job",
+            "exec",
+            "--no-tty",
+            "--no-key-check",
+            "--timeout",
+            str(EXEC_TIMEOUT),
+            job_id,
+            "echo 1",
+        ]
     )
     assert captured.out == "1"
 
@@ -396,7 +421,8 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 job_id,
                 "[ -t 1 ]",
             ]
@@ -410,7 +436,15 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
+        [
+            "job",
+            "exec",
+            "--no-key-check",
+            "--timeout",
+            str(EXEC_TIMEOUT),
+            job_id,
+            "[ -t 1 ]",
+        ]
     )
     assert captured.out == ""
 
@@ -424,7 +458,8 @@ def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 "job_id",
                 "true",
             ]
@@ -446,7 +481,8 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 job_id,
                 "true",
             ]
