@@ -65,6 +65,30 @@ e2e: .update-deps
 		--durations 10 \
 		tests
 
+.PHONY: e2e-jobs
+e2e-jobs: .update-deps
+	pytest \
+	    -n ${PYTEST_XDIST_NUM_THREADS} \
+		-m "e2e and e2e_job" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		--verbose \
+		--durations 10 \
+		tests
+
+.PHONY: e2e-sumo
+e2e-sumo: .update-deps
+	pytest \
+	    -n ${PYTEST_XDIST_NUM_THREADS} \
+		-m "e2e and not e2e_job" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		--verbose \
+		--durations 10 \
+		tests
+
 
 .PHONY: test
 test: .update-deps
