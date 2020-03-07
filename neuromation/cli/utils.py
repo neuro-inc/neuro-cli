@@ -428,6 +428,9 @@ def volume_to_verbose_str(volume: Volume) -> str:
     )
 
 
+JOB_ID_PATTERN = r"job-[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}"
+
+
 async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
     default_user = client.username
     if id_or_name_or_uri.startswith("job:"):
@@ -441,6 +444,10 @@ async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
     else:
         id_or_name = id_or_name_or_uri
         owner = default_user
+
+    # Temporary fast path.
+    if re.fullmatch(JOB_ID_PATTERN, id_or_name):
+        return id_or_name
 
     jobs: List[JobDescription] = []
     details = f"name={id_or_name}, owner={owner}"
