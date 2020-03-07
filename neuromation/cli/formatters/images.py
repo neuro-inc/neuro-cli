@@ -145,11 +145,20 @@ class BaseImagesFormatter:
 
 class ShortImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        return (str(image) for image in images)
+        return (click.style(str(image), underline=True) for image in images)
 
 
 class LongImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        header = ["NEURO URL", "DOCKER URL"]
-        rows = [[str(image), image.as_docker_url] for image in images]
+        header = [
+            click.style("Neuro URL", bold=True),
+            click.style("Docker URL", bold=True),
+        ]
+        rows = [
+            [
+                click.style(str(image), underline=True),
+                click.style(image.as_docker_url(), underline=True),
+            ]
+            for image in images
+        ]
         return table([header] + rows)

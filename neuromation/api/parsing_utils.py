@@ -18,7 +18,6 @@ class RemoteImage:
     owner: Optional[str] = None
     registry: Optional[str] = None
 
-    @property
     def as_docker_url(self) -> str:
         if _is_in_neuro_registry(self):
             name = f"https://{self.registry}/{self.owner}/{self.name}"
