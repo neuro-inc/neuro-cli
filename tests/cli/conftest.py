@@ -9,7 +9,7 @@ from yarl import URL
 
 import neuromation
 from neuromation.api import Cluster, Factory, Preset
-from neuromation.api.config import _AuthConfig, _AuthToken, _Config, _CookieSession
+from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _CookieSession
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
 from neuromation.cli.root import Root
@@ -39,7 +39,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         },
         name="default",
     )
-    config = _Config(
+    config = _ConfigData(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
         url=URL("https://dev.neu.ro/api/v1"),

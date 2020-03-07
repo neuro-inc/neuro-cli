@@ -52,7 +52,7 @@ class _CookieSession:
 
 
 @dataclass(frozen=True)
-class _Config:
+class _ConfigData:
     auth_config: _AuthConfig
     auth_token: _AuthToken
     url: URL
@@ -63,7 +63,7 @@ class _Config:
 
 
 class Config(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, path: Path, config_data: _Config) -> None:
+    def __init__(self, core: _Core, path: Path, config_data: _ConfigData) -> None:
         self._core = core
         self._path = path
         self._config_data = config_data
@@ -190,7 +190,7 @@ class Config(metaclass=NoPublicConstructor):
             db.commit()
 
     @classmethod
-    def _save(cls, config: _Config, path: Path) -> None:
+    def _save(cls, config: _ConfigData, path: Path) -> None:
         # The wierd method signature is required for communicating with existing
         # Factory._save()
         payload: Dict[str, Any] = {}
