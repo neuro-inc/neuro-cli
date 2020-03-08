@@ -11,7 +11,7 @@ import aiohttp
 import click
 
 from neuromation.api import Client, Factory, gen_trace_id
-from neuromation.api.config import _Config
+from neuromation.api.config import _ConfigData
 
 from .asyncio_utils import Runner
 
@@ -68,7 +68,7 @@ class Root:
         return self._runner.run(main)
 
     @property
-    def _config(self) -> _Config:
+    def _config(self) -> _ConfigData:
         assert self._client is not None
         return self._client.config._config_data
 

@@ -36,21 +36,24 @@ from .core import (
     ResourceNotFound,
     ServerNotAvailable,
 )
+from .images import Images
 from .jobs import (
     Container,
     HTTPPort,
     JobDescription,
+    Jobs,
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
     Resources,
     Volume,
 )
+from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption
 from .server_cfg import Cluster
-from .storage import FileStatus, FileStatusType
+from .storage import FileStatus, FileStatusType, Storage
 from .tracing import gen_trace_id
-from .users import Action, Permission, Share
+from .users import Action, Permission, Share, Users
 from .utils import _ContextManager
 
 
@@ -58,7 +61,7 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
-    "TRUSTED_CONFIG_PATH",
+    "Jobs",
     "JobDescription",
     "JobStatus",
     "JobStatusHistory",
@@ -66,11 +69,13 @@ __all__ = (
     "Resources",
     "Volume",
     "HTTPPort",
+    "Users",
     "Action",
     "Permission",
     "Share",
     "Client",
     "Preset",
+    "Storage",
     "FileStatusType",
     "FileStatus",
     "Container",
@@ -105,6 +110,8 @@ __all__ = (
     "ConfigError",
     "gen_trace_id",
     "Cluster",
+    "Images",
+    "Parser",
 )
 
 

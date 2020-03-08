@@ -1,0 +1,1 @@
+Added 'neuro image ls -l' option, which also prints Docker URL-s

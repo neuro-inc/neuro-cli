@@ -279,12 +279,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_exec",
                 "token": await self._config.token(),
-                "params": {"job": id, "command": list(cmd)},
+                "params": {"job": job_status.id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
@@ -332,12 +332,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_port_forward",
                 "token": await self._config.token(),
-                "params": {"job": id, "port": job_port},
+                "params": {"job": job_status.id, "port": job_port},
             }
         )
         proxy_command = ["ssh"]
