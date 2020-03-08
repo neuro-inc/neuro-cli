@@ -58,6 +58,10 @@ class TestRow:
 
 
 class TestTable:
+    def test_empty(self) -> None:
+        result = list(table(()))
+        assert result == []
+
     def test_simple(self) -> None:
         rows = [["a", "Alpha"], ["b", "Bravo"]]
         result = list(
