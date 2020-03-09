@@ -20,7 +20,7 @@ from .config import (
     Config,
     ConfigError,
     _check_db,
-    _Config,
+    _ConfigData,
     _CookieSession,
 )
 from .core import DEFAULT_TIMEOUT
@@ -179,9 +179,9 @@ class Factory:
 
     def _gen_config(
         self, server_config: _ServerConfig, token: _AuthToken, url: URL
-    ) -> _Config:
+    ) -> _ConfigData:
         cluster_name = next(iter(server_config.clusters))
-        config = _Config(
+        config = _ConfigData(
             auth_config=server_config.auth_config,
             auth_token=token,
             url=url,
@@ -206,7 +206,7 @@ class Factory:
                 # Directory Not Empty or Not A Directory
                 pass
 
-    def _read(self) -> _Config:
+    def _read(self) -> _ConfigData:
         config_file = self._path / "db"
         if not self._path.exists():
             raise ConfigError(f"Config at {self._path} does not exists. Please login.")
@@ -255,7 +255,7 @@ class Factory:
             version = payload.get("version", "")
             cluster_name = payload["cluster_name"]
 
-            return _Config(
+            return _ConfigData(
                 auth_config=auth_config,
                 auth_token=auth_token,
                 url=api_url,
@@ -324,7 +324,7 @@ class Factory:
             refresh_token=auth_payload["refresh_token"],
         )
 
-    def _save(self, config: _Config) -> None:
+    def _save(self, config: _ConfigData) -> None:
         # Trampoline to Config._save() method
         # Looks ugly a little, fix me later.
         Config._save(config, self._path)
