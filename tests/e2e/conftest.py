@@ -650,10 +650,11 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
 
 @pytest.fixture()
 async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
+    if sys.platform == 'win32':
+        pytest.skip(f"Skip tests for docker on windows")
     try:
         client = aiodocker.Docker()
     except Exception as e:
         pytest.skip(f"Could not connect to Docker: {e}")
-        return
     yield client
     await client.close()
