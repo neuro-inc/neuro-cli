@@ -98,6 +98,9 @@ class JobStatusFormatter:
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
 
+        if job_status.container.tty:
+            result += "TTY: True\n"
+
         if job_status.container.volumes:
             rows = [
                 (

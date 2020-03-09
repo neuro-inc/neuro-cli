@@ -85,6 +85,7 @@ class Container:
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
+    tty: bool = False
 
 
 @dataclass(frozen=True)
@@ -502,6 +503,8 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+    if container.tty:
+        primitive["tty"] = True
     return primitive
 
 

@@ -856,6 +856,28 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_job_run_with_tty(helper: Helper) -> None:
+    # Run a new job
+    command = "test -t 0"
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "-t",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    job_id = captured.out
+
+    # Wait until the job is running
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
+
+
+@pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
 
